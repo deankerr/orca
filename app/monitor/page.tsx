@@ -1,27 +1,16 @@
 import type { Metadata } from 'next'
 
-import {
-  PageContainer,
-  PageDescription,
-  PageHeader,
-  PageTitle,
-} from '@/components/app-layout/pages'
 import { MonitorFeed } from '@/components/monitor-feed/monitor-feed-page'
 
 export const metadata: Metadata = {
   title: 'Monitor',
-  description: 'Updates detected between API snapshots',
+  description: 'Updates detected between OpenRouter API snapshots',
 }
 
 export default function Page() {
   return (
-    <PageContainer className="overflow-hidden px-0 pb-0 sm:px-0 sm:pb-0">
-      <PageHeader>
-        <PageTitle>Monitor</PageTitle>
-        <PageDescription>Updates detected between API snapshots</PageDescription>
-      </PageHeader>
-
+    <div className="flex flex-1 flex-col overflow-hidden">
       <MonitorFeed />
-    </PageContainer>
+    </div>
   )
 }

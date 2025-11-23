@@ -28,7 +28,7 @@ export function MonitorFeed() {
   })
 
   return (
-    <ScrollArea className="flex-1 rounded-none border-t" viewportRef={viewportRef} maskHeight={10}>
+    <ScrollArea className="flex-1 rounded-none" viewportRef={viewportRef} maskHeight={10}>
       <div className="space-y-6 px-2 py-4 sm:px-6">
         {results.map(({ crawl_id, data: changes }) => (
           <div key={crawl_id} className="space-y-4 text-sm">

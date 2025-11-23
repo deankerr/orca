@@ -95,7 +95,7 @@ export function EndpointsDataGrid() {
         base: 'border-x border-b',
       }}
     >
-      <DataGridCard className="border-t">
+      <DataGridCard>
         <DataGridCardToolbar>
           <DataGridControls />
         </DataGridCardToolbar>
