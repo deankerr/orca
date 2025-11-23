@@ -62,7 +62,6 @@
     "posthog-js": "^1.297.2",
     "posthog-node": "^5.13.2",
     "pretty-bytes": "^7.1.0",
-    "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^2.15.4",
