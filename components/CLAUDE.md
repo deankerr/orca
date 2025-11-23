@@ -22,7 +22,7 @@ export function LabeledBox({
 
 ## Target Audience
 
-ORCHID serves highly technical users who work with OpenRouter and LLMs professionally:
+ORCA serves highly technical users who work with OpenRouter and LLMs professionally:
 
 - Deep understanding of AI model concepts (variables, parameters, context lengths, quantization)
 - Interested in comprehensive pricing details (cache reads, reasoning tokens, structured outputs)

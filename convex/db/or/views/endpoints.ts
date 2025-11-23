@@ -130,7 +130,7 @@ export const table = defineTable({
     }),
   ),
 
-  // * orchid
+  // * orca
   unavailable_at: v.optional(v.number()),
   updated_at: v.number(),
 })

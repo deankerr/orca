@@ -1,5 +1,5 @@
-# ORCHID
+# ORCA
 
-OpenRouter Capability & Health Intelligence Dashboard
+OpenRouter Capability Analysis
 
 Exploring the model menagerie of OpenRouter.

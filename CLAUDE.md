@@ -1,8 +1,8 @@
-# ORCHID (OpenRouter Capability & Health Intelligence Dashboard)
+# ORCA (OpenRouter Capability Analysis)
 
 ## Overview
 
-ORCHID aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
+ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
 
 ## Target Users
 
@@ -29,7 +29,7 @@ Integration and visualization of OpenRouter's usage statistics. Tracks cumulativ
 
 ### Developer API
 
-Public HTTP API providing programmatic access to ORCHID's curated data. `/listmeps` endpoint for model/endpoint listings, with planned expansion for changes feed and analytics.
+Public HTTP API providing programmatic access to ORCA's curated data. `/public-api-preview/v2/models` endpoint for model/endpoint listings, with planned expansion for changes feed and analytics.
 
 ## Architecture Overview
 

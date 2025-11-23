@@ -1,10 +1,10 @@
-# ORCHID Data Philosophy
+# ORCA Data Philosophy
 
 ## Core Principles
 
 ### 1. Derived State is Expendable
 
-All processed data in ORCHID is **derived state** that can be completely regenerated from source snapshots. This fundamental principle shapes every design decision:
+All processed data in ORCA is **derived state** that can be completely regenerated from source snapshots. This fundamental principle shapes every design decision:
 
 - **Projections are expendable**: Any processed data can be voided and regenerated at any time
 - **Snapshots are the source of truth**: Raw API responses are preserved as the authoritative record
@@ -24,7 +24,7 @@ The AI model ecosystem is rapidly evolving, and external APIs will change withou
 
 ### 3. Temporal Awareness
 
-Everything in ORCHID exists within a temporal context defined by snapshots:
+Everything in ORCA exists within a temporal context defined by snapshots:
 
 - **Data has validity periods**: Each piece of information is valid from one snapshot until superseded
 - **Missing data is meaningful**: Absence of data in an snapshot indicates unavailability
@@ -92,7 +92,7 @@ Plans and implementations evolve based on real-world data and experience:
 
 ## Long-Term Perspective
 
-ORCHID is built to be **resilient to fundamental change**. While we optimize for current needs, we accept that:
+ORCA is built to be **resilient to fundamental change**. While we optimize for current needs, we accept that:
 
 - External APIs will evolve beyond our current understanding
 - Data schemas will require complete redesign periodically

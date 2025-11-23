@@ -36,10 +36,10 @@ const envPrefix = getEnvironmentPrefix()
 
 export const metadata: Metadata = {
   title: {
-    template: `${envPrefix}%s - ORCHID`,
-    default: `${envPrefix}ORCHID`,
+    template: `${envPrefix}%s - ORCA`,
+    default: `${envPrefix}ORCA`,
   },
-  description: 'ORCHID: OpenRouter Capability & Health Intelligence Dashboard',
+  description: 'ORCA: OpenRouter Capability Analysis',
 }
 
 export default function RootLayout({

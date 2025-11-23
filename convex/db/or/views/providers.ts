@@ -16,7 +16,7 @@ export const table = defineTable({
   terms_of_service_url: v.optional(v.string()),
   privacy_policy_url: v.optional(v.string()),
 
-  // orchid
+  // orca
   unavailable_at: v.optional(v.number()),
   updated_at: v.number(),
 })

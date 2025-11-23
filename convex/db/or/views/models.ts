@@ -30,7 +30,7 @@ export const table = defineTable({
   promotion_message: v.optional(v.string()),
   warning_message: v.optional(v.string()),
 
-  // orchid
+  // orca
   unavailable_at: v.optional(v.number()),
   updated_at: v.number(),
 })

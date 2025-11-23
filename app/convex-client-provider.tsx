@@ -37,7 +37,7 @@ convexQueryClient.connect(queryClient)
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  key: 'ORCHID_QUERY_CACHE',
+  key: 'ORCA_QUERY_CACHE',
 })
 
 /* 
