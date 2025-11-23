@@ -22,10 +22,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: withEnvironmentPrefix('%s - ORCA'),
+    template: withEnvironmentPrefix('ORCA ⋅ %s'),
     default: withEnvironmentPrefix('ORCA'),
   },
-  description: 'ORCA: OpenRouter Capability Analysis',
+  description: 'Compare models and providers available on OpenRouter',
 }
 
 export default function RootLayout({

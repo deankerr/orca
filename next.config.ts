@@ -15,25 +15,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  redirects: async () => {
-    return [
-      {
-        source: '/',
-        destination: '/endpoints',
-        permanent: false,
-      },
-      {
-        source: '/models',
-        destination: '/',
-        permanent: false,
-      },
-      {
-        source: '/models/:path*',
-        destination: '/',
-        permanent: false,
-      },
-    ]
-  },
   rewrites: async () => {
     return [
       // * posthog
@@ -44,11 +25,6 @@ const nextConfig: NextConfig = {
       {
         source: '/snarf/:path*',
         destination: 'https://us.i.posthog.com/:path*',
-      },
-      // * public api preview (legacy)
-      {
-        source: '/api/preview/endpoints',
-        destination: getConvexHttpUrl('/public-api-preview/v1'),
       },
       // * public api preview
       {

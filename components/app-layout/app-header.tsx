@@ -13,7 +13,7 @@ import {
 import { AdminMenu } from './admin-menu'
 
 const navigationLinks = [
-  { href: '/endpoints', label: 'Endpoints' },
+  { href: '/', label: 'Endpoints' },
   { href: '/monitor', label: 'Monitor' },
 ]
 
