@@ -54,3 +54,15 @@ export function getLogo(slug: string) {
   const url = style ? `${LOGOS_DIR}/${style.slug}.png` : undefined
   return { url, style }
 }
+
+/* CLI */
+if (import.meta.main) {
+  const slug = process.argv[2]
+  if (!slug) {
+    console.error('Usage: bun lib/logos.ts <slug>')
+    process.exit(1)
+  }
+
+  const result = getLogo(slug)
+  console.log(JSON.stringify(result, null, 2))
+}

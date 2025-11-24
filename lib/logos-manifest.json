@@ -90,6 +90,12 @@
       "background": "#FF6A00",
       "scale": 0.7
     },
+    "allenai": {
+      "slug": "allenai",
+      "title": "Allenai",
+      "background": "",
+      "scale": 1
+    },
     "antgroup": {
       "slug": "antgroup",
       "title": "AntGroup",
@@ -129,12 +135,6 @@
     "atlascloud": {
       "slug": "atlascloud",
       "title": "Atlascloud",
-      "background": "",
-      "scale": 1
-    },
-    "atoma": {
-      "slug": "atoma",
-      "title": "Atoma",
       "background": "",
       "scale": 1
     },
@@ -390,12 +390,6 @@
       "background": "#fff",
       "scale": 0.75
     },
-    "crofai": {
-      "slug": "crofai",
-      "title": "Crofai",
-      "background": "",
-      "scale": 1
-    },
     "crusoe": {
       "slug": "crusoe",
       "title": "Crusoe",
@@ -426,9 +420,9 @@
       "background": "#fff",
       "scale": 0.75
     },
-    "deepcognito": {
-      "slug": "deepcognito",
-      "title": "Deepcognito",
+    "deepcogito": {
+      "slug": "deepcogito",
+      "title": "Deepcogito",
       "background": "",
       "scale": 1
     },
@@ -822,12 +816,6 @@
       "background": "#6525F7",
       "scale": 0.75
     },
-    "klusterai": {
-      "slug": "klusterai",
-      "title": "Klusterai",
-      "background": "",
-      "scale": 1
-    },
     "kolors": {
       "slug": "kolors",
       "title": "Kolors",
@@ -1032,12 +1020,6 @@
       "background": "#624AFF",
       "scale": 0.75
     },
-    "modular": {
-      "slug": "modular",
-      "title": "Modular",
-      "background": "",
-      "scale": 1
-    },
     "monica": {
       "slug": "monica",
       "title": "Monica",
@@ -1089,12 +1071,6 @@
     "nextbit": {
       "slug": "nextbit",
       "title": "Nextbit",
-      "background": "",
-      "scale": 1
-    },
-    "nineteen": {
-      "slug": "nineteen",
-      "title": "Nineteen",
       "background": "",
       "scale": 1
     },
@@ -1287,12 +1263,6 @@
     "reka": {
       "slug": "reka",
       "title": "Reka",
-      "background": "",
-      "scale": 1
-    },
-    "relace": {
-      "slug": "relace",
-      "title": "Relace",
       "background": "",
       "scale": 1
     },
@@ -1499,12 +1469,6 @@
       "title": "TuriX",
       "background": "linear-gradient(-45deg, #FAD076, #F7AD8A, #C768B9)",
       "scale": 0.7
-    },
-    "ubicloud": {
-      "slug": "ubicloud",
-      "title": "Ubicloud",
-      "background": "",
-      "scale": 1
     },
     "udio": {
       "slug": "udio",
