@@ -1,7 +1,5 @@
 import * as R from 'remeda'
 
-import { TrendingDownIcon, TrendingUpIcon } from 'lucide-react'
-
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
@@ -130,12 +128,8 @@ function PercentageBadge({
   isGood: boolean
 }) {
   return (
-    <RadBadge
-      variant="surface"
-      color={isGood ? 'green' : 'red'}
-      className="-translate-y-px align-middle"
-    >
-      {isIncrease ? <TrendingUpIcon /> : <TrendingDownIcon />}
+    <RadBadge variant="soft" color={isGood ? 'green' : 'red'} className="">
+      {isIncrease ? '+ ' : '- '}
       {Math.abs(value).toFixed(1)}%
     </RadBadge>
   )

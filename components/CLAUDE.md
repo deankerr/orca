@@ -61,6 +61,7 @@ ORCA serves highly technical users who work with OpenRouter and LLMs professiona
 
 - Use a shadcn/ui-inspired structure for components, a single file which exports composable component parts, allowing for dynamic customization.
 - Use named exports only. NEVER use default exports.
+- The app is wrapped with a TooltipProvider.
 
 ### Presentation Component Design
 

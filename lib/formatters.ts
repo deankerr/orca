@@ -1,3 +1,5 @@
+import { formatDistanceToNow } from 'date-fns'
+
 type PricingFormat = {
   transform: (value: number) => number
   unit: string
@@ -88,58 +90,8 @@ export function formatPrice({
   return `${prefix}${formattedValue}${suffix}`
 }
 
-/**
- * Format a timestamp as relative time (e.g., "2 days ago", "3 hours ago")
- * Returns appropriate unit based on time difference
- */
-
-export function formatRelativeTime(
-  timestamp: number,
-  options?: { format?: 'short' | 'long' },
-): string {
-  const format = options?.format ?? 'short'
-  const now = Date.now()
-  const diffMs = now - timestamp
-  const diffMinutes = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  const diffWeeks = Math.floor(diffDays / 7)
-  const diffMonths = Math.floor(diffDays / 30)
-  const diffYears = Math.floor(diffDays / 365)
-
-  if (diffMinutes < 1) {
-    return 'Just now'
-  } else if (diffMinutes < 60) {
-    if (format === 'long') {
-      return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
-    }
-    return `${diffMinutes}m ago`
-  } else if (diffHours < 24) {
-    if (format === 'long') {
-      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
-    }
-    return `${diffHours}h ago`
-  } else if (diffDays < 7) {
-    if (format === 'long') {
-      return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
-    }
-    return `${diffDays}d ago`
-  } else if (diffWeeks < 4) {
-    if (format === 'long') {
-      return `${diffWeeks} week${diffWeeks === 1 ? '' : 's'} ago`
-    }
-    return `${diffWeeks}w ago`
-  } else if (diffMonths < 12) {
-    if (format === 'long') {
-      return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`
-    }
-    return `${diffMonths}mo ago`
-  } else {
-    if (format === 'long') {
-      return `${diffYears} year${diffYears === 1 ? '' : 's'} ago`
-    }
-    return `${diffYears}y ago`
-  }
+export function formatRelativeTime(timestamp: number): string {
+  return formatDistanceToNow(timestamp, { addSuffix: true })
 }
 
 /**
