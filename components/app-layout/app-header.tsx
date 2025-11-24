@@ -15,6 +15,7 @@ import { AdminMenu } from './admin-menu'
 const navigationLinks = [
   { href: '/', label: 'Endpoints' },
   { href: '/monitor', label: 'Monitor' },
+  { href: '/api', label: 'API' },
 ]
 
 export function AppHeader() {

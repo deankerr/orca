@@ -23,7 +23,7 @@ function ScrollArea({
   scrollHideDelay = 0,
   viewportClassName,
   maskClassName,
-  maskHeight = 30,
+  maskHeight = 10,
   ref,
   viewportRef: viewportRefProp,
   orientation = 'vertical',

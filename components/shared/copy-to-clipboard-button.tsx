@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 
 import { CheckIcon, CopyIcon } from 'lucide-react'
@@ -23,7 +25,7 @@ export function CopyToClipboardButton({
 
   return (
     <Button onClick={handleCopy} {...props}>
-      {children} {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+      {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />} {children}
     </Button>
   )
 }

@@ -22,7 +22,8 @@
       "WebSearch",
       "mcp__linear-server__get_project",
       "mcp__next-devtools__nextjs_runtime",
-      "mcp__convex__runOneoffQuery"
+      "mcp__convex__runOneoffQuery",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
