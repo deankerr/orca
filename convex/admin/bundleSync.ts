@@ -1,5 +1,5 @@
-import { WithoutSystemFields } from 'convex/server'
-import { z } from 'zod'
+import { ConvexHttpClient } from 'convex/browser'
+import { makeFunctionReference, WithoutSystemFields } from 'convex/server'
 
 import { up } from 'up-fetch'
 
@@ -9,51 +9,63 @@ import { httpAction, internalAction } from '../_generated/server'
 import { getEnv } from '../lib/utils'
 
 // * Client
-type IncomingArchive = WithoutSystemFields<Doc<'snapshot_crawl_archives'>> & {
+type ServerArchive = WithoutSystemFields<Doc<'snapshot_crawl_archives'>> & {
   _id: string
   _creationTime: number
 }
 
-export const syncRecent = internalAction({
+const BATCH_SIZE = 200
+
+/**
+ * Sync archives from source deployment to current instance.
+ * Resumable - automatically continues from latest synced crawl_id.
+ * Processes in batches to avoid function timeout.
+ */
+export const syncFromSource = internalAction({
   args: {},
   handler: async (ctx) => {
-    const hostUrl = getEnv('ARCHIVE_SYNC_URL')
-    const syncKey = getEnv('ARCHIVE_SYNC_KEY')
+    const sourceDeployment = getEnv('ARCHIVE_SYNC_SOURCE_DEPLOYMENT')
 
+    // Setup HTTP client for bundle downloads (.site URL)
     const upFetch = up(fetch, () => ({
-      baseUrl: hostUrl,
-      headers: {
-        'x-sync-key': syncKey,
-      },
+      baseUrl: `https://${sourceDeployment}.convex.site`,
       retry: {
         attempts: 2,
         delay: (ctx) => ctx.attempt ** 2 * 1000,
       },
     }))
 
-    // Fetch recent archives from production
-    const archives = await upFetch('/sync/archives', {
-      schema: z
-        .record(z.string(), z.any())
-        .array()
-        .transform((arr) => arr as IncomingArchive[]),
-    })
+    // Setup Convex client for queries (.cloud URL)
+    const convexClient = new ConvexHttpClient(`https://${sourceDeployment}.convex.cloud`)
 
-    const latestCrawlId = await ctx.runQuery(internal.db.snapshot.crawl.archives.getLatestCrawlId)
-    console.log({ latestCrawlId, archives: archives.map((a) => a.crawl_id) })
-
-    // Filter out archives older than the latest crawl_id
-    const filteredArchives = latestCrawlId
-      ? archives.filter((archive) => parseInt(archive.crawl_id) > parseInt(latestCrawlId))
-      : archives
-
-    // Process from oldest to newest
-    const sortedArchives = filteredArchives.sort(
-      (a, b) => parseInt(a.crawl_id) - parseInt(b.crawl_id),
+    // Check what we've already synced
+    const latestCrawlId: string | null = await ctx.runQuery(
+      internal.db.snapshot.crawl.archives.getLatestCrawlId,
     )
+    console.log('[bundleSync]', { latestCrawlId: latestCrawlId ?? null })
+
+    // Fetch all archives from source
+    const archives = await convexClient.query(
+      makeFunctionReference<'query', any, ServerArchive[]>('db/snapshot/crawl/archives:collect'),
+    )
+    console.log('[bundleSync]', { totalArchivesFromSource: archives.length })
+
+    // Sort oldest to newest
+    const sortedArchives = archives.sort((a, b) => parseInt(a.crawl_id) - parseInt(b.crawl_id))
+
+    // Filter out archives we've already synced
+    const remainingArchives: ServerArchive[] = latestCrawlId
+      ? sortedArchives.filter((archive) => parseInt(archive.crawl_id) > parseInt(latestCrawlId))
+      : sortedArchives
+
+    console.log('[bundleSync]', { archivesToSync: remainingArchives.length })
+
+    // Process in batches to avoid timeout
+    const batchToProcess = remainingArchives.slice(0, BATCH_SIZE)
+    const hasMore = remainingArchives.length > BATCH_SIZE
 
     let syncedCount = 0
-    for (const archive of sortedArchives) {
+    for (const archive of batchToProcess) {
       // Download the bundle
       const bundleBuffer = await upFetch(`/sync/bundle`, {
         params: {
@@ -65,7 +77,7 @@ export const syncRecent = internalAction({
       const blob = new Blob([bundleBuffer])
       const storage_id = await ctx.storage.store(blob)
 
-      // Modify the record data
+      // Preserve origin metadata
       const { _id, _creationTime, data } = archive
       const modifiedData = {
         ...data,
@@ -85,42 +97,39 @@ export const syncRecent = internalAction({
       syncedCount++
     }
 
-    console.log('[bundleSync]', { syncedCount, total: archives.length })
+    if (hasMore) {
+      const remainingAfterBatch = remainingArchives.length - syncedCount
+      console.log('[bundleSync]', {
+        synced: syncedCount,
+        remaining: remainingAfterBatch,
+        rescheduling: true,
+      })
+      // Schedule next batch immediately
+      await ctx.scheduler.runAfter(0, internal.admin.bundleSync.syncFromSource, {})
+      return {
+        syncedCount,
+        remaining: remainingAfterBatch,
+        totalSource: archives.length,
+        rescheduled: true,
+      }
+    }
+
+    console.log('[bundleSync]', { synced: syncedCount, complete: true })
+    return {
+      syncedCount,
+      remaining: 0,
+      totalSource: archives.length,
+      rescheduled: false,
+    }
   },
 })
 
 // * Server
-// Archive sync endpoints for dev/preview environments
-const SYNC_RECORDS_LIMIT = 72
-
-function validateSyncKey(req: Request): boolean {
-  const SYNC_KEY = getEnv('ARCHIVE_SYNC_KEY')
-  const key = req.headers.get('x-sync-key')
-  return key === SYNC_KEY
-}
+// HTTP endpoint for bundle downloads
 
 export const bundleSyncHttpHandler = httpAction(async (ctx, req) => {
-  if (!validateSyncKey(req)) {
-    return new Response('Unauthorized', { status: 401 })
-  }
-
   const url = new URL(req.url)
   const action = url.pathname.split('/').pop()
-
-  if (action === 'archives') {
-    // List recent archives
-    const archives = await ctx.runQuery(internal.db.snapshot.crawl.archives.list, {
-      paginationOpts: { cursor: null, numItems: SYNC_RECORDS_LIMIT },
-      order: 'desc',
-    })
-
-    return new Response(JSON.stringify(archives.page), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  }
 
   if (action === 'bundle') {
     // Download specific archive bundle

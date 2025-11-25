@@ -208,6 +208,13 @@ Active projects: Endpoints Data Grid, Monitor, Model Analytics Dashboard, Develo
 - Real-world edge cases (1.84M context length models, free pricing tiers)
 - Pipeline behavior (781 endpoints updated, but 0 user-facing changes)
 
+### Logging
+
+- The Convex backend is linked to Axiom, which captures all console.logs automatically
+- We use an simple ad-hoc structured logging format, e.g. `console.log('[function] optional short message', { someData, otherData })`
+- Optionally use `[function:subFunction]` only when necessary.
+- A single convex function can log 256 times before an error message is generated reporting that further logs have been truncated.
+
 ## Getting Oriented
 
 **Want to understand:**

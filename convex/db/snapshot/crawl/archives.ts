@@ -99,3 +99,9 @@ export const feed = query({
     return await ctx.db.query('snapshot_crawl_archives').order('desc').paginate(args.paginationOpts)
   },
 })
+
+export const collect = query({
+  handler: async (ctx) => {
+    return await ctx.db.query('snapshot_crawl_archives').collect()
+  },
+})
