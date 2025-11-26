@@ -7,7 +7,8 @@ import { ApiResponseViewer } from './api-response-viewer'
 
 export const metadata: Metadata = {
   title: 'ORCA API',
-  description: 'Public API for programmatic access to ORCA data',
+  description:
+    'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
 }
 
 const API_PATH = '/api/preview/v2/models'
@@ -31,29 +32,21 @@ export default function Page() {
         <h3>ORCA API</h3>
 
         <p>
-          The ORCA API provides programmatic access to curated OpenRouter data. Rather than
-          aggregating provider differences into model-level fields, this API highlights the
-          variability between providers for the same model. Pricing, context length, and
-          capabilities can differ significantly depending on which provider serves the request.
+          ORCA API returns all OpenRouter models with their available endpoints. Pricing, context
+          length, and capabilities are exposed at the endpoint level. The same model can vary
+          significantly depending on which provider serves your request.
         </p>
 
         <p>
-          This approach means pricing and limits are exposed per-provider rather than as top-level
-          model fields. Each model lists its available providers (or endpoints), and each endpoint
-          shows its specific pricing structure, context length, quantization, and other
-          provider-specific details.
+          Includes data not available in the standard OpenRouter API: long context pricing tiers,
+          data retention policies, hidden usage limits, moderation requirements, completions vs chat
+          completions support, provider ids with variant tags, and configuration details for
+          reasoning, caching, and web search.
         </p>
 
         <p>
-          Beyond restructuring how provider variability is represented, the API also surfaces data
-          that isn&apos;t available in the standard OpenRouter API: long context pricing tiers, data
-          retention policies, actual usage limits, moderation requirements, support for completions
-          vs chat completions, provider ids with variant tags, and configuration details for
-          reasoning, caching, and web search, etc.
-        </p>
-
-        <p>
-          The schema is still being refined, but will be versioned throughout the preview period.
+          The schema is versioned and the preview versions will be maintained for an extended
+          period, so you can confidently use it in your projects.
         </p>
       </div>
 
