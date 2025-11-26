@@ -1,5 +1,6 @@
 import { SortingState } from '@tanstack/react-table'
 import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
+import posthog from 'posthog-js'
 
 import { AttributeName } from '@/lib/attributes'
 
@@ -99,6 +100,8 @@ export function useEndpointFilters() {
     const currentHas = filters.has.filter((a) => a !== key)
     const currentNot = filters.not.filter((a) => a !== key)
 
+    posthog.capture('filter_modality', { modality: key, mode: value })
+
     if (value === 'include') {
       setFilters({
         has: [...currentHas, key],
@@ -122,6 +125,8 @@ export function useEndpointFilters() {
   const setAttributeFilter = (key: AttributeName, value: FilterMode) => {
     const currentHas = filters.has.filter((a) => a !== key)
     const currentNot = filters.not.filter((a) => a !== key)
+
+    posthog.capture('filter_attribute', { attribute: key, mode: value })
 
     if (value === 'include') {
       setFilters({
@@ -160,9 +165,11 @@ export function useEndpointFilters() {
       typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
 
     if (newSorting.length === 0) {
+      posthog.capture('sort_cleared')
       setFilters({ sort: null, order: null })
     } else {
       const sort = newSorting[0]
+      posthog.capture('sort_changed', { column: sort.id, direction: sort.desc ? 'desc' : 'asc' })
       setFilters({
         sort: sort.id,
         order: sort.desc ? 'desc' : 'asc',
