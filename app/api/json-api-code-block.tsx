@@ -19,13 +19,13 @@ async function highlight(code: string) {
   })
 }
 
-type ApiCodeViewerProps = {
+type JsonApiCodeBlock = {
   code: string
   isLoading?: boolean
   error?: Error | null
 }
 
-export function ApiCodeViewer({ code, isLoading, error }: ApiCodeViewerProps) {
+export function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
   const [html, setHtml] = useState<string | null>(null)
 
   useEffect(() => {

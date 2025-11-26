@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 
-import { ApiResponseViewer } from './api-response-viewer'
+import { ApiPreview } from './api-preview'
 
 export const metadata: Metadata = {
   title: 'ORCA API',
@@ -11,20 +11,11 @@ export const metadata: Metadata = {
     'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
 }
 
+const API_HOST = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ?? 'orca.site'
 const API_PATH = '/api/preview/v2/models'
-
-function getBaseUrl() {
-  const vercelUrl = process.env.VERCEL_URL
-  if (vercelUrl) {
-    return `https://${vercelUrl}`
-  }
-  return 'https://orca.example.com'
-}
+const API_URL = `https://${API_HOST}${API_PATH}`
 
 export default function Page() {
-  const baseUrl = getBaseUrl()
-  const apiUrl = `${baseUrl}${API_PATH}`
-
   return (
     <div className="flex flex-1 flex-col px-4 lg:flex-row lg:justify-center lg:overflow-hidden">
       {/* * Left Column - Documentation */}
@@ -32,21 +23,22 @@ export default function Page() {
         <h3>ORCA API</h3>
 
         <p>
-          ORCA API returns all OpenRouter models with their available endpoints. Pricing, context
-          length, and capabilities are exposed at the endpoint level. The same model can vary
-          significantly depending on which provider serves your request.
+          ORCA API returns all OpenRouter models with their available endpoints. The same model can
+          vary significantly depending on which provider serves your request. Pricing, context
+          length, and capabilities are exposed at the endpoint level.
         </p>
 
         <p>
-          Includes data not available in the standard OpenRouter API: long context pricing tiers,
+          Data not available in the standard OpenRouter API is included: long context pricing tiers,
           data retention policies, hidden usage limits, moderation requirements, completions vs chat
           completions support, provider ids with variant tags, and configuration details for
           reasoning, caching, and web search.
         </p>
 
         <p>
-          The schema is versioned and the preview versions will be maintained for an extended
-          period, so you can confidently use it in your projects.
+          This is a public preview, and the schema will evolve with feedback and feature updates.
+          Major changes are versioned, and preview versions will be maintained for an extended
+          period of time, so you can confidently use it in your projects.
         </p>
       </div>
 
@@ -55,16 +47,16 @@ export default function Page() {
         <Item variant="outline">
           <ItemContent>
             <ItemTitle>Preview V2</ItemTitle>
-            <code className="font-mono text-sm">{apiUrl}</code>
+            <code className="font-mono text-sm">{API_URL}</code>
           </ItemContent>
           <ItemActions>
-            <CopyToClipboardButton value={apiUrl} size="sm" variant="secondary">
+            <CopyToClipboardButton value={API_URL} size="sm" variant="secondary">
               Copy
             </CopyToClipboardButton>
           </ItemActions>
         </Item>
 
-        <ApiResponseViewer />
+        <ApiPreview url={API_PATH} />
       </div>
     </div>
   )
