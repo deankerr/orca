@@ -9,6 +9,7 @@
  */
 
 import type * as admin_bundleSync from "../admin/bundleSync.js";
+import type * as admin_postSyncMaintenance from "../admin/postSyncMaintenance.js";
 import type * as analysis_changes from "../analysis/changes.js";
 import type * as analysis_endpoints from "../analysis/endpoints.js";
 import type * as analysis_stats from "../analysis/stats.js";
@@ -57,6 +58,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "admin/bundleSync": typeof admin_bundleSync;
+  "admin/postSyncMaintenance": typeof admin_postSyncMaintenance;
   "analysis/changes": typeof analysis_changes;
   "analysis/endpoints": typeof analysis_endpoints;
   "analysis/stats": typeof analysis_stats;

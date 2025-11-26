@@ -106,21 +106,10 @@ export const syncFromSource = internalAction({
       })
       // Schedule next batch immediately
       await ctx.scheduler.runAfter(0, internal.admin.bundleSync.syncFromSource, {})
-      return {
-        syncedCount,
-        remaining: remainingAfterBatch,
-        totalSource: archives.length,
-        rescheduled: true,
-      }
     }
 
     console.log('[bundleSync]', { synced: syncedCount, complete: true })
-    return {
-      syncedCount,
-      remaining: 0,
-      totalSource: archives.length,
-      rescheduled: false,
-    }
+    await ctx.scheduler.runAfter(0, internal.snapshots.materialize.main.run, {})
   },
 })
 
