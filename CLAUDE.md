@@ -27,7 +27,7 @@ Change tracking feed showing field-level diffs between snapshots. Reveals model/
 
 Integration and visualization of OpenRouter's usage statistics. Tracks cumulative token counts, request volumes, and trends over time.
 
-### Developer API
+### ORCA API
 
 Public HTTP API providing programmatic access to ORCA's curated data. `/public-api-preview/v2/models` endpoint for model/endpoint listings, with planned expansion for changes feed and analytics.
 
@@ -226,3 +226,7 @@ Active projects: Endpoints Data Grid, Monitor, Model Analytics Dashboard, Develo
 - HTTP API? → `convex/http.ts` (preview implementation)
 
 Let the file structure guide you. The organization reflects the data flow and feature boundaries.
+
+## Production
+
+- The Next.js app is hosted on Vercel.
