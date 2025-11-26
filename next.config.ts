@@ -6,6 +6,7 @@ import { withPostHogConfig } from '@posthog/nextjs-config'
 import { getConvexHttpUrl } from './lib/utils'
 
 const nextConfig: NextConfig = {
+  reactCompiler: true,
   images: {
     remotePatterns: [
       {

@@ -80,8 +80,8 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
-    "@lobehub/icons-static-png": "^1.74.0",
     "@lobehub/icons": "^2.43.1",
+    "@lobehub/icons-static-png": "^1.74.0",
     "@next/bundle-analyzer": "^16.0.3",
     "@tailwindcss/postcss": "^4.1.17",
     "@tanstack/react-query-devtools": "^5.90.2",
@@ -89,6 +89,7 @@
     "@types/node": "~24.10.1",
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.0.3",
