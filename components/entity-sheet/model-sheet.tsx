@@ -5,17 +5,15 @@ import { api } from '@/convex/_generated/api'
 
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
-import { useEndpointFilters } from '../endpoints-data-grid/use-endpoint-filters'
 import { ActionLink } from '../shared/action-link'
 import { DataList, DataListItem, DataListLabel, DataListValue } from '../shared/data-list'
 import { ExternalLink } from '../shared/external-link'
 import { EntityChanges } from './entity-changes'
-import { useEntitySheet } from './entity-sheet'
 import { EntitySheetHeader, EntitySheetSection } from './entity-sheet-components'
+import { useFindAllEndpoints } from './use-find-all-endpoints'
 
 export function ModelSheet({ slug }: { slug: string }) {
-  const { setFocusSearch } = useEndpointFilters()
-  const { close } = useEntitySheet()
+  const findEndpoints = useFindAllEndpoints()
 
   const { data: model, isPending: modelPending } = useQuery(
     convexQuery(api.models.getBySlug, { slug }),
@@ -109,14 +107,7 @@ export function ModelSheet({ slug }: { slug: string }) {
         <EntitySheetSection
           title="Providers"
           action={
-            <ActionLink
-              onClick={() => {
-                setFocusSearch(model.slug)
-                close()
-              }}
-            >
-              Find all Endpoints
-            </ActionLink>
+            <ActionLink onClick={() => findEndpoints(model.slug)}>Find all Endpoints</ActionLink>
           }
         />
 
