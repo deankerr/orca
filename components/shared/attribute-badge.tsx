@@ -48,7 +48,7 @@ export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
 interface AttributeBadgeSetProps {
   endpoint: Doc<'or_views_endpoints'>
   attributes: (AttributeName | AttributeName[])[]
-  mode?: 'grid' | 'compact'
+  mode?: 'grid' | 'compact' | 'first'
 }
 
 export function AttributeBadgeSet({
@@ -82,6 +82,7 @@ export function AttributeBadgeSet({
       const state = definition.resolve(endpoint)
       if (state.active) {
         components.push(<AttributeBadge key={name} definition={definition} state={state} />)
+        if (mode === 'first') break
       } else if (mode === 'grid') {
         components.push(<div key={name} className="size-7 shrink-0" />)
       }

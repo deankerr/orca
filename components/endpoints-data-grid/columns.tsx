@@ -77,7 +77,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <AttributeBadgeSet
           endpoint={endpoint}
           attributes={['gone', 'disabled', 'deranked']}
-          mode="compact"
+          mode="first"
         />
       )
     },
