@@ -31,17 +31,19 @@ export function MonitorFeed() {
   return (
     <ScrollArea className="flex-1 rounded-none" viewportRef={viewportRef} maskHeight={10}>
       <div className="mx-auto max-w-7xl space-y-8 px-2 py-6 sm:px-6">
-        {results.map(({ crawl_id, data: changes }) => (
-          <div key={crawl_id} className="space-y-5 text-sm">
-            <TimelineMarker crawl_id={crawl_id} />
+        {results
+          .filter((r) => r.data.length)
+          .map(({ crawl_id, data: changes }) => (
+            <div key={crawl_id} className="space-y-5 text-sm">
+              <TimelineMarker crawl_id={crawl_id} />
 
-            <ul className="ml-2 list-disc space-y-4 font-mono leading-loose text-muted-foreground sm:pl-2">
-              {changes.map((change: ChangeDoc) => (
-                <FeedItem key={change._id} change={change} />
-              ))}
-            </ul>
-          </div>
-        ))}
+              <ul className="ml-2 list-disc space-y-4 font-mono leading-loose text-muted-foreground sm:pl-2">
+                {changes.map((change: ChangeDoc) => (
+                  <FeedItem key={change._id} change={change} />
+                ))}
+              </ul>
+            </div>
+          ))}
 
         <div className="flex items-center justify-center py-4">
           <PaginatedLoadButton status={status} onClick={() => loadMore(1)} />
