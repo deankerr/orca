@@ -4,6 +4,7 @@ import { paginationOptsValidator } from 'convex/server'
 import type { Doc } from './_generated/dataModel'
 import { query } from './_generated/server'
 import schema from './schema'
+import { transformChanges } from './transforms/changes'
 
 export type EndpointChangeDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
 export type ChangeDoc = Doc<'or_views_changes'>
@@ -79,7 +80,7 @@ export const changesByCrawlId = query({
           .order('desc')
           .collect()
 
-        return batch
+        return transformChanges(batch)
       })
 
     const batchResults: { crawl_id: string; data: ChangeDoc[] }[] = []

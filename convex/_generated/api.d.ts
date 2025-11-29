@@ -49,7 +49,9 @@ import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as snapshots_shared_icons from "../snapshots/shared/icons.js";
 import type * as snapshots_stats_main from "../snapshots/stats/main.js";
 import type * as storage from "../storage.js";
+import type * as transforms_changes from "../transforms/changes.js";
 import type * as transforms_endpoint from "../transforms/endpoint.js";
+import type * as transforms_endpointChange from "../transforms/endpointChange.js";
 
 import type {
   ApiFromModules,
@@ -99,7 +101,9 @@ declare const fullApi: ApiFromModules<{
   "snapshots/shared/icons": typeof snapshots_shared_icons;
   "snapshots/stats/main": typeof snapshots_stats_main;
   storage: typeof storage;
+  "transforms/changes": typeof transforms_changes;
   "transforms/endpoint": typeof transforms_endpoint;
+  "transforms/endpointChange": typeof transforms_endpointChange;
 }>;
 
 /**

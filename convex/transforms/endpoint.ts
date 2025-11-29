@@ -21,7 +21,7 @@ export type EndpointInput = z.infer<typeof EndpointInputSchema>
 
 // * Helpers
 
-function formatPrice(price: number | undefined): string | null {
+export function formatPrice(price: number | undefined): string | null {
   if (!price) return null
   return price.toLocaleString('en-US', {
     minimumFractionDigits: 0,

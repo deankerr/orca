@@ -45,6 +45,9 @@ const rawKeyMappings: Record<string, string> = {
   input_cache_read: 'cache_read',
   input_cache_write: 'cache_write',
   image_output: 'image_output',
+
+  // public api
+  audio_cache_write: 'audio_cache_input',
 }
 
 export function formatPrice({

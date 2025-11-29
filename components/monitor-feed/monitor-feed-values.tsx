@@ -52,6 +52,11 @@ function ChangeValue({
   path_level_1?: string
   path_level_2?: string
 }) {
+  // pricing values may have been transformed to strings
+  if (path_level_1 === 'pricing' && R.isString(value)) {
+    return <NumericValue value={Number(value)} priceKey={path_level_2} />
+  }
+
   if (R.isNumber(value)) {
     const priceKey = path_level_1 === 'pricing' ? path_level_2 : undefined
     return <NumericValue value={value} priceKey={priceKey} />
