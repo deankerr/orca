@@ -1,13 +1,12 @@
 'use client'
 
-import { usePaginatedQuery } from 'convex-helpers/react/cache/hooks'
+import { PaginationStatus, useConvex } from 'convex/react'
+
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { api } from '@/convex/_generated/api'
 import { ChangeDoc } from '@/convex/feed'
 
-import { EntitySheetTrigger } from '@/components/entity-sheet/entity-sheet'
-import { ChangeValuePair } from '@/components/monitor-feed/monitor-feed-values'
-import { EntityInline } from '@/components/shared/entity-badge'
 import { PaginatedLoadButton } from '@/components/shared/paginated-load-button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -16,14 +15,55 @@ import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 import { formatDateTime, formatRelativeTime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
-export function MonitorFeed() {
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.feed.changesByCrawlId,
-    {},
-    { initialNumItems: 50, customPagination: true },
-  )
+import { FeedItem } from './monitor-feed-item'
 
-  const viewportRef = useInfiniteScroll(() => loadMore(1), {
+function useMonitorFeed() {
+  const convex = useConvex()
+
+  const query = useInfiniteQuery({
+    queryKey: ['monitor-feed'],
+    queryFn: async ({ pageParam }) => {
+      return convex.query(api.feed.changesByCrawlId, {
+        paginationOpts: { numItems: 1, cursor: pageParam },
+      })
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => (lastPage.isDone ? undefined : lastPage.continueCursor),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 60,
+  })
+
+  // * Flatten pages into results array matching previous interface
+  const results = query.data?.pages.flatMap((page) => page.page) ?? []
+
+  // * Map TanStack status to Convex-style pagination status
+  const status: PaginationStatus =
+    query.status === 'pending'
+      ? 'LoadingFirstPage'
+      : query.isFetchingNextPage
+        ? 'LoadingMore'
+        : query.hasNextPage
+          ? 'CanLoadMore'
+          : 'Exhausted'
+
+  // * Safe loadMore that guards against concurrent fetches
+  // TanStack warns: calling fetchNextPage during ongoing fetch can overwrite data
+  const canFetch = query.hasNextPage && !query.isFetching
+  const loadMore = () => {
+    if (canFetch) query.fetchNextPage()
+  }
+
+  return {
+    results,
+    status,
+    loadMore,
+  }
+}
+
+export function MonitorFeed() {
+  const { results, status, loadMore } = useMonitorFeed()
+
+  const viewportRef = useInfiniteScroll(() => loadMore(), {
     hasMore: status === 'CanLoadMore',
     threshold: 1400,
   })
@@ -34,10 +74,10 @@ export function MonitorFeed() {
         {results
           .filter((r) => r.data.length)
           .map(({ crawl_id, data: changes }) => (
-            <div key={crawl_id} className="space-y-5 text-sm">
+            <div key={crawl_id} className="space-y-8 text-sm">
               <TimelineMarker crawl_id={crawl_id} />
 
-              <ul className="ml-2 list-disc space-y-4 font-mono leading-loose text-muted-foreground sm:pl-2">
+              <ul className="ml-2 list-disc space-y-6 font-mono leading-loose text-muted-foreground sm:pl-2">
                 {changes.map((change: ChangeDoc) => (
                   <FeedItem key={change._id} change={change} />
                 ))}
@@ -46,7 +86,7 @@ export function MonitorFeed() {
           ))}
 
         <div className="flex items-center justify-center py-4">
-          <PaginatedLoadButton status={status} onClick={() => loadMore(1)} />
+          <PaginatedLoadButton status={status} onClick={() => loadMore()} />
         </div>
       </div>
     </ScrollArea>
@@ -70,61 +110,5 @@ function TimelineMarker({ crawl_id, className }: { crawl_id: string; className?:
       </Tooltip>
       <div className="h-px flex-1 border-b border-dashed" />
     </div>
-  )
-}
-
-function FeedItem({ change }: { change: ChangeDoc }) {
-  const actionText =
-    change.change_kind === 'create' ? (
-      <span className="text-green-400">created</span>
-    ) : change.change_kind === 'delete' ? (
-      <span className="text-rose-400">removed</span>
-    ) : (
-      'updated: '
-    )
-
-  return (
-    <li className="[&>span]:font-normal">
-      {change.entity_type !== 'endpoint' && `${change.entity_type} `}
-      {change.entity_type === 'provider' && (
-        <EntitySheetTrigger type="provider" slug={change.provider_slug} asChild>
-          <EntityInline
-            slug={change.provider_slug}
-            className="text-primary underline decoration-primary/40 decoration-dotted underline-offset-3"
-          />
-        </EntitySheetTrigger>
-      )}
-      {'provider_tag_slug' in change && (
-        <EntitySheetTrigger type="provider" slug={change.provider_slug} asChild>
-          <EntityInline
-            slug={change.provider_tag_slug}
-            className="text-primary underline decoration-primary/40 decoration-dotted underline-offset-3"
-          />
-        </EntitySheetTrigger>
-      )}
-      {change.entity_type === 'endpoint' && ' endpoint for '}
-      {'model_slug' in change && (
-        <EntitySheetTrigger type="model" slug={change.model_slug} asChild>
-          <EntityInline
-            slug={change.model_slug}
-            className="text-primary underline decoration-primary/40 decoration-dotted underline-offset-3"
-          />
-        </EntitySheetTrigger>
-      )}{' '}
-      was {actionText}
-      {change.change_kind === 'update' && (
-        <>
-          <Badge variant="outline" className="rounded-sm border-dashed text-sm text-foreground/80">
-            {change.path}
-          </Badge>{' '}
-          <ChangeValuePair
-            before={change.before}
-            after={change.after}
-            path_level_1={change.path_level_1}
-            path_level_2={change.path_level_2}
-          />
-        </>
-      )}
-    </li>
   )
 }
