@@ -71,7 +71,7 @@ export const table = defineTable({
 
     // per request
     request: v.optional(v.number()),
-    web_search: v.optional(v.number()),
+    web_search: v.optional(v.number()), // ignored
 
     // discount already applied
     discount: v.optional(v.number()), // e.g. 0.2
@@ -110,18 +110,18 @@ export const table = defineTable({
   // * endpoint capability
   completions: v.boolean(),
   chat_completions: v.boolean(),
-  stream_cancellation: v.boolean(),
+  stream_cancellation: v.boolean(), // ignored
   implicit_caching: v.boolean(),
-  file_urls: v.boolean(),
+  file_urls: v.boolean(), // ignored
   native_web_search: v.boolean(),
-  multipart: v.boolean(),
+  multipart: v.boolean(), // ignored
   mandatory_reasoning: v.optional(v.boolean()), // inconsistently available upstream
 
   // * openrouter
   moderated: v.boolean(),
   deranked: v.boolean(),
   disabled: v.boolean(),
-  status: v.number(),
+  status: v.number(), // ignored
 
   stats: v.optional(
     v.object({

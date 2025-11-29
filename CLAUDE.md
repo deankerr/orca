@@ -36,7 +36,7 @@ Public HTTP API providing programmatic access to ORCA's curated data. `/public-a
 ### Frontend (`app/`)
 
 - Next.js 16 + React 19 + Tailwind CSS 4
-- Routes: `/` (home), `/endpoints` (data grid), `/monitor` (changes feed)
+- Routes: `/` (data grid), `/monitor` (changes feed)
 - Dev tools: `/dev/*` (archives, stats, component demos)
 
 ### Backend (`convex/`)

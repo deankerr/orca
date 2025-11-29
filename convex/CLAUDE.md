@@ -118,7 +118,7 @@ This philosophy guides us to build systems that can adapt, evolve, and when nece
 1. **Next.js dev server** (`localhost:3020`) - Frontend application
    - Runs via `bun dev` or similar
    - Serves the React app from `app/` directory
-   - Handles frontend routes like `/`, `/endpoints`, `/monitor`
+   - Handles frontend routes like `/`, `/monitor`
 
 2. **Convex backend** (`https://<deployment-name>.convex.site`) - Serverless backend
    - Runs independently in Convex cloud
