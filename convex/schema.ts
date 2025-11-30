@@ -13,6 +13,8 @@ export default defineSchema(
 
     snapshot_crawl_config: db.snapshot.crawl.config.table,
     snapshot_crawl_archives: db.snapshot.crawl.archives.table,
+
+    webhook_subscriptions: db.webhook.subscriptions.table,
   },
   {
     strictTableNameTypes: true,

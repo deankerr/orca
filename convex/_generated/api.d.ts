@@ -23,6 +23,7 @@ import type * as db_or_views_models from "../db/or/views/models.js";
 import type * as db_or_views_providers from "../db/or/views/providers.js";
 import type * as db_snapshot_crawl_archives from "../db/snapshot/crawl/archives.js";
 import type * as db_snapshot_crawl_config from "../db/snapshot/crawl/config.js";
+import type * as db_webhook_subscriptions from "../db/webhook/subscriptions.js";
 import type * as dev_feedTree from "../dev/feedTree.js";
 import type * as endpoints from "../endpoints.js";
 import type * as feed from "../feed.js";
@@ -48,6 +49,9 @@ import type * as snapshots_materializedChanges_process from "../snapshots/materi
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as snapshots_shared_icons from "../snapshots/shared/icons.js";
 import type * as snapshots_stats_main from "../snapshots/stats/main.js";
+import type * as snapshots_webhooks_dev from "../snapshots/webhooks/dev.js";
+import type * as snapshots_webhooks_discord from "../snapshots/webhooks/discord.js";
+import type * as snapshots_webhooks_send from "../snapshots/webhooks/send.js";
 import type * as storage from "../storage.js";
 import type * as transforms_changes from "../transforms/changes.js";
 import type * as transforms_endpoint from "../transforms/endpoint.js";
@@ -75,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "db/or/views/providers": typeof db_or_views_providers;
   "db/snapshot/crawl/archives": typeof db_snapshot_crawl_archives;
   "db/snapshot/crawl/config": typeof db_snapshot_crawl_config;
+  "db/webhook/subscriptions": typeof db_webhook_subscriptions;
   "dev/feedTree": typeof dev_feedTree;
   endpoints: typeof endpoints;
   feed: typeof feed;
@@ -100,6 +105,9 @@ declare const fullApi: ApiFromModules<{
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   "snapshots/shared/icons": typeof snapshots_shared_icons;
   "snapshots/stats/main": typeof snapshots_stats_main;
+  "snapshots/webhooks/dev": typeof snapshots_webhooks_dev;
+  "snapshots/webhooks/discord": typeof snapshots_webhooks_discord;
+  "snapshots/webhooks/send": typeof snapshots_webhooks_send;
   storage: typeof storage;
   "transforms/changes": typeof transforms_changes;
   "transforms/endpoint": typeof transforms_endpoint;
