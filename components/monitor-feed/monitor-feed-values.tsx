@@ -1,7 +1,8 @@
 import * as R from 'remeda'
 
+import { formatPricing } from '@/convex/shared'
+
 import { Badge } from '@/components/ui/badge'
-import { formatPrice } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
 import { RadBadge } from '../shared/rad-badge'
@@ -66,16 +67,13 @@ function ChangeValue({
   path_level_1?: string
   path_level_2?: string
 }) {
-  // pricing values may have been transformed to strings
-  if (path_level_1 === 'pricing' && R.isString(value)) {
-    return <NumericValue value={Number(value)} priceKey={path_level_2} />
+  // * pricing values - format with formatPricing, display as string (no unit)
+  if (path_level_1 === 'pricing' && path_level_2 && (R.isString(value) || R.isNumber(value))) {
+    const formatted = formatPricing(path_level_2, value)
+    if (formatted) return <StringValue value={formatted.value} />
   }
 
-  if (R.isNumber(value)) {
-    const priceKey = path_level_1 === 'pricing' ? path_level_2 : undefined
-    return <NumericValue value={value} priceKey={priceKey} />
-  }
-
+  if (R.isNumber(value)) return <NumericValue value={value} />
   if (R.isString(value)) return <StringValue value={value} />
   if (R.isBoolean(value)) return <BooleanValue value={value} />
   if (value === null) return <NullValue />
@@ -94,15 +92,8 @@ function BaseBadge({ className, ...props }: React.ComponentProps<'span'>) {
   )
 }
 
-function NumericValue({ value, priceKey }: { value: number; priceKey?: string }) {
-  const formatted = priceKey
-    ? formatPrice({
-        priceKey,
-        priceValue: value,
-        unitSuffix: priceKey === 'discount',
-      })
-    : value.toLocaleString()
-  return <BaseBadge title={String(value)}>{formatted}</BaseBadge>
+function NumericValue({ value }: { value: number }) {
+  return <BaseBadge title={String(value)}>{value.toLocaleString()}</BaseBadge>
 }
 
 function StringValue({ value }: { value: string }) {
