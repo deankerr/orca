@@ -13,11 +13,14 @@ import { ChangeDoc } from '@/convex/feed'
 import { ModelCombobox } from '@/components/shared/or-entity-combobox'
 import { PaginatedLoadButton } from '@/components/shared/paginated-load-button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDateTime, formatRelativeTime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
+import { Separator } from '../ui/separator'
 import { FeedItem } from './monitor-feed-item'
 
 type FlatItem = { type: 'marker'; crawl_id: string } | { type: 'item'; change: ChangeDoc }
@@ -108,11 +111,34 @@ export function MonitorFeed() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6">
-        <ModelCombobox value={modelSlug} onValueChange={setModelSlug} />
+      <div className="mx-auto w-full max-w-7xl px-2 py-6 pt-4 sm:px-6">
+        <div className="flex items-end gap-3">
+          <Field className="w-[300px]">
+            <FieldLabel htmlFor="model-filter">Filter</FieldLabel>
+            <ModelCombobox
+              value={modelSlug}
+              onValueChange={setModelSlug}
+              className="w-full"
+              placeholder="Select model"
+            />
+          </Field>
+          <div className="grid h-11 place-content-center">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setModelSlug('')}
+              disabled={!modelSlug}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
       </div>
+
+      <Separator />
+
       <ScrollArea className="flex-1 rounded-none" viewportRef={scrollRef} maskHeight={5}>
-        <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6">
+        <div className="mx-auto max-w-7xl px-2 py-3 sm:px-6">
           <div className="relative" style={{ height: totalSize }}>
             {virtualItems.map((virtualRow) => {
               const item = flatItems[virtualRow.index]

@@ -76,7 +76,7 @@ export function ModelCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn('h-10 w-[300px] justify-between font-normal', className)}
+          className={cn('h-11 w-[300px] justify-between font-normal', className)}
         >
           {selected ? (
             <EntityBadge

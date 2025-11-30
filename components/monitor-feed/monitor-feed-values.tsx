@@ -177,7 +177,7 @@ function ArrayDiff({ before, after }: { before: unknown[]; after: unknown[] }) {
 
         return (
           <RadBadge key={item} variant="surface" color="green">
-            +{item}
+            + {item}
           </RadBadge>
         )
       })}
