@@ -27,10 +27,10 @@ const modelChangesValidator = v.object({
 
 const endpointChangesValidator = v.object({
   entity_type: v.literal('endpoint'),
-  model_slug: v.string(), // model, endpoint
-  provider_slug: v.string(), // provider, endpoint
-  provider_tag_slug: v.string(), // endpoint
-  endpoint_uuid: v.string(), // endpoint
+  model_slug: v.string(),
+  provider_slug: v.string(),
+  provider_tag_slug: v.string(),
+  endpoint_uuid: v.string(),
   ...baseFields,
 })
 
@@ -47,6 +47,7 @@ export const table = defineTable(
   .index('by_crawl_id', ['crawl_id'])
   .index('by_entity_type__crawl_id', ['entity_type', 'crawl_id'])
   .index('by_change_kind', ['change_kind'])
+  .index('by_model_slug__crawl_id', ['model_slug', 'crawl_id'])
 
 // NOTE: we can't create the vTable helper with a union validator
 // export const vTable = createTableVHelper('or_views_changes', table.validator)

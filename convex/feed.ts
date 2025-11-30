@@ -1,5 +1,6 @@
 import { stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
+import { v } from 'convex/values'
 
 import type { Doc } from './_generated/dataModel'
 import { query } from './_generated/server'
@@ -65,49 +66,61 @@ function sortChanges(changes: ChangeDoc[]): ChangeDoc[] {
 
 export const changesByCrawlId = query({
   args: {
+    modelSlug: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { paginationOpts }) => {
-    const batchStream = stream(ctx.db, schema)
-      .query('or_views_changes')
-      .withIndex('by_crawl_id', (q) => q.lt('crawl_id', paginationOpts.cursor ?? 'a'))
-      .order('desc')
-      .distinct(['crawl_id'])
-      .map(async (p) => {
-        const batch = await ctx.db
+  handler: async (ctx, { modelSlug, paginationOpts }) => {
+    // * Choose stream based on whether we're filtering by model
+    const crawlIdStream = modelSlug
+      ? stream(ctx.db, schema)
           .query('or_views_changes')
-          .withIndex('by_crawl_id', (q) => q.eq('crawl_id', p.crawl_id))
+          .withIndex('by_model_slug__crawl_id', (q) =>
+            q.eq('model_slug', modelSlug).lt('crawl_id', paginationOpts.cursor ?? 'a'),
+          )
           .order('desc')
-          .collect()
+          .distinct(['crawl_id'])
+      : stream(ctx.db, schema)
+          .query('or_views_changes')
+          .withIndex('by_crawl_id', (q) => q.lt('crawl_id', paginationOpts.cursor ?? 'a'))
+          .order('desc')
+          .distinct(['crawl_id'])
 
-        return transformChanges(batch)
-      })
-
-    const batchResults: { crawl_id: string; data: ChangeDoc[] }[] = []
+    // * Iterate through crawl_ids, fetch and flatten batches
+    const results: ChangeDoc[] = []
     let continueCursor = ''
     let cycles = 0
-    let totalResults = 0
 
-    for await (const batch of batchStream) {
+    for await (const doc of crawlIdStream) {
       cycles++
+      const crawl_id = doc.crawl_id
 
-      const crawl_id = batch?.[0]?.crawl_id
-      if (crawl_id) {
-        const sortedBatch = sortChanges(batch)
-        batchResults.push({ crawl_id, data: sortedBatch })
-        totalResults += sortedBatch.length
-      }
-      continueCursor = crawl_id ?? ''
+      // * Fetch all changes for this crawl_id (filtered by model if needed)
+      const batch = modelSlug
+        ? await ctx.db
+            .query('or_views_changes')
+            .withIndex('by_model_slug__crawl_id', (q) =>
+              q.eq('model_slug', modelSlug).eq('crawl_id', crawl_id),
+            )
+            .collect()
+        : await ctx.db
+            .query('or_views_changes')
+            .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
+            .collect()
+
+      const transformed = transformChanges(batch)
+      const sorted = sortChanges(transformed)
+      results.push(...sorted)
+
+      continueCursor = crawl_id
 
       if (cycles >= MAX_CYCLES) break
-      if (totalResults >= GOAL_COUNT) break
+      if (results.length >= GOAL_COUNT) break
     }
 
     return {
-      page: batchResults,
+      page: results,
       continueCursor,
       isDone: continueCursor === '',
-      pageStatus: null,
     }
   },
 })

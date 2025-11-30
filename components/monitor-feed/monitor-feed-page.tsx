@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { PaginationStatus, useConvex } from 'convex/react'
 
@@ -10,6 +10,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { api } from '@/convex/_generated/api'
 import { ChangeDoc } from '@/convex/feed'
 
+import { ModelCombobox } from '@/components/shared/or-entity-combobox'
 import { PaginatedLoadButton } from '@/components/shared/paginated-load-button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -21,13 +22,14 @@ import { FeedItem } from './monitor-feed-item'
 
 type FlatItem = { type: 'marker'; crawl_id: string } | { type: 'item'; change: ChangeDoc }
 
-function useMonitorFeed() {
+function useMonitorFeed(modelSlug: string | undefined) {
   const convex = useConvex()
 
   const query = useInfiniteQuery({
-    queryKey: ['monitor-feed'],
+    queryKey: ['monitor-feed', modelSlug],
     queryFn: async ({ pageParam }) => {
       return convex.query(api.feed.changesByCrawlId, {
+        modelSlug: modelSlug || undefined,
         paginationOpts: { numItems: 1, cursor: pageParam },
       })
     },
@@ -37,16 +39,19 @@ function useMonitorFeed() {
     gcTime: 1000 * 60 * 60,
   })
 
-  // * Flatten pages into crawl_id groups
-  const results = query.data?.pages.flatMap((page) => page.page) ?? []
+  // * Flatten pages into single list
+  const changes = query.data?.pages.flatMap((page) => page.page) ?? []
 
-  // * Flatten into single list for virtualization
-  const flatItems: FlatItem[] = results
-    .filter((r) => r.data.length)
-    .flatMap(({ crawl_id, data }) => [
-      { type: 'marker' as const, crawl_id },
-      ...data.map((change) => ({ type: 'item' as const, change })),
-    ])
+  // * Insert markers when crawl_id changes
+  const flatItems: FlatItem[] = []
+  let lastCrawlId = ''
+  for (const change of changes) {
+    if (change.crawl_id !== lastCrawlId) {
+      flatItems.push({ type: 'marker', crawl_id: change.crawl_id })
+      lastCrawlId = change.crawl_id
+    }
+    flatItems.push({ type: 'item', change })
+  }
 
   // * Map TanStack status to Convex-style pagination status
   const status: PaginationStatus =
@@ -73,7 +78,8 @@ function useMonitorFeed() {
 }
 
 export function MonitorFeed() {
-  const { flatItems, status, loadMore } = useMonitorFeed()
+  const [modelSlug, setModelSlug] = useState<string>('')
+  const { flatItems, status, loadMore } = useMonitorFeed(modelSlug)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -101,36 +107,41 @@ export function MonitorFeed() {
   const totalSize = virtualizer.getTotalSize()
 
   return (
-    <ScrollArea className="flex-1 rounded-none" viewportRef={scrollRef} maskHeight={10}>
+    <>
       <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6">
-        <div className="relative" style={{ height: totalSize }}>
-          {virtualItems.map((virtualRow) => {
-            const item = flatItems[virtualRow.index]
-            return (
-              <div
-                key={virtualRow.key}
-                data-index={virtualRow.index}
-                ref={virtualizer.measureElement}
-                className="absolute right-0 left-0"
-                style={{ transform: `translateY(${virtualRow.start}px)` }}
-              >
-                {item.type === 'marker' ? (
-                  <TimelineMarker crawl_id={item.crawl_id} className="pt-4 pb-8" />
-                ) : (
-                  <div className="ml-2 pb-4 font-mono text-sm leading-loose text-muted-foreground sm:pl-2">
-                    <FeedItem change={item.change} />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="flex items-center justify-center py-4">
-          <PaginatedLoadButton status={status} onClick={() => loadMore()} />
-        </div>
+        <ModelCombobox value={modelSlug} onValueChange={setModelSlug} />
       </div>
-    </ScrollArea>
+      <ScrollArea className="flex-1 rounded-none" viewportRef={scrollRef} maskHeight={5}>
+        <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6">
+          <div className="relative" style={{ height: totalSize }}>
+            {virtualItems.map((virtualRow) => {
+              const item = flatItems[virtualRow.index]
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute right-0 left-0"
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  {item.type === 'marker' ? (
+                    <TimelineMarker crawl_id={item.crawl_id} className="pt-4 pb-8" />
+                  ) : (
+                    <div className="ml-2 pb-4 font-mono text-sm leading-loose text-muted-foreground sm:pl-2">
+                      <FeedItem change={item.change} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-center py-4">
+            <PaginatedLoadButton status={status} onClick={() => loadMore()} />
+          </div>
+        </div>
+      </ScrollArea>
+    </>
   )
 }
 
