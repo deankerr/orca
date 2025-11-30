@@ -6,6 +6,16 @@ import { cn } from '@/lib/utils'
 
 import { RadBadge } from '../shared/rad-badge'
 
+// * Parse numeric value from number or numeric string (for percentage calculations)
+function parseNumeric(value: unknown): number | null {
+  if (R.isNumber(value)) return value
+  if (R.isString(value)) {
+    const parsed = parseFloat(value.replace(/,/g, ''))
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
 export function ChangeValuePair({
   before,
   after,
@@ -17,14 +27,18 @@ export function ChangeValuePair({
   path_level_1?: string
   path_level_2?: string
 }) {
-  // Handle array diffs
-  if (Array.isArray(before) && Array.isArray(after) && path_level_1 !== 'variable_pricings') {
+  // Handle array diffs (skip pricing.tiers - show as JSON)
+  const isPricingTiers = path_level_1 === 'pricing' && path_level_2 === 'tiers'
+  if (Array.isArray(before) && Array.isArray(after) && !isPricingTiers) {
     return <ArrayDiff before={before} after={after} />
   }
 
-  const showPercentage = R.isNumber(before) && R.isNumber(after) && before !== 0
-  const percentageChange = showPercentage ? ((after - before) / before) * 100 : 0
-  const isIncrease = showPercentage && after > before
+  // * percentage change for numeric values (handles both numbers and numeric strings)
+  const beforeNum = parseNumeric(before)
+  const afterNum = parseNumeric(after)
+  const showPercentage = beforeNum !== null && afterNum !== null && beforeNum !== 0
+  const percentageChange = showPercentage ? ((afterNum - beforeNum) / beforeNum) * 100 : 0
+  const isIncrease = showPercentage && afterNum > beforeNum
   const isGood = path_level_1 === 'pricing' ? !isIncrease : isIncrease
 
   return (
@@ -103,7 +117,7 @@ function StringValue({ value }: { value: string }) {
 }
 
 function EmptyValue() {
-  return <BaseBadge className="opacity-80">empty</BaseBadge>
+  return <BaseBadge className="text-foreground/50">empty</BaseBadge>
 }
 
 function BooleanValue({ value }: { value: boolean }) {
@@ -111,7 +125,7 @@ function BooleanValue({ value }: { value: boolean }) {
 }
 
 function NullValue() {
-  return <BaseBadge>null</BaseBadge>
+  return <BaseBadge className="text-foreground/50">null</BaseBadge>
 }
 
 function UndefinedValue() {
@@ -133,22 +147,14 @@ function PercentageBadge({
   isGood: boolean
 }) {
   return (
-    <RadBadge variant="soft" color={isGood ? 'green' : 'red'} className="">
-      {isIncrease ? '+ ' : '- '}
+    <RadBadge variant="surface" color={isGood ? 'green' : 'red'}>
+      {isIncrease ? '+' : '-'}
       {Math.abs(value).toFixed(1)}%
     </RadBadge>
   )
 }
 
-function ArrayDiff({
-  before,
-  after,
-  showUnchanged,
-}: {
-  before: unknown[]
-  after: unknown[]
-  showUnchanged?: boolean
-}) {
+function ArrayDiff({ before, after }: { before: unknown[]; after: unknown[] }) {
   const beforeSet = new Set(before.map(String))
   const afterSet = new Set(after.map(String))
   const allItems = Array.from(new Set([...before.map(String), ...after.map(String)])).sort()
@@ -159,41 +165,20 @@ function ArrayDiff({
         const inBefore = beforeSet.has(item)
         const inAfter = afterSet.has(item)
 
-        // Unchanged
-        if (inBefore && inAfter) {
-          if (showUnchanged) {
-            return (
-              <Badge
-                key={item}
-                variant="outline"
-                className="rounded-md border-dotted text-sm text-foreground/80"
-              >
-                {item}
-              </Badge>
-            )
-          } else return null
-        }
+        if (inBefore && inAfter) return null
 
-        // Removed
         if (inBefore) {
           return (
-            <Badge
-              key={item}
-              className="rounded-md border-dotted border-negative-surface-border bg-negative-surface text-sm text-negative-surface-foreground line-through"
-            >
+            <RadBadge key={item} variant="surface" color="red" className="line-through">
               {item}
-            </Badge>
+            </RadBadge>
           )
         }
 
-        // Added
         return (
-          <Badge
-            key={item}
-            className="rounded-md border-dotted border-positive-surface-border bg-positive-surface text-sm text-positive-surface-foreground"
-          >
-            + {item}
-          </Badge>
+          <RadBadge key={item} variant="surface" color="green">
+            +{item}
+          </RadBadge>
         )
       })}
     </span>

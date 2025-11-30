@@ -1,6 +1,6 @@
 // * Field mappings for change transforms (validated against output types)
 
-import { DataPolicyOutput, formatPrice, LimitsOutput, PricingOutput } from './endpoint'
+import { DataPolicyOutput, formatPrice, PricingOutput } from './endpoint'
 
 const dataPolicyFieldMap: Record<string, keyof DataPolicyOutput> = {
   can_publish: 'may_publish_data',
@@ -18,8 +18,28 @@ const pricingFieldMap: Record<string, keyof PricingOutput> = {
   request: 'per_request',
 }
 
-const limitsFieldMap: Record<string, keyof LimitsOutput> = {
-  // all field names match between input/output
+// provider fields flatten to top level
+const providerFieldMap: Record<string, string> = {
+  tag_slug: 'provider_id',
+  region: 'provider_region',
+}
+
+type VariablePricingInput = {
+  threshold?: number
+  text_input?: number
+  text_output?: number
+  cache_read?: number
+  cache_write?: number
+}
+
+function transformVariablePricingTier(tier: VariablePricingInput) {
+  return {
+    tokens: tier.threshold,
+    text_input: formatPrice(tier.text_input),
+    text_output: formatPrice(tier.text_output),
+    text_cache_read: formatPrice(tier.cache_read),
+    text_cache_write: formatPrice(tier.cache_write),
+  }
 }
 
 // * Transform a change's path and values
@@ -33,17 +53,43 @@ export function transformEndpointChange(change: {
 }) {
   if (!change.path) return change
 
-  // Get the appropriate field map based on path_level_1
+  // * provider fields flatten to top level
+  if (change.path_level_1 === 'provider' && change.path_level_2) {
+    const outputField = providerFieldMap[change.path_level_2]
+    if (outputField) {
+      return {
+        ...change,
+        path: outputField,
+        path_level_1: outputField,
+        path_level_2: undefined,
+      }
+    }
+    return change
+  }
+
+  // * variable_pricings array transformation
+  if (change.path_level_1 === 'variable_pricings') {
+    const transformArray = (arr: unknown) =>
+      Array.isArray(arr) ? arr.map(transformVariablePricingTier) : arr
+
+    return {
+      ...change,
+      path: 'pricing.tiers',
+      path_level_1: 'pricing',
+      path_level_2: 'tiers',
+      before: transformArray(change.before),
+      after: transformArray(change.after),
+    }
+  }
+
+  // * nested field mappings (data_policy, pricing)
   const fieldMap =
     change.path_level_1 === 'data_policy'
       ? dataPolicyFieldMap
       : change.path_level_1 === 'pricing'
         ? pricingFieldMap
-        : change.path_level_1 === 'limits'
-          ? limitsFieldMap
-          : null
+        : null
 
-  // Transform path if mapping exists
   const outputField = change.path_level_2 && fieldMap?.[change.path_level_2]
   const outputPath = outputField ? `${change.path_level_1}.${outputField}` : change.path
 

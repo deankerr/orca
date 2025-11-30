@@ -27,7 +27,6 @@ const DIFF_OPTIONS: DiffOptions = {
     'provider.name',
     'provider.icon_url',
     'provider.model_id',
-    'provider.region',
     'model.name',
     'model.icon_url',
     'model.author_slug',
