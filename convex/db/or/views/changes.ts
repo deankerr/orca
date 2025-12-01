@@ -1,7 +1,9 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { Doc } from '../../../_generated/dataModel'
 import { internalQuery } from '../../../_generated/server'
+import { transformChanges } from '../../../transforms/changes'
 
 const changeKindValidator = v.union(v.literal('create'), v.literal('update'), v.literal('delete'))
 
@@ -52,6 +54,9 @@ export const table = defineTable(
 // NOTE: we can't create the vTable helper with a union validator
 // export const vTable = createTableVHelper('or_views_changes', table.validator)
 
+export type ChangeTypeModelDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'model' }>
+export type ChangeTypeEndpointDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
+
 export const getLatestCrawlId = internalQuery({
   args: {},
   returns: v.union(v.null(), v.string()),
@@ -77,6 +82,7 @@ export const listByModelSlugAndCrawlId = internalQuery({
         q.eq('model_slug', args.model_slug).eq('crawl_id', args.crawl_id),
       )
       .collect()
+      .then(transformChanges)
   },
 })
 
@@ -89,6 +95,7 @@ export const listByCrawlId = internalQuery({
       .query('or_views_changes')
       .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
       .collect()
+      .then(transformChanges)
   },
 })
 

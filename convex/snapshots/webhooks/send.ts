@@ -45,10 +45,12 @@ export function buildWebhookDeliveries(args: {
 
   for (const [webhookUrl, modelSlugs] of byWebhookUrl) {
     const slugSet = new Set(modelSlugs)
-    const destChanges = relevantChanges.filter((c) => {
-      const slug = 'model_slug' in c ? c.model_slug : undefined
-      return slug && slugSet.has(slug)
-    })
+    const destChanges = relevantChanges
+      .filter((c) => {
+        const slug = 'model_slug' in c ? c.model_slug : undefined
+        return slug && slugSet.has(slug)
+      })
+      .filter((c) => c.entity_type !== 'provider')
 
     if (!destChanges.length) continue
 
@@ -140,70 +142,5 @@ export const sendForCrawl = internalAction({
         })
       }
     }
-  },
-})
-
-// * dev action: send arbitrary payload to a webhook URL
-export const devSendPayload = internalAction({
-  args: {
-    webhookUrl: v.string(),
-    payload: v.any(),
-  },
-  handler: async (ctx, args) => {
-    const delivery: WebhookDelivery = {
-      webhookUrl: args.webhookUrl,
-      modelSlugs: ['dev-test'],
-      payload: args.payload as DiscordWebhookPayload,
-    }
-
-    const result = await sendDelivery(delivery)
-    console.log('[webhooks:dev] sent', { success: result.success, error: result.error })
-    return result
-  },
-})
-
-// * dev action: build deliveries from a crawl_id without sending
-export const devBuildDeliveries = internalAction({
-  args: {
-    crawl_id: v.string(),
-    modelSlugs: v.optional(v.array(v.string())),
-  },
-  handler: async (ctx, args) => {
-    // * get all changes for this crawl
-    const changes = await ctx.runQuery(internal.db.or.views.changes.listByCrawlId, {
-      crawl_id: args.crawl_id,
-    })
-
-    // * build fake subscriptions from provided model_slugs, or use all unique slugs from changes
-    const slugs = args.modelSlugs ?? [
-      ...new Set(changes.filter((c) => 'model_slug' in c).map((c) => (c as any).model_slug)),
-    ]
-
-    const fakeSubscriptions: Subscription[] = slugs.map((slug) => ({
-      _id: 'dev' as any,
-      _creationTime: Date.now(),
-      model_slug: slug,
-      webhook_url: 'https://example.com/webhook',
-      enabled: true,
-    }))
-
-    const deliveries = buildWebhookDeliveries({
-      changes,
-      subscriptions: fakeSubscriptions,
-      crawl_id: args.crawl_id,
-    })
-
-    console.log('[webhooks:dev] built deliveries', {
-      crawl_id: args.crawl_id,
-      totalChanges: changes.length,
-      deliveries: deliveries.length,
-      embeds: deliveries.reduce((sum, d) => sum + d.payload.embeds.length, 0),
-    })
-
-    // * return payloads for inspection (without URLs)
-    return deliveries.map((d) => ({
-      modelSlugs: d.modelSlugs,
-      payload: d.payload,
-    }))
   },
 })

@@ -37,6 +37,7 @@ import type * as providers from "../providers.js";
 import type * as public_api_preview_v1 from "../public_api/preview_v1.js";
 import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
 import type * as shared from "../shared.js";
+import type * as shared_logos from "../shared/logos.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
 import type * as snapshots_materialize_main from "../snapshots/materialize/main.js";
 import type * as snapshots_materialize_output from "../snapshots/materialize/output.js";
@@ -93,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   "public_api/preview_v1": typeof public_api_preview_v1;
   "public_api/preview_v2": typeof public_api_preview_v2;
   shared: typeof shared;
+  "shared/logos": typeof shared_logos;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
   "snapshots/materialize/main": typeof snapshots_materialize_main;
   "snapshots/materialize/output": typeof snapshots_materialize_output;

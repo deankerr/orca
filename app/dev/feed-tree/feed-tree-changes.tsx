@@ -3,7 +3,7 @@
 import { MinusIcon, PencilIcon, PlusIcon } from 'lucide-react'
 
 import { api } from '@/convex/_generated/api'
-import { EndpointChangeDoc } from '@/convex/feed'
+import { ChangeTypeEndpointDoc } from '@/convex/db/or/views/changes'
 
 import { EntityBadge } from '@/components/shared/entity-badge'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +11,7 @@ import { useCachedQuery } from '@/hooks/use-cached-query'
 
 import { FeedTreeContent, FeedTreeGroup, FeedTreeItem, FeedTreeTrigger } from './feed-tree-group'
 
-function ChangeItemEntry({ item }: { item: EndpointChangeDoc }) {
+function ChangeItemEntry({ item }: { item: ChangeTypeEndpointDoc }) {
   return (
     <div className="flex items-center gap-2 overflow-hidden">
       <span className="mx-1 size-6 shrink-0 rounded-md border border-yellow-500/20 bg-yellow-500/10 p-1 text-yellow-500">
@@ -33,7 +33,7 @@ function ChangeItemEntry({ item }: { item: EndpointChangeDoc }) {
   )
 }
 
-export function CreateChanges({ items }: { items: EndpointChangeDoc[] }) {
+export function CreateChanges({ items }: { items: ChangeTypeEndpointDoc[] }) {
   const models = useCachedQuery(api.models.list, {})
   return (
     <>
@@ -55,7 +55,7 @@ export function CreateChanges({ items }: { items: EndpointChangeDoc[] }) {
   )
 }
 
-export function DeleteChanges({ items }: { items: EndpointChangeDoc[] }) {
+export function DeleteChanges({ items }: { items: ChangeTypeEndpointDoc[] }) {
   const models = useCachedQuery(api.models.list, {})
   return (
     <>
@@ -82,7 +82,7 @@ export function UpdateChanges({
   modelSlug,
   defaultExpanded,
 }: {
-  items: EndpointChangeDoc[]
+  items: ChangeTypeEndpointDoc[]
   modelSlug: string
   defaultExpanded?: boolean
 }) {

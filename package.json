@@ -53,6 +53,7 @@
     "convex": "^1.29.3",
     "convex-helpers": "^0.1.105",
     "date-fns": "^4.1.0",
+    "discord-api-types": "^0.38.34",
     "fflate": "^0.8.2",
     "json-diff-ts": "^4.8.2",
     "ldrs": "^1.1.9",

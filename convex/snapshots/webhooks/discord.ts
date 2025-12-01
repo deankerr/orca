@@ -1,6 +1,24 @@
+import { APIEmbed } from 'discord-api-types/v10'
+
 import type { Doc } from '../../_generated/dataModel'
+import { ChangeTypeEndpointDoc, ChangeTypeModelDoc } from '../../db/or/views/changes'
+import { formatPricing } from '../../shared'
+import { getLogo } from '../../shared/logos'
+
+// https://discord.com/developers/docs/resources/message#embed-object-embed-structure
 
 type Change = Doc<'or_views_changes'>
+
+function getIconUrl(model_slug: string): string | undefined {
+  const baseUrl = process.env.ORCA_PUBLIC_URL
+  if (!baseUrl) return undefined
+
+  const logo = getLogo(model_slug)
+  if (!logo.url) return undefined
+
+  const encodedPath = encodeURIComponent(logo.url)
+  return `${baseUrl}/_next/image?url=${encodedPath}&w=32&q=75`
+}
 
 // * Discord embed color codes
 const COLORS = {
@@ -9,143 +27,234 @@ const COLORS = {
   delete: 0xef4444, // red
 } as const
 
-// * Emoji prefixes for change kinds
-const EMOJI = {
-  create: '🆕',
-  update: '🔄',
-  delete: '🗑️',
-} as const
+export type DiscordWebhookPayload = {
+  content?: string
+  embeds: APIEmbed[]
+}
 
-export function formatValue(value: unknown): string {
+// * Value formatting
+
+const MIN_FIELD_WIDTH = 18
+const MIN_VALUE_WIDTH = 12
+
+function centerPad(value: string, minWidth: number): string {
+  if (value.length >= minWidth) return value
+  const totalPadding = minWidth - value.length
+  const leftPad = Math.ceil(totalPadding / 2)
+  const rightPad = totalPadding - leftPad
+  return ' '.repeat(leftPad) + value + ' '.repeat(rightPad)
+}
+
+function rightPad(value: string, minWidth: number): string {
+  if (value.length >= minWidth) return value
+  return value + ' '.repeat(minWidth - value.length)
+}
+
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '`null`'
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number')
     return value.toLocaleString(undefined, { maximumFractionDigits: 20 })
-  if (typeof value === 'boolean') return value ? 'true' : 'false'
-  if (typeof value === 'string') return value
+  if (typeof value === 'string') return value.length > 100 ? value.slice(0, 100) + '…' : value
   return JSON.stringify(value)
 }
 
-function formatChangeValue(change: Change): string {
-  const before = formatValue(change.before)
-  const after = formatValue(change.after)
-
-  if (change.change_kind === 'create') {
-    return `→ ${after}`
+function formatPricingValue(value: unknown, priceKey: string): string {
+  if (typeof value === 'string' || typeof value === 'number') {
+    const formatted = formatPricing(priceKey, value)
+    if (formatted) return `${formatted.value}${formatted.unit}`
   }
-  if (change.change_kind === 'delete') {
-    return `${before} →`
-  }
-  return `${before} → ${after}`
+  return formatValue(value)
 }
 
-function getEntityLabel(change: Change): string {
-  if (change.entity_type === 'endpoint') {
-    return `${change.model_slug} (${change.provider_tag_slug})`
+function toNumber(value: unknown): number | null {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? null : parsed
   }
-  if (change.entity_type === 'model') {
-    return change.model_slug
+  return null
+}
+
+function getChangeEmoji(path: string): string {
+  // * exact matches
+  const exact: Record<string, string> = {
+    // model fields
+    name: '🏷️',
+    reasoning: '🧠',
+    tokenizer: '✂️',
+    instruct_type: '📋',
+    hugging_face_id: '🤗',
+    promotion_message: '📢',
+    warning_message: '⚠️',
+
+    // endpoint fields
+    context_length: '📏',
+    quantization: '📊',
+    completions: '🔘',
+    chat_completions: '💬',
+    deranked: '📉',
+    implicit_caching: '💾',
+    moderated: '🛡️',
+    native_web_search: '🔍',
   }
-  return change.provider_slug
+  if (exact[path]) return exact[path]
+
+  // * prefix matches
+  if (path.startsWith('input_modalities')) return '🎭'
+  if (path.startsWith('output_modalities')) return '🎭'
+  if (path.startsWith('supported_parameters')) return '🎛️'
+  if (path.startsWith('data_policy')) return '🔒'
+  if (path.startsWith('limits')) return '🚦'
+  if (path.startsWith('provider')) return '🌍'
+
+  // * fallback
+  return '⚙️'
 }
 
-export type DiscordEmbed = {
-  title: string
-  description?: string
-  color: number
-  fields?: Array<{ name: string; value: string; inline?: boolean }>
-  footer?: { text: string }
-  timestamp?: string
+// * template: % `[ % ]` ` % ` ▶️ ` % ` %
+function formatChangeTemplate(
+  emoji: string,
+  field: string,
+  before: string,
+  after: string,
+  delta: string,
+): string {
+  const paddedField = rightPad(field, MIN_FIELD_WIDTH)
+  const paddedBefore = centerPad(before, MIN_VALUE_WIDTH)
+  const paddedAfter = centerPad(after, MIN_VALUE_WIDTH)
+  return `${emoji} \` ${paddedField} \` \` ${paddedBefore} \` ▶︎ \` ${paddedAfter} \` ${delta}`
 }
 
-export type DiscordWebhookPayload = {
-  content?: string
-  embeds: DiscordEmbed[]
+// * array diff: show added/removed items
+function formatArrayDiff(path: string, field: string, before: unknown[], after: unknown[]): string {
+  const beforeSet = new Set(before.map(String))
+  const afterSet = new Set(after.map(String))
+
+  const added = after.filter((item) => !beforeSet.has(String(item))).map(String)
+  const removed = before.filter((item) => !afterSet.has(String(item))).map(String)
+
+  const emoji = getChangeEmoji(path)
+  const paddedField = rightPad(field, MIN_FIELD_WIDTH)
+  const parts: string[] = [`${emoji} \` ${paddedField} \``]
+  if (added.length > 0) parts.push(`+ ${added.join(', ')}`)
+  if (removed.length > 0) parts.push(`- ${removed.join(', ')}`)
+
+  return parts.join(' ')
 }
 
-// * format a single change as a Discord embed field
-export function formatChangeField(change: Change): { name: string; value: string } {
+function formatUpdateChange(change: Change): string {
   const path = change.path ?? 'unknown'
-  return {
-    name: path,
-    value: formatChangeValue(change),
+  const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
+  const isPricing = change.path_level_1 === 'pricing'
+  const isPricingTiers = isPricing && change.path_level_2 === 'tiers'
+
+  // * array diffs (skip pricing.tiers - too complex)
+  if (Array.isArray(change.before) && Array.isArray(change.after) && !isPricingTiers) {
+    return formatArrayDiff(path, field, change.before, change.after)
   }
-}
 
-// * format a group of changes for the same entity into an embed
-export function formatEntityEmbed(entityKey: string, changes: Change[]): DiscordEmbed {
-  const first = changes[0]
-  if (!first) throw new Error('No changes to format')
+  // * pricing changes get special formatting
+  if (isPricing) {
+    const beforeNum = toNumber(change.before)
+    const afterNum = toNumber(change.after)
+    const beforeFormatted = formatPricingValue(change.before, field)
+    const afterFormatted = formatPricingValue(change.after, field)
 
-  const changeKind = first.change_kind
-  const emoji = EMOJI[changeKind]
-  const color = COLORS[changeKind]
-
-  // * create/delete are entity-level events - show description only
-  if (changeKind === 'create' || changeKind === 'delete') {
-    const action = changeKind === 'create' ? 'Created' : 'Deleted'
-    return {
-      title: `${emoji} ${getEntityLabel(first)}`,
-      description: `${first.entity_type} ${action.toLowerCase()}`,
-      color,
+    let delta: string
+    if (beforeNum === null || afterNum === null || beforeNum === 0) {
+      delta = ''
+    } else {
+      const percentChange = ((afterNum - beforeNum) / beforeNum) * 100
+      const arrow = percentChange > 0 ? '⬆︎' : '⬇︎'
+      delta = `${arrow}${Math.abs(percentChange).toFixed(0)}%`
     }
+
+    return formatChangeTemplate('💵', field, beforeFormatted, afterFormatted, delta)
   }
 
-  // * update events have field-level changes
-  const fields = changes.map(formatChangeField)
-
-  return {
-    title: `${emoji} ${getEntityLabel(first)}`,
-    color,
-    fields: fields.slice(0, 25), // Discord limit
-  }
+  // * all other changes
+  const emoji = getChangeEmoji(path)
+  return formatChangeTemplate(
+    emoji,
+    field,
+    formatValue(change.before),
+    formatValue(change.after),
+    '',
+  )
 }
 
-// * group changes by entity and format as embeds
-export function formatChangesAsEmbeds(changes: Change[]): DiscordEmbed[] {
-  // * group by entity key
-  const byEntity = new Map<string, Change[]>()
+// * Grouping and payload
+export function formatWebhookPayload(
+  changes: (ChangeTypeModelDoc | ChangeTypeEndpointDoc)[],
+  crawl_id: string,
+): DiscordWebhookPayload {
+  const changesByModel = Map.groupBy(changes, (c) => c.model_slug)
 
-  for (const change of changes) {
-    const key =
-      change.entity_type === 'endpoint'
-        ? `endpoint:${change.endpoint_uuid}`
-        : change.entity_type === 'model'
-          ? `model:${change.model_slug}`
-          : `provider:${change.provider_slug}`
+  const embeds: APIEmbed[] = []
+  for (const [model_slug, entityChanges] of changesByModel) {
+    const items: string[] = []
 
-    const existing = byEntity.get(key) ?? []
-    existing.push(change)
-    byEntity.set(key, existing)
+    const modelChanges = entityChanges.filter((c) => c.entity_type === 'model')
+    const endpointChanges = entityChanges.filter((c) => c.entity_type === 'endpoint')
+
+    // * model created
+    if (modelChanges.find((c) => c.change_kind === 'create')) {
+      items.push('🆕 model created')
+    }
+
+    // * model updates (bulleted)
+    const modelUpdates = modelChanges.filter((c) => c.change_kind === 'update')
+    if (modelUpdates.length > 0) {
+      const bullets = modelUpdates.map((c) => `${formatUpdateChange(c)}`)
+      items.push(bullets.join('\n'))
+    }
+
+    // * endpoints grouped by provider (each provider is one block)
+    const endpointChangesByProvider = Map.groupBy(endpointChanges, (c) => c.provider_tag_slug)
+    for (const [providerSlug, providerChanges] of endpointChangesByProvider) {
+      const lines: string[] = [`${providerSlug}`]
+
+      // * endpoint created
+      if (providerChanges.find((c) => c.change_kind === 'create')) {
+        lines.push('🆕 endpoint created')
+      }
+
+      // * endpoint updates
+      for (const change of providerChanges.filter((c) => c.change_kind === 'update')) {
+        lines.push(`${formatUpdateChange(change)}`)
+      }
+
+      // * endpoint deleted
+      if (providerChanges.find((c) => c.change_kind === 'delete')) {
+        lines.push('❌ endpoint deleted')
+      }
+
+      items.push(lines.join('\n'))
+    }
+
+    // * model deleted
+    if (modelChanges.find((c) => c.change_kind === 'delete')) {
+      items.push('❌ model deleted')
+    }
+
+    const embed: APIEmbed = {
+      author: {
+        name: model_slug,
+        icon_url: getIconUrl(model_slug),
+      },
+      color: COLORS.update,
+      description: items.join('\n\n'),
+      footer: { text: `ORCA • ${crawl_id}` },
+      timestamp: new Date(parseInt(crawl_id)).toISOString(),
+    }
+    embeds.push(embed)
   }
-
-  // * format each entity group as an embed
-  const embeds: DiscordEmbed[] = []
-  for (const [key, entityChanges] of byEntity) {
-    embeds.push(formatEntityEmbed(key, entityChanges))
-  }
-
-  return embeds
-}
-
-// * format a batch of changes as a Discord webhook payload
-export function formatWebhookPayload(changes: Change[], crawl_id: string): DiscordWebhookPayload {
-  const embeds = formatChangesAsEmbeds(changes)
 
   // * Discord allows max 10 embeds per message
   const truncatedEmbeds = embeds.slice(0, 10)
 
-  // * add footer to last embed with crawl info
-  const lastEmbed = truncatedEmbeds[truncatedEmbeds.length - 1]
-  if (lastEmbed) {
-    const crawlDate = new Date(parseInt(crawl_id))
-    lastEmbed.footer = { text: `ORCA • ${crawl_id}` }
-    lastEmbed.timestamp = crawlDate.toISOString()
-  }
+  const content = `🚨 ORCA Monitor Update \`${crawl_id}\``
 
-  const content = embeds.length > 10 ? `Showing 10 of ${embeds.length} changed entities` : undefined
-
-  return {
-    content,
-    embeds: truncatedEmbeds,
-  }
+  return { content, embeds: truncatedEmbeds }
 }

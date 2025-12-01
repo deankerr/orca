@@ -216,10 +216,12 @@ export const preview = internalAction({
     const slugsToUse = args.modelSlugs ?? allSlugs
 
     // * filter changes to requested slugs
-    const filteredChanges = changes.filter((c) => {
-      const slug = 'model_slug' in c ? c.model_slug : undefined
-      return slug && slugsToUse.includes(slug)
-    })
+    const filteredChanges = changes
+      .filter((c) => {
+        const slug = 'model_slug' in c ? c.model_slug : undefined
+        return slug && slugsToUse.includes(slug)
+      })
+      .filter((c) => c.entity_type !== 'provider')
 
     const payload = formatWebhookPayload(filteredChanges, args.crawlId)
 
