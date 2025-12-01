@@ -1,7 +1,9 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { Doc } from '../../../_generated/dataModel'
 import { internalQuery } from '../../../_generated/server'
+import { transformChanges } from '../../../transforms/changes'
 
 const changeKindValidator = v.union(v.literal('create'), v.literal('update'), v.literal('delete'))
 
@@ -52,6 +54,9 @@ export const table = defineTable(
 // NOTE: we can't create the vTable helper with a union validator
 // export const vTable = createTableVHelper('or_views_changes', table.validator)
 
+export type ChangeTypeModelDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'model' }>
+export type ChangeTypeEndpointDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
+
 export const getLatestCrawlId = internalQuery({
   args: {},
   returns: v.union(v.null(), v.string()),
@@ -62,5 +67,58 @@ export const getLatestCrawlId = internalQuery({
       .order('desc')
       .first()
     return doc?.crawl_id ?? null
+  },
+})
+
+export const listByModelSlugAndCrawlId = internalQuery({
+  args: {
+    model_slug: v.string(),
+    crawl_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('or_views_changes')
+      .withIndex('by_model_slug__crawl_id', (q) =>
+        q.eq('model_slug', args.model_slug).eq('crawl_id', args.crawl_id),
+      )
+      .collect()
+      .then(transformChanges)
+  },
+})
+
+export const listByCrawlId = internalQuery({
+  args: {
+    crawl_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('or_views_changes')
+      .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
+      .collect()
+      .then(transformChanges)
+  },
+})
+
+export const listRecentCrawlIds = internalQuery({
+  args: {
+    limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const seen = new Set<string>()
+    const crawlIds: string[] = []
+
+    // * walk backwards through changes, collecting unique crawl_ids
+    for await (const doc of ctx.db
+      .query('or_views_changes')
+      .withIndex('by_crawl_id')
+      .order('desc')) {
+      if (!seen.has(doc.crawl_id)) {
+        seen.add(doc.crawl_id)
+        crawlIds.push(doc.crawl_id)
+        if (crawlIds.length >= args.limit) break
+      }
+    }
+
+    return crawlIds
   },
 })

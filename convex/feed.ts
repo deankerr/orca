@@ -7,7 +7,6 @@ import { query } from './_generated/server'
 import schema from './schema'
 import { transformChanges } from './transforms/changes'
 
-export type EndpointChangeDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
 export type ChangeDoc = Doc<'or_views_changes'>
 
 const GOAL_COUNT = 50

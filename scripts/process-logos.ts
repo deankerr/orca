@@ -4,7 +4,7 @@ import { processLobehubIcons } from './logos/lobehub'
 import { processOpenRouterIcons } from './logos/openrouter'
 import { processOtherIcons } from './logos/other'
 
-const MANIFEST_FILE = 'lib/logos-manifest.json'
+const MANIFEST_FILE = 'convex/shared/logos-manifest.json'
 
 /**
  * Process all logos from all sources and generate unified manifest

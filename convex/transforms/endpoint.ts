@@ -10,14 +10,9 @@
  * 3. TRANSFORM: Converts from database shape to output shape
  */
 
-import { convexToZod } from 'convex-helpers/server/zod4'
 import { z } from 'zod'
 
-import { db } from '../db'
-
-// * Input Schema from database table
-export const EndpointInputSchema = convexToZod(db.or.views.endpoints.table.validator)
-export type EndpointInput = z.infer<typeof EndpointInputSchema>
+import { Doc } from '../_generated/dataModel'
 
 // * Helpers
 
@@ -107,8 +102,7 @@ export const EndpointOutputSchema = z.object({
 export type OrcaEndpoint = z.infer<typeof EndpointOutputSchema>
 
 // * Transform function
-
-export function transformEndpoint(input: EndpointInput): OrcaEndpoint {
+export function transformEndpoint(input: Doc<'or_views_endpoints'>): OrcaEndpoint {
   const variablePricingTiers =
     input.variable_pricings?.map((tier) => ({
       tokens: tier.threshold,
@@ -167,7 +161,3 @@ export function transformEndpoint(input: EndpointInput): OrcaEndpoint {
     native_web_search: input.native_web_search,
   }
 }
-
-// * Zod schema with transform (input → output)
-
-export const EndpointTransformSchema = EndpointInputSchema.transform(transformEndpoint)
