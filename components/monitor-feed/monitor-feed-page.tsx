@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { formatDateTime, formatRelativeTime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
+import { FeatureFlag } from '../dev-utils/feature-flag'
 import { CopyToClipboardButton } from '../shared/copy-to-clipboard-button'
 import { Separator } from '../ui/separator'
 import { FeedItem } from './monitor-feed-item'
@@ -188,7 +189,9 @@ function TimelineMarker({ crawl_id, className }: { crawl_id: string; className?:
         <TooltipContent className="font-mono">{localTime}</TooltipContent>
       </Tooltip>
       <div className="h-px flex-1 border-b border-dashed" />
-      <CopyToClipboardButton value={crawl_id} />
+      <FeatureFlag flag="dev">
+        <CopyToClipboardButton size="icon-sm" variant="secondary" value={crawl_id} />
+      </FeatureFlag>
     </div>
   )
 }
