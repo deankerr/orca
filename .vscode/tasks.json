@@ -34,10 +34,7 @@
       "args": ["convex", "dev"],
       "isBackground": true,
       "problemMatcher": {
-        "owner": "convex",
-        "pattern": {
-          "regexp": "^(.*)$"
-        },
+        "base": "$tsc-watch",
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".",

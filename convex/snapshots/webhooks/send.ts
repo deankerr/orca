@@ -1,146 +1,83 @@
-import { v } from 'convex/values'
+import { isResponseError, up } from 'up-fetch'
 
-import { internal } from '../../_generated/api'
-import type { Doc } from '../../_generated/dataModel'
-import { internalAction } from '../../_generated/server'
-import { getErrorMessage } from '../../shared'
-import { formatWebhookPayload, type DiscordWebhookPayload } from './discord'
+import type { DiscordPayload } from './embeds'
 
-type Change = Doc<'or_views_changes'>
-type Subscription = Doc<'webhook_subscriptions'>
-
-export type WebhookDelivery = {
+export type Delivery = {
   webhookUrl: string
-  modelSlugs: string[]
-  payload: DiscordWebhookPayload
+  payloads: DiscordPayload[]
 }
 
-// * pure function: takes changes and subscriptions, returns deliveries to send
-export function buildWebhookDeliveries(args: {
-  changes: Change[]
-  subscriptions: Subscription[]
-  crawl_id: string
-}): WebhookDelivery[] {
-  const { changes, subscriptions, crawl_id } = args
+// * Config
 
-  // * group subscriptions by webhook_url
-  const byWebhookUrl = new Map<string, string[]>()
-  for (const sub of subscriptions) {
-    const existing = byWebhookUrl.get(sub.webhook_url) ?? []
-    existing.push(sub.model_slug)
-    byWebhookUrl.set(sub.webhook_url, existing)
-  }
+const DELAY_BETWEEN_PAYLOADS_MS = 500
+const RETRY_ATTEMPTS = 3
 
-  // * build set of subscribed model_slugs for fast lookup
-  const subscribedSlugs = new Set(subscriptions.map((s) => s.model_slug))
+// * Configured fetch with retry
 
-  // * filter changes to only those matching subscriptions
-  const relevantChanges = changes.filter((c) => {
-    const slug = 'model_slug' in c ? c.model_slug : undefined
-    return slug && subscribedSlugs.has(slug)
+const discordFetch = up(fetch, () => ({
+  // Discord returns 204 No Content on success - don't try to parse JSON
+  parseResponse: () => undefined,
+  retry: {
+    attempts: RETRY_ATTEMPTS,
+    delay: (ctx) => Math.min(ctx.attempt ** 2 * 1000, 10_000), // 1s, 4s, 9s (capped at 10s)
+    when: (ctx) => ctx.response?.status === 429 || (ctx.response?.status ?? 0) >= 500,
+  },
+}))
+
+// * Helpers
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// * Send a single payload to Discord
+
+async function sendPayload(webhookUrl: string, payload: DiscordPayload): Promise<void> {
+  await discordFetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+// * Send all deliveries with delay between payloads
+
+export async function sendDeliveries(deliveries: Delivery[]): Promise<void> {
+  const totalPayloads = deliveries.reduce((sum, d) => sum + d.payloads.length, 0)
+  let sent = 0
+  let failed = 0
+
+  console.log('[webhooks:send] starting', {
+    deliveries: deliveries.length,
+    totalPayloads,
   })
 
-  // * build deliveries for each webhook destination
-  const deliveries: WebhookDelivery[] = []
+  for (const delivery of deliveries) {
+    const webhookLabel = delivery.webhookUrl.slice(0, 50) + '...'
 
-  for (const [webhookUrl, modelSlugs] of byWebhookUrl) {
-    const slugSet = new Set(modelSlugs)
-    const destChanges = relevantChanges
-      .filter((c) => {
-        const slug = 'model_slug' in c ? c.model_slug : undefined
-        return slug && slugSet.has(slug)
-      })
-      .filter((c) => c.entity_type !== 'provider')
+    for (const payload of delivery.payloads) {
+      await sleep(DELAY_BETWEEN_PAYLOADS_MS)
 
-    if (!destChanges.length) continue
-
-    const payload = formatWebhookPayload(destChanges, crawl_id)
-    deliveries.push({ webhookUrl, modelSlugs, payload })
-  }
-
-  return deliveries
-}
-
-// * send a single delivery to Discord
-async function sendDelivery(
-  delivery: WebhookDelivery,
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch(delivery.webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(delivery.payload),
-    })
-
-    if (!response.ok) {
-      const text = await response.text()
-      return { success: false, error: `${response.status}: ${text.slice(0, 200)}` }
-    }
-
-    return { success: true }
-  } catch (err) {
-    return { success: false, error: getErrorMessage(err) }
-  }
-}
-
-// * main action: fetch data, build deliveries, send
-export const sendForCrawl = internalAction({
-  args: {
-    crawl_id: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // * get enabled subscriptions
-    const subscriptions = await ctx.runQuery(internal.db.webhook.subscriptions.listEnabled)
-
-    if (!subscriptions.length) {
-      console.log('[webhooks] no enabled subscriptions')
-      return
-    }
-
-    // * get all changes for this crawl
-    const changes = await ctx.runQuery(internal.db.or.views.changes.listByCrawlId, {
-      crawl_id: args.crawl_id,
-    })
-
-    if (!changes.length) {
-      console.log('[webhooks] no changes for crawl', { crawl_id: args.crawl_id })
-      return
-    }
-
-    console.log('[webhooks] processing', {
-      crawl_id: args.crawl_id,
-      subscriptions: subscriptions.length,
-      totalChanges: changes.length,
-    })
-
-    // * build deliveries
-    const deliveries = buildWebhookDeliveries({
-      changes,
-      subscriptions,
-      crawl_id: args.crawl_id,
-    })
-
-    if (!deliveries.length) {
-      console.log('[webhooks] no deliveries to send (no matching changes)')
-      return
-    }
-
-    // * send each delivery
-    for (const delivery of deliveries) {
-      const result = await sendDelivery(delivery)
-
-      if (result.success) {
-        console.log('[webhooks] sent', {
-          crawl_id: args.crawl_id,
-          modelSlugs: delivery.modelSlugs,
-          embeds: delivery.payload.embeds.length,
-        })
-      } else {
-        console.error('[webhooks] failed', {
-          error: result.error,
-          modelSlugs: delivery.modelSlugs,
+      try {
+        await sendPayload(delivery.webhookUrl, payload)
+        sent++
+      } catch (err) {
+        failed++
+        const errorMsg = isResponseError(err)
+          ? `${err.status}: ${err.data?.message ?? JSON.stringify(err.data)}`
+          : String(err)
+        console.error('[webhooks:send] payload failed after retries', {
+          webhookUrl: webhookLabel,
+          error: errorMsg,
         })
       }
     }
-  },
-})
+
+    console.log('[webhooks:send] delivery complete', {
+      webhookUrl: webhookLabel,
+      payloads: delivery.payloads.length,
+    })
+  }
+
+  console.log('[webhooks:send] complete', { sent, failed, totalPayloads })
+}

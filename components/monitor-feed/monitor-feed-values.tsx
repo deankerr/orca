@@ -1,6 +1,6 @@
 import * as R from 'remeda'
 
-import { formatPricing } from '@/convex/shared'
+import { formatPricing } from '@/convex/shared/pricing'
 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'

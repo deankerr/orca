@@ -94,7 +94,7 @@ export const run = internalAction({
 
       // * send webhooks for the latest processed crawl
       if (lastProcessedCrawlId) {
-        await ctx.scheduler.runAfter(0, internal.snapshots.webhooks.send.sendForCrawl, {
+        await ctx.scheduler.runAfter(0, internal.snapshots.webhooks.main.run, {
           crawl_id: lastProcessedCrawlId,
         })
       }
