@@ -24,13 +24,13 @@ export function ModelCombobox({
   onValueChange,
   placeholder = 'Filter by model...',
   className,
+  ...props
 }: {
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
   placeholder?: string
-  className?: string
-}) {
+} & React.ComponentProps<typeof Button>) {
   const [value, setValue] = useControllableState({
     prop: valueProp,
     defaultProp: defaultValue ?? '',
@@ -96,11 +96,9 @@ export function ModelCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "flex w-fit items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
-            className,
-          )}
+          className={cn('text-left', className)}
           size="lg"
+          {...props}
         >
           {selected ? (
             <EntityBadge
@@ -112,7 +110,7 @@ export function ModelCombobox({
           ) : value && isPending ? (
             <EntityBadgeSkeleton className="flex-1" />
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="w-full text-muted-foreground">{placeholder}</span>
           )}
         </Button>
       </PopoverTrigger>
