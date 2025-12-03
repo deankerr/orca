@@ -53,7 +53,7 @@ function buildContent(args: { subscription: Subscription; message?: MessageOptio
   const { subscription, message } = args
   const { prefix, body, suffix } = message ?? {}
 
-  const subInfo = `⚪ label: \`${subscription.label}\` ⚫︎ matched: \`${subscription.pattern}\``
+  const subInfo = `label: \`${subscription.label}\` ⚫︎ matched: \`${subscription.pattern}\``
 
   return [prefix, body || subInfo, suffix].filter(Boolean).join(' ')
 }
@@ -135,7 +135,6 @@ export const run = internalAction({
     const deliveries = buildDeliveries({
       changes,
       subscriptions,
-      message: { suffix: `\`${args.crawl_id}\`` },
     })
 
     if (!deliveries.length) {

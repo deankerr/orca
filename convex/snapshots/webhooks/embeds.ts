@@ -36,7 +36,7 @@ function getIconUrl(model_slug: string): string | undefined {
 const MIN_FIELD_WIDTH = 16
 const MIN_VALUE_WIDTH = 12
 
-function inlineCode(
+function monoField(
   value: string,
   args: { align?: 'left' | 'center' | 'right'; minWidth?: number } = {},
 ): string {
@@ -124,22 +124,25 @@ function getChangeEmoji(path: string): string {
   return '⚙️'
 }
 
-// * template: % `[ % ]` ` % ` ▶️ ` % ` %
 function formatChangeTemplate(
   emoji: string,
-  field: string,
+  label: string,
   before: string,
   after: string,
   delta: string,
 ): string {
-  const fieldCode = inlineCode(field, { align: 'center', minWidth: MIN_FIELD_WIDTH })
-  const beforeCode = inlineCode(before, { align: 'center', minWidth: MIN_VALUE_WIDTH })
-  const afterCode = inlineCode(after, { align: 'center', minWidth: MIN_VALUE_WIDTH })
-  return `${emoji} ${fieldCode} ${beforeCode} ▶︎ ${afterCode} ${delta}`
+  return [
+    emoji,
+    monoField(label, { align: 'center', minWidth: MIN_FIELD_WIDTH }),
+    monoField(before, { align: 'center', minWidth: MIN_VALUE_WIDTH }),
+    '▶︎',
+    monoField(after, { align: 'center', minWidth: MIN_VALUE_WIDTH }),
+    delta,
+  ].join(' ')
 }
 
 // * array diff: show added/removed items
-function formatArrayDiff(path: string, field: string, before: unknown[], after: unknown[]): string {
+function formatArrayDiff(path: string, label: string, before: unknown[], after: unknown[]): string {
   const beforeSet = new Set(before.map(String))
   const afterSet = new Set(after.map(String))
 
@@ -147,10 +150,24 @@ function formatArrayDiff(path: string, field: string, before: unknown[], after: 
   const removed = before.filter((item) => !afterSet.has(String(item))).map(String)
 
   const emoji = getChangeEmoji(path)
-  const fieldCode = inlineCode(field, { align: 'left', minWidth: MIN_FIELD_WIDTH })
-  const parts: string[] = [`${emoji} ${fieldCode}`]
-  if (added.length > 0) parts.push(`+ ${added.join(', ')}`)
-  if (removed.length > 0) parts.push(`- ${removed.join(', ')}`)
+  const parts: string[] = [emoji, monoField(label, { align: 'left', minWidth: MIN_FIELD_WIDTH })]
+
+  // * build code diff block
+  const diffLines: string[] = []
+  if (removed.length > 0) {
+    for (const item of removed) {
+      diffLines.push(`- ${item}`)
+    }
+  }
+  if (added.length > 0) {
+    for (const item of added) {
+      diffLines.push(`+ ${item}`)
+    }
+  }
+
+  if (diffLines.length > 0) {
+    parts.push(`\`\`\`diff\n${diffLines.join('\n')}\n\`\`\``)
+  }
 
   return parts.join(' ')
 }
@@ -256,7 +273,7 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
         name: model_slug,
         icon_url: getIconUrl(model_slug),
       },
-      description: items.join('\n\n') + '\n  ',
+      description: items.join('\n\n'),
       footer: { text: `ORCA • ${crawl_id}` },
       timestamp: new Date(parseInt(crawl_id)).toISOString(),
       color: 0x3b82f6,
