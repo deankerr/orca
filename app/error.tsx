@@ -18,7 +18,7 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
 
   return (
     <PageContainer className="flex flex-col items-center justify-center">
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="w-full max-w-3xl">
         <XCircle />
         <AlertTitle>Something went wrong</AlertTitle>
         <AlertDescription>

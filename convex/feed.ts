@@ -1,4 +1,5 @@
 import { stream } from 'convex-helpers/server/stream'
+import { literals } from 'convex-helpers/validators'
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 
@@ -65,24 +66,58 @@ function sortChanges(changes: ChangeDoc[]): ChangeDoc[] {
 
 export const changesByCrawlId = query({
   args: {
+    entityType: v.optional(literals('model', 'endpoint')),
     modelSlug: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { modelSlug, paginationOpts }) => {
-    // * Choose stream based on whether we're filtering by model
-    const crawlIdStream = modelSlug
-      ? stream(ctx.db, schema)
-          .query('or_views_changes')
-          .withIndex('by_model_slug__crawl_id', (q) =>
-            q.eq('model_slug', modelSlug).lt('crawl_id', paginationOpts.cursor ?? 'a'),
-          )
-          .order('desc')
-          .distinct(['crawl_id'])
-      : stream(ctx.db, schema)
-          .query('or_views_changes')
-          .withIndex('by_crawl_id', (q) => q.lt('crawl_id', paginationOpts.cursor ?? 'a'))
-          .order('desc')
-          .distinct(['crawl_id'])
+  handler: async (ctx, { entityType, modelSlug, paginationOpts }) => {
+    const baseStream = stream(ctx.db, schema).query('or_views_changes')
+
+    function byEntityType(entityType: 'model' | 'endpoint') {
+      return baseStream
+        .withIndex('by_entity_type__crawl_id', (q) =>
+          q.eq('entity_type', entityType).lt('crawl_id', paginationOpts.cursor ?? 'a'),
+        )
+        .order('desc')
+        .distinct(['crawl_id'])
+    }
+
+    function byModelSlug(modelSlug: string) {
+      return baseStream
+        .withIndex('by_model_slug__crawl_id', (q) =>
+          q.eq('model_slug', modelSlug).lt('crawl_id', paginationOpts.cursor ?? 'a'),
+        )
+        .order('desc')
+        .distinct(['crawl_id'])
+    }
+
+    function byEntityTypeAndModelSlug(entityType: 'model' | 'endpoint', modelSlug: string) {
+      return baseStream
+        .withIndex('by_entity_type__model_slug__crawl_id', (q) =>
+          q
+            .eq('entity_type', entityType)
+            .eq('model_slug', modelSlug)
+            .lt('crawl_id', paginationOpts.cursor ?? 'a'),
+        )
+        .order('desc')
+        .distinct(['crawl_id'])
+    }
+
+    function all() {
+      return baseStream
+        .withIndex('by_crawl_id', (q) => q.lt('crawl_id', paginationOpts.cursor ?? 'a'))
+        .order('desc')
+        .distinct(['crawl_id'])
+    }
+
+    const crawlIdStream =
+      entityType && modelSlug
+        ? byEntityTypeAndModelSlug(entityType, modelSlug)
+        : entityType
+          ? byEntityType(entityType)
+          : modelSlug
+            ? byModelSlug(modelSlug)
+            : all()
 
     // * Iterate through crawl_ids, fetch and flatten batches
     const results: ChangeDoc[] = []
@@ -94,17 +129,35 @@ export const changesByCrawlId = query({
       const crawl_id = doc.crawl_id
 
       // * Fetch all changes for this crawl_id (filtered by model if needed)
-      const batch = modelSlug
-        ? await ctx.db
-            .query('or_views_changes')
-            .withIndex('by_model_slug__crawl_id', (q) =>
-              q.eq('model_slug', modelSlug).eq('crawl_id', crawl_id),
-            )
-            .collect()
-        : await ctx.db
-            .query('or_views_changes')
-            .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
-            .collect()
+      const batch =
+        entityType && modelSlug
+          ? await ctx.db
+              .query('or_views_changes')
+              .withIndex('by_entity_type__model_slug__crawl_id', (q) =>
+                q
+                  .eq('entity_type', entityType)
+                  .eq('model_slug', modelSlug)
+                  .eq('crawl_id', crawl_id),
+              )
+              .collect()
+          : entityType
+            ? await ctx.db
+                .query('or_views_changes')
+                .withIndex('by_entity_type__crawl_id', (q) =>
+                  q.eq('entity_type', entityType).eq('crawl_id', crawl_id),
+                )
+                .collect()
+            : modelSlug
+              ? await ctx.db
+                  .query('or_views_changes')
+                  .withIndex('by_model_slug__crawl_id', (q) =>
+                    q.eq('model_slug', modelSlug).eq('crawl_id', crawl_id),
+                  )
+                  .collect()
+              : await ctx.db
+                  .query('or_views_changes')
+                  .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
+                  .collect()
 
       const transformed = transformChanges(batch)
       const sorted = sortChanges(transformed)

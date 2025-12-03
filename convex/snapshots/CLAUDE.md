@@ -13,3 +13,36 @@
 - Use the `paginateAndProcess` helper (`../shared.ts`) to walk over many documents in a table sequentially.
 - Decompressed archive bundles can be very large - around ~20MB. A maximum of two decompressed bundles can be handled at once (for comparison).
   - Ensure most work is done in helper functions so that the bundle data is properly garbage collected when it is no longer needed.
+
+## Pure Functions First
+
+Write the core logic as a plain function that takes inputs and returns outputs. Then wrap it.
+
+```typescript
+// Good: pure function, easy to test and reuse
+export function buildDeliveries(args: { changes, subscriptions, crawl_id }): Delivery[] {
+  // all the logic here
+}
+
+// Action is just a thin wrapper
+export const run = internalAction({
+  handler: async (ctx, args) => {
+    const inputs = await ctx.runQuery(...)
+    const deliveries = buildDeliveries(inputs)  // pure function
+    await sendDeliveries(deliveries)
+  },
+})
+```
+
+Not: complex logic embedded in action bodies.
+
+## Module Boundaries by Knowledge
+
+Group code by what it knows about, not what it does.
+
+- If it requires Discord-specific knowledge (embed limits, payload format), it belongs in the Discord module
+- If it's just "send HTTP request", it doesn't need to know what's inside the payload
+
+## YAGNI
+
+Ask: "Do I have evidence this is needed?"

@@ -42,23 +42,43 @@ export function ModelCombobox({
 
   const { data: models, isPending } = useQuery(convexQuery(api.models.list, {}))
 
-  // * Fuzzy filter + rank models by search
+  // * Fuzzy filter + rank models by search, with selected item at top
   const filtered = useMemo(() => {
     if (!models) return undefined
-    if (!search) return models
 
-    return models
-      .map((m) => {
-        // Rank against both slug and name, take the better match
-        const slugRank = rankItem(m.slug, search, { threshold: rankings.CONTAINS })
-        const nameRank = rankItem(m.name, search, { threshold: rankings.CONTAINS })
-        const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
-        return { model: m, rank: bestRank }
-      })
-      .filter((item) => item.rank.passed)
-      .sort((a, b) => compareItems(a.rank, b.rank))
-      .map((item) => item.model)
-  }, [models, search])
+    let result: Doc<'or_views_models'>[]
+
+    if (!search) {
+      result = models
+    } else {
+      result = models
+        .map((m) => {
+          // Rank against both slug and name, take the better match
+          const slugRank = rankItem(m.slug, search, { threshold: rankings.CONTAINS })
+          const nameRank = rankItem(m.name, search, { threshold: rankings.CONTAINS })
+          const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
+          return { model: m, rank: bestRank }
+        })
+        .filter((item) => item.rank.passed)
+        .sort((a, b) => compareItems(a.rank, b.rank))
+        .map((item) => item.model)
+    }
+
+    // Move selected item to top if present
+    if (value) {
+      const selectedIndex = result.findIndex((m) => m.slug === value)
+      if (selectedIndex > 0) {
+        const selectedModel = result[selectedIndex]
+        result = [
+          selectedModel,
+          ...result.slice(0, selectedIndex),
+          ...result.slice(selectedIndex + 1),
+        ]
+      }
+    }
+
+    return result
+  }, [models, search, value])
 
   const selected = models?.find((m) => m.slug === value)
 
@@ -76,7 +96,11 @@ export function ModelCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn('h-11 w-[300px] justify-between font-normal', className)}
+          className={cn(
+            "flex w-fit items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
+            className,
+          )}
+          size="lg"
         >
           {selected ? (
             <EntityBadge
@@ -101,7 +125,7 @@ export function ModelCombobox({
               placeholder="Search models..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="rounded-b-none border-0 focus-visible:ring-1 focus-visible:ring-inset dark:bg-transparent"
+              className="rounded-b-none border-0 dark:bg-transparent"
               autoFocus
             />
           </div>
@@ -137,13 +161,13 @@ function VirtualizedModelList({
   const virtualizer = useVirtualizer({
     count: models.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => 42,
     overscan: 5,
   })
 
   return (
-    <ScrollArea className="h-[300px] p-1" viewportRef={scrollRef}>
-      <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+    <ScrollArea className="h-[300px]" viewportRef={scrollRef}>
+      <div className="relative py-1" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const model = models[virtualRow.index]
           const isSelected = model.slug === selectedSlug
@@ -153,7 +177,7 @@ function VirtualizedModelList({
               key={model._id}
               type="button"
               className={cn(
-                'absolute right-0 left-0 flex cursor-pointer items-center justify-between rounded-xs px-2 text-left hover:bg-accent/70',
+                'absolute right-0 left-0 mx-1 flex cursor-pointer items-center justify-between rounded-xs px-2 text-left hover:bg-accent/70',
               )}
               style={{
                 height: virtualRow.size,

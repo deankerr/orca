@@ -13,7 +13,6 @@ import { ChangeDoc } from '@/convex/feed'
 import { ModelCombobox } from '@/components/shared/or-entity-combobox'
 import { PaginatedLoadButton } from '@/components/shared/paginated-load-button'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -22,18 +21,21 @@ import { cn } from '@/lib/utils'
 
 import { FeatureFlag } from '../dev-utils/feature-flag'
 import { CopyToClipboardButton } from '../shared/copy-to-clipboard-button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Separator } from '../ui/separator'
 import { FeedItem } from './monitor-feed-item'
 
 type FlatItem = { type: 'marker'; crawl_id: string } | { type: 'item'; change: ChangeDoc }
+type EntityType = 'model' | 'endpoint' | ''
 
-function useMonitorFeed(modelSlug: string | undefined) {
+function useMonitorFeed(entityType: EntityType, modelSlug: string) {
   const convex = useConvex()
 
   const query = useInfiniteQuery({
-    queryKey: ['monitor-feed', modelSlug],
+    queryKey: ['monitor-feed', entityType, modelSlug],
     queryFn: async ({ pageParam }) => {
       return convex.query(api.feed.changesByCrawlId, {
+        entityType: entityType || undefined,
         modelSlug: modelSlug || undefined,
         paginationOpts: { numItems: 1, cursor: pageParam },
       })
@@ -84,7 +86,8 @@ function useMonitorFeed(modelSlug: string | undefined) {
 
 export function MonitorFeed() {
   const [modelSlug, setModelSlug] = useState<string>('')
-  const { flatItems, status, loadMore } = useMonitorFeed(modelSlug)
+  const [entityType, setEntityType] = useState<EntityType>('')
+  const { flatItems, status, loadMore } = useMonitorFeed(entityType, modelSlug)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -114,26 +117,33 @@ export function MonitorFeed() {
   return (
     <>
       <div className="mx-auto w-full max-w-7xl px-2 py-6 pt-4 sm:px-6">
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap gap-4">
           <Field className="w-[300px]">
-            <FieldLabel htmlFor="model-filter">Filter</FieldLabel>
+            <FieldLabel>Model</FieldLabel>
             <ModelCombobox
               value={modelSlug}
               onValueChange={setModelSlug}
               className="w-full"
-              placeholder="Select model"
+              placeholder="Select model to filter"
             />
           </Field>
-          <div className="grid h-11 place-content-center">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setModelSlug('')}
-              disabled={!modelSlug}
+
+          <Field className="w-40">
+            <FieldLabel htmlFor="type-filter">Type</FieldLabel>
+            <Select
+              value={entityType ? entityType : 'all'}
+              onValueChange={(value) => setEntityType(value === 'all' ? '' : (value as EntityType))}
             >
-              Clear
-            </Button>
-          </div>
+              <SelectTrigger size="lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="model">Models</SelectItem>
+                <SelectItem value="endpoint">Endpoints</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
       </div>
 
@@ -190,7 +200,12 @@ function TimelineMarker({ crawl_id, className }: { crawl_id: string; className?:
       </Tooltip>
       <div className="h-px flex-1 border-b border-dashed" />
       <FeatureFlag flag="dev">
-        <CopyToClipboardButton size="icon-sm" variant="secondary" value={crawl_id} />
+        <CopyToClipboardButton
+          size="icon-sm"
+          className="-my-4"
+          variant="secondary"
+          value={crawl_id}
+        />
       </FeatureFlag>
     </div>
   )
