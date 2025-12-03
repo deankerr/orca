@@ -119,8 +119,9 @@ export function MonitorFeed() {
       <div className="mx-auto w-full max-w-7xl px-2 py-6 pt-4 sm:px-6">
         <div className="flex flex-wrap gap-4">
           <Field className="w-[300px]">
-            <FieldLabel>Model</FieldLabel>
+            <FieldLabel htmlFor="model-filter">Model</FieldLabel>
             <ModelCombobox
+              id="model-filter"
               value={modelSlug}
               onValueChange={setModelSlug}
               className="w-full"
@@ -134,7 +135,7 @@ export function MonitorFeed() {
               value={entityType ? entityType : 'all'}
               onValueChange={(value) => setEntityType(value === 'all' ? '' : (value as EntityType))}
             >
-              <SelectTrigger size="lg">
+              <SelectTrigger id="type-filter" size="lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
