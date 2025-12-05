@@ -56,7 +56,6 @@
     "discord-api-types": "^0.38.36",
     "fflate": "^0.8.2",
     "json-diff-ts": "^4.8.2",
-    "ldrs": "^1.1.9",
     "lucide-react": "^0.555.0",
     "ms": "^2.1.3",
     "next": "16.0.7",

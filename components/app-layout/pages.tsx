@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-import { LoaderSquare } from '../shared/loader'
+import { Spinner } from '../ui/spinner'
 
 export function PageContainer({ className, ...props }: React.ComponentProps<'main'>) {
   return (
@@ -32,5 +32,5 @@ export function PageDescription({ className, ...props }: React.ComponentProps<'p
 }
 
 export function PageLoading() {
-  return <LoaderSquare className="m-auto" />
+  return <Spinner className="m-auto" />
 }
