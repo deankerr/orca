@@ -51,7 +51,7 @@ export function EntitySheet() {
 
   return (
     <Sheet open={entity !== null} onOpenChange={(open) => !open && close()}>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent className="overflow-y-auto" aria-describedby={undefined}>
         {entity?.type === 'model' && <ModelSheet slug={entity.slug} />}
         {entity?.type === 'provider' && <ProviderSheet slug={entity.slug} />}
       </SheetContent>
