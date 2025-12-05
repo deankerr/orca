@@ -24,7 +24,6 @@ import type * as db_or_views_providers from "../db/or/views/providers.js";
 import type * as db_snapshot_crawl_archives from "../db/snapshot/crawl/archives.js";
 import type * as db_snapshot_crawl_config from "../db/snapshot/crawl/config.js";
 import type * as db_webhook_subscriptions from "../db/webhook/subscriptions.js";
-import type * as dev_feedTree from "../dev/feedTree.js";
 import type * as endpoints from "../endpoints.js";
 import type * as feed from "../feed.js";
 import type * as http from "../http.js";
@@ -84,7 +83,6 @@ declare const fullApi: ApiFromModules<{
   "db/snapshot/crawl/archives": typeof db_snapshot_crawl_archives;
   "db/snapshot/crawl/config": typeof db_snapshot_crawl_config;
   "db/webhook/subscriptions": typeof db_webhook_subscriptions;
-  "dev/feedTree": typeof dev_feedTree;
   endpoints: typeof endpoints;
   feed: typeof feed;
   http: typeof http;
