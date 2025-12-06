@@ -1,19 +1,10 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
-import { getEnv } from '../../../lib/env'
-import { getLogo } from '../../../shared/logos'
 import { truncate } from '../../../shared/utils'
 import type { WebhookChange } from '../inputs'
+import { buildLinks, getColorIconUrl } from './utils'
 
 const MAX_DESCRIPTION_LENGTH = 900
-
-function getIconUrl(model_slug: string): string | undefined {
-  const { colorPath } = getLogo(model_slug)
-  if (!colorPath) return undefined
-
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
-}
 
 function formatModalities(modalities: string[]): string {
   return modalities.join(', ') || 'none'
@@ -22,20 +13,6 @@ function formatModalities(modalities: string[]): string {
 function formatDescription(description: string): string {
   // * double single newlines for proper paragraph spacing in Discord
   return description.replace(/(?<!\n)\n(?!\n)/g, '\n\n')
-}
-
-function buildLinks(model_slug: string, hugging_face_id?: string): string {
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  const links = [
-    `[⚪ ORCA](${baseUrl}/?q=${model_slug})`,
-    `[🔀 OpenRouter](https://openrouter.ai/${model_slug})`,
-  ]
-
-  if (hugging_face_id) {
-    links.push(`[🤗 Hugging Face](https://huggingface.co/${hugging_face_id})`)
-  }
-
-  return links.join(' ・ ')
 }
 
 export function buildModelCreateEmbed(args: {
@@ -49,7 +26,7 @@ export function buildModelCreateEmbed(args: {
     .setColor(0x22c55e) // green for new model
     .setAuthor({
       name: change.model_slug,
-      iconURL: getIconUrl(change.model_slug),
+      iconURL: getColorIconUrl(change.model_slug),
     })
     .setFooter({
       text: `ORCA ${change.crawl_id}`,

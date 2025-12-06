@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
 import { internalAction } from '../../_generated/server'
-import { generateDiscordEmbeds, type DiscordPayload } from './embeds'
+import { generateDiscordEmbeds, type DiscordPayload } from './discord/embeds'
 import type { WebhookChange } from './inputs'
 import { sendDeliveries, type Delivery } from './send'
 

@@ -1,6 +1,6 @@
 import { isResponseError, up } from 'up-fetch'
 
-import type { DiscordPayload } from './embeds'
+import type { DiscordPayload } from './discord/embeds'
 
 export type Delivery = {
   webhookUrl: string

@@ -2,15 +2,14 @@ import * as R from 'remeda'
 
 import { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { getEnv } from '../../lib/env'
-import { getLogo } from '../../shared/logos'
-import { formatPricing } from '../../shared/pricing'
-import { buildModelCreateEmbed } from './discord/modelCreate'
-import type { WebhookChange } from './inputs'
+import { formatPricing } from '../../../shared/pricing'
+import type { WebhookChange } from '../inputs'
+import { buildModelCreateEmbed } from './modelCreate'
+import { buildLinks, getColorIconUrl } from './utils'
 
 // https://discord.com/developers/docs/resources/message#embed-object-embed-structure
 
-/* 
+/*
   improvements:
   - build lines with composition array
   - combine emoji+label function
@@ -21,14 +20,6 @@ export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody
 
 // * Discord limits
 const MAX_EMBEDS_PER_MESSAGE = 10
-
-function getIconUrl(model_slug: string): string | undefined {
-  const { avatarPath } = getLogo(model_slug)
-  if (!avatarPath) return undefined
-
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${avatarPath}&w=32&q=75`
-}
 
 // * Value formatting
 
@@ -287,12 +278,16 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
 
     if (items.length === 0) continue
 
+    // * get hugging_face_id from first model change if available
+    const hugging_face_id = modelChanges[0]?.model?.hugging_face_id
+    const links = buildLinks(model_slug, hugging_face_id)
+
     const embed: APIEmbed = {
       author: {
         name: model_slug,
-        icon_url: getIconUrl(model_slug),
+        icon_url: getColorIconUrl(model_slug),
       },
-      description: items.join('\n\n'),
+      description: `${items.join('\n\n')}\n\n${links}`,
       footer: { text: `ORCA • ${crawl_id}` },
       timestamp: new Date(parseInt(crawl_id)).toISOString(),
       color: 0x3b82f6,
