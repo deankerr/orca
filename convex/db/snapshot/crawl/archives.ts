@@ -2,8 +2,6 @@ import { literals, nullable } from 'convex-helpers/validators'
 import { defineTable, paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 
-import { internal } from '../../../_generated/api'
-import type { Id } from '../../../_generated/dataModel'
 import { internalMutation, internalQuery, query } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
 
@@ -64,30 +62,6 @@ export const list = internalQuery({
       .withIndex('by_crawl_id', (q) => q.gte('crawl_id', args.fromCrawlId ?? ''))
       .order(args.order ?? 'asc')
       .paginate(args.paginationOpts)
-  },
-})
-
-export const deleteByCrawlId = internalMutation({
-  args: {
-    crawl_ids: v.array(v.string()),
-  },
-  handler: async (ctx, { crawl_ids }) => {
-    const storageIds: Id<'_storage'>[] = []
-
-    for (const crawl_id of crawl_ids) {
-      const crawlArchive = await ctx.db
-        .query('snapshot_crawl_archives')
-        .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
-        .first()
-      if (crawlArchive) {
-        await ctx.db.delete(crawlArchive._id)
-        storageIds.push(crawlArchive.storage_id)
-      }
-    }
-
-    await ctx.scheduler.runAfter(0, internal.storage.deleteFiles, {
-      storageIds,
-    })
   },
 })
 

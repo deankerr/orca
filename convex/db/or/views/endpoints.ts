@@ -1,7 +1,7 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-import { query, type MutationCtx, type QueryCtx } from '../../../_generated/server'
+import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
 
 export const table = defineTable({
@@ -181,10 +181,3 @@ export async function replace(
 ) {
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
-
-// NOTE: deprecated
-export const all = query({
-  handler: async (ctx) => {
-    return await ctx.db.query(vTable.name).order('desc').collect()
-  },
-})
