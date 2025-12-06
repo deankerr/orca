@@ -1,14 +1,7 @@
 import { paginationOptsValidator, PaginationResult } from 'convex/server'
 
-import type { Doc, TableNames } from './_generated/dataModel'
-import type { ActionCtx, MutationCtx } from './_generated/server'
-
-export function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Abnormal Error'
-}
+import type { Doc, TableNames } from '../_generated/dataModel'
+import type { ActionCtx, MutationCtx } from '../_generated/server'
 
 /**
  * Utility function to paginate through a table and process each page of results.

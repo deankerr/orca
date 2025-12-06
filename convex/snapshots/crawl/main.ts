@@ -7,7 +7,7 @@ import { up } from 'up-fetch'
 
 import { internal } from '../../_generated/api'
 import { internalAction, type ActionCtx } from '../../_generated/server'
-import { getErrorMessage } from '../../shared'
+import { getErrorMessage } from '../../shared/utils'
 
 export const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',

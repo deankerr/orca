@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
 import { internalAction, type ActionCtx } from '../../_generated/server'
-import { paginateAndProcess } from '../../shared'
+import { paginateAndProcess } from '../../lib/paginateAndProcess'
 import { materializeModelEndpoints } from '../materialize/main'
 import { getArchiveBundle } from '../shared/bundle'
 import { computeMaterializedChanges } from './process'

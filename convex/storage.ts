@@ -2,7 +2,7 @@ import { asyncMap } from 'convex-helpers'
 import { v } from 'convex/values'
 
 import { internalAction } from './_generated/server'
-import { getErrorMessage } from './shared'
+import { getErrorMessage } from './shared/utils'
 
 export const deleteFiles = internalAction({
   args: {

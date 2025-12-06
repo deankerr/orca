@@ -1,4 +1,4 @@
-import { OrcaEndpoint } from '../transforms/endpoint'
+import { type OrcaEndpoint } from '../transforms/endpoint'
 
 // * Pricing Formatter
 // Transforms raw pricing values (dollar per unit) into display format.
