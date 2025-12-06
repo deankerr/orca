@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import { getIconUrl } from '../../shared/icons'
-
 export const ModelTransformSchema = z
   .object({
     slug: z.string(),
@@ -51,7 +49,7 @@ export const ModelTransformSchema = z
       variant: raw.endpoint?.variant ?? 'standard',
 
       name: raw.short_name,
-      icon_url: getIconUrl(raw.slug) ?? '',
+      icon_url: '', // deprecated
 
       author_slug: raw.author,
       author_name,

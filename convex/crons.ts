@@ -8,7 +8,7 @@ const crons = cronJobs()
 export const snapshotCron = internalAction({
   args: {},
   handler: async (ctx) => {
-    const cfg = await ctx.runQuery(internal.db.snapshot.crawl.config.getFirst)
+    const cfg = await ctx.runQuery(internal.config.getFirst)
     if (!cfg?.enabled) return
 
     const h = new Date().getUTCHours()

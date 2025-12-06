@@ -1,12 +1,46 @@
+import { nullable } from 'convex-helpers/validators'
 import { ConvexHttpClient } from 'convex/browser'
 import { makeFunctionReference, WithoutSystemFields } from 'convex/server'
+import { v } from 'convex/values'
 
 import { up } from 'up-fetch'
 
 import { internal } from '../_generated/api'
 import { Doc } from '../_generated/dataModel'
-import { httpAction, internalAction } from '../_generated/server'
+import { httpAction, internalAction, internalQuery, query } from '../_generated/server'
+import { db } from '../db'
 import { getEnv } from '../lib/env'
+
+export const getLatestCrawlId = internalQuery({
+  returns: nullable(v.string()),
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('snapshot_crawl_archives')
+      .withIndex('by_crawl_id')
+      .order('desc')
+      .first()
+      .then((r) => r?.crawl_id ?? null)
+  },
+})
+
+export const getByCrawlId = internalQuery({
+  args: {
+    crawl_id: v.string(),
+  },
+  returns: nullable(db.snapshot.crawl.archives.vTable.doc),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('snapshot_crawl_archives')
+      .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
+      .first()
+  },
+})
+
+export const collect = query({
+  handler: async (ctx) => {
+    return await ctx.db.query('snapshot_crawl_archives').collect()
+  },
+})
 
 // * Client
 type ServerArchive = WithoutSystemFields<Doc<'snapshot_crawl_archives'>> & {
@@ -40,13 +74,13 @@ export const syncFromSource = internalAction({
 
     // Check what we've already synced
     const latestCrawlId: string | null = await ctx.runQuery(
-      internal.db.snapshot.crawl.archives.getLatestCrawlId,
+      internal.admin.bundleSync.getLatestCrawlId,
     )
     console.log('[bundleSync]', { latestCrawlId: latestCrawlId ?? null })
 
     // Fetch all archives from source
     const archives = await convexClient.query(
-      makeFunctionReference<'query', any, ServerArchive[]>('db/snapshot/crawl/archives:collect'),
+      makeFunctionReference<'query', any, ServerArchive[]>('admin/bundleSync:collect'),
     )
     console.log('[bundleSync]', { totalArchivesFromSource: archives.length })
 
@@ -88,7 +122,7 @@ export const syncFromSource = internalAction({
       }
 
       // Insert the archive record
-      await ctx.runMutation(internal.db.snapshot.crawl.archives.insert, {
+      await ctx.runMutation(internal.snapshots.crawl.outputs.insert, {
         crawl_id: archive.crawl_id,
         storage_id,
         data: modifiedData,
@@ -128,7 +162,7 @@ export const bundleSyncHttpHandler = httpAction(async (ctx, req) => {
       return new Response('Missing crawl_id parameter', { status: 400 })
     }
 
-    const archive = await ctx.runQuery(internal.db.snapshot.crawl.archives.getByCrawlId, {
+    const archive = await ctx.runQuery(internal.admin.bundleSync.getByCrawlId, {
       crawl_id: crawlId,
     })
 

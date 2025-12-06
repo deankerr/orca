@@ -53,7 +53,7 @@ async function processArchiveDay(ctx: ActionCtx, archiveDay: Doc<'snapshot_crawl
 
     if (stats) {
       // * upsert stats
-      const upsertCounts = await ctx.runMutation(internal.db.or.stats.upsert, { stats })
+      const upsertCounts = await ctx.runMutation(internal.snapshots.stats.outputs.upsert, { stats })
       const day_timestamp = getDayTimestamp(bundle.crawl_id)
       console.log('[snapshots:stats:processArchiveDay]', {
         crawl_id: bundle.crawl_id,
@@ -121,31 +121,27 @@ export function processStats(bundle: CrawlArchiveBundle) {
 
 export const backfill = internalAction({
   handler: async (ctx) => {
-    const latestCrawlId = await ctx.runQuery(internal.db.snapshot.crawl.archives.getLatestCrawlId)
+    const latestCrawlId = await ctx.runQuery(internal.snapshots.stats.inputs.getLatestCrawlId)
 
     let pending: Doc<'snapshot_crawl_archives'>[] = []
-
     await paginateAndProcess(ctx, {
       queryFnArgs: { fromCrawlId: latestCrawlId ?? undefined },
       queryFn: async (ctx, args) =>
-        await ctx.runQuery(internal.db.snapshot.crawl.archives.list, args),
+        await ctx.runQuery(internal.snapshots.stats.inputs.listArchives, args),
       processFn: async (archives) => {
         // * group bundles by day, earliest to latest including any from previous iteration
         const sorted = [...pending, ...archives].sort((a, b) =>
           a.crawl_id.localeCompare(b.crawl_id),
         )
         const byDay = [...Map.groupBy(sorted, (a) => getDayTimestamp(a.crawl_id)).values()]
-
         // * store latest day for next iteration
         pending = byDay.pop() ?? []
-
         for (const archiveDay of byDay) {
           await processArchiveDay(ctx, archiveDay)
         }
       },
       batchSize: 100,
     })
-
     // * process any remaining pending archives after pagination completes
     if (pending.length > 0) {
       await processArchiveDay(ctx, pending)

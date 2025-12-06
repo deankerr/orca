@@ -1,8 +1,6 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { getIconUrl } from '../../shared/icons'
-
 export const ProviderTransformSchema = z
   .object({
     slug: z.string(),
@@ -28,7 +26,7 @@ export const ProviderTransformSchema = z
   .transform((raw) => ({
     slug: raw.slug,
     name: raw.displayName,
-    icon_url: getIconUrl(raw.slug) ?? (raw.icon.url.startsWith('http') ? raw.icon.url : ''),
+    icon_url: '', // deprecated
 
     headquarters: raw.headquarters,
     datacenters: raw.datacenters,

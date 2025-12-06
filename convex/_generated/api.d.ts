@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as admin_archives from "../admin/archives.js";
 import type * as admin_bundleSync from "../admin/bundleSync.js";
 import type * as admin_postSyncMaintenance from "../admin/postSyncMaintenance.js";
 import type * as analysis_changes from "../analysis/changes.js";
 import type * as analysis_endpoints from "../analysis/endpoints.js";
 import type * as analysis_stats from "../analysis/stats.js";
 import type * as changes from "../changes.js";
+import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as db_index from "../db/index.js";
 import type * as db_or_sources from "../db/or/sources.js";
@@ -41,17 +43,20 @@ import type * as shared_logos from "../shared/logos.js";
 import type * as shared_pricing from "../shared/pricing.js";
 import type * as shared_utils from "../shared/utils.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
+import type * as snapshots_crawl_outputs from "../snapshots/crawl/outputs.js";
 import type * as snapshots_materialize_main from "../snapshots/materialize/main.js";
 import type * as snapshots_materialize_output from "../snapshots/materialize/output.js";
 import type * as snapshots_materialize_validators_endpoints from "../snapshots/materialize/validators/endpoints.js";
 import type * as snapshots_materialize_validators_models from "../snapshots/materialize/validators/models.js";
 import type * as snapshots_materialize_validators_providers from "../snapshots/materialize/validators/providers.js";
+import type * as snapshots_materializedChanges_inputs from "../snapshots/materializedChanges/inputs.js";
 import type * as snapshots_materializedChanges_main from "../snapshots/materializedChanges/main.js";
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
-import type * as snapshots_shared_icons from "../snapshots/shared/icons.js";
+import type * as snapshots_stats_inputs from "../snapshots/stats/inputs.js";
 import type * as snapshots_stats_main from "../snapshots/stats/main.js";
+import type * as snapshots_stats_outputs from "../snapshots/stats/outputs.js";
 import type * as snapshots_webhooks_dev from "../snapshots/webhooks/dev.js";
 import type * as snapshots_webhooks_discord_embeds from "../snapshots/webhooks/discord/embeds.js";
 import type * as snapshots_webhooks_discord_modelCreate from "../snapshots/webhooks/discord/modelCreate.js";
@@ -71,12 +76,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/archives": typeof admin_archives;
   "admin/bundleSync": typeof admin_bundleSync;
   "admin/postSyncMaintenance": typeof admin_postSyncMaintenance;
   "analysis/changes": typeof analysis_changes;
   "analysis/endpoints": typeof analysis_endpoints;
   "analysis/stats": typeof analysis_stats;
   changes: typeof changes;
+  config: typeof config;
   crons: typeof crons;
   "db/index": typeof db_index;
   "db/or/sources": typeof db_or_sources;
@@ -104,17 +111,20 @@ declare const fullApi: ApiFromModules<{
   "shared/pricing": typeof shared_pricing;
   "shared/utils": typeof shared_utils;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
+  "snapshots/crawl/outputs": typeof snapshots_crawl_outputs;
   "snapshots/materialize/main": typeof snapshots_materialize_main;
   "snapshots/materialize/output": typeof snapshots_materialize_output;
   "snapshots/materialize/validators/endpoints": typeof snapshots_materialize_validators_endpoints;
   "snapshots/materialize/validators/models": typeof snapshots_materialize_validators_models;
   "snapshots/materialize/validators/providers": typeof snapshots_materialize_validators_providers;
+  "snapshots/materializedChanges/inputs": typeof snapshots_materializedChanges_inputs;
   "snapshots/materializedChanges/main": typeof snapshots_materializedChanges_main;
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
-  "snapshots/shared/icons": typeof snapshots_shared_icons;
+  "snapshots/stats/inputs": typeof snapshots_stats_inputs;
   "snapshots/stats/main": typeof snapshots_stats_main;
+  "snapshots/stats/outputs": typeof snapshots_stats_outputs;
   "snapshots/webhooks/dev": typeof snapshots_webhooks_dev;
   "snapshots/webhooks/discord/embeds": typeof snapshots_webhooks_discord_embeds;
   "snapshots/webhooks/discord/modelCreate": typeof snapshots_webhooks_discord_modelCreate;

@@ -26,7 +26,7 @@ import { getConvexHttpUrl } from '@/lib/utils'
 
 export default function Page() {
   const archives = usePaginatedQuery(
-    api.db.snapshot.crawl.archives.feed,
+    api.admin.archives.feed,
     {},
     { initialNumItems: 20 },
   )

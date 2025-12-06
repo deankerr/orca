@@ -1,14 +1,11 @@
-import { asyncMap } from 'convex-helpers'
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
-import * as R from 'remeda'
 
 import { TableAggregate } from '@convex-dev/aggregate'
-import { diff } from 'json-diff-ts'
 
 import { components } from '../../_generated/api'
 import { DataModel, Doc } from '../../_generated/dataModel'
-import { internalMutation, MutationCtx } from '../../_generated/server'
+import { MutationCtx } from '../../_generated/server'
 import { createTableVHelper } from '../../lib/vTable'
 
 // Daily stats for each model
@@ -52,13 +49,16 @@ const statsByTimeAggregate = new TableAggregate<{
   sortKey: (doc) => doc.day_timestamp,
 })
 
-async function insertDoc(ctx: MutationCtx, { fields }: { fields: typeof vTable.validator.type }) {
+export async function insertDoc(
+  ctx: MutationCtx,
+  { fields }: { fields: typeof vTable.validator.type },
+) {
   const id = await ctx.db.insert('or_stats', fields)
   const doc = await ctx.db.get(id)
   await statsByTimeAggregate.insert(ctx, doc!)
 }
 
-async function replaceDoc(
+export async function replaceDoc(
   ctx: MutationCtx,
   { oldDoc, fields }: { oldDoc: Doc<'or_stats'>; fields: typeof vTable.validator.type },
 ) {
@@ -66,32 +66,3 @@ async function replaceDoc(
   const newDoc = await ctx.db.get(oldDoc._id)
   await statsByTimeAggregate.replace(ctx, oldDoc, newDoc!)
 }
-
-export const upsert = internalMutation({
-  args: {
-    stats: v.array(vTable.validator),
-  },
-  handler: async (ctx, args) => {
-    const results = await asyncMap(args.stats, async (fields) => {
-      const oldDoc = await ctx.db
-        .query(vTable.name)
-        .withIndex('by_slug__day_timestamp', (q) =>
-          q.eq('slug', fields.slug).eq('day_timestamp', fields.day_timestamp),
-        )
-        .first()
-
-      if (!oldDoc) {
-        await insertDoc(ctx, { fields })
-        return 'insert'
-      } else {
-        const diffResults = diff(oldDoc, fields, { keysToSkip: ['_id', '_creationTime'] })
-        if (!diffResults.length) return 'stable'
-
-        await replaceDoc(ctx, { oldDoc, fields })
-        return 'replace'
-      }
-    })
-
-    return R.countBy(results, (r) => r)
-  },
-})

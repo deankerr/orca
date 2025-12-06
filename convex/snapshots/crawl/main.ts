@@ -275,7 +275,7 @@ export async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundl
     analytics: parsed.data.analytics ? 1 : 0,
   }
 
-  await ctx.runMutation(internal.db.snapshot.crawl.archives.insert, {
+  await ctx.runMutation(internal.snapshots.crawl.outputs.insert, {
     crawl_id: parsed.crawl_id,
     storage_id,
     data: {
