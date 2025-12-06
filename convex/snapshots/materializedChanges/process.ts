@@ -32,6 +32,9 @@ const DIFF_OPTIONS: DiffOptions = {
     'model.author_slug',
     'model.author_name',
     'model.or_added_at',
+    'model.input_modalities',
+    'model.output_modalities',
+    'model.reasoning',
   ],
   embeddedObjKeys: {
     // models
@@ -40,8 +43,6 @@ const DIFF_OPTIONS: DiffOptions = {
 
     // endpoints
     supported_parameters: '$value',
-    'model.input_modalities': '$value',
-    'model.output_modalities': '$value',
 
     // providers
     datacenters: '$value',
