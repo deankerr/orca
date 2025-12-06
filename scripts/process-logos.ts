@@ -1,10 +1,60 @@
+import { copyFile, mkdir, readdir } from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
+import {
+  COLOR_OUTPUT_DIR,
+  LOBEHUB_ICONS,
+  LOBEHUB_STATIC_PNG,
+  SOURCES_OTHER_DIR,
+} from './logos/config'
 import { processLobehubIcons } from './logos/lobehub'
 import { processOpenRouterIcons } from './logos/openrouter'
 import { processOtherIcons } from './logos/other'
+import { fileExists } from './logos/utils'
 
 const MANIFEST_FILE = 'convex/shared/logos-manifest.json'
+
+/**
+ * Process color icons for webhooks (simpler - just copy color variants)
+ */
+async function processColorIcons() {
+  console.log('\n🎨 Processing color icons for webhooks...')
+
+  await mkdir(COLOR_OUTPUT_DIR, { recursive: true })
+
+  let copied = 0
+
+  // * Process lobehub icons - prefer color variant, fallback to mono
+  const dirs = await readdir(LOBEHUB_ICONS, { withFileTypes: true })
+  const iconDirs = dirs.filter(
+    (d) => d.isDirectory() && !['components', 'features', 'hooks', 'types'].includes(d.name),
+  )
+
+  for (const dir of iconDirs) {
+    const slug = dir.name.toLowerCase()
+    const colorPath = join(LOBEHUB_STATIC_PNG, `${slug}-color.png`)
+    const monoPath = join(LOBEHUB_STATIC_PNG, `${slug}.png`)
+    const outputPath = join(COLOR_OUTPUT_DIR, `${slug}.png`)
+
+    if (await fileExists(colorPath)) {
+      await copyFile(colorPath, outputPath)
+      copied++
+    } else if (await fileExists(monoPath)) {
+      await copyFile(monoPath, outputPath)
+      copied++
+    }
+  }
+
+  // * Copy other sources directly (already color versions)
+  const otherFiles = await readdir(SOURCES_OTHER_DIR)
+  for (const file of otherFiles.filter((f) => f.endsWith('.png'))) {
+    await copyFile(join(SOURCES_OTHER_DIR, file), join(COLOR_OUTPUT_DIR, file))
+    copied++
+  }
+
+  console.log(`   Copied ${copied} color icons to ${COLOR_OUTPUT_DIR}`)
+}
 
 /**
  * Process all logos from all sources and generate unified manifest
@@ -20,6 +70,9 @@ async function processLogos() {
   // * Process OpenRouter icons and merge with all styles
   const openRouterStyles = await processOpenRouterIcons(new Set(Object.keys(allStylesSoFar)))
   const allStyles = { ...allStylesSoFar, ...openRouterStyles }
+
+  // * Process color icons for webhooks
+  await processColorIcons()
 
   // * Build and save unified manifest
   const manifest = {

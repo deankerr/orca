@@ -96,6 +96,12 @@
       "background": "",
       "scale": 1
     },
+    "amazonnova": {
+      "slug": "amazonnova",
+      "title": "Amazonnova",
+      "background": "",
+      "scale": 1
+    },
     "antgroup": {
       "slug": "antgroup",
       "title": "AntGroup",
@@ -117,6 +123,12 @@
     "arcee": {
       "slug": "arcee",
       "title": "Arcee",
+      "background": "",
+      "scale": 1
+    },
+    "arceeai": {
+      "slug": "arceeai",
+      "title": "Arceeai",
       "background": "",
       "scale": 1
     },
@@ -239,6 +251,12 @@
       "title": "Bing",
       "background": "linear-gradient(130deg, #2870EA 20%, #1B4AEF 77.5%)",
       "scale": 0.7
+    },
+    "blackforestlabs": {
+      "slug": "blackforestlabs",
+      "title": "Blackforestlabs",
+      "background": "",
+      "scale": 1
     },
     "burncloud": {
       "slug": "burncloud",
@@ -504,12 +522,6 @@
       "background": "#1f40ed",
       "scale": 0.6
     },
-    "fakeprovider": {
-      "slug": "fakeprovider",
-      "title": "Fakeprovider",
-      "background": "",
-      "scale": 1
-    },
     "fal": {
       "slug": "fal",
       "title": "Fal",
@@ -749,12 +761,6 @@
       "title": "Inference",
       "background": "#000",
       "scale": 0.6
-    },
-    "inferencenet": {
-      "slug": "inferencenet",
-      "title": "Inferencenet",
-      "background": "",
-      "scale": 1
     },
     "infermatic": {
       "slug": "infermatic",
@@ -1266,6 +1272,12 @@
       "background": "",
       "scale": 1
     },
+    "relace": {
+      "slug": "relace",
+      "title": "Relace",
+      "background": "",
+      "scale": 1
+    },
     "replicate": {
       "slug": "replicate",
       "title": "Replicate",
@@ -1379,6 +1391,12 @@
       "title": "Straico",
       "background": "#464bba",
       "scale": 0.6
+    },
+    "streamlake": {
+      "slug": "streamlake",
+      "title": "Streamlake",
+      "background": "",
+      "scale": 1
     },
     "submodel": {
       "slug": "submodel",

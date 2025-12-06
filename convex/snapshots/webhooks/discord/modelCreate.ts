@@ -8,11 +8,11 @@ import type { WebhookChange } from '../inputs'
 const MAX_DESCRIPTION_LENGTH = 900
 
 function getIconUrl(model_slug: string): string | undefined {
-  const logo = getLogo(model_slug)
-  if (!logo.path) return undefined
+  const { colorPath } = getLogo(model_slug)
+  if (!colorPath) return undefined
 
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${logo.path}&w=32&q=75`
+  return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
 }
 
 function formatModalities(modalities: string[]): string {
@@ -58,7 +58,7 @@ export function buildModelCreateEmbed(args: {
 
   // * title with model name
   if (model?.name) {
-    embed.setTitle(model.name)
+    embed.setTitle('🆕 ' + model.name)
   }
 
   // * description from or_sources + links
@@ -116,7 +116,7 @@ export function buildModelCreateEmbed(args: {
 
   if (model?.warning_message) {
     fields.push({
-      name: 'warning',
+      name: 'warning_message',
       value: model.warning_message,
       inline: false,
     })
@@ -124,7 +124,7 @@ export function buildModelCreateEmbed(args: {
 
   if (model?.promotion_message) {
     fields.push({
-      name: 'promotion',
+      name: 'promotion_message',
       value: model.promotion_message,
       inline: false,
     })

@@ -1,4 +1,5 @@
 export const OUTPUT_DIR = 'public/logos/web'
+export const COLOR_OUTPUT_DIR = 'public/logos/color'
 export const SOURCES_DIR = 'scripts/logos/sources'
 
 export const SOURCES_LOBEHUB_DIR = `${SOURCES_DIR}/lobehub-icons`

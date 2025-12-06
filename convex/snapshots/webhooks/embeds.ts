@@ -23,11 +23,11 @@ export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody
 const MAX_EMBEDS_PER_MESSAGE = 10
 
 function getIconUrl(model_slug: string): string | undefined {
-  const logo = getLogo(model_slug)
-  if (!logo.path) return undefined
+  const { avatarPath } = getLogo(model_slug)
+  if (!avatarPath) return undefined
 
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${logo.path}&w=32&q=75`
+  return `${baseUrl}/_next/image?url=${avatarPath}&w=32&q=75`
 }
 
 // * Value formatting

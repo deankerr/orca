@@ -13,7 +13,7 @@ export function EntityAvatar({
   slug: string
   fallbackText?: string
 } & React.ComponentProps<'span'>) {
-  const { path, style } = getLogo(slug)
+  const { avatarPath, style } = getLogo(slug)
 
   return (
     <span
@@ -24,9 +24,9 @@ export function EntityAvatar({
       style={{ background: style?.background }}
       {...props}
     >
-      {path ? (
+      {avatarPath ? (
         <Image
-          src={path}
+          src={avatarPath}
           alt=""
           fill
           sizes="40px"

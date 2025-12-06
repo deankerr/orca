@@ -7,7 +7,8 @@ export interface LogoStyle {
   scale: number
 }
 
-const LOGOS_DIR = '/logos/web' as const
+const AVATAR_LOGOS_DIR = '/logos/web' as const
+const COLOR_LOGOS_DIR = '/logos/color' as const
 
 // Hardcoded transforms for special cases and vendor-specific naming
 const TRANSFORMS: Array<[string, string]> = [
@@ -47,10 +48,15 @@ function resolveLogo(slug: string): LogoStyle | undefined {
 }
 
 /**
- * Get logo URL and style data for a given slug
+ * Get logo URLs and style data for a given slug
+ *
+ * Returns two paths:
+ * - avatarPath: mono/tinted icons for use with CSS background styling
+ * - colorPath: standalone color icons for external use (webhooks, etc.)
  */
 export function getLogo(slug: string) {
   const style = resolveLogo(slug)
-  const path = style ? `${LOGOS_DIR}/${style.slug}.png` : undefined
-  return { path, style }
+  const avatarPath = style ? `${AVATAR_LOGOS_DIR}/${style.slug}.png` : undefined
+  const colorPath = style ? `${COLOR_LOGOS_DIR}/${style.slug}.png` : undefined
+  return { avatarPath, colorPath, style }
 }
