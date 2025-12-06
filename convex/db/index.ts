@@ -1,3 +1,4 @@
+import * as or_sources from './or/sources'
 import * as or_stats from './or/stats'
 import * as or_views_changes from './or/views/changes'
 import * as or_views_endpoints from './or/views/endpoints'
@@ -9,6 +10,7 @@ import * as webhook_subscriptions from './webhook/subscriptions'
 
 export const db = {
   or: {
+    sources: or_sources,
     stats: or_stats,
     views: {
       changes: or_views_changes,

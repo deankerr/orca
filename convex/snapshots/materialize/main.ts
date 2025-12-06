@@ -17,7 +17,7 @@ export const run = internalAction({
 
     console.log(`[materialize]`, { crawl_id: bundle.crawl_id })
 
-    const { models, endpoints, providers } = materializeModelEndpoints(bundle)
+    const { models, endpoints, providers, sources } = materializeModelEndpoints(bundle)
 
     if (endpoints.length === 0) {
       console.warn(`[materialize] abort: no endpoints found`)
@@ -28,6 +28,7 @@ export const run = internalAction({
       models,
       endpoints,
       providers,
+      sources,
       crawl_id: bundle.crawl_id,
     })
 
@@ -51,6 +52,12 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
     string,
     Omit<Infer<typeof db.or.views.providers.vTable.validator>, 'updated_at'>
   >()
+
+  // * sources - raw API artifacts keyed by entity key
+  const modelSourcesMap = new Map<string, Record<string, unknown>>()
+  const endpointSourcesMap = new Map<string, Record<string, unknown>>()
+  const providerSourcesMap = new Map<string, Record<string, unknown>>()
+
   const issues: string[] = []
 
   for (const raw of rawEndpoints) {
@@ -65,6 +72,20 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
     modelsMap.set(model.slug, model)
     endpointsMap.set(endpoint.uuid, endpoint)
     providersMap.set(provider.slug, provider)
+
+    // * collect raw sources - use model_variant_slug as key (matches transformed model.slug)
+    const rawRecord = raw as Record<string, unknown>
+    modelSourcesMap.set(model.slug, rawRecord.model as Record<string, unknown>)
+    endpointSourcesMap.set(endpoint.uuid, rawRecord)
+    // provider sources come from bundle.data.providers, collected separately
+  }
+
+  // * collect provider sources from bundle
+  for (const rawProvider of bundle.data.providers) {
+    const slug = (rawProvider as Record<string, unknown>).slug as string
+    if (slug && providersMap.has(slug)) {
+      providerSourcesMap.set(slug, rawProvider as Record<string, unknown>)
+    }
   }
 
   if (issues.length) {
@@ -81,6 +102,11 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
     models: Array.from(modelsMap.values()),
     endpoints: Array.from(endpointsMap.values()),
     providers: Array.from(providersMap.values()),
+    sources: {
+      models: Array.from(modelSourcesMap.entries()).map(([key, data]) => ({ key, data })),
+      endpoints: Array.from(endpointSourcesMap.entries()).map(([key, data]) => ({ key, data })),
+      providers: Array.from(providerSourcesMap.entries()).map(([key, data]) => ({ key, data })),
+    },
     issues,
   }
 }

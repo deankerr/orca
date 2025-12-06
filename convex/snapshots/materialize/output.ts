@@ -10,6 +10,11 @@ const vUpsertModel = db.or.views.models.vTable.validator.omit('updated_at')
 const vUpsertEndpoint = db.or.views.endpoints.vTable.validator.omit('updated_at')
 const vUpsertProvider = db.or.views.providers.vTable.validator.omit('updated_at')
 
+const vSourceItem = v.object({
+  key: v.string(),
+  data: v.record(v.string(), v.any()),
+})
+
 function isEqual(from: Record<string, unknown>, to: Record<string, unknown>) {
   const changes = diff(from, to, {
     keysToSkip: ['_id', '_creationTime', 'updated_at'],
@@ -22,6 +27,11 @@ export const upsert = internalMutation({
     models: v.array(vUpsertModel),
     endpoints: v.array(vUpsertEndpoint),
     providers: v.array(vUpsertProvider),
+    sources: v.object({
+      models: v.array(vSourceItem),
+      endpoints: v.array(vSourceItem),
+      providers: v.array(vSourceItem),
+    }),
     crawl_id: v.string(),
   },
   handler: async (ctx, args) => {
@@ -30,6 +40,7 @@ export const upsert = internalMutation({
       models: { stable: 0, update: 0, insert: 0, unavailable: 0 },
       endpoints: { stable: 0, update: 0, insert: 0, unavailable: 0 },
       providers: { stable: 0, update: 0, insert: 0, unavailable: 0 },
+      sources: { stable: 0, update: 0, insert: 0 },
     }
 
     // * models
@@ -140,11 +151,49 @@ export const upsert = internalMutation({
       }
     }
 
+    // * sources - upsert raw API artifacts
+    const currentSources = await db.or.sources.collect(ctx)
+    const currentSourcesMap = new Map(
+      currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
+    )
+
+    const allSourceItems = [
+      ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
+      ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
+      ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
+    ]
+
+    for (const source of allSourceItems) {
+      const compositeKey = `${source.entity_type}:${source.key}`
+      const currentSource = currentSourcesMap.get(compositeKey)
+
+      if (currentSource) {
+        if (isEqual(currentSource.data, source.data)) {
+          counters.sources.stable++
+        } else {
+          await db.or.sources.replace(ctx, currentSource._id, {
+            entity_type: source.entity_type,
+            entity_key: source.key,
+            data: source.data,
+          })
+          counters.sources.update++
+        }
+      } else {
+        await db.or.sources.insert(ctx, {
+          entity_type: source.entity_type,
+          entity_key: source.key,
+          data: source.data,
+        })
+        counters.sources.insert++
+      }
+    }
+
     // * log final counts
     console.log(`[materialize:counts]`, {
       models: counters.models,
       endpoints: counters.endpoints,
       providers: counters.providers,
+      sources: counters.sources,
     })
   },
 })
