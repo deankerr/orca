@@ -42,3 +42,18 @@ export async function replace(
 ) {
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
+
+export async function getModelDescription(ctx: QueryCtx, modelSlug: string) {
+  const model = await ctx.db
+    .query(vTable.name)
+    .withIndex('by_entity', (q) => q.eq('entity_type', 'model').eq('entity_key', modelSlug))
+    .unique()
+  if (!model) {
+    return null
+  }
+  const description = model.data?.description
+  if (!description || typeof description !== 'string') {
+    return null
+  }
+  return description
+}

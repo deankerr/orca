@@ -6,7 +6,7 @@ import { up } from 'up-fetch'
 import { internal } from '../_generated/api'
 import { Doc } from '../_generated/dataModel'
 import { httpAction, internalAction } from '../_generated/server'
-import { getEnv } from '../lib/utils'
+import { getEnv } from '../lib/env'
 
 // * Client
 type ServerArchive = WithoutSystemFields<Doc<'snapshot_crawl_archives'>> & {

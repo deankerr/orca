@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
 import { internalAction } from '../../_generated/server'
-import { getEnv } from '../../lib/utils'
+import { getEnv } from '../../lib/env'
 import { buildDeliveries, type Subscription } from './main'
 import { sendDeliveries } from './send'
 

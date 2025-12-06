@@ -15,7 +15,7 @@ export const table = defineTable({
     variant: v.string(), // important info, e.g. `standard`, `free`
 
     name: v.string(), // display
-    icon_url: v.string(), // display
+    icon_url: v.string(), // deprecated
 
     author_slug: v.string(), // secondary index
     author_name: v.string(), // display
@@ -35,7 +35,7 @@ export const table = defineTable({
     tag_slug: v.string(), // situationally important info, e.g. `google-vertex/europe`, `deepinfra/fp4`, `anthropic`
 
     name: v.string(), // display
-    icon_url: v.string(), // display
+    icon_url: v.string(), // deprecated
 
     model_id: v.string(), // info
     region: v.optional(v.string()),

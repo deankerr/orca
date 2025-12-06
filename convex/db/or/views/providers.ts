@@ -8,7 +8,7 @@ export const table = defineTable({
   slug: v.string(),
 
   name: v.string(),
-  icon_url: v.string(),
+  icon_url: v.string(), // deprecated
 
   headquarters: v.optional(v.string()),
   datacenters: v.optional(v.array(v.string())),

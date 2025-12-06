@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 
 import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
+import { getModelDescription } from '../sources'
 
 export const table = defineTable({
   slug: v.string(),
@@ -11,7 +12,7 @@ export const table = defineTable({
   variant: v.string(),
 
   name: v.string(),
-  icon_url: v.string(),
+  icon_url: v.string(), // deprecated
 
   author_slug: v.string(),
   author_name: v.string(),
@@ -64,4 +65,21 @@ export async function replace(
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
+}
+
+export async function getWithDescription(ctx: QueryCtx, slug: string) {
+  const model = await ctx.db
+    .query(vTable.name)
+    .withIndex('by_slug', (q) => q.eq('slug', slug))
+    .order('desc')
+    .first()
+  if (!model) {
+    return null
+  }
+
+  const description = (await getModelDescription(ctx, slug)) ?? ''
+  return {
+    ...model,
+    description,
+  }
 }

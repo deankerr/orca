@@ -51,6 +51,6 @@ function resolveLogo(slug: string): LogoStyle | undefined {
  */
 export function getLogo(slug: string) {
   const style = resolveLogo(slug)
-  const url = style ? `${LOGOS_DIR}/${style.slug}.png` : undefined
-  return { url, style }
+  const path = style ? `${LOGOS_DIR}/${style.slug}.png` : undefined
+  return { path, style }
 }

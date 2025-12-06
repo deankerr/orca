@@ -2,8 +2,10 @@ import * as R from 'remeda'
 
 import { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
+import { getEnv } from '../../lib/env'
 import { getLogo } from '../../shared/logos'
 import { formatPricing } from '../../shared/pricing'
+import { buildModelCreateEmbed } from './discord/modelCreate'
 import type { WebhookChange } from './inputs'
 
 // https://discord.com/developers/docs/resources/message#embed-object-embed-structure
@@ -21,14 +23,11 @@ export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody
 const MAX_EMBEDS_PER_MESSAGE = 10
 
 function getIconUrl(model_slug: string): string | undefined {
-  const baseUrl = process.env.ORCA_PUBLIC_URL
-  if (!baseUrl) return undefined
-
   const logo = getLogo(model_slug)
-  if (!logo.url) return undefined
+  if (!logo.path) return undefined
 
-  const encodedPath = encodeURIComponent(logo.url)
-  return `${baseUrl}/_next/image?url=${encodedPath}&w=32&q=75`
+  const baseUrl = getEnv('ORCA_PUBLIC_URL')
+  return `${baseUrl}/_next/image?url=${logo.path}&w=32&q=75`
 }
 
 // * Value formatting
@@ -223,15 +222,33 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
 
   const embeds: APIEmbed[] = []
   for (const [model_slug, entityChanges] of changesByModel) {
-    const items: string[] = []
-
     const modelChanges = entityChanges.filter((c) => c.entity_type === 'model')
     const endpointChanges = entityChanges.filter((c) => c.entity_type === 'endpoint')
 
-    // * model created
-    if (modelChanges.find((c) => c.change_kind === 'create')) {
-      items.push('🐣 model created')
+    // * model created - use new discord.js builder (standalone embed)
+    const modelCreateChange = modelChanges.find(
+      (c): c is WebhookChange & { entity_type: 'model'; change_kind: 'create' } =>
+        c.change_kind === 'create',
+    )
+    if (modelCreateChange) {
+      // * collect provider slugs from endpoint creates
+      const providerSlugs = R.pipe(
+        endpointChanges,
+        R.filter((c) => c.change_kind === 'create'),
+        R.map((c) => c.provider_tag_slug),
+        R.unique(),
+      )
+
+      const embed = buildModelCreateEmbed({
+        change: modelCreateChange,
+        providerSlugs,
+      })
+      embeds.push(embed.toJSON())
+      continue // model create is standalone, skip other changes for this model
     }
+
+    // * existing system for updates/deletes
+    const items: string[] = []
 
     // * model updates (bulleted)
     const modelUpdates = modelChanges.filter((c) => c.change_kind === 'update')
@@ -267,6 +284,8 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
     if (modelChanges.find((c) => c.change_kind === 'delete')) {
       items.push('☠️ model deleted')
     }
+
+    if (items.length === 0) continue
 
     const embed: APIEmbed = {
       author: {
