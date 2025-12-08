@@ -367,7 +367,7 @@ export const attributes: Record<string, Attribute> = {
     resolve: (endpoint) => {
       const active = endpoint.data_policy?.retains_prompts === true
       const days = endpoint.data_policy?.retains_prompts_days?.toLocaleString()
-      const value = days ? `${days} days` : 'unknown period'
+      const value = days ? `${days} days` : '? days'
       return {
         active,
         value,

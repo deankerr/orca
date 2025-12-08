@@ -1,9 +1,11 @@
+import { Popover } from '@base-ui-components/react/popover'
+
 import { Doc } from '@/convex/_generated/dataModel'
 
 import { SpriteIcon } from '@/components/ui/sprite-icon'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Attribute, AttributeName, attributes } from '@/lib/attributes'
 
+import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import { RadIconBadge } from './rad-badge'
 
 interface AttributeBadgeProps {
@@ -17,31 +19,62 @@ export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
   const details = state?.details
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <RadIconBadge variant="surface" color={color} aria-label={key}>
-          <SpriteIcon name={icon} className="size-full" />
-        </RadIconBadge>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-72 font-mono text-pretty">
-        <div className="space-y-1">
-          <div className="space-y-1 not-only:mb-2">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-medium uppercase">{label}</p>
-              {badge && <span>{badge}</span>}
+    <Popover.Root>
+      <Popover.Trigger
+        render={<RadIconBadge variant="surface" color={color} aria-label={key} />}
+        openOnHover
+        delay={0}
+        closeDelay={0}
+        nativeButton={false}
+      >
+        <SpriteIcon name={icon} className="size-full" />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="top" sideOffset={8}>
+          <Popover.Popup className="max-w-72 origin-[var(--transform-origin)] rounded-lg bg-[canvas] px-4 py-3 text-foreground shadow-lg outline outline-border dark:-outline-offset-1">
+            <Popover.Arrow className="data-[side=bottom]:top-[-8px] data-[side=left]:right-[-13px] data-[side=left]:rotate-90 data-[side=right]:left-[-13px] data-[side=right]:-rotate-90 data-[side=top]:bottom-[-8px] data-[side=top]:rotate-180">
+              <ArrowSvg />
+            </Popover.Arrow>
+            <div className="flex items-center justify-between gap-4">
+              <Popover.Title className="text-sm font-medium">{label}</Popover.Title>
+              {badge && <span className="font-mono text-[95%]">{badge}</span>}
             </div>
-            <p className="font-sans">{description}</p>
-          </div>
+            <Popover.Description className="font-sans text-sm text-muted-foreground">
+              {description}
+            </Popover.Description>
+            {details && details.length > 0 && (
+              <DataList className="mt-2 space-y-0.5">
+                {details.map((item, i) => (
+                  <DataListItem key={i}>
+                    {item.label && <DataListLabel className="uppercase">{item.label}</DataListLabel>}
+                    <DataListValue>{item.value}</DataListValue>
+                  </DataListItem>
+                ))}
+              </DataList>
+            )}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
 
-          {details?.map((item, i) => (
-            <div key={i} className="flex justify-between gap-2">
-              {item.label && <span className="uppercase">{item.label}:</span>}
-              <span>{item.value}</span>
-            </div>
-          ))}
-        </div>
-      </TooltipContent>
-    </Tooltip>
+function ArrowSvg(props: React.ComponentProps<'svg'>) {
+  return (
+    <svg width="20" height="10" viewBox="0 0 20 10" fill="none" {...props}>
+      <path
+        d="M9.66437 2.60207L4.80758 6.97318C4.07308 7.63423 3.11989 8 2.13172 8H0V10H20V8H18.5349C17.5468 8 16.5936 7.63423 15.8591 6.97318L11.0023 2.60207C10.622 2.2598 10.0447 2.25979 9.66437 2.60207Z"
+        className="fill-[canvas]"
+      />
+      <path
+        d="M8.99542 1.85876C9.75604 1.17425 10.9106 1.17422 11.6713 1.85878L16.5281 6.22989C17.0789 6.72568 17.7938 7.00001 18.5349 7.00001L15.89 7L11.0023 2.60207C10.622 2.2598 10.0447 2.2598 9.66436 2.60207L4.77734 7L2.13171 7.00001C2.87284 7.00001 3.58774 6.72568 4.13861 6.22989L8.99542 1.85876Z"
+        className="fill-border dark:fill-none"
+      />
+      <path
+        d="M10.3333 3.34539L5.47654 7.71648C4.55842 8.54279 3.36693 9 2.13172 9H0V8H2.13172C3.11989 8 4.07308 7.63423 4.80758 6.97318L9.66437 2.60207C10.0447 2.25979 10.622 2.2598 11.0023 2.60207L15.8591 6.97318C16.5936 7.63423 17.5468 8 18.5349 8H20V9H18.5349C17.2998 9 16.1083 8.54278 15.1901 7.71648L10.3333 3.34539Z"
+        className="dark:fill-border"
+      />
+    </svg>
   )
 }
 

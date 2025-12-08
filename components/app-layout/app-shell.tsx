@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <EntitySheetProvider>
-        <div className="flex h-screen flex-col overflow-x-hidden">
+        <div className="isolate flex h-screen flex-col overflow-x-hidden">
           <AppHeader />
 
           {/* body */}

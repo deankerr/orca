@@ -143,7 +143,7 @@
     color-scheme: dark;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply relative isolate bg-background text-foreground;
   }
 
   @layer base {

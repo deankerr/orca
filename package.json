@@ -13,6 +13,7 @@
     "sprite": "bun scripts/generate-sprite.ts"
   },
   "dependencies": {
+    "@base-ui-components/react": "^1.0.0-rc.0",
     "@convex-dev/aggregate": "^0.2.0",
     "@convex-dev/react-query": "^0.1.0",
     "@discordjs/builders": "^1.13.1",

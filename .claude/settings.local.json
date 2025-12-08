@@ -24,7 +24,9 @@
       "mcp__next-devtools__nextjs_runtime",
       "mcp__convex__runOneoffQuery",
       "Bash(find:*)",
-      "Bash(bunx tsc:*)"
+      "Bash(bunx tsc:*)",
+      "mcp__exa__get_code_context_exa",
+      "WebFetch(domain:base-ui.com)"
     ],
     "deny": [],
     "ask": []
