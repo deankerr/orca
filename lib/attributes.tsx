@@ -2,6 +2,7 @@ import type { VariantProps } from 'class-variance-authority'
 
 import { Doc } from '@/convex/_generated/dataModel'
 
+import { InlineCode } from '@/components/shared/inline-code'
 import { RadIconBadge } from '@/components/shared/rad-badge'
 import { SpriteIconName } from '@/lib/sprite-icons'
 
@@ -14,7 +15,7 @@ export interface Attribute {
   key: string
   icon: SpriteIconName
   label: string
-  description: string
+  description: React.ReactNode
   color: Color
   resolve: (endpoint: EndpointPartial) => {
     active: boolean
@@ -29,7 +30,12 @@ export const attributes: Record<string, Attribute> = {
     key: 'reasoning',
     icon: 'brain-cog',
     label: 'Reasoning',
-    description: 'Model supports reasoning capabilities',
+    description: (
+      <>
+        Extended thinking with chain-of-thought visible in{' '}
+        <InlineCode>reasoning_content</InlineCode>.
+      </>
+    ),
     color: 'indigo',
     resolve: (endpoint) => {
       const active = endpoint.model?.reasoning ?? false
@@ -56,7 +62,12 @@ export const attributes: Record<string, Attribute> = {
     key: 'mandatory_reasoning',
     icon: 'brain-cog',
     label: 'Mandatory Reasoning',
-    description: 'Reasoning cannot be disabled.',
+    description: (
+      <>
+        Always emits reasoning tokens; cannot be disabled via{' '}
+        <InlineCode>reasoning_effort</InlineCode>.
+      </>
+    ),
     color: 'indigo',
     resolve: (endpoint) => {
       const active = endpoint.mandatory_reasoning ?? false
@@ -83,7 +94,11 @@ export const attributes: Record<string, Attribute> = {
     key: 'tools',
     icon: 'wrench',
     label: 'Tools',
-    description: 'Supports tool parameters',
+    description: (
+      <>
+        Function calling via the <InlineCode>tools</InlineCode> parameter for agentic workflows.
+      </>
+    ),
     color: 'blue',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('tools') ?? false,
@@ -94,7 +109,12 @@ export const attributes: Record<string, Attribute> = {
     key: 'response_format',
     icon: 'braces',
     label: 'Response Format',
-    description: 'Supports the response_format parameter with json_object type',
+    description: (
+      <>
+        Constrain output to valid JSON via{' '}
+        <InlineCode>{'response_format: { type: "json_object" }'}</InlineCode>.
+      </>
+    ),
     color: 'teal',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('response_format') ?? false,
@@ -105,7 +125,12 @@ export const attributes: Record<string, Attribute> = {
     key: 'structured_outputs',
     icon: 'braces',
     label: 'Structured Outputs',
-    description: 'Supports the response_format parameter with json_schema type',
+    description: (
+      <>
+        Enforce a JSON schema via{' '}
+        <InlineCode>{'response_format: { type: "json_schema" }'}</InlineCode>.
+      </>
+    ),
     color: 'teal',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('structured_outputs') ?? false,
@@ -116,7 +141,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'caching',
     icon: 'database',
     label: 'Caching',
-    description: 'Inputs can be cached',
+    description: 'Reduce costs on repeated prompts with explicit prompt caching.',
     color: 'cyan',
     resolve: (endpoint) => {
       const active = !!endpoint.pricing?.cache_read
@@ -153,7 +178,12 @@ export const attributes: Record<string, Attribute> = {
     key: 'implicit_caching',
     icon: 'database',
     label: 'Implicit Caching',
-    description: 'Inputs are cached automatically',
+    description: (
+      <>
+        Provider caches prompts automatically without explicit{' '}
+        <InlineCode>cache_control</InlineCode>.
+      </>
+    ),
     color: 'cyan',
     resolve: (endpoint) => {
       const active = endpoint.implicit_caching ?? false
@@ -191,7 +221,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'moderated',
     icon: 'shield-alert',
     label: 'Moderated',
-    description: 'Content is moderated by OpenRouter before being sent to the provider.',
+    description: 'OpenRouter applies content filtering before forwarding to the provider.',
     color: 'amber',
     resolve: (endpoint) => ({
       active: endpoint.moderated ?? false,
@@ -203,7 +233,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'file_urls',
     icon: 'link',
     label: 'File URLs',
-    description: 'Supports file URL inputs',
+    description: 'Pass files via URL instead of base64 encoding in the request body.',
     color: 'purple',
     resolve: (endpoint) => ({
       active: endpoint.file_urls ?? false,
@@ -214,7 +244,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'native_web_search',
     icon: 'globe',
     label: 'Native Web Search',
-    description: 'Use native web search capabilities',
+    description: 'Model can search the web for real-time information.',
     color: 'emerald',
     resolve: (endpoint) => {
       const active = endpoint.native_web_search ?? false
@@ -241,7 +271,11 @@ export const attributes: Record<string, Attribute> = {
     key: 'completions',
     icon: 'message-square',
     label: 'Completions',
-    description: 'Supports text completion API',
+    description: (
+      <>
+        Legacy <InlineCode>/completions</InlineCode> endpoint for raw text continuation.
+      </>
+    ),
     color: 'blue',
     resolve: (endpoint) => ({
       active: endpoint.completions ?? false,
@@ -252,7 +286,11 @@ export const attributes: Record<string, Attribute> = {
     key: 'chat_completions',
     icon: 'messages-square',
     label: 'Chat Completions',
-    description: 'Supports chat completion API',
+    description: (
+      <>
+        Standard <InlineCode>/chat/completions</InlineCode> endpoint with message arrays.
+      </>
+    ),
     color: 'blue',
     resolve: (endpoint) => ({
       active: endpoint.chat_completions ?? false,
@@ -263,7 +301,8 @@ export const attributes: Record<string, Attribute> = {
     key: 'stream_cancellation',
     icon: 'square-stop',
     label: 'Stream Cancellation',
-    description: 'Supports streaming cancellation',
+    description:
+      'Abort streaming requests mid-response without being charged for remaining tokens.',
     color: 'gray',
     resolve: (endpoint) => ({
       active: endpoint.stream_cancellation ?? false,
@@ -275,7 +314,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'free',
     icon: 'cake-slice',
     label: 'Free',
-    description: 'Free variant, subject to request limits and may have low availability.',
+    description: 'No cost per token. May have stricter rate limits and lower availability.',
     color: 'pink',
     resolve: (endpoint) => ({
       active: endpoint.model?.variant === 'free',
@@ -287,7 +326,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'deranked',
     icon: 'chevrons-down',
     label: 'Deranked',
-    description: 'Will only be routed to as a fallback',
+    description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
     color: 'amber',
     resolve: (endpoint) => ({
       active: endpoint.deranked ?? false,
@@ -298,7 +337,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'disabled',
     icon: 'octagon-x',
     label: 'Disabled',
-    description: 'Endpoint is currently disabled',
+    description: 'Temporarily unavailable; requests will fail or route elsewhere.',
     color: 'red',
     resolve: (endpoint) => ({
       active: endpoint.disabled ?? false,
@@ -309,7 +348,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'gone',
     icon: 'skull',
     label: 'Gone',
-    description: 'This endpoint no longer exists.',
+    description: 'This endpoint is no longer available.',
     color: 'rose',
     resolve: (endpoint) => ({
       active: !!endpoint.unavailable_at,
@@ -329,7 +368,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'training',
     icon: 'scan-eye',
     label: 'Training',
-    description: 'Your data may be used to train new models.',
+    description: 'Provider may use your prompts and completions for model training.',
     color: 'orange',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.training === true,
@@ -340,7 +379,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'data_publishing',
     icon: 'scroll-text',
     label: 'Data Publishing',
-    description: 'Your data may be published or shared publicly.',
+    description: 'Provider may publish or share your data in research or datasets.',
     color: 'orange',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.can_publish === true,
@@ -351,7 +390,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'user_id',
     icon: 'fingerprint',
     label: 'User ID',
-    description: 'An anonymous user ID is shared with the provider.',
+    description: 'An anonymized ID is forwarded to the provider with your request.',
     color: 'orange',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.requires_user_ids === true,
@@ -362,7 +401,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'data_retention',
     icon: 'save',
     label: 'Data Retention',
-    description: 'Your data may be retained by the provider.',
+    description: 'Provider stores prompts and completions for a limited period.',
     color: 'orange',
     resolve: (endpoint) => {
       const active = endpoint.data_policy?.retains_prompts === true
@@ -380,7 +419,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'max_text_input_tokens',
     icon: 'letter-text',
     label: 'Max Context',
-    description: 'Maximum text input tokens allowed',
+    description: 'Context window limit for this endpoint (may differ from model maximum).',
     color: 'yellow',
     resolve: (endpoint) => ({
       active: endpoint.limits?.text_input_tokens != null,
@@ -392,7 +431,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'max_image_input_tokens',
     icon: 'image',
     label: 'Max Image Tokens',
-    description: 'Maximum image input tokens allowed',
+    description: 'Token budget consumed by image inputs.',
     color: 'yellow',
     resolve: (endpoint) => ({
       active: endpoint.limits?.image_input_tokens != null,
@@ -404,7 +443,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'max_images_per_input',
     icon: 'image',
     label: 'Max Images',
-    description: 'Maximum number of images per input',
+    description: 'Number of images allowed in a single request.',
     color: 'yellow',
     resolve: (endpoint) => ({
       active: endpoint.limits?.images_per_input != null,
@@ -416,7 +455,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'max_requests_per_minute',
     icon: 'alarm-clock',
     label: 'Max Requests/Min',
-    description: 'Maximum requests per minute allowed',
+    description: 'Rate limit enforced by this endpoint.',
     color: 'yellow',
     resolve: (endpoint) => ({
       active: endpoint.limits?.requests_per_minute != null,
@@ -428,7 +467,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'max_requests_per_day',
     icon: 'calendar',
     label: 'Max Requests/Day',
-    description: 'Maximum requests per day allowed',
+    description: 'Daily request quota enforced by this endpoint.',
     color: 'yellow',
     resolve: (endpoint) => ({
       active: endpoint.limits?.requests_per_day != null,
@@ -441,7 +480,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'image_input',
     icon: 'image-up',
     label: 'Image Input',
-    description: 'Supports image input',
+    description: 'Vision model that accepts images in message content.',
     color: 'violet',
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('image') ?? false
@@ -468,7 +507,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'image_output',
     icon: 'image-down',
     label: 'Image Output',
-    description: 'Supports image output',
+    description: 'Generates images inline within the response.',
     color: 'violet',
     resolve: (endpoint) => {
       const active = endpoint.model?.output_modalities?.includes('image') ?? false
@@ -495,7 +534,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'file_input',
     icon: 'file-spreadsheet',
     label: 'File Input',
-    description: 'Supports file input',
+    description: 'Process documents like PDFs, CSVs, and spreadsheets.',
     color: 'sky',
     resolve: (endpoint) => ({
       active: endpoint.model?.input_modalities?.includes('file') ?? false,
@@ -506,7 +545,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'audio_input',
     icon: 'audio-lines',
     label: 'Audio Input',
-    description: 'Supports audio input',
+    description: 'Process speech and audio directly without transcription.',
     color: 'fuchsia',
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('audio') ?? false
@@ -543,7 +582,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'video_input',
     icon: 'video',
     label: 'Video Input',
-    description: 'Supports video input',
+    description: 'Analyze video content frame-by-frame.',
     color: 'emerald',
     resolve: (endpoint) => ({
       active: endpoint.model?.input_modalities?.includes('video') ?? false,
@@ -554,7 +593,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'embeddings_output',
     icon: 'file-digit',
     label: 'Embeddings',
-    description: 'Supports embeddings output',
+    description: 'Returns vector representations for semantic search and RAG.',
     color: 'amber',
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('embeddings') ?? false,
@@ -566,7 +605,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'request',
     icon: 'flag',
     label: 'Request',
-    description: 'Flat rate fee for every request.',
+    description: 'Fixed fee charged per API call, regardless of token count.',
     color: 'yellow',
     resolve: (endpoint) => {
       const active = !!endpoint.pricing?.request
@@ -593,7 +632,7 @@ export const attributes: Record<string, Attribute> = {
     key: 'threshold_pricing',
     icon: 'flag',
     label: 'Threshold Pricing',
-    description: 'Pricing varies based on prompt token threshold',
+    description: 'Different rates apply based on prompt length tiers.',
     color: 'yellow',
     resolve: (endpoint) => {
       const active = !!endpoint.variable_pricings && endpoint.variable_pricings.length > 0

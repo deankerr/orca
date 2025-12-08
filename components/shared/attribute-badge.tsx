@@ -35,18 +35,23 @@ export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
             <Popover.Arrow className="data-[side=bottom]:top-[-8px] data-[side=left]:right-[-13px] data-[side=left]:rotate-90 data-[side=right]:left-[-13px] data-[side=right]:-rotate-90 data-[side=top]:bottom-[-8px] data-[side=top]:rotate-180">
               <ArrowSvg />
             </Popover.Arrow>
-            <div className="flex items-center justify-between gap-4">
+
+            <div className="mb-1 flex items-center justify-between gap-4">
               <Popover.Title className="text-sm font-medium">{label}</Popover.Title>
               {badge && <span className="font-mono text-[95%]">{badge}</span>}
             </div>
+
             <Popover.Description className="font-sans text-sm text-muted-foreground">
               {description}
             </Popover.Description>
+
             {details && details.length > 0 && (
               <DataList className="mt-2 space-y-0.5">
                 {details.map((item, i) => (
                   <DataListItem key={i}>
-                    {item.label && <DataListLabel className="uppercase">{item.label}</DataListLabel>}
+                    {item.label && (
+                      <DataListLabel className="uppercase">{item.label}</DataListLabel>
+                    )}
                     <DataListValue>{item.value}</DataListValue>
                   </DataListItem>
                 ))}
