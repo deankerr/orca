@@ -1,6 +1,7 @@
-import { copyFile, mkdir, readdir } from 'node:fs/promises'
-import { writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import sharp from 'sharp'
 
 import {
   COLOR_OUTPUT_DIR,
@@ -12,6 +13,8 @@ import { processLobehubIcons } from './logos/lobehub'
 import { processOpenRouterIcons } from './logos/openrouter'
 import { processOtherIcons } from './logos/other'
 import { fileExists } from './logos/utils'
+
+const SUPPORTED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp']
 
 const MANIFEST_FILE = 'convex/shared/logos-manifest.json'
 
@@ -46,10 +49,24 @@ async function processColorIcons() {
     }
   }
 
-  // * Copy other sources directly (already color versions)
+  // * Copy other sources directly (already color versions), converting non-PNG to PNG
   const otherFiles = await readdir(SOURCES_OTHER_DIR)
-  for (const file of otherFiles.filter((f) => f.endsWith('.png'))) {
-    await copyFile(join(SOURCES_OTHER_DIR, file), join(COLOR_OUTPUT_DIR, file))
+  const imageFiles = otherFiles.filter((f) =>
+    SUPPORTED_EXTENSIONS.some((ext) => f.toLowerCase().endsWith(ext)),
+  )
+
+  for (const file of imageFiles) {
+    // * Remove extension and dashes from slug
+    const slug = file.replace(/\.(png|jpe?g|svg|webp)$/i, '').replace(/-/g, '')
+    const sourcePath = join(SOURCES_OTHER_DIR, file)
+    const outputPath = join(COLOR_OUTPUT_DIR, `${slug}.png`)
+    const isPng = file.toLowerCase().endsWith('.png')
+
+    if (isPng) {
+      await copyFile(sourcePath, outputPath)
+    } else {
+      await sharp(sourcePath).png().toFile(outputPath)
+    }
     copied++
   }
 

@@ -96,6 +96,12 @@
       "background": "",
       "scale": 1
     },
+    "alpindale": {
+      "slug": "alpindale",
+      "title": "Alpindale",
+      "background": "",
+      "scale": 1
+    },
     "amazonnova": {
       "slug": "amazonnova",
       "title": "Amazonnova",
@@ -108,6 +114,12 @@
       "background": "#1677ff",
       "scale": 0.8
     },
+    "anthraciteorg": {
+      "slug": "anthraciteorg",
+      "title": "Anthraciteorg",
+      "background": "",
+      "scale": 1
+    },
     "anthropic": {
       "slug": "anthropic",
       "title": "Anthropic",
@@ -118,6 +130,12 @@
       "slug": "anyscale",
       "title": "Anyscale",
       "background": "#0163FB",
+      "scale": 0.75
+    },
+    "apple": {
+      "slug": "apple",
+      "title": "Apple",
+      "background": "#fff",
       "scale": 0.75
     },
     "arcee": {
@@ -269,6 +287,12 @@
       "title": "ByteDance",
       "background": "#325AB4",
       "scale": 0.6
+    },
+    "byteplus": {
+      "slug": "byteplus",
+      "title": "Byteplus",
+      "background": "",
+      "scale": 1
     },
     "capcut": {
       "slug": "capcut",
@@ -516,6 +540,12 @@
       "background": "#fff",
       "scale": 0.7
     },
+    "essentialai": {
+      "slug": "essentialai",
+      "title": "Essentialai",
+      "background": "",
+      "scale": 1
+    },
     "exa": {
       "slug": "exa",
       "title": "Exa",
@@ -678,6 +708,12 @@
       "background": "#F55036",
       "scale": 0.75
     },
+    "gryphe": {
+      "slug": "gryphe",
+      "title": "Gryphe",
+      "background": "",
+      "scale": 1
+    },
     "hailuo": {
       "slug": "hailuo",
       "title": "Hailuo",
@@ -756,6 +792,12 @@
       "background": "",
       "scale": 1
     },
+    "inclusionai": {
+      "slug": "inclusionai",
+      "title": "Inclusionai",
+      "background": "",
+      "scale": 1
+    },
     "inference": {
       "slug": "inference",
       "title": "Inference",
@@ -798,12 +840,6 @@
       "background": "#000",
       "scale": 0.6
     },
-    "kera": {
-      "slug": "kera",
-      "title": "Kera",
-      "background": "#000",
-      "scale": 0.6
-    },
     "kimi": {
       "slug": "kimi",
       "title": "Kimi",
@@ -827,6 +863,12 @@
       "title": "Kolors",
       "background": "radial-gradient(#CBFF00,#7EF426)",
       "scale": 0.75
+    },
+    "krea": {
+      "slug": "krea",
+      "title": "Krea",
+      "background": "#000",
+      "scale": 0.6
     },
     "kwaipilot": {
       "slug": "kwaipilot",
@@ -960,6 +1002,12 @@
       "background": "#fff",
       "scale": 0.75
     },
+    "mara": {
+      "slug": "mara",
+      "title": "Mara",
+      "background": "",
+      "scale": 1
+    },
     "mastra": {
       "slug": "mastra",
       "title": "Mastra",
@@ -1074,6 +1122,12 @@
       "background": "#DAFF33",
       "scale": 0.6
     },
+    "neversleep": {
+      "slug": "neversleep",
+      "title": "Neversleep",
+      "background": "",
+      "scale": 1
+    },
     "nextbit": {
       "slug": "nextbit",
       "title": "Nextbit",
@@ -1145,6 +1199,12 @@
       "title": "OpenChat",
       "background": "#4A7FE3",
       "scale": 0.6
+    },
+    "opengvlab": {
+      "slug": "opengvlab",
+      "title": "Opengvlab",
+      "background": "",
+      "scale": 1
     },
     "openinference": {
       "slug": "openinference",
@@ -1236,6 +1296,12 @@
       "background": "#E92063",
       "scale": 0.75
     },
+    "pygmalionai": {
+      "slug": "pygmalionai",
+      "title": "Pygmalionai",
+      "background": "",
+      "scale": 1
+    },
     "qingyan": {
       "slug": "qingyan",
       "title": "Qingyan",
@@ -1314,6 +1380,12 @@
       "background": "#EE7624",
       "scale": 0.6
     },
+    "sao10k": {
+      "slug": "sao10k",
+      "title": "Sao10k",
+      "background": "",
+      "scale": 1
+    },
     "search1api": {
       "slug": "search1api",
       "title": "Search1API",
@@ -1331,6 +1403,18 @@
       "title": "SenseNova",
       "background": "#5B2AD8",
       "scale": 0.7
+    },
+    "sentencetransformers": {
+      "slug": "sentencetransformers",
+      "title": "Sentencetransformers",
+      "background": "",
+      "scale": 1
+    },
+    "shisaai": {
+      "slug": "shisaai",
+      "title": "Shisaai",
+      "background": "",
+      "scale": 1
     },
     "siliconcloud": {
       "slug": "siliconcloud",
@@ -1361,6 +1445,12 @@
       "title": "Sora",
       "background": "linear-gradient(180deg, #012659 0%, #0968DA 100%)",
       "scale": 0.7
+    },
+    "sourceful": {
+      "slug": "sourceful",
+      "title": "Sourceful",
+      "background": "",
+      "scale": 1
     },
     "spark": {
       "slug": "spark",
@@ -1452,6 +1542,12 @@
       "background": "",
       "scale": 1
     },
+    "thudm": {
+      "slug": "thudm",
+      "title": "Thudm",
+      "background": "",
+      "scale": 1
+    },
     "tiangong": {
       "slug": "tiangong",
       "title": "Tiangong",
@@ -1493,6 +1589,12 @@
       "title": "Udio",
       "background": "#e30a5d",
       "scale": 0.6
+    },
+    "undi95": {
+      "slug": "undi95",
+      "title": "Undi95",
+      "background": "",
+      "scale": 1
     },
     "unstructured": {
       "slug": "unstructured",
@@ -1649,6 +1751,12 @@
       "title": "Zeabur",
       "background": "#6300FF",
       "scale": 0.6
+    },
+    "zenmux": {
+      "slug": "zenmux",
+      "title": "ZenMux",
+      "background": "#000",
+      "scale": 0.7
     },
     "zeroone": {
       "slug": "zeroone",
