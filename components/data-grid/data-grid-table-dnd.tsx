@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, useId, useRef } from 'react'
+import { CSSProperties, Fragment, useCallback, useId, useRef } from 'react'
 
 import {
   closestCenter,
@@ -214,12 +214,15 @@ function DataGridTableDndVirtual<TData>({
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => rowHeight,
     overscan,
-    getItemKey: (index) => {
-      if (isLoading && props.loadingMode === 'skeleton') {
-        return `skeleton-${index}`
-      }
-      return table.getRowModel().rows[index]?.id ?? index
-    },
+    getItemKey: useCallback(
+      (index: number) => {
+        if (isLoading && props.loadingMode === 'skeleton') {
+          return `skeleton-${index}`
+        }
+        return table.getRowModel().rows[index]?.id ?? index
+      },
+      [isLoading, props.loadingMode, table],
+    ),
   })
 
   const virtualRows = virtualizer.getVirtualItems()

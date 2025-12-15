@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
 
@@ -35,11 +35,14 @@ export function VirtualizedFeed({
       return items[index].type === 'marker' ? MARKER_HEIGHT : ITEM_HEIGHT
     },
     overscan: 10,
-    getItemKey: (index) => {
-      return items[index].type === 'marker'
-        ? `marker-${items[index].crawl_id}`
-        : items[index].change._id
-    },
+    getItemKey: useCallback(
+      (index: number) => {
+        return items[index].type === 'marker'
+          ? `marker-${items[index].crawl_id}`
+          : items[index].change._id
+      },
+      [items],
+    ),
     onChange: (instance) => {
       if (!hasNextPage) return
 
