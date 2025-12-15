@@ -297,18 +297,6 @@ export const attributes: Record<string, Attribute> = {
     }),
   },
 
-  stream_cancellation: {
-    key: 'stream_cancellation',
-    icon: 'square-stop',
-    label: 'Stream Cancellation',
-    description:
-      'Abort streaming requests mid-response without being charged for remaining tokens.',
-    color: 'gray',
-    resolve: (endpoint) => ({
-      active: endpoint.stream_cancellation ?? false,
-    }),
-  },
-
   // Variant
   free: {
     key: 'free',

@@ -139,6 +139,8 @@ export function AttributeFilterControls() {
               {renderAttributeToggle('native_web_search')}
               {renderAttributeToggle('moderated')}
               {renderAttributeToggle('free')}
+              {renderAttributeToggle('completions')}
+              {renderAttributeToggle('chat_completions')}
             </div>
           </FilterSection>
 
@@ -150,6 +152,18 @@ export function AttributeFilterControls() {
               {renderAttributeToggle('gone')}
               {renderAttributeToggle('disabled')}
               {renderAttributeToggle('deranked')}
+            </div>
+          </FilterSection>
+
+          <Separator />
+
+          {/* Data Policy */}
+          <FilterSection title="Data Policy">
+            <div className="grid grid-cols-1 gap-x-2 gap-y-1.5 sm:grid-cols-2">
+              {renderAttributeToggle('training')}
+              {renderAttributeToggle('data_publishing')}
+              {renderAttributeToggle('user_id')}
+              {renderAttributeToggle('data_retention')}
             </div>
           </FilterSection>
 
