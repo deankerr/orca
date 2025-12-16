@@ -35,165 +35,171 @@ export const upsert = internalMutation({
     crawl_id: v.string(),
   },
   handler: async (ctx, args) => {
-    // * initialize counters
-    const counters = {
-      models: { stable: 0, update: 0, insert: 0, unavailable: 0 },
-      endpoints: { stable: 0, update: 0, insert: 0, unavailable: 0 },
-      providers: { stable: 0, update: 0, insert: 0, unavailable: 0 },
-      sources: { stable: 0, update: 0, insert: 0 },
-    }
+    // * run all entity upserts in parallel
+    const [models, endpoints, providers, sources] = await Promise.all([
+      upsertModels(),
+      upsertEndpoints(),
+      upsertProviders(),
+      upsertSources(),
+    ])
+
+    console.log(`[materialize:counts]`, { models, endpoints, providers, sources })
 
     // * models
-    const currentModels = await db.or.views.models.collect(ctx)
-    const currentModelsMap = new Map(currentModels.map((m) => [m.slug, m]))
+    async function upsertModels() {
+      const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-    for (const model of args.models) {
-      const currentModel = currentModelsMap.get(model.slug)
+      const currentModels = await db.or.views.models.collect(ctx)
+      const currentModelsMap = new Map(currentModels.map((m) => [m.slug, m]))
 
-      if (currentModel) {
-        currentModelsMap.delete(currentModel.slug)
+      for (const model of args.models) {
+        const currentModel = currentModelsMap.get(model.slug)
 
-        if (isEqual(currentModel, model)) {
-          // * stable
-          counters.models.stable++
+        if (currentModel) {
+          currentModelsMap.delete(currentModel.slug)
+
+          if (isEqual(currentModel, model)) {
+            counters.stable++
+          } else {
+            await db.or.views.models.replace(ctx, currentModel._id, model)
+            counters.update++
+          }
         } else {
-          // * update
-          await db.or.views.models.replace(ctx, currentModel._id, model)
-          counters.models.update++
+          await db.or.views.models.insert(ctx, model)
+          counters.insert++
         }
-      } else {
-        // * insert
-        await db.or.views.models.insert(ctx, model)
-        counters.models.insert++
       }
-    }
 
-    // update unavailable_at for models that are no longer advertised
-    for (const currentModel of currentModelsMap.values()) {
-      // * only set unavailable_at once when entity first becomes unavailable
-      if (currentModel.unavailable_at === undefined) {
-        await db.or.views.models.patch(ctx, currentModel._id, {
-          unavailable_at: parseInt(args.crawl_id),
-        })
-        counters.models.unavailable++
+      // update unavailable_at for models that are no longer advertised
+      for (const currentModel of currentModelsMap.values()) {
+        if (currentModel.unavailable_at === undefined) {
+          await db.or.views.models.patch(ctx, currentModel._id, {
+            unavailable_at: parseInt(args.crawl_id),
+          })
+          counters.unavailable++
+        }
       }
+
+      return counters
     }
 
     // * endpoints
-    const currentEndpoints = await db.or.views.endpoints.collect(ctx)
-    const currentEndpointsMap = new Map(currentEndpoints.map((e) => [e.uuid, e]))
+    async function upsertEndpoints() {
+      const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-    for (const endpoint of args.endpoints) {
-      const currentEndpoint = currentEndpointsMap.get(endpoint.uuid)
+      const currentEndpoints = await db.or.views.endpoints.collect(ctx)
+      const currentEndpointsMap = new Map(currentEndpoints.map((e) => [e.uuid, e]))
 
-      if (currentEndpoint) {
-        currentEndpointsMap.delete(currentEndpoint.uuid)
+      for (const endpoint of args.endpoints) {
+        const currentEndpoint = currentEndpointsMap.get(endpoint.uuid)
 
-        if (isEqual(currentEndpoint, endpoint)) {
-          // * stable
-          counters.endpoints.stable++
+        if (currentEndpoint) {
+          currentEndpointsMap.delete(currentEndpoint.uuid)
+
+          if (isEqual(currentEndpoint, endpoint)) {
+            counters.stable++
+          } else {
+            await db.or.views.endpoints.replace(ctx, currentEndpoint._id, endpoint)
+            counters.update++
+          }
         } else {
-          // * update
-          await db.or.views.endpoints.replace(ctx, currentEndpoint._id, endpoint)
-          counters.endpoints.update++
+          await db.or.views.endpoints.insert(ctx, endpoint)
+          counters.insert++
         }
-      } else {
-        // * insert
-        await db.or.views.endpoints.insert(ctx, endpoint)
-        counters.endpoints.insert++
       }
-    }
 
-    // update unavailable_at for endpoints that are no longer advertised
-    for (const currentEndpoint of currentEndpointsMap.values()) {
-      // * only set unavailable_at once when entity first becomes unavailable
-      if (currentEndpoint.unavailable_at === undefined) {
-        await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
-          unavailable_at: parseInt(args.crawl_id),
-        })
-        counters.endpoints.unavailable++
+      // update unavailable_at for endpoints that are no longer advertised
+      for (const currentEndpoint of currentEndpointsMap.values()) {
+        if (currentEndpoint.unavailable_at === undefined) {
+          await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
+            unavailable_at: parseInt(args.crawl_id),
+          })
+          counters.unavailable++
+        }
       }
+
+      return counters
     }
 
     // * providers
-    const currentProviders = await db.or.views.providers.collect(ctx)
-    const currentProvidersMap = new Map(currentProviders.map((p) => [p.slug, p]))
+    async function upsertProviders() {
+      const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-    for (const provider of args.providers) {
-      const currentProvider = currentProvidersMap.get(provider.slug)
+      const currentProviders = await db.or.views.providers.collect(ctx)
+      const currentProvidersMap = new Map(currentProviders.map((p) => [p.slug, p]))
 
-      if (currentProvider) {
-        currentProvidersMap.delete(currentProvider.slug)
+      for (const provider of args.providers) {
+        const currentProvider = currentProvidersMap.get(provider.slug)
 
-        if (isEqual(currentProvider, provider)) {
-          // * stable
-          counters.providers.stable++
+        if (currentProvider) {
+          currentProvidersMap.delete(currentProvider.slug)
+
+          if (isEqual(currentProvider, provider)) {
+            counters.stable++
+          } else {
+            await db.or.views.providers.replace(ctx, currentProvider._id, provider)
+            counters.update++
+          }
         } else {
-          // * update
-          await db.or.views.providers.replace(ctx, currentProvider._id, provider)
-          counters.providers.update++
+          await db.or.views.providers.insert(ctx, provider)
+          counters.insert++
         }
-      } else {
-        // * insert
-        await db.or.views.providers.insert(ctx, provider)
-        counters.providers.insert++
       }
-    }
 
-    // update unavailable_at for providers that are no longer advertised
-    for (const currentProvider of currentProvidersMap.values()) {
-      // * only set unavailable_at once when entity first becomes unavailable
-      if (currentProvider.unavailable_at === undefined) {
-        await db.or.views.providers.patch(ctx, currentProvider._id, {
-          unavailable_at: parseInt(args.crawl_id),
-        })
-        counters.providers.unavailable++
+      // update unavailable_at for providers that are no longer advertised
+      for (const currentProvider of currentProvidersMap.values()) {
+        if (currentProvider.unavailable_at === undefined) {
+          await db.or.views.providers.patch(ctx, currentProvider._id, {
+            unavailable_at: parseInt(args.crawl_id),
+          })
+          counters.unavailable++
+        }
       }
+
+      return counters
     }
 
     // * sources - upsert raw API artifacts
-    const currentSources = await db.or.sources.collect(ctx)
-    const currentSourcesMap = new Map(
-      currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
-    )
+    async function upsertSources() {
+      const counters = { stable: 0, update: 0, insert: 0 }
 
-    const allSourceItems = [
-      ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
-      ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
-      ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
-    ]
+      const currentSources = await db.or.sources.collect(ctx)
+      const currentSourcesMap = new Map(
+        currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
+      )
 
-    for (const source of allSourceItems) {
-      const compositeKey = `${source.entity_type}:${source.key}`
-      const currentSource = currentSourcesMap.get(compositeKey)
+      const allSourceItems = [
+        ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
+        ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
+        ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
+      ]
 
-      if (currentSource) {
-        if (isEqual(currentSource.data, source.data)) {
-          counters.sources.stable++
+      for (const source of allSourceItems) {
+        const compositeKey = `${source.entity_type}:${source.key}`
+        const currentSource = currentSourcesMap.get(compositeKey)
+
+        if (currentSource) {
+          if (isEqual(currentSource.data, source.data)) {
+            counters.stable++
+          } else {
+            await db.or.sources.replace(ctx, currentSource._id, {
+              entity_type: source.entity_type,
+              entity_key: source.key,
+              data: source.data,
+            })
+            counters.update++
+          }
         } else {
-          await db.or.sources.replace(ctx, currentSource._id, {
+          await db.or.sources.insert(ctx, {
             entity_type: source.entity_type,
             entity_key: source.key,
             data: source.data,
           })
-          counters.sources.update++
+          counters.insert++
         }
-      } else {
-        await db.or.sources.insert(ctx, {
-          entity_type: source.entity_type,
-          entity_key: source.key,
-          data: source.data,
-        })
-        counters.sources.insert++
       }
-    }
 
-    // * log final counts
-    console.log(`[materialize:counts]`, {
-      models: counters.models,
-      endpoints: counters.endpoints,
-      providers: counters.providers,
-      sources: counters.sources,
-    })
+      return counters
+    }
   },
 })
