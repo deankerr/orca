@@ -19,12 +19,7 @@ export const ModelTransformSchema = z
     promotion_message: z.string().nullish(),
     warning_message: z.string().nullish(),
     permaslug: z.string(),
-    reasoning_config: z
-      .object({
-        start_token: z.string(),
-        end_token: z.string(),
-      })
-      .nullish(),
+    reasoning_config: z.record(z.string(), z.unknown()).nullish(),
     // only available in some contexts
     endpoint: z
       .object({
