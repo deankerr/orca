@@ -5,44 +5,53 @@ import { internalAction } from './_generated/server'
 
 const crons = cronJobs()
 
-export const snapshotCron = internalAction({
+// * lite crawl - core data only (models, endpoints, providers)
+export const snapshotCronLite = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const cfg = await ctx.runQuery(internal.config.getFirst)
+    if (!cfg?.enabled) return
+
+    await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
+      apps: false,
+      uptimes: false,
+      modelAuthors: false,
+      analytics: false,
+      onComplete: { materialize: true },
+    })
+
+    console.log(`[cron:snapshot] crawl started`)
+  },
+})
+
+// * main crawl - core + extras based on hourly config
+export const snapshotCronMain = internalAction({
   args: {},
   handler: async (ctx) => {
     const cfg = await ctx.runQuery(internal.config.getFirst)
     if (!cfg?.enabled) return
 
     const h = new Date().getUTCHours()
-
-    // helper: true  ⇒ fetch the component this tick
     const on = (every: number) => every > 0 && h % every === 0
 
-    const shouldRunCore = on(cfg.core_every_hours)
-    if (!shouldRunCore) {
-      if (process.env.CONVEX_ENVIRONMENT !== 'DEVELOPMENT') {
-        console.log('[cron:snapshot] crawl skipped for this hour')
-      }
-      return
-    }
-
-    const jitter = Math.floor(Math.random() * cfg.jitter_minutes * 60_000)
-    const delayMs = cfg.delay_minutes * 60_000 + jitter
-
-    await ctx.scheduler.runAfter(delayMs, internal.snapshots.crawl.main.run, {
+    await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
       apps: on(cfg.apps_every_hours),
       uptimes: on(cfg.uptimes_every_hours),
-      modelAuthors: false, // no longer exists upstream
+      modelAuthors: false,
       analytics: on(cfg.analytics_every_hours ?? 0),
-      onComplete: {
-        materialize: true,
-      },
+      onComplete: { materialize: true },
     })
 
-    console.log(`[cron:snapshot] scheduled crawl in ${Math.round(delayMs / 60000)}m`)
+    console.log(`[cron:snapshot:main] crawl started`, {
+      apps: on(cfg.apps_every_hours),
+      uptimes: on(cfg.uptimes_every_hours),
+      analytics: on(cfg.analytics_every_hours ?? 0),
+    })
   },
 })
 
-crons.hourly('snapshot', { minuteUTC: 0 }, internal.crons.snapshotCron)
-
-crons.daily('process stats', { hourUTC: 0, minuteUTC: 5 }, internal.snapshots.stats.main.backfill)
+crons.hourly('snapshot-10', { minuteUTC: 10 }, internal.crons.snapshotCronLite)
+crons.hourly('snapshot-30', { minuteUTC: 30 }, internal.crons.snapshotCronMain)
+crons.hourly('snapshot-50', { minuteUTC: 50 }, internal.crons.snapshotCronLite)
 
 export default crons
