@@ -3,7 +3,9 @@ import * as R from 'remeda'
 import { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
 import { formatPricing } from '../../../shared/pricing'
+import { transformEndpoint } from '../../../transforms/endpoint'
 import type { WebhookChange } from '../inputs'
+import { buildEndpointCreateEmbed } from './endpointCreate'
 import { buildModelCreateEmbed } from './modelCreate'
 import { buildLinks, getColorIconUrl } from './utils'
 
@@ -214,7 +216,6 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
   const embeds: APIEmbed[] = []
   for (const [model_slug, entityChanges] of changesByModel) {
     const modelChanges = entityChanges.filter((c) => c.entity_type === 'model')
-    const endpointChanges = entityChanges.filter((c) => c.entity_type === 'endpoint')
 
     // * model created - use new discord.js builder (standalone embed)
     const modelCreateChange = modelChanges.find(
@@ -222,24 +223,40 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
         c.change_kind === 'create',
     )
     if (modelCreateChange) {
-      // * collect provider slugs from endpoint creates
-      const providerSlugs = R.pipe(
-        endpointChanges,
-        R.filter((c) => c.change_kind === 'create'),
-        R.map((c) => c.provider_tag_slug),
-        R.unique(),
-      )
-
       const embed = buildModelCreateEmbed({
         change: modelCreateChange,
-        providerSlugs,
       })
       embeds.push(embed.toJSON())
       continue // model create is standalone, skip other changes for this model
     }
 
+    // * individual endpoint create embeds
+    const endpointCreateChanges = entityChanges.filter(
+      (c) => c.entity_type === 'endpoint' && c.change_kind === 'create',
+    )
+    for (const change of endpointCreateChanges) {
+      if ('endpoint' in change && change.endpoint) {
+        const embed = buildEndpointCreateEmbed({
+          model_slug: change.model_slug,
+          endpoint_uuid: change.endpoint_uuid,
+          endpoint: transformEndpoint(change.endpoint),
+        })
+          .setFooter({
+            text: `ORCA ${change.crawl_id}`,
+          })
+          .setTimestamp(new Date(parseInt(change.crawl_id)))
+
+        embeds.push(embed.toJSON())
+      }
+    }
+
     // * existing system for updates/deletes
     const items: string[] = []
+
+    // * other endpoint changes
+    const endpointChanges = entityChanges
+      .filter((c) => c.entity_type === 'endpoint')
+      .filter((c) => c.change_kind !== 'create')
 
     // * model updates (bulleted)
     const modelUpdates = modelChanges.filter((c) => c.change_kind === 'update')
@@ -252,11 +269,6 @@ export function generateDiscordEmbeds(changes: WebhookChange[]) {
     const endpointChangesByProvider = Map.groupBy(endpointChanges, (c) => c.provider_tag_slug)
     for (const [providerSlug, providerChanges] of endpointChangesByProvider) {
       const lines: string[] = [`${providerSlug}`]
-
-      // * endpoint created
-      if (providerChanges.find((c) => c.change_kind === 'create')) {
-        lines.push('🆕 endpoint created')
-      }
 
       // * endpoint updates
       for (const change of providerChanges.filter((c) => c.change_kind === 'update')) {

@@ -59,6 +59,7 @@ import type * as snapshots_stats_main from "../snapshots/stats/main.js";
 import type * as snapshots_stats_outputs from "../snapshots/stats/outputs.js";
 import type * as snapshots_webhooks_dev from "../snapshots/webhooks/dev.js";
 import type * as snapshots_webhooks_discord_embeds from "../snapshots/webhooks/discord/embeds.js";
+import type * as snapshots_webhooks_discord_endpointCreate from "../snapshots/webhooks/discord/endpointCreate.js";
 import type * as snapshots_webhooks_discord_modelCreate from "../snapshots/webhooks/discord/modelCreate.js";
 import type * as snapshots_webhooks_discord_utils from "../snapshots/webhooks/discord/utils.js";
 import type * as snapshots_webhooks_inputs from "../snapshots/webhooks/inputs.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "snapshots/stats/outputs": typeof snapshots_stats_outputs;
   "snapshots/webhooks/dev": typeof snapshots_webhooks_dev;
   "snapshots/webhooks/discord/embeds": typeof snapshots_webhooks_discord_embeds;
+  "snapshots/webhooks/discord/endpointCreate": typeof snapshots_webhooks_discord_endpointCreate;
   "snapshots/webhooks/discord/modelCreate": typeof snapshots_webhooks_discord_modelCreate;
   "snapshots/webhooks/discord/utils": typeof snapshots_webhooks_discord_utils;
   "snapshots/webhooks/inputs": typeof snapshots_webhooks_inputs;

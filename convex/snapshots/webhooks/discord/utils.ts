@@ -26,3 +26,7 @@ export function buildLinks(model_slug: string, hugging_face_id?: string): string
 
   return links.join(' ・ ')
 }
+
+export function mono(value: unknown) {
+  return `\`${String(value)}\``
+}

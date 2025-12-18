@@ -17,9 +17,8 @@ function formatDescription(description: string): string {
 
 export function buildModelCreateEmbed(args: {
   change: WebhookChange & { entity_type: 'model'; change_kind: 'create' }
-  providerSlugs: string[]
 }): EmbedBuilder {
-  const { change, providerSlugs } = args
+  const { change } = args
   const model = change.model
 
   const embed = new EmbedBuilder()
@@ -80,14 +79,6 @@ export function buildModelCreateEmbed(args: {
       name: 'tokenizer',
       value: model.tokenizer,
       inline: true,
-    })
-  }
-
-  if (providerSlugs.length > 0) {
-    fields.push({
-      name: 'providers',
-      value: providerSlugs.join(', '),
-      inline: false,
     })
   }
 

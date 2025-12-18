@@ -181,3 +181,11 @@ export async function replace(
 ) {
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
+
+export async function getByUuid(ctx: QueryCtx, uuid: string) {
+  return await ctx.db
+    .query('or_views_endpoints')
+    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
+    .order('desc')
+    .first()
+}

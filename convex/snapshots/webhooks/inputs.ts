@@ -51,10 +51,13 @@ async function changesByCrawlIdHandler(ctx: QueryCtx, args: { crawl_id: string }
     }
 
     if (c.entity_type === 'endpoint') {
+      const endpoint = await db.or.views.endpoints.getByUuid(ctx, c.endpoint_uuid)
+
       if (c.change_kind === 'update') {
         return {
           ...c,
           model,
+          endpoint,
           path: c.path ?? 'unknown',
           path_level_1: c.path_level_1 ?? 'unknown',
         }
@@ -63,6 +66,7 @@ async function changesByCrawlIdHandler(ctx: QueryCtx, args: { crawl_id: string }
       return {
         ...c,
         model,
+        endpoint,
       }
     }
 
