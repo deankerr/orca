@@ -3,6 +3,7 @@ import { useEndpointsData } from './api'
 import { useEndpointFilters } from './use-endpoint-filters'
 
 export function DataGridFooter() {
+  'use no memo'
   const { table } = useDataGrid()
   const { rawEndpoints, isLoading } = useEndpointsData()
   const { hasActiveFilters } = useEndpointFilters()
