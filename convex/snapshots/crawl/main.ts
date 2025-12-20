@@ -145,7 +145,6 @@ export const run = internalAction({
       bundle.data.models.push(modelData)
     }
 
-
     // * analytics
     if (args.analytics) {
       try {
@@ -218,12 +217,15 @@ async function fetchModelData(
   if (crawlArgs.topApps) {
     try {
       const topApps = await orFetch('/api/frontend/stats/top-apps-for-model', {
-        params: { slug: model.slug },
+        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
         schema: DataRecord,
       })
       result.topApps = topApps
     } catch (err) {
-      console.error('[crawl:topApps]', { slug: model.slug, error: getErrorMessage(err) })
+      console.error('[crawl:topApps]', {
+        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
+        error: getErrorMessage(err),
+      })
     }
   }
 
