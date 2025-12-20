@@ -66,10 +66,11 @@ export type CrawlArchiveBundle = {
       model: ModelsArray[number]
       endpoints: EndpointsArray
       uptimes: Array<[string, DataRecordItem]>
-      apps: DataRecordItemArray
+      apps: DataRecordItemArray // deprecated - no longer fetched
+      topApps?: DataRecordItem // new endpoint format
     }>
     providers: DataRecordItemArray
-    modelAuthors: Array<DataRecordItem>
+    modelAuthors: Array<DataRecordItem> // deprecated - no longer fetched
     analytics?: DataRecordItem
   }
 }
@@ -94,6 +95,7 @@ const CrawlArchiveBundleSchema = z.strictObject({
         endpoints: z.array(EndpointMinimalSchema),
         uptimes: z.array(z.tuple([z.string(), DataRecordSchema])),
         apps: z.array(DataRecordSchema),
+        topApps: DataRecordSchema.optional(),
       }),
     ),
     providers: z.array(DataRecordSchema),
@@ -104,9 +106,8 @@ const CrawlArchiveBundleSchema = z.strictObject({
 
 export const run = internalAction({
   args: {
-    apps: v.boolean(),
     uptimes: v.boolean(),
-    modelAuthors: v.boolean(),
+    topApps: v.boolean(),
     analytics: v.boolean(),
     onComplete: v.object({
       materialize: v.boolean(),
@@ -144,25 +145,6 @@ export const run = internalAction({
       bundle.data.models.push(modelData)
     }
 
-    // * modelAuthors
-    if (args.modelAuthors) {
-      const modelAuthors: Array<DataRecordItem> = []
-      const authorSlugs = new Set(models.map((model) => model.author))
-
-      for (const authorSlug of authorSlugs) {
-        try {
-          const modelAuthor = await orFetch('/api/frontend/model-author', {
-            params: { authorSlug, shouldIncludeStats: true, shouldIncludeVariants: false },
-            schema: DataRecord,
-          })
-          modelAuthors.push(modelAuthor)
-        } catch (err) {
-          console.error('[crawl:modelAuthors]', { authorSlug, error: getErrorMessage(err) })
-        }
-      }
-
-      bundle.data.modelAuthors = modelAuthors
-    }
 
     // * analytics
     if (args.analytics) {
@@ -189,7 +171,7 @@ export const run = internalAction({
 })
 
 async function fetchModelData(
-  crawlArgs: { uptimes: boolean; apps: boolean },
+  crawlArgs: { uptimes: boolean; topApps: boolean },
   model: z.infer<typeof ModelsDataRecordArray>[number],
 ) {
   const result: CrawlArchiveBundle['data']['models'][number] = {
@@ -232,19 +214,16 @@ async function fetchModelData(
     }
   }
 
-  // * apps
-  if (crawlArgs.apps && result.endpoints.length) {
+  // * topApps
+  if (crawlArgs.topApps) {
     try {
-      const apps = await orFetch('/api/frontend/stats/app', {
-        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-        schema: DataRecordArray,
+      const topApps = await orFetch('/api/frontend/stats/top-apps-for-model', {
+        params: { slug: model.slug },
+        schema: DataRecord,
       })
-      result.apps = apps
+      result.topApps = topApps
     } catch (err) {
-      console.error('[crawl:apps]', {
-        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-        error: getErrorMessage(err),
-      })
+      console.error('[crawl:topApps]', { slug: model.slug, error: getErrorMessage(err) })
     }
   }
 
@@ -268,10 +247,9 @@ export async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundl
   const totals = {
     models: parsed.data.models.length,
     endpoints: parsed.data.models.reduce((sum, m) => sum + m.endpoints.length, 0),
-    apps: parsed.data.models.reduce((sum, m) => sum + m.apps.length, 0),
     uptimes: parsed.data.models.reduce((sum, m) => sum + m.uptimes.length, 0),
+    topApps: parsed.data.models.reduce((sum, m) => sum + (m.topApps ? 1 : 0), 0),
     providers: parsed.data.providers.length,
-    modelAuthors: parsed.data.modelAuthors.length,
     analytics: parsed.data.analytics ? 1 : 0,
   }
 

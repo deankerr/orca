@@ -13,9 +13,8 @@ export const snapshotCronLite = internalAction({
     if (!cfg?.enabled) return
 
     await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
-      apps: false,
       uptimes: false,
-      modelAuthors: false,
+      topApps: false,
       analytics: false,
       onComplete: { materialize: true },
     })
@@ -35,16 +34,15 @@ export const snapshotCronMain = internalAction({
     const on = (every: number) => every > 0 && h % every === 0
 
     await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
-      apps: on(cfg.apps_every_hours),
       uptimes: on(cfg.uptimes_every_hours),
-      modelAuthors: false,
+      topApps: on(cfg.topApps_every_hours ?? 0),
       analytics: on(cfg.analytics_every_hours ?? 0),
       onComplete: { materialize: true },
     })
 
     console.log(`[cron:snapshot:main] crawl started`, {
-      apps: on(cfg.apps_every_hours),
       uptimes: on(cfg.uptimes_every_hours),
+      topApps: on(cfg.topApps_every_hours ?? 0),
       analytics: on(cfg.analytics_every_hours ?? 0),
     })
   },
