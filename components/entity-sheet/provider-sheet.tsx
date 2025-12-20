@@ -56,7 +56,7 @@ export function ProviderSheet({ slug }: { slug: string }) {
       <div className="flex flex-col gap-6 pb-6 text-sm">
         {/* OpenRouter Link */}
         <div className="flex flex-col items-end gap-1 px-4 text-right">
-          <ExternalLink href={`https://openrouter.ai/providers/${provider.slug}`}>
+          <ExternalLink href={`https://openrouter.ai/provider/${provider.slug}`}>
             OpenRouter
           </ExternalLink>
         </div>
