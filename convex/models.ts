@@ -15,6 +15,7 @@ export const getBySlug = query({
     return await ctx.db
       .query('or_views_models')
       .withIndex('by_slug', (q) => q.eq('slug', args.slug))
-      .unique()
+      .order('desc')
+      .first()
   },
 })
