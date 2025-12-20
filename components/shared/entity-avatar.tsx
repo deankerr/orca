@@ -18,7 +18,7 @@ export function EntityAvatar({
   return (
     <span
       className={cn(
-        '@container relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-neutral-700/50 bg-muted text-sm select-none',
+        '@container relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-neutral-700/30 text-sm select-none',
         className,
       )}
       style={{ background: style?.background }}
@@ -31,7 +31,7 @@ export function EntityAvatar({
           fill
           sizes="40px"
           className="object-contain"
-          style={{ scale: style?.scale ?? 0.75 }}
+          style={{ scale: style?.scale ?? 1 }}
         />
       ) : (
         <span className="font-mono text-[55cqi] text-foreground/90 uppercase">
