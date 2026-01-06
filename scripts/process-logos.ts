@@ -7,6 +7,7 @@ import {
   COLOR_OUTPUT_DIR,
   LOBEHUB_ICONS,
   LOBEHUB_STATIC_PNG,
+  SOURCES_OPENROUTER_DIR,
   SOURCES_OTHER_DIR,
 } from './logos/config'
 import { processLobehubIcons } from './logos/lobehub'
@@ -67,6 +68,17 @@ async function processColorIcons() {
     } else {
       await sharp(sourcePath).png().toFile(outputPath)
     }
+    copied++
+  }
+
+  // * Copy OpenRouter sources (already PNG), skipping if already exists from other sources
+  const openRouterFiles = await readdir(SOURCES_OPENROUTER_DIR).catch(() => [])
+  for (const file of openRouterFiles) {
+    if (!file.toLowerCase().endsWith('.png')) continue
+    const slug = file.replace(/\.png$/i, '')
+    const outputPath = join(COLOR_OUTPUT_DIR, `${slug}.png`)
+    if (await fileExists(outputPath)) continue
+    await copyFile(join(SOURCES_OPENROUTER_DIR, file), outputPath)
     copied++
   }
 

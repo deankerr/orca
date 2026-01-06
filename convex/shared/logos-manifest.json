@@ -174,12 +174,6 @@
       "background": "#E00054",
       "scale": 0.75
     },
-    "avian": {
-      "slug": "avian",
-      "title": "Avian",
-      "background": "",
-      "scale": 1
-    },
     "aws": {
       "slug": "aws",
       "title": "AWS",
@@ -1409,6 +1403,12 @@
       "title": "SearchApi",
       "background": "#4f46e5",
       "scale": 0.75
+    },
+    "seed": {
+      "slug": "seed",
+      "title": "Seed",
+      "background": "",
+      "scale": 1
     },
     "sensenova": {
       "slug": "sensenova",
