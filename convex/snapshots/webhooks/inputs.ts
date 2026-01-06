@@ -2,12 +2,23 @@ import { asyncMap } from 'convex-helpers'
 import { stream } from 'convex-helpers/server/stream'
 import { v } from 'convex/values'
 
-import { internalQuery, QueryCtx } from '../../_generated/server'
+import type { Doc } from '../../_generated/dataModel'
+import { internalQuery, type QueryCtx } from '../../_generated/server'
 import { db } from '../../db'
 import schema from '../../schema'
 import { transformChanges } from '../../transforms/changes'
 
-// * Queries
+type TransformedChange = ReturnType<typeof transformChanges>[number]
+
+// Non-provider changes (filtered subset we actually work with)
+type ModelOrEndpointChange = Extract<TransformedChange, { entity_type: 'model' | 'endpoint' }>
+
+// Enriched change with supporting data loaded
+export type EnrichedChange = {
+  raw: ModelOrEndpointChange
+  model: Awaited<ReturnType<typeof db.or.views.models.getWithDescription>>
+  endpoint: Doc<'or_views_endpoints'> | null
+}
 
 export const getEnabledSubscriptions = internalQuery({
   args: {},
@@ -19,59 +30,36 @@ export const getEnabledSubscriptions = internalQuery({
   },
 })
 
-export type WebhookChange = Awaited<Promise<ReturnType<typeof changesByCrawlIdHandler>>>[number]
+async function enrichChange(
+  ctx: QueryCtx,
+  change: ModelOrEndpointChange,
+): Promise<EnrichedChange> {
+  const model = await db.or.views.models.getWithDescription(ctx, change.model_slug)
 
-async function changesByCrawlIdHandler(ctx: QueryCtx, args: { crawl_id: string }) {
+  const endpoint =
+    change.entity_type === 'endpoint'
+      ? await db.or.views.endpoints.getByUuid(ctx, change.endpoint_uuid)
+      : null
+
+  return { raw: change, model, endpoint }
+}
+
+function isModelOrEndpointChange(c: TransformedChange): c is ModelOrEndpointChange {
+  return c.entity_type === 'model' || c.entity_type === 'endpoint'
+}
+
+async function changesByCrawlIdHandler(
+  ctx: QueryCtx,
+  args: { crawl_id: string },
+): Promise<EnrichedChange[]> {
   const changes = await ctx.db
     .query('or_views_changes')
     .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
     .collect()
     .then(transformChanges)
-    .then((c) => c.filter((c) => c.entity_type !== 'provider'))
+    .then((c) => c.filter(isModelOrEndpointChange))
 
-  return await asyncMap(changes, async (c) => {
-    // * add model data
-    const model = await db.or.views.models.getWithDescription(ctx, c.model_slug)
-
-    if (c.entity_type === 'model') {
-      // * ensure update paths
-      if (c.change_kind === 'update') {
-        return {
-          ...c,
-          model,
-          path: c.path ?? 'unknown',
-          path_level_1: c.path_level_1 ?? 'unknown',
-        }
-      }
-
-      return {
-        ...c,
-        model,
-      }
-    }
-
-    if (c.entity_type === 'endpoint') {
-      const endpoint = await db.or.views.endpoints.getByUuid(ctx, c.endpoint_uuid)
-
-      if (c.change_kind === 'update') {
-        return {
-          ...c,
-          model,
-          endpoint,
-          path: c.path ?? 'unknown',
-          path_level_1: c.path_level_1 ?? 'unknown',
-        }
-      }
-
-      return {
-        ...c,
-        model,
-        endpoint,
-      }
-    }
-
-    return c
-  })
+  return await asyncMap(changes, (c) => enrichChange(ctx, c))
 }
 
 export const changesByCrawlId = internalQuery({

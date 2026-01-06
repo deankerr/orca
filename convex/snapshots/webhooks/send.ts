@@ -1,6 +1,6 @@
 import { isResponseError, up } from 'up-fetch'
 
-import type { DiscordPayload } from './discord/embeds'
+import type { DiscordPayload } from './discord/utils'
 
 export type Delivery = {
   webhookUrl: string
@@ -9,7 +9,7 @@ export type Delivery = {
 
 // * Config
 
-const DELAY_BETWEEN_PAYLOADS_MS = 500
+const DELAY_BETWEEN_PAYLOADS_MS = 1000
 const RETRY_ATTEMPTS = 3
 
 // * Configured fetch with retry

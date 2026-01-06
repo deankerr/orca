@@ -1,7 +1,61 @@
 import { getEnv } from '../../../lib/env'
 import { getLogo } from '../../../shared/logos'
+import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-// * Icon URL builders
+// * Types
+
+// Payload type for Discord webhook
+export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
+  embeds?: APIEmbed[]
+}
+
+// Link button definition
+export type LinkButton = {
+  label: string
+  url: string
+}
+
+// Embed result from builders
+export type EmbedResult = {
+  embed: APIEmbed
+  links: LinkButton[]
+}
+
+
+export type FieldChange = {
+  path?: string
+  path_level_1?: string
+  path_level_2?: string
+  before: unknown
+  after: unknown
+}
+
+// * Constants
+
+export const ORCA_PUBLIC_URL = 'https://orca.orb.town'
+
+export const MAX_DESCRIPTION_LENGTH = 900
+
+export const EMOJIS = {
+  new: '🆕',
+  delete: '☠️',
+  update: '🔄',
+  checkmark: '\u2705',
+  cross: '\u274c',
+  arrow: '▶︎',
+  arrowUp: '⬆︎',
+  arrowDown: '⬇︎',
+} as const
+
+// Embed colors by change kind
+export const COLORS = {
+  create: 0x22c55e, // green
+  update: 0x3b82f6, // blue
+  delete: 0xef4444, // red
+} as const
+
+
+// * Icon helpers
 
 export function getColorIconUrl(model_slug: string): string | undefined {
   const { colorPath } = getLogo(model_slug)
@@ -11,22 +65,56 @@ export function getColorIconUrl(model_slug: string): string | undefined {
   return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
 }
 
-// * Link builders
-
-export function buildLinks(model_slug: string, hugging_face_id?: string): string {
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  const links = [
-    `[⚪ ORCA](${baseUrl}/?q=${model_slug})`,
-    `[🔀 OpenRouter](https://openrouter.ai/${model_slug})`,
-  ]
-
-  if (hugging_face_id) {
-    links.push(`[🤗 Hugging Face](https://huggingface.co/${hugging_face_id})`)
-  }
-
-  return links.join(' ・ ')
-}
+// * Formatting helpers
 
 export function mono(value: unknown) {
   return `\`${String(value)}\``
+}
+
+export function isMissing(value: unknown): boolean {
+  return value === undefined || value === null
+}
+
+export function getFieldLabel(field: string, before: unknown, after: unknown): string {
+  if (isMissing(before)) return `${field} ${EMOJIS.new}`
+  if (isMissing(after)) return `${field} ${EMOJIS.delete}`
+  return `${field} ${EMOJIS.update}`
+}
+
+export function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return 'null'
+  if (typeof value === 'boolean') return value ? EMOJIS.checkmark : EMOJIS.cross
+  if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 20 })
+  if (typeof value === 'string') return value.length > 100 ? value.slice(0, 100) + '...' : value
+  return JSON.stringify(value)
+}
+
+export function formatArrayDiff(before: unknown[], after: unknown[]): string {
+  const beforeSet = new Set(before.map(String))
+  const afterSet = new Set(after.map(String))
+
+  const added = after.filter((item) => !beforeSet.has(String(item))).map(String)
+  const removed = before.filter((item) => !afterSet.has(String(item))).map(String)
+
+  const lines: string[] = []
+  for (const item of removed) lines.push(`- ${item}`)
+  for (const item of added) lines.push(`+ ${item}`)
+
+  return lines.length > 0 ? `\`\`\`diff\n${lines.join('\n')}\n\`\`\`` : ''
+}
+
+export function toNumber(value: unknown): number | null {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+export function formatDelta(before: number | null, after: number | null): string {
+  if (before === null || after === null || before === 0) return ''
+  const percentChange = ((after - before) / before) * 100
+  const arrow = percentChange > 0 ? EMOJIS.arrowUp : EMOJIS.arrowDown
+  return `${arrow}${Math.abs(percentChange).toFixed(0)}%`
 }

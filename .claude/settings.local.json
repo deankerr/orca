@@ -31,5 +31,7 @@
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["next-devtools"]
+  "enabledMcpjsonServers": [
+    "next-devtools"
+  ]
 }
