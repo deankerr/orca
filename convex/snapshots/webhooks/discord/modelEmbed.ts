@@ -3,15 +3,16 @@ import { EmbedBuilder } from '@discordjs/builders'
 import { truncate } from '../../../shared/utils'
 import { buildEntityLinks } from './components'
 import {
+  COLORS,
   EMOJIS,
-  MAX_DESCRIPTION_LENGTH,
   formatArrayDiff,
   formatValue,
   getColorIconUrl,
   getFieldLabel,
   isMissing,
+  MAX_DESCRIPTION_LENGTH,
   mono,
-  COLORS, type EmbedResult,
+  type EmbedResult,
   type FieldChange,
 } from './utils'
 
@@ -102,12 +103,10 @@ function buildBaseEmbed(
   model: ModelData | null,
   change_kind: 'create' | 'update' | 'delete',
 ): EmbedResult {
-  const embed = new EmbedBuilder()
-    .setColor(COLORS[change_kind])
-    .setAuthor({
-      name: model_slug,
-      iconURL: getColorIconUrl(model_slug),
-    })
+  const embed = new EmbedBuilder().setColor(COLORS[change_kind]).setAuthor({
+    name: model_slug,
+    iconURL: getColorIconUrl(model_slug),
+  })
 
   // Set title based on change kind
   switch (change_kind) {

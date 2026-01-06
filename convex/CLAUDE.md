@@ -223,6 +223,7 @@ export const myAction = action({
 
 ```typescript
 import { v } from 'convex/values'
+
 import { query } from './_generated/server'
 
 export const f = query({
@@ -239,6 +240,7 @@ export const f = query({
 
 ```typescript
 import { httpRouter } from 'convex/server'
+
 import { httpAction } from './_generated/server'
 
 const http = httpRouter()
@@ -260,6 +262,7 @@ http.route({
 
 ```typescript
 import { v } from 'convex/values'
+
 import { mutation } from './_generated/server'
 
 export const create = mutation({
@@ -507,8 +510,8 @@ export default crons
 Instead, query the `_storage` system table. For example, you can use `ctx.db.system.get` to get an `Id<"_storage">`.
 
 ```ts
-import { query } from './_generated/server'
 import { Id } from './_generated/dataModel'
+import { query } from './_generated/server'
 
 type FileMetadata = {
   _id: Id<'_storage'>
@@ -700,7 +703,13 @@ import { v } from 'convex/values'
 import OpenAI from 'openai'
 
 import { internal } from './_generated/api'
-import { internalAction, internalMutation, internalQuery, mutation, query } from './_generated/server'
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from './_generated/server'
 
 /**
  * Create a user with a given name.

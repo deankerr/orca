@@ -200,7 +200,9 @@ export function buildDeliveries(args: {
       if (slugCompare !== 0) return slugCompare
 
       // Then sort by logical weight within the same model
-      return getSortWeight(a.entity_type, a.change_kind) - getSortWeight(b.entity_type, b.change_kind)
+      return (
+        getSortWeight(a.entity_type, a.change_kind) - getSortWeight(b.entity_type, b.change_kind)
+      )
     })
 
     // Convert to deliveries

@@ -44,7 +44,11 @@ export function needsTint(color: string): boolean {
  * - Invert when icon color matches background (both black or both white)
  * - Invert when avatarColor is black (source logos are white, need to invert to black)
  */
-export function needsInversion(avatarColor: string, background: string, useColor: boolean): boolean {
+export function needsInversion(
+  avatarColor: string,
+  background: string,
+  useColor: boolean,
+): boolean {
   // * If using color variant, no inversion needed
   if (useColor) return false
 
@@ -75,4 +79,3 @@ export function slugToTitle(slug: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
-

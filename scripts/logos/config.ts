@@ -8,4 +8,3 @@ export const SOURCES_OPENROUTER_DIR = `${SOURCES_DIR}/openrouter`
 
 export const LOBEHUB_STATIC_PNG = 'node_modules/@lobehub/icons-static-png/dark'
 export const LOBEHUB_ICONS = 'node_modules/@lobehub/icons/es'
-

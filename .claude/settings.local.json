@@ -25,13 +25,13 @@
       "mcp__convex__runOneoffQuery",
       "Bash(find:*)",
       "Bash(bunx tsc:*)",
-      "mcp__exa__get_code_context_exa"
+      "mcp__exa__get_code_context_exa",
+      "mcp__exa__web_search_exa",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "next-devtools"
-  ]
+  "enabledMcpjsonServers": ["next-devtools"]
 }

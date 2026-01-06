@@ -2,12 +2,7 @@ import { ExternalLink as ExternalLinkIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-export function ExternalLink({
-  href,
-  children,
-  className,
-  ...props
-}: React.ComponentProps<'a'>) {
+export function ExternalLink({ href, children, className, ...props }: React.ComponentProps<'a'>) {
   return (
     <a
       href={href}

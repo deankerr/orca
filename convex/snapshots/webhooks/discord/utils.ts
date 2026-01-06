@@ -1,6 +1,7 @@
+import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
+
 import { getEnv } from '../../../lib/env'
 import { getLogo } from '../../../shared/logos'
-import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
 // * Types
 
@@ -20,7 +21,6 @@ export type EmbedResult = {
   embed: APIEmbed
   links: LinkButton[]
 }
-
 
 export type FieldChange = {
   path?: string
@@ -54,7 +54,6 @@ export const COLORS = {
   delete: 0xef4444, // red
 } as const
 
-
 // * Icon helpers
 
 export function getColorIconUrl(model_slug: string): string | undefined {
@@ -84,7 +83,8 @@ export function getFieldLabel(field: string, before: unknown, after: unknown): s
 export function formatValue(value: unknown): string {
   if (value === null || value === undefined) return 'null'
   if (typeof value === 'boolean') return value ? EMOJIS.checkmark : EMOJIS.cross
-  if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 20 })
+  if (typeof value === 'number')
+    return value.toLocaleString(undefined, { maximumFractionDigits: 20 })
   if (typeof value === 'string') return value.length > 100 ? value.slice(0, 100) + '...' : value
   return JSON.stringify(value)
 }

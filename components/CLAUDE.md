@@ -12,8 +12,11 @@ export function LabeledBox({
   ...props
 }: { label?: string } & React.ComponentProps<'div'>) {
   return (
-    <div className={cn('bg-card text-card-foreground space-y-2 rounded-sm border p-2', className)} {...props}>
-      {label && <div className="text-muted-foreground font-mono text-sm uppercase">{label}</div>}
+    <div
+      className={cn('space-y-2 rounded-sm border bg-card p-2 text-card-foreground', className)}
+      {...props}
+    >
+      {label && <div className="font-mono text-sm text-muted-foreground uppercase">{label}</div>}
       {children}
     </div>
   )
@@ -100,7 +103,13 @@ Function components can now accept `ref` as a regular prop, eliminating `forward
 
 ```tsx
 // NEW (React 19)
-function MyInput({ placeholder, ref }: { placeholder?: string; ref?: React.Ref<HTMLInputElement> }) {
+function MyInput({
+  placeholder,
+  ref,
+}: {
+  placeholder?: string
+  ref?: React.Ref<HTMLInputElement>
+}) {
   return <input placeholder={placeholder} ref={ref} />
 }
 ```

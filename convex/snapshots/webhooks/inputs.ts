@@ -30,10 +30,7 @@ export const getEnabledSubscriptions = internalQuery({
   },
 })
 
-async function enrichChange(
-  ctx: QueryCtx,
-  change: ModelOrEndpointChange,
-): Promise<EnrichedChange> {
+async function enrichChange(ctx: QueryCtx, change: ModelOrEndpointChange): Promise<EnrichedChange> {
   const model = await db.or.views.models.getWithDescription(ctx, change.model_slug)
 
   const endpoint =

@@ -4,6 +4,7 @@ import { formatPricing } from '../../../shared/pricing'
 import type { OrcaEndpoint } from '../../../transforms/endpoint'
 import { buildEntityLinks } from './components'
 import {
+  COLORS,
   EMOJIS,
   formatArrayDiff,
   formatDelta,
@@ -13,7 +14,7 @@ import {
   isMissing,
   mono,
   toNumber,
-  COLORS, type EmbedResult,
+  type EmbedResult,
   type FieldChange,
 } from './utils'
 
@@ -87,13 +88,17 @@ function buildEndpointFields(
 
     fields.push({
       name: 'json_object',
-      value: endpoint.supported_parameters.includes('response_format') ? EMOJIS.checkmark : EMOJIS.cross,
+      value: endpoint.supported_parameters.includes('response_format')
+        ? EMOJIS.checkmark
+        : EMOJIS.cross,
       inline: true,
     })
 
     fields.push({
       name: 'json_schema',
-      value: endpoint.supported_parameters.includes('structured_outputs') ? EMOJIS.checkmark : EMOJIS.cross,
+      value: endpoint.supported_parameters.includes('structured_outputs')
+        ? EMOJIS.checkmark
+        : EMOJIS.cross,
       inline: true,
     })
 

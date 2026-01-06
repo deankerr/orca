@@ -25,11 +25,7 @@ import { formatDateTimeUTC, formatRelativeTime } from '@/lib/formatters'
 import { getConvexHttpUrl } from '@/lib/utils'
 
 export default function Page() {
-  const archives = usePaginatedQuery(
-    api.admin.archives.feed,
-    {},
-    { initialNumItems: 20 },
-  )
+  const archives = usePaginatedQuery(api.admin.archives.feed, {}, { initialNumItems: 20 })
 
   return (
     <PageContainer className="pb-4">

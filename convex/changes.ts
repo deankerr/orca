@@ -27,7 +27,9 @@ export const getProviderChanges = query({
       .collect()
 
     return allChanges
-      .filter((change) => change.entity_type === 'provider' && change.provider_slug === args.providerSlug)
+      .filter(
+        (change) => change.entity_type === 'provider' && change.provider_slug === args.providerSlug,
+      )
       .slice(0, args.limit)
   },
 })
