@@ -12,7 +12,7 @@ export function ActionLink({
     <button
       type="button"
       className={cn(
-        'inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-mono text-xs text-primary uppercase underline decoration-primary/40 decoration-dashed underline-offset-3 hover:decoration-solid',
+        'inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-mono text-xs text-primary uppercase underline decoration-primary/40 decoration-dashed underline-offset-3',
         className,
       )}
       {...props}
