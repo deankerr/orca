@@ -73,9 +73,6 @@ function DataGridColumnHeader<TData, TValue>({
     )
   }
 
-  // NOTE: removed unused: headerControls(), headerPin(), etc.
-
-  // NOTE: removed isResizable check which prevented headerLabel from ever being used
   if (column.getCanSort()) {
     return headerButton()
   }

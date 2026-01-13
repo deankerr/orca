@@ -96,7 +96,6 @@ function DataGridTableHeadRow<TData>({
       className={cn(
         'bg-muted/40',
         props.tableLayout?.cellBorder && '*:last:border-e-0',
-        props.tableLayout?.stripped && 'bg-transparent',
         props.tableLayout?.headerBackground === false && 'bg-transparent',
         props.tableClassNames?.headerRow,
       )}
@@ -196,7 +195,6 @@ function DataGridTableBody({ children }: { children: ReactNode }) {
   return (
     <tbody
       className={cn(
-        '[&_tr:last-child]:border-0',
         props.tableLayout?.rowRounded &&
           '[&_td:first-child]:rounded-s-lg [&_td:last-child]:rounded-e-lg',
         props.tableClassNames?.body,
@@ -215,11 +213,8 @@ function DataGridTableBodyRowSkeleton({ children }: { children: ReactNode }) {
       className={cn(
         'hover:bg-muted/40 data-[state=selected]:bg-muted/50',
         props.onRowClick && 'cursor-pointer',
-        !props.tableLayout?.stripped &&
-          props.tableLayout?.rowBorder &&
-          'border-b border-border [&:not(:last-child)>td]:border-b',
+        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border',
         props.tableLayout?.cellBorder && '*:last:border-e-0',
-        props.tableLayout?.stripped && 'odd:bg-muted/90 hover:bg-transparent odd:hover:bg-muted',
         table.options.enableRowSelection && '*:first:relative',
         props.tableClassNames?.bodyRow,
       )}
@@ -267,13 +262,11 @@ function DataGridTableBodyRow<TData>({
   row,
   dndRef,
   dndStyle,
-  contentVisibility,
 }: {
   children: ReactNode
   row: Row<TData>
   dndRef?: React.Ref<HTMLTableRowElement>
   dndStyle?: CSSProperties
-  contentVisibility?: boolean
 }) {
   'use no memo'
   const { props, table } = useDataGrid()
@@ -281,25 +274,14 @@ function DataGridTableBodyRow<TData>({
   return (
     <tr
       ref={dndRef}
-      style={{
-        ...(dndStyle ? dndStyle : null),
-        ...(contentVisibility
-          ? {
-              contentVisibility: 'auto',
-              containIntrinsicHeight: props.tableLayout?.rowHeight ?? 58.5,
-            }
-          : null),
-      }}
+      style={dndStyle ?? undefined}
       data-state={table.options.enableRowSelection && row.getIsSelected() ? 'selected' : undefined}
       onClick={() => props.onRowClick && props.onRowClick(row.original)}
       className={cn(
         'group hover:bg-muted/40 data-[state=selected]:bg-muted/50',
         props.onRowClick && 'cursor-pointer',
-        !props.tableLayout?.stripped &&
-          props.tableLayout?.rowBorder &&
-          'border-b border-border [&:not(:last-child)>td]:border-b',
+        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border',
         props.tableLayout?.cellBorder && '*:last:border-e-0',
-        props.tableLayout?.stripped && 'odd:bg-muted/90 hover:bg-transparent odd:hover:bg-muted',
         table.options.enableRowSelection && '*:first:relative',
         props.tableClassNames?.bodyRow,
       )}
@@ -313,7 +295,7 @@ function DataGridTableBodyRowExpanded<TData>({ row }: { row: Row<TData> }) {
   const { props, table } = useDataGrid()
 
   return (
-    <tr className={cn(props.tableLayout?.rowBorder && '[&:not(:last-child)>td]:border-b')}>
+    <tr className={cn(props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border')}>
       <td colSpan={row.getVisibleCells().length}>
         {table
           .getAllColumns()
@@ -391,38 +373,6 @@ function DataGridTableEmpty() {
   )
 }
 
-function DataGridTableLoader() {
-  const { props } = useDataGrid()
-
-  return (
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-      <div className="flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm leading-none font-medium text-muted-foreground shadow-xs">
-        <svg
-          className="-ml-1 h-5 w-5 animate-spin text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="3"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        {props.loadingMessage || 'Loading...'}
-      </div>
-    </div>
-  )
-}
-
 function DataGridTableRowSelect<TData>({ row }: { row: Row<TData> }) {
   return (
     <>
@@ -461,14 +411,10 @@ function DataGridTableRowSelectAll() {
 function DataGridTableVirtual<TData>() {
   const { table, isLoading, props } = useDataGrid()
   const scrollElementRef = useRef<HTMLDivElement>(null)
-  const pagination = table.getState().pagination
   const rowHeight = props.tableLayout?.rowHeight ?? 58.5
   const overscan = props.tableLayout?.overscan ?? 3
 
-  const rowCount =
-    isLoading && props.loadingMode === 'skeleton'
-      ? props.skeletonRows || pagination?.pageSize || 10
-      : table.getRowModel().rows.length
+  const rowCount = isLoading ? (props.skeletonRows ?? 10) : table.getRowModel().rows.length
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -478,12 +424,10 @@ function DataGridTableVirtual<TData>() {
     overscan,
     getItemKey: useCallback(
       (index: number) => {
-        if (isLoading && props.loadingMode === 'skeleton') {
-          return `skeleton-${index}`
-        }
+        if (isLoading) return `skeleton-${index}`
         return table.getRowModel().rows[index]?.id ?? index
       },
-      [isLoading, props.loadingMode, table],
+      [isLoading, table],
     ),
   })
 
@@ -524,9 +468,7 @@ function DataGridTableVirtual<TData>() {
           })}
         </DataGridTableHead>
 
-        {(props.tableLayout?.stripped || !props.tableLayout?.rowBorder) && (
-          <DataGridTableRowSpacer />
-        )}
+        {!props.tableLayout?.rowBorder && <DataGridTableRowSpacer />}
 
         <DataGridTableBody>
           {paddingTop > 0 && (
@@ -535,7 +477,7 @@ function DataGridTableVirtual<TData>() {
             </tr>
           )}
 
-          {isLoading && props.loadingMode === 'skeleton' ? (
+          {isLoading ? (
             virtualRows.map((virtualRow) => (
               <DataGridTableBodyRowSkeleton key={virtualRow.key}>
                 {table.getVisibleFlatColumns().map((column, colIndex) => {
@@ -597,7 +539,6 @@ export {
   DataGridTableHeadRow,
   DataGridTableHeadRowCell,
   DataGridTableHeadRowCellResize,
-  DataGridTableLoader,
   DataGridTableRowSelect,
   DataGridTableRowSelectAll,
   DataGridTableRowSpacer,
