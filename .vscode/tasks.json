@@ -5,50 +5,20 @@
       "label": "Next.js Dev",
       "type": "shell",
       "command": "bun",
-      "args": ["next", "dev", "--turbopack", "--port", "3020"],
+      "args": ["dev:next"],
       "isBackground": true,
-      "problemMatcher": {
-        "owner": "nextjs",
-        "pattern": {
-          "regexp": "^(.*)$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "Ready in"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "group": "dev"
-      },
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
+      "presentation": { "reveal": "never", "panel": "dedicated", "group": "dev" },
+      "runOptions": { "runOn": "folderOpen" }
     },
     {
       "label": "Convex Dev",
       "type": "shell",
       "command": "bun",
-      "args": ["convex", "dev"],
+      "args": ["dev:convex"],
       "isBackground": true,
-      "problemMatcher": {
-        "base": "$tsc-watch",
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "Convex functions ready"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "group": "dev"
-      },
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
+      "problemMatcher": [],
+      "presentation": { "reveal": "never", "panel": "dedicated", "group": "dev" },
+      "runOptions": { "runOn": "folderOpen" }
     }
   ]
 }
