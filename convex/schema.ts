@@ -5,7 +5,6 @@ import { db } from './db'
 export default defineSchema(
   {
     or_sources: db.or.sources.table,
-    or_stats: db.or.stats.table,
 
     or_views_changes: db.or.views.changes.table,
     or_views_endpoints: db.or.views.endpoints.table,

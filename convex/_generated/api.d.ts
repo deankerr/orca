@@ -19,7 +19,6 @@ import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as db_index from "../db/index.js";
 import type * as db_or_sources from "../db/or/sources.js";
-import type * as db_or_stats from "../db/or/stats.js";
 import type * as db_or_views_changes from "../db/or/views/changes.js";
 import type * as db_or_views_endpoints from "../db/or/views/endpoints.js";
 import type * as db_or_views_models from "../db/or/views/models.js";
@@ -54,9 +53,6 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
-import type * as snapshots_stats_inputs from "../snapshots/stats/inputs.js";
-import type * as snapshots_stats_main from "../snapshots/stats/main.js";
-import type * as snapshots_stats_outputs from "../snapshots/stats/outputs.js";
 import type * as snapshots_webhooks_dev from "../snapshots/webhooks/dev.js";
 import type * as snapshots_webhooks_discord_components from "../snapshots/webhooks/discord/components.js";
 import type * as snapshots_webhooks_discord_endpointEmbed from "../snapshots/webhooks/discord/endpointEmbed.js";
@@ -88,7 +84,6 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   "db/index": typeof db_index;
   "db/or/sources": typeof db_or_sources;
-  "db/or/stats": typeof db_or_stats;
   "db/or/views/changes": typeof db_or_views_changes;
   "db/or/views/endpoints": typeof db_or_views_endpoints;
   "db/or/views/models": typeof db_or_views_models;
@@ -123,9 +118,6 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
-  "snapshots/stats/inputs": typeof snapshots_stats_inputs;
-  "snapshots/stats/main": typeof snapshots_stats_main;
-  "snapshots/stats/outputs": typeof snapshots_stats_outputs;
   "snapshots/webhooks/dev": typeof snapshots_webhooks_dev;
   "snapshots/webhooks/discord/components": typeof snapshots_webhooks_discord_components;
   "snapshots/webhooks/discord/endpointEmbed": typeof snapshots_webhooks_discord_endpointEmbed;
