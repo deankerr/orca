@@ -1,18 +1,9 @@
 [install]
 minimumReleaseAge = 259200 # 3 days
-# Temporary exclusion for next and react dependencies
 minimumReleaseAgeExcludes = [
-  "next",
-  "react",
-  "react-dom",
   "@next/bundle-analyzer",
-  "@types/react",
-  "@types/react-dom",
-  "eslint-config-next",
-  "eslint-plugin-react-hooks",
   "@next/env",
   "@next/eslint-plugin-next",
-  "@swc/helpers",
   "@next/swc-darwin-arm64",
   "@next/swc-darwin-x64",
   "@next/swc-linux-arm64-gnu",
@@ -20,5 +11,17 @@ minimumReleaseAgeExcludes = [
   "@next/swc-linux-x64-gnu",
   "@next/swc-linux-x64-musl",
   "@next/swc-win32-arm64-msvc",
-  "@next/swc-win32-x64-msvc"
+  "@next/swc-win32-x64-msvc",
+  "@swc/helpers",
+  "@types/bun",
+  "@types/node",
+  "@types/react-dom",
+  "@types/react",
+  "bun-types",
+  "convex",
+  "eslint-config-next",
+  "eslint-plugin-react-hooks",
+  "next",
+  "react-dom",
+  "react",
 ]
