@@ -106,6 +106,7 @@ function DataGridProvider<TData extends object>({
   table,
   ...props
 }: DataGridProps<TData> & { table: Table<TData> }) {
+  'use no memo'
   return (
     <DataGridContext.Provider
       value={{
@@ -121,6 +122,7 @@ function DataGridProvider<TData extends object>({
 }
 
 function DataGrid<TData extends object>({ children, table, ...props }: DataGridProps<TData>) {
+  'use no memo'
   const defaultProps: Partial<DataGridProps<TData>> = {
     loadingMode: 'skeleton',
     tableLayout: {

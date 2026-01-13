@@ -25,16 +25,14 @@ function DataGridColumnHeader<TData, TValue>({
   icon,
   className,
 }: DataGridColumnHeaderProps<TData, TValue>) {
-  const { isLoading, props, recordCount } = useDataGrid()
-
-  const isResizable = props.tableLayout?.columnsResizable && column.getCanResize()
+  'use no memo'
+  const { isLoading, recordCount } = useDataGrid()
 
   const headerLabel = () => {
     return (
       <div
         className={cn(
           'inline-flex h-full grow items-center justify-center gap-1.5 font-normal text-accent-foreground [&_svg]:size-3.5 [&_svg]:opacity-60',
-          isResizable && 'pr-2.5', // offset resize handle
           className,
         )}
         data-slot="data-grid-header-label"
@@ -50,7 +48,7 @@ function DataGridColumnHeader<TData, TValue>({
       <Button
         variant="ghost"
         className={cn(
-          '-ms-2 justify-center px-2 py-0.5 text-xs font-normal text-secondary-foreground hover:bg-secondary hover:text-foreground data-[state=open]:bg-secondary data-[state=open]:text-foreground',
+          'justify-center px-2 py-0.5 text-xs font-normal text-secondary-foreground hover:bg-secondary hover:text-foreground data-[state=open]:bg-secondary data-[state=open]:text-foreground',
           className,
         )}
         disabled={isLoading || recordCount === 0}
@@ -65,11 +63,11 @@ function DataGridColumnHeader<TData, TValue>({
 
         {column.getCanSort() &&
           (column.getIsSorted() === 'desc' ? (
-            <ChevronDown className="size-[0.7rem]!" />
+            <ChevronDown className="size-[0.7rem]! -mr-2" />
           ) : column.getIsSorted() === 'asc' ? (
-            <ChevronUp className="size-[0.7rem]!" />
+            <ChevronUp className="size-[0.7rem]! -mr-2" />
           ) : (
-            <ChevronsUpDown className="size-[0.7rem]!" />
+            <ChevronsUpDown className="size-[0.7rem]! -mr-2" />
           ))}
       </Button>
     )
