@@ -49,18 +49,16 @@ export function ModelSheet({ slug }: { slug: string }) {
     <>
       <SheetTitle className="sr-only">{model.name}</SheetTitle>
       {/* Header */}
-      <SheetHeader>
+      <SheetHeader className='pb-0'>
         <EntitySheetHeader type="model" slug={model.slug} name={model.name} />
       </SheetHeader>
 
       <div className="flex flex-col gap-6 pb-6 text-sm">
         {/* External Links */}
         <div className="flex flex-col items-end gap-1 px-4 text-right">
-          <ExternalLink href={`https://openrouter.ai/${model.slug}`}>OpenRouter</ExternalLink>
+          <ExternalLink href={`https://openrouter.ai/${model.slug}`} />
           {model.hugging_face_id && (
-            <ExternalLink href={`https://huggingface.co/${model.hugging_face_id}`}>
-              Hugging Face
-            </ExternalLink>
+            <ExternalLink href={`https://huggingface.co/${model.hugging_face_id}`} />
           )}
         </div>
 

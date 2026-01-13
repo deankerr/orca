@@ -1,5 +1,9 @@
 # ORCA (OpenRouter Capability Analysis)
 
+## Commands
+
+- `bun check`: type check and lint the whole project - do not try to check components individually. This is all you need.
+
 ## Overview
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.

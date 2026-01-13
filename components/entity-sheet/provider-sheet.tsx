@@ -49,16 +49,14 @@ export function ProviderSheet({ slug }: { slug: string }) {
     <>
       <SheetTitle className="sr-only">{provider.name}</SheetTitle>
       {/* Header */}
-      <SheetHeader>
+      <SheetHeader className='pb-0'>
         <EntitySheetHeader type="provider" slug={provider.slug} name={provider.name} />
       </SheetHeader>
 
       <div className="flex flex-col gap-6 pb-6 text-sm">
         {/* OpenRouter Link */}
         <div className="flex flex-col items-end gap-1 px-4 text-right">
-          <ExternalLink href={`https://openrouter.ai/provider/${provider.slug}`}>
-            OpenRouter
-          </ExternalLink>
+          <ExternalLink href={`https://openrouter.ai/provider/${provider.slug}`} />
         </div>
 
         {/* Details Section */}
@@ -80,7 +78,7 @@ export function ProviderSheet({ slug }: { slug: string }) {
               <DataListItem>
                 <DataListLabel>Status Page</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.status_page_url}>Link</ExternalLink>
+                  <ExternalLink href={provider.status_page_url} />
                 </DataListValue>
               </DataListItem>
             )}
@@ -88,7 +86,7 @@ export function ProviderSheet({ slug }: { slug: string }) {
               <DataListItem>
                 <DataListLabel>Terms of Service</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.terms_of_service_url}>Link</ExternalLink>
+                  <ExternalLink href={provider.terms_of_service_url} />
                 </DataListValue>
               </DataListItem>
             )}
@@ -96,7 +94,7 @@ export function ProviderSheet({ slug }: { slug: string }) {
               <DataListItem>
                 <DataListLabel>Privacy Policy</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.privacy_policy_url}>Link</ExternalLink>
+                  <ExternalLink href={provider.privacy_policy_url} />
                 </DataListValue>
               </DataListItem>
             )}

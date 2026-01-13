@@ -5,6 +5,12 @@ import { Badge } from '@/components/ui/badge'
 
 import { EntitySheetSection } from './entity-sheet-components'
 
+function getChangeKindDisplayText(kind: string) {
+  if (kind === 'create') return 'created'
+  if (kind === 'delete') return 'removed'
+  return kind
+}
+
 export function EntityChanges({
   changes,
   isPending,
@@ -13,7 +19,7 @@ export function EntityChanges({
   isPending: boolean
 }) {
   return (
-    <EntitySheetSection title="Recent Changes" count={changes?.length ?? '...'}>
+    <EntitySheetSection title="Recent Changes">
       {isPending ? (
         <div className="text-sm text-muted-foreground">Loading changes...</div>
       ) : changes && changes.length > 0 ? (
@@ -21,13 +27,13 @@ export function EntityChanges({
           {changes.map((change) => (
             <div key={change._id} className="rounded-xs border p-2">
               <div className="mb-1 flex items-center justify-between">
-                <span className="uppercase">{change.change_kind}</span>
+                <span className="uppercase">{getChangeKindDisplayText(change.change_kind)}</span>
                 <span className="text-muted-foreground">
                   {new Date(Number(change.crawl_id)).toLocaleDateString()}
                 </span>
               </div>
               {change.path && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 overflow-hidden gap-y-0.5 *:data-[slot=badge]:text-xs">
                   <Badge
                     variant="outline"
                     className="rounded-sm border-dashed text-xs font-normal text-muted-foreground"

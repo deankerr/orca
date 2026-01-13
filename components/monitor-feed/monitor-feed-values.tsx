@@ -86,7 +86,7 @@ function BaseBadge({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <Badge
       variant="outline"
-      className={cn('rounded-sm border-dotted text-sm text-foreground/80', className)}
+      className={cn('rounded-sm border-dotted break-all overflow-hidden whitespace-normal text-sm text-foreground/80', className)}
       {...props}
     />
   )
@@ -125,7 +125,7 @@ function UndefinedValue() {
 
 function JSONValue({ value }: { value: unknown }) {
   const stringified = JSON.stringify(value, null, 2)
-  return <BaseBadge className="mt-1 py-2 text-xs whitespace-normal">{stringified}</BaseBadge>
+  return <BaseBadge className="text-xs whitespace-normal">{stringified}</BaseBadge>
 }
 
 function PercentageBadge({

@@ -29,7 +29,8 @@
       "mcp__exa__web_search_exa",
       "WebFetch(domain:github.com)",
       "mcp__plugin_claude-mem_mcp-search__search",
-      "mcp__plugin_claude-mem_mcp-search__get_observations"
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(bun check:*)"
     ],
     "deny": [],
     "ask": []

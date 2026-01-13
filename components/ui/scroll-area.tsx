@@ -157,7 +157,7 @@ function ScrollBar({
       orientation={orientation}
       data-slot="scroll-area-scrollbar"
       className={cn(
-        'flex touch-none p-px transition-[colors] duration-150 select-none hover:bg-muted data-[state=hidden]:animate-out data-[state=hidden]:fade-out-0 data-[state=visible]:animate-in data-[state=visible]:fade-in-0 dark:hover:bg-muted/50',
+        'z-20 flex touch-none p-px transition-[colors] duration-150 select-none hover:bg-muted data-[state=hidden]:animate-out data-[state=hidden]:fade-out-0 data-[state=visible]:animate-in data-[state=visible]:fade-in-0 dark:hover:bg-muted/50',
         orientation === 'vertical' && 'h-full w-2.5 border-l border-l-transparent',
         orientation === 'horizontal' && 'h-2.5 flex-col border-t border-t-transparent px-1 pr-1.25',
         className,
