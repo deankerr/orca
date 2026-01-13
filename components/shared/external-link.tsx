@@ -2,6 +2,14 @@ import { ExternalLink as ExternalLinkIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
+function getDomain(url: string) {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return url
+  }
+}
+
 export function ExternalLink({ href, children, className, ...props }: React.ComponentProps<'a'>) {
   return (
     <a
@@ -14,7 +22,7 @@ export function ExternalLink({ href, children, className, ...props }: React.Comp
       )}
       {...props}
     >
-      {children}
+      {children ?? (href && getDomain(href))}
       <ExternalLinkIcon className="size-3" />
     </a>
   )
