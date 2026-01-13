@@ -7,9 +7,10 @@
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start",
+    "format": "prettier -w .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "bun typecheck && bun lint --max-warnings 0",
+    "check": "bun typecheck && bun lint --max-warnings 0 && bun format --log-level warn",
     "process-logos": "bun run scripts/process-logos.ts",
     "generate-sprite": "bun scripts/generate-sprite.ts"
   },

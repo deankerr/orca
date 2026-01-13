@@ -86,7 +86,10 @@ function BaseBadge({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <Badge
       variant="outline"
-      className={cn('rounded-sm border-dotted break-all overflow-hidden whitespace-normal text-sm text-foreground/80', className)}
+      className={cn(
+        'overflow-hidden rounded-sm border-dotted text-sm break-all whitespace-normal text-foreground/80',
+        className,
+      )}
       {...props}
     />
   )

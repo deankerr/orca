@@ -33,7 +33,7 @@ export function EntityChanges({
                 </span>
               </div>
               {change.path && (
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 overflow-hidden gap-y-0.5 *:data-[slot=badge]:text-xs">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 overflow-hidden *:data-[slot=badge]:text-xs">
                   <Badge
                     variant="outline"
                     className="rounded-sm border-dashed text-xs font-normal text-muted-foreground"

@@ -49,7 +49,7 @@ export function ModelSheet({ slug }: { slug: string }) {
     <>
       <SheetTitle className="sr-only">{model.name}</SheetTitle>
       {/* Header */}
-      <SheetHeader className='pb-0'>
+      <SheetHeader className="pb-0">
         <EntitySheetHeader type="model" slug={model.slug} name={model.name} />
       </SheetHeader>
 

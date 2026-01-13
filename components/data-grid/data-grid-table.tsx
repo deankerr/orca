@@ -347,7 +347,7 @@ function DataGridTableBodyRowCell<TData>({
         cell.column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:bg-background/90 data-pinned:group-hover:bg-muted/40 data-pinned:group-hover:backdrop-blur-md data-pinned:backdrop-blur-xs [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          'data-pinned:bg-background/90 data-pinned:backdrop-blur-xs data-pinned:group-hover:bg-muted/40 data-pinned:group-hover:backdrop-blur-md [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
         column.getIndex() === 0 || column.getIndex() === row.getVisibleCells().length - 1
           ? props.tableClassNames?.edgeCell
           : '',
@@ -365,7 +365,7 @@ function DataGridTableEmpty() {
   return (
     <tr>
       <td colSpan={totalColumns} className="h-32">
-        <div className="sticky left-0 right-0 flex w-screen max-w-full items-center justify-center text-muted-foreground">
+        <div className="sticky right-0 left-0 flex w-screen max-w-full items-center justify-center text-muted-foreground">
           {props.emptyMessage || 'No data available'}
         </div>
       </td>

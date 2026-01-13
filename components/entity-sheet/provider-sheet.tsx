@@ -49,7 +49,7 @@ export function ProviderSheet({ slug }: { slug: string }) {
     <>
       <SheetTitle className="sr-only">{provider.name}</SheetTitle>
       {/* Header */}
-      <SheetHeader className='pb-0'>
+      <SheetHeader className="pb-0">
         <EntitySheetHeader type="provider" slug={provider.slug} name={provider.name} />
       </SheetHeader>
 

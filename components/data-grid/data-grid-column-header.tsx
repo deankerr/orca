@@ -63,11 +63,11 @@ function DataGridColumnHeader<TData, TValue>({
 
         {column.getCanSort() &&
           (column.getIsSorted() === 'desc' ? (
-            <ChevronDown className="size-[0.7rem]! -mr-2" />
+            <ChevronDown className="-mr-2 size-[0.7rem]!" />
           ) : column.getIsSorted() === 'asc' ? (
-            <ChevronUp className="size-[0.7rem]! -mr-2" />
+            <ChevronUp className="-mr-2 size-[0.7rem]!" />
           ) : (
-            <ChevronsUpDown className="size-[0.7rem]! -mr-2" />
+            <ChevronsUpDown className="-mr-2 size-[0.7rem]!" />
           ))}
       </Button>
     )
