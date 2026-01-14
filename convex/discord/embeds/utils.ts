@@ -16,11 +16,8 @@ export type LinkButton = {
   url: string
 }
 
-// Embed result from builders
-export type EmbedResult = {
-  embed: APIEmbed
-  links: LinkButton[]
-}
+// Embed result from builders (just the embed with links already added as a field)
+export type EmbedResult = APIEmbed
 
 export type FieldChange = {
   path?: string

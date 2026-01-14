@@ -1,64 +1,9 @@
+import { z } from 'zod'
+
 import { isResponseError, up } from 'up-fetch'
 
 import type { DiscordPayload } from './embeds/utils'
 
-// Discord API base URL
-const DISCORD_API_BASE = 'https://discord.com/api/v10'
-
-// Rate limiting config
-const DELAY_BETWEEN_MESSAGES_MS = 1000
-const RETRY_ATTEMPTS = 3
-
-// Configured fetch with retry for Discord API
-const discordFetch = up(fetch, () => ({
-  baseUrl: DISCORD_API_BASE,
-  retry: {
-    attempts: RETRY_ATTEMPTS,
-    delay: (ctx) => Math.min(ctx.attempt ** 2 * 1000, 10_000), // 1s, 4s, 9s (capped at 10s)
-    when: (ctx) => ctx.response?.status === 429 || (ctx.response?.status ?? 0) >= 500,
-  },
-}))
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-// Create a DM channel with a user (Discord creates or returns existing)
-async function createDMChannel(args: { user_id: string; botToken: string }): Promise<string> {
-  const { user_id, botToken } = args
-
-  // up-fetch returns the parsed JSON directly
-  const data = (await discordFetch('/users/@me/channels', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bot ${botToken}`,
-    },
-    body: JSON.stringify({ recipient_id: user_id }),
-  })) as { id: string }
-
-  return data.id
-}
-
-// Send a message to a Discord channel via bot API
-async function sendMessage(args: {
-  channel_id: string
-  payload: DiscordPayload
-  botToken: string
-}): Promise<void> {
-  const { channel_id, payload, botToken } = args
-
-  await discordFetch(`/channels/${channel_id}/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bot ${botToken}`,
-    },
-    body: JSON.stringify(payload),
-  })
-}
-
-// Delivery target for channel subscription
 export type ChannelDelivery = {
   type: 'channel'
   channel_id: string
@@ -66,7 +11,6 @@ export type ChannelDelivery = {
   payloads: DiscordPayload[]
 }
 
-// Delivery target for DM subscription
 export type DMDelivery = {
   type: 'dm'
   user_id: string
@@ -76,79 +20,107 @@ export type DMDelivery = {
 
 export type DiscordDelivery = ChannelDelivery | DMDelivery
 
-// Cache for DM channel IDs (user_id -> channel_id)
+type ChannelResult = { ok: true; channelId: string } | { ok: false; error: unknown }
+
+type DiscordClient = ReturnType<typeof createDiscordClient>
+
+const DISCORD_API_BASE = 'https://discord.com/api/v10'
+const DELAY_BETWEEN_MESSAGES_MS = 1000
+const RETRY_ATTEMPTS = 3
+
+// DM channel cache - safe for Convex actions because:
+// 1. Actions are single-threaded per invocation
+// 2. Cache is cleared when action completes
+// 3. Prevents duplicate API calls for same user in one batch
 const dmChannelCache = new Map<string, string>()
 
-// Send all deliveries with delay between messages
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+function formatError(err: unknown): unknown {
+  return isResponseError(err) ? { status: err.status, ...err.data } : String(err)
+}
+
+function createDiscordClient(botToken: string) {
+  return up(fetch, () => ({
+    baseUrl: DISCORD_API_BASE,
+    headers: { Authorization: `Bot ${botToken}` },
+    retry: {
+      attempts: RETRY_ATTEMPTS,
+      delay: (ctx) => Math.min(ctx.attempt ** 2 * 1000, 10_000),
+      when: (ctx) => ctx.response?.status === 429 || (ctx.response?.status ?? 0) >= 500,
+    },
+  }))
+}
+
+async function resolveChannelId(
+  delivery: DiscordDelivery,
+  discord: DiscordClient,
+): Promise<ChannelResult> {
+  if (delivery.type === 'channel') {
+    return { ok: true, channelId: delivery.channel_id }
+  }
+
+  const cached = dmChannelCache.get(delivery.user_id)
+  if (cached) return { ok: true, channelId: cached }
+
+  try {
+    const { id } = await discord('/users/@me/channels', {
+      method: 'POST',
+      body: { recipient_id: delivery.user_id },
+      schema: z.object({ id: z.string() }),
+    })
+    dmChannelCache.set(delivery.user_id, id)
+    return { ok: true, channelId: id }
+  } catch (error) {
+    return { ok: false, error }
+  }
+}
+
 export async function sendDiscordDeliveries(
   deliveries: DiscordDelivery[],
   botToken: string,
 ): Promise<void> {
+  const discord = createDiscordClient(botToken)
   const totalPayloads = deliveries.reduce((sum, d) => sum + d.payloads.length, 0)
   let sent = 0
   let failed = 0
 
-  console.log('[discord:bot] starting', {
-    deliveries: deliveries.length,
-    totalPayloads,
-    channels: deliveries.filter((d) => d.type === 'channel').length,
-    dms: deliveries.filter((d) => d.type === 'dm').length,
-  })
+  console.log('[discord:bot] starting', { deliveries: deliveries.length, payloads: totalPayloads })
 
   for (const delivery of deliveries) {
-    // Resolve channel_id (direct for channels, create DM for users)
-    let channelId: string
-    const targetLabel = delivery.type === 'channel' ? delivery.channel_id : `DM:${delivery.user_id}`
+    const result = await resolveChannelId(delivery, discord)
 
-    if (delivery.type === 'dm') {
-      // Check cache first
-      const cached = dmChannelCache.get(delivery.user_id)
-      if (cached) {
-        channelId = cached
-      } else {
-        try {
-          channelId = await createDMChannel({ user_id: delivery.user_id, botToken })
-          dmChannelCache.set(delivery.user_id, channelId)
-        } catch (err) {
-          const errorMsg = isResponseError(err)
-            ? `${err.status}: ${err.data?.message ?? JSON.stringify(err.data)}`
-            : String(err)
-          console.error('[discord:bot] failed to create DM channel', {
-            user_id: delivery.user_id,
-            pattern: delivery.pattern,
-            error: errorMsg,
-          })
-          failed += delivery.payloads.length
-          continue
-        }
-      }
-    } else {
-      channelId = delivery.channel_id
+    if (!result.ok) {
+      console.error('[discord:bot] channel resolution failed', {
+        delivery_type: delivery.type,
+        user_id: delivery.type === 'dm' ? delivery.user_id : undefined,
+        error: formatError(result.error),
+      })
+      failed += delivery.payloads.length
+      continue
     }
 
-    for (const payload of delivery.payloads) {
-      await sleep(DELAY_BETWEEN_MESSAGES_MS)
+    const { channelId } = result
 
+    for (const payload of delivery.payloads) {
       try {
-        await sendMessage({
-          channel_id: channelId,
-          payload,
-          botToken,
+        await discord(`/channels/${channelId}/messages`, {
+          method: 'POST',
+          body: payload,
         })
         sent++
       } catch (err) {
         failed++
-        const errorMsg = isResponseError(err)
-          ? `${err.status}: ${err.data?.message ?? JSON.stringify(err.data)}`
-          : String(err)
-        console.error('[discord:bot] message failed after retries', {
-          target: targetLabel,
+        console.error('[discord:bot] send failed', {
+          channel: channelId,
           pattern: delivery.pattern,
-          error: errorMsg,
+          error: formatError(err),
         })
       }
+
+      await sleep(DELAY_BETWEEN_MESSAGES_MS)
     }
   }
 
-  console.log('[discord:bot] complete', { sent, failed, totalPayloads })
+  console.log('[discord:bot] complete', { sent, failed })
 }

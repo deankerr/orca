@@ -54,6 +54,7 @@
     "convex-helpers": "^0.1.109",
     "date-fns": "^4.1.0",
     "discord-api-types": "^0.38.37",
+    "discord-interactions": "^4.4.0",
     "fflate": "^0.8.2",
     "json-diff-ts": "^4.8.2",
     "lucide-react": "^0.562.0",

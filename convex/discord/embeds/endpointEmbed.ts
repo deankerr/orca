@@ -1,8 +1,9 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
+import type { EndpointChange } from '../../alerts/inputs'
 import { formatPricing } from '../../shared/pricing'
 import type { OrcaEndpoint } from '../../transforms/endpoint'
-import { buildEntityLinks } from './components'
+import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
   COLORS,
   EMOJIS,
@@ -15,7 +16,6 @@ import {
   mono,
   toNumber,
   type EmbedResult,
-  type FieldChange,
 } from './utils'
 
 function formatPricingValue(value: unknown, priceKey: string): string {
@@ -44,19 +44,15 @@ const OPTIONAL_PRICING_FIELDS: Array<keyof OrcaEndpoint['pricing']> = [
   'per_request',
 ]
 
-function buildEndpointFields(
-  model_slug: string,
-  endpoint_uuid: string,
-  endpoint: OrcaEndpoint | null,
-  provider_tag_slug: string | undefined,
-) {
+function buildEndpointFields(change: EndpointChange) {
+  const { model_slug, endpoint_uuid, endpoint, provider_tag_slug } = change
   const isFree = model_slug.split(':')[1] === 'free'
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: provider_id
   fields.push({
     name: 'provider_id',
-    value: mono(provider_tag_slug ?? endpoint?.provider_id ?? 'unknown'),
+    value: mono(endpoint?.provider_id ?? provider_tag_slug ?? 'unknown'),
     inline: false,
   })
 
@@ -137,22 +133,19 @@ function buildEndpointFields(
   return fields
 }
 
-function buildBaseEmbed(
-  model_slug: string,
-  endpoint_uuid: string,
-  endpoint: OrcaEndpoint | null,
-  provider_name: string,
-  provider_tag_slug: string | undefined,
-  change_kind: 'create' | 'delete',
-  hugging_face_id?: string,
-): EmbedResult {
+function buildBaseEmbed(change: EndpointChange): EmbedResult {
+  const { model_slug, endpoint, provider_tag_slug, model, change_kind, crawl_id } = change
+  const provider_name = endpoint?.provider_name ?? provider_tag_slug ?? 'Unknown'
+  const provider_id = endpoint?.provider_id ?? provider_tag_slug
+
   const embed = new EmbedBuilder()
     .setColor(COLORS[change_kind])
+    .setTimestamp(new Date(parseInt(crawl_id)))
     .setAuthor({
       name: model_slug,
       iconURL: getColorIconUrl(model_slug),
     })
-    .setThumbnail(getColorIconUrl(provider_tag_slug ?? endpoint?.provider_id ?? model_slug) ?? null)
+    .setThumbnail(getColorIconUrl(provider_id ?? model_slug) ?? null)
 
   // Set title based on change kind
   if (change_kind === 'create') {
@@ -161,47 +154,52 @@ function buildBaseEmbed(
     embed.setTitle(`~~${provider_name}~~ ${EMOJIS.delete}`)
   }
 
-  const fields = buildEndpointFields(model_slug, endpoint_uuid, endpoint, provider_tag_slug)
+  const fields = buildEndpointFields(change)
   embed.setFields(fields)
 
-  const links = buildEntityLinks({
-    model_slug,
-    hugging_face_id,
-    provider_tag_slug: provider_tag_slug ?? endpoint?.provider_id,
-  })
+  const links = buildMarkdownLinks(
+    buildEntityLinks({
+      model_slug,
+      hugging_face_id: model?.hugging_face_id,
+      provider_tag_slug: provider_id,
+    }),
+  )
+  embed.addFields({ name: 'links', value: links, inline: false })
 
-  return { embed: embed.toJSON(), links }
+  return embed.toJSON()
 }
 
-function buildUpdateEmbed(
-  model_slug: string,
-  endpoint_uuid: string,
-  provider_name: string,
-  provider_tag_slug: string | undefined,
-  changes: FieldChange[],
-  hugging_face_id?: string,
-): EmbedResult {
+function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
+  const first = changes[0]!
+  const { model_slug, endpoint_uuid, endpoint, provider_tag_slug, model, crawl_id } = first
+  const provider_name = endpoint?.provider_name ?? provider_tag_slug ?? 'Unknown'
+  const provider_id = endpoint?.provider_id ?? provider_tag_slug
+
   const embed = new EmbedBuilder()
     .setColor(COLORS.update)
+    .setTimestamp(new Date(parseInt(crawl_id)))
     .setAuthor({
       name: model_slug,
       iconURL: getColorIconUrl(model_slug),
     })
     .setTitle(provider_name)
-    .setThumbnail(getColorIconUrl(provider_tag_slug ?? model_slug) ?? null)
+    .setThumbnail(getColorIconUrl(provider_id ?? model_slug) ?? null)
 
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: provider_id
-  if (provider_tag_slug) {
+  if (provider_id) {
     fields.push({
       name: 'provider_id',
-      value: mono(provider_tag_slug),
+      value: mono(provider_id),
       inline: false,
     })
   }
 
-  for (const change of changes) {
+  // Field changes from all update records
+  const fieldChanges = changes.filter((c) => c.change_kind === 'update')
+
+  for (const change of fieldChanges) {
     const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
     const isPricing = change.path_level_1 === 'pricing'
     const isPricingTiers = isPricing && change.path_level_2 === 'tiers'
@@ -295,55 +293,26 @@ function buildUpdateEmbed(
 
   embed.setFields(fields)
 
-  const links = buildEntityLinks({
-    model_slug,
-    hugging_face_id,
-    provider_tag_slug,
-  })
+  const links = buildMarkdownLinks(
+    buildEntityLinks({
+      model_slug,
+      hugging_face_id: model?.hugging_face_id,
+      provider_tag_slug: provider_id,
+    }),
+  )
+  embed.addFields({ name: 'links', value: links, inline: false })
 
-  return { embed: embed.toJSON(), links }
+  return embed.toJSON()
 }
 
-export function buildEndpointEmbed(args: {
-  model_slug: string
-  endpoint_uuid: string
-  change_kind: 'create' | 'update' | 'delete'
-  endpoint: OrcaEndpoint | null
-  provider_name: string
-  provider_tag_slug?: string
-  hugging_face_id?: string
-  changes?: FieldChange[]
-}): EmbedResult {
-  const {
-    model_slug,
-    endpoint_uuid,
-    change_kind,
-    endpoint,
-    provider_name,
-    provider_tag_slug,
-    hugging_face_id,
-    changes = [],
-  } = args
+export function buildEndpointEmbed(changes: EndpointChange[]): EmbedResult {
+  const first = changes[0]
+  if (!first) throw new Error('buildEndpointEmbed requires at least one change')
 
   // Updates show field-level diffs, create/delete show full endpoint state
-  if (change_kind === 'update') {
-    return buildUpdateEmbed(
-      model_slug,
-      endpoint_uuid,
-      provider_name,
-      provider_tag_slug,
-      changes,
-      hugging_face_id,
-    )
+  if (first.change_kind === 'update') {
+    return buildUpdateEmbed(changes)
   }
 
-  return buildBaseEmbed(
-    model_slug,
-    endpoint_uuid,
-    endpoint,
-    provider_name,
-    provider_tag_slug,
-    change_kind,
-    hugging_face_id,
-  )
+  return buildBaseEmbed(first)
 }
