@@ -2,11 +2,11 @@ import { asyncMap } from 'convex-helpers'
 import { stream } from 'convex-helpers/server/stream'
 import { v } from 'convex/values'
 
-import type { Doc } from '../../_generated/dataModel'
-import { internalQuery, type QueryCtx } from '../../_generated/server'
-import { db } from '../../db'
-import schema from '../../schema'
-import { transformChanges } from '../../transforms/changes'
+import type { Doc } from '../_generated/dataModel'
+import { internalQuery, type QueryCtx } from '../_generated/server'
+import { db } from '../db'
+import schema from '../schema'
+import { transformChanges } from '../transforms/changes'
 
 type TransformedChange = ReturnType<typeof transformChanges>[number]
 
@@ -19,16 +19,6 @@ export type EnrichedChange = {
   model: Awaited<ReturnType<typeof db.or.views.models.getWithDescription>>
   endpoint: Doc<'or_views_endpoints'> | null
 }
-
-export const getEnabledSubscriptions = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db
-      .query('webhook_subscriptions')
-      .withIndex('by_enabled', (q) => q.eq('enabled', true))
-      .collect()
-  },
-})
 
 async function enrichChange(ctx: QueryCtx, change: ModelOrEndpointChange): Promise<EnrichedChange> {
   const model = await db.or.views.models.getWithDescription(ctx, change.model_slug)

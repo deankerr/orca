@@ -21,7 +21,7 @@ export const test = internalAction({
     if (args.crawlIds) {
       crawlIds = Array.isArray(args.crawlIds) ? args.crawlIds : [args.crawlIds]
     } else if (args.lastN) {
-      crawlIds = await ctx.runQuery(internal.snapshots.webhooks.inputs.getRecentCrawlIds, {
+      crawlIds = await ctx.runQuery(internal.alerts.inputs.getRecentCrawlIds, {
         limit: args.lastN,
       })
     } else {

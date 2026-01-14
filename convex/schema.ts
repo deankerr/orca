@@ -4,7 +4,7 @@ import { db } from './db'
 
 export default defineSchema(
   {
-    discord_alert_subscriptions: db.discord.subscriptions.table,
+    alerts_discord_subscriptions: db.alerts.discord.subscriptions.table,
 
     or_sources: db.or.sources.table,
 
@@ -15,8 +15,6 @@ export default defineSchema(
 
     snapshot_crawl_config: db.snapshot.crawl.config.table,
     snapshot_crawl_archives: db.snapshot.crawl.archives.table,
-
-    webhook_subscriptions: db.webhook.subscriptions.table,
   },
   {
     strictTableNameTypes: true,

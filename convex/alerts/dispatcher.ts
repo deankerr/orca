@@ -13,8 +13,8 @@ import { buildMarkdownLinks } from '../discord/embeds/components'
 import { buildEndpointEmbed } from '../discord/embeds/endpointEmbed'
 import { buildModelEmbed } from '../discord/embeds/modelEmbed'
 import type { DiscordPayload, EmbedResult } from '../discord/embeds/utils'
-import type { EnrichedChange } from '../snapshots/webhooks/inputs'
 import { transformEndpoint } from '../transforms/endpoint'
+import type { EnrichedChange } from './inputs'
 
 // Pattern matching - "*" for all, otherwise simple includes
 export function matchPattern(pattern: string, slug: string): boolean {
@@ -31,7 +31,7 @@ function groupChangesByEntity(changes: EnrichedChange[]): Map<string, EnrichedCh
   )
 }
 
-type DiscordSubscription = Doc<'discord_alert_subscriptions'>
+type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
 
 // Build a single Discord payload for an entity's changes
 function buildPayload(args: {
@@ -62,20 +62,7 @@ function buildPayload(args: {
     result = buildModelEmbed({
       model_slug: raw.model_slug,
       change_kind,
-      model: model
-        ? {
-            name: model.name,
-            slug: model.slug,
-            description: model.description,
-            input_modalities: model.input_modalities,
-            output_modalities: model.output_modalities,
-            reasoning: model.reasoning,
-            tokenizer: model.tokenizer,
-            warning_message: model.warning_message,
-            promotion_message: model.promotion_message,
-            hugging_face_id: model.hugging_face_id,
-          }
-        : null,
+      model,
       changes,
     })
   } else if (raw.entity_type === 'endpoint') {
@@ -228,7 +215,7 @@ export const run = internalAction({
     }
 
     // Load changes
-    const changes = await ctx.runQuery(internal.snapshots.webhooks.inputs.changesByCrawlId, {
+    const changes = await ctx.runQuery(internal.alerts.inputs.changesByCrawlId, {
       crawl_id: args.crawl_id,
     })
 

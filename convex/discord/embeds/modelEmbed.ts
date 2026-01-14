@@ -1,5 +1,6 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
+import { Doc } from '../../_generated/dataModel'
 import { truncate } from '../../shared/utils'
 import { buildEntityLinks } from './components'
 import {
@@ -16,18 +17,7 @@ import {
   type FieldChange,
 } from './utils'
 
-type ModelData = {
-  name: string
-  slug: string
-  description?: string
-  input_modalities?: string[]
-  output_modalities?: string[]
-  reasoning?: boolean
-  tokenizer?: string
-  warning_message?: string
-  promotion_message?: string
-  hugging_face_id?: string
-}
+type ModelData = Doc<'or_views_models'> & { description?: string }
 
 function formatModalities(modalities: string[]): string {
   return modalities.join(', ') || 'none'
