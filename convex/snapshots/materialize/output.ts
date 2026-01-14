@@ -27,23 +27,17 @@ export const upsert = internalMutation({
     models: v.array(vUpsertModel),
     endpoints: v.array(vUpsertEndpoint),
     providers: v.array(vUpsertProvider),
-    sources: v.object({
-      models: v.array(vSourceItem),
-      endpoints: v.array(vSourceItem),
-      providers: v.array(vSourceItem),
-    }),
     crawl_id: v.string(),
   },
   handler: async (ctx, args) => {
     // * run all entity upserts in parallel
-    const [models, endpoints, providers, sources] = await Promise.all([
+    const [models, endpoints, providers] = await Promise.all([
       upsertModels(),
       upsertEndpoints(),
       upsertProviders(),
-      upsertSources(),
     ])
 
-    console.log(`[materialize:counts]`, { models, endpoints, providers, sources })
+    console.log(`[materialize:upsert]`, { models, endpoints, providers })
 
     // * models
     async function upsertModels() {
@@ -158,48 +152,56 @@ export const upsert = internalMutation({
 
       return counters
     }
+  },
+})
 
-    // * sources - upsert raw API artifacts
-    async function upsertSources() {
-      const counters = { stable: 0, update: 0, insert: 0 }
+export const upsertSources = internalMutation({
+  args: {
+    sources: v.object({
+      models: v.array(vSourceItem),
+      endpoints: v.array(vSourceItem),
+      providers: v.array(vSourceItem),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const counters = { stable: 0, update: 0, insert: 0 }
 
-      const currentSources = await db.or.sources.collect(ctx)
-      const currentSourcesMap = new Map(
-        currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
-      )
+    const currentSources = await db.or.sources.collect(ctx)
+    const currentSourcesMap = new Map(
+      currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
+    )
 
-      const allSourceItems = [
-        ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
-        ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
-        ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
-      ]
+    const allSourceItems = [
+      ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
+      ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
+      ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
+    ]
 
-      for (const source of allSourceItems) {
-        const compositeKey = `${source.entity_type}:${source.key}`
-        const currentSource = currentSourcesMap.get(compositeKey)
+    for (const source of allSourceItems) {
+      const compositeKey = `${source.entity_type}:${source.key}`
+      const currentSource = currentSourcesMap.get(compositeKey)
 
-        if (currentSource) {
-          if (isEqual(currentSource.data, source.data)) {
-            counters.stable++
-          } else {
-            await db.or.sources.replace(ctx, currentSource._id, {
-              entity_type: source.entity_type,
-              entity_key: source.key,
-              data: source.data,
-            })
-            counters.update++
-          }
+      if (currentSource) {
+        if (isEqual(currentSource.data, source.data)) {
+          counters.stable++
         } else {
-          await db.or.sources.insert(ctx, {
+          await db.or.sources.replace(ctx, currentSource._id, {
             entity_type: source.entity_type,
             entity_key: source.key,
             data: source.data,
           })
-          counters.insert++
+          counters.update++
         }
+      } else {
+        await db.or.sources.insert(ctx, {
+          entity_type: source.entity_type,
+          entity_key: source.key,
+          data: source.data,
+        })
+        counters.insert++
       }
-
-      return counters
     }
+
+    console.log(`[materialize:upsertSources]`, counters)
   },
 })

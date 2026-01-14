@@ -28,8 +28,11 @@ export const run = internalAction({
       models,
       endpoints,
       providers,
-      sources,
       crawl_id: bundle.crawl_id,
+    })
+
+    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
+      sources,
     })
 
     // * schedule materializeChanges
