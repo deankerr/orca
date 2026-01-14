@@ -10,3 +10,5 @@ export function transformChanges(changes: Doc<'or_views_changes'>[]) {
     return change
   })
 }
+
+export type TransformedChange = ReturnType<typeof transformChanges>[number]

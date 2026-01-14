@@ -1,6 +1,7 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { Doc } from '../../../_generated/dataModel'
 import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
 import { getModelDescription } from '../sources'
@@ -67,7 +68,11 @@ export async function replace(
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
-export async function getWithDescription(ctx: QueryCtx, slug: string) {
+export type ModelDocWithDescription = Doc<'or_views_models'> & { description: string }
+export async function getWithDescription(
+  ctx: QueryCtx,
+  slug: string,
+): Promise<ModelDocWithDescription | null> {
   const model = await ctx.db
     .query(vTable.name)
     .withIndex('by_slug', (q) => q.eq('slug', slug))

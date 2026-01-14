@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 
 import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
+import { transformEndpoint } from '../../../transforms/endpoint'
 
 export const table = defineTable({
   uuid: v.string(), // unique id
@@ -188,4 +189,13 @@ export async function getByUuid(ctx: QueryCtx, uuid: string) {
     .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
     .order('desc')
     .first()
+}
+
+export async function getTransformedByUuid(ctx: QueryCtx, uuid: string) {
+  return await ctx.db
+    .query('or_views_endpoints')
+    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
+    .order('desc')
+    .first()
+    .then((endp) => (endp ? transformEndpoint(endp) : null))
 }

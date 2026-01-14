@@ -95,9 +95,9 @@ export const run = internalAction({
     } else {
       console.log('[materializedChanges] complete', { processedPairs })
 
-      // * send webhooks for the latest processed crawl
+      // * send alerts for the latest processed crawl
       if (lastProcessedCrawlId) {
-        await ctx.scheduler.runAfter(0, internal.snapshots.webhooks.main.run, {
+        await ctx.scheduler.runAfter(0, internal.alerts.dispatcher.run, {
           crawl_id: lastProcessedCrawlId,
         })
       }

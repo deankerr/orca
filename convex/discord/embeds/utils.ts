@@ -1,60 +1,19 @@
 import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { getEnv } from '../../../lib/env'
-import { getLogo } from '../../../shared/logos'
+import { getEnv } from '../../lib/env'
+import { getLogo } from '../../shared/logos'
+import { EMOJIS } from '../constants'
 
-// * Types
-
-// Payload type for Discord webhook
 export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
 }
 
-// Link button definition
 export type LinkButton = {
   label: string
   url: string
 }
 
-// Embed result from builders
-export type EmbedResult = {
-  embed: APIEmbed
-  links: LinkButton[]
-}
-
-export type FieldChange = {
-  path?: string
-  path_level_1?: string
-  path_level_2?: string
-  before: unknown
-  after: unknown
-}
-
-// * Constants
-
-export const ORCA_PUBLIC_URL = 'https://orca.orb.town'
-
-export const MAX_DESCRIPTION_LENGTH = 900
-
-export const EMOJIS = {
-  new: '🆕',
-  delete: '☠️',
-  update: '🔄',
-  checkmark: '\u2705',
-  cross: '\u274c',
-  arrow: '▶︎',
-  arrowUp: '⬆︎',
-  arrowDown: '⬇︎',
-} as const
-
-// Embed colors by change kind
-export const COLORS = {
-  create: 0x22c55e, // green
-  update: 0x3b82f6, // blue
-  delete: 0xef4444, // red
-} as const
-
-// * Icon helpers
+export type EmbedResult = APIEmbed
 
 export function getColorIconUrl(model_slug: string): string | undefined {
   const { colorPath } = getLogo(model_slug)
@@ -63,8 +22,6 @@ export function getColorIconUrl(model_slug: string): string | undefined {
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
   return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
 }
-
-// * Formatting helpers
 
 export function mono(value: unknown) {
   return `\`${String(value)}\``

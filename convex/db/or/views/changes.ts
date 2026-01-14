@@ -2,6 +2,8 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 import { Doc } from '../../../_generated/dataModel'
+import { QueryCtx } from '../../../_generated/server'
+import { transformChanges, TransformedChange } from '../../../transforms/changes'
 
 const changeKindValidator = v.union(v.literal('create'), v.literal('update'), v.literal('delete'))
 
@@ -52,3 +54,14 @@ export const table = defineTable(
 
 export type ChangeTypeModelDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'model' }>
 export type ChangeTypeEndpointDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
+
+export async function listTransformedByCrawlId(
+  ctx: QueryCtx,
+  crawl_id: string,
+): Promise<TransformedChange[]> {
+  return await ctx.db
+    .query('or_views_changes')
+    .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
+    .collect()
+    .then(transformChanges)
+}

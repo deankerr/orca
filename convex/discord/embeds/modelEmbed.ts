@@ -1,33 +1,18 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
-import { truncate } from '../../../shared/utils'
-import { buildEntityLinks } from './components'
+import type { ModelChange } from '../../alerts/inputs'
+import { truncate } from '../../shared/utils'
+import { COLORS, EMOJIS, MAX_DESCRIPTION_LENGTH } from '../constants'
+import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
-  COLORS,
-  EMOJIS,
   formatArrayDiff,
   formatValue,
   getColorIconUrl,
   getFieldLabel,
   isMissing,
-  MAX_DESCRIPTION_LENGTH,
   mono,
   type EmbedResult,
-  type FieldChange,
 } from './utils'
-
-type ModelData = {
-  name: string
-  slug: string
-  description?: string
-  input_modalities?: string[]
-  output_modalities?: string[]
-  reasoning?: boolean
-  tokenizer?: string
-  warning_message?: string
-  promotion_message?: string
-  hugging_face_id?: string
-}
 
 function formatModalities(modalities: string[]): string {
   return modalities.join(', ') || 'none'
@@ -38,7 +23,8 @@ function formatDescription(description: string): string {
   return description.replace(/(?<!\n)\n(?!\n)/g, '\n\n')
 }
 
-function buildModelFields(model_slug: string, model: ModelData | null) {
+function buildModelFields(change: ModelChange) {
+  const { model_slug, model } = change
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: model_id
@@ -98,15 +84,16 @@ function buildModelFields(model_slug: string, model: ModelData | null) {
   return fields
 }
 
-function buildBaseEmbed(
-  model_slug: string,
-  model: ModelData | null,
-  change_kind: 'create' | 'update' | 'delete',
-): EmbedResult {
-  const embed = new EmbedBuilder().setColor(COLORS[change_kind]).setAuthor({
-    name: model_slug,
-    iconURL: getColorIconUrl(model_slug),
-  })
+function buildBaseEmbed(change: ModelChange): EmbedResult {
+  const { model_slug, model, change_kind, crawl_id } = change
+
+  const embed = new EmbedBuilder()
+    .setColor(COLORS[change_kind])
+    .setTimestamp(new Date(parseInt(crawl_id)))
+    .setAuthor({
+      name: model_slug,
+      iconURL: getColorIconUrl(model_slug),
+    })
 
   // Set title based on change kind
   switch (change_kind) {
@@ -127,24 +114,27 @@ function buildBaseEmbed(
     embed.setDescription(truncate(formatted, MAX_DESCRIPTION_LENGTH))
   }
 
-  const fields = buildModelFields(model_slug, model)
+  const fields = buildModelFields(change)
   embed.setFields(fields)
 
-  const links = buildEntityLinks({
-    model_slug,
-    hugging_face_id: model?.hugging_face_id,
-  })
+  const links = buildMarkdownLinks(
+    buildEntityLinks({
+      model_slug,
+      hugging_face_id: model?.hugging_face_id,
+    }),
+  )
+  embed.addFields({ name: 'links', value: links, inline: false })
 
-  return { embed: embed.toJSON(), links }
+  return embed.toJSON()
 }
 
-function buildUpdateEmbed(
-  model_slug: string,
-  model: ModelData | null,
-  changes: FieldChange[],
-): EmbedResult {
+function buildUpdateEmbed(changes: ModelChange[]): EmbedResult {
+  const first = changes[0]!
+  const { model_slug, model, crawl_id } = first
+
   const embed = new EmbedBuilder()
     .setColor(COLORS.update)
+    .setTimestamp(new Date(parseInt(crawl_id)))
     .setAuthor({
       name: model_slug,
       iconURL: getColorIconUrl(model_slug),
@@ -160,7 +150,10 @@ function buildUpdateEmbed(
     inline: false,
   })
 
-  for (const change of changes) {
+  // Field changes from all update records
+  const fieldChanges = changes.filter((c) => c.change_kind === 'update')
+
+  for (const change of fieldChanges) {
     const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
     const label = getFieldLabel(field, change.before, change.after)
     const isNew = isMissing(change.before)
@@ -197,26 +190,25 @@ function buildUpdateEmbed(
 
   embed.setFields(fields)
 
-  const links = buildEntityLinks({
-    model_slug,
-    hugging_face_id: model?.hugging_face_id,
-  })
+  const links = buildMarkdownLinks(
+    buildEntityLinks({
+      model_slug,
+      hugging_face_id: model?.hugging_face_id,
+    }),
+  )
+  embed.addFields({ name: 'links', value: links, inline: false })
 
-  return { embed: embed.toJSON(), links }
+  return embed.toJSON()
 }
 
-export function buildModelEmbed(args: {
-  model_slug: string
-  change_kind: 'create' | 'update' | 'delete'
-  model: ModelData | null
-  changes?: FieldChange[]
-}): EmbedResult {
-  const { model_slug, change_kind, model, changes = [] } = args
+export function buildModelEmbed(changes: ModelChange[]): EmbedResult {
+  const first = changes[0]
+  if (!first) throw new Error('buildModelEmbed requires at least one change')
 
   // Updates show field-level diffs, create/delete show full model state
-  if (change_kind === 'update') {
-    return buildUpdateEmbed(model_slug, model, changes)
+  if (first.change_kind === 'update') {
+    return buildUpdateEmbed(changes)
   }
 
-  return buildBaseEmbed(model_slug, model, change_kind)
+  return buildBaseEmbed(first)
 }

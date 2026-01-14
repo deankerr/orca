@@ -1,4 +1,5 @@
-import { ORCA_PUBLIC_URL, type LinkButton } from './utils'
+import { ORCA_PUBLIC_URL } from '../constants'
+import type { LinkButton } from './utils'
 
 // Build markdown links for embed fields
 export function buildMarkdownLinks(links: LinkButton[]): string {
