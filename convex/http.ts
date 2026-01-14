@@ -55,12 +55,7 @@ http.route({
       return new Response('Bundle not found', { status: 404 })
     }
 
-    return new Response(JSON.stringify(bundle), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    return Response.json(bundle)
   }),
 })
 
@@ -69,13 +64,7 @@ http.route({
   method: 'GET',
   handler: httpAction(async (ctx) => {
     const result = await previewV2HttpHandler(ctx)
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    return Response.json(result)
   }),
 })
 
@@ -84,13 +73,7 @@ http.route({
   method: 'GET',
   handler: httpAction(async (ctx) => {
     const result = await previewV1HttpHandler(ctx)
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    return Response.json(result)
   }),
 })
 

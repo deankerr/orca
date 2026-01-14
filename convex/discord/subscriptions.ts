@@ -1,27 +1,16 @@
 import { v } from 'convex/values'
 
-import type { Doc, Id } from '../_generated/dataModel'
+import type { Id } from '../_generated/dataModel'
 import { internalMutation, internalQuery } from '../_generated/server'
 import { db } from '../db'
-
-// Re-export types and validators from db module
-export {
-  SUBSCRIPTIONS_PER_USER_LIMIT,
-  vSubscriptionInput,
-  type SubscriptionContext,
-  type SubscriptionInput,
-} from '../db/alerts/discord/subscriptions'
-
-export type ChannelSubscription = Extract<Doc<'alerts_discord_subscriptions'>, { type: 'channel' }>
-export type DMSubscription = Extract<Doc<'alerts_discord_subscriptions'>, { type: 'dm' }>
-
-const subs = db.alerts.discord.subscriptions
+import { SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
 
 // * Internal Queries
 
 export const countByUser = internalQuery({
   args: { user_id: v.string() },
-  handler: async (ctx, args) => subs.countByUser(ctx, args.user_id),
+  handler: async (ctx, args) =>
+    await db.alerts.discord.subscriptions.countByUser(ctx, args.user_id),
 })
 
 export const list = internalQuery({
@@ -31,24 +20,25 @@ export const list = internalQuery({
       v.object({ type: v.literal('dm'), user_id: v.string() }),
     ),
   },
-  handler: async (ctx, args) => subs.listByContext(ctx, args.context),
+  handler: async (ctx, args) =>
+    await db.alerts.discord.subscriptions.listByContext(ctx, args.context),
 })
 
 export const getActive = internalQuery({
   args: {},
-  handler: async (ctx) => subs.getActive(ctx),
+  handler: async (ctx) => await db.alerts.discord.subscriptions.getActive(ctx),
 })
 
 // * Internal Mutations
 
 export const create = internalMutation({
-  args: { input: subs.vSubscriptionInput },
+  args: { input: db.alerts.discord.subscriptions.vSubscriptionInput },
   handler: async (ctx, args): Promise<Id<'alerts_discord_subscriptions'> | 'limit' | 'exists'> => {
     const { input } = args
 
     // Check global user limit
-    const count = await subs.countByUser(ctx, input.user_id)
-    if (count >= subs.SUBSCRIPTIONS_PER_USER_LIMIT) {
+    const count = await db.alerts.discord.subscriptions.countByUser(ctx, input.user_id)
+    if (count >= SUBSCRIPTIONS_PER_USER_LIMIT) {
       return 'limit'
     }
 
@@ -58,10 +48,14 @@ export const create = internalMutation({
         ? { type: 'channel' as const, channel_id: input.channel_id }
         : { type: 'dm' as const, user_id: input.user_id }
 
-    const existing = await subs.findByContextAndPattern(ctx, context, input.pattern)
+    const existing = await db.alerts.discord.subscriptions.findByContextAndPattern(
+      ctx,
+      context,
+      input.pattern,
+    )
     if (existing) return 'exists'
 
-    return subs.insert(ctx, input)
+    return db.alerts.discord.subscriptions.insert(ctx, input)
   },
 })
 
@@ -76,10 +70,10 @@ export const remove = internalMutation({
   handler: async (ctx, args) => {
     const { context, pattern } = args
 
-    const sub = await subs.findByContextAndPattern(ctx, context, pattern)
+    const sub = await db.alerts.discord.subscriptions.findByContextAndPattern(ctx, context, pattern)
     if (!sub) return null
 
-    await subs.softDelete(ctx, sub._id)
+    await db.alerts.discord.subscriptions.softDelete(ctx, sub._id)
     return sub
   },
 })

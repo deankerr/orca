@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(bun check:*)",
+      "Bash(curl:*)",
       "Bash(find:*)",
+      "Bash(jq:*)",
+      "Bash(ls:*)",
       "mcp__convex__data",
       "mcp__convex__logs",
       "mcp__convex__runOneoffQuery",
@@ -26,12 +29,11 @@
       "mcp__next-devtools__nextjs_runtime",
       "mcp__plugin_claude-mem_mcp-search__get_observations",
       "mcp__plugin_claude-mem_mcp-search__search",
+      "mcp__plugin_claude-mem_mcp-search__timeline",
       "WebFetch(domain:docs.convex.dev)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:tanstack.com)",
-      "WebSearch",
-      "Bash(curl:*)",
-      "Bash(jq:*)"
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

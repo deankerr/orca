@@ -2,16 +2,14 @@ import { EmbedBuilder } from '@discordjs/builders'
 
 import type { ModelChange } from '../../alerts/inputs'
 import { truncate } from '../../shared/utils'
+import { COLORS, EMOJIS, MAX_DESCRIPTION_LENGTH } from '../constants'
 import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
-  COLORS,
-  EMOJIS,
   formatArrayDiff,
   formatValue,
   getColorIconUrl,
   getFieldLabel,
   isMissing,
-  MAX_DESCRIPTION_LENGTH,
   mono,
   type EmbedResult,
 } from './utils'

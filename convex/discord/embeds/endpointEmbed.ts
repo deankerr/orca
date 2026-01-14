@@ -3,10 +3,9 @@ import { EmbedBuilder } from '@discordjs/builders'
 import type { EndpointChange } from '../../alerts/inputs'
 import { formatPricing } from '../../shared/pricing'
 import type { OrcaEndpoint } from '../../transforms/endpoint'
+import { COLORS, EMOJIS } from '../constants'
 import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
-  COLORS,
-  EMOJIS,
   formatArrayDiff,
   formatDelta,
   formatValue,

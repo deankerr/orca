@@ -27,38 +27,20 @@ const dmSubscriptionValidator = v.object({
   ...baseFields,
 })
 
-export const table = defineTable(v.union(channelSubscriptionValidator, dmSubscriptionValidator))
+export const vSubscriptionInput = v.union(channelSubscriptionValidator, dmSubscriptionValidator)
+export type SubscriptionInput = Infer<typeof vSubscriptionInput>
+
+export const table = defineTable(vSubscriptionInput)
   .index('by_user_id', ['user_id', 'deleted_at'])
   .index('by_channel_id', ['channel_id', 'deleted_at'])
   .index('by_channel_id_and_pattern', ['channel_id', 'pattern', 'deleted_at'])
   .index('by_user_id_and_pattern', ['user_id', 'pattern', 'deleted_at'])
   .index('by_deleted_at', ['deleted_at'])
 
-// Input validator for create operations
-export const vSubscriptionInput = v.union(
-  v.object({
-    type: v.literal('channel'),
-    guild_id: v.string(),
-    channel_id: v.string(),
-    user_id: v.string(),
-    pattern: v.string(),
-  }),
-  v.object({
-    type: v.literal('dm'),
-    user_id: v.string(),
-    pattern: v.string(),
-  }),
-)
-
-export type SubscriptionInput = Infer<typeof vSubscriptionInput>
-
 // Context for querying/deleting subscriptions
 export type SubscriptionContext =
   | { type: 'channel'; channel_id: string }
   | { type: 'dm'; user_id: string }
-
-// Global limit per user (all subscription types combined)
-export const SUBSCRIPTIONS_PER_USER_LIMIT = 50
 
 // * Queries
 
@@ -120,21 +102,7 @@ export async function findByContextAndPattern(
 // * Mutations
 
 export async function insert(ctx: MutationCtx, input: SubscriptionInput) {
-  if (input.type === 'channel') {
-    return ctx.db.insert(TABLE_NAME, {
-      type: 'channel',
-      guild_id: input.guild_id,
-      channel_id: input.channel_id,
-      user_id: input.user_id,
-      pattern: input.pattern,
-    })
-  } else {
-    return ctx.db.insert(TABLE_NAME, {
-      type: 'dm',
-      user_id: input.user_id,
-      pattern: input.pattern,
-    })
-  }
+  return ctx.db.insert(TABLE_NAME, input)
 }
 
 export async function softDelete(ctx: MutationCtx, id: Id<typeof TABLE_NAME>) {

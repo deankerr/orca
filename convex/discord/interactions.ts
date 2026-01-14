@@ -1,106 +1,20 @@
-import nacl from 'tweetnacl'
+import { InteractionType, type APIInteraction } from 'discord-api-types/v10'
+import { InteractionResponseFlags, InteractionResponseType, verifyKey } from 'discord-interactions'
 
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
-import { SUBSCRIPTIONS_PER_USER_LIMIT } from './subscriptions'
-
-// Discord interaction types
-const InteractionType = {
-  PING: 1,
-  APPLICATION_COMMAND: 2,
-} as const
-
-// Discord response types
-const InteractionResponseType = {
-  PONG: 1,
-  CHANNEL_MESSAGE_WITH_SOURCE: 4,
-} as const
-
-// Web-compatible hex encoding (no Buffer in Convex runtime)
-function fromHex(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2)
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16)
-  }
-  return bytes
-}
-
-// Verify Discord's Ed25519 signature
-export function verifyDiscordSignature(args: {
-  signature: string
-  timestamp: string
-  body: string
-  publicKey: string
-}): boolean {
-  const { signature, timestamp, body, publicKey } = args
-
-  const message = new TextEncoder().encode(timestamp + body)
-  const sig = fromHex(signature)
-  const key = fromHex(publicKey)
-
-  return nacl.sign.detached.verify(message, sig, key)
-}
-
-// Discord integration owner types
-// "0" = guild install, "1" = user install
-type AuthorizingIntegrationOwners = {
-  '0'?: string // guild_id if guild-installed
-  '1'?: string // user_id if user-installed
-}
-
-// Discord interaction payload (minimal typing for what we need)
-type DiscordInteraction = {
-  type: number
-  id: string
-  token: string
-  guild_id?: string
-  channel_id?: string
-  // Present when app has install contexts configured
-  authorizing_integration_owners?: AuthorizingIntegrationOwners
-  member?: {
-    user: {
-      id: string
-      username: string
-    }
-  }
-  user?: {
-    id: string
-    username: string
-  }
-  data?: {
-    id: string
-    name: string
-    options?: Array<{
-      name: string
-      value: string | number | boolean
-      type: number
-      options?: Array<{
-        name: string
-        value: string | number | boolean
-        type: number
-      }>
-    }>
-  }
-}
-
-// Response helpers
-function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+import { COLORS, PATTERN_MAX_LENGTH, SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
 
 function pongResponse(): Response {
-  return jsonResponse({ type: InteractionResponseType.PONG })
+  return Response.json({ type: InteractionResponseType.PONG })
 }
 
 function messageResponse(content: string, ephemeral = false): Response {
-  return jsonResponse({
+  return Response.json({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       content,
-      flags: ephemeral ? 64 : 0,
+      flags: ephemeral ? InteractionResponseFlags.EPHEMERAL : 0,
     },
   })
 }
@@ -115,37 +29,50 @@ function embedResponse(
   },
   ephemeral = false,
 ): Response {
-  return jsonResponse({
+  return Response.json({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       embeds: [embed],
-      flags: ephemeral ? 64 : 0,
+      flags: ephemeral ? InteractionResponseFlags.EPHEMERAL : 0,
     },
   })
 }
 
-// Get user ID from interaction
-function getUserId(interaction: DiscordInteraction): string | null {
-  return interaction.member?.user.id ?? interaction.user?.id ?? null
+function getUserId(interaction: APIInteraction): string | null {
+  if ('member' in interaction && interaction.member) {
+    return interaction.member.user.id
+  }
+  if ('user' in interaction && interaction.user) {
+    return interaction.user.id
+  }
+  return null
 }
 
-// Get subcommand and options from interaction
-function parseSubcommand(interaction: DiscordInteraction): {
+function parseSubcommand(interaction: APIInteraction): {
   subcommand: string | null
   options: Record<string, string | number | boolean>
 } {
-  const topOptions = interaction.data?.options ?? []
-  const firstOption = topOptions[0]
+  if (!('data' in interaction) || !interaction.data) {
+    return { subcommand: null, options: {} }
+  }
 
+  const data = interaction.data
+  if (!('options' in data) || !data.options) {
+    return { subcommand: null, options: {} }
+  }
+
+  const firstOption = data.options[0]
   if (!firstOption) {
     return { subcommand: null, options: {} }
   }
 
   // Subcommands have type 1
-  if (firstOption.type === 1) {
+  if (firstOption.type === 1 && 'options' in firstOption) {
     const options: Record<string, string | number | boolean> = {}
     for (const opt of firstOption.options ?? []) {
-      options[opt.name] = opt.value
+      if ('value' in opt) {
+        options[opt.name] = opt.value as string | number | boolean
+      }
     }
     return { subcommand: firstOption.name, options }
   }
@@ -153,25 +80,58 @@ function parseSubcommand(interaction: DiscordInteraction): {
   return { subcommand: null, options: {} }
 }
 
-// Determine if this is a DM context
-function isDMContext(interaction: DiscordInteraction): boolean {
-  // DM interactions have no guild_id
-  return !interaction.guild_id
+function isDMContext(interaction: APIInteraction): boolean {
+  return !('guild_id' in interaction) || !interaction.guild_id
 }
 
-// Check if this is a user-installed app being used in a guild channel
-// (user can run commands but bot can't post to the channel)
-function isUserInstallInGuild(interaction: DiscordInteraction): boolean {
+function isUserInstallInGuild(interaction: APIInteraction): boolean {
+  if (!('authorizing_integration_owners' in interaction)) return false
   const owners = interaction.authorizing_integration_owners
   if (!owners) return false
+  const hasGuild = 'guild_id' in interaction && !!interaction.guild_id
   // Has guild_id but authorized via user install (key "1"), not guild install (key "0")
-  return !!interaction.guild_id && !!owners['1'] && !owners['0']
+  return hasGuild && !!owners['1'] && !owners['0']
 }
 
-// Command handlers
+function getChannelId(interaction: APIInteraction): string | undefined {
+  if ('channel_id' in interaction) return interaction.channel_id
+  if ('channel' in interaction && interaction.channel) return interaction.channel.id
+  return undefined
+}
+
+function getGuildId(interaction: APIInteraction): string | undefined {
+  if ('guild_id' in interaction) return interaction.guild_id
+  return undefined
+}
+
+// Only alphanumeric, hyphen, underscore, forward slash, colon
+const PATTERN_REGEX = /^[a-zA-Z0-9\-_/:]+$/
+
+function validatePattern(pattern: string): string | null {
+  if (pattern.length > PATTERN_MAX_LENGTH) {
+    return `Pattern must be ${PATTERN_MAX_LENGTH} characters or less.`
+  }
+
+  // Single asterisk is valid (matches all)
+  if (pattern === '*') {
+    return null
+  }
+
+  // Asterisks are only valid as the single "*" pattern
+  if (pattern.includes('*')) {
+    return 'Wildcards like `gpt*` are not supported. Use `*` for all changes, or a simple pattern like `gpt` to match any slug containing "gpt".'
+  }
+
+  if (!PATTERN_REGEX.test(pattern)) {
+    return 'Pattern can only contain letters, numbers, hyphens, underscores, forward slashes, and colons.'
+  }
+
+  return null
+}
+
 async function handleSubscribe(
   ctx: ActionCtx,
-  interaction: DiscordInteraction,
+  interaction: APIInteraction,
   options: Record<string, string | number | boolean>,
 ): Promise<Response> {
   const userId = getUserId(interaction)
@@ -181,10 +141,14 @@ async function handleSubscribe(
 
   const pattern = options.pattern as string | undefined
   if (!pattern) {
-    return messageResponse('Please provide a pattern. Example: `/orca subscribe anthropic/*`', true)
+    return messageResponse('Please provide a pattern. Example: `/orca subscribe anthropic/`', true)
   }
 
-  // Check for user-install in guild context (bot can't post to channel)
+  const validationError = validatePattern(pattern)
+  if (validationError) {
+    return messageResponse(validationError, true)
+  }
+
   if (isUserInstallInGuild(interaction)) {
     return messageResponse(
       "You're using a personal app install in a server channel. The bot can't post here.\n\n" +
@@ -198,7 +162,6 @@ async function handleSubscribe(
   const isDM = isDMContext(interaction)
 
   if (isDM) {
-    // DM subscription
     const result = await ctx.runMutation(internal.discord.subscriptions.create, {
       input: { type: 'dm', user_id: userId, pattern },
     })
@@ -221,14 +184,13 @@ async function handleSubscribe(
       {
         title: 'DM Subscription Created',
         description: `You will receive DM alerts for changes matching \`${pattern}\`.`,
-        color: 0x22c55e, // green
+        color: COLORS.create,
       },
       false,
     )
   } else {
-    // Channel subscription
-    const channelId = interaction.channel_id
-    const guildId = interaction.guild_id
+    const channelId = getChannelId(interaction)
+    const guildId = getGuildId(interaction)
 
     if (!channelId || !guildId) {
       return messageResponse('Unable to identify channel.', true)
@@ -259,14 +221,14 @@ async function handleSubscribe(
       {
         title: 'Subscription Created',
         description: `This channel will now receive alerts for changes matching \`${pattern}\`.`,
-        color: 0x22c55e, // green
+        color: COLORS.create,
       },
       false,
     )
   }
 }
 
-async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Promise<Response> {
+async function handleList(ctx: ActionCtx, interaction: APIInteraction): Promise<Response> {
   const isDM = isDMContext(interaction)
   const userId = getUserId(interaction)
 
@@ -292,13 +254,13 @@ async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Prom
       {
         title: 'Your DM Subscriptions',
         description,
-        color: 0x3b82f6, // blue
+        color: COLORS.update,
         footer: { text: `${subs.length} subscriptions` },
       },
       true,
     )
   } else {
-    const channelId = interaction.channel_id
+    const channelId = getChannelId(interaction)
 
     if (!channelId) {
       return messageResponse('Unable to identify channel.', true)
@@ -321,7 +283,7 @@ async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Prom
       {
         title: 'Channel Subscriptions',
         description,
-        color: 0x3b82f6, // blue
+        color: COLORS.update,
         footer: { text: `${subs.length} subscriptions` },
       },
       true,
@@ -331,7 +293,7 @@ async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Prom
 
 async function handleDelete(
   ctx: ActionCtx,
-  interaction: DiscordInteraction,
+  interaction: APIInteraction,
   options: Record<string, string | number | boolean>,
 ): Promise<Response> {
   const isDM = isDMContext(interaction)
@@ -363,12 +325,12 @@ async function handleDelete(
       {
         title: 'Subscription Deleted',
         description: `Removed subscription for pattern \`${pattern}\`.`,
-        color: 0xef4444, // red
+        color: COLORS.delete,
       },
       false,
     )
   } else {
-    const channelId = interaction.channel_id
+    const channelId = getChannelId(interaction)
 
     if (!channelId) {
       return messageResponse('Unable to identify channel.', true)
@@ -387,20 +349,20 @@ async function handleDelete(
       {
         title: 'Subscription Deleted',
         description: `Removed subscription for pattern \`${pattern}\`.`,
-        color: 0xef4444, // red
+        color: COLORS.delete,
       },
       false,
     )
   }
 }
 
-async function handleHelp(): Promise<Response> {
+function handleHelp(): Response {
   return embedResponse(
     {
       title: 'ORCA Alert Bot',
       description:
         'Get notified when AI models and endpoints change on OpenRouter.\n\nUse in a **server channel** to subscribe the channel, or in **DMs** to get personal alerts.',
-      color: 0x8b5cf6, // purple
+      color: COLORS.help,
       fields: [
         {
           name: '/orca subscribe <pattern>',
@@ -425,7 +387,6 @@ async function handleHelp(): Promise<Response> {
   )
 }
 
-// Handle incoming Discord interaction
 export async function handleInteraction(
   ctx: ActionCtx,
   args: {
@@ -437,27 +398,28 @@ export async function handleInteraction(
 ): Promise<Response> {
   const { body, signature, timestamp, publicKey } = args
 
-  // Verify signature
-  if (!verifyDiscordSignature({ signature, timestamp, body, publicKey })) {
+  const isValid = await verifyKey(body, signature, timestamp, publicKey)
+  if (!isValid) {
     return new Response('Invalid signature', { status: 401 })
   }
 
-  const interaction: DiscordInteraction = JSON.parse(body)
+  const interaction = JSON.parse(body) as APIInteraction
 
-  // Handle PING (Discord verification)
-  if (interaction.type === InteractionType.PING) {
+  if (interaction.type === InteractionType.Ping) {
     console.log('[discord:interactions] PING received')
     return pongResponse()
   }
 
-  // Handle slash commands
-  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-    const commandName = interaction.data?.name
+  if (interaction.type === InteractionType.ApplicationCommand) {
+    const commandName =
+      'data' in interaction && interaction.data && 'name' in interaction.data
+        ? interaction.data.name
+        : undefined
 
     console.log('[discord:interactions] command received', {
       command: commandName,
-      channel_id: interaction.channel_id,
-      guild_id: interaction.guild_id,
+      channel_id: getChannelId(interaction),
+      guild_id: getGuildId(interaction),
     })
 
     if (commandName !== 'orca') {
@@ -468,11 +430,11 @@ export async function handleInteraction(
 
     switch (subcommand) {
       case 'subscribe':
-        return handleSubscribe(ctx, interaction, options)
+        return await handleSubscribe(ctx, interaction, options)
       case 'list':
-        return handleList(ctx, interaction)
+        return await handleList(ctx, interaction)
       case 'delete':
-        return handleDelete(ctx, interaction, options)
+        return await handleDelete(ctx, interaction, options)
       case 'help':
         return handleHelp()
       default:

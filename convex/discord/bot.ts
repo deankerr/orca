@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
-import { isResponseError, up } from 'up-fetch'
-
+import { createDiscordClient, formatDiscordError, type DiscordClient } from './api'
 import type { DiscordPayload } from './embeds/utils'
 
 export type ChannelDelivery = {
@@ -22,11 +21,7 @@ export type DiscordDelivery = ChannelDelivery | DMDelivery
 
 type ChannelResult = { ok: true; channelId: string } | { ok: false; error: unknown }
 
-type DiscordClient = ReturnType<typeof createDiscordClient>
-
-const DISCORD_API_BASE = 'https://discord.com/api/v10'
 const DELAY_BETWEEN_MESSAGES_MS = 1000
-const RETRY_ATTEMPTS = 3
 
 // DM channel cache - safe for Convex actions because:
 // 1. Actions are single-threaded per invocation
@@ -35,22 +30,6 @@ const RETRY_ATTEMPTS = 3
 const dmChannelCache = new Map<string, string>()
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-function formatError(err: unknown): unknown {
-  return isResponseError(err) ? { status: err.status, ...err.data } : String(err)
-}
-
-function createDiscordClient(botToken: string) {
-  return up(fetch, () => ({
-    baseUrl: DISCORD_API_BASE,
-    headers: { Authorization: `Bot ${botToken}` },
-    retry: {
-      attempts: RETRY_ATTEMPTS,
-      delay: (ctx) => Math.min(ctx.attempt ** 2 * 1000, 10_000),
-      when: (ctx) => ctx.response?.status === 429 || (ctx.response?.status ?? 0) >= 500,
-    },
-  }))
-}
 
 async function resolveChannelId(
   delivery: DiscordDelivery,
@@ -94,7 +73,7 @@ export async function sendDiscordDeliveries(
       console.error('[discord:bot] channel resolution failed', {
         delivery_type: delivery.type,
         user_id: delivery.type === 'dm' ? delivery.user_id : undefined,
-        error: formatError(result.error),
+        error: formatDiscordError(result.error),
       })
       failed += delivery.payloads.length
       continue
@@ -114,7 +93,7 @@ export async function sendDiscordDeliveries(
         console.error('[discord:bot] send failed', {
           channel: channelId,
           pattern: delivery.pattern,
-          error: formatError(err),
+          error: formatDiscordError(err),
         })
       }
 
