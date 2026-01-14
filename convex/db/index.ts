@@ -1,3 +1,4 @@
+import * as discord_subscriptions from '../discord/subscriptions'
 import * as or_sources from './or/sources'
 import * as or_views_changes from './or/views/changes'
 import * as or_views_endpoints from './or/views/endpoints'
@@ -8,6 +9,9 @@ import * as snapshot_crawl_config from './snapshot/crawl/config'
 import * as webhook_subscriptions from './webhook/subscriptions'
 
 export const db = {
+  discord: {
+    subscriptions: discord_subscriptions,
+  },
   or: {
     sources: or_sources,
     views: {

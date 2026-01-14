@@ -109,6 +109,7 @@ This philosophy guides us to build systems that can adapt, evolve, and when nece
 - Share args/returns validators between convex functions rather than redefining them each time.
 - Use the prefix "v" to indicate a shared validator, e.g. "vNewChatArgs".
 - Convex has first class support for objects as fields on documents, including indexes on nested fields.
+- All documents have an immutable `_id` and `_creationTime` field.
 - NEVER try to 'deploy' to convex, this will deploy to production!
 
 ## HTTP Endpoints and Deployment URLs

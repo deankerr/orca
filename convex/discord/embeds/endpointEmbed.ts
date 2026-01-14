@@ -1,7 +1,7 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
-import { formatPricing } from '../../../shared/pricing'
-import type { OrcaEndpoint } from '../../../transforms/endpoint'
+import { formatPricing } from '../../shared/pricing'
+import type { OrcaEndpoint } from '../../transforms/endpoint'
 import { buildEntityLinks } from './components'
 import {
   COLORS,

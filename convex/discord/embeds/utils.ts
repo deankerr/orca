@@ -1,7 +1,7 @@
 import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { getEnv } from '../../../lib/env'
-import { getLogo } from '../../../shared/logos'
+import { getEnv } from '../../lib/env'
+import { getLogo } from '../../shared/logos'
 
 // * Types
 

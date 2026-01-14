@@ -1,6 +1,6 @@
 import { EmbedBuilder } from '@discordjs/builders'
 
-import { truncate } from '../../../shared/utils'
+import { truncate } from '../../shared/utils'
 import { buildEntityLinks } from './components'
 import {
   COLORS,

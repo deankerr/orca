@@ -4,6 +4,8 @@ import { db } from './db'
 
 export default defineSchema(
   {
+    discord_alert_subscriptions: db.discord.subscriptions.table,
+
     or_sources: db.or.sources.table,
 
     or_views_changes: db.or.views.changes.table,

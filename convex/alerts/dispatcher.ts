@@ -1,47 +1,28 @@
 import { v } from 'convex/values'
 
-import { internal } from '../../_generated/api'
-import { internalAction } from '../../_generated/server'
-import { buildMarkdownLinks } from '../../discord/embeds/components'
-import { buildEndpointEmbed } from '../../discord/embeds/endpointEmbed'
-import { buildModelEmbed } from '../../discord/embeds/modelEmbed'
-import type { DiscordPayload, EmbedResult } from '../../discord/embeds/utils'
-import { transformEndpoint } from '../../transforms/endpoint'
-import type { EnrichedChange } from './inputs'
-import { sendDeliveries, type Delivery } from './send'
+import { internal } from '../_generated/api'
+import type { Doc } from '../_generated/dataModel'
+import { internalAction } from '../_generated/server'
+import {
+  sendDiscordDeliveries,
+  type ChannelDelivery,
+  type DiscordDelivery,
+  type DMDelivery,
+} from '../discord/bot'
+import { buildMarkdownLinks } from '../discord/embeds/components'
+import { buildEndpointEmbed } from '../discord/embeds/endpointEmbed'
+import { buildModelEmbed } from '../discord/embeds/modelEmbed'
+import type { DiscordPayload, EmbedResult } from '../discord/embeds/utils'
+import type { EnrichedChange } from '../snapshots/webhooks/inputs'
+import { transformEndpoint } from '../transforms/endpoint'
 
-// Pattern matching
-// Supports: "*" (all), "foo*", "*foo", "*foo*", "exact"
-
+// Pattern matching - "*" for all, otherwise simple includes
 export function matchPattern(pattern: string, slug: string): boolean {
   if (pattern === '*') return true
-
-  if (pattern.startsWith('*') && pattern.endsWith('*') && pattern.length > 2) {
-    const inner = pattern.slice(1, -1)
-    return slug.includes(inner)
-  }
-
-  if (pattern.endsWith('*')) {
-    const prefix = pattern.slice(0, -1)
-    return slug.startsWith(prefix)
-  }
-
-  if (pattern.startsWith('*')) {
-    const suffix = pattern.slice(1)
-    return slug.endsWith(suffix)
-  }
-
-  return pattern === slug
-}
-
-export type Subscription = {
-  pattern: string
-  webhook_url: string
-  label?: string
+  return slug.includes(pattern)
 }
 
 // Group changes by entity (model or endpoint) AND crawl_id
-// This prevents merging changes from different snapshots
 function groupChangesByEntity(changes: EnrichedChange[]): Map<string, EnrichedChange[]> {
   return Map.groupBy(changes, (c) =>
     c.raw.entity_type === 'model'
@@ -50,12 +31,15 @@ function groupChangesByEntity(changes: EnrichedChange[]): Map<string, EnrichedCh
   )
 }
 
-// Build a single payload for an entity's changes
+type DiscordSubscription = Doc<'discord_alert_subscriptions'>
+
+// Build a single Discord payload for an entity's changes
 function buildPayload(args: {
   entityChanges: EnrichedChange[]
-  subscription: Subscription
+  subscription: DiscordSubscription
+  crawl_id: string
 }): DiscordPayload | null {
-  const { entityChanges, subscription } = args
+  const { entityChanges, subscription, crawl_id } = args
   const first = entityChanges[0]
   if (!first) return null
 
@@ -65,7 +49,6 @@ function buildPayload(args: {
   let result: EmbedResult
 
   if (raw.entity_type === 'model') {
-    // Collect field changes for updates
     const changes = entityChanges
       .filter((c) => c.raw.change_kind === 'update')
       .map((c) => ({
@@ -96,7 +79,6 @@ function buildPayload(args: {
       changes,
     })
   } else if (raw.entity_type === 'endpoint') {
-    // Collect field changes for updates
     const changes = entityChanges
       .filter((c) => c.raw.change_kind === 'update')
       .map((c) => ({
@@ -121,11 +103,11 @@ function buildPayload(args: {
     return null
   }
 
-  // Add footer with subscription label and timestamp
-  result.embed.footer = { text: subscription.label ?? 'ORCA Monitor' }
-  result.embed.timestamp = new Date(parseInt(raw.crawl_id)).toISOString()
+  // Add footer with subscription pattern and timestamp
+  result.embed.footer = { text: subscription.pattern }
+  result.embed.timestamp = new Date(parseInt(crawl_id)).toISOString()
 
-  // Add links as a field at the end (components only work with application-owned webhooks)
+  // Add links as a field
   const linksMarkdown = buildMarkdownLinks(result.links)
   result.embed.fields = [
     ...(result.embed.fields ?? []),
@@ -135,9 +117,7 @@ function buildPayload(args: {
   return { embeds: [result.embed] }
 }
 
-// Sort weight for logical ordering of changes
-// Model lifecycle: create -> update -> (endpoints) -> delete
-// Endpoint lifecycle: create -> update -> delete (within model context)
+// Sort weight for logical ordering
 function getSortWeight(entity_type: string, change_kind: string): number {
   if (entity_type === 'model') {
     if (change_kind === 'create') return 0
@@ -149,7 +129,7 @@ function getSortWeight(entity_type: string, change_kind: string): number {
     if (change_kind === 'update') return 3
     if (change_kind === 'delete') return 4
   }
-  return 3 // default to middle
+  return 3
 }
 
 type PayloadWithMeta = {
@@ -159,20 +139,18 @@ type PayloadWithMeta = {
   change_kind: string
 }
 
-// Build deliveries for all subscriptions
-// Pure function: takes inputs, returns deliveries ready to send
-export function buildDeliveries(args: {
+// Build Discord deliveries for all subscriptions
+function buildDiscordDeliveries(args: {
   changes: EnrichedChange[]
-  subscriptions: Subscription[]
-}): Delivery[] {
-  const { changes, subscriptions } = args
-  const deliveries: Delivery[] = []
+  subscriptions: DiscordSubscription[]
+  crawl_id: string
+}): DiscordDelivery[] {
+  const { changes, subscriptions, crawl_id } = args
+  const deliveries: DiscordDelivery[] = []
 
-  // Group by entity first
   const byEntity = groupChangesByEntity(changes)
 
   for (const sub of subscriptions) {
-    // Collect all payloads for this subscription with metadata
     const payloadsWithMeta: PayloadWithMeta[] = []
 
     for (const [_entityKey, entityChanges] of byEntity) {
@@ -182,7 +160,7 @@ export function buildDeliveries(args: {
       const model_slug = first.raw.model_slug
       if (!model_slug || !matchPattern(sub.pattern, model_slug)) continue
 
-      const payload = buildPayload({ entityChanges, subscription: sub })
+      const payload = buildPayload({ entityChanges, subscription: sub, crawl_id })
       if (!payload) continue
 
       payloadsWithMeta.push({
@@ -193,70 +171,93 @@ export function buildDeliveries(args: {
       })
     }
 
-    // Sort: group by model_slug, then by logical order within each model
+    if (payloadsWithMeta.length === 0) continue
+
+    // Sort by model_slug then by logical order
     payloadsWithMeta.sort((a, b) => {
-      // First sort by model_slug to group related changes
       const slugCompare = a.model_slug.localeCompare(b.model_slug)
       if (slugCompare !== 0) return slugCompare
-
-      // Then sort by logical weight within the same model
       return (
         getSortWeight(a.entity_type, a.change_kind) - getSortWeight(b.entity_type, b.change_kind)
       )
     })
 
-    // Convert to deliveries
-    for (const { payload } of payloadsWithMeta) {
-      deliveries.push({
-        webhookUrl: sub.webhook_url,
-        payloads: [payload],
-      })
+    const payloads = payloadsWithMeta.map((p) => p.payload)
+
+    // Create delivery based on subscription type
+    if (sub.type === 'channel' && sub.channel_id) {
+      const delivery: ChannelDelivery = {
+        type: 'channel',
+        channel_id: sub.channel_id,
+        pattern: sub.pattern,
+        payloads,
+      }
+      deliveries.push(delivery)
+    } else if (sub.type === 'dm') {
+      const delivery: DMDelivery = {
+        type: 'dm',
+        user_id: sub.user_id,
+        pattern: sub.pattern,
+        payloads,
+      }
+      deliveries.push(delivery)
     }
   }
 
   return deliveries
 }
 
-// Main action: fetch inputs, build deliveries, send
+// Main dispatcher action
 export const run = internalAction({
   args: {
     crawl_id: v.string(),
   },
   handler: async (ctx, args) => {
-    const subscriptions = await ctx.runQuery(
-      internal.snapshots.webhooks.inputs.getEnabledSubscriptions,
-    )
-
-    if (!subscriptions.length) {
-      console.log('[webhooks] no enabled subscriptions')
+    const botToken = process.env.DISCORD_BOT_TOKEN
+    if (!botToken) {
+      console.log('[alerts:dispatcher] DISCORD_BOT_TOKEN not configured, skipping')
       return
     }
 
+    // Load Discord subscriptions
+    const discordSubs = await ctx.runQuery(internal.discord.subscriptions.getActive)
+
+    if (!discordSubs.length) {
+      console.log('[alerts:dispatcher] no active Discord subscriptions')
+      return
+    }
+
+    // Load changes
     const changes = await ctx.runQuery(internal.snapshots.webhooks.inputs.changesByCrawlId, {
       crawl_id: args.crawl_id,
     })
 
     if (!changes.length) {
-      console.log('[webhooks] no changes for crawl', { crawl_id: args.crawl_id })
+      console.log('[alerts:dispatcher] no changes for crawl', { crawl_id: args.crawl_id })
       return
     }
 
-    console.log('[webhooks] processing', {
+    console.log('[alerts:dispatcher] processing', {
       crawl_id: args.crawl_id,
-      subscriptions: subscriptions.length,
+      discordSubs: discordSubs.length,
       changes: changes.length,
     })
 
-    const deliveries = buildDeliveries({
+    // Build and send Discord deliveries
+    const discordDeliveries = buildDiscordDeliveries({
       changes,
-      subscriptions,
+      subscriptions: discordSubs,
+      crawl_id: args.crawl_id,
     })
 
-    if (!deliveries.length) {
-      console.log('[webhooks] no matching changes for any subscription')
-      return
+    if (discordDeliveries.length > 0) {
+      console.log('[alerts:dispatcher] sending Discord deliveries', {
+        deliveries: discordDeliveries.length,
+        totalPayloads: discordDeliveries.reduce((sum, d) => sum + d.payloads.length, 0),
+      })
+      await sendDiscordDeliveries(discordDeliveries, botToken)
+    } else {
+      console.log('[alerts:dispatcher] no matching Discord deliveries')
     }
-
-    await sendDeliveries(deliveries)
   },
 })
