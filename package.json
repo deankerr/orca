@@ -10,7 +10,7 @@
     "format": "prettier -w .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "bun typecheck && bun lint --max-warnings 0 && bun format --log-level warn",
+    "check": "bun typecheck && bun lint --max-warnings 0",
     "process-logos": "bun run scripts/process-logos.ts",
     "generate-sprite": "bun scripts/generate-sprite.ts"
   },

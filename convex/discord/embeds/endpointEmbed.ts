@@ -2,7 +2,6 @@ import { EmbedBuilder } from '@discordjs/builders'
 
 import type { EndpointChange } from '../../alerts/inputs'
 import { formatPricing } from '../../shared/pricing'
-import type { OrcaEndpoint } from '../../transforms/endpoint'
 import { COLORS, EMOJIS } from '../constants'
 import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
@@ -25,27 +24,21 @@ function formatPricingValue(value: unknown, priceKey: string): string {
   return ''
 }
 
-// Core pricing fields (always shown if present)
-const CORE_PRICING_FIELDS: Array<keyof OrcaEndpoint['pricing']> = [
+const PRICING_FIELDS = [
   'text_input',
   'text_output',
   'text_cache_read',
   'text_cache_write',
-]
-
-// Optional pricing fields (only shown if they have values)
-const OPTIONAL_PRICING_FIELDS: Array<keyof OrcaEndpoint['pricing']> = [
   'reasoning_output',
   'audio_input',
   'audio_cache_write',
   'image_input',
   'image_output',
   'per_request',
-]
+] as const
 
 function buildEndpointFields(change: EndpointChange) {
-  const { model_slug, endpoint_uuid, endpoint, provider_tag_slug } = change
-  const isFree = model_slug.split(':')[1] === 'free'
+  const { endpoint_uuid, endpoint, provider_tag_slug } = change
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: provider_id
@@ -97,23 +90,9 @@ function buildEndpointFields(change: EndpointChange) {
       inline: true,
     })
 
-    for (const key of CORE_PRICING_FIELDS) {
+    for (const key of PRICING_FIELDS) {
       const value = endpoint.pricing[key]
-      if (value !== undefined && value !== null) {
-        if (isFree && (key === 'text_input' || key === 'text_output')) {
-          fields.push({ name: key, value: '\ud83c\udd93', inline: true })
-        } else {
-          const formatted = formatPricingValue(value, key)
-          if (formatted) {
-            fields.push({ name: key, value: mono(formatted), inline: true })
-          }
-        }
-      }
-    }
-
-    for (const key of OPTIONAL_PRICING_FIELDS) {
-      const value = endpoint.pricing[key]
-      if (value !== undefined && value !== null) {
+      if (value !== null) {
         const formatted = formatPricingValue(value, key)
         if (formatted) {
           fields.push({ name: key, value: mono(formatted), inline: true })
