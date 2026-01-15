@@ -15,7 +15,7 @@ export function getColorIconUrl(model_slug: string): string | undefined {
   if (!colorPath) return undefined
 
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${colorPath}&w=48&q=75`
+  return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
 }
 
 export function mono(value: unknown) {
