@@ -33,7 +33,8 @@
       "WebFetch(domain:docs.convex.dev)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:tanstack.com)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:discord.com)"
     ],
     "deny": [],
     "ask": []

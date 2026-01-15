@@ -11,12 +11,14 @@ export const EMOJIS = {
   new: '🆕',
   delete: '☠️',
   update: '🔄',
-  checkmark: '\u2705',
-  cross: '\u274c',
+  checkmark: '✅',
+  cross: '❌',
   arrow: '▶︎',
   arrowUp: '⬆︎',
   arrowDown: '⬇︎',
 } as const
+
+export const DOT_SPACER = ' • '
 
 // Public URL for ORCA
 export const ORCA_PUBLIC_URL = 'https://orca.orb.town'

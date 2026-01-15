@@ -81,7 +81,7 @@ function buildEmbeds(changes: EnrichedChange[]): BuiltEmbed[] {
 // Stamp an embed for a specific subscription
 function stampEmbed(built: BuiltEmbed, pattern: string): DiscordPayload {
   // Clone to avoid mutation across subscriptions
-  const embed = { ...built.result, footer: { text: pattern } }
+  const embed = { ...built.result, footer: { text: `pattern: ${pattern}` } }
   return { embeds: [embed] }
 }
 

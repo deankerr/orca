@@ -2,10 +2,9 @@ import { EmbedBuilder } from '@discordjs/builders'
 
 import type { EndpointChange } from '../../alerts/inputs'
 import { formatPricing } from '../../shared/pricing'
-import type { OrcaEndpoint } from '../../transforms/endpoint'
 import { COLORS, EMOJIS } from '../constants'
-import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
+  buildEntityLinks,
   formatArrayDiff,
   formatDelta,
   formatValue,
@@ -25,27 +24,21 @@ function formatPricingValue(value: unknown, priceKey: string): string {
   return ''
 }
 
-// Core pricing fields (always shown if present)
-const CORE_PRICING_FIELDS: Array<keyof OrcaEndpoint['pricing']> = [
+const PRICING_FIELDS = [
   'text_input',
   'text_output',
   'text_cache_read',
   'text_cache_write',
-]
-
-// Optional pricing fields (only shown if they have values)
-const OPTIONAL_PRICING_FIELDS: Array<keyof OrcaEndpoint['pricing']> = [
   'reasoning_output',
   'audio_input',
   'audio_cache_write',
   'image_input',
   'image_output',
   'per_request',
-]
+] as const
 
 function buildEndpointFields(change: EndpointChange) {
-  const { model_slug, endpoint_uuid, endpoint, provider_tag_slug } = change
-  const isFree = model_slug.split(':')[1] === 'free'
+  const { endpoint_uuid, endpoint, provider_tag_slug } = change
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: provider_id
@@ -97,23 +90,9 @@ function buildEndpointFields(change: EndpointChange) {
       inline: true,
     })
 
-    for (const key of CORE_PRICING_FIELDS) {
+    for (const key of PRICING_FIELDS) {
       const value = endpoint.pricing[key]
-      if (value !== undefined && value !== null) {
-        if (isFree && (key === 'text_input' || key === 'text_output')) {
-          fields.push({ name: key, value: '\ud83c\udd93', inline: true })
-        } else {
-          const formatted = formatPricingValue(value, key)
-          if (formatted) {
-            fields.push({ name: key, value: mono(formatted), inline: true })
-          }
-        }
-      }
-    }
-
-    for (const key of OPTIONAL_PRICING_FIELDS) {
-      const value = endpoint.pricing[key]
-      if (value !== undefined && value !== null) {
+      if (value !== null) {
         const formatted = formatPricingValue(value, key)
         if (formatted) {
           fields.push({ name: key, value: mono(formatted), inline: true })
@@ -156,13 +135,11 @@ function buildBaseEmbed(change: EndpointChange): EmbedResult {
   const fields = buildEndpointFields(change)
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-      provider_tag_slug: provider_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+    provider_tag_slug: provider_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()
@@ -200,6 +177,10 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
   for (const change of fieldChanges) {
     const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
+    const label = getFieldLabel(field, change.before, change.after)
+    const isNew = isMissing(change.before)
+    const isRemoved = isMissing(change.after)
+
     const isPricing = change.path_level_1 === 'pricing'
     const isPricingTiers = isPricing && change.path_level_2 === 'tiers'
 
@@ -208,17 +189,13 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
       const diff = formatArrayDiff(change.before, change.after)
       if (diff) {
         fields.push({
-          name: field,
+          name: label,
           value: diff,
           inline: false,
         })
       }
       continue
     }
-
-    const label = getFieldLabel(field, change.before, change.after)
-    const isNew = isMissing(change.before)
-    const isRemoved = isMissing(change.after)
 
     // Pricing changes
     if (isPricing && !isPricingTiers) {
@@ -256,11 +233,11 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
       let value: string
       if (isNew) {
-        value = mono(afterStr)
+        value = afterStr
       } else if (isRemoved) {
-        value = mono(beforeStr)
+        value = beforeStr
       } else {
-        value = `${mono(beforeStr)} ${EMOJIS.arrow} ${mono(afterStr)} ${delta}`.trim()
+        value = `${beforeStr} ${EMOJIS.arrow} ${afterStr} ${delta}`.trim()
       }
 
       fields.push({ name: label, value, inline: false })
@@ -273,11 +250,11 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
     let value: string
     if (isNew) {
-      value = mono(afterStr)
+      value = afterStr
     } else if (isRemoved) {
-      value = mono(beforeStr)
+      value = beforeStr
     } else {
-      value = `${mono(beforeStr)} ${EMOJIS.arrow} ${mono(afterStr)}`
+      value = `${beforeStr} ${EMOJIS.arrow} ${afterStr}`
     }
 
     fields.push({ name: label, value, inline: false })
@@ -292,13 +269,11 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-      provider_tag_slug: provider_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+    provider_tag_slug: provider_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()
