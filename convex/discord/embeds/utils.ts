@@ -33,12 +33,13 @@ export function getFieldLabel(field: string, before: unknown, after: unknown): s
 }
 
 export function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return 'null'
   if (typeof value === 'boolean') return value ? EMOJIS.checkmark : EMOJIS.cross
+  if (value === null || value === undefined) return mono('null')
   if (typeof value === 'number')
-    return value.toLocaleString(undefined, { maximumFractionDigits: 20 })
-  if (typeof value === 'string') return value.length > 100 ? value.slice(0, 100) + '...' : value
-  return JSON.stringify(value)
+    return mono(value.toLocaleString(undefined, { maximumFractionDigits: 20 }))
+  if (typeof value === 'string')
+    return mono(value.length > 100 ? value.slice(0, 100) + '...' : value)
+  return mono(JSON.stringify(value))
 }
 
 export function formatArrayDiff(before: unknown[], after: unknown[]): string {

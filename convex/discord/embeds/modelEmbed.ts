@@ -176,11 +176,11 @@ function buildUpdateEmbed(changes: ModelChange[]): EmbedResult {
 
     let value: string
     if (isNew) {
-      value = mono(afterStr)
+      value = afterStr
     } else if (isRemoved) {
-      value = mono(beforeStr)
+      value = beforeStr
     } else {
-      value = `${mono(beforeStr)} ${EMOJIS.arrow} ${mono(afterStr)}`
+      value = `${beforeStr} ${EMOJIS.arrow} ${afterStr}`
     }
 
     fields.push({ name: label, value, inline: false })
