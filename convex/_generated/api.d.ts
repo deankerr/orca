@@ -33,7 +33,6 @@ import type * as discord_admin from "../discord/admin.js";
 import type * as discord_api from "../discord/api.js";
 import type * as discord_bot from "../discord/bot.js";
 import type * as discord_constants from "../discord/constants.js";
-import type * as discord_embeds_components from "../discord/embeds/components.js";
 import type * as discord_embeds_endpointEmbed from "../discord/embeds/endpointEmbed.js";
 import type * as discord_embeds_modelEmbed from "../discord/embeds/modelEmbed.js";
 import type * as discord_embeds_utils from "../discord/embeds/utils.js";
@@ -103,7 +102,6 @@ declare const fullApi: ApiFromModules<{
   "discord/api": typeof discord_api;
   "discord/bot": typeof discord_bot;
   "discord/constants": typeof discord_constants;
-  "discord/embeds/components": typeof discord_embeds_components;
   "discord/embeds/endpointEmbed": typeof discord_embeds_endpointEmbed;
   "discord/embeds/modelEmbed": typeof discord_embeds_modelEmbed;
   "discord/embeds/utils": typeof discord_embeds_utils;

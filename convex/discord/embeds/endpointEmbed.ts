@@ -3,8 +3,8 @@ import { EmbedBuilder } from '@discordjs/builders'
 import type { EndpointChange } from '../../alerts/inputs'
 import { formatPricing } from '../../shared/pricing'
 import { COLORS, EMOJIS } from '../constants'
-import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
+  buildEntityLinks,
   formatArrayDiff,
   formatDelta,
   formatValue,
@@ -135,13 +135,11 @@ function buildBaseEmbed(change: EndpointChange): EmbedResult {
   const fields = buildEndpointFields(change)
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-      provider_tag_slug: provider_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+    provider_tag_slug: provider_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()
@@ -271,13 +269,11 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-      provider_tag_slug: provider_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+    provider_tag_slug: provider_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()

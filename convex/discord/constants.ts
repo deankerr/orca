@@ -18,6 +18,8 @@ export const EMOJIS = {
   arrowDown: '⬇︎',
 } as const
 
+export const DOT_SPACER = ' • '
+
 // Public URL for ORCA
 export const ORCA_PUBLIC_URL = 'https://orca.orb.town'
 

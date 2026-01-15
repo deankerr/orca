@@ -3,8 +3,8 @@ import { EmbedBuilder } from '@discordjs/builders'
 import type { ModelChange } from '../../alerts/inputs'
 import { truncate } from '../../shared/utils'
 import { COLORS, EMOJIS, MAX_DESCRIPTION_LENGTH } from '../constants'
-import { buildEntityLinks, buildMarkdownLinks } from './components'
 import {
+  buildEntityLinks,
   formatArrayDiff,
   formatValue,
   getColorIconUrl,
@@ -117,12 +117,10 @@ function buildBaseEmbed(change: ModelChange): EmbedResult {
   const fields = buildModelFields(change)
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()
@@ -190,12 +188,10 @@ function buildUpdateEmbed(changes: ModelChange[]): EmbedResult {
 
   embed.setFields(fields)
 
-  const links = buildMarkdownLinks(
-    buildEntityLinks({
-      model_slug,
-      hugging_face_id: model?.hugging_face_id,
-    }),
-  )
+  const links = buildEntityLinks({
+    model_slug,
+    hugging_face_id: model?.hugging_face_id,
+  })
   embed.addFields({ name: 'links', value: links, inline: false })
 
   return embed.toJSON()

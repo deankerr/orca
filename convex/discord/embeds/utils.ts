@@ -2,15 +2,10 @@ import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-
 
 import { getEnv } from '../../lib/env'
 import { getLogo } from '../../shared/logos'
-import { EMOJIS } from '../constants'
+import { DOT_SPACER, EMOJIS, ORCA_PUBLIC_URL } from '../constants'
 
 export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
-}
-
-export type LinkButton = {
-  label: string
-  url: string
 }
 
 export type EmbedResult = APIEmbed
@@ -74,4 +69,27 @@ export function formatDelta(before: number | null, after: number | null): string
   const percentChange = ((after - before) / before) * 100
   const arrow = percentChange > 0 ? EMOJIS.arrowUp : EMOJIS.arrowDown
   return `${arrow}${Math.abs(percentChange).toFixed(0)}%`
+}
+
+export function buildEntityLinks(args: {
+  model_slug: string
+  hugging_face_id?: string
+  provider_tag_slug?: string
+}): string {
+  const { model_slug, hugging_face_id, provider_tag_slug } = args
+
+  const links = [
+    `[⚪ ORCA](${ORCA_PUBLIC_URL}/?q=${model_slug})`,
+    `[🔀 Model](https://openrouter.ai/${model_slug})`,
+  ]
+
+  if (provider_tag_slug) {
+    links.push(`[🔀 Provider](https://openrouter.ai/provider/${provider_tag_slug})`)
+  }
+
+  if (hugging_face_id) {
+    links.push(`[🤗 HuggingFace](https://huggingface.co/${hugging_face_id})`)
+  }
+
+  return links.join(DOT_SPACER)
 }
