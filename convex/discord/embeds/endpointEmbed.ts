@@ -179,6 +179,10 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
 
   for (const change of fieldChanges) {
     const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
+    const label = getFieldLabel(field, change.before, change.after)
+    const isNew = isMissing(change.before)
+    const isRemoved = isMissing(change.after)
+
     const isPricing = change.path_level_1 === 'pricing'
     const isPricingTiers = isPricing && change.path_level_2 === 'tiers'
 
@@ -187,17 +191,13 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
       const diff = formatArrayDiff(change.before, change.after)
       if (diff) {
         fields.push({
-          name: field,
+          name: label,
           value: diff,
           inline: false,
         })
       }
       continue
     }
-
-    const label = getFieldLabel(field, change.before, change.after)
-    const isNew = isMissing(change.before)
-    const isRemoved = isMissing(change.after)
 
     // Pricing changes
     if (isPricing && !isPricingTiers) {
