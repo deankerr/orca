@@ -17,6 +17,7 @@
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-rc.0",
     "@convex-dev/aggregate": "^0.2.1",
+    "@convex-dev/workflow": "^0.2.1",
     "@convex-dev/react-query": "^0.1.0",
     "@discordjs/builders": "^1.13.1",
     "@posthog/nextjs-config": "^1.7.5",
