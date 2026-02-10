@@ -1,0 +1,55 @@
+/**
+ * PROTOTYPE: CSS-based pinned column styling
+ *
+ * Replaces JS-computed conditional Tailwind classes with static CSS selectors.
+ * The data-pinned and data-last-col attributes are already set on cells by
+ * data-grid-table.tsx -- this CSS targets those attributes directly.
+ *
+ * What this replaces (from DataGridTableBodyRowCell):
+ *   data-pinned:bg-background/90
+ *   data-pinned:backdrop-blur-xs
+ *   data-pinned:group-hover:bg-muted/40
+ *   data-pinned:group-hover:backdrop-blur-md
+ *   [&[data-pinned=left][data-last-col=left]]:border-e!
+ *   [&[data-pinned=right][data-last-col=right]]:border-s!
+ *   [&[data-pinned][data-last-col]]:border-border
+ *
+ * See docs/data-table-css-performance.md for full analysis.
+ */
+
+/* --- Pinned cell base: solid opaque background (no blur) --- */
+
+[data-slot="data-grid-table"] td[data-pinned],
+[data-slot="data-grid-table"] th[data-pinned] {
+  background-color: var(--color-background);
+}
+
+/* --- Pinned cell hover: solid muted background --- */
+
+[data-slot="data-grid-table"] tr:hover td[data-pinned] {
+  background-color: var(--color-muted);
+}
+
+/* --- Pinned header row bg --- */
+
+[data-slot="data-grid-table"] thead tr th[data-pinned] {
+  background-color: color-mix(in oklab, var(--color-muted) 40%, var(--color-background));
+}
+
+/* --- Last pinned column edge: border + subtle shadow for depth --- */
+
+[data-slot="data-grid-table"] [data-pinned][data-last-col="left"] {
+  border-inline-end: 1px solid var(--color-border);
+  box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+[data-slot="data-grid-table"] [data-pinned][data-last-col="right"] {
+  border-inline-start: 1px solid var(--color-border);
+  box-shadow: -4px 0 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Generic pinned column edge border --- */
+
+[data-slot="data-grid-table"] [data-pinned][data-last-col] {
+  border-color: var(--color-border);
+}
