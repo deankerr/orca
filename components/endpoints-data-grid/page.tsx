@@ -18,6 +18,7 @@ import {
 } from '../data-grid/data-grid-card'
 import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
+import { AttributePopoverProvider } from '../shared/attribute-badge'
 import { useEndpointsData } from './api'
 import { columns } from './columns'
 import { DataGridControls } from './controls'
@@ -52,42 +53,44 @@ export function EndpointsDataGrid() {
   })
 
   return (
-    <DataGrid
-      table={table}
-      recordCount={table.getFilteredRowModel().rows.length}
-      isLoading={isLoading}
-      emptyMessage="No endpoints found"
-      skeletonRows={30}
-      tableLayout={{
-        headerSticky: true,
-        headerBorder: true,
-        width: 'fixed',
-        cellBorder: true,
-        rowHeight: 57,
-        overscan: 20,
-        columnsResizable: true,
-        columnsPinnable: true,
-      }}
-      tableClassNames={{
-        headerRow: 'uppercase font-mono',
-        bodyRow:
-          'has-aria-[label=disabled]:[&_td_>_*]:opacity-50 has-aria-[label=disabled]:[&_td]:text-foreground/50 has-aria-[label=gone]:[&_td_>_*]:opacity-50 has-aria-[label=gone]:[&_td]:text-foreground/50',
-        body: 'font-mono',
-      }}
-    >
-      <DataGridCard>
-        <DataGridCardToolbar>
-          <DataGridControls />
-        </DataGridCardToolbar>
+    <AttributePopoverProvider>
+      <DataGrid
+        table={table}
+        recordCount={table.getFilteredRowModel().rows.length}
+        isLoading={isLoading}
+        emptyMessage="No endpoints found"
+        skeletonRows={30}
+        tableLayout={{
+          headerSticky: true,
+          headerBorder: true,
+          width: 'fixed',
+          cellBorder: true,
+          rowHeight: 57,
+          overscan: 20,
+          columnsResizable: true,
+          columnsPinnable: true,
+        }}
+        tableClassNames={{
+          headerRow: 'uppercase font-mono',
+          bodyRow:
+            'has-aria-[label=disabled]:[&_td_>_*]:opacity-50 has-aria-[label=disabled]:[&_td]:text-foreground/50 has-aria-[label=gone]:[&_td_>_*]:opacity-50 has-aria-[label=gone]:[&_td]:text-foreground/50',
+          body: 'font-mono',
+        }}
+      >
+        <DataGridCard>
+          <DataGridCardToolbar>
+            <DataGridControls />
+          </DataGridCardToolbar>
 
-        <DataGridCardContent>
-          <DataGridTableVirtual />
-        </DataGridCardContent>
+          <DataGridCardContent>
+            <DataGridTableVirtual />
+          </DataGridCardContent>
 
-        <DataGridCardFooter>
-          <DataGridFooter />
-        </DataGridCardFooter>
-      </DataGridCard>
-    </DataGrid>
+          <DataGridCardFooter>
+            <DataGridFooter />
+          </DataGridCardFooter>
+        </DataGridCard>
+      </DataGrid>
+    </AttributePopoverProvider>
   )
 }
