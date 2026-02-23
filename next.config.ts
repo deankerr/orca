@@ -63,5 +63,8 @@ export default withBundleAnalyzer(
   withPostHogConfig(nextConfig, {
     personalApiKey: process.env.POSTHOG_API_KEY!,
     envId: process.env.POSTHOG_ENV_ID!,
+    sourcemaps: {
+      version: appVersion,
+    },
   }),
 )

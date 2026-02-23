@@ -20,6 +20,7 @@ const latest = tags
   .split('\n')
   .filter(Boolean)
   .map((t) => Number(t.replace('v', '')))
+  .filter((n) => !Number.isNaN(n))
   .sort((a, b) => a - b)
   .pop() ?? 0
 
