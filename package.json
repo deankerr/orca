@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "check": "bun typecheck && bun lint --max-warnings 0",
     "process-logos": "bun run scripts/process-logos.ts",
-    "generate-sprite": "bun scripts/generate-sprite.ts"
+    "generate-sprite": "bun scripts/generate-sprite.ts",
+    "release": "bun scripts/release.ts"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-rc.0",
