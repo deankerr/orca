@@ -1,4 +1,4 @@
-import { Popover } from '@base-ui-components/react/popover'
+import { Popover } from '@base-ui/react/popover'
 
 import { Doc } from '@/convex/_generated/dataModel'
 
@@ -7,6 +7,62 @@ import { Attribute, AttributeName, attributes } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import { RadIconBadge } from './rad-badge'
+
+// --- Singleton popover: one shared Root for all attribute badges ---
+
+interface AttributePopoverPayload {
+  label: string
+  description: React.ReactNode
+  badge?: string
+  details?: { label?: string; value: string }[]
+}
+
+const attributePopoverHandle = Popover.createHandle<AttributePopoverPayload>()
+
+export function AttributePopoverProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <Popover.Root handle={attributePopoverHandle}>
+        {({ payload }) => (
+          <Popover.Portal>
+            <Popover.Positioner side="top" sideOffset={8}>
+              <Popover.Popup className="max-w-72 origin-[var(--transform-origin)] rounded-lg bg-[canvas] px-4 py-3 text-foreground shadow-lg outline outline-border dark:-outline-offset-1">
+                <Popover.Arrow className="data-[side=bottom]:top-[-8px] data-[side=left]:right-[-13px] data-[side=left]:rotate-90 data-[side=right]:left-[-13px] data-[side=right]:-rotate-90 data-[side=top]:bottom-[-8px] data-[side=top]:rotate-180">
+                  <ArrowSvg />
+                </Popover.Arrow>
+
+                <div className="mb-1 flex items-center justify-between gap-4">
+                  <Popover.Title className="text-sm font-medium">{payload?.label}</Popover.Title>
+                  {payload?.badge && <span className="font-mono text-[95%]">{payload.badge}</span>}
+                </div>
+
+                <Popover.Description className="font-sans text-sm text-muted-foreground">
+                  {payload?.description}
+                </Popover.Description>
+
+                {payload?.details && payload.details.length > 0 && (
+                  <DataList className="mt-2 space-y-0.5">
+                    {payload.details.map((item, i) => (
+                      <DataListItem key={i}>
+                        {item.label && (
+                          <DataListLabel className="uppercase">{item.label}</DataListLabel>
+                        )}
+                        <DataListValue>{item.value}</DataListValue>
+                      </DataListItem>
+                    ))}
+                  </DataList>
+                )}
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        )}
+      </Popover.Root>
+    </>
+  )
+}
+
+// --- Badge: lightweight trigger only (no Root, no Portal) ---
 
 interface AttributeBadgeProps {
   definition: Attribute
@@ -19,48 +75,17 @@ export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
   const details = state?.details
 
   return (
-    <Popover.Root>
-      <Popover.Trigger
-        render={<RadIconBadge variant="surface" color={color} aria-label={key} />}
-        openOnHover
-        delay={0}
-        closeDelay={0}
-        nativeButton={false}
-      >
-        <SpriteIcon name={icon} className="size-full" />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner side="top" sideOffset={8}>
-          <Popover.Popup className="max-w-72 origin-[var(--transform-origin)] rounded-lg bg-[canvas] px-4 py-3 text-foreground shadow-lg outline outline-border dark:-outline-offset-1">
-            <Popover.Arrow className="data-[side=bottom]:top-[-8px] data-[side=left]:right-[-13px] data-[side=left]:rotate-90 data-[side=right]:left-[-13px] data-[side=right]:-rotate-90 data-[side=top]:bottom-[-8px] data-[side=top]:rotate-180">
-              <ArrowSvg />
-            </Popover.Arrow>
-
-            <div className="mb-1 flex items-center justify-between gap-4">
-              <Popover.Title className="text-sm font-medium">{label}</Popover.Title>
-              {badge && <span className="font-mono text-[95%]">{badge}</span>}
-            </div>
-
-            <Popover.Description className="font-sans text-sm text-muted-foreground">
-              {description}
-            </Popover.Description>
-
-            {details && details.length > 0 && (
-              <DataList className="mt-2 space-y-0.5">
-                {details.map((item, i) => (
-                  <DataListItem key={i}>
-                    {item.label && (
-                      <DataListLabel className="uppercase">{item.label}</DataListLabel>
-                    )}
-                    <DataListValue>{item.value}</DataListValue>
-                  </DataListItem>
-                ))}
-              </DataList>
-            )}
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    <Popover.Trigger
+      handle={attributePopoverHandle}
+      openOnHover
+      delay={50}
+      closeDelay={50}
+      nativeButton={false}
+      payload={{ label, description, badge, details }}
+      render={<RadIconBadge variant="surface" color={color} aria-label={key} />}
+    >
+      <SpriteIcon name={icon} className="size-full" />
+    </Popover.Trigger>
   )
 }
 
@@ -82,6 +107,8 @@ function ArrowSvg(props: React.ComponentProps<'svg'>) {
     </svg>
   )
 }
+
+// --- Badge set ---
 
 interface AttributeBadgeSetProps {
   endpoint: Doc<'or_views_endpoints'>
