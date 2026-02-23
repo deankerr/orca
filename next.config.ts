@@ -1,19 +1,13 @@
-import { execSync } from 'child_process'
 import type { NextConfig } from 'next'
 
 import bundleAnalyzer from '@next/bundle-analyzer'
 import { withPostHogConfig } from '@posthog/nextjs-config'
 
 import { getConvexHttpUrl } from './lib/utils'
+import pkg from './package.json'
 
-// derive version from git tags, e.g. "v1" or "v1-3-gabcdef"
-const appVersion = (() => {
-  try {
-    return execSync('git describe --tags --always').toString().trim()
-  } catch {
-    return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'unknown'
-  }
-})()
+// version from package.json, e.g. "35.0.0" → "v35"
+const appVersion = `v${pkg.version.split('.')[0]}`
 
 const nextConfig: NextConfig = {
   env: {
