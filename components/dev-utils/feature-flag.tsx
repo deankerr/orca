@@ -1,24 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 // presentational features only
 export function FeatureFlag({ flag, children }: { flag: string; children: React.ReactNode }) {
-  const [isEnabled, setIsEnabled] = useState(false)
-  const [hasMounted, setHasMounted] = useState(false)
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasMounted(true)
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const enabled = localStorage.getItem(`feature-${flag}`) === 'true'
-      setIsEnabled(enabled)
-    }
-  }, [flag])
-
-  // Prevent hydration mismatch
-  if (!hasMounted) return null
-
+  const isEnabled = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem(`feature-${flag}`) === 'true',
+    () => false,
+  )
   return isEnabled ? <>{children}</> : null
 }
 

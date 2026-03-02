@@ -62,9 +62,7 @@ function ScrollArea({
       left: scrollLeft > 0,
       right: scrollLeft + clientWidth < scrollWidth - 1,
     }))
-    // viewportRef causes infinite loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [viewportRef])
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return
@@ -78,7 +76,7 @@ function ScrollArea({
     const resizeObserver = new ResizeObserver(checkScrollability)
     resizeObserver.observe(element)
 
-    element.addEventListener('scroll', checkScrollability, { signal })
+    element.addEventListener('scroll', checkScrollability, { passive: true, signal })
     window.addEventListener('resize', checkScrollability, { signal })
 
     // Run an initial check whenever dependencies change (including pointer mode)

@@ -25,6 +25,7 @@ export function VirtualizedFeed({
   hasNextPage: boolean
   isFetchingNextPage: boolean
 }) {
+  'use no memo'
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // eslint-disable-next-line react-hooks/incompatible-library
