@@ -75,18 +75,18 @@ Every event is tagged with `app_version`. Filter any insight by this property to
 
 ### GitHub Secrets
 
-| Secret | Value |
-|--------|-------|
+| Secret               | Value                                 |
+| -------------------- | ------------------------------------- |
 | `VERCEL_DEPLOY_HOOK` | Deploy Hook URL from Vercel Dashboard |
 
 ### Files
 
-| File | Purpose |
-|------|---------|
-| `package.json` | Source of truth for version number |
-| `scripts/release.ts` | Release script: bump, commit, tag, release |
-| `.github/workflows/ci.yml` | PR checks: typecheck + lint |
-| `.github/workflows/deploy-production.yml` | Triggers deploy hook on release |
-| `next.config.ts` | Reads version from package.json at build time |
-| `instrumentation-client.ts` | Sends version to PostHog as super property |
-| `vercel.json` | Disables auto-production-deploy on main |
+| File                                      | Purpose                                       |
+| ----------------------------------------- | --------------------------------------------- |
+| `package.json`                            | Source of truth for version number            |
+| `scripts/release.ts`                      | Release script: bump, commit, tag, release    |
+| `.github/workflows/ci.yml`                | PR checks: typecheck + lint                   |
+| `.github/workflows/deploy-production.yml` | Triggers deploy hook on release               |
+| `next.config.ts`                          | Reads version from package.json at build time |
+| `instrumentation-client.ts`               | Sends version to PostHog as super property    |
+| `vercel.json`                             | Disables auto-production-deploy on main       |

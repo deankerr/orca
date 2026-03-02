@@ -7,10 +7,7 @@
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start",
-    "format": "prettier -w .",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "check": "bun typecheck && bun lint --max-warnings 0",
+    "check": "tsc --noEmit && eslint --max-warnings 0 . && prettier --log-level warn -w .",
     "process-logos": "bun run scripts/process-logos.ts",
     "generate-sprite": "bun scripts/generate-sprite.ts",
     "release": "bun scripts/release.ts"
