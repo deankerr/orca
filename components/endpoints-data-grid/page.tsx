@@ -26,6 +26,7 @@ import { DataGridFooter } from './footer'
 import { useEndpointFilters } from './use-endpoint-filters'
 
 export function EndpointsDataGrid() {
+  'use no memo'
   const { filteredEndpoints, isLoading } = useEndpointsData()
   const { globalFilter, sorting, onSortingChange } = useEndpointFilters()
   const isMobile = useIsMobile()

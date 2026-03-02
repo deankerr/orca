@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 
 import { convexQuery } from '@convex-dev/react-query'
 import { useControllableState } from '@radix-ui/react-use-controllable-state'
@@ -39,6 +39,7 @@ export function ModelCombobox({
 
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const listboxId = useId()
 
   const { data: models, isPending } = useQuery(convexQuery(api.models.list, {}))
 
@@ -96,6 +97,7 @@ export function ModelCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={listboxId}
           className={cn('text-left', className)}
           size="lg"
           {...props}
@@ -116,7 +118,7 @@ export function ModelCombobox({
       </PopoverTrigger>
 
       <PopoverContent className="w-[300px] overflow-hidden p-0" align="start">
-        <div className="flex flex-col">
+        <div id={listboxId} className="flex flex-col">
           {/* Search input */}
           <div className="overflow-hidden border-b">
             <Input
@@ -153,6 +155,7 @@ function VirtualizedModelList({
   selectedSlug?: string
   onSelect: (model: Doc<'or_views_models'>) => void
 }) {
+  'use no memo'
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // eslint-disable-next-line react-hooks/incompatible-library

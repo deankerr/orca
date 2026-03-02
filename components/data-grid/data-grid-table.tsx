@@ -403,6 +403,7 @@ function DataGridTableRowSelectAll() {
 }
 
 function DataGridTableVirtual<TData>() {
+  'use no memo'
   const { table, isLoading, props } = useDataGrid()
   const scrollElementRef = useRef<HTMLDivElement>(null)
   const rowHeight = props.tableLayout?.rowHeight ?? 58.5
@@ -440,14 +441,14 @@ function DataGridTableVirtual<TData>() {
     >
       <DataGridTableBase>
         <DataGridTableHead>
-          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>, index) => {
+          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => {
             return (
-              <DataGridTableHeadRow headerGroup={headerGroup} key={index}>
-                {headerGroup.headers.map((header, index) => {
+              <DataGridTableHeadRow headerGroup={headerGroup} key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
                   const { column } = header
 
                   return (
-                    <DataGridTableHeadRowCell header={header} key={index}>
+                    <DataGridTableHeadRowCell header={header} key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -474,9 +475,9 @@ function DataGridTableVirtual<TData>() {
           {isLoading ? (
             virtualRows.map((virtualRow) => (
               <DataGridTableBodyRowSkeleton key={virtualRow.key}>
-                {table.getVisibleFlatColumns().map((column, colIndex) => {
+                {table.getVisibleFlatColumns().map((column) => {
                   return (
-                    <DataGridTableBodyRowSkeletonCell column={column} key={colIndex}>
+                    <DataGridTableBodyRowSkeletonCell column={column} key={column.id}>
                       {column.columnDef.meta?.skeleton}
                     </DataGridTableBodyRowSkeletonCell>
                   )
@@ -491,9 +492,9 @@ function DataGridTableVirtual<TData>() {
               return (
                 <Fragment key={virtualRow.key}>
                   <DataGridTableBodyRow row={row}>
-                    {row.getVisibleCells().map((cell: Cell<TData, unknown>, colIndex) => {
+                    {row.getVisibleCells().map((cell: Cell<TData, unknown>) => {
                       return (
-                        <DataGridTableBodyRowCell cell={cell} key={colIndex}>
+                        <DataGridTableBodyRowCell cell={cell} key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </DataGridTableBodyRowCell>
                       )
