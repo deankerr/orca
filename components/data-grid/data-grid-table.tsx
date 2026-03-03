@@ -4,8 +4,10 @@ import { CSSProperties, Fragment, ReactNode, useCallback, useRef } from 'react'
 import { Cell, Column, flexRender, Header, HeaderGroup, Row } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva } from 'class-variance-authority'
+import { InboxIcon } from 'lucide-react'
 
 import { Checkbox } from '@/components/ui/checkbox'
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
@@ -316,9 +318,18 @@ function DataGridTableEmpty() {
 
   return (
     <tr>
-      <td colSpan={totalColumns} className="h-32">
-        <div className="sticky right-0 left-0 flex w-screen max-w-full items-center justify-center text-muted-foreground">
-          {props.emptyMessage || 'No data available'}
+      <td colSpan={totalColumns}>
+        <div className="sticky right-0 left-0 flex w-screen max-w-full items-center justify-center py-12">
+          {props.emptyMessage || (
+            <Empty className="border-none">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>No data available</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
+          )}
         </div>
       </td>
     </tr>
