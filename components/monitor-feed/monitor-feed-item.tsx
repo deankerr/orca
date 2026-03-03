@@ -2,6 +2,7 @@ import { ChangeDoc } from '@/convex/feed'
 
 import { EntitySheetTrigger } from '@/components/entity-sheet/entity-sheet'
 import { ChangeValuePair } from '@/components/monitor-feed/monitor-feed-values'
+import { EndpointUuid } from '@/components/shared/endpoint-uuid'
 import { EntityInline } from '@/components/shared/entity-badge'
 import { Badge } from '@/components/ui/badge'
 
@@ -17,6 +18,13 @@ export function FeedItem({ change }: { change: ChangeDoc }) {
 
   return (
     <li className="[&>span]:font-normal">
+      {'endpoint_uuid' in change && (
+        <EndpointUuid
+          uuid={change.endpoint_uuid}
+          modelSlug={change.model_slug}
+          className="mr-2 mb-1"
+        />
+      )}
       {change.entity_type !== 'endpoint' && `${change.entity_type} `}
       {change.entity_type === 'provider' && (
         <EntitySheetTrigger type="provider" slug={change.provider_slug} asChild>

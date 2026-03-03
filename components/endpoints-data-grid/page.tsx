@@ -1,5 +1,7 @@
 'use client'
 
+import { useCallback, useMemo } from 'react'
+
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -20,7 +22,7 @@ import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
 import { AttributePopoverProvider } from '../shared/attribute-badge'
 import { useEndpointsData } from './api'
-import { columns } from './columns'
+import { columns, EndpointRow } from './columns'
 import { DataGridControls } from './controls'
 import { DataGridFooter } from './footer'
 import { useEndpointFilters } from './use-endpoint-filters'
@@ -28,8 +30,21 @@ import { useEndpointFilters } from './use-endpoint-filters'
 export function EndpointsDataGrid() {
   'use no memo'
   const { filteredEndpoints, isLoading } = useEndpointsData()
-  const { globalFilter, sorting, onSortingChange } = useEndpointFilters()
+  const { globalFilter, highlightUuid, sorting, onSortingChange } = useEndpointFilters()
   const isMobile = useIsMobile()
+
+  // Compute row-level data attributes for status-based styling
+  const rowDataAttributes = useCallback((row: EndpointRow) => {
+    const status = row.unavailable_at ? 'gone' : row.disabled ? 'disabled' : undefined
+    return status ? { 'data-row-status': status } : {}
+  }, [])
+
+  // Derive row selection from highlight UUID
+  const rowSelection = useMemo(() => {
+    if (!highlightUuid) return {}
+    const match = filteredEndpoints.find((e) => e.uuid.startsWith(highlightUuid))
+    return match ? { [match._id]: true } : {}
+  }, [highlightUuid, filteredEndpoints])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -42,7 +57,8 @@ export function EndpointsDataGrid() {
     state: {
       globalFilter,
       sorting,
-      columnPinning: isMobile === false ? { left: ['model', 'provider'] } : {},
+      rowSelection,
+      columnPinning: isMobile === false ? { left: ['uuid', 'model', 'provider'] } : {},
     },
     columnResizeMode: 'onChange',
     onSortingChange,
@@ -51,6 +67,7 @@ export function EndpointsDataGrid() {
     getFilteredRowModel: getFilteredRowModel(),
     getRowId: (row) => row._id,
     manualPagination: true,
+    enableRowSelection: true,
   })
 
   return (
@@ -61,6 +78,7 @@ export function EndpointsDataGrid() {
         isLoading={isLoading}
         emptyMessage="No endpoints found"
         skeletonRows={30}
+        rowDataAttributes={rowDataAttributes}
         tableLayout={{
           headerSticky: true,
           headerBorder: true,
@@ -74,7 +92,7 @@ export function EndpointsDataGrid() {
         tableClassNames={{
           headerRow: 'uppercase font-mono',
           bodyRow:
-            'has-aria-[label=disabled]:[&_td_>_*]:opacity-50 has-aria-[label=disabled]:[&_td]:text-foreground/50 has-aria-[label=gone]:[&_td_>_*]:opacity-50 has-aria-[label=gone]:[&_td]:text-foreground/50',
+            '[&>td]:bg-background hover:[&>td]:bg-muted-hover data-[row-status]:[&_td_>_*]:opacity-50 data-[row-status]:[&_td]:text-foreground/50',
           body: 'font-mono',
         }}
       >

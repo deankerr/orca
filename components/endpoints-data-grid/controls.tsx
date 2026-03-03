@@ -20,10 +20,16 @@ function EndpointsSearchInput() {
 }
 
 export function DataGridControls() {
-  const { hasActiveAttributeFilters, hasActiveModalityFilters, clearAllFilters } =
-    useEndpointFilters()
+  const {
+    highlightUuid,
+    hasActiveAttributeFilters,
+    hasActiveModalityFilters,
+    hasActiveSorting,
+    clearAllFilters,
+  } = useEndpointFilters()
 
-  const hasAnyFilter = hasActiveAttributeFilters || hasActiveModalityFilters
+  const hasAnyFilter =
+    hasActiveAttributeFilters || hasActiveModalityFilters || hasActiveSorting || !!highlightUuid
 
   return (
     <div className="flex items-center gap-2 px-3 py-4">

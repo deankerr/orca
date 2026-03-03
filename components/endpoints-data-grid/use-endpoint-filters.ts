@@ -41,6 +41,7 @@ export function useEndpointFilters() {
   const [filters, setFilters] = useQueryStates(
     {
       q: parseAsString.withDefault(''),
+      uuid: parseAsString.withDefault(''),
       has: parseAsAttributeArray,
       not: parseAsAttributeArray,
       sort: parseAsString,
@@ -198,10 +199,14 @@ export function useEndpointFilters() {
     })
   }
 
+  // Clear everything affecting the table except search
   const clearAllFilters = () => {
     setFilters({
+      uuid: '',
       has: [],
       not: [],
+      sort: null,
+      order: null,
     })
   }
 
@@ -228,6 +233,7 @@ export function useEndpointFilters() {
 
   return {
     globalFilter: filters.q,
+    highlightUuid: filters.uuid,
     setGlobalFilter,
     sorting,
     onSortingChange,
