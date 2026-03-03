@@ -38,7 +38,7 @@ const PRICING_FIELDS = [
 ] as const
 
 function buildEndpointFields(change: EndpointChange) {
-  const { endpoint_uuid, endpoint, provider_tag_slug } = change
+  const { endpoint, provider_tag_slug } = change
   const fields: { name: string; value: string; inline: boolean }[] = []
 
   // Standard header: provider_id
@@ -101,18 +101,12 @@ function buildEndpointFields(change: EndpointChange) {
     }
   }
 
-  // Standard footer: uuid
-  fields.push({
-    name: 'endpoint_uuid',
-    value: mono(endpoint_uuid),
-    inline: false,
-  })
-
   return fields
 }
 
 function buildBaseEmbed(change: EndpointChange): EmbedResult {
-  const { model_slug, endpoint, provider_tag_slug, model, change_kind, crawl_id } = change
+  const { model_slug, endpoint_uuid, endpoint, provider_tag_slug, model, change_kind, crawl_id } =
+    change
   const provider_name = endpoint?.provider_name ?? provider_tag_slug ?? 'Unknown'
   const provider_id = endpoint?.provider_id ?? provider_tag_slug
 
@@ -139,6 +133,7 @@ function buildBaseEmbed(change: EndpointChange): EmbedResult {
     model_slug,
     hugging_face_id: model?.hugging_face_id,
     provider_tag_slug: provider_id,
+    endpoint_uuid,
   })
   embed.addFields({ name: 'links', value: links, inline: false })
 
@@ -260,19 +255,13 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
     fields.push({ name: label, value, inline: false })
   }
 
-  // Standard footer: uuid
-  fields.push({
-    name: 'endpoint_uuid',
-    value: mono(endpoint_uuid),
-    inline: false,
-  })
-
   embed.setFields(fields)
 
   const links = buildEntityLinks({
     model_slug,
     hugging_face_id: model?.hugging_face_id,
     provider_tag_slug: provider_id,
+    endpoint_uuid,
   })
   embed.addFields({ name: 'links', value: links, inline: false })
 

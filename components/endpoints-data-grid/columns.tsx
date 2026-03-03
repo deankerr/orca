@@ -11,11 +11,32 @@ import { formatDateTime, formatPrice } from '@/lib/formatters'
 import { fuzzySort } from '../data-grid/data-grid-fuzzy'
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
 import { AttributeBadge, AttributeBadgeSet } from '../shared/attribute-badge'
+import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
 
 export type EndpointRow = Doc<'or_views_endpoints'>
 
 export const columns: ColumnDef<EndpointRow>[] = [
+  {
+    id: 'uuid',
+    accessorFn: (row) => row.uuid,
+    header: ({ column }) => (
+      <div className="grow text-center">
+        <DataGridColumnHeader column={column} title="UUID" />
+      </div>
+    ),
+    cell: ({ row }) => {
+      return <EndpointUuid uuid={row.original.uuid} modelSlug={row.original.model.slug} />
+    },
+    size: 85,
+    enableSorting: false,
+    meta: {
+      skeleton: <Skeleton className="h-5 w-16" />,
+      headerTitle: 'UUID',
+      cellClassName: 'text-center px-1',
+    },
+  },
+
   {
     id: 'model',
     accessorFn: (row) => `${row.model.name} ${row.model.slug}`,
@@ -252,7 +273,10 @@ export const columns: ColumnDef<EndpointRow>[] = [
     ),
     cell: ({ getValue }) => {
       return (
-        <Badge variant="outline" className="rounded-sm font-mono text-sm uppercase">
+        <Badge
+          variant="outline"
+          className="rounded-sm bg-card/50 font-mono text-sm tracking-wide uppercase shadow"
+        >
           {getValue<string>()}
         </Badge>
       )

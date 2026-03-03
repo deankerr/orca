@@ -1,0 +1,38 @@
+/* --- Data grid: selected row styling --- */
+/* Borders use color-mix to simulate the additive lightening effect that
+   transparent borders get naturally when painted over a colored background.
+   Without this, solid borders look muddy against the highlight bg. */
+
+/* Row above selected: match its bottom border to the highlight blend */
+[data-slot='data-grid-table'] tbody tr:has(+ tr[data-state='selected']) > td {
+  border-bottom-color: color-mix(in oklab, var(--color-highlight), white 15%);
+}
+
+/* Selected row: highlight bg + blended borders on all sides */
+[data-slot='data-grid-table'] tbody tr[data-state='selected'] > td {
+  border-color: color-mix(in oklab, var(--color-highlight), white 15%);
+  background-color: var(--color-highlight);
+}
+
+/* Selected row hover: subtle lift so it doesn't feel static */
+[data-slot='data-grid-table'] tbody tr[data-state='selected']:hover > td {
+  background-color: color-mix(in oklab, var(--color-highlight), white 2%);
+}
+
+/* --- Data grid: pinned columns --- */
+
+/* Pinned header cells need an opaque bg to cover scrolling content */
+[data-slot='data-grid-table'] thead th[data-pinned] {
+  background-color: var(--color-muted-hover);
+}
+
+/* Edge borders + drop shadow on the last pinned column in each direction */
+[data-slot='data-grid-table'] [data-pinned][data-last-col='left'] {
+  border-inline-end: 1px solid var(--color-border-solid);
+  box-shadow: 4px 0 8px 0px oklch(0 0 0 / 20%);
+}
+
+[data-slot='data-grid-table'] [data-pinned][data-last-col='right'] {
+  border-inline-start: 1px solid var(--color-border-solid);
+  box-shadow: -4px 0 8px 0px oklch(0 0 0 / 20%);
+}

@@ -1,0 +1,108 @@
+/* Radix gold & bronze (dark) — hardcoded since we're always dark */
+@theme inline {
+  --color-gold-1: var(--gold-1);
+  --color-gold-2: var(--gold-2);
+  --color-gold-3: var(--gold-3);
+  --color-gold-4: var(--gold-4);
+  --color-gold-5: var(--gold-5);
+  --color-gold-6: var(--gold-6);
+  --color-gold-7: var(--gold-7);
+  --color-gold-8: var(--gold-8);
+  --color-gold-9: var(--gold-9);
+  --color-gold-10: var(--gold-10);
+  --color-gold-11: var(--gold-11);
+  --color-gold-12: var(--gold-12);
+
+  --color-gold-a1: var(--gold-a1);
+  --color-gold-a2: var(--gold-a2);
+  --color-gold-a3: var(--gold-a3);
+  --color-gold-a4: var(--gold-a4);
+  --color-gold-a5: var(--gold-a5);
+  --color-gold-a6: var(--gold-a6);
+  --color-gold-a7: var(--gold-a7);
+  --color-gold-a8: var(--gold-a8);
+  --color-gold-a9: var(--gold-a9);
+  --color-gold-a10: var(--gold-a10);
+  --color-gold-a11: var(--gold-a11);
+  --color-gold-a12: var(--gold-a12);
+
+  --color-bronze-1: var(--bronze-1);
+  --color-bronze-2: var(--bronze-2);
+  --color-bronze-3: var(--bronze-3);
+  --color-bronze-4: var(--bronze-4);
+  --color-bronze-5: var(--bronze-5);
+  --color-bronze-6: var(--bronze-6);
+  --color-bronze-7: var(--bronze-7);
+  --color-bronze-8: var(--bronze-8);
+  --color-bronze-9: var(--bronze-9);
+  --color-bronze-10: var(--bronze-10);
+  --color-bronze-11: var(--bronze-11);
+  --color-bronze-12: var(--bronze-12);
+
+  --color-bronze-a1: var(--bronze-a1);
+  --color-bronze-a2: var(--bronze-a2);
+  --color-bronze-a3: var(--bronze-a3);
+  --color-bronze-a4: var(--bronze-a4);
+  --color-bronze-a5: var(--bronze-a5);
+  --color-bronze-a6: var(--bronze-a6);
+  --color-bronze-a7: var(--bronze-a7);
+  --color-bronze-a8: var(--bronze-a8);
+  --color-bronze-a9: var(--bronze-a9);
+  --color-bronze-a10: var(--bronze-a10);
+  --color-bronze-a11: var(--bronze-a11);
+  --color-bronze-a12: var(--bronze-a12);
+}
+
+:root {
+  --gold-1: oklch(18.18% 0.002 106.6);
+  --gold-2: oklch(21.78% 0.0059 91.62);
+  --gold-3: oklch(25.58% 0.0075 95.35);
+  --gold-4: oklch(28.94% 0.0093 88.76);
+  --gold-5: oklch(32.97% 0.0127 87.56);
+  --gold-6: oklch(37.32% 0.0129 81.75);
+  --gold-7: oklch(42.96% 0.0159 82.36);
+  --gold-8: oklch(49.9% 0.0205 81.26);
+  --gold-9: oklch(62.04% 0.0492 77.7);
+  --gold-10: oklch(66.27% 0.0468 78.25);
+  --gold-11: oklch(79.4% 0.041 77.08);
+  --gold-12: oklch(91.5% 0.0138 78.26);
+
+  --bronze-1: oklch(18.09% 0.0054 39.35);
+  --bronze-2: oklch(21.61% 0.0061 56.04);
+  --bronze-3: oklch(25.57% 0.0071 48.43);
+  --bronze-4: oklch(29.05% 0.0104 48.34);
+  --bronze-5: oklch(32.86% 0.0127 41.7);
+  --bronze-6: oklch(37.4% 0.0168 41.03);
+  --bronze-7: oklch(42.91% 0.0207 40.65);
+  --bronze-8: oklch(49.89% 0.0236 45.04);
+  --bronze-9: oklch(62.74% 0.046 44.16);
+  --bronze-10: oklch(66.8% 0.0463 43.53);
+  --bronze-11: oklch(79.18% 0.0431 44.29);
+  --bronze-12: oklch(91.51% 0.0172 50.42);
+
+  --gold-a1: oklch(63.61% 0.1344 109.68 / 0.8%);
+  --gold-a2: oklch(91.59% 0.0907 91.77 / 4.3%);
+  --gold-a3: oklch(94.06% 0.0646 95.91 / 8.2%);
+  --gold-a4: oklch(95.23% 0.0574 88.6 / 11.8%);
+  --gold-a5: oklch(94.71% 0.0578 87.56 / 16.5%);
+  --gold-a6: oklch(94.71% 0.0467 80.81 / 21.6%);
+  --gold-a7: oklch(95.23% 0.0461 82.04 / 28.2%);
+  --gold-a8: oklch(94.41% 0.0467 80.81 / 37.3%);
+  --gold-a9: oklch(90.93% 0.0789 77.1 / 56.5%);
+  --gold-a10: oklch(91.8% 0.0698 78.01 / 61.6%);
+  --gold-a11: oklch(93.82% 0.05 76.9 / 78.4%);
+  --gold-a12: oklch(97.88% 0.0152 77.07 / 90.6%);
+
+  --bronze-a1: oklch(54.48% 0.2177 30.12 / 1.6%);
+  --bronze-a2: oklch(84.3% 0.0924 55.41 / 4.7%);
+  --bronze-a3: oklch(88.37% 0.0582 48.04 / 9%);
+  --bronze-a4: oklch(88.14% 0.0599 48.56 / 13.3%);
+  --bronze-a5: oklch(89.8% 0.056 41.74 / 17.6%);
+  --bronze-a6: oklch(89.59% 0.0571 41.28 / 23.5%);
+  --bronze-a7: oklch(89.22% 0.0555 40.51 / 31%);
+  --bronze-a8: oklch(90.65% 0.0516 43.76 / 39.6%);
+  --bronze-a9: oklch(87.27% 0.0705 43.8 / 60.8%);
+  --bronze-a10: oklch(87.94% 0.066 43.08 / 66.3%);
+  --bronze-a11: oklch(90.86% 0.0505 44.32 / 82%);
+  --bronze-a12: oklch(96.7% 0.0186 51.98 / 92.5%);
+}
