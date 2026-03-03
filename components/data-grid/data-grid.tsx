@@ -14,7 +14,6 @@ declare module '@tanstack/react-table' {
     headerTitle?: string
     headerClassName?: string
     cellClassName?: string
-    skeleton?: ReactNode
     expandedContent?: (row: TData) => ReactNode
   }
 }
@@ -34,7 +33,6 @@ export interface DataGridProps<TData extends object> {
   onRowClick?: (row: TData) => void
   isLoading?: boolean
   emptyMessage?: ReactNode | string
-  skeletonRows?: number
   tableLayout?: {
     dense?: boolean
     cellBorder?: boolean
