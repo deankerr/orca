@@ -4,7 +4,6 @@ import type { Doc } from '@/convex/_generated/dataModel'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { attributes, resolveThresholdPricing } from '@/lib/attributes'
 import { formatDateTime, formatPrice } from '@/lib/formatters'
 
@@ -31,7 +30,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 85,
     enableSorting: false,
     meta: {
-      skeleton: <Skeleton className="h-5 w-16" />,
       headerTitle: 'UUID',
       cellClassName: 'text-center px-1',
     },
@@ -56,7 +54,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     enableHiding: false,
 
     meta: {
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Model',
     },
   },
@@ -79,7 +76,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortingFn: fuzzySort,
     enableHiding: false,
     meta: {
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Provider',
     },
   },
@@ -102,10 +98,9 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 110,
+    size: 90,
     enableHiding: true,
     meta: {
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Status',
       cellClassName: 'justify-center',
     },
@@ -134,7 +129,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 120,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'Input ($/MTOK)',
     },
@@ -163,7 +157,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 120,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'Output ($/MTOK)',
     },
@@ -192,7 +185,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 160,
     meta: {
       headerClassName: 'text-center',
-      skeleton: <Skeleton className="h-6 w-full" />,
       headerTitle: 'Modalities',
       cellClassName: 'px-2',
     },
@@ -224,7 +216,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
       headerClassName: 'text-center',
       headerTitle: 'Features',
       cellClassName: 'px-2',
-      skeleton: <Skeleton className="h-6 w-full" />,
     },
   },
 
@@ -239,7 +230,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue }) => getValue<number>().toLocaleString(),
     size: 135,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'Context (TOK)',
     },
@@ -257,7 +247,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 135,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'Max Output (TOK)',
     },
@@ -283,7 +272,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     },
     size: 120,
     meta: {
-      skeleton: <Skeleton className="h-6 w-full" />,
       headerClassName: 'text-center',
       cellClassName: 'text-center px-2',
       headerTitle: 'Quant.',
@@ -311,7 +299,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 125,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'Speed (TOK/S)',
     },
@@ -338,7 +325,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 105,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-right',
       headerTitle: 'TTFT (MS)',
     },
@@ -380,7 +366,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 105,
     meta: {
       headerClassName: 'text-center',
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Other $',
       cellClassName: 'px-2',
     },
@@ -403,7 +388,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 150,
     meta: {
       headerClassName: 'text-center',
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Data Policy',
       cellClassName: 'px-2',
     },
@@ -431,7 +415,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 150,
     meta: {
       headerClassName: 'text-center',
-      skeleton: <Skeleton className="h-8 w-full" />,
       headerTitle: 'Limits',
       cellClassName: 'px-2',
     },
@@ -456,7 +439,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 120,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-center',
       headerTitle: 'Model Added (Date)',
     },
@@ -479,7 +461,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 135,
     sortUndefined: -1,
     meta: {
-      skeleton: <Skeleton className="h-5 w-full" />,
       cellClassName: 'text-center',
       headerTitle: 'Unavailable (Date)',
     },

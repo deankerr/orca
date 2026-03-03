@@ -10,6 +10,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
+import { DataGridSkeleton } from './data-grid-skeleton'
 
 const headerCellSpacingVariants = cva('', {
   variants: {
@@ -205,54 +206,6 @@ function DataGridTableBody({ children }: { children: ReactNode }) {
   )
 }
 
-function DataGridTableBodyRowSkeleton({ children }: { children: ReactNode }) {
-  const { table, props } = useDataGrid()
-
-  return (
-    <tr
-      className={cn(
-        props.onRowClick && 'cursor-pointer',
-        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border-solid',
-        props.tableLayout?.cellBorder && '*:last:border-e-0',
-        table.options.enableRowSelection && '*:first:relative',
-        props.tableClassNames?.bodyRow,
-      )}
-    >
-      {children}
-    </tr>
-  )
-}
-
-function DataGridTableBodyRowSkeletonCell<TData>({
-  children,
-  column,
-}: {
-  children: ReactNode
-  column: Column<TData>
-}) {
-  const { props, table } = useDataGrid()
-  const bodyCellSpacing = bodyCellSpacingVariants({
-    size: props.tableLayout?.dense ? 'dense' : 'default',
-  })
-
-  return (
-    <td
-      className={cn(
-        'align-middle',
-        bodyCellSpacing,
-        props.tableLayout?.cellBorder && 'border-e',
-        props.tableLayout?.columnsResizable && column.getCanResize() && 'truncate',
-        column.columnDef.meta?.cellClassName,
-        column.getIndex() === 0 || column.getIndex() === table.getVisibleFlatColumns().length - 1
-          ? props.tableClassNames?.edgeCell
-          : '',
-      )}
-    >
-      {children}
-    </td>
-  )
-}
-
 function DataGridTableBodyRow<TData>({
   children,
   row,
@@ -414,22 +367,19 @@ function DataGridTableVirtual<TData>() {
   const rowHeight = props.tableLayout?.rowHeight ?? 58.5
   const overscan = props.tableLayout?.overscan ?? 3
 
-  const rowCount = isLoading ? (props.skeletonRows ?? 10) : table.getRowModel().rows.length
-
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: rowCount,
+    count: table.getRowModel().rows.length,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => rowHeight,
     overscan,
     getItemKey: useCallback(
-      (index: number) => {
-        if (isLoading) return `skeleton-${index}`
-        return table.getRowModel().rows[index]?.id ?? index
-      },
-      [isLoading, table],
+      (index: number) => table.getRowModel().rows[index]?.id ?? index,
+      [table],
     ),
   })
+
+  if (isLoading) return <DataGridSkeleton />
 
   const virtualRows = virtualizer.getVirtualItems()
   const totalSize = virtualizer.getTotalSize()
@@ -477,19 +427,7 @@ function DataGridTableVirtual<TData>() {
             </tr>
           )}
 
-          {isLoading ? (
-            virtualRows.map((virtualRow) => (
-              <DataGridTableBodyRowSkeleton key={virtualRow.key}>
-                {table.getVisibleFlatColumns().map((column) => {
-                  return (
-                    <DataGridTableBodyRowSkeletonCell column={column} key={column.id}>
-                      {column.columnDef.meta?.skeleton}
-                    </DataGridTableBodyRowSkeletonCell>
-                  )
-                })}
-              </DataGridTableBodyRowSkeleton>
-            ))
-          ) : virtualRows.length > 0 ? (
+          {virtualRows.length > 0 ? (
             virtualRows.map((virtualRow) => {
               const row = table.getRowModel().rows[virtualRow.index]
               if (!row) return null
@@ -532,8 +470,6 @@ export {
   DataGridTableBodyRow,
   DataGridTableBodyRowCell,
   DataGridTableBodyRowExpanded,
-  DataGridTableBodyRowSkeleton,
-  DataGridTableBodyRowSkeletonCell,
   DataGridTableEmpty,
   DataGridTableHead,
   DataGridTableHeadRow,
