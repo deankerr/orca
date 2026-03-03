@@ -8,7 +8,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { SearchXIcon } from 'lucide-react'
 
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 import { DataGrid } from '../data-grid/data-grid'
@@ -21,11 +30,62 @@ import {
 import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
 import { AttributePopoverProvider } from '../shared/attribute-badge'
+import { Button } from '../ui/button'
 import { useEndpointsData } from './api'
 import { columns, EndpointRow } from './columns'
 import { DataGridControls } from './controls'
 import { DataGridFooter } from './footer'
 import { useEndpointFilters } from './use-endpoint-filters'
+
+function EndpointsEmptyState() {
+  const {
+    globalFilter,
+    clearAllFilters,
+    setGlobalFilter,
+    activeAttributeCount,
+    activeModalityCount,
+  } = useEndpointFilters()
+
+  const filterCount = activeAttributeCount + activeModalityCount
+  const hasSearch = !!globalFilter
+
+  const clearEverything = () => {
+    clearAllFilters()
+    setGlobalFilter('')
+  }
+
+  return (
+    <Empty className="border-none">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <SearchXIcon />
+        </EmptyMedia>
+        {hasSearch ? (
+          <>
+            <EmptyTitle>No results for &ldquo;{globalFilter}&rdquo;</EmptyTitle>
+            <EmptyDescription>
+              {filterCount > 0
+                ? `${filterCount} active filter${filterCount > 1 ? 's' : ''} may be narrowing results`
+                : 'Check your spelling or try a broader search'}
+            </EmptyDescription>
+          </>
+        ) : (
+          <>
+            <EmptyTitle>No endpoints match your filters</EmptyTitle>
+            <EmptyDescription>
+              {filterCount} active filter{filterCount > 1 ? 's' : ''} returned no results
+            </EmptyDescription>
+          </>
+        )}
+      </EmptyHeader>
+      <EmptyContent>
+        <Button variant="secondary" size="sm" onClick={clearEverything}>
+          Reset
+        </Button>
+      </EmptyContent>
+    </Empty>
+  )
+}
 
 export function EndpointsDataGrid() {
   'use no memo'
@@ -76,7 +136,7 @@ export function EndpointsDataGrid() {
         table={table}
         recordCount={table.getFilteredRowModel().rows.length}
         isLoading={isLoading}
-        emptyMessage="No endpoints found"
+        emptyMessage={<EndpointsEmptyState />}
         rowDataAttributes={rowDataAttributes}
         tableLayout={{
           headerSticky: true,
