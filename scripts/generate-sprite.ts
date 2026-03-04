@@ -30,6 +30,7 @@ const REQUIRED_ICONS = [
   'message-square',
   'messages-square',
   'octagon-x',
+  'ticket',
   'skull',
   'siren',
   'save',
@@ -46,8 +47,6 @@ const REQUIRED_ICONS = [
   'file-up',
   'image-down',
   'image-up',
-
-  'bug',
 ] as const
 
 interface SpriteConfig {

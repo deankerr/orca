@@ -7,7 +7,7 @@ import ms from 'ms'
 import { api } from '@/convex/_generated/api'
 import { Doc } from '@/convex/_generated/dataModel'
 
-import { attributes } from '@/lib/attributes'
+import { attributes, isAttributeKey } from '@/lib/attributes'
 
 import { useEndpointFilters } from './use-endpoint-filters'
 
@@ -23,13 +23,14 @@ export function useEndpointsData() {
 
     const filtered = rawEndpoints.filter((endpoint) => {
       for (const [filterName, mode] of Object.entries(attributeFilters)) {
+        if (!isAttributeKey(filterName)) {
+          continue
+        }
+
         let hasAttribute = false
 
         // Handle all attribute filters (including modalities which are now in attributes)
-        const attr = attributes[filterName as keyof typeof attributes]
-        if (attr) {
-          hasAttribute = attr.resolve(endpoint).active
-        }
+        hasAttribute = attributes[filterName].resolve(endpoint).active
 
         if (mode === 'include' && !hasAttribute) {
           return false

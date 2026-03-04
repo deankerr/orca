@@ -1,30 +1,36 @@
-import type { VariantProps } from 'class-variance-authority'
-
 import { Doc } from '@/convex/_generated/dataModel'
 
 import { InlineCode } from '@/components/shared/inline-code'
-import { RadIconBadge } from '@/components/shared/rad-badge'
+import { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
 import { SpriteIconName } from '@/lib/sprite-icons'
 
 import { formatDateTime, formatPrice } from './formatters'
 
 type EndpointPartial = Partial<Doc<'or_views_endpoints'>>
-type Color = VariantProps<typeof RadIconBadge>['color']
 
-export interface Attribute {
-  key: string
+export interface AttributeState {
+  active: boolean
+  value?: string
+  details?: { label?: string; value: string }[]
+}
+
+interface AttributeDefinition {
   icon: SpriteIconName
   label: string
   description: React.ReactNode
-  color: Color
-  resolve: (endpoint: EndpointPartial) => {
-    active: boolean
-    value?: string
-    details?: { label?: string; value: string }[]
-  }
+  color: SpriteIconBadgeColor
+  resolve: (endpoint: EndpointPartial) => AttributeState
 }
 
-export const attributes: Record<string, Attribute> = {
+type AttributeDefinitions = {
+  [K in string]: AttributeDefinition & { key: K }
+}
+
+function defineAttributes<T extends AttributeDefinitions>(definitions: T): T {
+  return definitions
+}
+
+export const attributes = defineAttributes({
   // Features (model)
   reasoning: {
     key: 'reasoning',
@@ -591,7 +597,7 @@ export const attributes: Record<string, Attribute> = {
   // Request Pricing & Limits
   request: {
     key: 'request',
-    icon: 'flag',
+    icon: 'ticket',
     label: 'Request',
     description: 'Fixed fee charged per API call, regardless of token count.',
     color: 'yellow',
@@ -623,69 +629,84 @@ export const attributes: Record<string, Attribute> = {
     description: 'Different rates apply based on prompt length tiers.',
     color: 'yellow',
     resolve: (endpoint) => {
-      const active = !!endpoint.variable_pricings && endpoint.variable_pricings.length > 0
+      // only a single 'prompt-threshold' item can exist
+      const variablePricing = endpoint.variable_pricings?.find(
+        (vp) => vp.type === 'prompt-threshold',
+      )
+
+      if (!variablePricing) {
+        return { active: false }
+      }
+
+      const details: { label: string; value: string }[] = [
+        {
+          label: 'Threshold',
+          value: `> ${variablePricing.threshold.toLocaleString()} tokens`,
+        },
+        {
+          label: 'Text Input',
+          value: formatPrice({
+            priceKey: 'text_input',
+            priceValue: variablePricing.text_input,
+          }),
+        },
+        {
+          label: 'Text Output',
+          value: formatPrice({
+            priceKey: 'text_output',
+            priceValue: variablePricing.text_output,
+          }),
+        },
+      ]
+
+      if (variablePricing.cache_read) {
+        details.push({
+          label: 'Cache Read',
+          value: formatPrice({
+            priceKey: 'cache_read',
+            priceValue: variablePricing.cache_read,
+          }),
+        })
+      }
+
+      if (variablePricing.cache_write) {
+        details.push({
+          label: 'Cache Write',
+          value: formatPrice({
+            priceKey: 'cache_write',
+            priceValue: variablePricing.cache_write,
+          }),
+        })
+      }
+
       return {
-        active,
+        active: true,
+        details,
       }
     },
   },
-} as const
+})
 
-/**
- * Resolve a specific threshold pricing entry to an attribute state
- */
-export function resolveThresholdPricing(
-  variablePricing: NonNullable<EndpointPartial['variable_pricings']>[number],
-): ReturnType<Attribute['resolve']> {
-  if (variablePricing.type !== 'prompt-threshold') {
-    return { active: false }
-  }
+export type AttributeKey = keyof typeof attributes
+export type AttributeSlots = AttributeKey[][]
+export type Attribute = AttributeDefinition & { key: AttributeKey }
 
-  const details: { label?: string; value: string }[] = [
-    {
-      label: 'Threshold',
-      value: `> ${variablePricing.threshold.toLocaleString()} tokens`,
-    },
-    {
-      label: 'Text Input',
-      value: formatPrice({
-        priceKey: 'text_input',
-        priceValue: variablePricing.text_input,
-      }),
-    },
-    {
-      label: 'Text Output',
-      value: formatPrice({
-        priceKey: 'text_output',
-        priceValue: variablePricing.text_output,
-      }),
-    },
-  ]
-
-  if (variablePricing.cache_read) {
-    details.push({
-      label: 'Cache Read',
-      value: formatPrice({
-        priceKey: 'cache_read',
-        priceValue: variablePricing.cache_read,
-      }),
-    })
-  }
-
-  if (variablePricing.cache_write) {
-    details.push({
-      label: 'Cache Write',
-      value: formatPrice({
-        priceKey: 'cache_write',
-        priceValue: variablePricing.cache_write,
-      }),
-    })
-  }
-
-  return {
-    active: true,
-    details,
-  }
+export function isAttributeKey(value: string): value is AttributeKey {
+  return Object.hasOwn(attributes, value)
 }
 
-export type AttributeName = keyof typeof attributes
+export function resolveEndpointAttribute(endpoint: EndpointPartial, key: AttributeKey) {
+  const attribute = attributes[key]
+  const data = attribute.resolve(endpoint)
+
+  return { attribute, data } as { attribute: Attribute; data: AttributeState }
+}
+
+export function resolveEndpointAttributeSlot(endpoint: EndpointPartial, slot: AttributeKey[]) {
+  for (const key of slot) {
+    const result = resolveEndpointAttribute(endpoint, key)
+    if (result.data.active) {
+      return result
+    }
+  }
+}
