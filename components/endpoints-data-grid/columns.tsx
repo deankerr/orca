@@ -4,12 +4,12 @@ import type { Doc } from '@/convex/_generated/dataModel'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
-import { attributes, resolveThresholdPricing } from '@/lib/attributes'
+import { endpointAttributeSets } from '@/lib/attribute-groups'
 import { formatDateTime, formatPrice } from '@/lib/formatters'
 
 import { fuzzySort } from '../data-grid/data-grid-fuzzy'
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
-import { AttributeBadge, AttributeBadgeSet } from '../shared/attribute-badge'
+import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
 
@@ -89,14 +89,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     ),
     cell: ({ row }) => {
       const endpoint = row.original
-
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          attributes={['gone', 'disabled', 'deranked']}
-          mode="first"
-        />
-      )
+      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.status} />
     },
     size: 90,
     enableHiding: true,
@@ -167,20 +160,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="MODALITIES" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          attributes={[
-            'image_input',
-            'file_input',
-            'audio_input',
-            'image_output',
-            'video_input',
-            'embeddings_output',
-          ]}
-          mode="compact"
-        />
-      )
+      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.modalities} />
     },
     size: 160,
     meta: {
@@ -198,16 +178,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return (
         <AttributeBadgeSet
           endpoint={endpoint}
-          attributes={[
-            ['reasoning', 'mandatory_reasoning'],
-            'tools',
-            ['response_format', 'structured_outputs'],
-            ['caching', 'implicit_caching'],
-            'native_web_search',
-            'moderated',
-            'free',
-          ]}
-          mode="grid"
+          slots={endpointAttributeSets.features}
+          reserve={true}
         />
       )
     },
@@ -300,7 +272,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'Speed (TOK/S)',
+      headerTitle: 'TOK/SEC',
     },
   },
 
@@ -335,38 +307,12 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="MISC $" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      const badges: React.ReactNode[] = []
-
-      // Render request badge if active
-      const requestDefinition = attributes.request
-      const requestState = requestDefinition.resolve(endpoint)
-      if (requestState.active) {
-        badges.push(
-          <AttributeBadge key="request" definition={requestDefinition} state={requestState} />,
-        )
-      }
-
-      // Render threshold pricing badges
-      const thresholdPricingDefinition = attributes.threshold_pricing
-      for (const [i, variablePricing] of endpoint.variable_pricings?.entries() ?? []) {
-        const state = resolveThresholdPricing(variablePricing)
-        if (state.active) {
-          badges.push(
-            <AttributeBadge
-              key={`threshold-${i}`}
-              definition={thresholdPricingDefinition}
-              state={state}
-            />,
-          )
-        }
-      }
-
-      return <div className="flex items-center justify-center gap-1">{badges}</div>
+      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.miscPricing} />
     },
     size: 105,
     meta: {
       headerClassName: 'text-center',
-      headerTitle: 'Other $',
+      headerTitle: 'Misc $',
       cellClassName: 'px-2',
     },
   },
@@ -376,14 +322,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="DATA POLICY" />,
     cell: ({ row }) => {
       const endpoint = row.original
-
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          attributes={['training', 'data_publishing', 'user_id', 'data_retention']}
-          mode="compact"
-        />
-      )
+      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.dataPolicy} />
     },
     size: 150,
     meta: {
@@ -398,19 +337,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="LIMITS" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          attributes={[
-            'max_text_input_tokens',
-            'max_image_input_tokens',
-            'max_images_per_input',
-            'max_requests_per_minute',
-            'max_requests_per_day',
-          ]}
-          mode="compact"
-        />
-      )
+      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.limits} />
     },
     size: 150,
     meta: {
@@ -440,7 +367,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-center',
-      headerTitle: 'Model Added (Date)',
+      headerTitle: 'Model Added',
     },
   },
 
@@ -462,7 +389,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-center',
-      headerTitle: 'Unavailable (Date)',
+      headerTitle: 'Endpoint Gone',
     },
   },
 ]
