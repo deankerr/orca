@@ -2,8 +2,7 @@ import { Popover } from '@base-ui/react/popover'
 
 import { Doc } from '@/convex/_generated/dataModel'
 
-import { SpriteIcon } from '@/components/ui/sprite-icon'
-import { Attribute, AttributeName, attributes } from '@/lib/attributes'
+import { Attribute, AttributeSlots, resolveEndpointAttributeSlot } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import {
@@ -13,7 +12,7 @@ import {
   PopoverCardTitle,
   PopoverCardTrigger,
 } from './popover-card'
-import { RadIconBadge } from './rad-badge'
+import { SpriteIconBadge } from './sprite-icon-badge'
 
 // --- Singleton popover: one shared Root for all attribute badges ---
 
@@ -62,24 +61,22 @@ export function AttributePopoverProvider({ children }: { children: React.ReactNo
 // --- Badge: lightweight trigger only (no Root, no Portal) ---
 
 interface AttributeBadgeProps {
-  definition: Attribute
-  state?: ReturnType<Attribute['resolve']>
+  attribute: Attribute
+  data?: ReturnType<Attribute['resolve']>
 }
 
-export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
-  const { icon, label, description, color, key } = definition
-  const badge = state?.value
-  const details = state?.details
+export function AttributeBadge({ attribute, data }: AttributeBadgeProps) {
+  const { icon, label, description, color, key } = attribute
+  const badge = data?.value
+  const details = data?.details
 
   return (
     <PopoverCardTrigger
       handle={attributePopoverHandle}
       nativeButton={false}
       payload={{ label, description, badge, details }}
-      render={<RadIconBadge variant="surface" color={color} aria-label={key} />}
-    >
-      <SpriteIcon name={icon} className="size-full" />
-    </PopoverCardTrigger>
+      render={<SpriteIconBadge icon={icon} color={color} aria-label={key} />}
+    />
   )
 }
 
@@ -87,47 +84,29 @@ export function AttributeBadge({ definition, state }: AttributeBadgeProps) {
 
 interface AttributeBadgeSetProps {
   endpoint: Doc<'or_views_endpoints'>
-  attributes: (AttributeName | AttributeName[])[]
-  mode?: 'grid' | 'compact' | 'first'
+  slots: AttributeSlots
+  reserve?: boolean
 }
 
-export function AttributeBadgeSet({
-  endpoint,
-  attributes: attributeItems,
-  mode = 'grid',
-}: AttributeBadgeSetProps) {
-  const components: React.ReactNode[] = []
-
-  for (const item of attributeItems) {
-    if (Array.isArray(item)) {
-      // Array: resolve in reverse order, render first active one
-      let rendered = false
-      for (const name of [...item].reverse()) {
-        const definition = attributes[name]
-        const state = definition.resolve(endpoint)
-        if (state.active) {
-          components.push(<AttributeBadge key={name} definition={definition} state={state} />)
-          rendered = true
-          break
+export function AttributeBadgeSet({ endpoint, slots, reserve = false }: AttributeBadgeSetProps) {
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {slots.map((slot, index) => {
+        const resolved = resolveEndpointAttributeSlot(endpoint, slot)
+        if (resolved) {
+          return (
+            <AttributeBadge
+              key={`${resolved.attribute.key}:${index}`}
+              attribute={resolved.attribute}
+              data={resolved.data}
+            />
+          )
         }
-      }
-      // If none were active and in grid mode, add placeholder
-      if (!rendered && mode === 'grid') {
-        components.push(<div key={item[0]} className="size-7 shrink-0" />)
-      }
-    } else {
-      // Single attribute: resolve and add
-      const name = item
-      const definition = attributes[name]
-      const state = definition.resolve(endpoint)
-      if (state.active) {
-        components.push(<AttributeBadge key={name} definition={definition} state={state} />)
-        if (mode === 'first') break
-      } else if (mode === 'grid') {
-        components.push(<div key={name} className="size-7 shrink-0" />)
-      }
-    }
-  }
 
-  return <div className="flex items-center justify-center gap-1">{components}</div>
+        if (reserve) {
+          return <div key={`slot:${index}`} className="size-7 shrink-0" />
+        }
+      })}
+    </div>
+  )
 }

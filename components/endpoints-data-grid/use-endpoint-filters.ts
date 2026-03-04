@@ -2,40 +2,26 @@ import { SortingState } from '@tanstack/react-table'
 import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 import posthog from 'posthog-js'
 
-import { AttributeName } from '@/lib/attributes'
+import { endpointModalityAttributes, type EndpointModalityAttribute } from '@/lib/attribute-groups'
+import { AttributeKey, isAttributeKey } from '@/lib/attributes'
 
 type FilterMode = 'include' | 'exclude' | 'any'
 
-type ModalityName =
-  | 'image_input'
-  | 'file_input'
-  | 'audio_input'
-  | 'video_input'
-  | 'image_output'
-  | 'embeddings_output'
+type ModalityName = EndpointModalityAttribute
 
-type AttributeFilterState = Partial<Record<AttributeName | ModalityName, FilterMode>>
+type AttributeFilterState = Partial<Record<AttributeKey | ModalityName, FilterMode>>
 
-type ModalityFilterState = {
-  image_input: FilterMode
-  file_input: FilterMode
-  audio_input: FilterMode
-  video_input: FilterMode
-  image_output: FilterMode
-  embeddings_output: FilterMode
-}
+type ModalityFilterState = Record<ModalityName, FilterMode>
 
 // Parser for arrays of attribute/modality names
 const parseAsAttributeArray = parseAsArrayOf(parseAsString).withDefault([])
 
-const MODALITIES: ModalityName[] = [
-  'image_input',
-  'file_input',
-  'audio_input',
-  'video_input',
-  'image_output',
-  'embeddings_output',
-]
+const MODALITIES: ModalityName[] = [...endpointModalityAttributes]
+const modalityNameSet = new Set<string>(MODALITIES)
+
+function isModalityName(value: string): value is ModalityName {
+  return modalityNameSet.has(value)
+}
 
 export function useEndpointFilters() {
   const [filters, setFilters] = useQueryStates(
@@ -54,46 +40,24 @@ export function useEndpointFilters() {
   )
 
   // Extract modality filters from has/not lists
-  const modalityFilters: ModalityFilterState = {
-    image_input: filters.has.includes('image_input')
+  const modalityFilters: ModalityFilterState = MODALITIES.reduce((acc, modality) => {
+    acc[modality] = filters.has.includes(modality)
       ? 'include'
-      : filters.not.includes('image_input')
+      : filters.not.includes(modality)
         ? 'exclude'
-        : 'any',
-    file_input: filters.has.includes('file_input')
-      ? 'include'
-      : filters.not.includes('file_input')
-        ? 'exclude'
-        : 'any',
-    audio_input: filters.has.includes('audio_input')
-      ? 'include'
-      : filters.not.includes('audio_input')
-        ? 'exclude'
-        : 'any',
-    video_input: filters.has.includes('video_input')
-      ? 'include'
-      : filters.not.includes('video_input')
-        ? 'exclude'
-        : 'any',
-    image_output: filters.has.includes('image_output')
-      ? 'include'
-      : filters.not.includes('image_output')
-        ? 'exclude'
-        : 'any',
-    embeddings_output: filters.has.includes('embeddings_output')
-      ? 'include'
-      : filters.not.includes('embeddings_output')
-        ? 'exclude'
-        : 'any',
-  }
+        : 'any'
+    return acc
+  }, {} as ModalityFilterState)
 
   // Build attribute filters from has/not lists
   const attributeFilters: AttributeFilterState = {}
   for (const attr of filters.has) {
-    attributeFilters[attr as AttributeName | ModalityName] = 'include'
+    if (!isAttributeKey(attr)) continue
+    attributeFilters[attr] = 'include'
   }
   for (const attr of filters.not) {
-    attributeFilters[attr as AttributeName | ModalityName] = 'exclude'
+    if (!isAttributeKey(attr)) continue
+    attributeFilters[attr] = 'exclude'
   }
 
   // Helper to update modality filters
@@ -123,7 +87,7 @@ export function useEndpointFilters() {
   }
 
   // Helper to update attribute filters
-  const setAttributeFilter = (key: AttributeName, value: FilterMode) => {
+  const setAttributeFilter = (key: AttributeKey, value: FilterMode) => {
     const currentHas = filters.has.filter((a) => a !== key)
     const currentNot = filters.not.filter((a) => a !== key)
 
@@ -180,7 +144,7 @@ export function useEndpointFilters() {
 
   const clearAttributeFilters = () => {
     // Only keep modalities
-    const currentModalities = filters.has.filter((a) => MODALITIES.includes(a as ModalityName))
+    const currentModalities = filters.has.filter(isModalityName)
 
     setFilters({
       has: currentModalities,
@@ -190,8 +154,8 @@ export function useEndpointFilters() {
 
   const clearModalityFilters = () => {
     // Keep only non-modality attributes
-    const currentAttributes = filters.has.filter((a) => !MODALITIES.includes(a as ModalityName))
-    const currentNotAttributes = filters.not.filter((a) => !MODALITIES.includes(a as ModalityName))
+    const currentAttributes = filters.has.filter((a) => !isModalityName(a))
+    const currentNotAttributes = filters.not.filter((a) => !isModalityName(a))
 
     setFilters({
       has: currentAttributes,

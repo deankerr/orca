@@ -1,6 +1,12 @@
 import { CheckIcon, FilterIcon, LayoutGridIcon, XIcon } from 'lucide-react'
 
-import { AttributeName, attributes } from '@/lib/attributes'
+import {
+  endpointFilterAttributeGroups,
+  endpointModalityInputAttributes,
+  endpointModalityOutputAttributes,
+  type EndpointModalityAttribute,
+} from '@/lib/attribute-groups'
+import { AttributeKey, attributes } from '@/lib/attributes'
 import { SpriteIconName } from '@/lib/sprite-icons'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +19,17 @@ import { useEndpointFilters, type FilterMode } from './use-endpoint-filters'
 export function ModalityFilterControls() {
   const { modalityFilters, setModalityFilter, clearModalityFilters, activeModalityCount } =
     useEndpointFilters()
+
+  const renderModalityToggle = (name: EndpointModalityAttribute) => (
+    <FilterToggle
+      key={name}
+      icon={attributes[name].icon}
+      label={getModalityFilterLabel(name)}
+      mode={modalityFilters[name]}
+      onChange={(mode) => setModalityFilter(name, mode)}
+      allowExclude={true}
+    />
+  )
 
   return (
     <Popover>
@@ -32,53 +49,13 @@ export function ModalityFilterControls() {
         <div className="space-y-4">
           <FilterSection title="Input">
             <div className="grid grid-cols-2 gap-2">
-              <FilterToggle
-                icon={attributes.image_input.icon}
-                label="Image"
-                mode={modalityFilters.image_input}
-                onChange={(mode) => setModalityFilter('image_input', mode)}
-                allowExclude={true}
-              />
-              <FilterToggle
-                icon={attributes.file_input.icon}
-                label="File"
-                mode={modalityFilters.file_input}
-                onChange={(mode) => setModalityFilter('file_input', mode)}
-                allowExclude={true}
-              />
-              <FilterToggle
-                icon={attributes.audio_input.icon}
-                label="Audio"
-                mode={modalityFilters.audio_input}
-                onChange={(mode) => setModalityFilter('audio_input', mode)}
-                allowExclude={true}
-              />
-              <FilterToggle
-                icon={attributes.video_input.icon}
-                label="Video"
-                mode={modalityFilters.video_input}
-                onChange={(mode) => setModalityFilter('video_input', mode)}
-                allowExclude={true}
-              />
+              {endpointModalityInputAttributes.map(renderModalityToggle)}
             </div>
           </FilterSection>
 
           <FilterSection title="Output">
             <div className="grid grid-cols-2 gap-2">
-              <FilterToggle
-                icon={attributes.image_output.icon}
-                label="Image"
-                mode={modalityFilters.image_output}
-                onChange={(mode) => setModalityFilter('image_output', mode)}
-                allowExclude={true}
-              />
-              <FilterToggle
-                icon={attributes.embeddings_output.icon}
-                label="Embeddings"
-                mode={modalityFilters.embeddings_output}
-                onChange={(mode) => setModalityFilter('embeddings_output', mode)}
-                allowExclude={true}
-              />
+              {endpointModalityOutputAttributes.map(renderModalityToggle)}
             </div>
           </FilterSection>
 
@@ -103,7 +80,7 @@ export function AttributeFilterControls() {
     useEndpointFilters()
 
   // Helper to render an attribute filter toggle
-  const renderAttributeToggle = (name: AttributeName) => (
+  const renderAttributeToggle = (name: AttributeKey) => (
     <FilterToggle
       icon={attributes[name].icon}
       label={attributes[name].label}
@@ -131,16 +108,7 @@ export function AttributeFilterControls() {
           {/* Features */}
           <FilterSection title="Features">
             <div className="grid grid-cols-1 gap-x-2 gap-y-1.5 sm:grid-cols-2">
-              {renderAttributeToggle('reasoning')}
-              {renderAttributeToggle('tools')}
-              {renderAttributeToggle('response_format')}
-              {renderAttributeToggle('structured_outputs')}
-              {renderAttributeToggle('caching')}
-              {renderAttributeToggle('native_web_search')}
-              {renderAttributeToggle('moderated')}
-              {renderAttributeToggle('free')}
-              {renderAttributeToggle('completions')}
-              {renderAttributeToggle('chat_completions')}
+              {endpointFilterAttributeGroups.features.map(renderAttributeToggle)}
             </div>
           </FilterSection>
 
@@ -149,9 +117,7 @@ export function AttributeFilterControls() {
           {/* Status */}
           <FilterSection title="Status">
             <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
-              {renderAttributeToggle('gone')}
-              {renderAttributeToggle('disabled')}
-              {renderAttributeToggle('deranked')}
+              {endpointFilterAttributeGroups.status.map(renderAttributeToggle)}
             </div>
           </FilterSection>
 
@@ -160,10 +126,7 @@ export function AttributeFilterControls() {
           {/* Data Policy */}
           <FilterSection title="Data Policy">
             <div className="grid grid-cols-1 gap-x-2 gap-y-1.5 sm:grid-cols-2">
-              {renderAttributeToggle('training')}
-              {renderAttributeToggle('data_publishing')}
-              {renderAttributeToggle('user_id')}
-              {renderAttributeToggle('data_retention')}
+              {endpointFilterAttributeGroups.dataPolicy.map(renderAttributeToggle)}
             </div>
           </FilterSection>
 
@@ -181,6 +144,10 @@ export function AttributeFilterControls() {
       </PopoverContent>
     </Popover>
   )
+}
+
+function getModalityFilterLabel(name: EndpointModalityAttribute) {
+  return attributes[name].label.replace(/ (Input|Output)$/, '')
 }
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
