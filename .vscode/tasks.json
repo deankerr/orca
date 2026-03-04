@@ -7,7 +7,8 @@
       "command": "bun",
       "args": ["dev:next"],
       "isBackground": true,
-      "presentation": { "reveal": "never", "panel": "dedicated", "group": "dev" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "dev" },
       "runOptions": { "runOn": "folderOpen" }
     },
     {
@@ -17,7 +18,7 @@
       "args": ["dev:convex"],
       "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "never", "panel": "dedicated", "group": "dev" },
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "dev" },
       "runOptions": { "runOn": "folderOpen" }
     }
   ]

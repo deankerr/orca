@@ -10,4 +10,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun check
+      - run: bunx tsc --noEmit
+      - run: bunx eslint --max-warnings 0 .
+      - run: bunx prettier --check .
