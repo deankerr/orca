@@ -1,5 +1,7 @@
 'use client'
 
+import './data-grid.css'
+
 import { createContext, ReactNode, useContext } from 'react'
 
 import { RowData, Table } from '@tanstack/react-table'
@@ -51,6 +53,7 @@ export interface DataGridProps<TData extends object> {
     rowHeight?: number
     overscan?: number
   }
+  rowDataAttributes?: (row: TData) => Record<string, string | undefined>
   tableClassNames?: {
     base?: string
     header?: string

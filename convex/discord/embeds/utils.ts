@@ -76,11 +76,15 @@ export function buildEntityLinks(args: {
   model_slug: string
   hugging_face_id?: string
   provider_tag_slug?: string
+  endpoint_uuid?: string
 }): string {
-  const { model_slug, hugging_face_id, provider_tag_slug } = args
+  const { model_slug, hugging_face_id, provider_tag_slug, endpoint_uuid } = args
 
+  const orcaParams = endpoint_uuid
+    ? `?q=${model_slug}&uuid=${endpoint_uuid.slice(0, 8)}`
+    : `?q=${model_slug}`
   const links = [
-    `[⚪ ORCA](${ORCA_PUBLIC_URL}/?q=${model_slug})`,
+    `[⚪ ORCA](${ORCA_PUBLIC_URL}/${orcaParams})`,
     `[🔀 Model](https://openrouter.ai/${model_slug})`,
   ]
 

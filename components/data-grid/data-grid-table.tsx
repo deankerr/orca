@@ -163,7 +163,7 @@ function DataGridTableHeadRowCell<TData>({
       {children}
       {/* NOTE: header border-b replacement that remains in place with sticky headers */}
       {props.tableLayout?.headerBorder && (
-        <div className="absolute bottom-0 left-0 h-px w-full bg-border" />
+        <div className="absolute bottom-0 left-0 h-px w-full bg-border-solid" />
       )}
     </th>
   )
@@ -179,7 +179,7 @@ function DataGridTableHeadRowCellResize<TData>({ header }: { header: Header<TDat
         onMouseDown: header.getResizeHandler(),
         onTouchStart: header.getResizeHandler(),
         className:
-          'absolute top-0 h-full w-4 cursor-col-resize user-select-none touch-none -end-2 z-10 flex justify-center before:absolute before:w-px before:inset-y-0 before:bg-border translate-x-px',
+          'absolute top-0 h-full w-4 cursor-col-resize user-select-none touch-none -end-2 z-10 flex justify-center before:absolute before:w-px before:inset-y-0 before:bg-border-solid translate-x-px',
       }}
     />
   )
@@ -211,9 +211,8 @@ function DataGridTableBodyRowSkeleton({ children }: { children: ReactNode }) {
   return (
     <tr
       className={cn(
-        'data-[state=selected]:bg-muted/50',
         props.onRowClick && 'cursor-pointer',
-        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border',
+        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border-solid',
         props.tableLayout?.cellBorder && '*:last:border-e-0',
         table.options.enableRowSelection && '*:first:relative',
         props.tableClassNames?.bodyRow,
@@ -268,16 +267,20 @@ function DataGridTableBodyRow<TData>({
   'use no memo'
   const { props, table } = useDataGrid()
 
+  // Compute dynamic data attributes from row data
+  const dynamicAttrs = props.rowDataAttributes?.(row.original)
+
   return (
     <tr
       ref={dndRef}
       style={dndStyle ?? undefined}
       data-state={table.options.enableRowSelection && row.getIsSelected() ? 'selected' : undefined}
+      {...dynamicAttrs}
       onClick={() => props.onRowClick && props.onRowClick(row.original)}
       className={cn(
         'group data-[state=selected]:bg-muted/50',
         props.onRowClick && 'cursor-pointer',
-        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border',
+        props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border-solid',
         props.tableLayout?.cellBorder && '*:last:border-e-0',
         table.options.enableRowSelection && '*:first:relative',
         props.tableClassNames?.bodyRow,
@@ -292,7 +295,9 @@ function DataGridTableBodyRowExpanded<TData>({ row }: { row: Row<TData> }) {
   const { props, table } = useDataGrid()
 
   return (
-    <tr className={cn(props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border')}>
+    <tr
+      className={cn(props.tableLayout?.rowBorder && '[&>td]:border-b [&>td]:border-border-solid')}
+    >
       <td colSpan={row.getVisibleCells().length}>
         {table
           .getAllColumns()
