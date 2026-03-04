@@ -12,6 +12,7 @@ import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
+import { dataGridPopoverHandle } from './popover-handle'
 
 export type EndpointRow = Doc<'or_views_endpoints'>
 
@@ -25,7 +26,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
       </div>
     ),
     cell: ({ row }) => {
-      return <EndpointUuid uuid={row.original.uuid} modelSlug={row.original.model.slug} />
+      return (
+        <EndpointUuid
+          uuid={row.original.uuid}
+          modelSlug={row.original.model.slug}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 85,
     enableSorting: false,
@@ -89,7 +96,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     ),
     cell: ({ row }) => {
       const endpoint = row.original
-      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.status} />
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.status}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 90,
     enableHiding: true,
@@ -160,7 +173,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="MODALITIES" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.modalities} />
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.modalities}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 160,
     meta: {
@@ -180,6 +199,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
           endpoint={endpoint}
           slots={endpointAttributeSets.features}
           reserve={true}
+          handle={dataGridPopoverHandle}
         />
       )
     },
@@ -307,7 +327,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="MISC $" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.miscPricing} />
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.miscPricing}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 105,
     meta: {
@@ -322,7 +348,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="DATA POLICY" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.dataPolicy} />
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.dataPolicy}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 150,
     meta: {
@@ -337,7 +369,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     header: ({ column }) => <DataGridColumnHeader column={column} title="LIMITS" />,
     cell: ({ row }) => {
       const endpoint = row.original
-      return <AttributeBadgeSet endpoint={endpoint} slots={endpointAttributeSets.limits} />
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.limits}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
     size: 150,
     meta: {
