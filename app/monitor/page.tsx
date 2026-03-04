@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
-import { ClientOnly } from '@/components/client-only'
 import { MonitorFeed } from '@/components/monitor-feed/monitor-feed-page'
+import { ClientOnly } from '@/components/shared/client-only'
 
 export const metadata: Metadata = {
   title: 'Monitor',

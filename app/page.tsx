@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 
-import { ClientOnly } from '@/components/client-only'
 import { EndpointsDataGrid } from '@/components/endpoints-data-grid/page'
+import { ClientOnly } from '@/components/shared/client-only'
 
 export default function Page() {
   return (
