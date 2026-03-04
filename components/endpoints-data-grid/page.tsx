@@ -77,7 +77,6 @@ export function EndpointsDataGrid() {
         recordCount={table.getFilteredRowModel().rows.length}
         isLoading={isLoading}
         emptyMessage="No endpoints found"
-        skeletonRows={30}
         rowDataAttributes={rowDataAttributes}
         tableLayout={{
           headerSticky: true,
@@ -85,7 +84,7 @@ export function EndpointsDataGrid() {
           width: 'fixed',
           cellBorder: true,
           rowHeight: 57,
-          overscan: 20,
+          overscan: 10,
           columnsResizable: true,
           columnsPinnable: true,
         }}
