@@ -29,12 +29,12 @@ import {
 } from '../data-grid/data-grid-card'
 import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
-import { AttributePopoverProvider } from '../shared/attribute-badge'
 import { Button } from '../ui/button'
 import { useEndpointsData } from './api'
 import { columns, EndpointRow } from './columns'
 import { DataGridControls } from './controls'
 import { DataGridFooter } from './footer'
+import { DataGridPopoverProvider } from './popover-handle'
 import { useEndpointFilters } from './use-endpoint-filters'
 
 function EndpointsEmptyState() {
@@ -131,7 +131,7 @@ export function EndpointsDataGrid() {
   })
 
   return (
-    <AttributePopoverProvider>
+    <DataGridPopoverProvider>
       <DataGrid
         table={table}
         recordCount={table.getFilteredRowModel().rows.length}
@@ -169,6 +169,6 @@ export function EndpointsDataGrid() {
           </DataGridCardFooter>
         </DataGridCard>
       </DataGrid>
-    </AttributePopoverProvider>
+    </DataGridPopoverProvider>
   )
 }

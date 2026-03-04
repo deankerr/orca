@@ -1,12 +1,9 @@
-import { Popover } from '@base-ui/react/popover'
-
 import { Doc } from '@/convex/_generated/dataModel'
 
 import { Attribute, AttributeSlots, resolveEndpointAttributeSlot } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import {
-  PopoverCard,
   PopoverCardContent,
   PopoverCardDescription,
   PopoverCardTitle,
@@ -14,81 +11,79 @@ import {
 } from './popover-card'
 import { SpriteIconBadge } from './sprite-icon-badge'
 
-// --- Singleton popover: one shared Root for all attribute badges ---
+// --- Popover content ---
 
-interface AttributePopoverPayload {
+export function AttributeBadgePopoverContent({
+  label,
+  description,
+  badge,
+  details,
+}: {
   label: string
   description: React.ReactNode
   badge?: string
   details?: { label?: string; value: string }[]
-}
-
-const attributePopoverHandle = Popover.createHandle<AttributePopoverPayload>()
-
-export function AttributePopoverProvider({ children }: { children: React.ReactNode }) {
+}) {
   return (
-    <>
-      {children}
-      <PopoverCard handle={attributePopoverHandle}>
-        {({ payload }) => (
-          <PopoverCardContent className="max-w-72">
-            <PopoverCardTitle>
-              {payload?.label}
-              {payload?.badge && <span className="font-mono text-[95%]">{payload.badge}</span>}
-            </PopoverCardTitle>
+    <PopoverCardContent className="max-w-72">
+      <PopoverCardTitle>
+        {label}
+        {badge && <span className="font-mono text-[95%]">{badge}</span>}
+      </PopoverCardTitle>
 
-            <PopoverCardDescription>{payload?.description}</PopoverCardDescription>
+      <PopoverCardDescription>{description}</PopoverCardDescription>
 
-            {payload?.details && payload.details.length > 0 && (
-              <DataList className="mt-2 space-y-0.5">
-                {payload.details.map((item, i) => (
-                  <DataListItem key={i}>
-                    {item.label && (
-                      <DataListLabel className="uppercase">{item.label}</DataListLabel>
-                    )}
-                    <DataListValue>{item.value}</DataListValue>
-                  </DataListItem>
-                ))}
-              </DataList>
-            )}
-          </PopoverCardContent>
-        )}
-      </PopoverCard>
-    </>
+      {details && details.length > 0 && (
+        <DataList className="mt-2 space-y-0.5">
+          {details.map((item, i) => (
+            <DataListItem key={i}>
+              {item.label && <DataListLabel className="uppercase">{item.label}</DataListLabel>}
+              <DataListValue>{item.value}</DataListValue>
+            </DataListItem>
+          ))}
+        </DataList>
+      )}
+    </PopoverCardContent>
   )
 }
 
-// --- Badge: lightweight trigger only (no Root, no Portal) ---
+// --- Badge ---
 
-interface AttributeBadgeProps {
+export function AttributeBadge({
+  attribute,
+  data,
+  ...props
+}: {
   attribute: Attribute
   data?: ReturnType<Attribute['resolve']>
-}
-
-export function AttributeBadge({ attribute, data }: AttributeBadgeProps) {
+} & React.ComponentProps<typeof PopoverCardTrigger>) {
   const { icon, label, description, color, key } = attribute
   const badge = data?.value
   const details = data?.details
 
   return (
     <PopoverCardTrigger
-      handle={attributePopoverHandle}
       nativeButton={false}
-      payload={{ label, description, badge, details }}
+      payload={{ type: 'attribute', label, description, badge, details }}
       render={<SpriteIconBadge icon={icon} color={color} aria-label={key} />}
+      {...props}
     />
   )
 }
 
 // --- Badge set ---
 
-interface AttributeBadgeSetProps {
+export function AttributeBadgeSet({
+  endpoint,
+  slots,
+  reserve = false,
+  handle,
+}: {
   endpoint: Doc<'or_views_endpoints'>
   slots: AttributeSlots
   reserve?: boolean
-}
-
-export function AttributeBadgeSet({ endpoint, slots, reserve = false }: AttributeBadgeSetProps) {
+  handle: React.ComponentProps<typeof PopoverCardTrigger>['handle']
+}) {
   return (
     <div className="flex items-center justify-center gap-1">
       {slots.map((slot, index) => {
@@ -99,6 +94,7 @@ export function AttributeBadgeSet({ endpoint, slots, reserve = false }: Attribut
               key={`${resolved.attribute.key}:${index}`}
               attribute={resolved.attribute}
               data={resolved.data}
+              handle={handle}
             />
           )
         }
