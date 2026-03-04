@@ -20,9 +20,6 @@ export const EMOJIS = {
 
 export const DOT_SPACER = ' • '
 
-// Public URL for ORCA
-export const ORCA_PUBLIC_URL = 'https://orca.orb.town'
-
 // Maximum description length for embeds
 export const MAX_DESCRIPTION_LENGTH = 900
 

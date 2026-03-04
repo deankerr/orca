@@ -2,7 +2,7 @@ import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-
 
 import { getEnv } from '../../lib/env'
 import { getLogo } from '../../shared/logos'
-import { DOT_SPACER, EMOJIS, ORCA_PUBLIC_URL } from '../constants'
+import { DOT_SPACER, EMOJIS } from '../constants'
 
 export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
@@ -80,11 +80,14 @@ export function buildEntityLinks(args: {
 }): string {
   const { model_slug, hugging_face_id, provider_tag_slug, endpoint_uuid } = args
 
+  const orcaPublicUrl = getEnv('ORCA_PUBLIC_URL')
+
   const orcaParams = endpoint_uuid
     ? `?q=${model_slug}&uuid=${endpoint_uuid.slice(0, 8)}`
     : `?q=${model_slug}`
+
   const links = [
-    `[⚪ ORCA](${ORCA_PUBLIC_URL}/${orcaParams})`,
+    `[⚪ ORCA](${orcaPublicUrl}/${orcaParams})`,
     `[🔀 Model](https://openrouter.ai/${model_slug})`,
   ]
 

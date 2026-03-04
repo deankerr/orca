@@ -37,6 +37,7 @@ import type * as discord_embeds_endpointEmbed from "../discord/embeds/endpointEm
 import type * as discord_embeds_modelEmbed from "../discord/embeds/modelEmbed.js";
 import type * as discord_embeds_utils from "../discord/embeds/utils.js";
 import type * as discord_interactions from "../discord/interactions.js";
+import type * as discord_releases from "../discord/releases.js";
 import type * as discord_subscriptions from "../discord/subscriptions.js";
 import type * as endpoints from "../endpoints.js";
 import type * as feed from "../feed.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   "discord/embeds/modelEmbed": typeof discord_embeds_modelEmbed;
   "discord/embeds/utils": typeof discord_embeds_utils;
   "discord/interactions": typeof discord_interactions;
+  "discord/releases": typeof discord_releases;
   "discord/subscriptions": typeof discord_subscriptions;
   endpoints: typeof endpoints;
   feed: typeof feed;
