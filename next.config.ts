@@ -53,12 +53,16 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 })
 
-export default withBundleAnalyzer(
-  withPostHogConfig(nextConfig, {
-    personalApiKey: process.env.POSTHOG_API_KEY!,
-    envId: process.env.POSTHOG_ENV_ID!,
-    sourcemaps: {
-      version: appVersion,
-    },
-  }),
-)
+// sourcemap uploads require PostHog credentials, skip entirely in local dev
+const withPostHog = process.env.POSTHOG_PROJECT_ID
+  ? (config: NextConfig) =>
+      withPostHogConfig(config, {
+        personalApiKey: process.env.POSTHOG_API_KEY!,
+        projectId: process.env.POSTHOG_PROJECT_ID!,
+        sourcemaps: {
+          releaseVersion: appVersion,
+        },
+      })
+  : (config: NextConfig) => config
+
+export default withBundleAnalyzer(withPostHog(nextConfig))
