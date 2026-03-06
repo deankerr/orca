@@ -45,7 +45,7 @@ function buildEndpointFields(change: EndpointChange) {
   fields.push({
     name: 'provider_id',
     value: mono(endpoint?.provider_id ?? provider_tag_slug ?? 'unknown'),
-    inline: false,
+    inline: true,
   })
 
   // Show full context if endpoint data is available
@@ -119,15 +119,22 @@ function buildBaseEmbed(change: EndpointChange): EmbedResult {
     })
     .setThumbnail(getColorIconUrl(provider_id ?? model_slug) ?? null)
 
-  // Set title based on change kind
   if (change_kind === 'create') {
+    // show field data on create
     embed.setTitle(`${provider_name} ${EMOJIS.new}`)
+    const fields = buildEndpointFields(change)
+    embed.setFields(fields)
   } else {
+    // show provider_id only on delete
     embed.setTitle(`~~${provider_name}~~ ${EMOJIS.delete}`)
+    embed.setFields([
+      {
+        name: 'provider_id',
+        value: mono(provider_id),
+        inline: false,
+      },
+    ])
   }
-
-  const fields = buildEndpointFields(change)
-  embed.setFields(fields)
 
   const links = buildEntityLinks({
     model_slug,
@@ -163,7 +170,7 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
     fields.push({
       name: 'provider_id',
       value: mono(provider_id),
-      inline: false,
+      inline: true,
     })
   }
 
