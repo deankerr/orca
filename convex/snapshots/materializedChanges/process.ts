@@ -62,6 +62,26 @@ export function computeMaterializedChanges(args: {
   const previousEndpoints = new Map(args.previous.endpoints.map((e) => [e.uuid, e]))
   const currentEndpoints = new Map(args.current.endpoints.map((e) => [e.uuid, e]))
 
+  // * exclude models and endpoints affected by fetch errors from both sides
+  const allFailedModelKeys = new Set([
+    ...args.current.failedModelKeys,
+    ...args.previous.failedModelKeys,
+  ])
+  if (allFailedModelKeys.size > 0) {
+    excludeByModelKey(previousModels, allFailedModelKeys, (m) => `${m.version_slug}:${m.variant}`)
+    excludeByModelKey(currentModels, allFailedModelKeys, (m) => `${m.version_slug}:${m.variant}`)
+    excludeByModelKey(
+      previousEndpoints,
+      allFailedModelKeys,
+      (e) => `${e.model.version_slug}:${e.model.variant}`,
+    )
+    excludeByModelKey(
+      currentEndpoints,
+      allFailedModelKeys,
+      (e) => `${e.model.version_slug}:${e.model.variant}`,
+    )
+  }
+
   const previousProviders = new Map(args.previous.providers.map((p) => [p.slug, p]))
   const currentProviders = new Map(args.current.providers.map((p) => [p.slug, p]))
 
@@ -208,4 +228,17 @@ function getValueByPath(obj: Record<string, any>, segments: string[]): unknown {
     current = current[segment]
   }
   return current
+}
+
+/** Remove entities matching failed model keys from a map so they're excluded from diffing. */
+function excludeByModelKey<T>(
+  map: Map<string, T>,
+  failedModelKeys: Set<string>,
+  getModelKey: (entity: T) => string,
+) {
+  for (const [key, entity] of map) {
+    if (failedModelKeys.has(getModelKey(entity))) {
+      map.delete(key)
+    }
+  }
 }

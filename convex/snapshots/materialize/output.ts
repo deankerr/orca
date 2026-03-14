@@ -28,8 +28,10 @@ export const upsert = internalMutation({
     endpoints: v.array(vUpsertEndpoint),
     providers: v.array(vUpsertProvider),
     crawl_id: v.string(),
+    failedModelKeys: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    const failedModelKeys = new Set(args.failedModelKeys)
     // * run all entity upserts in parallel
     const [models, endpoints, providers] = await Promise.all([
       upsertModels(),
@@ -65,8 +67,12 @@ export const upsert = internalMutation({
       }
 
       // update unavailable_at for models that are no longer advertised
+      // skip models whose endpoint fetch failed (model itself was fetched fine)
       for (const currentModel of currentModelsMap.values()) {
         if (currentModel.unavailable_at === undefined) {
+          const modelKey = `${currentModel.version_slug}:${currentModel.variant}`
+          if (failedModelKeys.has(modelKey)) continue
+
           await db.or.views.models.patch(ctx, currentModel._id, {
             unavailable_at: parseInt(args.crawl_id),
           })
@@ -103,8 +109,12 @@ export const upsert = internalMutation({
       }
 
       // update unavailable_at for endpoints that are no longer advertised
+      // skip endpoints whose model had a fetch error (transient failure, not a real deletion)
       for (const currentEndpoint of currentEndpointsMap.values()) {
         if (currentEndpoint.unavailable_at === undefined) {
+          const modelKey = `${currentEndpoint.model.version_slug}:${currentEndpoint.model.variant}`
+          if (failedModelKeys.has(modelKey)) continue
+
           await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
             unavailable_at: parseInt(args.crawl_id),
           })
