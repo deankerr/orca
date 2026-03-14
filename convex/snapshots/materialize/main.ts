@@ -34,7 +34,16 @@ export const run = internalAction({
     })
 
     await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
-      sources,
+      entityType: 'model',
+      items: sources.models,
+    })
+    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
+      entityType: 'endpoint',
+      items: sources.endpoints,
+    })
+    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
+      entityType: 'provider',
+      items: sources.providers,
     })
 
     // * schedule materializeChanges
