@@ -178,7 +178,10 @@ function buildUpdateEmbed(changes: EndpointChange[]): EmbedResult {
   const fieldChanges = changes.filter((c) => c.change_kind === 'update')
 
   for (const change of fieldChanges) {
-    const field = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
+    // add "limits" prefix when applicable
+    const rawField = change.path_level_2 ?? change.path_level_1 ?? 'unknown'
+    const field =
+      change.path_level_1 === 'limits' && change.path_level_2 ? `limits.${rawField}` : rawField
     const label = getFieldLabel(field, change.before, change.after)
     const isNew = isMissing(change.before)
     const isRemoved = isMissing(change.after)
