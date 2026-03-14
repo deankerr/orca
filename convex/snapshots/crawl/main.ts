@@ -12,7 +12,7 @@ import { getErrorMessage } from '../../shared/utils'
 export const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
   retry: {
-    attempts: 2,
+    attempts: 3,
     delay: (ctx) => ctx.attempt ** 2 * 1000,
   },
 }))
@@ -58,13 +58,15 @@ type EndpointsArray = z.infer<typeof EndpointsDataRecordArray>
 type DataRecordItem = z.infer<typeof DataRecord>
 type DataRecordItemArray = z.infer<typeof DataRecordArray>
 
+type FetchError = { error: string }
+
 export type CrawlArchiveBundle = {
   crawl_id: string
   args: Record<string, boolean | Record<string, boolean>>
   data: {
     models: Array<{
       model: ModelsArray[number]
-      endpoints: EndpointsArray
+      endpoints: EndpointsArray | FetchError
       uptimes: Array<[string, DataRecordItem]>
       apps: DataRecordItemArray // deprecated - no longer fetched
       topApps?: DataRecordItem // new endpoint format
@@ -85,6 +87,8 @@ const ModelMinimalSchema = z.looseObject({
 const EndpointMinimalSchema = z.looseObject({ id: z.string() })
 const DataRecordSchema = z.record(z.string(), z.unknown())
 
+const FetchErrorSchema = z.strictObject({ error: z.string() })
+
 const CrawlArchiveBundleSchema = z.strictObject({
   crawl_id: z.string(),
   args: z.record(z.string(), z.union([z.boolean(), z.record(z.string(), z.boolean())])),
@@ -92,7 +96,7 @@ const CrawlArchiveBundleSchema = z.strictObject({
     models: z.array(
       z.strictObject({
         model: ModelMinimalSchema,
-        endpoints: z.array(EndpointMinimalSchema),
+        endpoints: z.union([z.array(EndpointMinimalSchema), FetchErrorSchema]),
         uptimes: z.array(z.tuple([z.string(), DataRecordSchema])),
         apps: z.array(DataRecordSchema),
         topApps: DataRecordSchema.optional(),
@@ -192,14 +196,16 @@ async function fetchModelData(
     })
     result.endpoints = endpoints
   } catch (err) {
+    const error = getErrorMessage(err)
     console.error('[crawl:endpoints]', {
       params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-      error: getErrorMessage(err),
+      error,
     })
+    result.endpoints = { error }
   }
 
   // * uptimes
-  if (crawlArgs.uptimes && result.endpoints.length) {
+  if (crawlArgs.uptimes && Array.isArray(result.endpoints) && result.endpoints.length) {
     for (const { id } of result.endpoints) {
       try {
         const uptime = await orFetch('/api/frontend/stats/uptime-hourly', {
@@ -248,7 +254,10 @@ export async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundl
 
   const totals = {
     models: parsed.data.models.length,
-    endpoints: parsed.data.models.reduce((sum, m) => sum + m.endpoints.length, 0),
+    endpoints: parsed.data.models.reduce(
+      (sum, m) => sum + (Array.isArray(m.endpoints) ? m.endpoints.length : 0),
+      0,
+    ),
     uptimes: parsed.data.models.reduce((sum, m) => sum + m.uptimes.length, 0),
     topApps: parsed.data.models.reduce((sum, m) => sum + (m.topApps ? 1 : 0), 0),
     providers: parsed.data.providers.length,

@@ -17,7 +17,8 @@ export const run = internalAction({
 
     console.log(`[materialize]`, { crawl_id: bundle.crawl_id })
 
-    const { models, endpoints, providers, sources } = materializeModelEndpoints(bundle)
+    const { models, endpoints, providers, sources, failedModelKeys } =
+      materializeModelEndpoints(bundle)
 
     if (endpoints.length === 0) {
       console.warn(`[materialize] abort: no endpoints found`)
@@ -29,10 +30,20 @@ export const run = internalAction({
       endpoints,
       providers,
       crawl_id: bundle.crawl_id,
+      failedModelKeys: [...failedModelKeys],
     })
 
     await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
-      sources,
+      entityType: 'model',
+      items: sources.models,
+    })
+    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
+      entityType: 'endpoint',
+      items: sources.endpoints,
+    })
+    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
+      entityType: 'provider',
+      items: sources.providers,
     })
 
     // * schedule materializeChanges
@@ -41,7 +52,20 @@ export const run = internalAction({
 })
 
 export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
-  const rawEndpoints = bundle.data.models.flatMap((m) => m.endpoints)
+  // * collect failed model keys before filtering
+  const failedModelKeys = new Set<string>()
+  for (const m of bundle.data.models) {
+    if (!Array.isArray(m.endpoints)) {
+      failedModelKeys.add(`${m.model.permaslug}:${m.model.endpoint?.variant}`)
+    }
+  }
+  if (failedModelKeys.size > 0) {
+    console.warn('[materialize] endpoint fetch errors, skipping models:', [...failedModelKeys])
+  }
+
+  const rawEndpoints = bundle.data.models.flatMap((m) =>
+    Array.isArray(m.endpoints) ? m.endpoints : [],
+  )
 
   const modelsMap = new Map<
     string,
@@ -110,6 +134,7 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
       endpoints: Array.from(endpointSourcesMap.entries()).map(([key, data]) => ({ key, data })),
       providers: Array.from(providerSourcesMap.entries()).map(([key, data]) => ({ key, data })),
     },
+    failedModelKeys,
     issues,
   }
 }

@@ -28,8 +28,10 @@ export const upsert = internalMutation({
     endpoints: v.array(vUpsertEndpoint),
     providers: v.array(vUpsertProvider),
     crawl_id: v.string(),
+    failedModelKeys: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    const failedModelKeys = new Set(args.failedModelKeys)
     // * run all entity upserts in parallel
     const [models, endpoints, providers] = await Promise.all([
       upsertModels(),
@@ -65,8 +67,12 @@ export const upsert = internalMutation({
       }
 
       // update unavailable_at for models that are no longer advertised
+      // skip models whose endpoint fetch failed (model itself was fetched fine)
       for (const currentModel of currentModelsMap.values()) {
         if (currentModel.unavailable_at === undefined) {
+          const modelKey = `${currentModel.version_slug}:${currentModel.variant}`
+          if (failedModelKeys.has(modelKey)) continue
+
           await db.or.views.models.patch(ctx, currentModel._id, {
             unavailable_at: parseInt(args.crawl_id),
           })
@@ -103,8 +109,12 @@ export const upsert = internalMutation({
       }
 
       // update unavailable_at for endpoints that are no longer advertised
+      // skip endpoints whose model had a fetch error (transient failure, not a real deletion)
       for (const currentEndpoint of currentEndpointsMap.values()) {
         if (currentEndpoint.unavailable_at === undefined) {
+          const modelKey = `${currentEndpoint.model.version_slug}:${currentEndpoint.model.variant}`
+          if (failedModelKeys.has(modelKey)) continue
+
           await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
             unavailable_at: parseInt(args.crawl_id),
           })
@@ -155,53 +165,47 @@ export const upsert = internalMutation({
   },
 })
 
+const vEntityType = v.union(v.literal('model'), v.literal('endpoint'), v.literal('provider'))
+
 export const upsertSources = internalMutation({
   args: {
-    sources: v.object({
-      models: v.array(vSourceItem),
-      endpoints: v.array(vSourceItem),
-      providers: v.array(vSourceItem),
-    }),
+    entityType: vEntityType,
+    items: v.array(vSourceItem),
   },
   handler: async (ctx, args) => {
     const counters = { stable: 0, update: 0, insert: 0 }
 
-    const currentSources = await db.or.sources.collect(ctx)
-    const currentSourcesMap = new Map(
-      currentSources.map((s) => [`${s.entity_type}:${s.entity_key}`, s]),
-    )
+    // * query only the sources for this entity type
+    const currentSources = await ctx.db
+      .query('or_sources')
+      .withIndex('by_entity', (q) => q.eq('entity_type', args.entityType))
+      .collect()
+    const currentSourcesMap = new Map(currentSources.map((s) => [s.entity_key, s]))
 
-    const allSourceItems = [
-      ...args.sources.models.map((s) => ({ entity_type: 'model' as const, ...s })),
-      ...args.sources.endpoints.map((s) => ({ entity_type: 'endpoint' as const, ...s })),
-      ...args.sources.providers.map((s) => ({ entity_type: 'provider' as const, ...s })),
-    ]
-
-    for (const source of allSourceItems) {
-      const compositeKey = `${source.entity_type}:${source.key}`
-      const currentSource = currentSourcesMap.get(compositeKey)
+    for (const item of args.items) {
+      const currentSource = currentSourcesMap.get(item.key)
 
       if (currentSource) {
-        if (isEqual(currentSource.data, source.data)) {
+        if (isEqual(currentSource.data, item.data)) {
           counters.stable++
         } else {
           await db.or.sources.replace(ctx, currentSource._id, {
-            entity_type: source.entity_type,
-            entity_key: source.key,
-            data: source.data,
+            entity_type: args.entityType,
+            entity_key: item.key,
+            data: item.data,
           })
           counters.update++
         }
       } else {
         await db.or.sources.insert(ctx, {
-          entity_type: source.entity_type,
-          entity_key: source.key,
-          data: source.data,
+          entity_type: args.entityType,
+          entity_key: item.key,
+          data: item.data,
         })
         counters.insert++
       }
     }
 
-    console.log(`[materialize:upsertSources]`, counters)
+    console.log(`[materialize:upsertSources:${args.entityType}]`, counters)
   },
 })
