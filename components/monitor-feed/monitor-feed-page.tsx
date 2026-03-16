@@ -3,11 +3,18 @@
 import { parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 
 import { ModelCombobox } from '@/components/shared/or-entity-combobox'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldLabel } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Spinner } from '@/components/ui/spinner'
 
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../ui/empty'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Separator } from '../ui/separator'
 import { EntityTypeFilter, useMonitorFeed } from './use-monitor-feed'
 import { VirtualizedFeed } from './virtualized-feed'
 
@@ -36,7 +43,7 @@ export function MonitorFeed() {
     <>
       <div className="mx-auto w-full max-w-7xl px-2 py-6 pt-4 sm:px-6">
         <div className="flex flex-wrap gap-4">
-          <Field className="w-[300px]">
+          <Field className="w-[300px] gap-1">
             <FieldLabel htmlFor="model-filter">Model</FieldLabel>
             <ModelCombobox
               id="model-filter"
@@ -47,7 +54,7 @@ export function MonitorFeed() {
             />
           </Field>
 
-          <Field className="w-40">
+          <Field className="w-40 gap-1">
             <FieldLabel htmlFor="type-filter">Type</FieldLabel>
             <Select
               value={entityType ? entityType : 'all'}
@@ -70,7 +77,11 @@ export function MonitorFeed() {
 
       <Separator />
 
-      {showEmpty ? (
+      {isLoading ? (
+        <div className="flex justify-center py-24">
+          <Spinner className="size-6 text-muted-foreground" />
+        </div>
+      ) : showEmpty ? (
         <Empty className="py-24">
           <EmptyHeader>
             <EmptyTitle>No changes found</EmptyTitle>
