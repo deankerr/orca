@@ -2,7 +2,7 @@
 
 ## Commands
 
-- `bun check`: type check and lint the whole project - do not try to check components individually. This is all you need.
+- `bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.
 
 ## Overview
 
@@ -26,10 +26,6 @@ Primary browsing interface - comprehensive, filterable data grid for comparing m
 ### Monitor
 
 Change tracking feed showing field-level diffs between snapshots. Reveals model/endpoint/provider activity that was previously impossible to observe. Popular feature for visibility into the rapidly evolving AI landscape.
-
-### Model Analytics Dashboard
-
-Integration and visualization of OpenRouter's usage statistics. Tracks cumulative token counts, request volumes, and trends over time.
 
 ### ORCA API
 
