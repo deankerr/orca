@@ -1,10 +1,10 @@
 import * as R from 'remeda'
 
-import { api } from '../_generated/api'
+import { internal } from '../_generated/api'
 import { ActionCtx } from '../_generated/server'
 
 export async function previewV1HttpHandler(ctx: ActionCtx) {
-  const endpointsList = await ctx.runQuery(api.endpoints.list, { maxTimeUnavailable: 0 })
+  const endpointsList = await ctx.runQuery(internal.endpoints.docs, { maxTimeUnavailable: 0 })
 
   const availableList = endpointsList.filter(
     (endpoint) => !R.isDefined(endpoint.unavailable_at) && !endpoint.disabled,

@@ -1,9 +1,10 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { omit } from 'remeda'
 
+import type { Doc } from '../../../_generated/dataModel'
 import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
-import { transformEndpoint } from '../../../transforms/endpoint'
 
 export const table = defineTable({
   uuid: v.string(), // unique id
@@ -71,8 +72,8 @@ export const table = defineTable({
     image_output: v.optional(v.number()),
 
     // per request
-    request: v.optional(v.number()),
-    web_search: v.optional(v.number()), // ignored
+    request: v.optional(v.number()), // deprecated
+    web_search: v.optional(v.number()),
 
     // discount already applied
     discount: v.optional(v.number()), // e.g. 0.2
@@ -111,18 +112,18 @@ export const table = defineTable({
   // * endpoint capability
   completions: v.boolean(),
   chat_completions: v.boolean(),
-  stream_cancellation: v.boolean(), // ignored
+  stream_cancellation: v.boolean(), // ignore
   implicit_caching: v.boolean(),
-  file_urls: v.boolean(), // ignored
+  file_urls: v.boolean(), // ignore
   native_web_search: v.boolean(),
-  multipart: v.boolean(), // ignored
-  mandatory_reasoning: v.optional(v.boolean()), // inconsistently available upstream
+  multipart: v.boolean(), // ignore
+  mandatory_reasoning: v.optional(v.boolean()), // broken - source location changed
 
   // * openrouter
   moderated: v.boolean(),
   deranked: v.boolean(),
   disabled: v.boolean(),
-  status: v.number(), // ignored
+  status: v.number(), // ignore
 
   stats: v.optional(
     v.object({
@@ -183,19 +184,72 @@ export async function replace(
   return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
-export async function getByUuid(ctx: QueryCtx, uuid: string) {
-  return await ctx.db
-    .query('or_views_endpoints')
-    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
-    .order('desc')
-    .first()
+// -- Endpoint transform
+//
+// Canonical transform from raw endpoint docs to a consumer-friendly shape.
+// Renames internal field names to clearer user-facing terminology.
+// Drops deprecated, ignored, and broken fields.
+
+type EndpointDoc = Doc<'or_views_endpoints'>
+
+// * Sub-object transforms
+
+function transformPricing(p: EndpointDoc['pricing']) {
+  return {
+    ...omit(p, ['internal_reasoning', 'audio_cache_input', 'cache_read', 'cache_write', 'request']),
+    reasoning_output: p.internal_reasoning,
+    audio_cache_write: p.audio_cache_input,
+    text_cache_read: p.cache_read,
+    text_cache_write: p.cache_write,
+  }
 }
 
-export async function getTransformedByUuid(ctx: QueryCtx, uuid: string) {
-  return await ctx.db
-    .query('or_views_endpoints')
-    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
-    .order('desc')
-    .first()
-    .then((endp) => (endp ? transformEndpoint(endp) : null))
+function transformDataPolicy(dp: EndpointDoc['data_policy']) {
+  return {
+    may_train_on_data: dp.training,
+    may_publish_data: dp.can_publish,
+    shares_user_id: dp.requires_user_ids,
+    may_retain_data: dp.retains_prompts,
+    data_retention_days: dp.retains_prompts_days,
+  }
 }
+
+function transformLimits(l: EndpointDoc['limits']) {
+  return omit(l, ['text_output_tokens'])
+}
+
+// * Transform
+
+export function transformEndpoint(doc: EndpointDoc) {
+  return {
+    ...omit(doc, [
+      // sub-objects handled below
+      'model',
+      'provider',
+      'pricing',
+      'data_policy',
+      'limits',
+      // deprecated
+      // (icon_url is inside model/provider, handled below)
+      // ignore
+      'stream_cancellation',
+      'file_urls',
+      'multipart',
+      'status',
+      // broken
+      'mandatory_reasoning',
+    ]),
+    model: omit(doc.model, ['icon_url']),
+    provider: omit(doc.provider, ['icon_url']),
+    pricing: transformPricing(doc.pricing),
+    data_policy: transformDataPolicy(doc.data_policy),
+    limits: transformLimits(doc.limits),
+    max_output: doc.limits.text_output_tokens ?? doc.context_length,
+  }
+}
+
+export function transformEndpoints(docs: EndpointDoc[]) {
+  return docs.map(transformEndpoint)
+}
+
+export type ORCAEndpoint = ReturnType<typeof transformEndpoint>

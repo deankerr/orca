@@ -9,6 +9,7 @@ const eslintConfig = [
       'next-env.d.ts',
       '.agents/skills',
       '.claude/skills',
+      '.claude/worktrees',
       'convex/_generated',
     ],
   },

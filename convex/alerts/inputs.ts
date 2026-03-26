@@ -7,7 +7,7 @@ import { db } from '../db'
 import { ModelDocWithDescription } from '../db/or/views/models'
 import schema from '../schema'
 import { TransformedChange } from '../transforms/changes'
-import { OrcaEndpoint } from '../transforms/endpoint'
+import { OrcaEndpoint, transformEndpointV2 } from '../transforms/endpoint'
 
 // Non-provider changes (filtered subset we actually work with)
 type ModelOrEndpointChange = Extract<TransformedChange, { entity_type: 'model' | 'endpoint' }>
@@ -22,6 +22,15 @@ export type EnrichedChange = ModelOrEndpointChange & {
 export type ModelChange = Extract<EnrichedChange, { entity_type: 'model' }>
 export type EndpointChange = Extract<EnrichedChange, { entity_type: 'endpoint' }>
 
+export async function getTransformedByUuid(ctx: QueryCtx, uuid: string) {
+  return await ctx.db
+    .query('or_views_endpoints')
+    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
+    .order('desc')
+    .first()
+    .then((endp) => (endp ? transformEndpointV2(endp) : null))
+}
+
 async function changesByCrawlIdHandler(
   ctx: QueryCtx,
   args: { crawl_id: string },
@@ -33,9 +42,7 @@ async function changesByCrawlIdHandler(
   return await asyncMap(changes, async (c) => {
     const model = await db.or.views.models.getWithDescription(ctx, c.model_slug)
     const endpoint =
-      c.entity_type === 'endpoint'
-        ? await db.or.views.endpoints.getTransformedByUuid(ctx, c.endpoint_uuid)
-        : null
+      c.entity_type === 'endpoint' ? await getTransformedByUuid(ctx, c.endpoint_uuid) : null
 
     return { ...c, model, endpoint }
   })

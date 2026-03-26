@@ -102,7 +102,7 @@ export const EndpointOutputSchema = z.object({
 export type OrcaEndpoint = z.infer<typeof EndpointOutputSchema>
 
 // * Transform function
-export function transformEndpoint(input: Doc<'or_views_endpoints'>): OrcaEndpoint {
+export function transformEndpointV2(input: Doc<'or_views_endpoints'>): OrcaEndpoint {
   const variablePricingTiers =
     input.variable_pricings?.map((tier) => ({
       tokens: tier.threshold,

@@ -1,4 +1,4 @@
-import { Doc } from '@/convex/_generated/dataModel'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 
 import { InlineCode } from '@/components/shared/inline-code'
 import { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
@@ -6,7 +6,7 @@ import { SpriteIconName } from '@/lib/sprite-icons'
 
 import { formatDateTime, formatPrice } from './formatters'
 
-type EndpointPartial = Partial<Doc<'or_views_endpoints'>>
+type EndpointPartial = Partial<ORCAEndpoint>
 
 export interface AttributeState {
   active: boolean
@@ -19,6 +19,7 @@ interface AttributeDefinition {
   label: string
   description: React.ReactNode
   color: SpriteIconBadgeColor
+  referenceUrl?: string
   resolve: (endpoint: EndpointPartial) => AttributeState
 }
 
@@ -38,53 +39,22 @@ export const attributes = defineAttributes({
     label: 'Reasoning',
     description: (
       <>
-        Extended thinking with chain-of-thought visible in{' '}
+        Produces thinking tokens with chain-of-thought visible in{' '}
         <InlineCode>reasoning_content</InlineCode>.
       </>
     ),
     color: 'indigo',
+    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/reasoning-tokens',
     resolve: (endpoint) => {
       const active = endpoint.model?.reasoning ?? false
       const items = []
 
-      if (endpoint.pricing?.internal_reasoning) {
+      if (endpoint.pricing?.reasoning_output) {
         items.push({
-          label: 'Internal Reasoning',
+          label: 'Output',
           value: formatPrice({
-            priceKey: 'internal_reasoning',
-            priceValue: endpoint.pricing.internal_reasoning,
-          }),
-        })
-      }
-
-      return {
-        active,
-        details: items.length > 0 ? items : undefined,
-      }
-    },
-  },
-
-  mandatory_reasoning: {
-    key: 'mandatory_reasoning',
-    icon: 'brain-cog',
-    label: 'Mandatory Reasoning',
-    description: (
-      <>
-        Always emits reasoning tokens; cannot be disabled via{' '}
-        <InlineCode>reasoning_effort</InlineCode>.
-      </>
-    ),
-    color: 'indigo',
-    resolve: (endpoint) => {
-      const active = endpoint.mandatory_reasoning ?? false
-      const items = []
-
-      if (endpoint.pricing?.internal_reasoning) {
-        items.push({
-          label: 'Internal Reasoning',
-          value: formatPrice({
-            priceKey: 'internal_reasoning',
-            priceValue: endpoint.pricing.internal_reasoning,
+            priceKey: 'reasoning_output',
+            priceValue: endpoint.pricing.reasoning_output,
           }),
         })
       }
@@ -102,10 +72,11 @@ export const attributes = defineAttributes({
     label: 'Tools',
     description: (
       <>
-        Function calling via the <InlineCode>tools</InlineCode> parameter for agentic workflows.
+        Function calling via the <InlineCode>tools</InlineCode> parameter.
       </>
     ),
     color: 'blue',
+    referenceUrl: 'https://openrouter.ai/docs/guides/features/tool-calling',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('tools') ?? false,
     }),
@@ -122,6 +93,7 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'teal',
+    referenceUrl: 'https://openrouter.ai/docs/api/reference/parameters',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('response_format') ?? false,
     }),
@@ -138,6 +110,7 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'teal',
+    referenceUrl: 'https://openrouter.ai/docs/guides/features/structured-outputs',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('structured_outputs') ?? false,
     }),
@@ -147,28 +120,29 @@ export const attributes = defineAttributes({
     key: 'caching',
     icon: 'database',
     label: 'Caching',
-    description: 'Reduce costs on repeated prompts with explicit prompt caching.',
+    description: 'Reduced pricing on cache hits for repeated prompt content.',
     color: 'cyan',
+    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
     resolve: (endpoint) => {
-      const active = !!endpoint.pricing?.cache_read
+      const active = !!endpoint.pricing?.text_cache_read
       const items = []
 
-      if (endpoint.pricing?.cache_read) {
+      if (endpoint.pricing?.text_cache_read) {
         items.push({
           label: 'Read',
           value: formatPrice({
-            priceKey: 'cache_read',
-            priceValue: endpoint.pricing.cache_read,
+            priceKey: 'text_cache_read',
+            priceValue: endpoint.pricing.text_cache_read,
           }),
         })
       }
 
-      if (endpoint.pricing?.cache_write) {
+      if (endpoint.pricing?.text_cache_write) {
         items.push({
           label: 'Write',
           value: formatPrice({
-            priceKey: 'cache_write',
-            priceValue: endpoint.pricing.cache_write,
+            priceKey: 'text_cache_write',
+            priceValue: endpoint.pricing.text_cache_write,
           }),
         })
       }
@@ -191,26 +165,27 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'cyan',
+    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
     resolve: (endpoint) => {
       const active = endpoint.implicit_caching ?? false
       const items = []
 
-      if (endpoint.pricing?.cache_read) {
+      if (endpoint.pricing?.text_cache_read) {
         items.push({
           label: 'Read',
           value: formatPrice({
-            priceKey: 'cache_read',
-            priceValue: endpoint.pricing.cache_read,
+            priceKey: 'text_cache_read',
+            priceValue: endpoint.pricing.text_cache_read,
           }),
         })
       }
 
-      if (endpoint.pricing?.cache_write) {
+      if (endpoint.pricing?.text_cache_write) {
         items.push({
           label: 'Write',
           value: formatPrice({
-            priceKey: 'cache_write',
-            priceValue: endpoint.pricing.cache_write,
+            priceKey: 'text_cache_write',
+            priceValue: endpoint.pricing.text_cache_write,
           }),
         })
       }
@@ -234,24 +209,13 @@ export const attributes = defineAttributes({
     }),
   },
 
-  // Other features
-  file_urls: {
-    key: 'file_urls',
-    icon: 'link',
-    label: 'File URLs',
-    description: 'Pass files via URL instead of base64 encoding in the request body.',
-    color: 'purple',
-    resolve: (endpoint) => ({
-      active: endpoint.file_urls ?? false,
-    }),
-  },
-
   native_web_search: {
     key: 'native_web_search',
     icon: 'globe',
     label: 'Native Web Search',
-    description: 'Model can search the web for real-time information.',
+    description: 'Provider handles web search natively, without the OpenRouter plugin.',
     color: 'emerald',
+    referenceUrl: 'https://openrouter.ai/docs/guides/features/plugins/web-search',
     resolve: (endpoint) => {
       const active = endpoint.native_web_search ?? false
       const items = []
@@ -283,6 +247,7 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'blue',
+    referenceUrl: 'https://openrouter.ai/docs/api/reference/overview',
     resolve: (endpoint) => ({
       active: endpoint.completions ?? false,
     }),
@@ -298,6 +263,7 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'blue',
+    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request',
     resolve: (endpoint) => ({
       active: endpoint.chat_completions ?? false,
     }),
@@ -308,8 +274,9 @@ export const attributes = defineAttributes({
     key: 'free',
     icon: 'cake-slice',
     label: 'Free',
-    description: 'No cost per token. May have stricter rate limits and lower availability.',
+    description: 'Zero-cost inference. May have stricter rate limits and lower availability.',
     color: 'pink',
+    referenceUrl: 'https://openrouter.ai/docs/guides/routing/model-variants/free',
     resolve: (endpoint) => ({
       active: endpoint.model?.variant === 'free',
     }),
@@ -322,6 +289,7 @@ export const attributes = defineAttributes({
     label: 'Deranked',
     description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
     color: 'amber',
+    referenceUrl: 'https://openrouter.ai/docs/guides/routing/auto-exacto',
     resolve: (endpoint) => ({
       active: endpoint.deranked ?? false,
     }),
@@ -364,8 +332,9 @@ export const attributes = defineAttributes({
     label: 'Training',
     description: 'Provider may use your prompts and completions for model training.',
     color: 'orange',
+    referenceUrl: 'https://openrouter.ai/docs/guides/privacy/data-collection',
     resolve: (endpoint) => ({
-      active: endpoint.data_policy?.training === true,
+      active: endpoint.data_policy?.may_train_on_data === true,
     }),
   },
 
@@ -375,8 +344,9 @@ export const attributes = defineAttributes({
     label: 'Data Publishing',
     description: 'Provider may publish or share your data in research or datasets.',
     color: 'orange',
+    referenceUrl: 'https://openrouter.ai/docs/guides/privacy/data-collection',
     resolve: (endpoint) => ({
-      active: endpoint.data_policy?.can_publish === true,
+      active: endpoint.data_policy?.may_publish_data === true,
     }),
   },
 
@@ -386,8 +356,9 @@ export const attributes = defineAttributes({
     label: 'User ID',
     description: 'An anonymized ID is forwarded to the provider with your request.',
     color: 'orange',
+    referenceUrl: 'https://openrouter.ai/docs/guides/administration/user-tracking',
     resolve: (endpoint) => ({
-      active: endpoint.data_policy?.requires_user_ids === true,
+      active: endpoint.data_policy?.shares_user_id === true,
     }),
   },
 
@@ -397,9 +368,10 @@ export const attributes = defineAttributes({
     label: 'Data Retention',
     description: 'Provider stores prompts and completions for a limited period.',
     color: 'orange',
+    referenceUrl: 'https://openrouter.ai/docs/guides/features/zdr',
     resolve: (endpoint) => {
-      const active = endpoint.data_policy?.retains_prompts === true
-      const days = endpoint.data_policy?.retains_prompts_days?.toLocaleString()
+      const active = endpoint.data_policy?.may_retain_data === true
+      const days = endpoint.data_policy?.data_retention_days?.toLocaleString()
       const value = days ? `${days} days` : '? days'
       return {
         active,
@@ -415,6 +387,7 @@ export const attributes = defineAttributes({
     label: 'Max Context',
     description: 'Context window limit for this endpoint (may differ from model maximum).',
     color: 'yellow',
+    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active: endpoint.limits?.text_input_tokens != null,
       value: endpoint.limits?.text_input_tokens?.toLocaleString(),
@@ -451,6 +424,7 @@ export const attributes = defineAttributes({
     label: 'Max Requests/Min',
     description: 'Rate limit enforced by this endpoint.',
     color: 'yellow',
+    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active: endpoint.limits?.requests_per_minute != null,
       value: endpoint.limits?.requests_per_minute?.toLocaleString(),
@@ -463,6 +437,7 @@ export const attributes = defineAttributes({
     label: 'Max Requests/Day',
     description: 'Daily request quota enforced by this endpoint.',
     color: 'yellow',
+    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active: endpoint.limits?.requests_per_day != null,
       value: endpoint.limits?.requests_per_day?.toLocaleString(),
@@ -474,8 +449,9 @@ export const attributes = defineAttributes({
     key: 'image_input',
     icon: 'image-up',
     label: 'Image Input',
-    description: 'Vision model that accepts images in message content.',
+    description: 'Accepts images via URL or base64 content parts.',
     color: 'violet',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/images',
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('image') ?? false
       const items = []
@@ -501,8 +477,9 @@ export const attributes = defineAttributes({
     key: 'image_output',
     icon: 'image-down',
     label: 'Image Output',
-    description: 'Generates images inline within the response.',
+    description: 'Generates images inline in the completion response.',
     color: 'violet',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/image-generation',
     resolve: (endpoint) => {
       const active = endpoint.model?.output_modalities?.includes('image') ?? false
       const items = []
@@ -528,8 +505,9 @@ export const attributes = defineAttributes({
     key: 'file_input',
     icon: 'file-spreadsheet',
     label: 'File Input',
-    description: 'Process documents like PDFs, CSVs, and spreadsheets.',
+    description: 'Accepts document and file uploads as input.',
     color: 'sky',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/pdfs',
     resolve: (endpoint) => ({
       active: endpoint.model?.input_modalities?.includes('file') ?? false,
     }),
@@ -539,8 +517,9 @@ export const attributes = defineAttributes({
     key: 'audio_input',
     icon: 'audio-lines',
     label: 'Audio Input',
-    description: 'Process speech and audio directly without transcription.',
+    description: 'Natively processes audio without a separate transcription step.',
     color: 'fuchsia',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('audio') ?? false
       const items = []
@@ -555,12 +534,12 @@ export const attributes = defineAttributes({
         })
       }
 
-      if (endpoint.pricing?.audio_cache_input) {
+      if (endpoint.pricing?.audio_cache_write) {
         items.push({
           label: 'Cache',
           value: formatPrice({
-            priceKey: 'audio_cache_input',
-            priceValue: endpoint.pricing.audio_cache_input,
+            priceKey: 'audio_cache_write',
+            priceValue: endpoint.pricing.audio_cache_write,
           }),
         })
       }
@@ -576,8 +555,9 @@ export const attributes = defineAttributes({
     key: 'video_input',
     icon: 'video',
     label: 'Video Input',
-    description: 'Analyze video content frame-by-frame.',
+    description: 'Accepts video content via URL or base64.',
     color: 'emerald',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
     resolve: (endpoint) => ({
       active: endpoint.model?.input_modalities?.includes('video') ?? false,
     }),
@@ -589,44 +569,18 @@ export const attributes = defineAttributes({
     label: 'Embeddings',
     description: 'Returns vector representations for semantic search and RAG.',
     color: 'amber',
+    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings',
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('embeddings') ?? false,
     }),
   },
 
   // Request Pricing & Limits
-  request: {
-    key: 'request',
-    icon: 'ticket',
-    label: 'Request',
-    description: 'Fixed fee charged per API call, regardless of token count.',
-    color: 'yellow',
-    resolve: (endpoint) => {
-      const active = !!endpoint.pricing?.request
-      const items = []
-
-      if (endpoint.pricing?.request) {
-        items.push({
-          label: 'Per Request',
-          value: formatPrice({
-            priceKey: 'request',
-            priceValue: endpoint.pricing.request,
-          }),
-        })
-      }
-
-      return {
-        active,
-        details: items.length > 0 ? items : undefined,
-      }
-    },
-  },
-
-  threshold_pricing: {
-    key: 'threshold_pricing',
+  long_context_pricing: {
+    key: 'long_context_pricing',
     icon: 'flag',
-    label: 'Threshold Pricing',
-    description: 'Different rates apply based on prompt length tiers.',
+    label: 'Long Context Pricing',
+    description: 'Higher rates apply when prompt length exceeds a token threshold.',
     color: 'yellow',
     resolve: (endpoint) => {
       // only a single 'prompt-threshold' item can exist
