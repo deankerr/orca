@@ -6,23 +6,6 @@ export const COLORS = {
   help: 0x8b5cf6, // purple
 } as const
 
-// Emoji constants for embeds and messages
-export const EMOJIS = {
-  new: '🆕',
-  delete: '☠️',
-  update: '🔄',
-  checkmark: '✅',
-  cross: '❌',
-  arrow: '▶︎',
-  arrowUp: '⬆︎',
-  arrowDown: '⬇︎',
-} as const
-
-export const DOT_SPACER = ' • '
-
-// Maximum description length for embeds
-export const MAX_DESCRIPTION_LENGTH = 900
-
 // Global limit per user (all subscription types combined)
 export const SUBSCRIPTIONS_PER_USER_LIMIT = 50
 
