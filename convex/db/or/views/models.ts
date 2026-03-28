@@ -97,3 +97,11 @@ export function transformModel(doc: Doc<'or_views_models'>) {
 }
 
 export type ORCAModel = ReturnType<typeof transformModel>
+
+export async function get(ctx: QueryCtx, slug: string) {
+  const doc = await ctx.db
+    .query(vTable.name)
+    .withIndex('by_slug', (q) => q.eq('slug', slug))
+    .first()
+  return doc ? transformModel(doc) : null
+}

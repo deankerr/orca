@@ -6,7 +6,7 @@ import { v } from 'convex/values'
 import type { Doc } from './_generated/dataModel'
 import { query } from './_generated/server'
 import schema from './schema'
-import { transformChanges } from './transforms/changes'
+import { transformChangesV2 } from './transforms/changes'
 
 export type ChangeDoc = Doc<'or_views_changes'>
 
@@ -159,7 +159,7 @@ export const changesByCrawlId = query({
                   .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
                   .collect()
 
-      const transformed = transformChanges(batch)
+      const transformed = transformChangesV2(batch)
       const sorted = sortChanges(transformed)
       results.push(...sorted)
 

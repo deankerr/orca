@@ -61,3 +61,11 @@ export function transformProvider(doc: Doc<'or_views_providers'>) {
 }
 
 export type ORCAProvider = ReturnType<typeof transformProvider>
+
+export async function get(ctx: QueryCtx, slug: string) {
+  const doc = await ctx.db
+    .query(vTable.name)
+    .withIndex('by_slug', (q) => q.eq('slug', slug))
+    .first()
+  return doc ? transformProvider(doc) : null
+}

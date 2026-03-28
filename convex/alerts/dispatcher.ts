@@ -1,102 +1,47 @@
 import { v } from 'convex/values'
+import * as R from 'remeda'
 
-import { internal } from '../_generated/api'
+import { api, internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
+import type { ChangeGroup } from '../changeBatch'
 import {
   sendDiscordDeliveries,
   type ChannelDelivery,
   type DiscordDelivery,
   type DMDelivery,
 } from '../discord/bot'
-import { buildEndpointEmbed } from '../discord/embeds/endpointEmbed'
-import { buildModelEmbed } from '../discord/embeds/modelEmbed'
-import type { DiscordPayload, EmbedResult } from '../discord/embeds/utils'
-import type { EndpointChange, EnrichedChange, ModelChange } from './inputs'
+import { buildMessage } from '../discord/messages'
+import type { DiscordPayload } from '../discord/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
 
-// Built embed with metadata for sorting and filtering
-type BuiltEmbed = {
-  model_slug: string
-  entity_type: 'model' | 'endpoint'
-  change_kind: 'create' | 'update' | 'delete'
-  result: EmbedResult
-}
-
-// Pattern matching - "*" for all, otherwise simple includes
+// Pattern matching — "*" for all, otherwise simple includes
 export function matchPattern(pattern: string, slug: string): boolean {
   if (pattern === '*') return true
   return slug.includes(pattern)
 }
 
-// Sort weight for logical ordering within model_slug groups
-function getSortWeight(entity_type: string, change_kind: string): number {
-  if (entity_type === 'model') {
-    if (change_kind === 'create') return 0
-    if (change_kind === 'update') return 1
-    if (change_kind === 'delete') return 5
-  }
-  if (entity_type === 'endpoint') {
-    if (change_kind === 'create') return 2
-    if (change_kind === 'update') return 3
-    if (change_kind === 'delete') return 4
-  }
-  return 3
+// Tag a message with the subscription pattern
+function stampPayload(payload: DiscordPayload, pattern: string): DiscordPayload {
+  if (pattern === '*') return payload
+  const suffix = ` (${pattern})`
+  const content = payload.content ? `${payload.content}${suffix}` : suffix
+  return { ...payload, content }
 }
 
-// Build all embeds from changes, grouped by entity, sorted
-function buildEmbeds(changes: EnrichedChange[]): BuiltEmbed[] {
-  const byEntity = Map.groupBy(changes, (c) =>
-    c.entity_type === 'model' ? `model:${c.model_slug}` : `endpoint:${c.endpoint_uuid}`,
-  )
-
-  const embeds: BuiltEmbed[] = []
-
-  for (const entityChanges of byEntity.values()) {
-    const first = entityChanges[0]
-    if (!first) continue
-
-    const result =
-      first.entity_type === 'model'
-        ? buildModelEmbed(entityChanges as ModelChange[])
-        : buildEndpointEmbed(entityChanges as EndpointChange[])
-
-    embeds.push({
-      model_slug: first.model_slug,
-      entity_type: first.entity_type,
-      change_kind: first.change_kind,
-      result,
-    })
-  }
-
-  // Sort by model_slug, then by logical order within
-  return embeds.toSorted((a, b) => {
-    const slugCompare = a.model_slug.localeCompare(b.model_slug)
-    if (slugCompare !== 0) return slugCompare
-    return getSortWeight(a.entity_type, a.change_kind) - getSortWeight(b.entity_type, b.change_kind)
-  })
-}
-
-// Stamp an embed for a specific subscription
-function stampEmbed(built: BuiltEmbed, pattern: string): DiscordPayload {
-  // Clone to avoid mutation across subscriptions
-  const embed = { ...built.result, footer: { text: `pattern: ${pattern}` } }
-  return { embeds: [embed] }
-}
-
-// Box embeds into deliveries per subscription
+// Build deliveries per subscription from messages
 function buildDeliveries(
-  embeds: BuiltEmbed[],
+  messages: { slug: string; payload: DiscordPayload }[],
   subscriptions: DiscordSubscription[],
 ): DiscordDelivery[] {
   const deliveries: DiscordDelivery[] = []
 
   for (const sub of subscriptions) {
-    const matching = embeds.filter((e) => matchPattern(sub.pattern, e.model_slug))
+    const matching = messages.filter((m) => matchPattern(sub.pattern, m.slug))
     if (matching.length === 0) continue
 
-    const payloads = matching.map((e) => stampEmbed(e, sub.pattern))
+    const payloads = matching.map((m) => stampPayload(m.payload, sub.pattern))
 
     if (sub.type === 'channel' && sub.channel_id) {
       const delivery: ChannelDelivery = {
@@ -132,16 +77,18 @@ export const run = internalAction({
       return
     }
 
-    const subscriptions = await ctx.runQuery(internal.discord.subscriptions.getActive)
+    const subscriptions: DiscordSubscription[] = await ctx.runQuery(
+      internal.discord.subscriptions.getActive,
+    )
     if (!subscriptions.length) {
       console.log('[alerts:dispatcher] no active subscriptions')
       return
     }
 
-    const changes = await ctx.runQuery(internal.alerts.inputs.changesByCrawlId, {
+    const groups: ChangeGroup[] = await ctx.runQuery(api.changeBatch.byCrawlId, {
       crawl_id: args.crawl_id,
     })
-    if (!changes.length) {
+    if (!groups.length) {
       console.log('[alerts:dispatcher] no changes', { crawl_id: args.crawl_id })
       return
     }
@@ -149,12 +96,24 @@ export const run = internalAction({
     console.log('[alerts:dispatcher] processing', {
       crawl_id: args.crawl_id,
       subscriptions: subscriptions.length,
-      changes: changes.length,
+      groups: groups.length,
     })
 
-    // Build → Sort → Box
-    const embeds = buildEmbeds(changes)
-    const deliveries = buildDeliveries(embeds, subscriptions)
+    // Build messages from groups, stamp with crawl_id timestamp, serialize.
+    // Discord allows max 10 embeds per message — chunk if needed.
+    const MAX_EMBEDS = 10
+    const timestamp = new Date(Number(args.crawl_id))
+    const messages = groups.flatMap((group) => {
+      const embeds = buildMessage(group)
+      if (!embeds) return []
+      for (const embed of embeds) embed.setTimestamp(timestamp.getTime())
+      return R.chunk(embeds, MAX_EMBEDS).map((chunk) => {
+        const payload: DiscordPayload = { embeds: chunk.map((e) => e.toJSON()) }
+        return { slug: group.slug, payload }
+      })
+    })
+
+    const deliveries = buildDeliveries(messages, subscriptions)
 
     if (deliveries.length > 0) {
       await sendDiscordDeliveries(deliveries, botToken)
