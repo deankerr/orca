@@ -1,6 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table'
 
-import type { Doc } from '@/convex/_generated/dataModel'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
 import { dataGridPopoverHandle } from './popover-handle'
 
-export type EndpointRow = Doc<'or_views_endpoints'>
+export type EndpointRow = ORCAEndpoint
 
 export const columns: ColumnDef<EndpointRow>[] = [
   {
@@ -229,7 +229,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'maxOutput',
-    accessorFn: (row) => row.limits.text_output_tokens ?? row.context_length,
+    accessorFn: (row) => row.max_output,
     header: ({ column }) => (
       <div className="grow text-center">
         <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />

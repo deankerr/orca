@@ -50,7 +50,7 @@ export const endpointAttributeSets = {
     ['embeddings_output'],
   ],
   features: [
-    ['mandatory_reasoning', 'reasoning'],
+    ['reasoning'],
     ['tools'],
     ['structured_outputs', 'response_format'],
     ['implicit_caching', 'caching'],
@@ -58,7 +58,7 @@ export const endpointAttributeSets = {
     ['moderated'],
     ['free'],
   ],
-  miscPricing: [['request'], ['threshold_pricing']],
+  miscPricing: [['long_context_pricing']],
   dataPolicy: [['training'], ['data_publishing'], ['user_id'], ['data_retention']],
   limits: [
     ['max_text_input_tokens'],

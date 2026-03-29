@@ -1,17 +1,17 @@
-import { api } from '../_generated/api'
+import { internal } from '../_generated/api'
 import { ActionCtx } from '../_generated/server'
-import { transformEndpoint } from '../transforms/endpoint'
+import { transformEndpointV2 } from '../transforms/endpoint'
 
 export async function previewV2HttpHandler(ctx: ActionCtx) {
   const endpointsList = await ctx
-    .runQuery(api.endpoints.list, { maxTimeUnavailable: 0 })
+    .runQuery(internal.endpoints.docs, { maxTimeUnavailable: 0 })
     .then((list) => list.filter((e) => !e.disabled))
 
   const models = Map.groupBy(endpointsList, (e) => e.model.slug)
     .values()
     .map((group) => {
       const model = group[0].model
-      const providers = group.map(transformEndpoint)
+      const providers = group.map(transformEndpointV2)
 
       return {
         id: model.slug,

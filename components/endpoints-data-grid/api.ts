@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import ms from 'ms'
 
 import { api } from '@/convex/_generated/api'
-import { Doc } from '@/convex/_generated/dataModel'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 
 import { attributes, isAttributeKey } from '@/lib/attributes'
 
@@ -58,7 +58,7 @@ export function useEndpointsData() {
   }
 }
 
-const FAKE_ENDPOINT: Doc<'or_views_endpoints'> = {
+const FAKE_ENDPOINT: ORCAEndpoint = {
   _id: '__fake__' as any,
   _creationTime: Date.now(),
   uuid: 'fake-endpoint-uuid',
@@ -68,7 +68,6 @@ const FAKE_ENDPOINT: Doc<'or_views_endpoints'> = {
     version_slug: 'orca/fake-model',
     variant: 'free',
     name: '🌺 ORCA Test Model',
-    icon_url: 'https://api.dicebear.com/7.x/shapes/svg?seed=orca',
     author_slug: 'orca',
     author_name: 'ORCA',
     or_added_at: Date.now(),
@@ -80,52 +79,46 @@ const FAKE_ENDPOINT: Doc<'or_views_endpoints'> = {
     slug: 'orca',
     tag_slug: 'orca',
     name: 'ORCA Test Provider',
-    icon_url: 'https://api.dicebear.com/7.x/shapes/svg?seed=provider',
     model_id: 'orca/fake-model',
   },
   data_policy: {
-    training: true,
-    can_publish: true,
-    requires_user_ids: true,
-    retains_prompts: true,
-    retains_prompts_days: 30,
+    may_train_on_data: true,
+    may_publish_data: true,
+    shares_user_id: true,
+    may_retain_data: true,
+    data_retention_days: 30,
   },
   pricing: {
     text_input: 0.000001,
     text_output: 0.000002,
-    internal_reasoning: 0.0000015,
+    reasoning_output: 0.0000015,
     audio_input: 0.0000005,
-    audio_cache_input: 0.00000025,
-    cache_read: 0.0000001,
-    cache_write: 0.0000005,
+    audio_cache_write: 0.00000025,
+    text_cache_read: 0.0000001,
+    text_cache_write: 0.0000005,
     image_input: 0.00001,
     image_output: 0.00002,
-    request: 0.0001,
     web_search: 0.001,
     discount: 0.2,
   },
+  variable_pricings: undefined,
   limits: {
     text_input_tokens: 200000,
-    text_output_tokens: 16000,
     image_input_tokens: 50000,
     images_per_input: 20,
     requests_per_minute: 100,
     requests_per_day: 10000,
   },
   context_length: 200000,
+  max_output: 16000,
   quantization: 'fp16',
   supported_parameters: ['tools', 'response_format', 'structured_outputs'],
   completions: true,
   chat_completions: true,
-  stream_cancellation: true,
   implicit_caching: true,
-  file_urls: true,
   native_web_search: true,
-  multipart: true,
-  mandatory_reasoning: true,
   moderated: true,
   deranked: true,
   disabled: false,
-  status: 200,
   updated_at: Date.now(),
 }

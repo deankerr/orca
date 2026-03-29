@@ -1,10 +1,16 @@
+import { v } from 'convex/values'
+
 import { db } from '@/convex/db'
 
-import { internalMutation } from '../_generated/server'
+import { internalMutation, internalQuery } from '../_generated/server'
 
 export const run = internalMutation({
-  handler: async (ctx) => {
-    const endpoints = await db.or.views.endpoints.collect(ctx)
+  args: { excludeUnavailable: v.boolean() },
+  handler: async (ctx, { excludeUnavailable }) => {
+    const allEndpoints = await db.or.views.endpoints.collect(ctx)
+    const availableEndpoints = allEndpoints.filter((endp) => endp.unavailable_at === undefined)
+
+    const endpoints = excludeUnavailable ? availableEndpoints : allEndpoints
     const total = endpoints.length
 
     if (total === 0) return 'no endpoints found'
@@ -176,8 +182,25 @@ export const run = internalMutation({
       other_fields: otherFields,
     }
 
-    console.log('[analysis:endpoints] Field presence report:', JSON.stringify(report, null, 2))
-
     return report
+  },
+})
+
+// Endpoints with web search capabilities: has web_search pricing and/or native_web_search is true
+export const nativeWebSearch = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const allEndpoints = await db.or.views.endpoints.collect(ctx)
+
+    return allEndpoints
+      .filter((ep) => ep.unavailable_at === undefined)
+      .filter((ep) => ep.pricing.web_search != null || ep.native_web_search)
+      .map((ep) => ({
+        model_slug: ep.model.slug,
+        provider_slug: ep.provider.tag_slug,
+        native_web_search: ep.native_web_search,
+        web_search_pricing: ep.pricing.web_search ?? null,
+      }))
+      .sort((a, b) => a.model_slug.localeCompare(b.model_slug))
   },
 })

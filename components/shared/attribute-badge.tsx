@@ -1,4 +1,4 @@
-import { Doc } from '@/convex/_generated/dataModel'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 
 import { Attribute, AttributeSlots, resolveEndpointAttributeSlot } from '@/lib/attributes'
 
@@ -79,7 +79,7 @@ export function AttributeBadgeSet({
   reserve = false,
   handle,
 }: {
-  endpoint: Doc<'or_views_endpoints'>
+  endpoint: ORCAEndpoint
   slots: AttributeSlots
   reserve?: boolean
   handle: React.ComponentProps<typeof PopoverCardTrigger>['handle']

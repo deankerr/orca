@@ -1,5 +1,6 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { omit } from 'remeda'
 
 import { Doc } from '../../../_generated/dataModel'
 import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
@@ -88,3 +89,11 @@ export async function getWithDescription(
     description,
   }
 }
+
+// -- Model transform
+
+export function transformModel(doc: Doc<'or_views_models'>) {
+  return omit(doc, ['icon_url', 'tokenizer', 'instruct_type'])
+}
+
+export type ORCAModel = ReturnType<typeof transformModel>
