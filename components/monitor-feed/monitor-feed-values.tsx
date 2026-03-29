@@ -1,11 +1,10 @@
 import * as R from 'remeda'
 
-import { formatPricing } from '@/convex/shared/pricing'
-
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 import { RadBadge } from '../shared/rad-badge'
+import { formatPricing } from './pricing'
 
 // * Parse numeric value from number or numeric string (for percentage calculations)
 function parseNumeric(value: unknown): number | null {

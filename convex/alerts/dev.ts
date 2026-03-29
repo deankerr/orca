@@ -1,7 +1,9 @@
+import { stream } from 'convex-helpers/server/stream'
 import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
-import { internalAction } from '../_generated/server'
+import { internalAction, internalQuery } from '../_generated/server'
+import schema from '../schema'
 
 /**
  * Dev testing action. Runs the real dispatcher for recent crawl_ids.
@@ -20,12 +22,10 @@ export const test = internalAction({
     let crawlIds: string[]
     if (args.crawlIds) {
       crawlIds = Array.isArray(args.crawlIds) ? args.crawlIds : [args.crawlIds]
-    } else if (args.lastN) {
-      crawlIds = await ctx.runQuery(internal.alerts.inputs.getRecentCrawlIds, {
-        limit: args.lastN,
-      })
     } else {
-      throw new Error('Must provide crawlIds or lastN')
+      crawlIds = await ctx.runQuery(internal.alerts.dev.getRecentCrawlIds, {
+        limit: args.lastN ?? 1,
+      })
     }
 
     if (!crawlIds.length) {
@@ -38,5 +38,19 @@ export const test = internalAction({
     for (const crawl_id of crawlIds) {
       await ctx.runAction(internal.alerts.dispatcher.run, { crawl_id })
     }
+  },
+})
+
+export const getRecentCrawlIds = internalQuery({
+  args: { limit: v.number() },
+  handler: async (ctx, args) => {
+    const docs = await stream(ctx.db, schema)
+      .query('or_views_changes')
+      .withIndex('by_crawl_id')
+      .order('desc')
+      .distinct(['crawl_id'])
+      .take(args.limit)
+
+    return docs.map((doc) => doc.crawl_id)
   },
 })

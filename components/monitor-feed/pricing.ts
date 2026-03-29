@@ -1,11 +1,11 @@
-import { type OrcaEndpoint } from '../transforms/endpoint'
+import { type OrcaEndpointV2 } from '@/convex/transforms/endpoint'
 
 // * Pricing Formatter
 // Transforms raw pricing values (dollar per unit) into display format.
 // Returns { value, unit } for flexible display: `${value}${unit}` -> "$1.23/MTOK"
 // Handles untyped keys gracefully - unknown keys return raw value with blank unit.
 
-export type PricingFormatResult = {
+type PricingFormatResult = {
   value: string
   unit: string
 }
@@ -15,7 +15,7 @@ type PricingFormat = {
   unit: string
 }
 
-type PricingKey = keyof Omit<OrcaEndpoint['pricing'], 'tiers'>
+type PricingKey = keyof Omit<OrcaEndpointV2['pricing'], 'tiers'>
 
 // Canonical pricing keys from PricingOutputSchema (convex/transforms/endpoint.ts)
 const pricingFormats: Record<PricingKey, PricingFormat> = {

@@ -33,5 +33,8 @@ export type DiscordClient = ReturnType<typeof createDiscordClient>
  * Format error for logging - extracts status and data from up-fetch response errors
  */
 export function formatDiscordError(err: unknown): unknown {
-  return isResponseError(err) ? { status: err.status, ...err.data } : String(err)
+  if (!isResponseError(err)) return String(err)
+  // data may be a string (HTML error page) instead of a JSON object
+  const data = typeof err.data === 'string' ? { body: err.data.slice(0, 2000) } : err.data
+  return { status: err.status, ...data }
 }

@@ -253,3 +253,11 @@ export function transformEndpoints(docs: EndpointDoc[]) {
 }
 
 export type ORCAEndpoint = ReturnType<typeof transformEndpoint>
+
+export async function get(ctx: QueryCtx, uuid: string) {
+  const doc = await ctx.db
+    .query(vTable.name)
+    .withIndex('by_uuid', (q) => q.eq('uuid', uuid))
+    .first()
+  return doc ? transformEndpoint(doc) : null
+}

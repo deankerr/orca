@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { createDiscordClient, formatDiscordError, type DiscordClient } from './api'
-import type { DiscordPayload } from './embeds/utils'
+import type { DiscordPayload } from './utils'
 
 export type ChannelDelivery = {
   type: 'channel'

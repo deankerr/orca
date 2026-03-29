@@ -44,7 +44,7 @@ function transformVariablePricingTier(tier: VariablePricingInput) {
 
 // * Transform a change's path and values
 
-export function transformEndpointChange(change: {
+export function transformEndpointChangeV2(change: {
   path?: string
   path_level_1?: string
   path_level_2?: string
