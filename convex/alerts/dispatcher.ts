@@ -4,14 +4,14 @@ import * as R from 'remeda'
 import { api, internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
-import type { ChangeGroup } from '../changeBatch'
+import type { EntityChange } from '../db/or/views/changes'
 import {
   sendDiscordDeliveries,
   type ChannelDelivery,
   type DiscordDelivery,
   type DMDelivery,
 } from '../discord/bot'
-import { buildMessage } from '../discord/messages'
+import { buildMessages } from '../discord/messages'
 import type { DiscordPayload } from '../discord/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
@@ -85,10 +85,10 @@ export const run = internalAction({
       return
     }
 
-    const groups: ChangeGroup[] = await ctx.runQuery(api.changeBatch.byCrawlId, {
+    const changes: EntityChange[] = await ctx.runQuery(api.changeBatch.byCrawlId, {
       crawl_id: args.crawl_id,
     })
-    if (!groups.length) {
+    if (!changes.length) {
       console.log('[alerts:dispatcher] no changes', { crawl_id: args.crawl_id })
       return
     }
@@ -96,20 +96,20 @@ export const run = internalAction({
     console.log('[alerts:dispatcher] processing', {
       crawl_id: args.crawl_id,
       subscriptions: subscriptions.length,
-      groups: groups.length,
+      changes: changes.length,
     })
 
-    // Build messages from groups, stamp with crawl_id timestamp, serialize.
+    // Build messages from flat changes, stamp with crawl_id timestamp, serialize.
     // Discord allows max 10 embeds per message — chunk if needed.
     const MAX_EMBEDS = 10
     const timestamp = new Date(Number(args.crawl_id))
-    const messages = groups.flatMap((group) => {
-      const embeds = buildMessage(group)
-      if (!embeds) return []
+    const discordMessages = buildMessages(changes)
+
+    const messages = discordMessages.flatMap(({ slug, embeds }) => {
       for (const embed of embeds) embed.setTimestamp(timestamp.getTime())
       return R.chunk(embeds, MAX_EMBEDS).map((chunk) => {
         const payload: DiscordPayload = { embeds: chunk.map((e) => e.toJSON()) }
-        return { slug: group.slug, payload }
+        return { slug, payload }
       })
     })
 
