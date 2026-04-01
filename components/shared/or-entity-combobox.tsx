@@ -8,7 +8,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { CheckIcon } from 'lucide-react'
 
 import { api } from '@/convex/_generated/api'
-import { Doc } from '@/convex/_generated/dataModel'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,19 +17,34 @@ import { cn } from '@/lib/utils'
 
 import { EntityBadge, EntityBadgeSkeleton } from './entity-badge'
 
-export function ModelCombobox({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  placeholder = 'Filter by model...',
-  className,
-  ...props
-}: {
+type EntityItem = {
+  name: string
+  slug: string
+}
+
+type EntityComboboxProps = {
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
   placeholder?: string
-} & React.ComponentProps<typeof Button>) {
+  searchPlaceholder: string
+  emptyMessage: string
+  items?: EntityItem[]
+  isPending: boolean
+} & React.ComponentProps<typeof Button>
+
+function EntityCombobox({
+  value: valueProp,
+  defaultValue,
+  onValueChange,
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
+  items,
+  isPending,
+  className,
+  ...props
+}: EntityComboboxProps) {
   const [value, setValue] = useControllableState({
     prop: valueProp,
     defaultProp: defaultValue ?? '',
@@ -41,37 +55,43 @@ export function ModelCombobox({
   const [search, setSearch] = useState('')
   const listboxId = useId()
 
-  const { data: models, isPending } = useQuery(convexQuery(api.models.list, {}))
+  const dedupedItems = useMemo(() => {
+    if (!items) return undefined
 
-  // * Fuzzy filter + rank models by search, with selected item at top
+    const seenSlugs = new Set<string>()
+    return items.filter((item) => {
+      if (seenSlugs.has(item.slug)) return false
+      seenSlugs.add(item.slug)
+      return true
+    })
+  }, [items])
+
   const filtered = useMemo(() => {
-    if (!models) return undefined
+    if (!dedupedItems) return undefined
 
-    let result: Doc<'or_views_models'>[]
+    let result: EntityItem[]
 
     if (!search) {
-      result = models
+      result = dedupedItems
     } else {
-      result = models
-        .map((m) => {
-          // Rank against both slug and name, take the better match
-          const slugRank = rankItem(m.slug, search, { threshold: rankings.CONTAINS })
-          const nameRank = rankItem(m.name, search, { threshold: rankings.CONTAINS })
+      result = dedupedItems
+        .map((item) => {
+          const slugRank = rankItem(item.slug, search, { threshold: rankings.CONTAINS })
+          const nameRank = rankItem(item.name, search, { threshold: rankings.CONTAINS })
           const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
-          return { model: m, rank: bestRank }
+          return { item, rank: bestRank }
         })
-        .filter((item) => item.rank.passed)
+        .filter((result) => result.rank.passed)
         .sort((a, b) => compareItems(a.rank, b.rank))
-        .map((item) => item.model)
+        .map((result) => result.item)
     }
 
-    // Move selected item to top if present
     if (value) {
-      const selectedIndex = result.findIndex((m) => m.slug === value)
+      const selectedIndex = result.findIndex((item) => item.slug === value)
       if (selectedIndex > 0) {
-        const selectedModel = result[selectedIndex]
+        const selectedItem = result[selectedIndex]
         result = [
-          selectedModel,
+          selectedItem,
           ...result.slice(0, selectedIndex),
           ...result.slice(selectedIndex + 1),
         ]
@@ -79,13 +99,12 @@ export function ModelCombobox({
     }
 
     return result
-  }, [models, search, value])
+  }, [dedupedItems, search, value])
 
-  const selected = models?.find((m) => m.slug === value)
+  const selected = dedupedItems?.find((item) => item.slug === value)
 
-  const handleSelect = (model: Doc<'or_views_models'>) => {
-    // Toggle off if already selected
-    setValue(model.slug === value ? '' : model.slug)
+  const handleSelect = (item: EntityItem) => {
+    setValue(item.slug === value ? '' : item.slug)
     setOpen(false)
     setSearch('')
   }
@@ -122,7 +141,7 @@ export function ModelCombobox({
           {/* Search input */}
           <div className="overflow-hidden border-b">
             <Input
-              placeholder="Search models..."
+              placeholder={searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="rounded-b-none border-0 dark:bg-transparent"
@@ -136,9 +155,9 @@ export function ModelCombobox({
               <EntityBadgeSkeleton className="flex-1" />
             </div>
           ) : !filtered?.length ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">No models found.</div>
+            <div className="p-4 text-center text-sm text-muted-foreground">{emptyMessage}</div>
           ) : (
-            <VirtualizedModelList models={filtered} selectedSlug={value} onSelect={handleSelect} />
+            <VirtualizedEntityList items={filtered} selectedSlug={value} onSelect={handleSelect} />
           )}
         </div>
       </PopoverContent>
@@ -146,21 +165,57 @@ export function ModelCombobox({
   )
 }
 
-function VirtualizedModelList({
-  models,
+export function ModelCombobox({
+  placeholder = 'Filter by model...',
+  ...props
+}: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
+  const { data: models, isPending } = useQuery(convexQuery(api.models.list, {}))
+
+  return (
+    <EntityCombobox
+      {...props}
+      placeholder={placeholder}
+      searchPlaceholder="Search models..."
+      emptyMessage="No models found."
+      items={models}
+      isPending={isPending}
+    />
+  )
+}
+
+export function ProviderCombobox({
+  placeholder = 'Filter by provider...',
+  ...props
+}: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
+  const { data: providers, isPending } = useQuery(convexQuery(api.providers.list, {}))
+
+  return (
+    <EntityCombobox
+      {...props}
+      placeholder={placeholder}
+      searchPlaceholder="Search providers..."
+      emptyMessage="No providers found."
+      items={providers}
+      isPending={isPending}
+    />
+  )
+}
+
+function VirtualizedEntityList({
+  items,
   selectedSlug,
   onSelect,
 }: {
-  models: Doc<'or_views_models'>[]
+  items: EntityItem[]
   selectedSlug?: string
-  onSelect: (model: Doc<'or_views_models'>) => void
+  onSelect: (item: EntityItem) => void
 }) {
   'use no memo'
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: models.length,
+    count: items.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 42,
     overscan: 5,
@@ -170,12 +225,12 @@ function VirtualizedModelList({
     <ScrollArea className="h-[300px]" viewportRef={scrollRef}>
       <div className="relative py-1" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
-          const model = models[virtualRow.index]
-          const isSelected = model.slug === selectedSlug
+          const item = items[virtualRow.index]
+          const isSelected = item.slug === selectedSlug
 
           return (
             <button
-              key={model._id}
+              key={item.slug}
               type="button"
               className={cn(
                 'absolute right-0 left-0 mx-1 flex cursor-pointer items-center justify-between rounded-xs px-2 text-left hover:bg-accent/70',
@@ -184,11 +239,11 @@ function VirtualizedModelList({
                 height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-              onClick={() => onSelect(model)}
+              onClick={() => onSelect(item)}
             >
               <EntityBadge
-                name={model.name}
-                slug={model.slug}
+                name={item.name}
+                slug={item.slug}
                 clickToCopy={false}
                 className="flex-1"
               />

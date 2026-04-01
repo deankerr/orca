@@ -91,6 +91,13 @@ export function fmtValue(value: unknown, path: string): string {
   return fmtScalar(value)
 }
 
+export function fmtUnit(path: string): string | null {
+  const pricingField = parsePricingPath(path)
+  if (!pricingField) return null
+  const unit = PRICING_FIELDS[pricingField].unit
+  return unit || null
+}
+
 export function fmtScalar(value: unknown): string {
   if (!R.isDefined(value)) return 'null'
   if (R.isNumber(value)) return value.toLocaleString('en-US', { maximumFractionDigits: 6 })

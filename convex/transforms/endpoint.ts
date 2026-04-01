@@ -1,4 +1,6 @@
 /**
+ * DEPRECATED - used for public_api v2 only
+ *
  * Endpoint Transform Layer
  *
  * Defines the canonical output shape for endpoint data (called "provider" in the public API)

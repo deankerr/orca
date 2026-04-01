@@ -17,6 +17,7 @@ export function EntityAvatar({
 
   return (
     <span
+      data-slot="entity-avatar"
       className={cn(
         '@container relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-neutral-700/30 text-sm select-none',
         className,

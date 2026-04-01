@@ -35,7 +35,7 @@ interface RadBadgeVariantProps {
 }
 
 const baseBadgeClass =
-  'inline-flex items-center justify-center rounded-md aria-disabled:opacity-20 aria-disabled:saturate-20 shrink-0 [&>svg]:pointer-events-none overflow-hidden'
+  'inline-flex items-center justify-center rounded-full aria-disabled:opacity-20 aria-disabled:saturate-20 shrink-0 [&>svg]:pointer-events-none overflow-hidden'
 
 const variantBaseClass: Record<RadBadgeVariant, string> = {
   solid: '',
@@ -199,7 +199,7 @@ function RadBadge({
     <Comp
       data-slot="rad-badge"
       className={cn(
-        "gap-2 px-2 py-0.5 text-sm [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "gap-1 px-2 py-0.5 text-xs [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         radBadgeVariants({ variant, color }),
         className,
       )}
