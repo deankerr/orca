@@ -48,7 +48,6 @@ import type * as lib_validator from "../lib/validator.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
-import type * as public_api_preview_v1 from "../public_api/preview_v1.js";
 import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
 import type * as shared_formatters from "../shared/formatters.js";
 import type * as shared_groups from "../shared/groups.js";
@@ -67,7 +66,6 @@ import type * as snapshots_materializedChanges_output from "../snapshots/materia
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as storage from "../storage.js";
-import type * as transforms_endpoint from "../transforms/endpoint.js";
 
 import type {
   ApiFromModules,
@@ -116,7 +114,6 @@ declare const fullApi: ApiFromModules<{
   models: typeof models;
   monitor: typeof monitor;
   providers: typeof providers;
-  "public_api/preview_v1": typeof public_api_preview_v1;
   "public_api/preview_v2": typeof public_api_preview_v2;
   "shared/formatters": typeof shared_formatters;
   "shared/groups": typeof shared_groups;
@@ -135,7 +132,6 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   storage: typeof storage;
-  "transforms/endpoint": typeof transforms_endpoint;
 }>;
 
 /**

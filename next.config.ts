@@ -9,10 +9,14 @@ import pkg from './package.json'
 // version from package.json, e.g. "35.0.0" → "v35"
 const appVersion = `v${pkg.version.split('.')[0]}`
 
+// ignored by next if empty
+const localDevOrigin = process.env.LOCAL_DEV_ORIGIN ?? ''
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
   },
+  allowedDevOrigins: [localDevOrigin],
   reactCompiler: true,
   images: {
     remotePatterns: [
@@ -35,10 +39,6 @@ const nextConfig: NextConfig = {
         destination: 'https://us.i.posthog.com/:path*',
       },
       // * public api preview
-      {
-        source: '/api/preview/v1/models',
-        destination: getConvexHttpUrl('/public-api-preview/v1'),
-      },
       {
         source: '/api/preview/v2/models',
         destination: getConvexHttpUrl('/public-api-preview/v2'),
