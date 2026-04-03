@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
-import { MonitorFeed } from '@/components/monitor-feed/monitor-feed-page'
+import { MonitorPage } from '@/components/monitor/monitor-page'
 import { ClientOnly } from '@/components/shared/client-only'
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export default function Page() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <Suspense>
         <ClientOnly>
-          <MonitorFeed />
+          <MonitorPage />
         </ClientOnly>
       </Suspense>
     </div>

@@ -8,7 +8,6 @@ import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ActionLink } from '../shared/action-link'
 import { DataList, DataListItem, DataListLabel, DataListValue } from '../shared/data-list'
 import { ExternalLink } from '../shared/external-link'
-import { EntityChanges } from './entity-changes'
 import { EntitySheetHeader, EntitySheetSection } from './entity-sheet-components'
 import { useFindAllEndpoints } from './use-find-all-endpoints'
 
@@ -17,10 +16,6 @@ export function ModelSheet({ slug }: { slug: string }) {
 
   const { data: model, isPending: modelPending } = useQuery(
     convexQuery(api.models.getBySlug, { slug }),
-  )
-
-  const { data: changes, isPending: changesPending } = useQuery(
-    convexQuery(api.changes.getModelChanges, { modelSlug: slug, limit: 20 }),
   )
 
   if (modelPending) {
@@ -108,9 +103,6 @@ export function ModelSheet({ slug }: { slug: string }) {
             <ActionLink onClick={() => findEndpoints(model.slug)}>Find all Endpoints</ActionLink>
           }
         />
-
-        {/* Change History Section */}
-        <EntityChanges changes={changes} isPending={changesPending} />
       </div>
     </>
   )

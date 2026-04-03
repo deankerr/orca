@@ -18,7 +18,6 @@ import type * as analysis_endpoints from "../analysis/endpoints.js";
 import type * as analysis_providers from "../analysis/providers.js";
 import type * as analysis_stats from "../analysis/stats.js";
 import type * as changeBatch from "../changeBatch.js";
-import type * as changes from "../changes.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as db_alerts_discord_subscriptions from "../db/alerts/discord/subscriptions.js";
@@ -40,7 +39,6 @@ import type * as discord_releases from "../discord/releases.js";
 import type * as discord_subscriptions from "../discord/subscriptions.js";
 import type * as discord_utils from "../discord/utils.js";
 import type * as endpoints from "../endpoints.js";
-import type * as feed from "../feed.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
@@ -48,6 +46,7 @@ import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
 import type * as lib_vTable from "../lib/vTable.js";
 import type * as lib_validator from "../lib/validator.js";
 import type * as models from "../models.js";
+import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
 import type * as public_api_preview_v1 from "../public_api/preview_v1.js";
 import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
@@ -68,9 +67,7 @@ import type * as snapshots_materializedChanges_output from "../snapshots/materia
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as storage from "../storage.js";
-import type * as transforms_changes from "../transforms/changes.js";
 import type * as transforms_endpoint from "../transforms/endpoint.js";
-import type * as transforms_endpointChange from "../transforms/endpointChange.js";
 
 import type {
   ApiFromModules,
@@ -89,7 +86,6 @@ declare const fullApi: ApiFromModules<{
   "analysis/providers": typeof analysis_providers;
   "analysis/stats": typeof analysis_stats;
   changeBatch: typeof changeBatch;
-  changes: typeof changes;
   config: typeof config;
   crons: typeof crons;
   "db/alerts/discord/subscriptions": typeof db_alerts_discord_subscriptions;
@@ -111,7 +107,6 @@ declare const fullApi: ApiFromModules<{
   "discord/subscriptions": typeof discord_subscriptions;
   "discord/utils": typeof discord_utils;
   endpoints: typeof endpoints;
-  feed: typeof feed;
   http: typeof http;
   init: typeof init;
   "lib/env": typeof lib_env;
@@ -119,6 +114,7 @@ declare const fullApi: ApiFromModules<{
   "lib/vTable": typeof lib_vTable;
   "lib/validator": typeof lib_validator;
   models: typeof models;
+  monitor: typeof monitor;
   providers: typeof providers;
   "public_api/preview_v1": typeof public_api_preview_v1;
   "public_api/preview_v2": typeof public_api_preview_v2;
@@ -139,9 +135,7 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   storage: typeof storage;
-  "transforms/changes": typeof transforms_changes;
   "transforms/endpoint": typeof transforms_endpoint;
-  "transforms/endpointChange": typeof transforms_endpointChange;
 }>;
 
 /**
