@@ -1,5 +1,11 @@
 {
   "logos": {
+    "ace": {
+      "slug": "ace",
+      "title": "ace",
+      "background": "#000",
+      "scale": 0.65
+    },
     "adobe": {
       "slug": "adobe",
       "title": "Adobe",
@@ -78,6 +84,12 @@
       "background": "#000",
       "scale": 0.75
     },
+    "akashml": {
+      "slug": "akashml",
+      "title": "Akashml",
+      "background": "",
+      "scale": 1
+    },
     "alephalpha": {
       "slug": "alephalpha",
       "title": "AlephAlpha",
@@ -108,6 +120,12 @@
       "background": "",
       "scale": 1
     },
+    "ambient": {
+      "slug": "ambient",
+      "title": "Ambient",
+      "background": "",
+      "scale": 1
+    },
     "antgroup": {
       "slug": "antgroup",
       "title": "AntGroup",
@@ -125,6 +143,12 @@
       "title": "Anthropic",
       "background": "#F1F0E8",
       "scale": 0.75
+    },
+    "antigravity": {
+      "slug": "antigravity",
+      "title": "Antigravity",
+      "background": "#fff",
+      "scale": 0.7
     },
     "anyscale": {
       "slug": "anyscale",
@@ -164,9 +188,9 @@
     },
     "atlascloud": {
       "slug": "atlascloud",
-      "title": "Atlascloud",
-      "background": "",
-      "scale": 1
+      "title": "Atlas Cloud",
+      "background": "#7036F0",
+      "scale": 0.6
     },
     "automatic": {
       "slug": "automatic",
@@ -312,6 +336,12 @@
       "background": "#4268FA",
       "scale": 0.75
     },
+    "cherrystudio": {
+      "slug": "cherrystudio",
+      "title": "CherryStudio",
+      "background": "#EA5E5D",
+      "scale": 0.75
+    },
     "chutes": {
       "slug": "chutes",
       "title": "Chutes",
@@ -371,6 +401,12 @@
       "title": "CodeGeeX",
       "background": "#00e7e7",
       "scale": 0.75
+    },
+    "codex": {
+      "slug": "codex",
+      "title": "Codex",
+      "background": "#fff",
+      "scale": 0.7
     },
     "cogvideo": {
       "slug": "cogvideo",
@@ -798,6 +834,12 @@
       "background": "#fff",
       "scale": 0.8
     },
+    "inceptron": {
+      "slug": "inceptron",
+      "title": "Inceptron",
+      "background": "",
+      "scale": 1
+    },
     "inclusionai": {
       "slug": "inclusionai",
       "title": "Inclusionai",
@@ -834,6 +876,18 @@
       "background": "#1B3882",
       "scale": 0.75
     },
+    "ionet": {
+      "slug": "ionet",
+      "title": "Ionet",
+      "background": "",
+      "scale": 1
+    },
+    "ionstream": {
+      "slug": "ionstream",
+      "title": "Ionstream",
+      "background": "",
+      "scale": 1
+    },
     "jimeng": {
       "slug": "jimeng",
       "title": "Jimeng",
@@ -845,6 +899,12 @@
       "title": "Jina",
       "background": "#000",
       "scale": 0.6
+    },
+    "kilocode": {
+      "slug": "kilocode",
+      "title": "Kilo Code",
+      "background": "#F8F676",
+      "scale": 0.7
     },
     "kimi": {
       "slug": "kimi",
@@ -984,6 +1044,12 @@
       "background": "#000",
       "scale": 0.65
     },
+    "lovart": {
+      "slug": "lovart",
+      "title": "Lovart",
+      "background": "#000",
+      "scale": 1
+    },
     "luma": {
       "slug": "luma",
       "title": "Luma",
@@ -1116,11 +1182,11 @@
       "background": "#EA4B71",
       "scale": 0.75
     },
-    "ncompass": {
-      "slug": "ncompass",
-      "title": "Ncompass",
-      "background": "",
-      "scale": 1
+    "nanobanana": {
+      "slug": "nanobanana",
+      "title": "NanoBanana",
+      "background": "#FCD53F",
+      "scale": 0.8
     },
     "nebius": {
       "slug": "nebius",
@@ -1206,11 +1272,29 @@
       "background": "#4A7FE3",
       "scale": 0.6
     },
+    "openclaw": {
+      "slug": "openclaw",
+      "title": "OpenClaw",
+      "background": "#000",
+      "scale": 0.75
+    },
+    "opencode": {
+      "slug": "opencode",
+      "title": "opencode",
+      "background": "#000",
+      "scale": 0.75
+    },
     "opengvlab": {
       "slug": "opengvlab",
       "title": "Opengvlab",
       "background": "",
       "scale": 1
+    },
+    "openhands": {
+      "slug": "openhands",
+      "title": "OpenHands",
+      "background": "#fff",
+      "scale": 0.75
     },
     "openinference": {
       "slug": "openinference",
@@ -1361,6 +1445,12 @@
       "title": "Replit",
       "background": "#FD5402",
       "scale": 0.6
+    },
+    "roocode": {
+      "slug": "roocode",
+      "title": "RooCode",
+      "background": "#000",
+      "scale": 0.75
     },
     "rsshub": {
       "slug": "rsshub",
@@ -1715,6 +1805,12 @@
       "title": "Xiaomi",
       "background": "",
       "scale": 1
+    },
+    "xiaomimimo": {
+      "slug": "xiaomimimo",
+      "title": "XiaomiMiMo",
+      "background": "#000",
+      "scale": 0.7
     },
     "xinference": {
       "slug": "xinference",
