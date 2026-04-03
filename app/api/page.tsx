@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 
-import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
-import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-
-import { ApiPreview } from './api-preview'
+import { ClientApiPreview } from './client-api-preview'
 
 export const metadata: Metadata = {
   title: 'ORCA API',
@@ -11,11 +9,28 @@ export const metadata: Metadata = {
     'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
 }
 
-const API_HOST = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ?? 'orca.site'
 const API_PATH = '/api/preview/v2/models'
-const API_URL = `https://${API_HOST}${API_PATH}`
 
-export default function Page() {
+async function getApiUrl() {
+  const requestHeaders = await headers()
+  const host =
+    requestHeaders.get('x-forwarded-host') ??
+    requestHeaders.get('host') ??
+    process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+  const protocol =
+    requestHeaders.get('x-forwarded-proto') ??
+    (host === process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ? 'https' : 'http')
+
+  if (!host) {
+    return API_PATH
+  }
+
+  return new URL(API_PATH, `${protocol}://${host}`).toString()
+}
+
+export default async function Page() {
+  const apiUrl = await getApiUrl()
+
   return (
     <div className="flex flex-1 flex-col px-4 lg:flex-row lg:justify-center lg:overflow-hidden">
       {/* * Left Column - Documentation */}
@@ -43,21 +58,7 @@ export default function Page() {
       </div>
 
       {/* * Right Column - Live API Response */}
-      <div className="flex w-full max-w-2xl flex-col gap-4 overflow-hidden p-6">
-        <Item variant="outline">
-          <ItemContent>
-            <ItemTitle>Preview V2</ItemTitle>
-            <code className="font-mono text-sm">{API_URL}</code>
-          </ItemContent>
-          <ItemActions>
-            <CopyToClipboardButton value={API_URL} size="sm" variant="secondary">
-              Copy
-            </CopyToClipboardButton>
-          </ItemActions>
-        </Item>
-
-        <ApiPreview url={API_PATH} />
-      </div>
+      <ClientApiPreview apiUrl={apiUrl} />
     </div>
   )
 }

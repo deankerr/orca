@@ -2,12 +2,42 @@
 
 import { useEffect, useState } from 'react'
 
+import { convexQuery } from '@convex-dev/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { codeToHtml } from 'shiki'
 
+import { api } from '@/convex/_generated/api'
+
+import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
 import { Badge } from '@/components/ui/badge'
+import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+
+export function ClientApiPreview({ apiUrl }: { apiUrl: string }) {
+  const {
+    data = '',
+    isLoading,
+    error,
+  } = useQuery(convexQuery(api.public_api.preview_v2.getModels, { limit: 5 }))
+
+  return (
+    <div className="flex w-full max-w-2xl flex-col gap-4 overflow-hidden p-6">
+      <Item variant="outline">
+        <ItemContent className="min-h-12">
+          <ItemTitle>Preview V2</ItemTitle>
+          <code className="font-mono text-sm">{apiUrl}</code>
+        </ItemContent>
+        <ItemActions className="shrink-0 self-start sm:self-center">
+          <CopyToClipboardButton value={apiUrl} size="sm" variant="secondary" disabled={!apiUrl} />
+        </ItemActions>
+      </Item>
+
+      <JsonApiCodeBlock code={JSON.stringify(data, null, 2)} isLoading={isLoading} error={error} />
+    </div>
+  )
+}
 
 async function highlight(code: string) {
   return codeToHtml(code, {
@@ -25,7 +55,7 @@ type JsonApiCodeBlock = {
   error?: Error | null
 }
 
-export function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
+function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
   const [html, setHtml] = useState<string | null>(null)
 
   useEffect(() => {

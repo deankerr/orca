@@ -1,10 +1,9 @@
 import { httpRouter } from 'convex/server'
 
+import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { bundleSyncHttpHandler } from './admin/bundleSync'
 import { handleInteraction } from './discord/interactions'
-import { previewV1HttpHandler } from './public_api/preview_v1'
-import { previewV2HttpHandler } from './public_api/preview_v2'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
@@ -63,16 +62,7 @@ http.route({
   path: '/public-api-preview/v2',
   method: 'GET',
   handler: httpAction(async (ctx) => {
-    const result = await previewV2HttpHandler(ctx)
-    return Response.json(result)
-  }),
-})
-
-http.route({
-  path: '/public-api-preview/v1',
-  method: 'GET',
-  handler: httpAction(async (ctx) => {
-    const result = await previewV1HttpHandler(ctx)
+    const result = await ctx.runQuery(api.public_api.preview_v2.getModels, {})
     return Response.json(result)
   }),
 })
