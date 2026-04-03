@@ -1,20 +1,21 @@
-// Builds Discord messages from ChangeGroups.
+// Builds Discord embeds from EntityChange[].
 //
-// A ChangeGroup maps to one Discord message (which can contain multiple embeds).
-// For example, a new model produces a model embed + an embed per endpoint child,
-// all in a single message.
-//
-// Entity data (names, descriptions, pricing) comes from the enriched refs on
-// each ORCAChange, not from the group itself.
-//
-// Descriptions are built as string[] buffers — each section pushes content
-// with embedded newlines as needed, then joined at the end.
+// Uses shared groupChanges to bucket changes into message-level groups,
+// then builds embeds for each group. Embeds use author/footer icon slots
+// to show entity branding.
 
 import { EmbedBuilder } from '@discordjs/builders'
 
-import type { ChangeGroup, EndpointChangeGroup, ModelChangeGroup } from '../changeBatch'
-import type { EndpointRef, ModelRef, ORCAChange } from '../db/or/views/changes'
+import type {
+  EndpointChange,
+  EntityChange,
+  FieldChange,
+  ModelChange,
+  ModelRef,
+  ProviderChange,
+} from '../db/or/views/changes'
 import { computeDelta, fmtValue, formatPricingFields, splitPath } from '../shared/formatters'
+import { groupChanges } from '../shared/groups'
 import { truncate } from '../shared/utils'
 import { COLORS } from './constants'
 import { getAuthorUrl, getColorIconUrl } from './utils'
@@ -23,147 +24,173 @@ import { getAuthorUrl, getColorIconUrl } from './utils'
 
 const TRUNCATE_LENGTH = 800
 
-// truncate and blockquote a long string, preserving line breaks
 function blockquote(text: string): string {
   return `> ${truncate(text, TRUNCATE_LENGTH).replace(/\n/g, '\n> ')}`
 }
 
 const CHARS = {
-  new: ' 🆕 ',
-  cross: ' ❌ ',
-  skull: ' ☠️ ',
-  sparkles: ' ✨ ',
+  new: ' 🆕 ',
+  cross: ' ❌ ',
+  skull: ' ☠️ ',
+  sparkles: ' ✨ ',
   arrow: ' → ',
-  deltaUpGood: ' \u{25B2} ',
-  deltaDownGood: ' \u{25BC} ',
-  deltaUpBad: ' \u{1F53A} ',
-  deltaDownBad: ' \u{1F53B} ',
+  deltaUpGood: ' \u{25B2} ',
+  deltaDownGood: ' \u{25BC} ',
+  deltaUpBad: ' \u{1F53A} ',
+  deltaDownBad: ' \u{1F53B} ',
   dot: ' • ',
   bullet: '-',
 } as const
 
-// -- Ref extraction helpers
-//
-// Groups carry changes with enriched refs. We grab the first change's ref
-// to access entity metadata (name, description, pricing, etc.)
-
-function getModelRef(group: ModelChangeGroup): ModelRef {
-  const allChanges = [...group.changes, ...group.children.flatMap((c) => c.changes)]
-  const first = allChanges[0]
-  if (!first) return { slug: group.slug }
-  if (first.entity_type === 'model') return first.model
-  if (first.entity_type === 'endpoint') return first.model
-  return { slug: group.slug }
-}
-
-function getEndpointRef(child: EndpointChangeGroup): EndpointRef {
-  for (const c of child.changes) {
-    if (c.entity_type === 'endpoint') return c.endpoint
-  }
-  return { uuid: child.uuid }
-}
-
 // -- Public API
 
-export function buildMessage(group: ChangeGroup): EmbedBuilder[] | null {
-  if (group.entity_type === 'model') return buildModelMessage(group)
-  return null
+export type DiscordMessage = {
+  slug: string
+  embeds: EmbedBuilder[]
 }
 
-// -- Model messages
+export function buildMessages(changes: EntityChange[]): DiscordMessage[] {
+  const groups = groupChanges(changes)
 
-function buildModelMessage(group: ModelChangeGroup): EmbedBuilder[] | null {
-  const model = getModelRef(group)
-  const action = detectLifecycle(group.changes)
-
-  // each branch builds its own embed — no intermediate buffers
-  const modelAuthor = {
-    name: group.slug,
-    iconURL: getColorIconUrl(group.slug),
-    url: getAuthorUrl(group.slug),
-  }
-  const modelTitle = model.name ?? group.slug
-
-  let modelEmbed: EmbedBuilder | null = null
-
-  if (action === 'available') {
-    modelEmbed = new EmbedBuilder()
-      .setColor(COLORS.create)
-      .setTitle(`${modelTitle}${CHARS.sparkles}`)
-      .setAuthor(modelAuthor)
-    if (model.description) modelEmbed.setDescription(blockquote(model.description))
-    const fields = getNewModelFields(model)
-    if (fields.length > 0) modelEmbed.setFields(fields)
-  } else if (action === 'unavailable') {
-    modelEmbed = new EmbedBuilder()
-      .setColor(COLORS.delete)
-      .setTitle(`${modelTitle}${CHARS.skull}`)
-      .setAuthor(modelAuthor)
-      .setDescription('- This model has no more available endpoints!')
-  } else if (group.changes.length > 0) {
-    const desc: string[] = []
-    addChanges(desc, group.changes)
-    if (desc.length > 0) {
-      modelEmbed = new EmbedBuilder()
-        .setColor(COLORS.update)
-        .setTitle(modelTitle)
-        .setAuthor(modelAuthor)
-        .setDescription(desc.join('\n'))
-    }
-  }
-
-  // unavailable: model embed goes last (after endpoint children)
-  const embeds: EmbedBuilder[] = []
-  if (modelEmbed && action !== 'unavailable') embeds.push(modelEmbed)
-  for (const child of group.children) {
-    embeds.push(buildEndpointEmbed(child))
-  }
-  if (modelEmbed && action === 'unavailable') embeds.push(modelEmbed)
-
-  if (embeds.length === 0) return null
-  return embeds
+  return groups.flatMap(({ slug, changes: groupChanges }) => {
+    const embeds = groupChanges.flatMap((change) => {
+      const embed = buildEmbed(change)
+      return embed ? [embed] : []
+    })
+    if (embeds.length === 0) return []
+    return [{ slug, embeds }]
+  })
 }
 
-// -- Endpoint embeds
+function buildEmbed(change: EntityChange): EmbedBuilder | null {
+  if (change.entity_type === 'model') return buildModelEmbed(change)
+  if (change.entity_type === 'endpoint') return buildEndpointEmbed(change)
+  return buildProviderEmbed(change)
+}
 
-function buildEndpointEmbed(child: EndpointChangeGroup): EmbedBuilder {
-  const action = detectLifecycle(child.changes)
+// -- Model embeds
 
-  const epAuthor = {
-    name: child.model_slug,
-    iconURL: getColorIconUrl(child.model_slug),
-    url: getAuthorUrl(child.model_slug, child.uuid),
+function modelAuthor(model: ModelChange) {
+  return {
+    name: model.model.slug,
+    iconURL: getColorIconUrl(model.model.slug),
+    url: getAuthorUrl(model.model.slug),
   }
-  const epFooter = {
-    text: action === 'unavailable' ? `${child.provider_slug}${CHARS.cross}` : child.provider_slug,
-    iconURL: getColorIconUrl(child.provider_slug),
-  }
+}
 
-  if (action === 'available') {
+function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
+  const title = model.model.name ?? model.model.slug
+  const author = modelAuthor(model)
+
+  if (model.event.kind === 'entity_available') {
     const embed = new EmbedBuilder()
       .setColor(COLORS.create)
-      .setAuthor(epAuthor)
-      .setFooter(epFooter)
-      .setDescription('- endpoint discovered')
-    const fields = getNewEndpointFields(getEndpointRef(child))
+      .setTitle(`${title}${CHARS.sparkles}`)
+      .setAuthor(author)
+    if (model.model.description) embed.setDescription(blockquote(model.model.description))
+    const fields = getNewModelFields(model.model)
     if (fields.length > 0) embed.setFields(fields)
     return embed
   }
 
-  if (action === 'unavailable') {
+  if (model.event.kind === 'entity_unavailable') {
     return new EmbedBuilder()
       .setColor(COLORS.delete)
-      .setAuthor(epAuthor)
-      .setFooter(epFooter)
+      .setTitle(`${title}${CHARS.skull}`)
+      .setAuthor(author)
+      .setDescription('- This model has no more available endpoints!')
+  }
+
+  // entity_updated
+  const desc = formatFieldChanges(model.event.fields)
+  if (!desc) return null
+  return new EmbedBuilder()
+    .setColor(COLORS.update)
+    .setTitle(title)
+    .setAuthor(author)
+    .setDescription(desc)
+}
+
+// -- Endpoint embeds
+
+function endpointAuthor(ep: EndpointChange) {
+  return {
+    name: ep.model.slug,
+    iconURL: getColorIconUrl(ep.model.slug),
+    url: getAuthorUrl(ep.model.slug, ep.endpoint.uuid),
+  }
+}
+
+function endpointFooter(ep: EndpointChange, cross = false) {
+  return {
+    text: cross ? `${ep.provider.slug}${CHARS.cross}` : ep.provider.slug,
+    iconURL: getColorIconUrl(ep.provider.slug),
+  }
+}
+
+function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
+  const author = endpointAuthor(ep)
+
+  if (ep.event.kind === 'entity_available') {
+    const embed = new EmbedBuilder()
+      .setColor(COLORS.create)
+      .setAuthor(author)
+      .setFooter(endpointFooter(ep))
+      .setDescription('- endpoint discovered')
+    const fields = getNewEndpointFields(ep)
+    if (fields.length > 0) embed.setFields(fields)
+    return embed
+  }
+
+  if (ep.event.kind === 'entity_unavailable') {
+    return new EmbedBuilder()
+      .setColor(COLORS.delete)
+      .setAuthor(author)
+      .setFooter(endpointFooter(ep, true))
       .setDescription('- endpoint has become unavailable')
   }
 
-  // updates
-  const desc: string[] = []
-  addChanges(desc, child.changes)
-  const embed = new EmbedBuilder().setColor(COLORS.update).setAuthor(epAuthor).setFooter(epFooter)
-  if (desc.length > 0) embed.setDescription(desc.join('\n'))
-  return embed
+  // entity_updated
+  const desc = formatFieldChanges(ep.event.fields)
+  if (!desc) return null
+  return new EmbedBuilder()
+    .setColor(COLORS.update)
+    .setAuthor(author)
+    .setFooter(endpointFooter(ep))
+    .setDescription(desc)
+}
+
+// -- Provider embeds
+
+function buildProviderEmbed(provider: ProviderChange): EmbedBuilder | null {
+  const name = provider.provider.name ?? provider.provider.slug
+  const author = {
+    name: provider.provider.slug,
+    iconURL: getColorIconUrl(provider.provider.slug),
+  }
+
+  if (provider.event.kind === 'entity_available') {
+    return new EmbedBuilder()
+      .setColor(COLORS.create)
+      .setAuthor(author)
+      .setDescription(`${name} — provider discovered`)
+  }
+
+  if (provider.event.kind === 'entity_unavailable') {
+    return new EmbedBuilder()
+      .setColor(COLORS.delete)
+      .setAuthor(author)
+      .setDescription(`${name} — provider has become unavailable`)
+  }
+
+  // entity_updated
+  const desc = formatFieldChanges(provider.event.fields)
+  if (!desc) return null
+  return new EmbedBuilder()
+    .setColor(COLORS.update)
+    .setAuthor(author)
+    .setTitle(name)
+    .setDescription(desc)
 }
 
 // -- New entity fields
@@ -198,19 +225,20 @@ function getNewModelFields(model: ModelRef): EmbedField[] {
   return fields
 }
 
-function getNewEndpointFields(ep: EndpointRef): EmbedField[] {
+function getNewEndpointFields(ep: EndpointChange): EmbedField[] {
   const fields: EmbedField[] = []
+  const ref = ep.endpoint
 
-  if (ep.context_length) {
+  if (ref.context_length) {
     const ctx =
-      ep.max_output !== ep.context_length
-        ? `${ep.context_length.toLocaleString()} (max: ${ep.max_output?.toLocaleString()})`
-        : ep.context_length.toLocaleString()
+      ref.max_output !== ref.context_length
+        ? `${ref.context_length.toLocaleString()} (max: ${ref.max_output?.toLocaleString()})`
+        : ref.context_length.toLocaleString()
     fields.push({ name: 'context_length', value: ctx, inline: true })
   }
 
-  if (ep.pricing) {
-    for (const result of formatPricingFields(ep.pricing)) {
+  if (ref.pricing) {
+    for (const result of formatPricingFields(ref.pricing)) {
       const name = result.field.startsWith('text_cache_') ? result.field.slice(5) : result.field
       fields.push({ name, value: result.value, inline: true })
     }
@@ -219,66 +247,52 @@ function getNewEndpointFields(ep: EndpointRef): EmbedField[] {
   return fields
 }
 
-// -- Change description builder
+// -- Field change formatting
 //
-// Groups changes by path category (pricing, limits, data_policy, etc.)
-// and pushes formatted content to the description buffer.
+// Takes FieldChange[] and returns a formatted description string,
+// grouped by category (pricing, limits, data_policy, etc.)
 
-type FieldAction = Exclude<
-  ORCAChange['action'],
-  { kind: 'entity_available' } | { kind: 'entity_unavailable' }
->
-
-function addChanges(desc: string[], changes: ORCAChange[]): void {
-  // collect items with their categories
+function formatFieldChanges(fields: FieldChange[]): string | null {
   type Item = { category: string | null; key: string; content: string }
   const items: Item[] = []
 
-  for (const change of changes) {
-    const { action } = change
-    if (action.kind === 'entity_available' || action.kind === 'entity_unavailable') continue
-
-    const item = formatChangeItem(action)
+  for (const field of fields) {
+    const item = formatChangeItem(field)
     if (item) items.push(item)
   }
 
-  // group by category — top-level fields first, then categorized
+  if (items.length === 0) return null
+
   const grouped = Map.groupBy(items, (item) => item.category)
+  const lines: string[] = []
 
   // top-level (no category) first
   const topLevel = grouped.get(null)
   if (topLevel) {
-    for (const item of topLevel) desc.push(`${item.key}:  ${item.content}`)
+    for (const item of topLevel) lines.push(`${item.key}:  ${item.content}`)
   }
 
   // categorized groups: header + bulleted items
   for (const [category, catItems] of grouped) {
     if (category === null) continue
-    const lines = catItems.map((item) => `${CHARS.bullet} ${item.key}:  ${item.content}`)
-    desc.push(`\n${category}\n${lines.join('\n')}`)
+    const catLines = catItems.map((item) => `${CHARS.bullet} ${item.key}:  ${item.content}`)
+    lines.push(`\n${category}\n${catLines.join('\n')}`)
   }
+
+  return lines.join('\n')
 }
 
-// -- Change item formatting
-//
-// Returns the key and formatted content for a single field change.
-// Content may contain embedded newlines (diff blocks, long strings).
-// The key is separated so the caller can apply its own prefix (bullet, etc.)
-
 function formatChangeItem(
-  action: FieldAction,
+  field: FieldChange,
 ): { category: string | null; key: string; content: string } | null {
-  const { category, key: rawKey } = splitPath(action.path)
+  const { category, key: rawKey } = splitPath(field.path)
   const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
   const isLong = (value: unknown) => typeof value === 'string' && value.length > 80
+  const fmt = (v: unknown) => truncate(fmtValue(v, field.path), TRUNCATE_LENGTH)
 
-  // format a value with Discord-length truncation
-  const fmt = (v: unknown) => truncate(fmtValue(v, action.path), TRUNCATE_LENGTH)
-
-  // set changes use diff blocks
-  if (action.kind === 'set_updated') {
+  if (field.kind === 'set_updated') {
     const lines: string[] = []
-    for (const item of action.items) {
+    for (const item of field.items) {
       if (item.status === 'removed') lines.push(`- ${item.value}`)
       if (item.status === 'added') lines.push(`+ ${item.value}`)
     }
@@ -286,33 +300,30 @@ function formatChangeItem(
     return { category, key, content: `\n\`\`\`diff\n${lines.join('\n')}\n\`\`\`` }
   }
 
-  if (action.kind === 'field_added') {
-    if (isLong(action.value))
-      return { category, key, content: `${CHARS.new}\n${blockquote(String(action.value))}` }
-    return { category, key, content: `${fmt(action.value)} ${CHARS.new}` }
+  if (field.kind === 'field_added') {
+    if (isLong(field.value))
+      return { category, key, content: `${CHARS.new}\n${blockquote(String(field.value))}` }
+    return { category, key, content: `${fmt(field.value)} ${CHARS.new}` }
   }
 
-  if (action.kind === 'field_removed') {
-    if (isLong(action.value))
-      return { category, key, content: `${CHARS.cross}\n~~${blockquote(String(action.value))}~~` }
-    return { category, key, content: `~~${fmt(action.value)}~~ ${CHARS.cross}` }
+  if (field.kind === 'field_removed') {
+    if (isLong(field.value))
+      return { category, key, content: `${CHARS.cross}\n~~${blockquote(String(field.value))}~~` }
+    return { category, key, content: `~~${fmt(field.value)}~~ ${CHARS.cross}` }
   }
 
-  // field_updated — long strings get a single continuous blockquote
-  if (isLong(action.before) || isLong(action.after)) {
+  // field_updated
+  if (isLong(field.before) || isLong(field.after)) {
     const before =
-      typeof action.before === 'string'
-        ? truncate(action.before, TRUNCATE_LENGTH)
-        : fmt(action.before)
+      typeof field.before === 'string' ? truncate(field.before, TRUNCATE_LENGTH) : fmt(field.before)
     const after =
-      typeof action.after === 'string' ? truncate(action.after, TRUNCATE_LENGTH) : fmt(action.after)
+      typeof field.after === 'string' ? truncate(field.after, TRUNCATE_LENGTH) : fmt(field.after)
     return { category, key, content: `\n> ~~${before}~~\n> ${after}` }
   }
 
-  const before = fmt(action.before)
-  const after = fmt(action.after)
-
-  const delta = fmtDelta(action.before, action.after, action.path)
+  const before = fmt(field.before)
+  const after = fmt(field.after)
+  const delta = fmtDelta(field.before, field.after, field.path)
   return { category, key, content: `~~${before}~~ ${CHARS.arrow} ${after} ${delta}` }
 }
 
@@ -331,14 +342,4 @@ function fmtDelta(before: unknown, after: unknown, path: string): string {
       : CHARS.deltaDownBad
 
   return `${symbol}${Math.abs(delta.pct).toFixed(0)}%`
-}
-
-// -- Helpers
-
-function detectLifecycle(changes: ORCAChange[]): 'available' | 'unavailable' | 'updates' {
-  for (const c of changes) {
-    if (c.action.kind === 'entity_available') return 'available'
-    if (c.action.kind === 'entity_unavailable') return 'unavailable'
-  }
-  return 'updates'
 }

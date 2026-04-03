@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 
 import type { Doc, Id } from '../../../_generated/dataModel'
 import type { QueryCtx } from '../../../_generated/server'
+import { baseProviderSlug } from '../../../shared/utils'
 import { getModelDescription } from '../sources'
 import { get as getEndpoint, type ORCAEndpoint } from './endpoints'
 import { get as getModel } from './models'
@@ -53,27 +54,24 @@ export const table = defineTable(
   .index('by_change_kind', ['change_kind'])
   .index('by_entity_type__crawl_id', ['entity_type', 'crawl_id'])
   .index('by_model_slug__crawl_id', ['model_slug', 'crawl_id'])
+  .index('by_model_slug__provider_slug__crawl_id', ['model_slug', 'provider_slug', 'crawl_id'])
   .index('by_entity_type__model_slug__crawl_id', ['entity_type', 'model_slug', 'crawl_id'])
+  .index('by_provider_slug__crawl_id', ['provider_slug', 'crawl_id'])
 
-export type ChangeTypeModelDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'model' }>
-export type ChangeTypeEndpointDoc = Extract<Doc<'or_views_changes'>, { entity_type: 'endpoint' }>
-
-// -- ORCAChange transform
+// -- EntityChange pipeline
 //
-// Canonical transform from raw change docs to a consumer-friendly shape.
-// Pure function — entity refs carry slug only by default. Consumers can
-// enrich with names/details as a separate step when db context is available.
+// Transforms raw change docs into enriched, grouped EntityChange[].
 //
-// Design notes:
-// - Entity refs are objects ({ slug }) to allow future expansion (name, etc.)
-//   without breaking the shape
-// - Lifecycle uses appeared/disappeared rather than create/delete — entities
-//   can vanish and return across crawls
-// - Scalar updates carry raw before/after with no subtype — consumers check
-//   for undefined themselves
-// - Path rewriting happens once here, normalizing internal field names to
-//   user-facing terminology
-// - variable_pricings changes are excluded (filtered before transform)
+// Each EntityChange represents one entity event in a crawl:
+// - entity_available / entity_unavailable — lifecycle events (no field data)
+// - entity_updated — carries FieldChange[] with the actual diffs
+//
+// Grouping key is (entity_type, entity_id, lifecycle). Field updates for the
+// same entity are collected into a single entity_updated event. Lifecycle
+// events always stand alone.
+//
+// Refs are enriched inline via Convex's query cache — repeated lookups for
+// the same slug/uuid are free within a query.
 
 // * Entity identity refs
 
@@ -100,47 +98,62 @@ export type EndpointRef = {
   pricing?: ORCAEndpoint['pricing']
 }
 
-// * Action discriminated union
+// * Field-level diffs — pure change payload, no entity context
 
 export type ArrayDiffItem = {
   value: string
   status: 'stable' | 'added' | 'removed'
 }
 
-export type ChangeAction =
-  | { kind: 'entity_available' }
-  | { kind: 'entity_unavailable' }
-  | { kind: 'field_updated'; path: string; before: unknown; after: unknown }
-  | { kind: 'field_added'; path: string; value: unknown }
-  | { kind: 'field_removed'; path: string; value: unknown }
-  | { kind: 'set_updated'; path: string; items: ArrayDiffItem[] }
+export type FieldChange =
+  | {
+      kind: 'field_updated'
+      change_id: Id<'or_views_changes'>
+      path: string
+      before: unknown
+      after: unknown
+    }
+  | { kind: 'field_added'; change_id: Id<'or_views_changes'>; path: string; value: unknown }
+  | { kind: 'field_removed'; change_id: Id<'or_views_changes'>; path: string; value: unknown }
+  | {
+      kind: 'set_updated'
+      change_id: Id<'or_views_changes'>
+      path: string
+      items: ArrayDiffItem[]
+    }
 
-// * Per-entity change shapes
+// * Entity event — what happened to this entity in this crawl
 
-type ChangeBase = {
-  change_id: Id<'or_views_changes'>
+export type EntityEvent =
+  | { kind: 'entity_available'; change_id: Id<'or_views_changes'> }
+  | { kind: 'entity_unavailable'; change_id: Id<'or_views_changes'> }
+  | { kind: 'entity_updated'; fields: FieldChange[] }
+
+// * Per-entity change group — one per (entity_type, entity_id, lifecycle)
+
+type EntityChangeBase = {
   crawl_id: string
-  action: ChangeAction
+  event: EntityEvent
 }
 
-export type ORCAProviderChange = ChangeBase & {
+export type ProviderChange = EntityChangeBase & {
   entity_type: 'provider'
   provider: ProviderRef
 }
 
-export type ORCAModelChange = ChangeBase & {
+export type ModelChange = EntityChangeBase & {
   entity_type: 'model'
   model: ModelRef
 }
 
-export type ORCAEndpointChange = ChangeBase & {
+export type EndpointChange = EntityChangeBase & {
   entity_type: 'endpoint'
   model: ModelRef
   provider: ProviderRef
   endpoint: EndpointRef
 }
 
-export type ORCAChange = ORCAProviderChange | ORCAModelChange | ORCAEndpointChange
+export type EntityChange = ProviderChange | ModelChange | EndpointChange
 
 // * Ignored endpoint fields — dropped from endpoint transform, filter from changes
 const IGNORED_ENDPOINT_FIELDS = new Set([
@@ -185,150 +198,178 @@ function computeArrayDiff(before: unknown[], after: unknown[]): ArrayDiffItem[] 
     }))
 }
 
-// * Action builder
+// * Field change builder — converts an update doc into a FieldChange
 
-function buildAction(doc: Doc<'or_views_changes'>): ChangeAction {
-  if (doc.change_kind === 'create') return { kind: 'entity_available' }
-  if (doc.change_kind === 'delete') return { kind: 'entity_unavailable' }
-
-  // update — must have a path
+function buildFieldChange(doc: Doc<'or_views_changes'>): FieldChange {
   const path = doc.path
   if (!path) throw new Error(`Update change ${doc._id} missing path`)
   const rewritten = PATH_REWRITES[path] ?? path
 
   // known string[] fields — both sides must be arrays
   if (Array.isArray(doc.before) && Array.isArray(doc.after) && path !== 'variable_pricings') {
-    return { kind: 'set_updated', path: rewritten, items: computeArrayDiff(doc.before, doc.after) }
+    return {
+      kind: 'set_updated',
+      change_id: doc._id,
+      path: rewritten,
+      items: computeArrayDiff(doc.before, doc.after),
+    }
   }
 
   // field added or removed on an existing entity
-  if (doc.before === undefined) return { kind: 'field_added', path: rewritten, value: doc.after }
-  if (doc.after === undefined) return { kind: 'field_removed', path: rewritten, value: doc.before }
+  if (doc.before === undefined) {
+    return { kind: 'field_added', change_id: doc._id, path: rewritten, value: doc.after }
+  }
+  if (doc.after === undefined) {
+    return { kind: 'field_removed', change_id: doc._id, path: rewritten, value: doc.before }
+  }
 
   // scalar value updated
-  return { kind: 'field_updated', path: rewritten, before: doc.before, after: doc.after }
+  return {
+    kind: 'field_updated',
+    change_id: doc._id,
+    path: rewritten,
+    before: doc.before,
+    after: doc.after,
+  }
 }
 
-// * Transform a single change doc
+// * Entity identity key — for grouping field updates by entity
 
-export function transformChange(doc: Doc<'or_views_changes'>): ORCAChange {
-  const action = buildAction(doc)
-  const base = { change_id: doc._id, crawl_id: doc.crawl_id, action }
+function entityKey(doc: Doc<'or_views_changes'>): string {
+  if (doc.entity_type === 'provider') return `provider:${doc.provider_slug}`
+  if (doc.entity_type === 'model') return `model:${doc.model_slug}`
+  return `endpoint:${doc.endpoint_uuid}`
+}
+
+// * Ref enrichment helpers
+//
+// Convex caches indexed queries for the lifetime of a query function, so
+// repeated lookups for the same entity are free. No manual dedup needed.
+
+async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
+  const m = await getModel(ctx, slug)
+  if (!m) return { slug }
+  const description = (await getModelDescription(ctx, slug)) ?? undefined
+  return {
+    slug,
+    name: m.name,
+    description,
+    input_modalities: m.input_modalities,
+    output_modalities: m.output_modalities,
+    reasoning: m.reasoning,
+    warning_message: m.warning_message,
+    promotion_message: m.promotion_message,
+  }
+}
+
+async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderRef> {
+  // provider tag slugs may include a variant suffix (e.g. "deepinfra/fp4")
+  const baseSlug = baseProviderSlug(slug)
+  const p = await getProvider(ctx, baseSlug)
+  if (!p) return { slug }
+  return { slug, name: p.name }
+}
+
+async function enrichEndpointRef(ctx: QueryCtx, uuid: string): Promise<EndpointRef> {
+  const ep = await getEndpoint(ctx, uuid)
+  if (!ep) return { uuid }
+  return { uuid, context_length: ep.context_length, max_output: ep.max_output, pricing: ep.pricing }
+}
+
+// * Build an enriched EntityChange from a doc + event
+
+async function toEntityChange(
+  ctx: QueryCtx,
+  doc: Doc<'or_views_changes'>,
+  event: EntityEvent,
+): Promise<EntityChange> {
+  const crawl_id = doc.crawl_id
 
   if (doc.entity_type === 'provider') {
-    return { ...base, entity_type: 'provider', provider: { slug: doc.provider_slug } }
+    return {
+      crawl_id,
+      event,
+      entity_type: 'provider',
+      provider: await enrichProviderRef(ctx, doc.provider_slug),
+    }
   }
-
   if (doc.entity_type === 'model') {
-    return { ...base, entity_type: 'model', model: { slug: doc.model_slug } }
+    return {
+      crawl_id,
+      event,
+      entity_type: 'model',
+      model: await enrichModelRef(ctx, doc.model_slug),
+    }
   }
-
-  // endpoint — provider_tag_slug is the full provider id (may include variant suffix)
   return {
-    ...base,
+    crawl_id,
+    event,
     entity_type: 'endpoint',
-    model: { slug: doc.model_slug },
-    provider: { slug: doc.provider_tag_slug },
-    endpoint: { uuid: doc.endpoint_uuid },
+    model: await enrichModelRef(ctx, doc.model_slug),
+    provider: await enrichProviderRef(ctx, doc.provider_tag_slug),
+    endpoint: await enrichEndpointRef(ctx, doc.endpoint_uuid),
   }
 }
 
-// * Ref enrichment — batch-load entities and populate optional ref fields
+// * Build enriched EntityChange[] from filtered docs
+//
+// Lifecycle docs (create/delete) each produce a standalone EntityChange.
+// Update docs are grouped by entity, producing one entity_updated per entity.
+// Refs are enriched inline — Convex's query cache makes repeated lookups free.
 
-async function enrichRefs(ctx: QueryCtx, changes: ORCAChange[]): Promise<ORCAChange[]> {
-  // collect unique keys
-  const modelSlugs = new Set<string>()
-  const providerSlugs = new Set<string>()
-  const endpointUuids = new Set<string>()
+async function buildEntityChanges(
+  ctx: QueryCtx,
+  docs: Doc<'or_views_changes'>[],
+): Promise<EntityChange[]> {
+  const result: EntityChange[] = []
+  const updatesByEntity = new Map<string, Doc<'or_views_changes'>[]>()
 
-  for (const c of changes) {
-    if (c.entity_type === 'model') modelSlugs.add(c.model.slug)
-    if (c.entity_type === 'provider') providerSlugs.add(c.provider.slug)
-    if (c.entity_type === 'endpoint') {
-      modelSlugs.add(c.model.slug)
-      providerSlugs.add(c.provider.slug)
-      endpointUuids.add(c.endpoint.uuid)
+  for (const doc of docs) {
+    // lifecycle events are standalone — one doc, one EntityChange
+    if (doc.change_kind === 'create') {
+      result.push(await toEntityChange(ctx, doc, { kind: 'entity_available', change_id: doc._id }))
+      continue
     }
+    if (doc.change_kind === 'delete') {
+      result.push(
+        await toEntityChange(ctx, doc, { kind: 'entity_unavailable', change_id: doc._id }),
+      )
+      continue
+    }
+
+    // field updates bucket by entity
+    const key = entityKey(doc)
+    const bucket = updatesByEntity.get(key)
+    if (bucket) bucket.push(doc)
+    else updatesByEntity.set(key, [doc])
   }
 
-  // batch load
-  const [modelEntries, descriptionEntries, providerEntries, endpointEntries] = await Promise.all([
-    Promise.all([...modelSlugs].map(async (s) => [s, await getModel(ctx, s)] as const)),
-    Promise.all([...modelSlugs].map(async (s) => [s, await getModelDescription(ctx, s)] as const)),
-    Promise.all([...providerSlugs].map(async (s) => [s, await getProvider(ctx, s)] as const)),
-    Promise.all([...endpointUuids].map(async (u) => [u, await getEndpoint(ctx, u)] as const)),
-  ])
+  // each bucket becomes one entity_updated event
+  for (const [, bucket] of updatesByEntity) {
+    const fields = bucket.map(buildFieldChange)
+    result.push(await toEntityChange(ctx, bucket[0]!, { kind: 'entity_updated', fields }))
+  }
 
-  const models = new Map(modelEntries)
-  const descriptions = new Map(descriptionEntries)
-  const providers = new Map(providerEntries)
-  const endpoints = new Map(endpointEntries)
-
-  // populate refs
-  return changes.map((c) => {
-    if (c.entity_type === 'model') {
-      const m = models.get(c.model.slug)
-      if (!m) return c
-      return {
-        ...c,
-        model: {
-          slug: c.model.slug,
-          name: m.name,
-          description: descriptions.get(c.model.slug) ?? undefined,
-          input_modalities: m.input_modalities,
-          output_modalities: m.output_modalities,
-          reasoning: m.reasoning,
-          warning_message: m.warning_message,
-          promotion_message: m.promotion_message,
-        },
-      }
-    }
-
-    if (c.entity_type === 'provider') {
-      const p = providers.get(c.provider.slug)
-      if (!p) return c
-      return { ...c, provider: { slug: c.provider.slug, name: p.name } }
-    }
-
-    if (c.entity_type === 'endpoint') {
-      const m = models.get(c.model.slug)
-      const p = providers.get(c.provider.slug)
-      const ep = endpoints.get(c.endpoint.uuid)
-      return {
-        ...c,
-        model: m ? { slug: c.model.slug, name: m.name } : c.model,
-        provider: p ? { slug: c.provider.slug, name: p.name } : c.provider,
-        endpoint: ep
-          ? {
-              uuid: c.endpoint.uuid,
-              context_length: ep.context_length,
-              max_output: ep.max_output,
-              pricing: ep.pricing,
-            }
-          : c.endpoint,
-      }
-    }
-
-    return c
-  })
+  return result
 }
 
 // * Public API
 
 const EXCLUDED_PATHS = ['variable_pricings']
 
-export async function getByCrawlId(ctx: QueryCtx, crawl_id: string): Promise<ORCAChange[]> {
+function filterDocs(docs: Doc<'or_views_changes'>[]) {
+  return docs.filter(
+    (doc) =>
+      (!doc.path_level_1 || !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
+      (!doc.path || !EXCLUDED_PATHS.includes(doc.path)),
+  )
+}
+
+export async function getByCrawlId(ctx: QueryCtx, crawl_id: string): Promise<EntityChange[]> {
   const docs = await ctx.db
     .query('or_views_changes')
     .withIndex('by_crawl_id', (q) => q.eq('crawl_id', crawl_id))
     .collect()
 
-  const filtered = docs.filter(
-    (doc) =>
-      (!doc.path_level_1 || !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
-      (!doc.path || !EXCLUDED_PATHS.includes(doc.path)),
-  )
-
-  const changes = filtered.map(transformChange)
-  return enrichRefs(ctx, changes)
+  return buildEntityChanges(ctx, filterDocs(docs))
 }

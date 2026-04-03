@@ -52,6 +52,7 @@ import type * as providers from "../providers.js";
 import type * as public_api_preview_v1 from "../public_api/preview_v1.js";
 import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
 import type * as shared_formatters from "../shared/formatters.js";
+import type * as shared_groups from "../shared/groups.js";
 import type * as shared_logos from "../shared/logos.js";
 import type * as shared_utils from "../shared/utils.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "public_api/preview_v1": typeof public_api_preview_v1;
   "public_api/preview_v2": typeof public_api_preview_v2;
   "shared/formatters": typeof shared_formatters;
+  "shared/groups": typeof shared_groups;
   "shared/logos": typeof shared_logos;
   "shared/utils": typeof shared_utils;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
