@@ -23,22 +23,12 @@ export function LabeledBox({
 }
 ```
 
-## Target Audience
-
-ORCA serves highly technical users who work with OpenRouter and LLMs professionally:
-
-- Deep understanding of AI model concepts (variables, parameters, context lengths, quantization)
-- Interested in comprehensive pricing details (cache reads, reasoning tokens, structured outputs)
-- Value technical precision over "friendly" explanations
-- Will copy/paste values (model slugs, API parameters) directly into their code
-
 ## Design Philosophy
 
 - Stylish technical aesthetic.
 - Dark, monochromatic, functional, and practical UI.
-- Dense, rich and data heavy, tabular elements. Minimal 'marketing' style elements.
-- Brand logos and badges add splashes of color.
-- Avoid excessive padding, border radius, and shadows.
+- Dense, rich and data heavy.
+- Minimal 'marketing' style elements.
 - Heavy use of monospace font used for data display and aesthetic flourish.
 - Primarily intended for desktop usage. Mobile optimization is a low priority.
 
@@ -58,7 +48,8 @@ ORCA serves highly technical users who work with OpenRouter and LLMs professiona
 ```
 
 - Intelligently apply classes like `font-mono` at a component root level, rather than specifying on all sub-elements.
-- Do not add custom padding, font/text size, or SVG icon size classes to shadcn components - they are already handled by the theme.
+- Do not add custom padding, font/text size, or SVG icon size classes to `shadcn-ui` components.
+- All `lucide-icons` already have `aria-hidden="true"` set by default.
 
 ### Structure
 
