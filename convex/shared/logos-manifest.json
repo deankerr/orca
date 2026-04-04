@@ -1080,6 +1080,12 @@
       "background": "#fff",
       "scale": 0.75
     },
+    "mara": {
+      "slug": "mara",
+      "title": "Mara",
+      "background": "",
+      "scale": 1
+    },
     "mastra": {
       "slug": "mastra",
       "title": "Mastra",
