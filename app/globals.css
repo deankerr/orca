@@ -1,16 +1,18 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 @import './typography.css';
 @import './radix-colors.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-foreground-dim: var(--foreground-dim);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -42,35 +44,19 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 
-  --color-warning: var(--color-yellow-500);
-  --color-info: var(--color-blue-500);
-  --color-alert: var(--alert);
-  --color-alert-foreground: var(--alert-foreground);
-
-  --color-positive: var(--positive);
-  --color-positive-foreground: var(--positive-foreground);
-  --color-positive-soft: var(--positive-soft);
   --color-positive-soft-foreground: var(--positive-soft-foreground);
-  --color-positive-surface: var(--positive-surface);
-  --color-positive-surface-foreground: var(--positive-surface-foreground);
-  --color-positive-surface-border: var(--positive-surface-border);
-  --color-positive-outline: var(--positive-outline);
-  --color-positive-outline-border: var(--positive-outline-border);
-
-  --color-negative: var(--negative);
-  --color-negative-foreground: var(--negative-foreground);
-  --color-negative-soft: var(--negative-soft);
   --color-negative-soft-foreground: var(--negative-soft-foreground);
-  --color-negative-surface: var(--negative-surface);
-  --color-negative-surface-foreground: var(--negative-surface-foreground);
-  --color-negative-surface-border: var(--negative-surface-border);
-  --color-negative-outline: var(--negative-outline);
-  --color-negative-outline-border: var(--negative-outline-border);
+  --color-highlight: var(--color-gold-2);
+
   --animate-skeleton: skeleton 2s -1s infinite linear;
 
   @keyframes skeleton {
@@ -78,16 +64,53 @@
       background-position: -200% 0;
     }
   }
-
-  --color-highlight: var(--color-gold-2);
 }
 
 :root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --muted-hover: oklch(0.198 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --border-solid: oklch(0.32 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
   --radius: 0.45rem;
-  --background: oklch(0.15 0 0);
+
+  --positive-soft-foreground: var(--color-green-400);
+  --negative-soft-foreground: var(--color-red-400);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.9 0 0);
+  --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
@@ -96,20 +119,17 @@
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --muted-hover: oklch(0.198 0 0);
-  --foreground-dim: oklch(0.8 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 20%);
-  --border-solid: oklch(0.32 0 0);
+  --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(64.3% 0.186 250.77);
-  --chart-2: oklch(72% 0.146 167.51);
-  --chart-3: oklch(82.3% 0.123 61.23);
-  --chart-4: oklch(67.2% 0.246 328.44);
-  --chart-5: oklch(75.1% 0.163 69.38);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -118,29 +138,6 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-
-  --alert: oklch(0.56 0.12 49);
-  --alert-foreground: oklch(0.985 0 0);
-
-  --positive: var(--color-green-600);
-  --positive-foreground: var(--color-green-50);
-  --positive-soft: var(--color-green-950);
-  --positive-soft-foreground: var(--color-green-400);
-  --positive-surface: oklch(26.6% 0.065 152.934 / 30%); /* 950 */
-  --positive-surface-foreground: var(--color-green-400);
-  --positive-surface-border: oklch(79.2% 0.209 151.711 / 30%); /* 400 */
-  --positive-outline: var(--color-green-400);
-  --positive-outline-border: var(--color-green-400);
-
-  --negative: var(--color-red-600);
-  --negative-foreground: var(--color-red-50);
-  --negative-soft: var(--color-red-950);
-  --negative-soft-foreground: var(--color-red-400);
-  --negative-surface: oklch(25.8% 0.092 26.042 / 30%); /* 950 */
-  --negative-surface-foreground: var(--color-red-400);
-  --negative-surface-border: oklch(70.4% 0.191 22.216 / 30%); /* 400 */
-  --negative-outline: var(--color-red-400);
-  --negative-outline-border: var(--color-red-400);
 }
 
 @layer base {
@@ -148,10 +145,11 @@
     @apply border-border outline-ring/50;
   }
   html {
+    @apply font-sans;
     color-scheme: dark;
   }
   body {
-    @apply relative isolate bg-background text-foreground;
+    @apply relative bg-background text-foreground;
   }
 
   /* Custom text selection color */

@@ -24,10 +24,15 @@ export function EndpointUuidPopoverContent({
     <PopoverCardContent>
       <PopoverCardTitle>
         Endpoint UUID
-        <Button variant="ghost" size="icon-sm" className="size-5" asChild>
-          <Link href={endpointUrl}>
-            <LinkIcon className="size-3" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="size-5"
+          render={<Link href={endpointUrl} />}
+          nativeButton={false}
+          aria-label="Open endpoint details"
+        >
+          <LinkIcon className="size-3" />
         </Button>
       </PopoverCardTitle>
       <Button

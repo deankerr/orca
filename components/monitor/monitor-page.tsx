@@ -7,7 +7,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 
 import { PageLoading } from '../app-layout/pages'
-import { ScrollArea } from '../ui/scroll-area'
 import { flattenMonitorFeed, MonitorFeedRowItem } from './crawl-batch'
 import { FilterBar } from './filter-bar'
 import { useMonitor } from './use-monitor'
@@ -37,7 +36,7 @@ export function MonitorPage() {
     <>
       <FilterBar filters={filters} />
 
-      <ScrollArea className="flex-1" viewportRef={viewportRef}>
+      <div ref={viewportRef} className="flex-1 overflow-y-auto">
         {feedRows.length > 0 ? (
           <>
             <div className="relative w-full" style={{ height: totalSize }}>
@@ -79,7 +78,7 @@ export function MonitorPage() {
             )}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </>
   )
 }
