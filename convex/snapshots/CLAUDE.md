@@ -20,7 +20,7 @@ Write the core logic as a plain function that takes inputs and returns outputs. 
 
 ```typescript
 // Good: pure function, easy to test and reuse
-export function buildProducts(args: { changes, subscriptions, crawl_id }): Delivery[] {
+export function buildProducts(args: { changes, subscriptions, crawl_id }): Product[] {
   // all the logic here
 }
 
