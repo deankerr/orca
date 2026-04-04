@@ -1,6 +1,6 @@
 {
   "name": "orca",
-  "version": "41.0.0",
+  "version": "42.0.0",
   "private": true,
   "scripts": {
     "dev:next": "next dev --turbopack --port 3020",
