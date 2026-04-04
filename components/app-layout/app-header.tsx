@@ -20,7 +20,7 @@ export function AppHeader() {
   const pathname = usePathname()
   return (
     <header className="border-b px-4 md:px-6">
-      <div className="flex h-16 items-center justify-between gap-4">
+      <div className="flex h-12 items-center justify-between gap-4">
         {/* Left side */}
         <div className="flex items-center gap-6">
           <Link href="/" className="font-mono font-medium text-primary hover:text-primary/90">
@@ -34,11 +34,11 @@ export function AppHeader() {
                 return (
                   <NavigationMenuItem key={index}>
                     <NavigationMenuLink
-                      asChild
                       active={isActive}
-                      className="py-1.5 font-medium text-muted-foreground hover:text-primary"
+                      render={<Link href={link.href} />}
+                      className="font-medium"
                     >
-                      <Link href={link.href}>{link.label}</Link>
+                      {link.label}
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                 )

@@ -58,6 +58,7 @@ ORCA serves highly technical users who work with OpenRouter and LLMs professiona
 ```
 
 - Intelligently apply classes like `font-mono` at a component root level, rather than specifying on all sub-elements.
+- Do not add custom padding, font/text size, or SVG icon size classes to shadcn components - they are already handled by the theme.
 
 ### Structure
 

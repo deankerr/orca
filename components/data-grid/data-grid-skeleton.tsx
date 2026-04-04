@@ -1,6 +1,6 @@
 import { Column } from '@tanstack/react-table'
 
-import { Skeleton } from '@/components/ui/skeleton'
+import { Shimmer } from '@/components/shared/shimmer'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
@@ -23,7 +23,7 @@ function DataGridSkeletonCell<TData>({
       className={cn('flex shrink-0 items-center px-2.5', cellBorder && !isLast && 'border-e')}
       style={{ width }}
     >
-      <Skeleton className="h-5 w-full" />
+      <Shimmer className="h-5 w-full" />
     </div>
   )
 }

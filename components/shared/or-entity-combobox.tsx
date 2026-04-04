@@ -12,7 +12,6 @@ import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { EntityBadge, EntityBadgeSkeleton } from './entity-badge'
@@ -111,16 +110,20 @@ function EntityCombobox({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listboxId}
-          className={cn('text-left', className)}
-          size="lg"
-          {...props}
-        >
+      <PopoverTrigger
+        aria-expanded={open}
+        aria-controls={listboxId}
+        render={
+          <Button
+            variant="outline"
+            role="combobox"
+            className={cn('text-left', className)}
+            size="lg"
+            {...props}
+          />
+        }
+      >
+        <>
           {selected ? (
             <EntityBadge
               name={selected.name}
@@ -133,7 +136,7 @@ function EntityCombobox({
           ) : (
             <span className="w-full text-muted-foreground">{placeholder}</span>
           )}
-        </Button>
+        </>
       </PopoverTrigger>
 
       <PopoverContent className="w-[300px] overflow-hidden p-0" align="start">
@@ -222,7 +225,7 @@ function VirtualizedEntityList({
   })
 
   return (
-    <ScrollArea className="h-[300px]" viewportRef={scrollRef}>
+    <div ref={scrollRef} className="h-[300px] overflow-y-auto">
       <div className="relative py-1" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const item = items[virtualRow.index]
@@ -252,6 +255,6 @@ function VirtualizedEntityList({
           )
         })}
       </div>
-    </ScrollArea>
+    </div>
   )
 }

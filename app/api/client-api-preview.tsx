@@ -25,12 +25,18 @@ export function ClientApiPreview({ apiUrl }: { apiUrl: string }) {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-4 overflow-hidden p-6">
       <Item variant="outline">
-        <ItemContent className="min-h-12">
+        <ItemContent>
           <ItemTitle>Preview V2</ItemTitle>
-          <code className="font-mono text-sm">{apiUrl}</code>
+          <code className="font-mono text-xs break-all">{apiUrl}</code>
         </ItemContent>
-        <ItemActions className="shrink-0 self-start sm:self-center">
-          <CopyToClipboardButton value={apiUrl} size="sm" variant="secondary" disabled={!apiUrl} />
+        <ItemActions>
+          <CopyToClipboardButton
+            value={apiUrl}
+            size="icon"
+            variant="secondary"
+            disabled={!apiUrl}
+            aria-label="Copy API URL"
+          />
         </ItemActions>
       </Item>
 

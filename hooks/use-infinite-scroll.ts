@@ -24,9 +24,9 @@ interface UseInfiniteScrollOptions {
  *   threshold: 400,
  * })
  *
- * <ScrollArea viewportRef={viewportRef}>
+ * <div ref={viewportRef} className="overflow-y-auto">
  *   <div>Content here...</div>
- * </ScrollArea>
+ * </div>
  * ```
  */
 export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteScrollOptions) {

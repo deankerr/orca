@@ -12,6 +12,7 @@ export function CopyToClipboardButton({
   ...props
 }: { value: string } & React.ComponentProps<typeof Button>) {
   const [copied, setCopied] = useState(false)
+  const ariaLabel = props['aria-label'] ?? (!children ? 'Copy to clipboard' : undefined)
 
   const handleCopy = async () => {
     try {
@@ -24,8 +25,8 @@ export function CopyToClipboardButton({
   }
 
   return (
-    <Button onClick={handleCopy} {...props}>
-      {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />} {children}
+    <Button onClick={handleCopy} aria-label={ariaLabel} {...props}>
+      {copied ? <CheckIcon /> : <CopyIcon />} {children}
     </Button>
   )
 }

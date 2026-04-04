@@ -103,10 +103,14 @@ function ArchiveCard({ archive }: { archive: Doc<'snapshot_crawl_archives'> }) {
               {archive.crawl_id}
             </CopyToClipboardButton>
 
-            <Button asChild variant="outline" size="icon-sm">
-              <Link href={downloadUrl} prefetch={false}>
-                <Download />
-              </Link>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              render={<Link href={downloadUrl} prefetch={false} />}
+              nativeButton={false}
+              aria-label="Download archive bundle"
+            >
+              <Download />
             </Button>
           </div>
         </div>

@@ -8,7 +8,6 @@ import { InboxIcon } from 'lucide-react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
@@ -347,7 +346,7 @@ function DataGridTableRowSelect<TData>({ row }: { row: Row<TData> }) {
       ></div>
       <Checkbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onCheckedChange={(value) => row.toggleSelected(value)}
         aria-label="Select row"
         className="align-[inherit]"
       />
@@ -360,11 +359,10 @@ function DataGridTableRowSelectAll() {
 
   return (
     <Checkbox
-      checked={
-        table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')
-      }
+      checked={table.getIsAllPageRowsSelected()}
+      indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
       disabled={isLoading || recordCount === 0}
-      onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      onCheckedChange={(value) => table.toggleAllPageRowsSelected(value)}
       aria-label="Select all"
       className="align-[inherit]"
     />
@@ -399,12 +397,7 @@ function DataGridTableVirtual<TData>() {
     virtualRows.length > 0 ? totalSize - virtualRows[virtualRows.length - 1].end : 0
 
   return (
-    <ScrollArea
-      viewportRef={scrollElementRef}
-      className="flex-1"
-      viewportClassName="flex overscroll-none"
-      maskHeight={0}
-    >
+    <div ref={scrollElementRef} className="flex-1 overflow-auto overscroll-none">
       <DataGridTableBase>
         <DataGridTableHead>
           {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => {
@@ -469,8 +462,7 @@ function DataGridTableVirtual<TData>() {
           )}
         </DataGridTableBody>
       </DataGridTableBase>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   )
 }
 

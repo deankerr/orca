@@ -33,8 +33,8 @@ export function ModalityFilterControls() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">
+      <PopoverTrigger render={<Button variant="outline" />}>
+        <>
           <LayoutGridIcon />
           Modalities
           {activeModalityCount > 0 && (
@@ -42,7 +42,7 @@ export function ModalityFilterControls() {
               {activeModalityCount}
             </span>
           )}
-        </Button>
+        </>
       </PopoverTrigger>
 
       <PopoverContent className="w-[min(100vw-2rem,410px)]" align="start">
@@ -82,6 +82,7 @@ export function AttributeFilterControls() {
   // Helper to render an attribute filter toggle
   const renderAttributeToggle = (name: AttributeKey) => (
     <FilterToggle
+      key={name}
       icon={attributes[name].icon}
       label={attributes[name].label}
       mode={attributeFilters[name] ?? 'any'}
@@ -91,8 +92,8 @@ export function AttributeFilterControls() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">
+      <PopoverTrigger render={<Button variant="outline" />}>
+        <>
           <FilterIcon />
           Attributes
           {activeAttributeCount > 0 && (
@@ -100,7 +101,7 @@ export function AttributeFilterControls() {
               {activeAttributeCount}
             </span>
           )}
-        </Button>
+        </>
       </PopoverTrigger>
 
       <PopoverContent className="w-[min(100vw-2rem,520px)]" align="start">
