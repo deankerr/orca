@@ -72,7 +72,7 @@ const FAKE_ENDPOINT: ORCAEndpoint = {
     author_name: 'ORCA',
     or_added_at: Date.now(),
     input_modalities: ['text', 'image', 'file', 'audio'],
-    output_modalities: ['text', 'image'],
+    output_modalities: ['text', 'image', 'audio', 'video'],
     reasoning: true,
   },
   provider: {

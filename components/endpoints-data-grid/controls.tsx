@@ -2,7 +2,8 @@ import { XIcon } from 'lucide-react'
 
 import { SearchInput } from '../shared/search-input'
 import { Button } from '../ui/button'
-import { AttributeFilterControls, ModalityFilterControls } from './attribute-filter-controls'
+import { AttributeFilterMenu } from './attribute-filter-menu'
+import { ModalityFilterMenu } from './modality-filter-menu'
 import { useEndpointFilters } from './use-endpoint-filters'
 
 function EndpointsSearchInput() {
@@ -32,14 +33,14 @@ export function DataGridControls() {
     hasActiveAttributeFilters || hasActiveModalityFilters || hasActiveSorting || !!highlightUuid
 
   return (
-    <div className="flex items-center gap-2 px-3 py-4">
+    <div className="flex items-center gap-1.5 px-3 py-3">
       <EndpointsSearchInput />
-      <ModalityFilterControls />
-      <AttributeFilterControls />
+      <ModalityFilterMenu />
+      <AttributeFilterMenu />
 
       {hasAnyFilter && (
-        <Button variant="secondary" onClick={clearAllFilters}>
-          <XIcon />
+        <Button variant="secondary" size="sm" onClick={clearAllFilters}>
+          <XIcon data-icon="inline-start" />
           Clear
         </Button>
       )}

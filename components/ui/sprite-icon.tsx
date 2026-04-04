@@ -33,6 +33,7 @@ export function SpriteIcon({ name, size = 24, ...props }: SpriteIconProps) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden
       {...props}
     >
       <use href={getSpriteUrl(name)} />
