@@ -10,8 +10,6 @@ import {
   NavigationMenuList,
 } from '@/components/ui/navigation-menu'
 
-import { AdminMenu } from './admin-menu'
-
 const navigationLinks = [
   { href: '/', label: 'Endpoints' },
   { href: '/monitor', label: 'Monitor' },
@@ -47,10 +45,6 @@ export function AppHeader() {
               })}
             </NavigationMenuList>
           </NavigationMenu>
-        </div>
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          <AdminMenu />
         </div>
       </div>
     </header>
