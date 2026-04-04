@@ -35,11 +35,10 @@ ORCA serves highly technical users who work with OpenRouter and LLMs professiona
 ## Design Philosophy
 
 - Stylish technical aesthetic.
-- Directly inspired by Vercel, shadcn.com, and Radix Themes.
 - Dark, monochromatic, functional, and practical UI.
 - Dense, rich and data heavy, tabular elements. Minimal 'marketing' style elements.
 - Brand logos and badges add splashes of color.
-- Avoid excessive padding, border radius (most elements use `rounded-sm`), and shadows.
+- Avoid excessive padding, border radius, and shadows.
 - Heavy use of monospace font used for data display and aesthetic flourish.
 - Primarily intended for desktop usage. Mobile optimization is a low priority.
 
@@ -91,7 +90,7 @@ Example: DataList exports `DataList`, `DataListItem`, `DataListLabel`, `DataList
 
 - ONLY when a page is reading search params with nuqs, e.g. `useQueryState`, the client component page must be wrapped in `<Suspense>` in the server-side `page.tsx`. No fallback is required, as there is no actual wait for any external data.
 
-# Web Development Framework Updates for 2025
+# Web Development Framework Updates for 2026
 
 ## React 19 - Major Changes
 
@@ -176,23 +175,6 @@ export default async function Page({
   const { query } = await searchParams
   return <h1>{slug}</h1>
 }
-```
-
-### Caching Defaults Inverted (Breaking Change)
-
-Requests are now uncached by default, opposite of Next.js 14.
-
-```typescript
-// Next.js 15 - Uncached by default
-const data = await fetch('https://api.example.com/data')
-
-// Next.js 15 - Opt into caching
-const data = await fetch('https://api.example.com/data', {
-  cache: 'force-cache',
-})
-
-// Route-level caching configuration
-export const fetchCache = 'default-cache'
 ```
 
 ### Enhanced TypeScript Support
@@ -298,16 +280,6 @@ emojiRegex.test('🧑‍💻') // true
 const excludeDigits = /^[\p{Letter}--[a-f]]$/v
 excludeDigits.test('g') // true
 excludeDigits.test('a') // false
-```
-
-### String Well-Formed Unicode Methods
-
-Checks and ensures strings contain only well-formed Unicode sequences.
-
-```javascript
-'hello'.isWellFormed() // true
-'\uD800test'.isWellFormed() // false (lone surrogate)
-'\uD800test'.toWellFormed() // "�test" (replaces with replacement char)
 ```
 
 ## CSS Baseline Newly Available (2023-2025)
