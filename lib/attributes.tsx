@@ -551,6 +551,18 @@ export const attributes = defineAttributes({
     },
   },
 
+  audio_output: {
+    key: 'audio_output',
+    icon: 'audio-lines',
+    label: 'Audio Output',
+    description: 'Generates audio inline in the completion response.',
+    color: 'fuchsia',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('audio') ?? false,
+    }),
+  },
+
   video_input: {
     key: 'video_input',
     icon: 'video',
@@ -560,6 +572,18 @@ export const attributes = defineAttributes({
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
     resolve: (endpoint) => ({
       active: endpoint.model?.input_modalities?.includes('video') ?? false,
+    }),
+  },
+
+  video_output: {
+    key: 'video_output',
+    icon: 'video',
+    label: 'Video Output',
+    description: 'Generates video inline in the completion response.',
+    color: 'emerald',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('video') ?? false,
     }),
   },
 

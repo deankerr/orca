@@ -7,7 +7,12 @@ export const endpointModalityInputAttributes = [
   'video_input',
 ] as const
 
-export const endpointModalityOutputAttributes = ['image_output', 'embeddings_output'] as const
+export const endpointModalityOutputAttributes = [
+  'image_output',
+  'audio_output',
+  'video_output',
+  'embeddings_output',
+] as const
 
 export const endpointModalityAttributes = [
   'image_input',
@@ -15,6 +20,8 @@ export const endpointModalityAttributes = [
   'audio_input',
   'video_input',
   'image_output',
+  'audio_output',
+  'video_output',
   'embeddings_output',
 ] as const
 
@@ -47,6 +54,8 @@ export const endpointAttributeSets = {
     ['audio_input'],
     ['video_input'],
     ['image_output'],
+    ['audio_output'],
+    ['video_output'],
     ['embeddings_output'],
   ],
   features: [
