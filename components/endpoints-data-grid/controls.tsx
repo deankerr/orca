@@ -11,11 +11,11 @@ function EndpointsSearchInput() {
 
   return (
     <SearchInput
+      aria-label="Search models/providers"
+      className="w-52 shrink-0"
       value={globalFilter}
       onValueChange={setGlobalFilter}
-      label="Search models/providers..."
       placeholder="Search models/providers..."
-      hideLabel
     />
   )
 }
@@ -33,7 +33,7 @@ export function DataGridControls() {
     hasActiveAttributeFilters || hasActiveModalityFilters || hasActiveSorting || !!highlightUuid
 
   return (
-    <div className="flex items-center gap-1.5 px-3 py-3">
+    <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-3">
       <EndpointsSearchInput />
       <ModalityFilterMenu />
       <AttributeFilterMenu />
