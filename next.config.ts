@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next'
 
-import bundleAnalyzer from '@next/bundle-analyzer'
 import { withPostHogConfig } from '@posthog/nextjs-config'
 
 import { getConvexHttpUrl } from './lib/utils'
@@ -49,10 +48,6 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 }
 
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-})
-
 // sourcemap uploads require PostHog credentials, skip entirely in local dev
 const withPostHog = process.env.POSTHOG_PROJECT_ID
   ? (config: NextConfig) =>
@@ -65,4 +60,4 @@ const withPostHog = process.env.POSTHOG_PROJECT_ID
       })
   : (config: NextConfig) => config
 
-export default withBundleAnalyzer(withPostHog(nextConfig))
+export default withPostHog(nextConfig)
