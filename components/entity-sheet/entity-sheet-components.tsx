@@ -35,7 +35,7 @@ export function EntitySheetSection({
   children?: React.ReactNode
 } & React.ComponentProps<'div'>) {
   return (
-    <div className={cn('space-y-2 px-4', className)} {...props}>
+    <div className={cn('space-y-2', className)} {...props}>
       <div className="flex items-center justify-between font-mono text-xs text-muted-foreground uppercase">
         <div>{title}</div>
         <div className="flex items-center gap-2">

@@ -22,8 +22,11 @@ export function AppHeader() {
     <header className="border-b px-4 md:px-6">
       <div className="flex h-12 items-center justify-between gap-4">
         {/* Left side */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="font-mono font-medium text-primary hover:text-primary/90">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="font-mono text-sm font-medium text-primary hover:text-primary/90"
+          >
             ORCA
           </Link>
 

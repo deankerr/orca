@@ -45,7 +45,7 @@ function PopoverCardContent({
         <Popover.Popup
           data-slot="popover-card-content"
           className={cn(
-            'origin-[var(--transform-origin)] rounded-lg bg-[canvas] px-4 py-3 text-foreground shadow-lg outline outline-border dark:-outline-offset-1',
+            'origin-[var(--transform-origin)] rounded-lg bg-popover px-4 py-3 text-foreground shadow-lg outline outline-border dark:-outline-offset-1',
             className,
           )}
           {...props}

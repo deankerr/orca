@@ -34,7 +34,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 85,
+    size: 75,
     enableSorting: false,
     meta: {
       headerTitle: 'UUID',
@@ -56,12 +56,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
         </EntitySheetTrigger>
       )
     },
-    size: 260,
+    size: 230,
     sortingFn: fuzzySort,
     enableHiding: false,
 
     meta: {
       headerTitle: 'Model',
+      cellClassName: 'px-3',
     },
   },
 
@@ -79,11 +80,12 @@ export const columns: ColumnDef<EndpointRow>[] = [
         </EntitySheetTrigger>
       )
     },
-    size: 230,
+    size: 200,
     sortingFn: fuzzySort,
     enableHiding: false,
     meta: {
       headerTitle: 'Provider',
+      cellClassName: 'px-3',
     },
   },
 
@@ -104,7 +106,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 90,
+    size: 75,
     enableHiding: true,
     meta: {
       headerTitle: 'Status',
@@ -132,7 +134,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return <span className="text-muted-foreground">&ndash;</span>
       }
     },
-    size: 120,
+    size: 100,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
@@ -160,7 +162,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return <span className="text-muted-foreground">&ndash;</span>
       }
     },
-    size: 120,
+    size: 100,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
@@ -220,7 +222,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       </div>
     ),
     cell: ({ getValue }) => getValue<number>().toLocaleString(),
-    size: 135,
+    size: 115,
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'Context (TOK)',
@@ -236,7 +238,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       </div>
     ),
     cell: ({ getValue }) => getValue<number | undefined>()?.toLocaleString(),
-    size: 135,
+    size: 115,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
@@ -256,13 +258,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return (
         <Badge
           variant="outline"
-          className="rounded-sm bg-card/50 font-mono text-sm tracking-wide uppercase shadow"
+          className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
         >
           {getValue<string>()}
         </Badge>
       )
     },
-    size: 120,
+    size: 100,
     meta: {
       headerClassName: 'text-center',
       cellClassName: 'text-center px-2',
@@ -288,7 +290,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return <span className="text-muted-foreground">&ndash;</span>
       }
     },
-    size: 125,
+    size: 110,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
@@ -314,7 +316,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return <span className="text-muted-foreground">&ndash;</span>
       }
     },
-    size: 105,
+    size: 110,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-right',
@@ -335,7 +337,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 105,
+    size: 80,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Misc $',
@@ -377,7 +379,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 150,
+    size: 110,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Limits',
@@ -423,7 +425,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return formatDateTime(timestamp).split(' ')[0]
       }
     },
-    size: 135,
+    size: 120,
     sortUndefined: -1,
     meta: {
       cellClassName: 'text-center',

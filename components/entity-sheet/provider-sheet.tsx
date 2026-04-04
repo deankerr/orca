@@ -48,9 +48,9 @@ export function ProviderSheet({ slug }: { slug: string }) {
         <EntitySheetHeader type="provider" slug={provider.slug} name={provider.name} />
       </SheetHeader>
 
-      <div className="flex flex-col gap-6 pb-6 text-sm">
+      <div className="flex flex-col gap-6 px-6 pb-6 text-sm">
         {/* OpenRouter Link */}
-        <div className="flex flex-col items-end gap-1 px-4 text-right">
+        <div className="flex flex-col items-end gap-1 text-right">
           <ExternalLink href={`https://openrouter.ai/provider/${provider.slug}`} />
         </div>
 
