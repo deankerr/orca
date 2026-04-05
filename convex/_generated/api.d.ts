@@ -14,8 +14,7 @@ import type * as admin_postSyncMaintenance from "../admin/postSyncMaintenance.js
 import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
 import type * as analysis_changes from "../analysis/changes.js";
-import type * as analysis_endpoints from "../analysis/endpoints.js";
-import type * as analysis_providers from "../analysis/providers.js";
+import type * as analysis_fields from "../analysis/fields.js";
 import type * as analysis_stats from "../analysis/stats.js";
 import type * as changeBatch from "../changeBatch.js";
 import type * as config from "../config.js";
@@ -80,8 +79,7 @@ declare const fullApi: ApiFromModules<{
   "alerts/dev": typeof alerts_dev;
   "alerts/dispatcher": typeof alerts_dispatcher;
   "analysis/changes": typeof analysis_changes;
-  "analysis/endpoints": typeof analysis_endpoints;
-  "analysis/providers": typeof analysis_providers;
+  "analysis/fields": typeof analysis_fields;
   "analysis/stats": typeof analysis_stats;
   changeBatch: typeof changeBatch;
   config: typeof config;
