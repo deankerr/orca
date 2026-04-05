@@ -21,11 +21,10 @@ export const listArchives = internalQuery({
     fromCrawlId: v.optional(v.string()),
     order: v.optional(literals('asc', 'desc')),
   },
-  handler: async (ctx, args) => {
-    return await ctx.db
+  handler: async (ctx, args) =>
+    ctx.db
       .query('snapshot_crawl_archives')
       .withIndex('by_crawl_id', (q) => q.gte('crawl_id', args.fromCrawlId ?? ''))
       .order(args.order ?? 'asc')
-      .paginate(args.paginationOpts)
-  },
+      .paginate(args.paginationOpts),
 })

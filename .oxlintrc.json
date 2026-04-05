@@ -60,22 +60,27 @@
   },
   "overrides": [
     {
-      "files": [
-        "convex/snapshots/materialize/**/*.{ts,tsx}",
-        "convex/snapshots/materializedChanges/**/*.{ts,tsx}",
-        "convex/db/or/sources.ts"
-      ],
+      "files": ["convex/**/*.{ts,tsx}"],
       "rules": {
-        "typescript/no-unsafe-assignment": "off",
-        "typescript/no-unsafe-member-access": "off",
-        "typescript/no-unsafe-argument": "off",
-        "typescript/no-unsafe-type-assertion": "off",
+        // useful pattern with convex ctx.* functions
+        "promise/prefer-await-to-then": "off",
 
         // convex doesn't support kebab-case
         "unicorn/filename-case": "off",
 
         // incompatible with matching `undefined` in index queries
         "unicorn/no-useless-undefined": "off"
+      }
+    },
+    {
+      "files": ["convex/snapshots/**/*.{ts,tsx}", "convex/db/or/sources.ts"],
+      "rules": {
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/strict-boolean-expressions": "off",
+        "typescript/prefer-nullish-coalescing": "off"
       }
     }
   ]

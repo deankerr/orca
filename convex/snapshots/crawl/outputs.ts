@@ -10,7 +10,5 @@ export const insert = internalMutation({
     data: v.record(v.string(), v.any()),
   },
   returns: db.snapshot.crawl.archives.vTable._id,
-  handler: async (ctx, args) => {
-    return await ctx.db.insert('snapshot_crawl_archives', args)
-  },
+  handler: async (ctx, args) => ctx.db.insert('snapshot_crawl_archives', args),
 })

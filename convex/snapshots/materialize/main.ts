@@ -1,8 +1,9 @@
-import { v, type Infer } from 'convex/values'
+import { v } from 'convex/values'
+import type { Infer } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { db } from '@/convex/db'
+import type { db } from '@/convex/db'
 
 import { internal } from '../../_generated/api'
 import { internalAction } from '../../_generated/server'
@@ -109,9 +110,9 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
 
   // * collect provider sources from bundle
   for (const rawProvider of bundle.data.providers) {
-    const slug = (rawProvider as Record<string, unknown>).slug as string
+    const slug = rawProvider.slug as string
     if (slug && providersMap.has(slug)) {
-      providerSourcesMap.set(slug, rawProvider as Record<string, unknown>)
+      providerSourcesMap.set(slug, rawProvider)
     }
   }
 
@@ -126,13 +127,13 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
   }
 
   return {
-    models: Array.from(modelsMap.values()),
-    endpoints: Array.from(endpointsMap.values()),
-    providers: Array.from(providersMap.values()),
+    models: [...modelsMap.values()],
+    endpoints: [...endpointsMap.values()],
+    providers: [...providersMap.values()],
     sources: {
-      models: Array.from(modelSourcesMap.entries()).map(([key, data]) => ({ key, data })),
-      endpoints: Array.from(endpointSourcesMap.entries()).map(([key, data]) => ({ key, data })),
-      providers: Array.from(providerSourcesMap.entries()).map(([key, data]) => ({ key, data })),
+      models: [...modelSourcesMap.entries()].map(([key, data]) => ({ key, data })),
+      endpoints: [...endpointSourcesMap.entries()].map(([key, data]) => ({ key, data })),
+      providers: [...providerSourcesMap.entries()].map(([key, data]) => ({ key, data })),
     },
     failedModelKeys,
     issues,
