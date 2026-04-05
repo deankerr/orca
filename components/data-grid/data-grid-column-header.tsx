@@ -1,7 +1,6 @@
-import { HTMLAttributes, ReactNode } from 'react'
-
 import { Column } from '@tanstack/react-table'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react'
+import { HTMLAttributes, ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'

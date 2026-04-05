@@ -1,8 +1,7 @@
 'use client'
 
-import { useRef, type ComponentProps } from 'react'
-
 import { CircleXIcon, SearchIcon } from 'lucide-react'
+import { useRef, type ComponentProps } from 'react'
 
 import {
   InputGroup,

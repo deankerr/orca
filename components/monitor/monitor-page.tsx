@@ -1,8 +1,7 @@
 'use client'
 
-import { useCallback } from 'react'
-
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useCallback } from 'react'
 
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 

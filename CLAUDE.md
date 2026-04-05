@@ -2,7 +2,21 @@
 
 ## Commands
 
-- `bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.
+- ~~`bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.~~ **Linter/formatter transition in progress.**
+
+## Lint/Format Stages
+
+Use a staged rollout for the OXC migration. A single PR is acceptable, but a Graphite stack is preferred.
+
+- [x] Stage 1: Replace Prettier with `oxfmt`.
+- [x] Stage 1: Format the repo.
+
+- [ ] Stage 2: Establish an `oxlint` baseline for `convex/`.
+- [ ] Stage 2: Keep the current overrides in place; resolving override-covered issues is not part of this stage.
+
+- [ ] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
+
+- [ ] Stage 4: Remove legacy ESLint only after the OXC flow is stable and intentionally adopted.
 
 ## Overview
 
@@ -138,6 +152,19 @@ All views can be regenerated from archive bundles. This enables:
 - We use an simple ad-hoc structured logging format, e.g. `console.log('[function] optional short message', { someData, otherData })`
 - Optionally use `[function:subFunction]` only when necessary.
 - A single Convex function can emit a total of 256 log messages, with any further being truncated - keep in mind during processing loops.
+
+### Remeda
+
+- Use remeda to write functional code that is compact as easy to read.
+- Import with this conventinon: `import * as R from 'remeda` - full treeshaken, safe to use in the frontend and backend
+- It is maintained by TKDodo, is battle-tested and has excellent type-safety
+- Useful examples: `R.isDefined`, `R.isNonNullish`, `R.chunk`, `R.pickBy`, `R.omitBy`, `R.countBy`
+
+### Validation - zod v4
+
+- Always validate unknown data with `zod` before use.
+- New: `z.codec`, `z.looseObject`, `z.strictObject`, `z.prettifyError`
+- Changes: specific validators like `z.string().url` have been moved to the top level, e.g. `z.url`
 
 <!-- convex-ai-start -->
 

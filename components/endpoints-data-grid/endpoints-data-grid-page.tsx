@@ -1,7 +1,5 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
-
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -9,6 +7,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { SearchXIcon } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 
 import {
   Empty,

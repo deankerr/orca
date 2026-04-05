@@ -1,9 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table'
 
-import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 import { formatDateTime, formatPrice } from '@/lib/formatters'
 

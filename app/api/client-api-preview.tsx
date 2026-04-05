@@ -1,18 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-
 import { convexQuery } from '@convex-dev/react-query'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { codeToHtml } from 'shiki'
-
-import { api } from '@/convex/_generated/api'
 
 import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
 import { Badge } from '@/components/ui/badge'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
+import { api } from '@/convex/_generated/api'
 import { cn } from '@/lib/utils'
 
 export function ClientApiPreview({ apiUrl }: { apiUrl: string }) {

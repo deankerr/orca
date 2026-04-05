@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
-
 import { XCircle } from 'lucide-react'
 import posthog from 'posthog-js'
+import { useEffect } from 'react'
 
 import { PageContainer } from '@/components/app-layout/pages'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'

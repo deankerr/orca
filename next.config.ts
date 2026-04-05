@@ -1,6 +1,5 @@
-import type { NextConfig } from 'next'
-
 import { withPostHogConfig } from '@posthog/nextjs-config'
+import type { NextConfig } from 'next'
 
 import { getConvexHttpUrl } from './lib/utils'
 import pkg from './package.json'
