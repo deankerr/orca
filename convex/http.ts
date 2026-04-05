@@ -2,7 +2,6 @@ import { httpRouter } from 'convex/server'
 
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
-import { bundleSyncHttpHandler } from './admin/bundleSync'
 import { handleInteraction } from './discord/interactions'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
@@ -65,12 +64,6 @@ http.route({
     const result = await ctx.runQuery(api.public_api.preview_v2.getModels, {})
     return Response.json(result)
   }),
-})
-
-http.route({
-  method: 'GET',
-  pathPrefix: '/sync/',
-  handler: bundleSyncHttpHandler,
 })
 
 export default http

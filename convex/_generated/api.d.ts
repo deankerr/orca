@@ -9,8 +9,6 @@
  */
 
 import type * as admin_archives from "../admin/archives.js";
-import type * as admin_bundleSync from "../admin/bundleSync.js";
-import type * as admin_postSyncMaintenance from "../admin/postSyncMaintenance.js";
 import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
 import type * as analysis_changes from "../analysis/changes.js";
@@ -74,8 +72,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "admin/archives": typeof admin_archives;
-  "admin/bundleSync": typeof admin_bundleSync;
-  "admin/postSyncMaintenance": typeof admin_postSyncMaintenance;
   "alerts/dev": typeof alerts_dev;
   "alerts/dispatcher": typeof alerts_dispatcher;
   "analysis/changes": typeof analysis_changes;

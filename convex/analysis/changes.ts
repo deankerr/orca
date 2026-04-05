@@ -1,5 +1,5 @@
-import { getPage } from 'convex-helpers/server/pagination';
-import type { IndexKey } from 'convex-helpers/server/pagination';
+import { getPage } from 'convex-helpers/server/pagination'
+import type { IndexKey } from 'convex-helpers/server/pagination'
 
 import { internalMutation } from '../_generated/server'
 import schema from '../schema'
