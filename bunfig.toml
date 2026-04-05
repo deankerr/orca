@@ -19,7 +19,6 @@ minimumReleaseAgeExcludes = [
   "@types/react",
   "bun-types",
   "convex",
-  "eslint-config-next",
   "eslint-plugin-react-hooks",
   "next",
   "react-dom",

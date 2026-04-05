@@ -20,7 +20,7 @@ export function MonitorPage() {
   })
   const feedRows = flattenMonitorFeed(monitor.batches)
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: feedRows.length,
     getScrollElement: () => viewportRef.current,

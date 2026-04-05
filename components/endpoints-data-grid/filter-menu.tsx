@@ -40,7 +40,7 @@ function FilterMenuTrigger({
           {activeCount > 0 && <Badge variant="secondary">{activeCount}</Badge>}
         </Button>
       }
-    ></PopoverTrigger>
+    />
   )
 }
 

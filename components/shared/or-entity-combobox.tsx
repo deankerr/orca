@@ -134,32 +134,30 @@ function EntityCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        aria-expanded={open}
-        aria-controls={listboxId}
         render={
           <Button
             variant="outline"
             role="combobox"
+            aria-expanded={open}
+            aria-controls={listboxId}
             className={cn('text-left', className)}
             size="lg"
             {...props}
           />
         }
       >
-        <>
-          {selected ? (
-            <EntityBadge
-              name={selected.name}
-              slug={selected.slug}
-              clickToCopy={false}
-              className="flex-1"
-            />
-          ) : value && isPending ? (
-            <EntityBadgeSkeleton className="flex-1" />
-          ) : (
-            <span className="w-full text-muted-foreground">{placeholder}</span>
-          )}
-        </>
+        {selected ? (
+          <EntityBadge
+            name={selected.name}
+            slug={selected.slug}
+            clickToCopy={false}
+            className="flex-1"
+          />
+        ) : value && isPending ? (
+          <EntityBadgeSkeleton className="flex-1" />
+        ) : (
+          <span className="w-full text-muted-foreground">{placeholder}</span>
+        )}
       </PopoverTrigger>
 
       <PopoverContent className="w-[300px] overflow-hidden p-0" align="start">
@@ -173,6 +171,7 @@ function EntityCombobox({
                 setSearch(e.target.value)
               }}
               className="rounded-b-none border-0 dark:bg-transparent"
+              // oxlint-disable-next-line jsx-a11y/no-autofocus -- Focusing the search input when the combobox opens is intentional for keyboard-driven filtering.
               autoFocus
             />
           </div>
@@ -233,7 +232,7 @@ function VirtualizedEntityList({
   'use no memo'
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollRef.current,

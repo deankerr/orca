@@ -204,7 +204,7 @@ function DataGridTableHeadRowCellResize<TData>({ header }: { header: Header<TDat
 }
 
 function DataGridTableRowSpacer() {
-  return <tbody aria-hidden="true" className="h-2"></tbody>
+  return <tbody aria-hidden="true" className="h-2" />
 }
 
 function DataGridTableBody({ children }: { children: ReactNode }) {
@@ -370,7 +370,7 @@ function DataGridTableRowSelect<TData>({ row }: { row: Row<TData> }) {
           'absolute start-0 top-0 bottom-0 hidden w-[2px] bg-primary',
           row.getIsSelected() && 'block',
         )}
-      ></div>
+      />
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => {
@@ -409,7 +409,7 @@ function DataGridTableVirtual<TData>() {
   const columnsResizable = props.tableLayout?.columnsResizable === true
   const hasRowBorder = props.tableLayout?.rowBorder === true
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     getScrollElement: () => scrollElementRef.current,

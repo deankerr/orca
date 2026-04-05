@@ -1,15 +1,9 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [
-    ".agents/skills",
-    ".claude/skills",
-    "**/_generated",
-    "**/components/ui",
-    "**/routeTree.gen.ts"
-  ],
+  "ignorePatterns": [".agents/skills", ".claude/skills", "**/_generated", "**/components/ui"],
   "semi": false,
   "singleQuote": true,
   "sortImports": {},
   "sortPackageJson": { "sortScripts": true },
-  "tailwindcss": { "functions": ["cn", "clsx", "twMerge"] }
+  "sortTailwindcss": { "functions": ["cn", "clsx", "twMerge"], "stylesheet": "app/globals.css" }
 }

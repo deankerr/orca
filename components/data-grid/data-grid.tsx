@@ -3,12 +3,11 @@
 import './data-grid.css'
 import type { RowData, Table } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 
 import { cn } from '@/lib/utils'
 
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     headerTitle?: string
     headerClassName?: string
@@ -79,18 +78,17 @@ function DataGridProvider<TData extends object>({
   ...props
 }: DataGridProps<TData> & { table: Table<TData> }) {
   'use no memo'
-  return (
-    <DataGridContext.Provider
-      value={{
-        props,
-        table,
-        recordCount: props.recordCount,
-        isLoading: props.isLoading ?? false,
-      }}
-    >
-      {children}
-    </DataGridContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      props,
+      table,
+      recordCount: props.recordCount,
+      isLoading: props.isLoading ?? false,
+    }),
+    [props, table],
   )
+
+  return <DataGridContext.Provider value={contextValue}>{children}</DataGridContext.Provider>
 }
 
 function DataGrid<TData extends object>({ children, table, ...props }: DataGridProps<TData>) {

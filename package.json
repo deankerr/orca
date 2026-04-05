@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "check": "tsc --noEmit && eslint --max-warnings 0 . && oxfmt --write . && echo '✓ check passed'",
+    "check": "oxlint --type-check --type-aware --report-unused-disable-directives --fix . && oxfmt --write . && echo '✓ check passed'",
     "dev:convex": "convex dev",
     "dev:next": "next dev --turbopack --port 3020",
     "generate-sprite": "bun scripts/generate-sprite.ts",
@@ -64,8 +64,6 @@
     "@types/react-dom": "19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "culori": "^4.0.2",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "16.2.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "lucide-static": "^0.577.0",
     "oxfmt": "^0.43.0",

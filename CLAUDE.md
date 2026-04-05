@@ -16,7 +16,7 @@ Use a staged rollout for the OXC migration. A single PR is acceptable, but a Gra
 
 - [x] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
 
-- [ ] Stage 4: Remove legacy ESLint only after the OXC flow is stable and intentionally adopted.
+- [x] Stage 4: Remove legacy ESLint only after the OXC flow is stable and intentionally adopted.
 
 ## Overview
 

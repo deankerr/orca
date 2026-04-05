@@ -25,6 +25,7 @@ export function PageHeader({ className, ...props }: React.ComponentProps<'div'>)
 // Page title and description components
 export function PageTitle({ className, ...props }: React.ComponentProps<'h1'>) {
   return (
+    // oxlint-disable-next-line jsx-a11y/heading-has-content -- This wrapper forwards children via props spread, so the heading content is provided by callers.
     <h1 className={cn('flex items-center gap-3 font-medium sm:text-lg', className)} {...props} />
   )
 }

@@ -1,8 +1,14 @@
 {
   "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "eslint.enable": false,
+  "prettier.enable": false,
+
+  "oxc.enable.oxfmt": true,
+  "oxc.enable.oxlint": true,
+  "oxc.typeAware": true,
+
   "editor.defaultFormatter": "oxc.oxc-vscode",
-  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll.oxc": "explicit"
   }
 }
