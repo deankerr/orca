@@ -5,7 +5,8 @@ import { up } from 'up-fetch'
 import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
-import { internalAction, type ActionCtx } from '../../_generated/server'
+import { internalAction } from '../../_generated/server'
+import type { ActionCtx } from '../../_generated/server'
 import { getErrorMessage } from '../../shared/utils'
 
 export const orFetch = up(fetch, () => ({
@@ -28,7 +29,7 @@ const ModelsDataRecordArray = z
       }),
     ),
   })
-  .transform((v) => v.data)
+  .transform((value) => value.data)
 
 const EndpointsDataRecordArray = z
   .object({
@@ -38,7 +39,7 @@ const EndpointsDataRecordArray = z
       }),
     ),
   })
-  .transform((v) => v.data)
+  .transform((value) => value.data)
 
 const DataRecord = z
   .object({ data: z.record(z.string(), z.unknown()) })
@@ -136,8 +137,8 @@ export const run = internalAction({
       bundle.data.providers = await orFetch('/api/frontend/all-providers', {
         schema: DataRecordArray,
       })
-    } catch (err) {
-      console.error('[crawl:providers]', { error: getErrorMessage(err) })
+    } catch (error) {
+      console.error('[crawl:providers]', { error: getErrorMessage(error) })
     }
 
     // * models
@@ -154,8 +155,8 @@ export const run = internalAction({
         bundle.data.analytics = await orFetch('/api/frontend/models/find', {
           schema: DataRecord,
         })
-      } catch (err) {
-        console.error('[crawl:analytics]', { error: getErrorMessage(err) })
+      } catch (error) {
+        console.error('[crawl:analytics]', { error: getErrorMessage(error) })
       }
     }
 
@@ -164,10 +165,11 @@ export const run = internalAction({
       console.log(`[crawl] complete`, { crawl_id, args })
 
       // * schedule materialize
-      if (args.onComplete.materialize)
+      if (args.onComplete.materialize) {
         await ctx.scheduler.runAfter(0, internal.snapshots.materialize.main.run, {})
-    } catch (err) {
-      console.error('[crawl] failed', { crawl_id, args, error: getErrorMessage(err) })
+      }
+    } catch (error) {
+      console.error('[crawl] failed', { crawl_id, args, error: getErrorMessage(error) })
     }
   },
 })
@@ -194,13 +196,13 @@ async function fetchModelData(
       schema: EndpointsDataRecordArray,
     })
     result.endpoints = endpoints
-  } catch (err) {
-    const error = getErrorMessage(err)
+  } catch (error) {
+    const errorMessage = getErrorMessage(error)
     console.error('[crawl:endpoints]', {
       params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-      error,
+      error: errorMessage,
     })
-    result.endpoints = { error }
+    result.endpoints = { error: errorMessage }
   }
 
   // * uptimes
@@ -212,8 +214,8 @@ async function fetchModelData(
           schema: DataRecord,
         })
         result.uptimes.push([id, uptime])
-      } catch (err) {
-        console.error('[crawl:uptimes]', { id, error: getErrorMessage(err) })
+      } catch (error) {
+        console.error('[crawl:uptimes]', { id, error: getErrorMessage(error) })
       }
     }
   }
@@ -226,10 +228,10 @@ async function fetchModelData(
         schema: DataRecord,
       })
       result.topApps = topApps
-    } catch (err) {
+    } catch (error) {
       console.error('[crawl:topApps]', {
         params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-        error: getErrorMessage(err),
+        error: getErrorMessage(error),
       })
     }
   }

@@ -1,8 +1,9 @@
-import { WithoutSystemFields } from 'convex/server'
-import { atomizeChangeset, diff, IAtomicChange, type Options as DiffOptions } from 'json-diff-ts'
+import type { WithoutSystemFields } from 'convex/server'
+import { atomizeChangeset, diff } from 'json-diff-ts'
+import type { IAtomicChange, Options as DiffOptions } from 'json-diff-ts'
 
-import { Doc } from '../../_generated/dataModel'
-import { materializeModelEndpoints } from '../materialize/main'
+import type { Doc } from '../../_generated/dataModel'
+import type { materializeModelEndpoints } from '../materialize/main'
 
 type MaterializedSnapshot = ReturnType<typeof materializeModelEndpoints>
 
@@ -114,7 +115,7 @@ function computeEntityChanges<T>(
 ): ChangeDraft[] {
   const changes: ChangeDraft[] = []
 
-  const keys = new Set([...previousMap.keys(), ...currentMap.keys()].sort())
+  const keys = new Set([...previousMap.keys(), ...currentMap.keys()].toSorted())
 
   for (const key of keys) {
     const before = previousMap.get(key)
@@ -205,7 +206,7 @@ function processDiff(
     } else {
       // non-array: use atomic change values directly
       // note: ADD has oldValue=undefined, REMOVE has value=undefined
-      const change = changes[0]
+      const [change] = changes
 
       items.push({
         path: basePath,
@@ -223,7 +224,9 @@ function processDiff(
 function getValueByPath(obj: Record<string, any>, segments: string[]): unknown {
   let current: any = obj
   for (const segment of segments) {
-    if (current == null) return undefined
+    if (current === null || current === undefined) {
+      return undefined
+    }
     current = current[segment]
   }
   return current

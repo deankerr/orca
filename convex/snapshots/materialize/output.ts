@@ -54,14 +54,14 @@ export const upsert = internalMutation({
           currentModelsMap.delete(currentModel.slug)
 
           if (isEqual(currentModel, model)) {
-            counters.stable++
+            counters.stable += 1
           } else {
             await db.or.views.models.replace(ctx, currentModel._id, model)
-            counters.update++
+            counters.update += 1
           }
         } else {
           await db.or.views.models.insert(ctx, model)
-          counters.insert++
+          counters.insert += 1
         }
       }
 
@@ -70,12 +70,14 @@ export const upsert = internalMutation({
       for (const currentModel of currentModelsMap.values()) {
         if (currentModel.unavailable_at === undefined) {
           const modelKey = `${currentModel.version_slug}:${currentModel.variant}`
-          if (failedModelKeys.has(modelKey)) continue
+          if (failedModelKeys.has(modelKey)) {
+            continue
+          }
 
           await db.or.views.models.patch(ctx, currentModel._id, {
-            unavailable_at: parseInt(args.crawl_id),
+            unavailable_at: Number.parseInt(args.crawl_id, 10),
           })
-          counters.unavailable++
+          counters.unavailable += 1
         }
       }
 
@@ -96,14 +98,14 @@ export const upsert = internalMutation({
           currentEndpointsMap.delete(currentEndpoint.uuid)
 
           if (isEqual(currentEndpoint, endpoint)) {
-            counters.stable++
+            counters.stable += 1
           } else {
             await db.or.views.endpoints.replace(ctx, currentEndpoint._id, endpoint)
-            counters.update++
+            counters.update += 1
           }
         } else {
           await db.or.views.endpoints.insert(ctx, endpoint)
-          counters.insert++
+          counters.insert += 1
         }
       }
 
@@ -112,12 +114,14 @@ export const upsert = internalMutation({
       for (const currentEndpoint of currentEndpointsMap.values()) {
         if (currentEndpoint.unavailable_at === undefined) {
           const modelKey = `${currentEndpoint.model.version_slug}:${currentEndpoint.model.variant}`
-          if (failedModelKeys.has(modelKey)) continue
+          if (failedModelKeys.has(modelKey)) {
+            continue
+          }
 
           await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
-            unavailable_at: parseInt(args.crawl_id),
+            unavailable_at: Number.parseInt(args.crawl_id, 10),
           })
-          counters.unavailable++
+          counters.unavailable += 1
         }
       }
 
@@ -138,14 +142,14 @@ export const upsert = internalMutation({
           currentProvidersMap.delete(currentProvider.slug)
 
           if (isEqual(currentProvider, provider)) {
-            counters.stable++
+            counters.stable += 1
           } else {
             await db.or.views.providers.replace(ctx, currentProvider._id, provider)
-            counters.update++
+            counters.update += 1
           }
         } else {
           await db.or.views.providers.insert(ctx, provider)
-          counters.insert++
+          counters.insert += 1
         }
       }
 
@@ -153,9 +157,9 @@ export const upsert = internalMutation({
       for (const currentProvider of currentProvidersMap.values()) {
         if (currentProvider.unavailable_at === undefined) {
           await db.or.views.providers.patch(ctx, currentProvider._id, {
-            unavailable_at: parseInt(args.crawl_id),
+            unavailable_at: Number.parseInt(args.crawl_id, 10),
           })
-          counters.unavailable++
+          counters.unavailable += 1
         }
       }
 
@@ -186,14 +190,14 @@ export const upsertSources = internalMutation({
 
       if (currentSource) {
         if (isEqual(currentSource.data, item.data)) {
-          counters.stable++
+          counters.stable += 1
         } else {
           await db.or.sources.replace(ctx, currentSource._id, {
             entity_type: args.entityType,
             entity_key: item.key,
             data: item.data,
           })
-          counters.update++
+          counters.update += 1
         }
       } else {
         await db.or.sources.insert(ctx, {
@@ -201,7 +205,7 @@ export const upsertSources = internalMutation({
           entity_key: item.key,
           data: item.data,
         })
-        counters.insert++
+        counters.insert += 1
       }
     }
 

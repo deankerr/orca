@@ -1,10 +1,22 @@
-import { WithoutSystemFields } from 'convex/server'
+import type { WithoutSystemFields } from 'convex/server'
 import { v } from 'convex/values'
 import { diff } from 'json-diff-ts'
 
-import { Doc } from '../../_generated/dataModel'
+import type { Doc } from '../../_generated/dataModel'
 import { internalMutation } from '../../_generated/server'
 import { db } from '../../db'
+
+function changeKey(change: WithoutSystemFields<Doc<'or_views_changes'>>) {
+  return [
+    change.entity_type,
+    change.change_kind,
+    (change as any).model_slug ?? '',
+    (change as any).provider_slug ?? '',
+    (change as any).provider_tag_slug ?? '',
+    (change as any).endpoint_uuid ?? '',
+    change.path ?? '',
+  ].join('|')
+}
 
 export const upsert = internalMutation({
   args: {
@@ -19,19 +31,6 @@ export const upsert = internalMutation({
     stable: v.number(),
   }),
   handler: async (ctx, args) => {
-    // * for identifying the same change subject
-    function changeKey(change: WithoutSystemFields<Doc<'or_views_changes'>>) {
-      return [
-        change.entity_type,
-        change.change_kind,
-        (change as any).model_slug ?? '',
-        (change as any).provider_slug ?? '',
-        (change as any).provider_tag_slug ?? '',
-        (change as any).endpoint_uuid ?? '',
-        change.path ?? '',
-      ].join('|')
-    }
-
     const existing = await ctx.db
       .query('or_views_changes')
       .withIndex('by_previous_crawl_id__crawl_id', (q) =>
@@ -66,7 +65,7 @@ export const upsert = internalMutation({
 
       if (!current) {
         await ctx.db.insert('or_views_changes', change)
-        counters.insert++
+        counters.insert += 1
         continue
       }
 
@@ -74,11 +73,11 @@ export const upsert = internalMutation({
         keysToSkip: ['_id', '_creationTime'],
       })
 
-      if (!diffResults.length) {
-        counters.stable++
-      } else {
+      if (diffResults.length) {
         await ctx.db.replace(current._id, change)
-        counters.update++
+        counters.update += 1
+      } else {
+        counters.stable += 1
       }
 
       existingByKey.delete(key)
@@ -86,7 +85,7 @@ export const upsert = internalMutation({
 
     for (const leftover of existingByKey.values()) {
       await ctx.db.delete(leftover._id)
-      counters.delete++
+      counters.delete += 1
     }
 
     return counters

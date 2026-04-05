@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
-import { internalAction, type ActionCtx } from '../../_generated/server'
+import { internalAction } from '../../_generated/server'
+import type { ActionCtx } from '../../_generated/server'
 import { paginateAndProcess } from '../../lib/paginateAndProcess'
 import { materializeModelEndpoints } from '../materialize/main'
 import { getArchiveBundle } from '../shared/bundle'
@@ -27,10 +28,7 @@ export const run = internalAction({
     await paginateAndProcess(ctx, {
       queryFnArgs: { fromCrawlId },
       queryFn: async (innerCtx, queryArgs) =>
-        await innerCtx.runQuery(
-          internal.snapshots.materializedChanges.inputs.listArchives,
-          queryArgs,
-        ),
+        innerCtx.runQuery(internal.snapshots.materializedChanges.inputs.listArchives, queryArgs),
       processFn: async (archives) => {
         for (const archive of archives) {
           const current = await loadMaterializedSnapshot(ctx, archive.crawl_id)

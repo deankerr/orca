@@ -6,8 +6,20 @@ import { ProviderTransformSchema } from './providers'
 
 const zPrice = z.coerce
   .number()
-  .transform((val) => (val !== 0 ? val : undefined))
+  .transform((val) => (val === 0 ? undefined : val))
   .optional()
+
+function getDisplayModelName(raw: { model: { name: string }; variant: string }) {
+  if (raw.variant === 'beta') {
+    return `${raw.model.name} (self-moderated)`
+  }
+
+  if (raw.variant === 'standard') {
+    return raw.model.name
+  }
+
+  return `${raw.model.name} (${raw.variant})`
+}
 
 const zVariablePricingPromptThreshold = z.strictObject({
   type: z.literal('prompt-threshold'),
@@ -105,12 +117,7 @@ export const EndpointTransformSchema = z
       variant: raw.variant,
       reasoning: raw.supports_reasoning,
       // add variant suffix to name
-      name:
-        raw.variant === 'beta'
-          ? `${raw.model.name} (self-moderated)` // anthropic only, match name on OR
-          : raw.variant !== 'standard'
-            ? `${raw.model.name} (${raw.variant})`
-            : raw.model.name,
+      name: getDisplayModelName(raw),
     }
 
     const provider = {
