@@ -43,10 +43,10 @@ async function processColorIcons() {
 
     if (await fileExists(colorPath)) {
       await copyFile(colorPath, outputPath)
-      copied++
+      copied += 1
     } else if (await fileExists(monoPath)) {
       await copyFile(monoPath, outputPath)
-      copied++
+      copied += 1
     }
   }
 
@@ -58,28 +58,28 @@ async function processColorIcons() {
 
   for (const file of imageFiles) {
     // * Remove extension and dashes from slug
-    const slug = file.replace(/\.(png|jpe?g|svg|webp)$/i, '').replace(/-/g, '')
+    const slug = file.replace(/\.(png|jpe?g|svg|webp)$/i, '').replaceAll('-', '')
     const sourcePath = join(SOURCES_OTHER_DIR, file)
     const outputPath = join(COLOR_OUTPUT_DIR, `${slug}.png`)
     const isPng = file.toLowerCase().endsWith('.png')
 
-    if (isPng) {
-      await copyFile(sourcePath, outputPath)
-    } else {
-      await sharp(sourcePath).png().toFile(outputPath)
-    }
-    copied++
+    await (isPng ? copyFile(sourcePath, outputPath) : sharp(sourcePath).png().toFile(outputPath))
+    copied += 1
   }
 
   // * Copy OpenRouter sources (already PNG), skipping if already exists from other sources
   const openRouterFiles = await readdir(SOURCES_OPENROUTER_DIR).catch(() => [])
   for (const file of openRouterFiles) {
-    if (!file.toLowerCase().endsWith('.png')) continue
+    if (!file.toLowerCase().endsWith('.png')) {
+      continue
+    }
     const slug = file.replace(/\.png$/i, '')
     const outputPath = join(COLOR_OUTPUT_DIR, `${slug}.png`)
-    if (await fileExists(outputPath)) continue
+    if (await fileExists(outputPath)) {
+      continue
+    }
     await copyFile(join(SOURCES_OPENROUTER_DIR, file), outputPath)
-    copied++
+    copied += 1
   }
 
   console.log(`   Copied ${copied} color icons to ${COLOR_OUTPUT_DIR}`)
@@ -105,7 +105,7 @@ async function processLogos() {
 
   // * Build and save unified manifest
   const manifest = {
-    logos: Object.fromEntries(Object.entries(allStyles).sort(([a], [b]) => a.localeCompare(b))),
+    logos: Object.fromEntries(Object.entries(allStyles).toSorted(([a], [b]) => a.localeCompare(b))),
   }
 
   // * Apply overrides
@@ -148,9 +148,9 @@ Examples:
  * Main function
  */
 async function main() {
-  const args = process.argv.slice(2)
+  const args = new Set(process.argv.slice(2))
 
-  if (args.includes('--help') || args.includes('-h')) {
+  if (args.has('--help') || args.has('-h')) {
     showHelp()
     return
   }
@@ -161,8 +161,10 @@ async function main() {
 }
 
 if (import.meta.main) {
-  main().catch((error) => {
+  try {
+    await main()
+  } catch (error) {
     console.error('❌ Error:', error)
     process.exit(1)
-  })
+  }
 }

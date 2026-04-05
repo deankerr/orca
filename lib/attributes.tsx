@@ -1,7 +1,7 @@
 import { InlineCode } from '@/components/shared/inline-code'
-import { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
+import type { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-import { SpriteIconName } from '@/lib/sprite-icons'
+import type { SpriteIconName } from '@/lib/sprite-icons'
 
 import { formatDateTime, formatPrice } from './formatters'
 
@@ -388,7 +388,9 @@ export const attributes = defineAttributes({
     color: 'yellow',
     referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
-      active: endpoint.limits?.text_input_tokens != null,
+      active:
+        endpoint.limits?.text_input_tokens !== undefined &&
+        endpoint.limits.text_input_tokens !== null,
       value: endpoint.limits?.text_input_tokens?.toLocaleString(),
     }),
   },
@@ -400,7 +402,9 @@ export const attributes = defineAttributes({
     description: 'Token budget consumed by image inputs.',
     color: 'yellow',
     resolve: (endpoint) => ({
-      active: endpoint.limits?.image_input_tokens != null,
+      active:
+        endpoint.limits?.image_input_tokens !== undefined &&
+        endpoint.limits.image_input_tokens !== null,
       value: endpoint.limits?.image_input_tokens?.toLocaleString(),
     }),
   },
@@ -412,7 +416,9 @@ export const attributes = defineAttributes({
     description: 'Number of images allowed in a single request.',
     color: 'yellow',
     resolve: (endpoint) => ({
-      active: endpoint.limits?.images_per_input != null,
+      active:
+        endpoint.limits?.images_per_input !== undefined &&
+        endpoint.limits.images_per_input !== null,
       value: endpoint.limits?.images_per_input?.toLocaleString(),
     }),
   },
@@ -425,7 +431,9 @@ export const attributes = defineAttributes({
     color: 'yellow',
     referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
-      active: endpoint.limits?.requests_per_minute != null,
+      active:
+        endpoint.limits?.requests_per_minute !== undefined &&
+        endpoint.limits.requests_per_minute !== null,
       value: endpoint.limits?.requests_per_minute?.toLocaleString(),
     }),
   },
@@ -438,7 +446,9 @@ export const attributes = defineAttributes({
     color: 'yellow',
     referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
-      active: endpoint.limits?.requests_per_day != null,
+      active:
+        endpoint.limits?.requests_per_day !== undefined &&
+        endpoint.limits.requests_per_day !== null,
       value: endpoint.limits?.requests_per_day?.toLocaleString(),
     }),
   },

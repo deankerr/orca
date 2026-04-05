@@ -30,7 +30,7 @@ if (dryRun) {
 
 // bump version in package.json
 pkg.version = `${next}.0.0`
-await Bun.write('package.json', JSON.stringify(pkg, null, 2) + '\n')
+await Bun.write('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
 
 // commit the version bump
 await $`git add package.json`

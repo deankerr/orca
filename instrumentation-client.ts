@@ -1,6 +1,6 @@
-import posthog from 'posthog-js'
+import posthogClient from 'posthog-js'
 
-posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+posthogClient.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
   api_host: '/snarf',
   ui_host: 'https://us.posthog.com',
   defaults: '2026-01-30',
@@ -9,4 +9,4 @@ posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
 })
 
 // tag every event with the app version
-posthog.register({ app_version: process.env.NEXT_PUBLIC_APP_VERSION })
+posthogClient.register({ app_version: process.env.NEXT_PUBLIC_APP_VERSION })

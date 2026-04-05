@@ -1,5 +1,5 @@
 import { SpriteIcon } from '@/components/ui/sprite-icon'
-import { SpriteIconName } from '@/lib/sprite-icons'
+import type { SpriteIconName } from '@/lib/sprite-icons'
 import { cn } from '@/lib/utils'
 
 const spriteIconBadgeColorClasses = {

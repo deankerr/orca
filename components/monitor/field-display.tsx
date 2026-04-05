@@ -200,7 +200,9 @@ function FieldSetUpdatedItem({
 }) {
   const added = field.items.filter((i) => i.status === 'added')
   const removed = field.items.filter((i) => i.status === 'removed')
-  if (added.length === 0 && removed.length === 0) return null
+  if (added.length === 0 && removed.length === 0) {
+    return null
+  }
 
   return (
     <div data-change-id={field.change_id}>
@@ -227,16 +229,24 @@ function ChangeItem({ field }: { field: FieldChange }) {
   const { key: rawKey } = splitPath(field.path)
   const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
 
-  if (field.kind === 'set_updated') return <FieldSetUpdatedItem fieldKey={key} field={field} />
-  if (field.kind === 'field_added') return <FieldAddedItem fieldKey={key} field={field} />
-  if (field.kind === 'field_removed') return <FieldRemovedItem fieldKey={key} field={field} />
+  if (field.kind === 'set_updated') {
+    return <FieldSetUpdatedItem fieldKey={key} field={field} />
+  }
+  if (field.kind === 'field_added') {
+    return <FieldAddedItem fieldKey={key} field={field} />
+  }
+  if (field.kind === 'field_removed') {
+    return <FieldRemovedItem fieldKey={key} field={field} />
+  }
   return <FieldUpdatedItem fieldKey={key} field={field} />
 }
 
 // -- Field change list
 
 export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
-  if (fields.length === 0) return null
+  if (fields.length === 0) {
+    return null
+  }
 
   const grouped = Map.groupBy(fields, (f) => splitPath(f.path).category)
   const topLevel = grouped.get(null) ?? []

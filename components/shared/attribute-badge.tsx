@@ -1,5 +1,6 @@
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-import { Attribute, AttributeSlots, resolveEndpointAttributeSlot } from '@/lib/attributes'
+import type { Attribute, AttributeSlots } from '@/lib/attributes'
+import { resolveEndpointAttributeSlot } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import {
@@ -101,6 +102,8 @@ export function AttributeBadgeSet({
         if (reserve) {
           return <div key={`slot:${index}`} className="size-7 shrink-0" />
         }
+
+        return null
       })}
     </div>
   )

@@ -6,15 +6,17 @@ export function InlineMarkdown({ text }: { text: string }) {
   let match: RegExpExecArray | null
 
   while ((match = inlinePattern.exec(text)) !== null) {
-    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
 
-    if (match[1] != null) {
+    if (match[1] !== undefined) {
       parts.push(
         <code key={match.index} className="rounded-xs bg-muted px-1 py-0.5 font-mono">
           {match[1]}
         </code>,
       )
-    } else if (match[2] != null && match[3] != null) {
+    } else if (match[2] !== undefined && match[3] !== undefined) {
       parts.push(
         <a
           key={match.index}
@@ -26,7 +28,7 @@ export function InlineMarkdown({ text }: { text: string }) {
           {match[2]}
         </a>,
       )
-    } else if (match[4] != null) {
+    } else if (match[4] !== undefined) {
       parts.push(
         <a
           key={match.index}
@@ -43,7 +45,9 @@ export function InlineMarkdown({ text }: { text: string }) {
     lastIndex = match.index + match[0].length
   }
 
-  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
 
   return <>{parts}</>
 }

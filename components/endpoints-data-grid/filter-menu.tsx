@@ -13,10 +13,10 @@ import {
 } from '@/components/ui/popover'
 import { SpriteIcon } from '@/components/ui/sprite-icon'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { SpriteIconName } from '@/lib/sprite-icons'
+import type { SpriteIconName } from '@/lib/sprite-icons'
 import { cn } from '@/lib/utils'
 
-import { type FilterMode } from './use-endpoint-filters'
+import type { FilterMode } from './use-endpoint-filters'
 
 function FilterMenu({ ...props }: React.ComponentProps<typeof Popover>) {
   return <Popover {...props} />
@@ -150,7 +150,7 @@ function FilterMenuToggleItem({
   const selectedModes = mode === 'any' ? [] : [mode]
 
   const handleValueChange = (value: string[]) => {
-    const nextMode = value[0]
+    const [nextMode] = value
     onChange(nextMode === 'include' || nextMode === 'exclude' ? nextMode : 'any')
   }
 

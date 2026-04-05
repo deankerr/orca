@@ -7,7 +7,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache/provider'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useKeys } from 'rooks'
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -33,8 +34,10 @@ const queryClient = new QueryClient({
 })
 convexQueryClient.connect(queryClient)
 
+const browserStorage = typeof window === 'undefined' ? undefined : window.localStorage
+
 const asyncStoragePersister = createAsyncStoragePersister({
-  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  storage: browserStorage,
   key: 'ORCA_QUERY_CACHE',
 })
 

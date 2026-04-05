@@ -25,14 +25,26 @@ type MonitorChangeRow = {
 
 export type MonitorFeedRow = MonitorBatchHeaderRow | MonitorChangeRow
 
+function getTopSpacingClassName(groupIndex: number, changeIndex: number) {
+  if (groupIndex === 0 && changeIndex === 0) {
+    return
+  }
+
+  return changeIndex === 0 ? 'mt-4' : 'mt-3'
+}
+
 export function flattenMonitorFeed(batches: CrawlBatch[]): MonitorFeedRow[] {
   const rows: MonitorFeedRow[] = []
 
-  batches.forEach((batch) => {
-    if (batch.changes.length === 0) return
+  for (const batch of batches) {
+    if (batch.changes.length === 0) {
+      continue
+    }
 
     const groups = groupChanges(batch.changes)
-    if (groups.length === 0) return
+    if (groups.length === 0) {
+      continue
+    }
 
     const timestamp = Number(batch.crawl_id)
     const date = new Date(timestamp)
@@ -51,18 +63,17 @@ export function flattenMonitorFeed(batches: CrawlBatch[]): MonitorFeedRow[] {
       relativeTime: formatRelativeTime(timestamp),
     })
 
-    groups.forEach((group, groupIndex) => {
-      group.changes.forEach((change, changeIndex) => {
+    for (const [groupIndex, group] of groups.entries()) {
+      for (const [changeIndex, change] of group.changes.entries()) {
         rows.push({
           kind: 'change',
           key: `change:${batch.crawl_id}:${groupIndex}:${changeIndex}:${changeKey(change)}`,
           change,
-          topSpacingClassName:
-            groupIndex === 0 && changeIndex === 0 ? undefined : changeIndex === 0 ? 'mt-4' : 'mt-3',
+          topSpacingClassName: getTopSpacingClassName(groupIndex, changeIndex),
         })
-      })
-    })
-  })
+      }
+    }
+  }
 
   return rows
 }
@@ -94,8 +105,12 @@ export function MonitorFeedRowItem({ row }: { row: MonitorFeedRow }) {
 }
 
 function changeKey(change: EntityChange): string {
-  if (change.event.kind !== 'entity_updated') return change.event.change_id
-  const firstField = change.event.fields[0]
-  if (firstField) return firstField.change_id
+  if (change.event.kind !== 'entity_updated') {
+    return change.event.change_id
+  }
+  const [firstField] = change.event.fields
+  if (firstField) {
+    return firstField.change_id
+  }
   return `${change.entity_type}:${change.event.kind}`
 }

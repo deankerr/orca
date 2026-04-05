@@ -5,8 +5,8 @@ import { LayoutGridIcon } from 'lucide-react'
 import {
   endpointModalityInputAttributes,
   endpointModalityOutputAttributes,
-  type EndpointModalityAttribute,
 } from '@/lib/attribute-groups'
+import type { EndpointModalityAttribute } from '@/lib/attribute-groups'
 import { attributes } from '@/lib/attributes'
 import { cn } from '@/lib/utils'
 

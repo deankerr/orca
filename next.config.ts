@@ -25,24 +25,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  rewrites: async () => {
-    return [
-      // * posthog
-      {
-        source: '/snarf/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/snarf/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-      // * public api preview
-      {
-        source: '/api/preview/v2/models',
-        destination: getConvexHttpUrl('/public-api-preview/v2'),
-      },
-    ]
-  },
+  rewrites: async () => [
+    // * posthog
+    {
+      source: '/snarf/static/:path*',
+      destination: 'https://us-assets.i.posthog.com/static/:path*',
+    },
+    {
+      source: '/snarf/:path*',
+      destination: 'https://us.i.posthog.com/:path*',
+    },
+    // * public api preview
+    {
+      source: '/api/preview/v2/models',
+      destination: getConvexHttpUrl('/public-api-preview/v2'),
+    },
+  ],
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 }

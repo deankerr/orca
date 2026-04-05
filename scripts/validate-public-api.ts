@@ -10,7 +10,7 @@ import { ZodError } from 'zod'
 import { OrcaPublicApiV2Schema } from '../convex/public_api/preview_v2'
 
 function getApiUrl() {
-  const apiUrl = process.argv[2]
+  const apiUrl = process.argv.at(2)
 
   if (!apiUrl) {
     throw new Error('Missing API URL argument. Usage: bun scripts/validate-public-api.ts <url>')
@@ -37,12 +37,18 @@ async function validatePublicApi(apiUrl: string) {
   console.log(`Updated at ${parsed.updated_at}`)
 }
 
-validatePublicApi(getApiUrl()).catch((error) => {
-  console.error('\n❌ Fatal error during validation:')
-  if (error instanceof ZodError) {
-    console.error(JSON.stringify(error.issues, null, 2))
-  } else {
-    console.error(error)
+async function main() {
+  try {
+    await validatePublicApi(getApiUrl())
+  } catch (error) {
+    console.error('\n❌ Fatal error during validation:')
+    if (error instanceof ZodError) {
+      console.error(JSON.stringify(error.issues, null, 2))
+    } else {
+      console.error(error)
+    }
+    process.exit(1)
   }
-  process.exit(1)
-})
+}
+
+await main()

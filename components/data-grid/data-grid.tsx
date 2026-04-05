@@ -1,8 +1,9 @@
 'use client'
 
 import './data-grid.css'
-import { RowData, Table } from '@tanstack/react-table'
-import { createContext, ReactNode, useContext } from 'react'
+import type { RowData, Table } from '@tanstack/react-table'
+import type { ReactNode } from 'react'
+import { createContext, useContext } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -130,11 +131,11 @@ function DataGrid<TData extends object>({ children, table, ...props }: DataGridP
     ...props,
     tableLayout: {
       ...defaultProps.tableLayout,
-      ...(props.tableLayout || {}),
+      ...props.tableLayout,
     },
     tableClassNames: {
       ...defaultProps.tableClassNames,
-      ...(props.tableClassNames || {}),
+      ...props.tableClassNames,
     },
   }
 

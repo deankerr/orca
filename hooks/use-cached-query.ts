@@ -7,7 +7,9 @@ function useQueryTimer<T>(result: T, label?: string): T {
   const startTimeRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!label) return
+    if (!label) {
+      return
+    }
 
     if (result === undefined && startTimeRef.current === null) {
       startTimeRef.current = performance.now()

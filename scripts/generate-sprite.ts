@@ -70,7 +70,7 @@ async function loadIcon(iconName: string): Promise<string> {
   const iconPath = join(LUCIDE_STATIC_PATH, `${iconName}.svg`)
 
   try {
-    const svgContent = await readFile(iconPath, 'utf-8')
+    const svgContent = await readFile(iconPath, 'utf8')
 
     // Optimize the SVG with basic optimization
     const result = optimize(svgContent, {
@@ -86,7 +86,7 @@ async function loadIcon(iconName: string): Promise<string> {
 
     return result.data
   } catch (error) {
-    throw new Error(`Failed to load icon "${iconName}": ${error}`)
+    throw new Error(`Failed to load icon "${iconName}": ${error}`, { cause: error })
   }
 }
 
@@ -108,15 +108,15 @@ async function generateSprite(
   icons: Map<string, string>,
   config: Required<SpriteConfig>,
 ): Promise<string> {
-  const symbols = Array.from(icons.entries())
-    .map(([name, content]) => {
-      return `  <symbol id="lucide-${name}" viewBox="${config.viewBox}">
+  const symbols = [...icons.entries()]
+    .map(
+      ([name, content]) => `  <symbol id="lucide-${name}" viewBox="${config.viewBox}">
 ${content
   .split('\n')
   .map((line) => `    ${line}`)
   .join('\n')}
-  </symbol>`
-    })
+  </symbol>`,
+    )
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -173,7 +173,9 @@ async function generateSpritesheet() {
 
   if (errors.length > 0) {
     console.error(`\n❌ ${errors.length} icons failed to load:`)
-    errors.forEach((error) => console.error(`   ${error}`))
+    for (const error of errors) {
+      console.error(`   ${error}`)
+    }
 
     if (errors.length === REQUIRED_ICONS.length) {
       throw new Error('All icons failed to load')
@@ -210,13 +212,13 @@ async function generateSpritesheet() {
     console.warn(`  ⚠️  Could not clean old sprites: ${error}`)
   }
 
-  await writeFile(spritePath, spriteContent, 'utf-8')
+  await writeFile(spritePath, spriteContent, 'utf8')
   console.log(`  ✅ Sprite saved to: ${spritePath}`)
 
   // Generate TypeScript definitions
   console.log('📝 Generating TypeScript definitions...')
-  const typesContent = generateTypes(Array.from(icons.keys()), spriteFileName)
-  await writeFile(TYPES_FILE, typesContent, 'utf-8')
+  const typesContent = generateTypes([...icons.keys()], spriteFileName)
+  await writeFile(TYPES_FILE, typesContent, 'utf8')
   console.log(`  ✅ Types saved to: ${TYPES_FILE}`)
 
   // Summary
@@ -234,9 +236,9 @@ async function generateSpritesheet() {
  * CLI interface
  */
 async function main() {
-  const args = process.argv.slice(2)
+  const args = new Set(process.argv.slice(2))
 
-  if (args.includes('--help') || args.includes('-h')) {
+  if (args.has('--help') || args.has('-h')) {
     console.log(`🎨 Lucide Sprite Generator
 
 Usage: bun scripts/generate-sprite.ts [options]
@@ -264,10 +266,12 @@ data grid components for optimal performance.`)
 
 // Handle script execution
 if (import.meta.main) {
-  main().catch((error) => {
+  try {
+    await main()
+  } catch (error) {
     console.error('❌ Unexpected error:', error)
     process.exit(1)
-  })
+  }
 }
 
 export { generateSpritesheet, REQUIRED_ICONS }

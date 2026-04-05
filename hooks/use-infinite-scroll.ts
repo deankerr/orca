@@ -35,7 +35,9 @@ export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteSc
 
   const checkAndLoadMore = useCallback(() => {
     const scrollElement = scrollElementRef.current
-    if (!scrollElement || !hasMore) return
+    if (!scrollElement || !hasMore) {
+      return
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = scrollElement
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
@@ -55,7 +57,9 @@ export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteSc
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
-    if (!scrollElement) return
+    if (!scrollElement) {
+      return
+    }
 
     scrollElement.addEventListener('scroll', handleScroll, { passive: true })
 
@@ -66,7 +70,9 @@ export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteSc
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
-    if (!scrollElement) return
+    if (!scrollElement) {
+      return
+    }
 
     const { scrollHeight, clientHeight } = scrollElement
 

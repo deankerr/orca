@@ -2,7 +2,8 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { OUTPUT_DIR, SOURCES_OPENROUTER_DIR } from './config'
-import { slugToTitle, type LogoStyle } from './utils'
+import { slugToTitle } from './utils'
+import type { LogoStyle } from './utils'
 
 /**
  * Process icons from OpenRouter API
@@ -34,7 +35,7 @@ export async function processOpenRouterIcons(
 
     for (const provider of providers) {
       const rawSlug = provider.slug
-      const slug = rawSlug.replace(/-/g, '') // Remove dashes like lobehub icons
+      const slug = rawSlug.replaceAll('-', '') // Remove dashes like lobehub icons
       const iconUrl = provider.icon?.url
 
       // * Skip if slug already exists
@@ -44,7 +45,7 @@ export async function processOpenRouterIcons(
 
       // * Skip if icon URL doesn't start with http
       if (!iconUrl || !iconUrl.startsWith('http')) {
-        skippedCount++
+        skippedCount += 1
         continue
       }
 
@@ -72,10 +73,10 @@ export async function processOpenRouterIcons(
         }
 
         console.log(`  ✓ Downloaded ${slug}.png (${title})`)
-        downloadedCount++
-      } catch (err) {
-        skippedCount++
-        console.warn(`  ⚠️  Skipped ${slug}:`, err instanceof Error ? err.message : err)
+        downloadedCount += 1
+      } catch (error) {
+        skippedCount += 1
+        console.warn(`  ⚠️  Skipped ${slug}:`, error instanceof Error ? error.message : error)
       }
     }
 
@@ -85,11 +86,11 @@ export async function processOpenRouterIcons(
     if (skippedCount > 0) {
       console.log(`  ⏭️  Skipped ${skippedCount} providers`)
     }
-  } catch (err) {
+  } catch (error) {
     // * API might be unavailable, that's okay
     console.warn(
       `  ⚠️  Could not fetch OpenRouter icons:`,
-      err instanceof Error ? err.message : err,
+      error instanceof Error ? error.message : error,
     )
   }
 

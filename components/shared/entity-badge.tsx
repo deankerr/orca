@@ -47,8 +47,8 @@ export function EntityBadge({
     try {
       await navigator.clipboard.writeText(slug)
       toast.success(`Copied to clipboard: ${slug}`)
-    } catch (err) {
-      console.error('Failed to copy text: ', err)
+    } catch (error) {
+      console.error('Failed to copy text:', error)
     }
   }
 

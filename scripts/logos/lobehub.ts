@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 
 import { LOBEHUB_ICONS, LOBEHUB_STATIC_PNG, OUTPUT_DIR, SOURCES_LOBEHUB_DIR } from './config'
-import { needsInversion, needsTint, type LogoStyle } from './utils'
+import { needsInversion, needsTint } from './utils'
+import type { LogoStyle } from './utils'
 
 export interface ProcessLobehubResult {
   styles: Record<string, LogoStyle>
@@ -39,8 +40,8 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
     const avatarPath = join(LOBEHUB_ICONS, componentName, 'components', 'Avatar.js')
 
     try {
-      const styleContent = await readFile(stylePath, 'utf-8')
-      const avatarContent = await readFile(avatarPath, 'utf-8').catch(() => '')
+      const styleContent = await readFile(stylePath, 'utf8')
+      const avatarContent = await readFile(avatarPath, 'utf8').catch(() => '')
 
       // * Extract style constants
       const title = styleContent.match(/export var TITLE = ['"](.+?)['"]/)?.[1]
@@ -50,7 +51,9 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
       const colorPrimary = styleContent.match(/export var COLOR_PRIMARY = ['"](.+?)['"]/)?.[1]
       const colorGradient = styleContent.match(/export var COLOR_GRADIENT = ['"](.+?)['"]/)?.[1]
 
-      if (!title || !avatarBackgroundRaw || !avatarColor) continue
+      if (!title || !avatarBackgroundRaw || !avatarColor) {
+        continue
+      }
 
       // * Determine which logo variant to use
       const useColor = /import\s+Color\s+from\s+['"]\.\/(Color|Color\.js)['"]/.test(avatarContent)
@@ -62,7 +65,7 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
       } else if (avatarBackgroundRaw === 'COLOR_GRADIENT') {
         background = colorGradient || colorPrimary || '#000'
       } else {
-        background = avatarBackgroundRaw.replace(/['"]/g, '')
+        background = avatarBackgroundRaw.replaceAll(/['"]/g, '')
       }
 
       // * Check if inversion is needed
@@ -122,7 +125,7 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
         await colored.joinChannel(alpha).png().toFile(webDestPath)
 
         console.log(`  🎨 Tinted: ${slug} (${avatarColor})`)
-        tintedCount++
+        tintedCount += 1
       }
 
       // * Store simplified metadata
@@ -130,13 +133,13 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
         slug,
         title,
         background,
-        scale: parseFloat(avatarIconScale || '0.75'),
+        scale: Number.parseFloat(avatarIconScale || '0.75'),
       }
 
-      processedCount++
-    } catch (err) {
-      skippedCount++
-      console.warn(`  ⚠️  Skipped ${slug}:`, err instanceof Error ? err.message : err)
+      processedCount += 1
+    } catch (error) {
+      skippedCount += 1
+      console.warn(`  ⚠️  Skipped ${slug}:`, error instanceof Error ? error.message : error)
     }
   }
 

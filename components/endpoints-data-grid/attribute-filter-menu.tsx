@@ -3,7 +3,8 @@
 import { FilterIcon } from 'lucide-react'
 
 import { endpointFilterAttributeGroups } from '@/lib/attribute-groups'
-import { AttributeKey, attributes } from '@/lib/attributes'
+import type { AttributeKey } from '@/lib/attributes'
+import { attributes } from '@/lib/attributes'
 import { cn } from '@/lib/utils'
 
 import {

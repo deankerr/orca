@@ -41,7 +41,9 @@ export function MonitorPage() {
             <div className="relative w-full" style={{ height: totalSize }}>
               {virtualRows.map((virtualRow) => {
                 const row = feedRows[virtualRow.index]
-                if (!row) return null
+                if (!row) {
+                  return null
+                }
 
                 return (
                   <div
