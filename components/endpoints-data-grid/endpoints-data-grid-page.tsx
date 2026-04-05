@@ -114,7 +114,7 @@ export function EndpointsDataGrid() {
     return match ? { [match._id]: true } : {}
   }, [highlightUuid, filteredEndpoints])
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library
   const table = useReactTable({
     columns,
     data: filteredEndpoints,

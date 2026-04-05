@@ -2,13 +2,14 @@
   // Note: this is a JSONC compatible file, like tsconfig.json
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "extends": ["./node_modules/ultracite/config/oxlint/core/.oxlintrc.json"],
-  "ignorePatterns": [
-    ".agents/skills",
-    ".claude/skills",
-    "**/_generated",
-    "**/components/ui",
-    "**/routeTree.gen.ts"
+  "plugins": ["react", "jsx-a11y", "nextjs"],
+  "jsPlugins": [
+    {
+      "name": "react-hooks-js",
+      "specifier": "eslint-plugin-react-hooks"
+    }
   ],
+  "ignorePatterns": [".agents/skills", ".claude/skills", "**/_generated", "**/components/ui"],
   "rules": {
     // Standard ultracite disables
     "func-style": "off",
@@ -25,9 +26,42 @@
 
     // Project specific
     "no-nested-ternary": "off",
+    "unicorn/no-nested-ternary": "off",
+    "unicorn/number-literal-case": "off",
     "typescript/no-explicit-any": "off",
     "typescript/no-non-null-assertion": "off",
-    "complexity": "off"
+    "complexity": "off",
+
+    // React
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-filename-extension": "off",
+    "react/jsx-max-depth": "off",
+    "react/no-multi-comp": "off",
+    "react/jsx-handler-names": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/only-export-components": "off",
+
+    // Use the upstream React Hooks plugin to recover the React Compiler /
+    // Hooks rule surface that Oxlint's native react plugin does not fully cover.
+    "react/rules-of-hooks": "off",
+    "react/exhaustive-deps": "off",
+    "react-hooks-js/rules-of-hooks": "error",
+    "react-hooks-js/exhaustive-deps": "warn",
+    "react-hooks-js/static-components": "error",
+    "react-hooks-js/use-memo": "error",
+    "react-hooks-js/component-hook-factories": "error",
+    "react-hooks-js/preserve-manual-memoization": "error",
+    "react-hooks-js/incompatible-library": "warn",
+    "react-hooks-js/immutability": "error",
+    "react-hooks-js/globals": "error",
+    "react-hooks-js/refs": "error",
+    "react-hooks-js/set-state-in-effect": "error",
+    "react-hooks-js/error-boundaries": "error",
+    "react-hooks-js/purity": "error",
+    "react-hooks-js/set-state-in-render": "error",
+    "react-hooks-js/unsupported-syntax": "warn",
+    "react-hooks-js/config": "error",
+    "react-hooks-js/gating": "error"
 
     // Type-aware linting policy
     //

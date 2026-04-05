@@ -32,10 +32,10 @@ export function AppHeader() {
 
           <NavigationMenu>
             <NavigationMenuList className="gap-2">
-              {navigationLinks.map((link, index) => {
+              {navigationLinks.map((link) => {
                 const isActive = pathname === link.href
                 return (
-                  <NavigationMenuItem key={index}>
+                  <NavigationMenuItem key={link.href}>
                     <NavigationMenuLink
                       active={isActive}
                       render={<Link href={link.href} />}

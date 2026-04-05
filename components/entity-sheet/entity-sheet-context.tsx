@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 type EntityState = { type: 'model'; slug: string } | { type: 'provider'; slug: string } | null
@@ -16,25 +16,23 @@ const EntitySheetContext = createContext<EntitySheetContextValue | null>(null)
 
 export function EntitySheetProvider({ children }: { children: ReactNode }) {
   const [entity, setEntity] = useState<EntityState>(null)
-
-  return (
-    <EntitySheetContext.Provider
-      value={{
-        entity,
-        openModel: (slug) => {
-          setEntity({ type: 'model', slug })
-        },
-        openProvider: (slug) => {
-          setEntity({ type: 'provider', slug })
-        },
-        close: () => {
-          setEntity(null)
-        },
-      }}
-    >
-      {children}
-    </EntitySheetContext.Provider>
+  const value = useMemo(
+    () => ({
+      entity,
+      openModel: (slug: string) => {
+        setEntity({ type: 'model', slug })
+      },
+      openProvider: (slug: string) => {
+        setEntity({ type: 'provider', slug })
+      },
+      close: () => {
+        setEntity(null)
+      },
+    }),
+    [entity],
   )
+
+  return <EntitySheetContext.Provider value={value}>{children}</EntitySheetContext.Provider>
 }
 
 export function useEntitySheet() {

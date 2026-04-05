@@ -195,7 +195,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <AttributeBadgeSet
           endpoint={endpoint}
           slots={endpointAttributeSets.features}
-          reserve={true}
+          reserve
           handle={dataGridPopoverHandle}
         />
       )

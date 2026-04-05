@@ -13,13 +13,19 @@ declare global {
 }
 
 // presentational features only
-export function FeatureFlag({ flag, children }: { flag: string; children: React.ReactNode }) {
+export function FeatureFlag({
+  flag,
+  children,
+}: {
+  flag: string
+  children: React.ReactNode
+}): React.ReactNode {
   const isEnabled = useSyncExternalStore(
     subscribe,
     () => localStorage.getItem(`feature-${flag}`) === 'true',
     () => false,
   )
-  return isEnabled ? <>{children}</> : null
+  return isEnabled ? children : null
 }
 
 // Helper to toggle flags from dev tools or anywhere

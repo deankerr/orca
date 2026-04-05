@@ -49,5 +49,5 @@ export function InlineMarkdown({ text }: { text: string }) {
     parts.push(text.slice(lastIndex))
   }
 
-  return <>{parts}</>
+  return parts
 }

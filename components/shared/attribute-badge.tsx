@@ -37,8 +37,8 @@ export function AttributeBadgePopoverContent({
 
       {details !== undefined && details.length > 0 && (
         <DataList className="mt-2 space-y-0.5">
-          {details.map((item, i) => (
-            <DataListItem key={i}>
+          {details.map((item) => (
+            <DataListItem key={`${item.label ?? ''}:${item.value}`}>
               {item.label !== undefined && item.label !== '' && (
                 <DataListLabel className="uppercase">{item.label}</DataListLabel>
               )}
@@ -90,12 +90,13 @@ export function AttributeBadgeSet({
 }) {
   return (
     <div className="flex items-center justify-center gap-1">
-      {slots.map((slot, index) => {
+      {slots.map((slot) => {
+        const slotKey = slot.join('|')
         const resolved = resolveEndpointAttributeSlot(endpoint, slot)
         if (resolved) {
           return (
             <AttributeBadge
-              key={`${resolved.attribute.key}:${index}`}
+              key={`${resolved.attribute.key}:${slotKey}`}
               attribute={resolved.attribute}
               data={resolved.data}
               handle={handle}
@@ -104,7 +105,7 @@ export function AttributeBadgeSet({
         }
 
         if (reserve) {
-          return <div key={`slot:${index}`} className="size-7 shrink-0" />
+          return <div key={`slot:${slotKey}`} className="size-7 shrink-0" />
         }
 
         return null
