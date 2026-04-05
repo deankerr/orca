@@ -12,8 +12,8 @@ export const deleteFiles = internalAction({
     await asyncMap(storageIds, async (storageId) => {
       try {
         await ctx.storage.delete(storageId)
-      } catch (err) {
-        console.error('[deleteFiles]', getErrorMessage(err))
+      } catch (error) {
+        console.error('[deleteFiles]', getErrorMessage(error))
       }
     })
   },

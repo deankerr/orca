@@ -10,7 +10,9 @@ export const snapshotCronLite = internalAction({
   args: {},
   handler: async (ctx) => {
     const cfg = await ctx.runQuery(internal.config.getFirst)
-    if (!cfg?.enabled) return
+    if (cfg?.enabled !== true) {
+      return
+    }
 
     await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
       uptimes: false,
@@ -28,7 +30,9 @@ export const snapshotCronMain = internalAction({
   args: {},
   handler: async (ctx) => {
     const cfg = await ctx.runQuery(internal.config.getFirst)
-    if (!cfg?.enabled) return
+    if (cfg?.enabled !== true) {
+      return
+    }
 
     const h = new Date().getUTCHours()
     const on = (every: number) => every > 0 && h % every === 0

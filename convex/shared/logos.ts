@@ -1,4 +1,5 @@
 import manifest from './logos-manifest.json'
+import { isNonEmptyString } from './utils'
 
 export interface LogoStyle {
   slug: string
@@ -18,28 +19,30 @@ const TRANSFORMS: Array<[string, string]> = [
 ]
 
 const logos = new Map<string, LogoStyle>(Object.entries(manifest.logos))
-const logoKeys = Array.from(logos.keys())
+const logoKeys = [...logos.keys()]
 
 /**
  * Try to find the best matching logo from our manifest for a given input slug.
  */
 function resolveLogo(slug: string): LogoStyle | undefined {
-  if (!slug) return undefined
+  if (!slug) {
+    return undefined
+  }
 
   // Apply transforms, remove dashes
   let normalized = slug.toLowerCase()
   for (const [from, to] of TRANSFORMS) {
     normalized = normalized.replaceAll(from, to)
   }
-  normalized = normalized.replace(/-/g, '')
+  normalized = normalized.replaceAll('-', '')
 
   // Split namespaces (e.g., "openai/gpt-4o") and try most specific first
-  const parts = normalized.split('/').reverse()
+  const parts = normalized.split('/').toReversed()
 
   for (const part of parts) {
     // Prefix match: part starts with a logo key
     const prefixMatch = logoKeys.find((key) => part.startsWith(key))
-    if (prefixMatch) {
+    if (isNonEmptyString(prefixMatch)) {
       return logos.get(prefixMatch)
     }
   }

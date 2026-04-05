@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import { omit } from 'remeda'
 
 import type { Doc } from '../../../_generated/dataModel'
-import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
+import type { MutationCtx, QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
 
 export const table = defineTable({
@@ -144,18 +144,18 @@ export const table = defineTable({
 export const vTable = createTableVHelper('or_views_endpoints', table.validator)
 
 export async function collect(ctx: QueryCtx) {
-  return await ctx.db.query(vTable.name).collect()
+  return ctx.db.query(vTable.name).collect()
 }
 
 export async function listByModelSlug(ctx: QueryCtx, modelSlug: string) {
-  return await ctx.db
+  return ctx.db
     .query(vTable.name)
     .withIndex('by_model_slug', (q) => q.eq('model.slug', modelSlug))
     .collect()
 }
 
 export async function listByProviderSlug(ctx: QueryCtx, providerSlug: string) {
-  return await ctx.db
+  return ctx.db
     .query(vTable.name)
     .withIndex('by_provider_slug', (q) => q.eq('provider.slug', providerSlug))
     .collect()
@@ -165,7 +165,7 @@ export async function insert(
   ctx: MutationCtx,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
+  return ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
 }
 
 export async function patch(
@@ -173,7 +173,7 @@ export async function patch(
   id: typeof vTable._id.type,
   updates: Partial<Omit<typeof vTable.validator.type, 'updated_at'>>,
 ) {
-  return await ctx.db.patch(id, { ...updates, updated_at: Date.now() })
+  await ctx.db.patch(id, { ...updates, updated_at: Date.now() })
 }
 
 export async function replace(
@@ -181,7 +181,7 @@ export async function replace(
   id: typeof vTable._id.type,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
+  await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
 // -- Endpoint transform

@@ -6,10 +6,12 @@
 import { stream } from 'convex-helpers/server/stream'
 import { v } from 'convex/values'
 
-import { query, type QueryCtx } from './_generated/server'
-import { getByCrawlId, type EntityChange } from './db/or/views/changes'
+import { query } from './_generated/server'
+import type { QueryCtx } from './_generated/server'
+import { getByCrawlId } from './db/or/views/changes'
+import type { EntityChange } from './db/or/views/changes'
 import schema from './schema'
-import { baseProviderSlug } from './shared/utils'
+import { baseProviderSlug, isNonEmptyString } from './shared/utils'
 
 export type CrawlBatch = {
   crawl_id: string
@@ -51,15 +53,15 @@ function buildExactEndpointCrawlIdStream(ctx: QueryCtx, modelSlug: string, provi
 }
 
 function buildFilteredCrawlIdStream(ctx: QueryCtx, modelSlug?: string, providerSlug?: string) {
-  if (modelSlug && providerSlug) {
+  if (isNonEmptyString(modelSlug) && isNonEmptyString(providerSlug)) {
     return buildExactEndpointCrawlIdStream(ctx, modelSlug, providerSlug)
   }
 
-  if (modelSlug) {
+  if (isNonEmptyString(modelSlug)) {
     return buildModelCrawlIdStream(ctx, modelSlug)
   }
 
-  if (providerSlug) {
+  if (isNonEmptyString(providerSlug)) {
     return buildProviderCrawlIdStream(ctx, providerSlug)
   }
 
@@ -74,8 +76,10 @@ export const feedIds = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.max(1, Math.floor(args.limit))
-    const modelSlug = args.modelSlug
-    const providerSlug = args.providerSlug ? baseProviderSlug(args.providerSlug) : undefined
+    const { modelSlug } = args
+    const providerSlug = isNonEmptyString(args.providerSlug)
+      ? baseProviderSlug(args.providerSlug)
+      : undefined
 
     const crawlIdStream = buildFilteredCrawlIdStream(ctx, modelSlug, providerSlug)
 

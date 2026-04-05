@@ -1,4 +1,4 @@
-import { paginationOptsValidator, PaginationResult } from 'convex/server'
+import type { paginationOptsValidator, PaginationResult } from 'convex/server'
 
 import type { Doc, TableNames } from '../_generated/dataModel'
 import type { ActionCtx, MutationCtx } from '../_generated/server'
@@ -21,7 +21,7 @@ export async function paginateAndProcess<T extends Doc<TableNames>>(
       ctx: ActionCtx | MutationCtx,
       args: { paginationOpts: typeof paginationOptsValidator.type } & Record<string, any>,
     ) => Promise<PaginationResult<T>>
-    processFn: (items: T[]) => Promise<void | boolean>
+    processFn: (items: T[]) => Promise<boolean | undefined>
     batchSize: number
   },
 ): Promise<void> {

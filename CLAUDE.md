@@ -11,8 +11,8 @@ Use a staged rollout for the OXC migration. A single PR is acceptable, but a Gra
 - [x] Stage 1: Replace Prettier with `oxfmt`.
 - [x] Stage 1: Format the repo.
 
-- [ ] Stage 2: Establish an `oxlint` baseline for `convex/`.
-- [ ] Stage 2: Keep the current overrides in place; resolving override-covered issues is not part of this stage.
+- [x] Stage 2: Establish an `oxlint` baseline for `convex/`.
+- [x] Stage 2: Keep the current overrides in place; resolving override-covered issues is not part of this stage.
 
 - [ ] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
 

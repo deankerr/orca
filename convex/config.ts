@@ -6,7 +6,5 @@ import { db } from './db'
 export const getFirst = internalQuery({
   args: {},
   returns: nullable(db.snapshot.crawl.config.vTable.doc),
-  handler: async (ctx) => {
-    return await ctx.db.query('snapshot_crawl_config').first()
-  },
+  handler: async (ctx) => ctx.db.query('snapshot_crawl_config').first(),
 })

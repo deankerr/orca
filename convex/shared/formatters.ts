@@ -28,11 +28,25 @@ export const PRICING_FIELDS = {
   reasoning_output: { scale: 1_000_000, unit: 'MTOK' },
   audio_input: { scale: 1_000_000, unit: 'MTOK' },
   audio_cache_write: { scale: 1_000_000, unit: 'MTOK' },
-  image_input: { scale: 1_000, unit: '1K IMG' },
-  image_output: { scale: 1_000, unit: '1K IMG' },
+  image_input: { scale: 1000, unit: '1K IMG' },
+  image_output: { scale: 1000, unit: '1K IMG' },
   web_search: { scale: 1, unit: 'REQ' },
   discount: { scale: 100, unit: '' },
 } as const satisfies Record<PricingKey, PricingConfig>
+
+const PRICING_FIELD_KEYS = [
+  'text_input',
+  'text_output',
+  'text_cache_read',
+  'text_cache_write',
+  'reasoning_output',
+  'audio_input',
+  'audio_cache_write',
+  'image_input',
+  'image_output',
+  'web_search',
+  'discount',
+] as const satisfies readonly PricingKey[]
 
 export type PricingFormatResult = {
   field: string
@@ -40,11 +54,17 @@ export type PricingFormatResult = {
   unit: string
 }
 
+function isPricingKey(key: string): key is PricingKey {
+  return PRICING_FIELD_KEYS.some((pricingKey) => pricingKey === key)
+}
+
 export function formatPricing(
   field: PricingKey,
   value: number | undefined,
 ): PricingFormatResult | null {
-  if (!R.isDefined(value) || !Number.isFinite(value)) return null
+  if (!R.isDefined(value) || !Number.isFinite(value)) {
+    return null
+  }
 
   const scaled = value * PRICING_FIELDS[field].scale
   const formatted = scaled.toLocaleString('en-US', {
@@ -57,9 +77,11 @@ export function formatPricing(
 }
 
 export function formatPricingFields(pricing: Partial<ORCAEndpointPricing>): PricingFormatResult[] {
-  return (Object.keys(PRICING_FIELDS) as PricingKey[]).flatMap((field) => {
+  return PRICING_FIELD_KEYS.flatMap((field) => {
     const formatted = formatPricing(field, pricing[field])
-    if (!formatted) return []
+    if (!formatted) {
+      return []
+    }
     return [formatted]
   })
 }
@@ -68,15 +90,21 @@ export function formatPricingFields(pricing: Partial<ORCAEndpointPricing>): Pric
 
 export function splitPath(path: string): { category: string | null; key: string } {
   const dotIndex = path.indexOf('.')
-  if (dotIndex === -1) return { category: null, key: path }
+  if (dotIndex === -1) {
+    return { category: null, key: path }
+  }
   return { category: path.slice(0, dotIndex), key: path.slice(dotIndex + 1) }
 }
 
 export function parsePricingPath(path: string): PricingKey | null {
-  if (!path.startsWith('pricing.')) return null
+  if (!path.startsWith('pricing.')) {
+    return null
+  }
   const key = path.slice('pricing.'.length)
-  if (!(key in PRICING_FIELDS)) return null
-  return key as PricingKey
+  if (!isPricingKey(key)) {
+    return null
+  }
+  return key
 }
 
 // -- Value formatting
@@ -93,16 +121,26 @@ export function fmtValue(value: unknown, path: string): string {
 
 export function fmtUnit(path: string): string | null {
   const pricingField = parsePricingPath(path)
-  if (!pricingField) return null
-  const unit = PRICING_FIELDS[pricingField].unit
+  if (!pricingField) {
+    return null
+  }
+  const { unit } = PRICING_FIELDS[pricingField]
   return unit || null
 }
 
 export function fmtScalar(value: unknown): string {
-  if (!R.isDefined(value)) return 'null'
-  if (R.isNumber(value)) return value.toLocaleString('en-US', { maximumFractionDigits: 6 })
-  if (R.isString(value)) return value
-  if (R.isBoolean(value)) return String(value)
+  if (!R.isDefined(value)) {
+    return 'null'
+  }
+  if (R.isNumber(value)) {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 6 })
+  }
+  if (R.isString(value)) {
+    return value
+  }
+  if (R.isBoolean(value)) {
+    return String(value)
+  }
   return JSON.stringify(value)
 }
 
@@ -118,7 +156,9 @@ export type Delta = {
 const COST_FIELDS = new Set(Object.keys(PRICING_FIELDS).filter((k) => k !== 'discount'))
 
 export function computeDelta(before: unknown, after: unknown, path: string): Delta | null {
-  if (!R.isNumber(before) || !R.isNumber(after) || before === 0) return null
+  if (!R.isNumber(before) || !R.isNumber(after) || before === 0) {
+    return null
+  }
 
   const pct = ((after - before) / before) * 100
   const isUp = after > before

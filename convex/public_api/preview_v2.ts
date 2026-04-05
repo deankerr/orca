@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { Doc } from '../_generated/dataModel'
+import type { Doc } from '../_generated/dataModel'
 import { query } from '../_generated/server'
 
 export const getModels = query({
@@ -13,14 +13,17 @@ export const getModels = query({
     const endpoints = await ctx.db
       .query('or_views_endpoints')
       .collect()
-      .then((endpoints) =>
-        endpoints.filter((endp) => !R.isDefined(endp.unavailable_at) && !endp.disabled),
-      )
+      .then((docs) => docs.filter((endp) => !R.isDefined(endp.unavailable_at) && !endp.disabled))
+
+    let maxUpdatedAt = 0
+    for (const endpoint of endpoints) {
+      maxUpdatedAt = Math.max(maxUpdatedAt, endpoint.updated_at)
+    }
 
     const models = Map.groupBy(endpoints, (endp) => endp.model.slug)
       .values()
       .map((group) => {
-        const model = group[0].model
+        const [{ model }] = group
         const providers = group.map(transformEndpointV2)
 
         return {
@@ -37,14 +40,12 @@ export const getModels = query({
         }
       })
       .toArray()
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
       .slice(0, limit)
 
     const result = {
       // overall updated_at = most recent endpoint updated_at
-      updated_at: new Date(
-        endpoints.reduce((max, e) => Math.max(max, e.updated_at), 0),
-      ).toISOString(),
+      updated_at: new Date(maxUpdatedAt).toISOString(),
       models,
     }
 
@@ -67,7 +68,9 @@ export const getModels = query({
 // * Helpers
 
 function formatPrice(price: number | undefined): string | null {
-  if (!price) return null
+  if (price === undefined || price === 0) {
+    return null
+  }
   return price.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 20,

@@ -3,6 +3,7 @@ import { httpRouter } from 'convex/server'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
+import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
@@ -13,7 +14,7 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, req) => {
     const publicKey = process.env.DISCORD_PUBLIC_KEY
-    if (!publicKey) {
+    if (!isNonEmptyString(publicKey)) {
       console.error('[discord:interactions] DISCORD_PUBLIC_KEY not configured')
       return new Response('Server configuration error', { status: 500 })
     }
@@ -21,7 +22,7 @@ http.route({
     const signature = req.headers.get('X-Signature-Ed25519')
     const timestamp = req.headers.get('X-Signature-Timestamp')
 
-    if (!signature || !timestamp) {
+    if (!isNonEmptyString(signature) || !isNonEmptyString(timestamp)) {
       return new Response('Missing signature headers', { status: 401 })
     }
 
@@ -43,7 +44,7 @@ http.route({
     const url = new URL(req.url)
     const crawlId = url.searchParams.get('crawl_id')
 
-    if (!crawlId) {
+    if (!isNonEmptyString(crawlId)) {
       return new Response('Missing crawl_id parameter', { status: 400 })
     }
 

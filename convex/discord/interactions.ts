@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
+import { isNonEmptyString } from '../shared/utils'
 import { COLORS, PATTERN_MAX_LENGTH, SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
 
 const InteractionOptionValueSchema = z.union([z.string(), z.number(), z.boolean()])
@@ -46,10 +47,6 @@ type Subcommand = 'subscribe' | 'list' | 'delete' | 'help'
 const SUBCOMMAND_OPTION_TYPE = 1
 const PING_TYPE: number = InteractionType.Ping
 const APPLICATION_COMMAND_TYPE: number = InteractionType.ApplicationCommand
-
-function hasText(value: string | null | undefined): value is string {
-  return value !== undefined && value !== null && value !== ''
-}
 
 function isSubcommand(value: string): value is Subcommand {
   return value === 'subscribe' || value === 'list' || value === 'delete' || value === 'help'
@@ -129,7 +126,7 @@ function parseSubcommand(interaction: DiscordInteraction): {
 }
 
 function isDMContext(interaction: DiscordInteraction): boolean {
-  return !hasText(interaction.guild_id)
+  return !isNonEmptyString(interaction.guild_id)
 }
 
 function isUserInstallInGuild(interaction: DiscordInteraction): boolean {
@@ -137,9 +134,9 @@ function isUserInstallInGuild(interaction: DiscordInteraction): boolean {
   if (owners === undefined) {
     return false
   }
-  const hasGuild = hasText(interaction.guild_id)
+  const hasGuild = isNonEmptyString(interaction.guild_id)
   // Has guild_id but authorized via user install (key "1"), not guild install (key "0")
-  return hasGuild && hasText(owners['1']) && !hasText(owners['0'])
+  return hasGuild && isNonEmptyString(owners['1']) && !isNonEmptyString(owners['0'])
 }
 
 function getChannelId(interaction: DiscordInteraction): string | undefined {
@@ -147,7 +144,7 @@ function getChannelId(interaction: DiscordInteraction): string | undefined {
 }
 
 function getGuildId(interaction: DiscordInteraction): string | undefined {
-  return hasText(interaction.guild_id) ? interaction.guild_id : undefined
+  return isNonEmptyString(interaction.guild_id) ? interaction.guild_id : undefined
 }
 
 // Only alphanumeric, hyphen, underscore, forward slash, colon

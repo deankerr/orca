@@ -17,7 +17,7 @@ export async function insert(
   ctx: MutationCtx,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
+  return ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
 }
 
 export async function replace(
@@ -25,7 +25,7 @@ export async function replace(
   id: typeof vTable._id.type,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
+  await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
 export async function getModelDescription(ctx: QueryCtx, modelSlug: string) {
@@ -37,7 +37,7 @@ export async function getModelDescription(ctx: QueryCtx, modelSlug: string) {
     return null
   }
   const description = model.data?.description
-  if (!description || typeof description !== 'string') {
+  if (typeof description !== 'string' || description === '') {
     return null
   }
   return description

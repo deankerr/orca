@@ -1,5 +1,6 @@
 import { defineTable } from 'convex/server'
-import { v, type Infer } from 'convex/values'
+import { v } from 'convex/values'
+import type { Infer } from 'convex/values'
 
 import type { Id } from '../../../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../../../_generated/server'
@@ -59,13 +60,12 @@ export async function listByContext(ctx: QueryCtx, context: SubscriptionContext)
         q.eq('channel_id', context.channel_id).eq('deleted_at', undefined),
       )
       .collect()
-  } else {
-    const subs = await ctx.db
-      .query(TABLE_NAME)
-      .withIndex('by_user_id', (q) => q.eq('user_id', context.user_id).eq('deleted_at', undefined))
-      .collect()
-    return subs.filter((s) => s.type === 'dm')
   }
+  const subs = await ctx.db
+    .query(TABLE_NAME)
+    .withIndex('by_user_id', (q) => q.eq('user_id', context.user_id).eq('deleted_at', undefined))
+    .collect()
+  return subs.filter((s) => s.type === 'dm')
 }
 
 export async function countByUser(ctx: QueryCtx, user_id: string) {
@@ -88,15 +88,14 @@ export async function findByContextAndPattern(
         q.eq('channel_id', context.channel_id).eq('pattern', pattern).eq('deleted_at', undefined),
       )
       .first()
-  } else {
-    const sub = await ctx.db
-      .query(TABLE_NAME)
-      .withIndex('by_user_id_and_pattern', (q) =>
-        q.eq('user_id', context.user_id).eq('pattern', pattern).eq('deleted_at', undefined),
-      )
-      .first()
-    return sub?.type === 'dm' ? sub : null
   }
+  const sub = await ctx.db
+    .query(TABLE_NAME)
+    .withIndex('by_user_id_and_pattern', (q) =>
+      q.eq('user_id', context.user_id).eq('pattern', pattern).eq('deleted_at', undefined),
+    )
+    .first()
+  return sub?.type === 'dm' ? sub : null
 }
 
 // * Mutations

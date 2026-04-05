@@ -10,7 +10,5 @@ import { getByCrawlId } from './db/or/views/changes'
 
 export const byCrawlId = query({
   args: { crawl_id: v.string() },
-  handler: async (ctx, { crawl_id }) => {
-    return getByCrawlId(ctx, crawl_id)
-  },
+  handler: async (ctx, { crawl_id }) => getByCrawlId(ctx, crawl_id),
 })

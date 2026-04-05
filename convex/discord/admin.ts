@@ -13,6 +13,7 @@
 import { z } from 'zod'
 
 import { internalAction } from '../_generated/server'
+import { isNonEmptyString } from '../shared/utils'
 import { createDiscordClient } from './api'
 
 // Command definitions following Discord's ApplicationCommand structure
@@ -79,10 +80,6 @@ const ApplicationInfoSchema = z.object({
 type RegisteredCommand = z.infer<typeof RegisteredCommandSchema>
 type ApplicationInfo = z.infer<typeof ApplicationInfoSchema>
 
-function hasText(value: string | undefined): value is string {
-  return value !== undefined && value !== ''
-}
-
 /**
  * Register slash commands with Discord
  *
@@ -99,11 +96,11 @@ export const registerCommands = internalAction({
     const applicationId = process.env.DISCORD_APPLICATION_ID
     const botToken = process.env.DISCORD_BOT_TOKEN
 
-    if (!hasText(applicationId)) {
+    if (!isNonEmptyString(applicationId)) {
       return { success: false, error: 'DISCORD_APPLICATION_ID not configured' }
     }
 
-    if (!hasText(botToken)) {
+    if (!isNonEmptyString(botToken)) {
       return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
     }
 
@@ -155,7 +152,7 @@ export const getApplicationInfo = internalAction({
   }> => {
     const botToken = process.env.DISCORD_BOT_TOKEN
 
-    if (!hasText(botToken)) {
+    if (!isNonEmptyString(botToken)) {
       return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
     }
 
