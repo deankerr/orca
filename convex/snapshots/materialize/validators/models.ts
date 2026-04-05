@@ -54,8 +54,7 @@ export const ModelTransformSchema = z
       input_modalities: raw.input_modalities,
       output_modalities: raw.output_modalities,
 
-      reasoning:
-        raw.reasoning_config !== undefined && raw.reasoning_config !== null,
+      reasoning: raw.reasoning_config !== undefined && raw.reasoning_config !== null,
 
       // details
       tokenizer: raw.group || undefined,

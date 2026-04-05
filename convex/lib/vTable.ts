@@ -1,4 +1,5 @@
-import { v, type ObjectType, type PropertyValidators, type VObject } from 'convex/values'
+import { v } from 'convex/values'
+import type { ObjectType, PropertyValidators, VObject } from 'convex/values'
 
 /**
  * Creates a schema-aware helper for a single Convex table, providing typed

@@ -5,7 +5,8 @@ import type { Doc, Id } from '../../../_generated/dataModel'
 import type { QueryCtx } from '../../../_generated/server'
 import { baseProviderSlug } from '../../../shared/utils'
 import { getModelDescription } from '../sources'
-import { get as getEndpoint, type ORCAEndpoint } from './endpoints'
+import { get as getEndpoint } from './endpoints'
+import type { ORCAEndpoint } from './endpoints'
 import { get as getModel } from './models'
 import { get as getProvider } from './providers'
 
@@ -191,18 +192,29 @@ function computeArrayDiff(before: unknown[], after: unknown[]): ArrayDiffItem[] 
   const all = new Set([...beforeSet, ...afterSet])
 
   return [...all]
-    .sort((a, b) => a.localeCompare(b))
-    .map((value) => ({
-      value,
-      status: !beforeSet.has(value) ? 'added' : !afterSet.has(value) ? 'removed' : 'stable',
-    }))
+    .toSorted((a, b) => a.localeCompare(b))
+    .map((value) => {
+      let status: ArrayDiffItem['status'] = 'stable'
+      if (beforeSet.has(value)) {
+        status = afterSet.has(value) ? 'stable' : 'removed'
+      } else {
+        status = 'added'
+      }
+
+      return {
+        value,
+        status,
+      }
+    })
 }
 
 // * Field change builder — converts an update doc into a FieldChange
 
 function buildFieldChange(doc: Doc<'or_views_changes'>): FieldChange {
-  const path = doc.path
-  if (!path) throw new Error(`Update change ${doc._id} missing path`)
+  const { path } = doc
+  if (path === undefined || path === '') {
+    throw new Error(`Update change ${doc._id} missing path`)
+  }
   const rewritten = PATH_REWRITES[path] ?? path
 
   // known string[] fields — both sides must be arrays
@@ -236,8 +248,12 @@ function buildFieldChange(doc: Doc<'or_views_changes'>): FieldChange {
 // * Entity identity key — for grouping field updates by entity
 
 function entityKey(doc: Doc<'or_views_changes'>): string {
-  if (doc.entity_type === 'provider') return `provider:${doc.provider_slug}`
-  if (doc.entity_type === 'model') return `model:${doc.model_slug}`
+  if (doc.entity_type === 'provider') {
+    return `provider:${doc.provider_slug}`
+  }
+  if (doc.entity_type === 'model') {
+    return `model:${doc.model_slug}`
+  }
   return `endpoint:${doc.endpoint_uuid}`
 }
 
@@ -248,7 +264,9 @@ function entityKey(doc: Doc<'or_views_changes'>): string {
 
 async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
   const m = await getModel(ctx, slug)
-  if (!m) return { slug }
+  if (!m) {
+    return { slug }
+  }
   const description = (await getModelDescription(ctx, slug)) ?? undefined
   return {
     slug,
@@ -266,13 +284,17 @@ async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderR
   // provider tag slugs may include a variant suffix (e.g. "deepinfra/fp4")
   const baseSlug = baseProviderSlug(slug)
   const p = await getProvider(ctx, baseSlug)
-  if (!p) return { slug }
+  if (!p) {
+    return { slug }
+  }
   return { slug, name: p.name }
 }
 
 async function enrichEndpointRef(ctx: QueryCtx, uuid: string): Promise<EndpointRef> {
   const ep = await getEndpoint(ctx, uuid)
-  if (!ep) return { uuid }
+  if (!ep) {
+    return { uuid }
+  }
   return { uuid, context_length: ep.context_length, max_output: ep.max_output, pricing: ep.pricing }
 }
 
@@ -283,7 +305,7 @@ async function toEntityChange(
   doc: Doc<'or_views_changes'>,
   event: EntityEvent,
 ): Promise<EntityChange> {
-  const crawl_id = doc.crawl_id
+  const { crawl_id } = doc
 
   if (doc.entity_type === 'provider') {
     return {
@@ -340,14 +362,21 @@ async function buildEntityChanges(
     // field updates bucket by entity
     const key = entityKey(doc)
     const bucket = updatesByEntity.get(key)
-    if (bucket) bucket.push(doc)
-    else updatesByEntity.set(key, [doc])
+    if (bucket) {
+      bucket.push(doc)
+    } else {
+      updatesByEntity.set(key, [doc])
+    }
   }
 
   // each bucket becomes one entity_updated event
   for (const [, bucket] of updatesByEntity) {
+    const [firstDoc] = bucket
+    if (firstDoc === undefined) {
+      continue
+    }
     const fields = bucket.map(buildFieldChange)
-    result.push(await toEntityChange(ctx, bucket[0]!, { kind: 'entity_updated', fields }))
+    result.push(await toEntityChange(ctx, firstDoc, { kind: 'entity_updated', fields }))
   }
 
   return result
@@ -355,13 +384,15 @@ async function buildEntityChanges(
 
 // * Public API
 
-const EXCLUDED_PATHS = ['variable_pricings']
+const EXCLUDED_PATHS = new Set(['variable_pricings'])
 
 function filterDocs(docs: Doc<'or_views_changes'>[]) {
   return docs.filter(
     (doc) =>
-      (!doc.path_level_1 || !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
-      (!doc.path || !EXCLUDED_PATHS.includes(doc.path)),
+      (doc.path_level_1 === undefined ||
+        doc.path_level_1 === '' ||
+        !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
+      (doc.path === undefined || doc.path === '' || !EXCLUDED_PATHS.has(doc.path)),
   )
 }
 

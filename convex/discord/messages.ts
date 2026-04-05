@@ -16,7 +16,7 @@ import type {
 } from '../db/or/views/changes'
 import { computeDelta, fmtValue, formatPricingFields, splitPath } from '../shared/formatters'
 import { groupChanges } from '../shared/groups'
-import { truncate } from '../shared/utils'
+import { isNonEmptyString, truncate } from '../shared/utils'
 import { COLORS } from './constants'
 import { getAuthorUrl, getColorIconUrl } from './utils'
 
@@ -26,10 +26,6 @@ const TRUNCATE_LENGTH = 800
 
 function isLong(value: unknown) {
   return typeof value === 'string' && value.length > 80
-}
-
-function hasText(value: string | undefined): value is string {
-  return value !== undefined && value !== ''
 }
 
 function blockquote(text: string): string {
@@ -101,7 +97,7 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
       .setColor(COLORS.create)
       .setTitle(`${title}${CHARS.sparkles}`)
       .setAuthor(author)
-    if (hasText(model.model.description)) {
+    if (isNonEmptyString(model.model.description)) {
       embed.setDescription(blockquote(model.model.description))
     }
     const fields = getNewModelFields(model.model)
@@ -236,14 +232,14 @@ function getNewModelFields(model: ModelRef): EmbedField[] {
     fields.push({ name: 'modalities', value: parts.join(CHARS.dot), inline: false })
   }
 
-  if (hasText(model.warning_message)) {
+  if (isNonEmptyString(model.warning_message)) {
     fields.push({
       name: 'warning_message',
       value: blockquote(model.warning_message),
       inline: false,
     })
   }
-  if (hasText(model.promotion_message)) {
+  if (isNonEmptyString(model.promotion_message)) {
     fields.push({
       name: 'promotion_message',
       value: blockquote(model.promotion_message),

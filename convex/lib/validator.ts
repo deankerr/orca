@@ -1,4 +1,5 @@
-import { v, type Validator } from 'convex/values'
+import { v } from 'convex/values'
+import type { Validator } from 'convex/values'
 
 export const vPaginatedQueryReturn = <T extends Validator<any, any, any>>(returns: T) =>
   v.object({

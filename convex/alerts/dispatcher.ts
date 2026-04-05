@@ -9,12 +9,9 @@ import type { ChannelDelivery, DiscordDelivery, DMDelivery } from '../discord/bo
 import { sendDiscordDeliveries } from '../discord/bot'
 import { buildMessages } from '../discord/messages'
 import type { DiscordPayload } from '../discord/utils'
+import { isNonEmptyString } from '../shared/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
-
-function hasText(value: string | undefined): value is string {
-  return value !== undefined && value !== ''
-}
 
 // Pattern matching — "*" for all, otherwise simple includes
 export function matchPattern(pattern: string, slug: string): boolean {
@@ -30,7 +27,7 @@ function stampPayload(payload: DiscordPayload, pattern: string): DiscordPayload 
     return payload
   }
   const suffix = ` (${pattern})`
-  const content = hasText(payload.content) ? `${payload.content}${suffix}` : suffix
+  const content = isNonEmptyString(payload.content) ? `${payload.content}${suffix}` : suffix
   return { ...payload, content }
 }
 
@@ -78,7 +75,7 @@ export const run = internalAction({
   },
   handler: async (ctx, args) => {
     const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!hasText(botToken)) {
+    if (!isNonEmptyString(botToken)) {
       console.log('[alerts:dispatcher] DISCORD_BOT_TOKEN not configured, skipping')
       return
     }

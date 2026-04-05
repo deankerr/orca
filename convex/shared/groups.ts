@@ -37,14 +37,18 @@ export function groupChanges(changes: EntityChange[]): ChangeGroup[] {
   for (const model of models) {
     if (model.event.kind === 'entity_available') {
       const eps = epByModelAndKind.get(`${model.model.slug}:entity_available`) ?? []
-      for (const ep of eps) claimed.add(ep)
+      for (const ep of eps) {
+        claimed.add(ep)
+      }
       groups.push({ slug: model.model.slug, changes: [model, ...eps] })
       continue
     }
 
     if (model.event.kind === 'entity_unavailable') {
       const eps = epByModelAndKind.get(`${model.model.slug}:entity_unavailable`) ?? []
-      for (const ep of eps) claimed.add(ep)
+      for (const ep of eps) {
+        claimed.add(ep)
+      }
       // endpoint unavailables first, then model
       groups.push({ slug: model.model.slug, changes: [...eps, model] })
       continue
@@ -56,7 +60,9 @@ export function groupChanges(changes: EntityChange[]): ChangeGroup[] {
 
   // unclaimed endpoints
   for (const ep of endpoints) {
-    if (claimed.has(ep)) continue
+    if (claimed.has(ep)) {
+      continue
+    }
     groups.push({ slug: ep.model.slug, changes: [ep] })
   }
 

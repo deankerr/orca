@@ -2,24 +2,21 @@ import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-
 
 import { getEnv } from '../lib/env'
 import { getLogo } from '../shared/logos'
+import { isNonEmptyString } from '../shared/utils'
 
 export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
 }
 
-function hasText(value: string | undefined): value is string {
-  return value !== undefined && value !== ''
-}
-
 export function getAuthorUrl(slug: string, uuid?: string): string {
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  const uuidParam = hasText(uuid) ? `&uuid=${uuid.slice(0, 6)}` : ''
+  const uuidParam = isNonEmptyString(uuid) ? `&uuid=${uuid.slice(0, 6)}` : ''
   return `${baseUrl}/?q=${slug}${uuidParam}`
 }
 
 export function getColorIconUrl(model_slug: string): string | undefined {
   const { colorPath } = getLogo(model_slug)
-  if (!hasText(colorPath)) {
+  if (!isNonEmptyString(colorPath)) {
     return undefined
   }
 

@@ -2,8 +2,8 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { omit } from 'remeda'
 
-import { Doc } from '../../../_generated/dataModel'
-import { type MutationCtx, type QueryCtx } from '../../../_generated/server'
+import type { Doc } from '../../../_generated/dataModel'
+import type { MutationCtx, QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
 import { getModelDescription } from '../sources'
 
@@ -43,14 +43,14 @@ export const table = defineTable({
 export const vTable = createTableVHelper('or_views_models', table.validator)
 
 export async function collect(ctx: QueryCtx) {
-  return await ctx.db.query(vTable.name).withIndex('by_or_added_at').order('desc').collect()
+  return ctx.db.query(vTable.name).withIndex('by_or_added_at').order('desc').collect()
 }
 
 export async function insert(
   ctx: MutationCtx,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
+  return ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
 }
 
 export async function patch(
@@ -58,7 +58,7 @@ export async function patch(
   id: typeof vTable._id.type,
   updates: Partial<Omit<typeof vTable.validator.type, 'updated_at'>>,
 ) {
-  return await ctx.db.patch(id, { ...updates, updated_at: Date.now() })
+  await ctx.db.patch(id, { ...updates, updated_at: Date.now() })
 }
 
 export async function replace(
@@ -66,7 +66,7 @@ export async function replace(
   id: typeof vTable._id.type,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
 ) {
-  return await ctx.db.replace(id, { ...data, updated_at: Date.now() })
+  await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
 export type ModelDocWithDescription = Doc<'or_views_models'> & { description: string }
