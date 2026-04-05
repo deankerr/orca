@@ -1,6 +1,5 @@
-import { v } from 'convex/values'
-
 import { EmbedBuilder } from '@discordjs/builders'
+import { v } from 'convex/values'
 import { up } from 'up-fetch'
 
 import { internalAction } from '../_generated/server'

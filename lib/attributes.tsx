@@ -1,7 +1,6 @@
-import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-
 import { InlineCode } from '@/components/shared/inline-code'
 import { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { SpriteIconName } from '@/lib/sprite-icons'
 
 import { formatDateTime, formatPrice } from './formatters'

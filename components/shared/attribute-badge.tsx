@@ -1,5 +1,4 @@
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-
 import { Attribute, AttributeSlots, resolveEndpointAttributeSlot } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'

@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { MonitorPage } from '@/components/monitor/monitor-page'
 import { ClientOnly } from '@/components/shared/client-only'

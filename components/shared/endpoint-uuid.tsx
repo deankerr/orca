@@ -1,6 +1,5 @@
-import Link from 'next/link'
-
 import { LinkIcon } from 'lucide-react'
+import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

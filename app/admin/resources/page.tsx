@@ -1,10 +1,9 @@
 'use client'
 
-import { api } from '@/convex/_generated/api'
-
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
 import { EntityBadge } from '@/components/shared/entity-badge'
 import { ExternalLink } from '@/components/shared/external-link'
+import { api } from '@/convex/_generated/api'
 import { useCachedQuery } from '@/hooks/use-cached-query'
 import { getConvexHttpUrl } from '@/lib/utils'
 

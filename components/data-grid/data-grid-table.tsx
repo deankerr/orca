@@ -1,10 +1,9 @@
-import * as React from 'react'
-import { CSSProperties, Fragment, ReactNode, useCallback, useRef } from 'react'
-
 import { Cell, Column, flexRender, Header, HeaderGroup, Row } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva } from 'class-variance-authority'
 import { InboxIcon } from 'lucide-react'
+import * as React from 'react'
+import { CSSProperties, Fragment, ReactNode, useCallback, useRef } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'

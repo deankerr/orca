@@ -9,7 +9,6 @@ import type {
   ProviderChange,
 } from '@/convex/db/or/views/changes'
 import { formatPricingFields } from '@/convex/shared/formatters'
-
 import { cn } from '@/lib/utils'
 
 import { EntityAvatar } from '../shared/entity-avatar'

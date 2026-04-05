@@ -1,5 +1,4 @@
 import { WithoutSystemFields } from 'convex/server'
-
 import { atomizeChangeset, diff, IAtomicChange, type Options as DiffOptions } from 'json-diff-ts'
 
 import { Doc } from '../../_generated/dataModel'

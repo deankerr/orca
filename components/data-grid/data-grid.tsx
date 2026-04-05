@@ -1,10 +1,8 @@
 'use client'
 
 import './data-grid.css'
-
-import { createContext, ReactNode, useContext } from 'react'
-
 import { RowData, Table } from '@tanstack/react-table'
+import { createContext, ReactNode, useContext } from 'react'
 
 import { cn } from '@/lib/utils'
 

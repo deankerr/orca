@@ -1,0 +1,82 @@
+{
+  // Note: this is a JSONC compatible file, like tsconfig.json
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./node_modules/ultracite/config/oxlint/core/.oxlintrc.json"],
+  "ignorePatterns": [
+    ".agents/skills",
+    ".claude/skills",
+    "**/_generated",
+    "**/components/ui",
+    "**/routeTree.gen.ts"
+  ],
+  "rules": {
+    // Standard ultracite disables
+    "func-style": "off",
+    "import/no-relative-parent-imports": "off",
+    "no-inline-comments": "off",
+    "no-use-before-define": "off",
+    "no-void": "off",
+    "no-warning-comments": "off",
+    "require-await": "off",
+    "typescript/consistent-type-definitions": "off",
+    "typescript/triple-slash-reference": "off",
+    "sort-keys": "off",
+    "array-type": "off",
+
+    // Project specific
+    "no-nested-ternary": "off",
+    "typescript/no-explicit-any": "off",
+    "typescript/no-non-null-assertion": "off",
+    "complexity": "off"
+
+    // Type-aware linting policy
+    //
+    // Keep the low-risk correctness rules on across `convex/`.
+    // Explicit nullable handling, floating-promise detection, and similar
+    // "real bug" classes are worth fixing even in raw-data processing code.
+    //
+    // Treat the raw ingestion/materialization pipeline as a deliberate type
+    // boundary, not a place where we must eliminate every `any`-adjacent
+    // operation. Convex schemas intentionally support `v.any`, and this
+    // project uses that at archival / source boundaries where the external
+    // shape is not stable enough to model exactly.
+    //
+    // Scope down the `typescript-eslint/no-unsafe-*` family only in the parts
+    // of the pipeline that intentionally operate on partially-known external
+    // records, rather than weakening type-aware linting for all of `convex/`.
+    //
+    // These paths are treated as that boundary:
+    // - `convex/snapshots/materialize/**`
+    // - `convex/snapshots/materializedChanges/**`
+    // - possibly `convex/db/or/sources.ts`
+    //
+    // Do not force "lint-clean" rewrites in fragile materialization code just
+    // to appease `no-unsafe-assignment`,
+    // `no-unsafe-member-access`, or `no-unsafe-type-assertion`. Improvements
+    // there should come from a considered redesign:
+    // - moving selected `v.any` fields to `unknown`
+    // - introducing targeted parsing / guards at stable boundaries
+    // - tightening individual artifacts once their shapes are truly known
+  },
+  "overrides": [
+    {
+      "files": [
+        "convex/snapshots/materialize/**/*.{ts,tsx}",
+        "convex/snapshots/materializedChanges/**/*.{ts,tsx}",
+        "convex/db/or/sources.ts"
+      ],
+      "rules": {
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+
+        // convex doesn't support kebab-case
+        "unicorn/filename-case": "off",
+
+        // incompatible with matching `undefined` in index queries
+        "unicorn/no-useless-undefined": "off"
+      }
+    }
+  ]
+}
