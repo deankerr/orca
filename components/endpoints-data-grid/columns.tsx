@@ -1,4 +1,4 @@
-import { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
@@ -24,15 +24,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <DataGridColumnHeader column={column} title="UUID" />
       </div>
     ),
-    cell: ({ row }) => {
-      return (
-        <EndpointUuid
-          uuid={row.original.uuid}
-          modelSlug={row.original.model.slug}
-          handle={dataGridPopoverHandle}
-        />
-      )
-    },
+    cell: ({ row }) => (
+      <EndpointUuid
+        uuid={row.original.uuid}
+        modelSlug={row.original.model.slug}
+        handle={dataGridPopoverHandle}
+      />
+    ),
     size: 75,
     enableSorting: false,
     meta: {
@@ -129,9 +127,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
           priceValue: inputPrice,
           unitSuffix: false,
         })
-      } else {
-        return <span className="text-muted-foreground">&ndash;</span>
       }
+      return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 100,
     sortUndefined: -1,
@@ -157,9 +154,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
           priceValue: outputPrice,
           unitSuffix: false,
         })
-      } else {
-        return <span className="text-muted-foreground">&ndash;</span>
       }
+      return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 100,
     sortUndefined: -1,
@@ -253,16 +249,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <DataGridColumnHeader column={column} title="QUANT." />
       </div>
     ),
-    cell: ({ getValue }) => {
-      return (
-        <Badge
-          variant="outline"
-          className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
-        >
-          {getValue<string>()}
-        </Badge>
-      )
-    },
+    cell: ({ getValue }) => (
+      <Badge
+        variant="outline"
+        className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
+      >
+        {getValue<string>()}
+      </Badge>
+    ),
     size: 100,
     meta: {
       headerClassName: 'text-center',
@@ -285,9 +279,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return `${throughput.toLocaleString('en-US', {
           maximumFractionDigits: 0,
         })}`
-      } else {
-        return <span className="text-muted-foreground">&ndash;</span>
       }
+      return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 110,
     sortUndefined: -1,
@@ -311,9 +304,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
         return `${latency.toLocaleString('en-US', {
           maximumFractionDigits: 0,
         })}`
-      } else {
-        return <span className="text-muted-foreground">&ndash;</span>
       }
+      return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 110,
     sortUndefined: -1,
@@ -398,9 +390,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
       const timestamp = getValue<number>()
       if (timestamp) {
         return formatDateTime(timestamp).split(' ')[0]
-      } else {
-        return <span className="text-muted-foreground">&ndash;</span>
       }
+      return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 120,
     sortUndefined: -1,

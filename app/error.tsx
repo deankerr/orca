@@ -1,7 +1,7 @@
 'use client'
 
 import { XCircle } from 'lucide-react'
-import posthog from 'posthog-js'
+import { posthog } from 'posthog-js'
 import { useEffect } from 'react'
 
 import { PageContainer } from '@/components/app-layout/pages'

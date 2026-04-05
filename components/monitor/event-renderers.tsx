@@ -65,8 +65,12 @@ function EventCardIdentity({
 // -- Public API
 
 export function EntityEventCard({ change }: { change: EntityChange }) {
-  if (change.entity_type === 'model') return <ModelEventCard change={change} />
-  if (change.entity_type === 'endpoint') return <EndpointEventCard change={change} />
+  if (change.entity_type === 'model') {
+    return <ModelEventCard change={change} />
+  }
+  if (change.entity_type === 'endpoint') {
+    return <EndpointEventCard change={change} />
+  }
   return <ProviderEventCard change={change} />
 }
 
@@ -196,7 +200,9 @@ function EndpointEventCard({ change }: { change: EndpointChange }) {
 
 function NewEndpointFields({ endpoint }: { endpoint: EndpointChange['endpoint'] }) {
   const pricing = endpoint.pricing ? formatPricingFields(endpoint.pricing) : []
-  if (!endpoint.context_length && pricing.length === 0) return null
+  if (!endpoint.context_length && pricing.length === 0) {
+    return null
+  }
 
   return (
     <FieldItemSet>

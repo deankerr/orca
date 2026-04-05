@@ -30,7 +30,8 @@ import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
 import { Button } from '../ui/button'
 import { useEndpointsData } from './api'
-import { columns, EndpointRow } from './columns'
+import type { EndpointRow } from './columns'
+import { columns } from './columns'
 import { DataGridControls } from './controls'
 import { DataGridFooter } from './footer'
 import { DataGridPopoverProvider } from './popover-handle'
@@ -100,7 +101,9 @@ export function EndpointsDataGrid() {
 
   // Derive row selection from highlight UUID
   const rowSelection = useMemo(() => {
-    if (!highlightUuid) return {}
+    if (!highlightUuid) {
+      return {}
+    }
     const match = filteredEndpoints.find((e) => e.uuid.startsWith(highlightUuid))
     return match ? { [match._id]: true } : {}
   }, [highlightUuid, filteredEndpoints])

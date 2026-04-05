@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation'
 
-import { useEntitySheet } from './entity-sheet'
+import { useEntitySheet } from './entity-sheet-context'
 
 export function useFindAllEndpoints() {
   const router = useRouter()

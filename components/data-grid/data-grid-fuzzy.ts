@@ -1,5 +1,7 @@
-import { compareItems, RankingInfo, rankings, rankItem } from '@tanstack/match-sorter-utils'
-import { FilterFn, SortingFn, sortingFns } from '@tanstack/react-table'
+import type { RankingInfo } from '@tanstack/match-sorter-utils'
+import { compareItems, rankings, rankItem } from '@tanstack/match-sorter-utils'
+import type { FilterFn, SortingFn } from '@tanstack/react-table'
+import { sortingFns } from '@tanstack/react-table'
 
 declare module '@tanstack/react-table' {
   //add fuzzy filter to the filterFns

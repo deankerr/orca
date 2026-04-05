@@ -50,7 +50,9 @@ export function needsInversion(
   useColor: boolean,
 ): boolean {
   // * If using color variant, no inversion needed
-  if (useColor) return false
+  if (useColor) {
+    return false
+  }
 
   const iconIsBlack = isBlack(avatarColor)
   const iconIsWhite = isWhite(avatarColor)

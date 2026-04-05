@@ -35,7 +35,7 @@ export function EntityAvatar({
         />
       ) : (
         <span className="font-mono text-[55cqi] text-foreground/90 uppercase">
-          {(fallbackText || slug).replace(/[^a-zA-Z0-9]/g, '').slice(0, 2)}
+          {(fallbackText || slug).replaceAll(/[^a-zA-Z0-9]/g, '').slice(0, 2)}
         </span>
       )}
     </span>

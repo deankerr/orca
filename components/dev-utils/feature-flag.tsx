@@ -2,10 +2,13 @@
 
 import { useSyncExternalStore } from 'react'
 
+const unsubscribe = () => null
+const subscribe = () => unsubscribe
+
 // presentational features only
 export function FeatureFlag({ flag, children }: { flag: string; children: React.ReactNode }) {
   const isEnabled = useSyncExternalStore(
-    () => () => {},
+    subscribe,
     () => localStorage.getItem(`feature-${flag}`) === 'true',
     () => false,
   )
@@ -14,7 +17,9 @@ export function FeatureFlag({ flag, children }: { flag: string; children: React.
 
 // Helper to toggle flags from dev tools or anywhere
 export const toggleFeature = (flag: string) => {
-  if (typeof window === 'undefined' || !window.localStorage) return
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return
+  }
   const current = localStorage.getItem(`feature-${flag}`) === 'true'
   localStorage.setItem(`feature-${flag}`, (!current).toString())
   window.location.reload() // Quick reload to apply changes
@@ -22,7 +27,9 @@ export const toggleFeature = (flag: string) => {
 
 // Helper to check if feature is enabled (for conditional logic)
 export const isFeatureEnabled = (flag: string) => {
-  if (typeof window === 'undefined' || !window.localStorage) return false
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return false
+  }
   return localStorage.getItem(`feature-${flag}`) === 'true'
 }
 

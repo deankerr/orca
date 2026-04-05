@@ -4,7 +4,9 @@ export function useTouchPrimary() {
   const [isTouchPrimary, setIsTouchPrimary] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') {
+      return
+    }
 
     const controller = new AbortController()
     const { signal } = controller

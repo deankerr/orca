@@ -34,7 +34,7 @@ export default function Page() {
         <div className="flex flex-wrap gap-3 py-1">
           <div className="-mb-1 w-full text-sm font-medium">Models</div>
           {models
-            ?.sort((a, b) => a.name.localeCompare(b.name))
+            ?.toSorted((a, b) => a.name.localeCompare(b.name))
             .map((m) => (
               <div key={m._id} className="flex w-56 justify-between gap-2 border px-1 py-1">
                 <EntityBadge name={m.name} slug={m.slug} />
@@ -55,7 +55,7 @@ export default function Page() {
         <div className="flex flex-wrap gap-3 py-1">
           <div className="-mb-1 w-full text-sm font-medium">Providers</div>
           {providers
-            ?.sort((a, b) => a.name.localeCompare(b.name))
+            ?.toSorted((a, b) => a.name.localeCompare(b.name))
             .map((p) => (
               <div key={p._id} className="flex w-60 justify-between gap-2 border px-1 py-1">
                 <EntityBadge name={p.name} slug={p.slug} />

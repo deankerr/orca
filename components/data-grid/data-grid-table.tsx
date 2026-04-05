@@ -1,9 +1,11 @@
-import { Cell, Column, flexRender, Header, HeaderGroup, Row } from '@tanstack/react-table'
+import type { Cell, Column, Header, HeaderGroup, Row } from '@tanstack/react-table'
+import { flexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva } from 'class-variance-authority'
 import { InboxIcon } from 'lucide-react'
 import * as React from 'react'
-import { CSSProperties, Fragment, ReactNode, useCallback, useRef } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { Fragment, useCallback, useRef } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
@@ -142,7 +144,7 @@ function DataGridTableHeadRowCell<TData>({
         }),
         ...pinningStyles,
         ...(needsStickyTop && { top: 0, zIndex: 11 }),
-        ...(dndStyle ? dndStyle : null),
+        ...dndStyle,
       }}
       data-pinned={isPinned || undefined}
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
@@ -290,7 +292,7 @@ function DataGridTableBodyRowCell<TData>({
       {...(props.tableLayout?.columnsDraggable && !isPinned ? { cell } : {})}
       style={{
         ...(props.tableLayout?.columnsPinnable && column.getCanPin() && getPinningStyles(column)),
-        ...(dndStyle ? dndStyle : null),
+        ...dndStyle,
       }}
       data-pinned={isPinned || undefined}
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
@@ -387,38 +389,38 @@ function DataGridTableVirtual<TData>() {
     ),
   })
 
-  if (isLoading) return <DataGridSkeleton />
+  if (isLoading) {
+    return <DataGridSkeleton />
+  }
 
   const virtualRows = virtualizer.getVirtualItems()
   const totalSize = virtualizer.getTotalSize()
+  const lastVirtualRow = virtualRows.at(-1)
   const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0
-  const paddingBottom =
-    virtualRows.length > 0 ? totalSize - virtualRows[virtualRows.length - 1].end : 0
+  const paddingBottom = lastVirtualRow ? totalSize - lastVirtualRow.end : 0
 
   return (
     <div ref={scrollElementRef} className="flex-1 overflow-auto overscroll-none">
       <DataGridTableBase>
         <DataGridTableHead>
-          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => {
-            return (
-              <DataGridTableHeadRow headerGroup={headerGroup} key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const { column } = header
+          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => (
+            <DataGridTableHeadRow headerGroup={headerGroup} key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const { column } = header
 
-                  return (
-                    <DataGridTableHeadRowCell header={header} key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                      {props.tableLayout?.columnsResizable && column.getCanResize() && (
-                        <DataGridTableHeadRowCellResize header={header} />
-                      )}
-                    </DataGridTableHeadRowCell>
-                  )
-                })}
-              </DataGridTableHeadRow>
-            )
-          })}
+                return (
+                  <DataGridTableHeadRowCell header={header} key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {props.tableLayout?.columnsResizable && column.getCanResize() && (
+                      <DataGridTableHeadRowCellResize header={header} />
+                    )}
+                  </DataGridTableHeadRowCell>
+                )
+              })}
+            </DataGridTableHeadRow>
+          ))}
         </DataGridTableHead>
 
         {!props.tableLayout?.rowBorder && <DataGridTableRowSpacer />}
@@ -433,18 +435,18 @@ function DataGridTableVirtual<TData>() {
           {virtualRows.length > 0 ? (
             virtualRows.map((virtualRow) => {
               const row = table.getRowModel().rows[virtualRow.index]
-              if (!row) return null
+              if (!row) {
+                return null
+              }
 
               return (
                 <Fragment key={virtualRow.key}>
                   <DataGridTableBodyRow row={row}>
-                    {row.getVisibleCells().map((cell: Cell<TData, unknown>) => {
-                      return (
-                        <DataGridTableBodyRowCell cell={cell} key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </DataGridTableBodyRowCell>
-                      )
-                    })}
+                    {row.getVisibleCells().map((cell: Cell<TData, unknown>) => (
+                      <DataGridTableBodyRowCell cell={cell} key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </DataGridTableBodyRowCell>
+                    ))}
                   </DataGridTableBodyRow>
                   {row.getIsExpanded() && <DataGridTableBodyRowExpanded row={row} />}
                 </Fragment>

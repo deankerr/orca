@@ -14,7 +14,9 @@ function filterBatches(
   modelSlug: string,
   providerSlug: string,
 ): CrawlBatch[] {
-  if (!modelSlug && !providerSlug) return batches
+  if (!modelSlug && !providerSlug) {
+    return batches
+  }
 
   const hasModelFilter = !!modelSlug
   const hasProviderFilter = !!providerSlug
@@ -23,7 +25,9 @@ function filterBatches(
   for (const batch of batches) {
     const changes = batch.changes.filter((change) => {
       if (hasModelFilter && hasProviderFilter) {
-        if (change.entity_type !== 'endpoint') return false
+        if (change.entity_type !== 'endpoint') {
+          return false
+        }
 
         const modelOk = change.model.slug === modelSlug
         const providerOk = baseProviderSlug(change.provider.slug) === providerSlug
@@ -87,7 +91,9 @@ export function useMonitor(modelSlug = '', providerSlug = '') {
   const isFeedIdsFetching = feedIdsQuery.isFetching
 
   const loadMore = useCallback(() => {
-    if (!hasMore || isFeedIdsFetching) return
+    if (!hasMore || isFeedIdsFetching) {
+      return
+    }
     setWindowState((state) => ({
       filtersKey,
       visibleCount: (state.filtersKey === filtersKey ? state.visibleCount : PAGE_SIZE) + PAGE_SIZE,

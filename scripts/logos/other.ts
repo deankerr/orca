@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 
 import { OUTPUT_DIR, SOURCES_OTHER_DIR } from './config'
-import { slugToTitle, type LogoStyle } from './utils'
+import { slugToTitle } from './utils'
+import type { LogoStyle } from './utils'
 
 const SUPPORTED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp']
 
@@ -38,7 +39,7 @@ export async function processOtherIcons(
 
     for (const file of iconFiles) {
       // * Extract slug by removing any supported extension and dashes
-      const slug = file.replace(/\.(png|jpe?g|svg|webp)$/i, '').replace(/-/g, '')
+      const slug = file.replace(/\.(png|jpe?g|svg|webp)$/i, '').replaceAll('-', '')
 
       // * Skip if already processed from lobehub
       if (existingSlugs.has(slug)) {
@@ -65,14 +66,17 @@ export async function processOtherIcons(
           scale: 1,
         }
         console.log(`  ✓ Added ${slug} (${title})`)
-      } catch (err) {
-        console.warn(`  ⚠️  Skipped ${slug}:`, err instanceof Error ? err.message : err)
+      } catch (error) {
+        console.warn(`  ⚠️  Skipped ${slug}:`, error instanceof Error ? error.message : error)
       }
     }
-  } catch (err) {
+  } catch (error) {
     // * Directory might not exist, that's okay
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      console.warn(`  ⚠️  Could not process other icons:`, err instanceof Error ? err.message : err)
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.warn(
+        `  ⚠️  Could not process other icons:`,
+        error instanceof Error ? error.message : error,
+      )
     }
   }
 

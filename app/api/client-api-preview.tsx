@@ -63,13 +63,28 @@ function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
   const [html, setHtml] = useState<string | null>(null)
 
   useEffect(() => {
+    let isActive = true
+
     if (!code || isLoading || error) {
       return
     }
 
-    highlight(code)
-      .then(setHtml)
-      .catch((err) => console.error('Syntax highlighting failed:', err))
+    const loadHighlight = async () => {
+      try {
+        const nextHtml = await highlight(code)
+        if (isActive) {
+          setHtml(nextHtml)
+        }
+      } catch (highlightError) {
+        console.error('Syntax highlighting failed:', highlightError)
+      }
+    }
+
+    void loadHighlight()
+
+    return () => {
+      isActive = false
+    }
   }, [code, isLoading, error])
 
   return (

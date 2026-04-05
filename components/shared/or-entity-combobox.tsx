@@ -53,58 +53,83 @@ function EntityCombobox({
   const listboxId = useId()
 
   const dedupedItems = useMemo(() => {
-    if (!items) return undefined
+    if (items === undefined) {
+      return
+    }
 
     const seenSlugs = new Set<string>()
     return items.filter((item) => {
-      if (seenSlugs.has(item.slug)) return false
+      if (seenSlugs.has(item.slug)) {
+        return false
+      }
       seenSlugs.add(item.slug)
       return true
     })
   }, [items])
 
   const filtered = useMemo(() => {
-    if (!dedupedItems) return undefined
-
-    let result: EntityItem[]
-
-    if (!search) {
-      result = dedupedItems
-    } else {
-      result = dedupedItems
-        .map((item) => {
-          const slugRank = rankItem(item.slug, search, { threshold: rankings.CONTAINS })
-          const nameRank = rankItem(item.name, search, { threshold: rankings.CONTAINS })
-          const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
-          return { item, rank: bestRank }
-        })
-        .filter((result) => result.rank.passed)
-        .sort((a, b) => compareItems(a.rank, b.rank))
-        .map((result) => result.item)
+    if (dedupedItems === undefined) {
+      return
     }
 
+    let nextItems = search
+      ? dedupedItems
+          .map((item) => {
+            const slugRank = rankItem(item.slug, search, { threshold: rankings.CONTAINS })
+            const nameRank = rankItem(item.name, search, { threshold: rankings.CONTAINS })
+            const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
+            return { item, rank: bestRank }
+          })
+          .filter((rankedItem) => rankedItem.rank.passed)
+          .toSorted((a, b) => compareItems(a.rank, b.rank))
+          .map((rankedItem) => rankedItem.item)
+      : dedupedItems
+
     if (value) {
-      const selectedIndex = result.findIndex((item) => item.slug === value)
+      const selectedIndex = nextItems.findIndex((item) => item.slug === value)
       if (selectedIndex > 0) {
-        const selectedItem = result[selectedIndex]
-        result = [
+        const selectedItem = nextItems[selectedIndex]
+        nextItems = [
           selectedItem,
-          ...result.slice(0, selectedIndex),
-          ...result.slice(selectedIndex + 1),
+          ...nextItems.slice(0, selectedIndex),
+          ...nextItems.slice(selectedIndex + 1),
         ]
       }
     }
 
-    return result
+    return nextItems
   }, [dedupedItems, search, value])
 
   const selected = dedupedItems?.find((item) => item.slug === value)
+  const hasFilteredItems = (filtered?.length ?? 0) > 0
 
   const handleSelect = (item: EntityItem) => {
     setValue(item.slug === value ? '' : item.slug)
     setOpen(false)
     setSearch('')
   }
+
+  const listContent = (() => {
+    if (isPending) {
+      return (
+        <div className="flex p-2">
+          <EntityBadgeSkeleton className="flex-1" />
+        </div>
+      )
+    }
+
+    if (hasFilteredItems) {
+      return (
+        <VirtualizedEntityList
+          items={filtered ?? []}
+          selectedSlug={value}
+          onSelect={handleSelect}
+        />
+      )
+    }
+
+    return <div className="p-4 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+  })()
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -151,15 +176,7 @@ function EntityCombobox({
           </div>
 
           {/* Virtualized list */}
-          {isPending ? (
-            <div className="flex p-2">
-              <EntityBadgeSkeleton className="flex-1" />
-            </div>
-          ) : !filtered?.length ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">{emptyMessage}</div>
-          ) : (
-            <VirtualizedEntityList items={filtered} selectedSlug={value} onSelect={handleSelect} />
-          )}
+          {listContent}
         </div>
       </PopoverContent>
     </Popover>

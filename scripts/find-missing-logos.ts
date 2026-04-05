@@ -64,13 +64,13 @@ async function checkMissingLogos() {
   // * Output results
   console.log('=== PROVIDERS WITHOUT LOGOS ===')
   console.log(`${missingProviders.length} providers:`)
-  for (const { slug, name } of missingProviders.sort((a, b) => a.slug.localeCompare(b.slug))) {
+  for (const { slug, name } of missingProviders.toSorted((a, b) => a.slug.localeCompare(b.slug))) {
     console.log(`  ${slug} (${name})`)
   }
 
   console.log('\n=== MODELS WITHOUT LOGOS ===')
   console.log(`${modelsWithoutLogos.length} models:`)
-  for (const slug of modelsWithoutLogos.sort()) {
+  for (const slug of modelsWithoutLogos.toSorted()) {
     console.log(`  ${slug}`)
   }
 }

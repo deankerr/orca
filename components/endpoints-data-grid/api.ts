@@ -17,7 +17,9 @@ export function useEndpointsData() {
   const { attributeFilters } = useEndpointFilters()
 
   const filteredEndpoints = useMemo(() => {
-    if (!rawEndpoints) return []
+    if (!rawEndpoints) {
+      return []
+    }
 
     const filtered = rawEndpoints.filter((endpoint) => {
       for (const [filterName, mode] of Object.entries(attributeFilters)) {
@@ -87,28 +89,28 @@ const FAKE_ENDPOINT: ORCAEndpoint = {
     data_retention_days: 30,
   },
   pricing: {
-    text_input: 0.000001,
-    text_output: 0.000002,
-    reasoning_output: 0.0000015,
-    audio_input: 0.0000005,
-    audio_cache_write: 0.00000025,
-    text_cache_read: 0.0000001,
-    text_cache_write: 0.0000005,
-    image_input: 0.00001,
-    image_output: 0.00002,
+    text_input: 0.000_001,
+    text_output: 0.000_002,
+    reasoning_output: 0.000_001_5,
+    audio_input: 0.000_000_5,
+    audio_cache_write: 0.000_000_25,
+    text_cache_read: 0.000_000_1,
+    text_cache_write: 0.000_000_5,
+    image_input: 0.000_01,
+    image_output: 0.000_02,
     web_search: 0.001,
     discount: 0.2,
   },
   variable_pricings: undefined,
   limits: {
-    text_input_tokens: 200000,
-    image_input_tokens: 50000,
+    text_input_tokens: 200_000,
+    image_input_tokens: 50_000,
     images_per_input: 20,
     requests_per_minute: 100,
-    requests_per_day: 10000,
+    requests_per_day: 10_000,
   },
-  context_length: 200000,
-  max_output: 16000,
+  context_length: 200_000,
+  max_output: 16_000,
   quantization: 'fp16',
   supported_parameters: ['tools', 'response_format', 'structured_outputs'],
   completions: true,

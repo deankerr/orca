@@ -8,7 +8,9 @@ export function DataGridFooter() {
   const { rawEndpoints, isLoading } = useEndpointsData()
   const { hasActiveFilters } = useEndpointFilters()
 
-  if (isLoading) return null
+  if (isLoading) {
+    return null
+  }
 
   const filteredEndpoints = table.getFilteredRowModel().rows.map((row) => row.original)
 

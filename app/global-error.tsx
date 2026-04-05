@@ -1,7 +1,7 @@
 'use client'
 
 import NextError from 'next/error'
-import posthog from 'posthog-js'
+import { posthog } from 'posthog-js'
 import { useEffect } from 'react'
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
