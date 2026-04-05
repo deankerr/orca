@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-import { createDiscordClient, formatDiscordError, type DiscordClient } from './api'
+import { createDiscordClient, formatDiscordError } from './api'
+import type { DiscordClient } from './api'
 import type { DiscordPayload } from './utils'
 
 export type ChannelDelivery = {
@@ -29,7 +30,12 @@ const DELAY_BETWEEN_MESSAGES_MS = 1000
 // 3. Prevents duplicate API calls for same user in one batch
 const dmChannelCache = new Map<string, string>()
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+async function sleep(ms: number): Promise<void> {
+  // oxlint-disable-next-line promise/avoid-new
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 
 async function resolveChannelId(
   delivery: DiscordDelivery,
@@ -40,7 +46,9 @@ async function resolveChannelId(
   }
 
   const cached = dmChannelCache.get(delivery.user_id)
-  if (cached) return { ok: true, channelId: cached }
+  if (cached !== undefined) {
+    return { ok: true, channelId: cached }
+  }
 
   try {
     const { id } = await discord('/users/@me/channels', {
@@ -87,13 +95,13 @@ export async function sendDiscordDeliveries(
           method: 'POST',
           body: payload,
         })
-        sent++
-      } catch (err) {
-        failed++
+        sent += 1
+      } catch (error) {
+        failed += 1
         console.error('[discord:bot] send failed', {
           channel: channelId,
           pattern: delivery.pattern,
-          error: formatDiscordError(err),
+          error: formatDiscordError(error),
         })
       }
 

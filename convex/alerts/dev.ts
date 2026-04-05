@@ -20,12 +20,12 @@ export const test = internalAction({
   handler: async (ctx, args) => {
     // resolve crawl_ids
     let crawlIds: string[]
-    if (args.crawlIds) {
-      crawlIds = Array.isArray(args.crawlIds) ? args.crawlIds : [args.crawlIds]
-    } else {
+    if (args.crawlIds === undefined) {
       crawlIds = await ctx.runQuery(internal.alerts.dev.getRecentCrawlIds, {
         limit: args.lastN ?? 1,
       })
+    } else {
+      crawlIds = Array.isArray(args.crawlIds) ? args.crawlIds : [args.crawlIds]
     }
 
     if (!crawlIds.length) {

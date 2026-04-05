@@ -7,15 +7,21 @@ export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
 }
 
+function hasText(value: string | undefined): value is string {
+  return value !== undefined && value !== ''
+}
+
 export function getAuthorUrl(slug: string, uuid?: string): string {
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  const uuidParam = uuid ? `&uuid=${uuid.slice(0, 6)}` : ''
+  const uuidParam = hasText(uuid) ? `&uuid=${uuid.slice(0, 6)}` : ''
   return `${baseUrl}/?q=${slug}${uuidParam}`
 }
 
 export function getColorIconUrl(model_slug: string): string | undefined {
   const { colorPath } = getLogo(model_slug)
-  if (!colorPath) return undefined
+  if (!hasText(colorPath)) {
+    return undefined
+  }
 
   const baseUrl = getEnv('ORCA_PUBLIC_URL')
   return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`

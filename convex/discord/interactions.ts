@@ -1,9 +1,67 @@
-import { InteractionType, type APIInteraction } from 'discord-api-types/v10'
+import { InteractionType } from 'discord-api-types/v10'
 import { InteractionResponseFlags, InteractionResponseType, verifyKey } from 'discord-interactions'
+import { z } from 'zod'
 
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
 import { COLORS, PATTERN_MAX_LENGTH, SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
+
+const InteractionOptionValueSchema = z.union([z.string(), z.number(), z.boolean()])
+
+const InteractionNestedOptionSchema = z.looseObject({
+  name: z.string(),
+  value: InteractionOptionValueSchema.optional(),
+})
+
+const InteractionOptionSchema = z.looseObject({
+  type: z.number(),
+  name: z.string(),
+  options: z.array(InteractionNestedOptionSchema).optional(),
+})
+
+const InteractionSchema = z.looseObject({
+  type: z.number(),
+  data: z
+    .looseObject({
+      name: z.string().optional(),
+      options: z.array(InteractionOptionSchema).optional(),
+    })
+    .optional(),
+  member: z
+    .looseObject({
+      user: z.looseObject({ id: z.string() }),
+    })
+    .nullable()
+    .optional(),
+  user: z.looseObject({ id: z.string() }).optional(),
+  guild_id: z.string().nullable().optional(),
+  channel: z.looseObject({ id: z.string() }).nullable().optional(),
+  channel_id: z.string().optional(),
+  authorizing_integration_owners: z.record(z.string(), z.string()).optional(),
+})
+
+type DiscordInteraction = z.infer<typeof InteractionSchema>
+type Subcommand = 'subscribe' | 'list' | 'delete' | 'help'
+
+const SUBCOMMAND_OPTION_TYPE = 1
+const PING_TYPE: number = InteractionType.Ping
+const APPLICATION_COMMAND_TYPE: number = InteractionType.ApplicationCommand
+
+function hasText(value: string | null | undefined): value is string {
+  return value !== undefined && value !== null && value !== ''
+}
+
+function isSubcommand(value: string): value is Subcommand {
+  return value === 'subscribe' || value === 'list' || value === 'delete' || value === 'help'
+}
+
+function getStringOption(
+  options: Record<string, string | number | boolean>,
+  key: string,
+): string | undefined {
+  const value = options[key]
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
 
 function pongResponse(): Response {
   return Response.json({ type: InteractionResponseType.PONG })
@@ -38,40 +96,30 @@ function embedResponse(
   })
 }
 
-function getUserId(interaction: APIInteraction): string | null {
-  if ('member' in interaction && interaction.member) {
-    return interaction.member.user.id
-  }
-  if ('user' in interaction && interaction.user) {
-    return interaction.user.id
-  }
-  return null
+function getUserId(interaction: DiscordInteraction): string | null {
+  return interaction.member?.user.id ?? interaction.user?.id ?? null
 }
 
-function parseSubcommand(interaction: APIInteraction): {
-  subcommand: string | null
+function parseSubcommand(interaction: DiscordInteraction): {
+  subcommand: Subcommand | null
   options: Record<string, string | number | boolean>
 } {
-  if (!('data' in interaction) || !interaction.data) {
+  const interactionData = interaction.data
+  if (interactionData === undefined) {
     return { subcommand: null, options: {} }
   }
 
-  const data = interaction.data
-  if (!('options' in data) || !data.options) {
+  if (interactionData.options === undefined || interactionData.options.length === 0) {
     return { subcommand: null, options: {} }
   }
 
-  const firstOption = data.options[0]
-  if (!firstOption) {
-    return { subcommand: null, options: {} }
-  }
+  const [firstOption] = interactionData.options
 
-  // Subcommands have type 1
-  if (firstOption.type === 1 && 'options' in firstOption) {
+  if (firstOption.type === SUBCOMMAND_OPTION_TYPE && isSubcommand(firstOption.name)) {
     const options: Record<string, string | number | boolean> = {}
     for (const opt of firstOption.options ?? []) {
-      if ('value' in opt) {
-        options[opt.name] = opt.value as string | number | boolean
+      if (opt.value !== undefined) {
+        options[opt.name] = opt.value
       }
     }
     return { subcommand: firstOption.name, options }
@@ -80,28 +128,26 @@ function parseSubcommand(interaction: APIInteraction): {
   return { subcommand: null, options: {} }
 }
 
-function isDMContext(interaction: APIInteraction): boolean {
-  return !('guild_id' in interaction) || !interaction.guild_id
+function isDMContext(interaction: DiscordInteraction): boolean {
+  return !hasText(interaction.guild_id)
 }
 
-function isUserInstallInGuild(interaction: APIInteraction): boolean {
-  if (!('authorizing_integration_owners' in interaction)) return false
+function isUserInstallInGuild(interaction: DiscordInteraction): boolean {
   const owners = interaction.authorizing_integration_owners
-  if (!owners) return false
-  const hasGuild = 'guild_id' in interaction && !!interaction.guild_id
+  if (owners === undefined) {
+    return false
+  }
+  const hasGuild = hasText(interaction.guild_id)
   // Has guild_id but authorized via user install (key "1"), not guild install (key "0")
-  return hasGuild && !!owners['1'] && !owners['0']
+  return hasGuild && hasText(owners['1']) && !hasText(owners['0'])
 }
 
-function getChannelId(interaction: APIInteraction): string | undefined {
-  if ('channel_id' in interaction) return interaction.channel_id
-  if ('channel' in interaction && interaction.channel) return interaction.channel.id
-  return undefined
+function getChannelId(interaction: DiscordInteraction): string | undefined {
+  return interaction.channel?.id ?? interaction.channel_id
 }
 
-function getGuildId(interaction: APIInteraction): string | undefined {
-  if ('guild_id' in interaction) return interaction.guild_id
-  return undefined
+function getGuildId(interaction: DiscordInteraction): string | undefined {
+  return hasText(interaction.guild_id) ? interaction.guild_id : undefined
 }
 
 // Only alphanumeric, hyphen, underscore, forward slash, colon
@@ -131,21 +177,21 @@ function validatePattern(pattern: string): string | null {
 
 async function handleSubscribe(
   ctx: ActionCtx,
-  interaction: APIInteraction,
+  interaction: DiscordInteraction,
   options: Record<string, string | number | boolean>,
 ): Promise<Response> {
   const userId = getUserId(interaction)
-  if (!userId) {
+  if (userId === null) {
     return messageResponse('Unable to identify user.', true)
   }
 
-  const pattern = options.pattern as string | undefined
-  if (!pattern) {
+  const pattern = getStringOption(options, 'pattern')
+  if (pattern === undefined) {
     return messageResponse('Please provide a pattern. Example: `/orca subscribe anthropic/`', true)
   }
 
   const validationError = validatePattern(pattern)
-  if (validationError) {
+  if (validationError !== null) {
     return messageResponse(validationError, true)
   }
 
@@ -188,52 +234,51 @@ async function handleSubscribe(
       },
       false,
     )
-  } else {
-    const channelId = getChannelId(interaction)
-    const guildId = getGuildId(interaction)
+  }
+  const channelId = getChannelId(interaction)
+  const guildId = getGuildId(interaction)
 
-    if (!channelId || !guildId) {
-      return messageResponse('Unable to identify channel.', true)
-    }
+  if (channelId === undefined || guildId === undefined) {
+    return messageResponse('Unable to identify channel.', true)
+  }
 
-    const result = await ctx.runMutation(internal.discord.subscriptions.create, {
-      input: {
-        type: 'channel',
-        guild_id: guildId,
-        channel_id: channelId,
-        user_id: userId,
-        pattern,
-      },
-    })
+  const result = await ctx.runMutation(internal.discord.subscriptions.create, {
+    input: {
+      type: 'channel',
+      guild_id: guildId,
+      channel_id: channelId,
+      user_id: userId,
+      pattern,
+    },
+  })
 
-    if (result === 'limit') {
-      return messageResponse(
-        `You have reached the limit of ${SUBSCRIPTIONS_PER_USER_LIMIT} subscriptions. Delete one first with \`/orca delete\`.`,
-        true,
-      )
-    }
-
-    if (result === 'exists') {
-      return messageResponse(`Pattern \`${pattern}\` already exists in this channel.`, true)
-    }
-
-    return embedResponse(
-      {
-        title: 'Subscription Created',
-        description: `This channel will now receive alerts for changes matching \`${pattern}\`.`,
-        color: COLORS.create,
-      },
-      false,
+  if (result === 'limit') {
+    return messageResponse(
+      `You have reached the limit of ${SUBSCRIPTIONS_PER_USER_LIMIT} subscriptions. Delete one first with \`/orca delete\`.`,
+      true,
     )
   }
+
+  if (result === 'exists') {
+    return messageResponse(`Pattern \`${pattern}\` already exists in this channel.`, true)
+  }
+
+  return embedResponse(
+    {
+      title: 'Subscription Created',
+      description: `This channel will now receive alerts for changes matching \`${pattern}\`.`,
+      color: COLORS.create,
+    },
+    false,
+  )
 }
 
-async function handleList(ctx: ActionCtx, interaction: APIInteraction): Promise<Response> {
+async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Promise<Response> {
   const isDM = isDMContext(interaction)
   const userId = getUserId(interaction)
 
   if (isDM) {
-    if (!userId) {
+    if (userId === null) {
       return messageResponse('Unable to identify user.', true)
     }
 
@@ -259,48 +304,47 @@ async function handleList(ctx: ActionCtx, interaction: APIInteraction): Promise<
       },
       true,
     )
-  } else {
-    const channelId = getChannelId(interaction)
+  }
+  const channelId = getChannelId(interaction)
 
-    if (!channelId) {
-      return messageResponse('Unable to identify channel.', true)
-    }
+  if (channelId === undefined) {
+    return messageResponse('Unable to identify channel.', true)
+  }
 
-    const subs = await ctx.runQuery(internal.discord.subscriptions.list, {
-      context: { type: 'channel', channel_id: channelId },
-    })
+  const subs = await ctx.runQuery(internal.discord.subscriptions.list, {
+    context: { type: 'channel', channel_id: channelId },
+  })
 
-    if (subs.length === 0) {
-      return messageResponse(
-        'No subscriptions in this channel. Create one with `/orca subscribe <pattern>`.',
-        true,
-      )
-    }
-
-    const description = subs.map((sub, i) => `${i + 1}. \`${sub.pattern}\``).join('\n')
-
-    return embedResponse(
-      {
-        title: 'Channel Subscriptions',
-        description,
-        color: COLORS.update,
-        footer: { text: `${subs.length} subscriptions` },
-      },
+  if (subs.length === 0) {
+    return messageResponse(
+      'No subscriptions in this channel. Create one with `/orca subscribe <pattern>`.',
       true,
     )
   }
+
+  const description = subs.map((sub, i) => `${i + 1}. \`${sub.pattern}\``).join('\n')
+
+  return embedResponse(
+    {
+      title: 'Channel Subscriptions',
+      description,
+      color: COLORS.update,
+      footer: { text: `${subs.length} subscriptions` },
+    },
+    true,
+  )
 }
 
 async function handleDelete(
   ctx: ActionCtx,
-  interaction: APIInteraction,
+  interaction: DiscordInteraction,
   options: Record<string, string | number | boolean>,
 ): Promise<Response> {
   const isDM = isDMContext(interaction)
   const userId = getUserId(interaction)
 
-  const pattern = options.pattern as string | undefined
-  if (!pattern) {
+  const pattern = getStringOption(options, 'pattern')
+  if (pattern === undefined) {
     return messageResponse(
       'Please provide a pattern to delete. Use `/orca list` to see patterns.',
       true,
@@ -308,7 +352,7 @@ async function handleDelete(
   }
 
   if (isDM) {
-    if (!userId) {
+    if (userId === null) {
       return messageResponse('Unable to identify user.', true)
     }
 
@@ -329,31 +373,30 @@ async function handleDelete(
       },
       false,
     )
-  } else {
-    const channelId = getChannelId(interaction)
-
-    if (!channelId) {
-      return messageResponse('Unable to identify channel.', true)
-    }
-
-    const deleted = await ctx.runMutation(internal.discord.subscriptions.remove, {
-      context: { type: 'channel', channel_id: channelId },
-      pattern,
-    })
-
-    if (!deleted) {
-      return messageResponse(`Pattern \`${pattern}\` not found in this channel.`, true)
-    }
-
-    return embedResponse(
-      {
-        title: 'Subscription Deleted',
-        description: `Removed subscription for pattern \`${pattern}\`.`,
-        color: COLORS.delete,
-      },
-      false,
-    )
   }
+  const channelId = getChannelId(interaction)
+
+  if (channelId === undefined) {
+    return messageResponse('Unable to identify channel.', true)
+  }
+
+  const deleted = await ctx.runMutation(internal.discord.subscriptions.remove, {
+    context: { type: 'channel', channel_id: channelId },
+    pattern,
+  })
+
+  if (!deleted) {
+    return messageResponse(`Pattern \`${pattern}\` not found in this channel.`, true)
+  }
+
+  return embedResponse(
+    {
+      title: 'Subscription Deleted',
+      description: `Removed subscription for pattern \`${pattern}\`.`,
+      color: COLORS.delete,
+    },
+    false,
+  )
 }
 
 function handleHelp(): Response {
@@ -403,18 +446,27 @@ export async function handleInteraction(
     return new Response('Invalid signature', { status: 401 })
   }
 
-  const interaction = JSON.parse(body) as APIInteraction
+  let interaction: DiscordInteraction
+  try {
+    const parsedInteraction = InteractionSchema.safeParse(JSON.parse(body))
+    if (!parsedInteraction.success) {
+      console.error('[discord:interactions] invalid payload', {
+        error: z.prettifyError(parsedInteraction.error),
+      })
+      return new Response('Invalid interaction payload', { status: 400 })
+    }
+    interaction = parsedInteraction.data
+  } catch {
+    return new Response('Invalid interaction payload', { status: 400 })
+  }
 
-  if (interaction.type === InteractionType.Ping) {
+  if (interaction.type === PING_TYPE) {
     console.log('[discord:interactions] PING received')
     return pongResponse()
   }
 
-  if (interaction.type === InteractionType.ApplicationCommand) {
-    const commandName =
-      'data' in interaction && interaction.data && 'name' in interaction.data
-        ? interaction.data.name
-        : undefined
+  if (interaction.type === APPLICATION_COMMAND_TYPE) {
+    const commandName = interaction.data?.name
 
     console.log('[discord:interactions] command received', {
       command: commandName,
@@ -427,18 +479,26 @@ export async function handleInteraction(
     }
 
     const { subcommand, options } = parseSubcommand(interaction)
+    if (subcommand === null) {
+      return handleHelp()
+    }
 
     switch (subcommand) {
-      case 'subscribe':
-        return await handleSubscribe(ctx, interaction, options)
-      case 'list':
-        return await handleList(ctx, interaction)
-      case 'delete':
-        return await handleDelete(ctx, interaction, options)
-      case 'help':
+      case 'subscribe': {
+        return handleSubscribe(ctx, interaction, options)
+      }
+      case 'list': {
+        return handleList(ctx, interaction)
+      }
+      case 'delete': {
+        return handleDelete(ctx, interaction, options)
+      }
+      case 'help': {
         return handleHelp()
-      default:
+      }
+      default: {
         return handleHelp()
+      }
     }
   }
 

@@ -24,8 +24,16 @@ import { getAuthorUrl, getColorIconUrl } from './utils'
 
 const TRUNCATE_LENGTH = 800
 
+function isLong(value: unknown) {
+  return typeof value === 'string' && value.length > 80
+}
+
+function hasText(value: string | undefined): value is string {
+  return value !== undefined && value !== ''
+}
+
 function blockquote(text: string): string {
-  return `> ${truncate(text, TRUNCATE_LENGTH).replace(/\n/g, '\n> ')}`
+  return `> ${truncate(text, TRUNCATE_LENGTH).replaceAll('\n', '\n> ')}`
 }
 
 const CHARS = {
@@ -52,19 +60,25 @@ export type DiscordMessage = {
 export function buildMessages(changes: EntityChange[]): DiscordMessage[] {
   const groups = groupChanges(changes)
 
-  return groups.flatMap(({ slug, changes: groupChanges }) => {
-    const embeds = groupChanges.flatMap((change) => {
+  return groups.flatMap(({ slug, changes: groupedChanges }) => {
+    const embeds = groupedChanges.flatMap((change) => {
       const embed = buildEmbed(change)
       return embed ? [embed] : []
     })
-    if (embeds.length === 0) return []
+    if (embeds.length === 0) {
+      return []
+    }
     return [{ slug, embeds }]
   })
 }
 
 function buildEmbed(change: EntityChange): EmbedBuilder | null {
-  if (change.entity_type === 'model') return buildModelEmbed(change)
-  if (change.entity_type === 'endpoint') return buildEndpointEmbed(change)
+  if (change.entity_type === 'model') {
+    return buildModelEmbed(change)
+  }
+  if (change.entity_type === 'endpoint') {
+    return buildEndpointEmbed(change)
+  }
   return buildProviderEmbed(change)
 }
 
@@ -87,9 +101,13 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
       .setColor(COLORS.create)
       .setTitle(`${title}${CHARS.sparkles}`)
       .setAuthor(author)
-    if (model.model.description) embed.setDescription(blockquote(model.model.description))
+    if (hasText(model.model.description)) {
+      embed.setDescription(blockquote(model.model.description))
+    }
     const fields = getNewModelFields(model.model)
-    if (fields.length > 0) embed.setFields(fields)
+    if (fields.length > 0) {
+      embed.setFields(fields)
+    }
     return embed
   }
 
@@ -103,7 +121,9 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(model.event.fields)
-  if (!desc) return null
+  if (desc === null) {
+    return null
+  }
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setTitle(title)
@@ -138,7 +158,9 @@ function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
       .setFooter(endpointFooter(ep))
       .setDescription('- endpoint discovered')
     const fields = getNewEndpointFields(ep)
-    if (fields.length > 0) embed.setFields(fields)
+    if (fields.length > 0) {
+      embed.setFields(fields)
+    }
     return embed
   }
 
@@ -152,7 +174,9 @@ function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(ep.event.fields)
-  if (!desc) return null
+  if (desc === null) {
+    return null
+  }
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setAuthor(author)
@@ -185,7 +209,9 @@ function buildProviderEmbed(provider: ProviderChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(provider.event.fields)
-  if (!desc) return null
+  if (desc === null) {
+    return null
+  }
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setAuthor(author)
@@ -201,26 +227,29 @@ function getNewModelFields(model: ModelRef): EmbedField[] {
   const fields: EmbedField[] = []
 
   if (model.input_modalities && model.output_modalities) {
-    const parts: string[] = []
-    parts.push(
+    const parts: string[] = [
       `${model.input_modalities.join(', ')} ${CHARS.arrow} ${model.output_modalities.join(', ')}`,
-    )
-    if (model.reasoning) parts.push('reasoning')
+    ]
+    if (model.reasoning === true) {
+      parts.push('reasoning')
+    }
     fields.push({ name: 'modalities', value: parts.join(CHARS.dot), inline: false })
   }
 
-  if (model.warning_message)
+  if (hasText(model.warning_message)) {
     fields.push({
       name: 'warning_message',
       value: blockquote(model.warning_message),
       inline: false,
     })
-  if (model.promotion_message)
+  }
+  if (hasText(model.promotion_message)) {
     fields.push({
       name: 'promotion_message',
       value: blockquote(model.promotion_message),
       inline: false,
     })
+  }
 
   return fields
 }
@@ -229,11 +258,11 @@ function getNewEndpointFields(ep: EndpointChange): EmbedField[] {
   const fields: EmbedField[] = []
   const ref = ep.endpoint
 
-  if (ref.context_length) {
+  if (ref.context_length !== undefined && ref.context_length !== null && ref.context_length !== 0) {
     const ctx =
-      ref.max_output !== ref.context_length
-        ? `${ref.context_length.toLocaleString()} (max: ${ref.max_output?.toLocaleString()})`
-        : ref.context_length.toLocaleString()
+      ref.max_output === ref.context_length
+        ? ref.context_length.toLocaleString()
+        : `${ref.context_length.toLocaleString()} (max: ${ref.max_output?.toLocaleString()})`
     fields.push({ name: 'context_length', value: ctx, inline: true })
   }
 
@@ -258,10 +287,14 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
 
   for (const field of fields) {
     const item = formatChangeItem(field)
-    if (item) items.push(item)
+    if (item) {
+      items.push(item)
+    }
   }
 
-  if (items.length === 0) return null
+  if (items.length === 0) {
+    return null
+  }
 
   const grouped = Map.groupBy(items, (item) => item.category)
   const lines: string[] = []
@@ -269,12 +302,16 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
   // top-level (no category) first
   const topLevel = grouped.get(null)
   if (topLevel) {
-    for (const item of topLevel) lines.push(`${item.key}:  ${item.content}`)
+    for (const item of topLevel) {
+      lines.push(`${item.key}:  ${item.content}`)
+    }
   }
 
   // categorized groups: header + bulleted items
   for (const [category, catItems] of grouped) {
-    if (category === null) continue
+    if (category === null) {
+      continue
+    }
     const catLines = catItems.map((item) => `${CHARS.bullet} ${item.key}:  ${item.content}`)
     lines.push(`\n${category}\n${catLines.join('\n')}`)
   }
@@ -287,28 +324,35 @@ function formatChangeItem(
 ): { category: string | null; key: string; content: string } | null {
   const { category, key: rawKey } = splitPath(field.path)
   const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
-  const isLong = (value: unknown) => typeof value === 'string' && value.length > 80
   const fmt = (v: unknown) => truncate(fmtValue(v, field.path), TRUNCATE_LENGTH)
 
   if (field.kind === 'set_updated') {
     const lines: string[] = []
     for (const item of field.items) {
-      if (item.status === 'removed') lines.push(`- ${item.value}`)
-      if (item.status === 'added') lines.push(`+ ${item.value}`)
+      if (item.status === 'removed') {
+        lines.push(`- ${item.value}`)
+      }
+      if (item.status === 'added') {
+        lines.push(`+ ${item.value}`)
+      }
     }
-    if (lines.length === 0) return null
+    if (lines.length === 0) {
+      return null
+    }
     return { category, key, content: `\n\`\`\`diff\n${lines.join('\n')}\n\`\`\`` }
   }
 
   if (field.kind === 'field_added') {
-    if (isLong(field.value))
+    if (isLong(field.value)) {
       return { category, key, content: `${CHARS.new}\n${blockquote(String(field.value))}` }
+    }
     return { category, key, content: `${fmt(field.value)} ${CHARS.new}` }
   }
 
   if (field.kind === 'field_removed') {
-    if (isLong(field.value))
+    if (isLong(field.value)) {
       return { category, key, content: `${CHARS.cross}\n~~${blockquote(String(field.value))}~~` }
+    }
     return { category, key, content: `~~${fmt(field.value)}~~ ${CHARS.cross}` }
   }
 
@@ -331,7 +375,9 @@ function formatChangeItem(
 
 function fmtDelta(before: unknown, after: unknown, path: string): string {
   const delta = computeDelta(before, after, path)
-  if (!delta) return ''
+  if (!delta) {
+    return ''
+  }
 
   const symbol = delta.isUp
     ? delta.isGood

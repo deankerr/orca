@@ -26,7 +26,7 @@ export const publish = internalAction({
     const logoUrl = new URL('orb-logo.png', orcaPublicUrl)
 
     const embed = new EmbedBuilder()
-      .setColor(0x3498db)
+      .setColor(0x34_98_db)
       .setAuthor({
         name: orcaPublicUrl.host,
         url: orcaPublicUrl.href,

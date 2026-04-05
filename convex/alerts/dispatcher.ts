@@ -5,28 +5,32 @@ import { api, internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
 import type { EntityChange } from '../db/or/views/changes'
-import {
-  sendDiscordDeliveries,
-  type ChannelDelivery,
-  type DiscordDelivery,
-  type DMDelivery,
-} from '../discord/bot'
+import type { ChannelDelivery, DiscordDelivery, DMDelivery } from '../discord/bot'
+import { sendDiscordDeliveries } from '../discord/bot'
 import { buildMessages } from '../discord/messages'
 import type { DiscordPayload } from '../discord/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
 
+function hasText(value: string | undefined): value is string {
+  return value !== undefined && value !== ''
+}
+
 // Pattern matching — "*" for all, otherwise simple includes
 export function matchPattern(pattern: string, slug: string): boolean {
-  if (pattern === '*') return true
+  if (pattern === '*') {
+    return true
+  }
   return slug.includes(pattern)
 }
 
 // Tag a message with the subscription pattern
 function stampPayload(payload: DiscordPayload, pattern: string): DiscordPayload {
-  if (pattern === '*') return payload
+  if (pattern === '*') {
+    return payload
+  }
   const suffix = ` (${pattern})`
-  const content = payload.content ? `${payload.content}${suffix}` : suffix
+  const content = hasText(payload.content) ? `${payload.content}${suffix}` : suffix
   return { ...payload, content }
 }
 
@@ -39,7 +43,9 @@ function buildDeliveries(
 
   for (const sub of subscriptions) {
     const matching = messages.filter((m) => matchPattern(sub.pattern, m.slug))
-    if (matching.length === 0) continue
+    if (matching.length === 0) {
+      continue
+    }
 
     const payloads = matching.map((m) => stampPayload(m.payload, sub.pattern))
 
@@ -72,7 +78,7 @@ export const run = internalAction({
   },
   handler: async (ctx, args) => {
     const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!botToken) {
+    if (!hasText(botToken)) {
       console.log('[alerts:dispatcher] DISCORD_BOT_TOKEN not configured, skipping')
       return
     }
@@ -106,7 +112,9 @@ export const run = internalAction({
     const discordMessages = buildMessages(changes)
 
     const messages = discordMessages.flatMap(({ slug, embeds }) => {
-      for (const embed of embeds) embed.setTimestamp(timestamp.getTime())
+      for (const embed of embeds) {
+        embed.setTimestamp(timestamp.getTime())
+      }
       return R.chunk(embeds, MAX_EMBEDS).map((chunk) => {
         const payload: DiscordPayload = { embeds: chunk.map((e) => e.toJSON()) }
         return { slug, payload }
