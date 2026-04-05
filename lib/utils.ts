@@ -1,46 +1,9 @@
 import { clsx } from 'clsx'
 import type { ClassValue } from 'clsx'
-import * as R from 'remeda'
 import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
-}
-
-/**
- * Calculate percentage change between two numeric values
- * Returns null if either value is not a number or if old value is 0
- * Handles both numbers and strings by parsing strings first
- */
-export function calculatePercentageChange(from: unknown, to: unknown): number | null {
-  if (R.isBoolean(from) || R.isBoolean(to)) {
-    return null
-  }
-
-  const fromValue = Number(from)
-  const toValue = Number(to)
-
-  // Check if both values are valid numbers
-  if (Number.isNaN(fromValue) || Number.isNaN(toValue)) {
-    return null
-  }
-
-  // Handle edge cases
-  if (fromValue === 0) {
-    // Can't calculate percentage change from 0, but we can show if new value is positive/negative
-    if (toValue === 0) {
-      return null
-    }
-
-    return toValue > 0 ? Infinity : -Infinity
-  }
-
-  if (fromValue === toValue) {
-    return 0
-  }
-
-  // Calculate percentage change: ((new - old) / old) * 100
-  return ((toValue - fromValue) / Math.abs(fromValue)) * 100
 }
 
 /**

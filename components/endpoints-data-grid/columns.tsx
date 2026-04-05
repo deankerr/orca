@@ -3,8 +3,8 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
+import { formatPricing } from '@/convex/shared/formatters'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
-import { formatDateTime, formatPrice } from '@/lib/formatters'
 
 import { fuzzySort } from '../data-grid/data-grid-fuzzy'
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
@@ -14,6 +14,21 @@ import { EntityBadge } from '../shared/entity-badge'
 import { dataGridPopoverHandle } from './popover-handle'
 
 export type EndpointRow = ORCAEndpoint
+
+function formatGridDate(timestamp: number): string {
+  return new Date(timestamp)
+    .toLocaleString('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    .replace(',', '')
+    .split(' ')[0]
+}
 
 export const columns: ColumnDef<EndpointRow>[] = [
   {
@@ -122,11 +137,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue }) => {
       const inputPrice = getValue<number>()
       if (inputPrice) {
-        return formatPrice({
-          priceKey: 'text_input',
-          priceValue: inputPrice,
-          unitSuffix: false,
-        })
+        return formatPricing('text_input', inputPrice)?.value
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
@@ -149,11 +160,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue }) => {
       const outputPrice = getValue<number>()
       if (outputPrice) {
-        return formatPrice({
-          priceKey: 'text_output',
-          priceValue: outputPrice,
-          unitSuffix: false,
-        })
+        return formatPricing('text_output', outputPrice)?.value
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
@@ -389,7 +396,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue }) => {
       const timestamp = getValue<number>()
       if (timestamp) {
-        return formatDateTime(timestamp).split(' ')[0]
+        return formatGridDate(timestamp)
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
@@ -412,7 +419,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue }) => {
       const timestamp = getValue<number>()
       if (timestamp) {
-        return formatDateTime(timestamp).split(' ')[0]
+        return formatGridDate(timestamp)
       }
     },
     size: 120,
