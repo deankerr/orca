@@ -24,6 +24,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../shared/*"],
   "exclude": ["./_generated"]
 }

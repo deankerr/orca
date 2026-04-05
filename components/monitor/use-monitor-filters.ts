@@ -1,6 +1,6 @@
 import { parseAsString, useQueryStates } from 'nuqs'
 
-import { baseProviderSlug } from '@/convex/shared/utils'
+import { baseProviderSlug } from '@/shared/utils'
 
 export function useMonitorFilters() {
   const [params, setParams] = useQueryStates(
