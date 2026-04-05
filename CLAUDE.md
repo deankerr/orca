@@ -2,7 +2,7 @@
 
 ## Commands
 
-- ~~`bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.~~ **Linter/formatter transition in progress.**
+- `bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.
 
 ## Lint/Format Stages
 
