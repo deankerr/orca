@@ -1,9 +1,10 @@
 'use client'
 
+import { formatDistanceToNow } from 'date-fns'
+
 import type { EntityChange } from '@/convex/db/or/views/changes'
 import type { CrawlBatch } from '@/convex/monitor'
 import { groupChanges } from '@/convex/shared/groups'
-import { formatRelativeTime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
 import { EntityEventCard } from './event-renderers'
@@ -60,7 +61,7 @@ export function flattenMonitorFeed(batches: CrawlBatch[]): MonitorFeedRow[] {
         minute: '2-digit',
         hour12: true,
       }),
-      relativeTime: formatRelativeTime(timestamp),
+      relativeTime: formatDistanceToNow(timestamp, { addSuffix: true }),
     })
 
     for (const [groupIndex, group] of groups.entries()) {

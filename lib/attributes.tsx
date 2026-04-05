@@ -1,9 +1,8 @@
 import { InlineCode } from '@/components/shared/inline-code'
 import type { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
+import { formatPricing } from '@/convex/shared/formatters'
 import type { SpriteIconName } from '@/lib/sprite-icons'
-
-import { formatDateTime, formatPrice } from './formatters'
 
 type EndpointPartial = Partial<ORCAEndpoint>
 
@@ -34,6 +33,28 @@ function hasValue<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined
 }
 
+function formatAttributePrice(field: Parameters<typeof formatPricing>[0], value: number): string {
+  const formatted = formatPricing(field, value)
+  if (!formatted) {
+    return String(value)
+  }
+  return formatted.unit ? `${formatted.value}/${formatted.unit}` : formatted.value
+}
+
+function formatAttributeDateTime(timestamp: number): string {
+  return new Date(timestamp)
+    .toLocaleString('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    .replace(',', '')
+}
+
 export const attributes = defineAttributes({
   // Features (model)
   reasoning: {
@@ -56,10 +77,7 @@ export const attributes = defineAttributes({
       if (hasValue(reasoningOutputPrice)) {
         items.push({
           label: 'Output',
-          value: formatPrice({
-            priceKey: 'reasoning_output',
-            priceValue: reasoningOutputPrice,
-          }),
+          value: formatAttributePrice('reasoning_output', reasoningOutputPrice),
         })
       }
 
@@ -136,20 +154,14 @@ export const attributes = defineAttributes({
       if (hasValue(textCacheRead)) {
         items.push({
           label: 'Read',
-          value: formatPrice({
-            priceKey: 'text_cache_read',
-            priceValue: textCacheRead,
-          }),
+          value: formatAttributePrice('text_cache_read', textCacheRead),
         })
       }
 
       if (hasValue(textCacheWrite)) {
         items.push({
           label: 'Write',
-          value: formatPrice({
-            priceKey: 'text_cache_write',
-            priceValue: textCacheWrite,
-          }),
+          value: formatAttributePrice('text_cache_write', textCacheWrite),
         })
       }
 
@@ -181,20 +193,14 @@ export const attributes = defineAttributes({
       if (hasValue(textCacheRead)) {
         items.push({
           label: 'Read',
-          value: formatPrice({
-            priceKey: 'text_cache_read',
-            priceValue: textCacheRead,
-          }),
+          value: formatAttributePrice('text_cache_read', textCacheRead),
         })
       }
 
       if (hasValue(textCacheWrite)) {
         items.push({
           label: 'Write',
-          value: formatPrice({
-            priceKey: 'text_cache_write',
-            priceValue: textCacheWrite,
-          }),
+          value: formatAttributePrice('text_cache_write', textCacheWrite),
         })
       }
 
@@ -232,10 +238,7 @@ export const attributes = defineAttributes({
       if (hasValue(webSearchPrice)) {
         items.push({
           label: 'Per Request',
-          value: formatPrice({
-            priceKey: 'web_search',
-            priceValue: webSearchPrice,
-          }),
+          value: formatAttributePrice('web_search', webSearchPrice),
         })
       }
 
@@ -327,7 +330,7 @@ export const attributes = defineAttributes({
         ? [
             {
               label: 'Last Seen',
-              value: formatDateTime(endpoint.unavailable_at),
+              value: formatAttributeDateTime(endpoint.unavailable_at),
             },
           ]
         : undefined,
@@ -479,10 +482,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageInputPrice)) {
         items.push({
           label: 'Input',
-          value: formatPrice({
-            priceKey: 'image_input',
-            priceValue: imageInputPrice,
-          }),
+          value: formatAttributePrice('image_input', imageInputPrice),
         })
       }
 
@@ -508,10 +508,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageOutputPrice)) {
         items.push({
           label: 'Output',
-          value: formatPrice({
-            priceKey: 'image_output',
-            priceValue: imageOutputPrice,
-          }),
+          value: formatAttributePrice('image_output', imageOutputPrice),
         })
       }
 
@@ -550,20 +547,14 @@ export const attributes = defineAttributes({
       if (hasValue(audioInputPrice)) {
         items.push({
           label: 'Input',
-          value: formatPrice({
-            priceKey: 'audio_input',
-            priceValue: audioInputPrice,
-          }),
+          value: formatAttributePrice('audio_input', audioInputPrice),
         })
       }
 
       if (hasValue(audioCacheWritePrice)) {
         items.push({
           label: 'Cache',
-          value: formatPrice({
-            priceKey: 'audio_cache_write',
-            priceValue: audioCacheWritePrice,
-          }),
+          value: formatAttributePrice('audio_cache_write', audioCacheWritePrice),
         })
       }
 
@@ -646,37 +637,25 @@ export const attributes = defineAttributes({
         },
         {
           label: 'Text Input',
-          value: formatPrice({
-            priceKey: 'text_input',
-            priceValue: variablePricing.text_input,
-          }),
+          value: formatAttributePrice('text_input', variablePricing.text_input),
         },
         {
           label: 'Text Output',
-          value: formatPrice({
-            priceKey: 'text_output',
-            priceValue: variablePricing.text_output,
-          }),
+          value: formatAttributePrice('text_output', variablePricing.text_output),
         },
       ]
 
       if (hasValue(variablePricing.cache_read)) {
         details.push({
           label: 'Cache Read',
-          value: formatPrice({
-            priceKey: 'cache_read',
-            priceValue: variablePricing.cache_read,
-          }),
+          value: formatAttributePrice('text_cache_read', variablePricing.cache_read),
         })
       }
 
       if (hasValue(variablePricing.cache_write)) {
         details.push({
           label: 'Cache Write',
-          value: formatPrice({
-            priceKey: 'cache_write',
-            priceValue: variablePricing.cache_write,
-          }),
+          value: formatAttributePrice('text_cache_write', variablePricing.cache_write),
         })
       }
 

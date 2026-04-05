@@ -1,6 +1,7 @@
 'use client'
 
 import { usePaginatedQuery } from 'convex/react'
+import { formatDistanceToNow } from 'date-fns'
 import { Database, Download } from 'lucide-react'
 import Link from 'next/link'
 import prettyBytes from 'pretty-bytes'
@@ -12,7 +13,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
-import { formatDateTimeUTC, formatRelativeTime } from '@/lib/formatters'
 import { getConvexHttpUrl } from '@/lib/utils'
 
 export default function Page() {
@@ -72,10 +72,10 @@ function ArchiveCard({ archive }: { archive: Doc<'snapshot_crawl_archives'> }) {
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="font-mono text-sm">
-                  {formatDateTimeUTC(Number(archive.crawl_id))}
+                  {formatArchiveTimeUTC(Number(archive.crawl_id))}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {formatRelativeTime(Number(archive.crawl_id))}
+                  {formatDistanceToNow(Number(archive.crawl_id), { addSuffix: true })}
                 </div>
               </div>
 
@@ -159,4 +159,19 @@ function readMetadata(
 ): z.infer<typeof ArchiveMetadataSchema> {
   const result = ArchiveMetadataSchema.safeParse(archive.data)
   return result.data ?? {}
+}
+
+function formatArchiveTimeUTC(timestamp: number): string {
+  return new Date(timestamp)
+    .toLocaleString('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    })
+    .replace(',', '')
 }

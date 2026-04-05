@@ -112,7 +112,7 @@ function FieldUpdatedItem({
   const after = fmtValue(field.after, field.path)
   const delta = computeDelta(field.before, field.after, field.path)
   const unit = fmtUnit(field.path)
-  const hasUnit = unit !== undefined && unit !== ''
+  const hasUnit = unit !== null && unit !== ''
 
   return (
     <div className="flex flex-wrap items-center gap-x-1.5" data-change-id={field.change_id}>
@@ -149,7 +149,7 @@ function FieldAddedItem({
 
   const value = fmtValue(field.value, field.path)
   const unit = fmtUnit(field.path)
-  const hasUnit = unit !== undefined && unit !== ''
+  const hasUnit = unit !== null && unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
@@ -184,7 +184,7 @@ function FieldRemovedItem({
 
   const value = fmtValue(field.value, field.path)
   const unit = fmtUnit(field.path)
-  const hasUnit = unit !== undefined && unit !== ''
+  const hasUnit = unit !== null && unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>

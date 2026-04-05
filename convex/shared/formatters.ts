@@ -69,7 +69,7 @@ export function formatPricing(
   const scaled = value * PRICING_FIELDS[field].scale
   const formatted = scaled.toLocaleString('en-US', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 3,
+    maximumFractionDigits: 4,
   })
 
   const display = field === 'discount' ? `${formatted}%` : `$${formatted}`
