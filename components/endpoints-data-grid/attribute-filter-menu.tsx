@@ -29,7 +29,9 @@ export function AttributeFilterMenu() {
       icon={attributes[name].icon}
       label={attributes[name].label}
       mode={attributeFilters[name] ?? 'any'}
-      onChange={(mode) => setAttributeFilter(name, mode)}
+      onChange={(mode) => {
+        setAttributeFilter(name, mode)
+      }}
     />
   )
 

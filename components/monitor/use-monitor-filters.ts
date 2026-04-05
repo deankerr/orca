@@ -14,9 +14,12 @@ export function useMonitorFilters() {
   return {
     modelSlug: params.model ?? '',
     providerSlug: params.provider ?? '',
-    setModelSlug: (slug: string) => setParams({ model: slug || null }),
-    setProviderSlug: (slug: string) =>
-      setParams({ provider: slug ? baseProviderSlug(slug) : null }),
-    hasActiveFilters: !!params.model || !!params.provider,
+    setModelSlug: (slug: string) => {
+      void setParams({ model: slug === '' ? null : slug })
+    },
+    setProviderSlug: (slug: string) => {
+      void setParams({ provider: slug === '' ? null : baseProviderSlug(slug) })
+    },
+    hasActiveFilters: params.model !== null || params.provider !== null,
   }
 }

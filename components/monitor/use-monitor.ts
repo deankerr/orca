@@ -80,7 +80,7 @@ export function useMonitor(modelSlug = '', providerSlug = '') {
   const batchResults = useQueries({
     queries: crawlIds.map((crawl_id) => ({
       queryKey: [BATCH_QUERY_KEY, crawl_id],
-      queryFn: () => convex.query(api.monitor.batch, { crawl_id }),
+      queryFn: async () => convex.query(api.monitor.batch, { crawl_id }),
       staleTime: Infinity,
     })),
   })

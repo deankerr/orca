@@ -39,6 +39,8 @@ export function ModelSheet({ slug }: { slug: string }) {
     )
   }
 
+  const { hugging_face_id: huggingFaceId, tokenizer, instruct_type: instructType } = model
+
   return (
     <>
       <SheetTitle className="sr-only">{model.name}</SheetTitle>
@@ -51,8 +53,8 @@ export function ModelSheet({ slug }: { slug: string }) {
         {/* External Links */}
         <div className="flex flex-col items-end gap-1 text-right">
           <ExternalLink href={`https://openrouter.ai/${model.slug}`} />
-          {model.hugging_face_id && (
-            <ExternalLink href={`https://huggingface.co/${model.hugging_face_id}`} />
+          {huggingFaceId !== undefined && huggingFaceId !== '' && (
+            <ExternalLink href={`https://huggingface.co/${huggingFaceId}`} />
           )}
         </div>
 
@@ -79,17 +81,17 @@ export function ModelSheet({ slug }: { slug: string }) {
               <DataListValue>{model.reasoning ? 'Yes' : 'No'}</DataListValue>
             </DataListItem>
 
-            {model.tokenizer && (
+            {tokenizer !== undefined && tokenizer !== '' && (
               <DataListItem>
                 <DataListLabel>Tokenizer</DataListLabel>
-                <DataListValue>{model.tokenizer}</DataListValue>
+                <DataListValue>{tokenizer}</DataListValue>
               </DataListItem>
             )}
 
-            {model.instruct_type && (
+            {instructType !== undefined && instructType !== '' && (
               <DataListItem>
                 <DataListLabel>Instruct Type</DataListLabel>
-                <DataListValue>{model.instruct_type}</DataListValue>
+                <DataListValue>{instructType}</DataListValue>
               </DataListItem>
             )}
           </DataList>
@@ -99,7 +101,13 @@ export function ModelSheet({ slug }: { slug: string }) {
         <EntitySheetSection
           title="Providers"
           action={
-            <ActionLink onClick={() => findEndpoints(model.slug)}>Find all Endpoints</ActionLink>
+            <ActionLink
+              onClick={() => {
+                findEndpoints(model.slug)
+              }}
+            >
+              Find all Endpoints
+            </ActionLink>
           }
         />
       </div>

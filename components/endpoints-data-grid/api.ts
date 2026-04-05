@@ -59,6 +59,7 @@ export function useEndpointsData() {
 }
 
 const FAKE_ENDPOINT: ORCAEndpoint = {
+  // oxlint-disable-next-line typescript-eslint/no-unsafe-assignment, typescript-eslint/no-unsafe-type-assertion -- Dev-only fake row needs a sentinel Convex id that never reaches the backend.
   _id: '__fake__' as any,
   _creationTime: Date.now(),
   uuid: 'fake-endpoint-uuid',

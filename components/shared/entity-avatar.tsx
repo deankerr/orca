@@ -13,6 +13,7 @@ export function EntityAvatar({
   fallbackText?: string
 } & React.ComponentProps<'span'>) {
   const { avatarPath, style } = getLogo(slug)
+  const hasAvatarPath = avatarPath !== undefined && avatarPath !== ''
 
   return (
     <span
@@ -24,7 +25,7 @@ export function EntityAvatar({
       style={{ background: style?.background }}
       {...props}
     >
-      {avatarPath ? (
+      {hasAvatarPath ? (
         <Image
           src={avatarPath}
           alt=""
@@ -35,7 +36,7 @@ export function EntityAvatar({
         />
       ) : (
         <span className="font-mono text-[55cqi] text-foreground/90 uppercase">
-          {(fallbackText || slug).replaceAll(/[^a-zA-Z0-9]/g, '').slice(0, 2)}
+          {(fallbackText ?? slug).replaceAll(/[^a-zA-Z0-9]/g, '').slice(0, 2)}
         </span>
       )}
     </span>

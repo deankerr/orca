@@ -14,7 +14,7 @@ Use a staged rollout for the OXC migration. A single PR is acceptable, but a Gra
 - [x] Stage 2: Establish an `oxlint` baseline for `convex/`.
 - [x] Stage 2: Keep the current overrides in place; resolving override-covered issues is not part of this stage.
 
-- [ ] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
+- [x] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
 
 - [ ] Stage 4: Remove legacy ESLint only after the OXC flow is stable and intentionally adopted.
 

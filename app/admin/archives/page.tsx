@@ -38,7 +38,9 @@ export default function Page() {
         <Button
           variant="secondary"
           className="mx-auto block"
-          onClick={() => archives.loadMore(40)}
+          onClick={() => {
+            archives.loadMore(40)
+          }}
           disabled={archives.status !== 'CanLoadMore'}
         >
           {loadMoreLabel}
@@ -54,6 +56,8 @@ function ArchiveCard({ archive }: { archive: Doc<'snapshot_crawl_archives'> }) {
     typeof value === 'number' ? value > 0 : Boolean(value),
   )
   const downloadUrl = getConvexHttpUrl(`/bundle?crawl_id=${archive.crawl_id}`)
+  const rawSize = metadata.size?.raw
+  const blobSize = metadata.size?.blob
 
   return (
     <section className="border bg-card p-2">
@@ -79,13 +83,13 @@ function ArchiveCard({ archive }: { archive: Doc<'snapshot_crawl_archives'> }) {
                 <div>
                   raw:{' '}
                   <span className="text-foreground">
-                    {metadata.size?.raw ? prettyBytes(metadata.size.raw) : 'Unknown'}
+                    {rawSize === undefined ? 'Unknown' : prettyBytes(rawSize)}
                   </span>
                 </div>
                 <div>
                   blob:{' '}
                   <span className="text-foreground">
-                    {metadata.size?.blob ? prettyBytes(metadata.size.blob) : 'Unknown'}
+                    {blobSize === undefined ? 'Unknown' : prettyBytes(blobSize)}
                   </span>
                 </div>
               </div>

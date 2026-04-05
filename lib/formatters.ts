@@ -71,7 +71,7 @@ export function formatPrice({
   // Get the format configuration
   const format = pricingFormats[schemaKey]
 
-  if (!format) {
+  if (format === undefined) {
     return String(priceValue)
   }
 

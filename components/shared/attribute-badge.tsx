@@ -1,5 +1,5 @@
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-import type { Attribute, AttributeSlots } from '@/lib/attributes'
+import type { Attribute, AttributeSlots, AttributeState } from '@/lib/attributes'
 import { resolveEndpointAttributeSlot } from '@/lib/attributes'
 
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
@@ -28,16 +28,20 @@ export function AttributeBadgePopoverContent({
     <PopoverCardContent className="max-w-72">
       <PopoverCardTitle>
         {label}
-        {badge && <span className="font-mono text-[95%]">{badge}</span>}
+        {badge !== undefined && badge !== '' && (
+          <span className="font-mono text-[95%]">{badge}</span>
+        )}
       </PopoverCardTitle>
 
       <PopoverCardDescription>{description}</PopoverCardDescription>
 
-      {details && details.length > 0 && (
+      {details !== undefined && details.length > 0 && (
         <DataList className="mt-2 space-y-0.5">
           {details.map((item, i) => (
             <DataListItem key={i}>
-              {item.label && <DataListLabel className="uppercase">{item.label}</DataListLabel>}
+              {item.label !== undefined && item.label !== '' && (
+                <DataListLabel className="uppercase">{item.label}</DataListLabel>
+              )}
               <DataListValue>{item.value}</DataListValue>
             </DataListItem>
           ))}
@@ -55,7 +59,7 @@ export function AttributeBadge({
   ...props
 }: {
   attribute: Attribute
-  data?: ReturnType<Attribute['resolve']>
+  data?: AttributeState
 } & React.ComponentProps<typeof PopoverCardTrigger>) {
   const { icon, label, description, color, key } = attribute
   const badge = data?.value

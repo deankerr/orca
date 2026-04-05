@@ -12,11 +12,11 @@ export function DataGridFooter() {
     return null
   }
 
-  const filteredEndpoints = table.getFilteredRowModel().rows.map((row) => row.original)
+  const filteredCount = table.getFilteredRowModel().rows.length
 
   return (
     <div>
-      {hasActiveFilters ? `${filteredEndpoints.length} /` : ''} {rawEndpoints.length} endpoints
+      {hasActiveFilters ? `${filteredCount} /` : ''} {rawEndpoints.length} endpoints
     </div>
   )
 }

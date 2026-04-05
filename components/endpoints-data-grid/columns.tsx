@@ -275,10 +275,10 @@ export const columns: ColumnDef<EndpointRow>[] = [
     ),
     cell: ({ getValue }) => {
       const throughput = getValue<number | undefined>()
-      if (throughput) {
-        return `${throughput.toLocaleString('en-US', {
+      if (throughput !== undefined) {
+        return throughput.toLocaleString('en-US', {
           maximumFractionDigits: 0,
-        })}`
+        })
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
@@ -300,10 +300,10 @@ export const columns: ColumnDef<EndpointRow>[] = [
     ),
     cell: ({ getValue }) => {
       const latency = getValue<number | undefined>()
-      if (latency) {
-        return `${latency.toLocaleString('en-US', {
+      if (latency !== undefined) {
+        return latency.toLocaleString('en-US', {
           maximumFractionDigits: 0,
-        })}`
+        })
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },

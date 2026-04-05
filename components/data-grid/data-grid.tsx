@@ -85,7 +85,7 @@ function DataGridProvider<TData extends object>({
         props,
         table,
         recordCount: props.recordCount,
-        isLoading: props.isLoading || false,
+        isLoading: props.isLoading ?? false,
       }}
     >
       {children}

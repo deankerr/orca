@@ -44,14 +44,21 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
       const avatarContent = await readFile(avatarPath, 'utf8').catch(() => '')
 
       // * Extract style constants
-      const title = styleContent.match(/export var TITLE = ['"](.+?)['"]/)?.[1]
-      const avatarBackgroundRaw = styleContent.match(/export var AVATAR_BACKGROUND = (.+?);/)?.[1]
-      const avatarColor = styleContent.match(/export var AVATAR_COLOR = ['"](.+?)['"]/)?.[1]
-      const avatarIconScale = styleContent.match(/export var AVATAR_ICON_MULTIPLE = ([\d.]+)/)?.[1]
-      const colorPrimary = styleContent.match(/export var COLOR_PRIMARY = ['"](.+?)['"]/)?.[1]
-      const colorGradient = styleContent.match(/export var COLOR_GRADIENT = ['"](.+?)['"]/)?.[1]
+      const title = /export var TITLE = ['"](.+?)['"]/.exec(styleContent)?.[1]
+      const avatarBackgroundRaw = /export var AVATAR_BACKGROUND = (.+?);/.exec(styleContent)?.[1]
+      const avatarColor = /export var AVATAR_COLOR = ['"](.+?)['"]/.exec(styleContent)?.[1]
+      const avatarIconScale = /export var AVATAR_ICON_MULTIPLE = ([\d.]+)/.exec(styleContent)?.[1]
+      const colorPrimary = /export var COLOR_PRIMARY = ['"](.+?)['"]/.exec(styleContent)?.[1]
+      const colorGradient = /export var COLOR_GRADIENT = ['"](.+?)['"]/.exec(styleContent)?.[1]
 
-      if (!title || !avatarBackgroundRaw || !avatarColor) {
+      if (
+        title === undefined ||
+        title === '' ||
+        avatarBackgroundRaw === undefined ||
+        avatarBackgroundRaw === '' ||
+        avatarColor === undefined ||
+        avatarColor === ''
+      ) {
         continue
       }
 
@@ -63,7 +70,7 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
       if (avatarBackgroundRaw === 'COLOR_PRIMARY') {
         background = colorPrimary!
       } else if (avatarBackgroundRaw === 'COLOR_GRADIENT') {
-        background = colorGradient || colorPrimary || '#000'
+        background = colorGradient ?? colorPrimary ?? '#000'
       } else {
         background = avatarBackgroundRaw.replaceAll(/['"]/g, '')
       }
@@ -92,8 +99,8 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
           // * Create black image with same dimensions
           const black = sharp({
             create: {
-              width: metadata.width!,
-              height: metadata.height!,
+              width: metadata.width,
+              height: metadata.height,
               channels: 3,
               background: '#000',
             },
@@ -114,8 +121,8 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
         // * Create solid color image with same dimensions
         const colored = sharp({
           create: {
-            width: metadata.width!,
-            height: metadata.height!,
+            width: metadata.width,
+            height: metadata.height,
             channels: 3,
             background: avatarColor,
           },
@@ -133,7 +140,7 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
         slug,
         title,
         background,
-        scale: Number.parseFloat(avatarIconScale || '0.75'),
+        scale: Number.parseFloat(avatarIconScale ?? '0.75'),
       }
 
       processedCount += 1

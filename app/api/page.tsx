@@ -21,7 +21,7 @@ async function getApiUrl() {
     requestHeaders.get('x-forwarded-proto') ??
     (host === process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ? 'https' : 'http')
 
-  if (!host) {
+  if (host === undefined || host === '') {
     return API_PATH
   }
 

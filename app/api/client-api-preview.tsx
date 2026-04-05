@@ -61,11 +61,42 @@ type JsonApiCodeBlock = {
 
 function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
   const [html, setHtml] = useState<string | null>(null)
+  const hasCode = code.length > 0
+  const isPending = isLoading === true
+  const hasError = error !== null && error !== undefined
+  const hasHtml = html !== null && html !== ''
+  const headerContent = (() => {
+    if (isPending) {
+      return (
+        <>
+          <Spinner className="size-3" />
+          <span className="font-mono">Loading...</span>
+        </>
+      )
+    }
+
+    if (hasError) {
+      return (
+        <Badge variant="destructive" className="font-mono">
+          Error: {error.message}
+        </Badge>
+      )
+    }
+
+    return <span className="font-mono">Sample</span>
+  })()
+
+  let emptyStateLabel: string | null = null
+  if (isPending) {
+    emptyStateLabel = 'Fetching data...'
+  } else if (hasError) {
+    emptyStateLabel = 'Unable to load sample data'
+  }
 
   useEffect(() => {
     let isActive = true
 
-    if (!code || isLoading || error) {
+    if (!hasCode || isPending || hasError) {
       return
     }
 
@@ -85,29 +116,18 @@ function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
     return () => {
       isActive = false
     }
-  }, [code, isLoading, error])
+  }, [code, hasCode, isPending, hasError])
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden rounded-md border">
       {/* * Header */}
       <div className="flex items-center gap-2 border-b bg-secondary px-4 py-2 text-xs text-muted-foreground">
-        {isLoading ? (
-          <>
-            <Spinner className="size-3" />
-            <span className="font-mono">Loading...</span>
-          </>
-        ) : error ? (
-          <Badge variant="destructive" className="font-mono">
-            Error: {error.message}
-          </Badge>
-        ) : (
-          <span className="font-mono">Sample</span>
-        )}
+        {headerContent}
       </div>
 
       {/* * Content */}
       <ScrollArea className="flex-1">
-        {!isLoading && !error && html ? (
+        {!isPending && !hasError && hasHtml ? (
           <div
             className={cn(
               'text-sm',
@@ -124,7 +144,7 @@ function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
           />
         ) : (
           <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-            {isLoading ? 'Fetching data...' : error ? 'Unable to load sample data' : null}
+            {emptyStateLabel}
           </div>
         )}
       </ScrollArea>

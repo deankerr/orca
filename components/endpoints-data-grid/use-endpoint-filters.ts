@@ -25,6 +25,35 @@ function isModalityName(value: string): value is ModalityName {
   return modalityNameSet.has(value)
 }
 
+function resolveFilterMode(
+  hasFilters: string[],
+  notFilters: string[],
+  key: ModalityName,
+): FilterMode {
+  if (hasFilters.includes(key)) {
+    return 'include'
+  }
+
+  if (notFilters.includes(key)) {
+    return 'exclude'
+  }
+
+  return 'any'
+}
+
+function getModalityFilters(hasFilters: string[], notFilters: string[]): ModalityFilterState {
+  return {
+    image_input: resolveFilterMode(hasFilters, notFilters, 'image_input'),
+    file_input: resolveFilterMode(hasFilters, notFilters, 'file_input'),
+    audio_input: resolveFilterMode(hasFilters, notFilters, 'audio_input'),
+    video_input: resolveFilterMode(hasFilters, notFilters, 'video_input'),
+    image_output: resolveFilterMode(hasFilters, notFilters, 'image_output'),
+    audio_output: resolveFilterMode(hasFilters, notFilters, 'audio_output'),
+    video_output: resolveFilterMode(hasFilters, notFilters, 'video_output'),
+    embeddings_output: resolveFilterMode(hasFilters, notFilters, 'embeddings_output'),
+  }
+}
+
 export function useEndpointFilters() {
   const [filters, setFilters] = useQueryStates(
     {
@@ -42,16 +71,7 @@ export function useEndpointFilters() {
   )
 
   // Extract modality filters from has/not lists
-  const modalityFilters = {} as ModalityFilterState
-  for (const modality of MODALITIES) {
-    if (filters.has.includes(modality)) {
-      modalityFilters[modality] = 'include'
-    } else if (filters.not.includes(modality)) {
-      modalityFilters[modality] = 'exclude'
-    } else {
-      modalityFilters[modality] = 'any'
-    }
-  }
+  const modalityFilters = getModalityFilters(filters.has, filters.not)
 
   // Build attribute filters from has/not lists
   const attributeFilters: AttributeFilterState = {}
@@ -76,18 +96,18 @@ export function useEndpointFilters() {
     posthogClient.capture('filter_modality', { modality: key, mode: value })
 
     if (value === 'include') {
-      setFilters({
+      void setFilters({
         has: [...currentHas, key],
         not: currentNot,
       })
     } else if (value === 'exclude') {
-      setFilters({
+      void setFilters({
         has: currentHas,
         not: [...currentNot, key],
       })
     } else {
       // 'any' - remove from both lists
-      setFilters({
+      void setFilters({
         has: currentHas,
         not: currentNot,
       })
@@ -102,18 +122,18 @@ export function useEndpointFilters() {
     posthogClient.capture('filter_attribute', { attribute: key, mode: value })
 
     if (value === 'include') {
-      setFilters({
+      void setFilters({
         has: [...currentHas, key],
         not: currentNot,
       })
     } else if (value === 'exclude') {
-      setFilters({
+      void setFilters({
         has: currentHas,
         not: [...currentNot, key],
       })
     } else {
       // 'any' - remove from both lists
-      setFilters({
+      void setFilters({
         has: currentHas,
         not: currentNot,
       })
@@ -122,13 +142,14 @@ export function useEndpointFilters() {
 
   // Helper to update search
   const setGlobalFilter = (value: string) => {
-    setFilters({ q: value })
+    void setFilters({ q: value })
   }
 
   // Convert URL state to TanStack SortingState
-  const sorting: SortingState = filters.sort
-    ? [{ id: filters.sort, desc: filters.order === 'desc' }]
-    : [{ id: 'modelAddedAt', desc: true }]
+  const sorting: SortingState =
+    filters.sort === null
+      ? [{ id: 'modelAddedAt', desc: true }]
+      : [{ id: filters.sort, desc: filters.order === 'desc' }]
 
   // Helper to update sorting from TanStack's onSortingChange
   const onSortingChange = (
@@ -139,17 +160,17 @@ export function useEndpointFilters() {
 
     if (newSorting.length === 0) {
       posthogClient.capture('sort_cleared')
-      setFilters({ sort: null, order: null })
+      void setFilters({ sort: null, order: null })
     } else {
       const [sort] = newSorting
-      if (!sort) {
+      if (sort === undefined) {
         return
       }
       posthogClient.capture('sort_changed', {
         column: sort.id,
         direction: sort.desc ? 'desc' : 'asc',
       })
-      setFilters({
+      void setFilters({
         sort: sort.id,
         order: sort.desc ? 'desc' : 'asc',
       })
@@ -160,7 +181,7 @@ export function useEndpointFilters() {
     // Only keep modalities
     const currentModalities = filters.has.filter(isModalityName)
 
-    setFilters({
+    void setFilters({
       has: currentModalities,
       not: [],
     })
@@ -171,7 +192,7 @@ export function useEndpointFilters() {
     const currentAttributes = filters.has.filter((a) => !isModalityName(a))
     const currentNotAttributes = filters.not.filter((a) => !isModalityName(a))
 
-    setFilters({
+    void setFilters({
       has: currentAttributes,
       not: currentNotAttributes,
     })
@@ -179,7 +200,7 @@ export function useEndpointFilters() {
 
   // Clear everything affecting the table except search
   const clearAllFilters = () => {
-    setFilters({
+    void setFilters({
       uuid: '',
       has: [],
       not: [],
@@ -189,7 +210,7 @@ export function useEndpointFilters() {
   }
 
   const setFocusSearch = (query: string) => {
-    setFilters({
+    void setFilters({
       q: query,
       has: [],
       not: [],
@@ -207,7 +228,8 @@ export function useEndpointFilters() {
   const hasActiveSorting = filters.sort !== null
   const hasActiveModalityFilters = activeModalityCount > 0
   const hasActiveAttributeFilters = activeAttributeCount > 0
-  const hasAnyActiveFilters = hasActiveModalityFilters || hasActiveAttributeFilters || !!filters.q
+  const hasAnyActiveFilters =
+    hasActiveModalityFilters || hasActiveAttributeFilters || filters.q.length > 0
 
   return {
     globalFilter: filters.q,

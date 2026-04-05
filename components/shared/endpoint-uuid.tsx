@@ -38,7 +38,9 @@ export function EndpointUuidPopoverContent({
         variant="ghost"
         className="-mx-2 h-7 px-2 font-mono text-[85%] text-muted-foreground dark:hover:bg-accent/30"
         size="sm"
-        onClick={() => copy(uuid, 'Copied Endpoint UUID')}
+        onClick={() => {
+          void copy(uuid, 'Copied Endpoint UUID')
+        }}
       >
         {uuid}
       </Button>

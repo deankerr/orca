@@ -109,7 +109,7 @@ async function processLogos() {
   }
 
   // * Apply overrides
-  if (manifest.logos.cirrascale) {
+  if ('cirrascale' in manifest.logos) {
     manifest.logos.cirrascale.background = '#000'
   }
 

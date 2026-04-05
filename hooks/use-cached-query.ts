@@ -5,9 +5,10 @@ import { useEffect, useRef } from 'react'
 
 function useQueryTimer<T>(result: T, label?: string): T {
   const startTimeRef = useRef<number | null>(null)
+  const hasLabel = label !== undefined && label !== ''
 
   useEffect(() => {
-    if (!label) {
+    if (!hasLabel) {
       return
     }
 
@@ -29,7 +30,7 @@ function useQueryTimer<T>(result: T, label?: string): T {
       console.groupEnd()
       startTimeRef.current = null
     }
-  }, [result, label])
+  }, [result, label, hasLabel])
 
   return result
 }
@@ -39,6 +40,7 @@ export function useCachedQuery<Query extends FunctionReference<'query'>>(
   args: OptionalRestArgsOrSkip<Query>[0],
   label?: string,
 ): FunctionReturnType<Query> | undefined {
-  const result = useQuery(query, args)
+  const result: FunctionReturnType<Query> | undefined = useQuery(query, args)
+  // oxlint-disable-next-line typescript-eslint/no-unsafe-return -- convex-helpers' generic return is correctly typed here, but oxlint loses precision through the wrapper.
   return useQueryTimer(result, label)
 }

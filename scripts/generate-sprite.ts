@@ -4,6 +4,10 @@ import { join } from 'node:path'
 
 import { optimize } from 'svgo'
 
+function formatUnknownError(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 // Configuration
 const LUCIDE_STATIC_PATH = 'node_modules/lucide-static/icons'
 const OUTPUT_DIR = 'public/sprites'
@@ -81,12 +85,14 @@ async function loadIcon(iconName: string): Promise<string> {
     })
 
     if ('error' in result) {
-      throw new Error(`SVGO optimization failed: ${result.error}`)
+      throw new Error(`SVGO optimization failed: ${formatUnknownError(result.error)}`)
     }
 
     return result.data
   } catch (error) {
-    throw new Error(`Failed to load icon "${iconName}": ${error}`, { cause: error })
+    throw new Error(`Failed to load icon "${iconName}": ${formatUnknownError(error)}`, {
+      cause: error,
+    })
   }
 }
 
@@ -94,7 +100,7 @@ async function loadIcon(iconName: string): Promise<string> {
  * Extract the inner content of an SVG (everything inside <svg> tags)
  */
 function extractSvgContent(svgString: string): string {
-  const match = svgString.match(/<svg[^>]*>([\s\S]*?)<\/svg>/)
+  const match = /<svg[^>]*>([\s\S]*?)<\/svg>/.exec(svgString)
   if (!match) {
     throw new Error('Invalid SVG format')
   }
@@ -165,7 +171,7 @@ async function generateSpritesheet() {
       const innerContent = extractSvgContent(svgContent)
       icons.set(iconName, innerContent)
     } catch (error) {
-      const errorMsg = `Failed to load ${iconName}: ${error}`
+      const errorMsg = `Failed to load ${iconName}: ${formatUnknownError(error)}`
       console.error(`  ❌ ${errorMsg}`)
       errors.push(errorMsg)
     }
@@ -209,7 +215,7 @@ async function generateSpritesheet() {
       console.log(`  🗑️  Removed old sprite: ${oldFile}`)
     }
   } catch (error) {
-    console.warn(`  ⚠️  Could not clean old sprites: ${error}`)
+    console.warn(`  ⚠️  Could not clean old sprites: ${formatUnknownError(error)}`)
   }
 
   await writeFile(spritePath, spriteContent, 'utf8')

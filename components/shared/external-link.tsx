@@ -11,6 +11,9 @@ function getDomain(url: string) {
 }
 
 export function ExternalLink({ href, children, className, ...props }: React.ComponentProps<'a'>) {
+  const resolvedLabel =
+    children ?? (href === undefined || href === '' ? undefined : getDomain(href))
+
   return (
     <a
       href={href}
@@ -22,7 +25,7 @@ export function ExternalLink({ href, children, className, ...props }: React.Comp
       )}
       {...props}
     >
-      {children ?? (href && getDomain(href))}
+      {resolvedLabel}
       <ExternalLinkIcon className="size-3" />
     </a>
   )

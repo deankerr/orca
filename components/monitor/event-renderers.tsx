@@ -32,18 +32,21 @@ function EventCardIdentity({
   removed?: boolean
   avatarClassName?: string
 } & React.ComponentProps<'div'>) {
+  const isRemoved = removed === true
+  const hasName = name !== undefined && name !== ''
+
   return (
     <div className={cn('flex min-w-0 items-center gap-2', className)} {...props}>
       <EntityAvatar
         slug={slug}
-        className={cn('size-6', removed && 'brightness-50', avatarClassName)}
+        className={cn('size-6', isRemoved && 'brightness-50', avatarClassName)}
       />
       <div className="min-w-0">
-        {name && (
+        {hasName && (
           <div
             className={cn(
               'truncate text-xs leading-tight font-medium',
-              removed && 'text-muted-foreground',
+              isRemoved && 'text-muted-foreground',
             )}
           >
             {name}
@@ -52,7 +55,7 @@ function EventCardIdentity({
         <div
           className={cn(
             'truncate font-mono text-xs leading-none text-muted-foreground',
-            removed && 'line-through',
+            isRemoved && 'line-through',
           )}
         >
           {slug}
@@ -78,6 +81,8 @@ export function EntityEventCard({ change }: { change: EntityChange }) {
 
 function ModelEventCard({ change }: { change: ModelChange }) {
   const { model, event } = change
+  const hasDescription = model.description !== undefined && model.description !== ''
+  const description = model.description ?? ''
 
   return (
     <EventCard>
@@ -103,10 +108,10 @@ function ModelEventCard({ change }: { change: ModelChange }) {
         )}
       </EventCardBody>
 
-      {event.kind === 'entity_available' && model.description && (
+      {event.kind === 'entity_available' && hasDescription && (
         <EventCardBody>
           <p className="text-xs whitespace-pre-line text-muted-foreground">
-            <InlineMarkdown text={model.description} />
+            <InlineMarkdown text={description} />
           </p>
         </EventCardBody>
       )}
@@ -127,7 +132,7 @@ function ModelEventCard({ change }: { change: ModelChange }) {
                     {m}
                   </Badge>
                 ))}
-                {model.reasoning && <Badge variant="secondary">reasoning</Badge>}
+                {model.reasoning === true && <Badge variant="secondary">reasoning</Badge>}
               </div>
             </FieldItem>
           </FieldItemSet>
@@ -147,6 +152,8 @@ function ModelEventCard({ change }: { change: ModelChange }) {
 
 function EndpointEventCard({ change }: { change: EndpointChange }) {
   const { model, provider, endpoint, event } = change
+  const hasContextLength = endpoint.context_length !== undefined && endpoint.context_length !== null
+  const hasPricing = endpoint.pricing !== undefined
 
   return (
     <EventCard>
@@ -174,7 +181,7 @@ function EndpointEventCard({ change }: { change: EndpointChange }) {
         </EventCardBody>
       )}
 
-      {event.kind === 'entity_available' && (endpoint.context_length || endpoint.pricing) && (
+      {event.kind === 'entity_available' && (hasContextLength || hasPricing) && (
         <EventCardBody className="pt-0">
           <NewEndpointFields endpoint={endpoint} />
         </EventCardBody>
@@ -200,18 +207,19 @@ function EndpointEventCard({ change }: { change: EndpointChange }) {
 
 function NewEndpointFields({ endpoint }: { endpoint: EndpointChange['endpoint'] }) {
   const pricing = endpoint.pricing ? formatPricingFields(endpoint.pricing) : []
-  if (!endpoint.context_length && pricing.length === 0) {
+  const contextLength = endpoint.context_length
+  const maxOutput = endpoint.max_output
+  const hasContextLength = contextLength !== undefined && contextLength !== null
+  const hasMaxOutput = maxOutput !== undefined && maxOutput !== null
+
+  if (!hasContextLength && pricing.length === 0) {
     return null
   }
 
   return (
     <FieldItemSet>
-      {endpoint.context_length && (
-        <FieldItem label="context">{endpoint.context_length.toLocaleString()}</FieldItem>
-      )}
-      {endpoint.max_output && (
-        <FieldItem label="max_output">{endpoint.max_output.toLocaleString()}</FieldItem>
-      )}
+      {hasContextLength && <FieldItem label="context">{contextLength.toLocaleString()}</FieldItem>}
+      {hasMaxOutput && <FieldItem label="max_output">{maxOutput.toLocaleString()}</FieldItem>}
       {pricing.map((p) => {
         const name = p.field.startsWith('text_cache_') ? p.field.slice(5) : p.field
         return (
