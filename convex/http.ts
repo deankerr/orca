@@ -1,9 +1,10 @@
 import { httpRouter } from 'convex/server'
 
+import { isNonEmptyString } from '@/shared/utils'
+
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
-import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()

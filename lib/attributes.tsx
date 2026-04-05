@@ -1,8 +1,8 @@
 import { InlineCode } from '@/components/shared/inline-code'
 import type { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-import { formatPricing } from '@/convex/shared/formatters'
 import type { SpriteIconName } from '@/lib/sprite-icons'
+import { formatPricing } from '@/shared/formatters'
 
 type EndpointPartial = Partial<ORCAEndpoint>
 

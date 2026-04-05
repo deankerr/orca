@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react'
 
 import { api } from '@/convex/_generated/api'
 import type { CrawlBatch } from '@/convex/monitor'
-import { baseProviderSlug } from '@/convex/shared/utils'
+import { baseProviderSlug } from '@/shared/utils'
 
 const PAGE_SIZE = 10
 const BATCH_QUERY_KEY = 'monitor:batch:v2'

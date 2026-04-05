@@ -4,8 +4,8 @@ import { formatDistanceToNow } from 'date-fns'
 
 import type { EntityChange } from '@/convex/db/or/views/changes'
 import type { CrawlBatch } from '@/convex/monitor'
-import { groupChanges } from '@/convex/shared/groups'
 import { cn } from '@/lib/utils'
+import { groupChanges } from '@/shared/groups'
 
 import { EntityEventCard } from './event-renderers'
 

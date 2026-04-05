@@ -1,9 +1,10 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { baseProviderSlug } from '@/shared/utils'
+
 import type { Doc, Id } from '../../../_generated/dataModel'
 import type { QueryCtx } from '../../../_generated/server'
-import { baseProviderSlug } from '../../../shared/utils'
 import { getModelDescription } from '../sources'
 import { get as getEndpoint } from './endpoints'
 import type { ORCAEndpoint } from './endpoints'

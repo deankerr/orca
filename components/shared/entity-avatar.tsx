@@ -1,7 +1,7 @@
 import Image from 'next/image'
 
-import { getLogo } from '@/convex/shared/logos'
 import { cn } from '@/lib/utils'
+import { getLogo } from '@/shared/logos'
 
 export function EntityAvatar({
   slug,

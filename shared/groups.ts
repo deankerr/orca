@@ -15,7 +15,7 @@ import type {
   EntityChange,
   ModelChange,
   ProviderChange,
-} from '../db/or/views/changes'
+} from '@/convex/db/or/views/changes'
 
 export type ChangeGroup = {
   slug: string

@@ -5,7 +5,7 @@
 
 import * as R from 'remeda'
 
-import type { ORCAEndpoint } from '../db/or/views/endpoints'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 
 // -- Pricing fields
 //

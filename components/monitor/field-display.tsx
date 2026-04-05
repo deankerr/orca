@@ -1,9 +1,9 @@
 'use client'
 
 import type { FieldChange } from '@/convex/db/or/views/changes'
-import { computeDelta, fmtUnit, fmtValue, splitPath } from '@/convex/shared/formatters'
-import { truncate } from '@/convex/shared/utils'
 import { cn } from '@/lib/utils'
+import { computeDelta, fmtUnit, fmtValue, splitPath } from '@/shared/formatters'
+import { truncate } from '@/shared/utils'
 
 import { InlineMarkdown } from './inline-markdown'
 

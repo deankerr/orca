@@ -2,21 +2,7 @@
 
 ## Commands
 
-- `bun run check`: type check and lint the whole project - do not try to check components individually. This is all you need.
-
-## Lint/Format Stages
-
-Use a staged rollout for the OXC migration. A single PR is acceptable, but a Graphite stack is preferred.
-
-- [x] Stage 1: Replace Prettier with `oxfmt`.
-- [x] Stage 1: Format the repo.
-
-- [x] Stage 2: Establish an `oxlint` baseline for `convex/`.
-- [x] Stage 2: Keep the current overrides in place; resolving override-covered issues is not part of this stage.
-
-- [x] Stage 3: Establish an `oxlint` baseline for the rest of the repo.
-
-- [x] Stage 4: Remove legacy ESLint only after the OXC flow is stable and intentionally adopted.
+- `bun run check`: run when work is complete.
 
 ## Overview
 
@@ -80,9 +66,10 @@ Serverless real-time database with Convex. Data pipeline transforms raw OpenRout
 - `convex/db/` - Database queries and schema definitions
 - `convex/analysis/` - Analytics and statistics processing (run via Convex dashboard)
 
-- `convex/shared/` - Utilities imported by both frontend and backend
-  - e.g. value formatters, logo data
-  - Modules MUST import types only - do not pull our backend code into the frontend!
+### Shared (`shared/`)
+
+- Utilities imported by both frontend and backend, e.g. value formatters, logo data
+- Modules MUST import types only - do not pull our backend code into the frontend!
 
 ## Data Pipeline
 
