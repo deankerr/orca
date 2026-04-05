@@ -38,10 +38,12 @@ export function FieldCategory({
   name?: string | null
   children: React.ReactNode
 }) {
+  const hasName = name !== null && name !== undefined && name !== ''
+
   return (
     <div className="space-y-0.5">
-      {name && <div className="text-muted-foreground/80">{name}</div>}
-      <div className={cn('space-y-0.5', name && 'pl-3')}>{children}</div>
+      {hasName && <div className="text-muted-foreground/80">{name}</div>}
+      <div className={cn('space-y-0.5', hasName && 'pl-3')}>{children}</div>
     </div>
   )
 }
@@ -110,6 +112,7 @@ function FieldUpdatedItem({
   const after = fmtValue(field.after, field.path)
   const delta = computeDelta(field.before, field.after, field.path)
   const unit = fmtUnit(field.path)
+  const hasUnit = unit !== undefined && unit !== ''
 
   return (
     <div className="flex flex-wrap items-center gap-x-1.5" data-change-id={field.change_id}>
@@ -117,7 +120,7 @@ function FieldUpdatedItem({
       <span className={cn(label, 'line-through')}>{before}</span>
       <span className={labelDimmer}>-&gt;</span>
       <span className="text-foreground">{after}</span>
-      {unit && <FieldUnit>{unit}</FieldUnit>}
+      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
       {delta && <DeltaBadge delta={delta} />}
     </div>
   )
@@ -146,13 +149,14 @@ function FieldAddedItem({
 
   const value = fmtValue(field.value, field.path)
   const unit = fmtUnit(field.path)
+  const hasUnit = unit !== undefined && unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
       <DiffSymbol className="text-positive-soft-foreground">+</DiffSymbol>
       <FieldLabel>{fieldKey}</FieldLabel>
       <span className="text-foreground">{value}</span>
-      {unit && <FieldUnit>{unit}</FieldUnit>}
+      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
     </div>
   )
 }
@@ -180,13 +184,14 @@ function FieldRemovedItem({
 
   const value = fmtValue(field.value, field.path)
   const unit = fmtUnit(field.path)
+  const hasUnit = unit !== undefined && unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
       <DiffSymbol className="text-negative-soft-foreground">-</DiffSymbol>
       <FieldLabel>{fieldKey}</FieldLabel>
       <span className="text-negative-soft-foreground line-through">{value}</span>
-      {unit && <FieldUnit>{unit}</FieldUnit>}
+      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
     </div>
   )
 }

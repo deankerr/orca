@@ -5,6 +5,13 @@ import { useSyncExternalStore } from 'react'
 const unsubscribe = () => null
 const subscribe = () => unsubscribe
 
+declare global {
+  interface Window {
+    toggleFeature: typeof toggleFeature
+    isFeatureEnabled: typeof isFeatureEnabled
+  }
+}
+
 // presentational features only
 export function FeatureFlag({ flag, children }: { flag: string; children: React.ReactNode }) {
   const isEnabled = useSyncExternalStore(
@@ -17,7 +24,7 @@ export function FeatureFlag({ flag, children }: { flag: string; children: React.
 
 // Helper to toggle flags from dev tools or anywhere
 export const toggleFeature = (flag: string) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  if (typeof window === 'undefined') {
     return
   }
   const current = localStorage.getItem(`feature-${flag}`) === 'true'
@@ -27,7 +34,7 @@ export const toggleFeature = (flag: string) => {
 
 // Helper to check if feature is enabled (for conditional logic)
 export const isFeatureEnabled = (flag: string) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  if (typeof window === 'undefined') {
     return false
   }
   return localStorage.getItem(`feature-${flag}`) === 'true'
@@ -35,6 +42,6 @@ export const isFeatureEnabled = (flag: string) => {
 
 // Make it globally available
 if (typeof window !== 'undefined') {
-  ;(window as any).toggleFeature = toggleFeature
-  ;(window as any).isFeatureEnabled = isFeatureEnabled
+  window.toggleFeature = toggleFeature
+  window.isFeatureEnabled = isFeatureEnabled
 }

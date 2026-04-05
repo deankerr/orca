@@ -72,7 +72,9 @@ export async function processOtherIcons(
     }
   } catch (error) {
     // * Directory might not exist, that's okay
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    const errorCode = error instanceof Error && 'code' in error ? error.code : undefined
+
+    if (errorCode !== 'ENOENT') {
       console.warn(
         `  ⚠️  Could not process other icons:`,
         error instanceof Error ? error.message : error,

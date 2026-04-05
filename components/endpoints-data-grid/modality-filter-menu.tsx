@@ -36,7 +36,9 @@ export function ModalityFilterMenu() {
       icon={attributes[name].icon}
       label={getModalityFilterLabel(name)}
       mode={modalityFilters[name]}
-      onChange={(mode) => setModalityFilter(name, mode)}
+      onChange={(mode) => {
+        setModalityFilter(name, mode)
+      }}
     />
   )
 

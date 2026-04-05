@@ -8,17 +8,22 @@
  *   bun scripts/release.ts --dry-run          # preview without creating
  */
 import { $ } from 'bun'
+import { z } from 'zod'
+
+const PackageJsonSchema = z.looseObject({
+  version: z.string(),
+})
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const title = args.find((a) => !a.startsWith('--'))
 
 // read current version from package.json
-const pkg = await Bun.file('package.json').json()
+const pkg = PackageJsonSchema.parse(await Bun.file('package.json').json())
 const current = Number(pkg.version.split('.')[0])
 const next = current + 1
 const tag = `v${next}`
-const displayTitle = title ? `${tag}: ${title}` : tag
+const displayTitle = title === undefined ? tag : `${tag}: ${title}`
 
 console.log(`[release] v${current} -> ${tag}`)
 console.log(`[release] title: ${displayTitle}`)

@@ -50,7 +50,7 @@ export function calculatePercentageChange(from: unknown, to: unknown): number | 
 export function getConvexHttpUrl(path: string): string {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
 
-  if (!convexUrl) {
+  if (convexUrl === undefined || convexUrl === '') {
     throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set')
   }
 

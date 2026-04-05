@@ -11,7 +11,7 @@ import { makeFunctionReference } from 'convex/server'
 import { getLogo } from '../convex/shared/logos'
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL
-if (!CONVEX_URL) {
+if (CONVEX_URL === undefined || CONVEX_URL === '') {
   throw new Error('NEXT_PUBLIC_CONVEX_URL not set - check .env.local')
 }
 
@@ -29,11 +29,13 @@ type Model = {
 }
 
 async function fetchProviders(): Promise<Provider[]> {
-  return await client.query(makeFunctionReference<'query', any, Provider[]>('providers:list'))
+  return client.query(
+    makeFunctionReference<'query', Record<string, never>, Provider[]>('providers:list'),
+  )
 }
 
 async function fetchModels(): Promise<Model[]> {
-  return await client.query(makeFunctionReference<'query', any, Model[]>('models:list'))
+  return client.query(makeFunctionReference<'query', Record<string, never>, Model[]>('models:list'))
 }
 
 async function checkMissingLogos() {
@@ -47,7 +49,7 @@ async function checkMissingLogos() {
   const missingProviders: Array<{ slug: string; name: string }> = []
   for (const provider of providers) {
     const { avatarPath } = getLogo(provider.slug)
-    if (!avatarPath) {
+    if (avatarPath === undefined || avatarPath === '') {
       missingProviders.push({ slug: provider.slug, name: provider.name })
     }
   }
@@ -56,7 +58,7 @@ async function checkMissingLogos() {
   const modelsWithoutLogos: string[] = []
   for (const model of models) {
     const { avatarPath } = getLogo(model.slug)
-    if (!avatarPath) {
+    if (avatarPath === undefined || avatarPath === '') {
       modelsWithoutLogos.push(model.slug)
     }
   }
@@ -75,4 +77,4 @@ async function checkMissingLogos() {
   }
 }
 
-checkMissingLogos()
+void checkMissingLogos()

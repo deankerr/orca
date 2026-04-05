@@ -15,7 +15,14 @@ export function EntitySheet() {
   const { entity, close } = useEntitySheet()
 
   return (
-    <Sheet open={entity !== null} onOpenChange={(open) => !open && close()}>
+    <Sheet
+      open={entity !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          close()
+        }
+      }}
+    >
       <SheetContent className="overflow-y-auto" aria-describedby={undefined}>
         {entity?.type === 'model' && <ModelSheet slug={entity.slug} />}
         {entity?.type === 'provider' && <ProviderSheet slug={entity.slug} />}

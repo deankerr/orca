@@ -59,7 +59,9 @@ const asyncStoragePersister = createAsyncStoragePersister({
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const [showDevtools, setShowDevtools] = useState(false)
-  useKeys(['ControlLeft', 'KeyT'], () => setShowDevtools((show) => !show))
+  useKeys(['ControlLeft', 'KeyT'], () => {
+    setShowDevtools((show) => !show)
+  })
 
   return (
     <ConvexProvider client={convex}>

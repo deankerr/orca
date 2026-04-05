@@ -14,8 +14,10 @@ declare module '@tanstack/react-table' {
 }
 
 export const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const query = typeof value === 'string' ? value : String(value ?? '')
+
   // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value, {
+  const itemRank = rankItem(String(row.getValue(columnId) ?? ''), query, {
     threshold: rankings.WORD_STARTS_WITH,
   })
 
@@ -32,7 +34,7 @@ export const fuzzySort: SortingFn<any> = (rowA, rowB, columnId) => {
   // Only sort by rank if the column has ranking information
   const rankA = rowA.columnFiltersMeta[columnId]?.itemRank
   const rankB = rowB.columnFiltersMeta[columnId]?.itemRank
-  if (rankA && rankB) {
+  if (rankA !== undefined && rankB !== undefined) {
     dir = compareItems(rankA, rankB)
   }
 

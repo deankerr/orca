@@ -39,6 +39,13 @@ export function ProviderSheet({ slug }: { slug: string }) {
     )
   }
 
+  const {
+    headquarters,
+    status_page_url: statusPageUrl,
+    terms_of_service_url: termsOfServiceUrl,
+    privacy_policy_url: privacyPolicyUrl,
+  } = provider
+
   return (
     <>
       <SheetTitle className="sr-only">{provider.name}</SheetTitle>
@@ -56,10 +63,10 @@ export function ProviderSheet({ slug }: { slug: string }) {
         {/* Details Section */}
         <EntitySheetSection title="Details">
           <DataList>
-            {provider.headquarters && (
+            {headquarters !== undefined && headquarters !== '' && (
               <DataListItem>
                 <DataListLabel>Headquarters</DataListLabel>
-                <DataListValue>{provider.headquarters}</DataListValue>
+                <DataListValue>{headquarters}</DataListValue>
               </DataListItem>
             )}
             {provider.datacenters && provider.datacenters.length > 0 && (
@@ -68,27 +75,27 @@ export function ProviderSheet({ slug }: { slug: string }) {
                 <DataListValue>{provider.datacenters.join(', ')}</DataListValue>
               </DataListItem>
             )}
-            {provider.status_page_url && (
+            {statusPageUrl !== undefined && statusPageUrl !== '' && (
               <DataListItem>
                 <DataListLabel>Status Page</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.status_page_url} />
+                  <ExternalLink href={statusPageUrl} />
                 </DataListValue>
               </DataListItem>
             )}
-            {provider.terms_of_service_url && (
+            {termsOfServiceUrl !== undefined && termsOfServiceUrl !== '' && (
               <DataListItem>
                 <DataListLabel>Terms of Service</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.terms_of_service_url} />
+                  <ExternalLink href={termsOfServiceUrl} />
                 </DataListValue>
               </DataListItem>
             )}
-            {provider.privacy_policy_url && (
+            {privacyPolicyUrl !== undefined && privacyPolicyUrl !== '' && (
               <DataListItem>
                 <DataListLabel>Privacy Policy</DataListLabel>
                 <DataListValue>
-                  <ExternalLink href={provider.privacy_policy_url} />
+                  <ExternalLink href={privacyPolicyUrl} />
                 </DataListValue>
               </DataListItem>
             )}
@@ -99,7 +106,13 @@ export function ProviderSheet({ slug }: { slug: string }) {
         <EntitySheetSection
           title="Endpoints"
           action={
-            <ActionLink onClick={() => findEndpoints(provider.slug)}>Find all Endpoints</ActionLink>
+            <ActionLink
+              onClick={() => {
+                findEndpoints(provider.slug)
+              }}
+            >
+              Find all Endpoints
+            </ActionLink>
           }
         />
       </div>

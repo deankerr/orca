@@ -46,15 +46,16 @@ const nextConfig: NextConfig = {
 }
 
 // sourcemap uploads require PostHog credentials, skip entirely in local dev
-const withPostHog = process.env.POSTHOG_PROJECT_ID
-  ? (config: NextConfig) =>
-      withPostHogConfig(config, {
-        personalApiKey: process.env.POSTHOG_API_KEY!,
-        projectId: process.env.POSTHOG_PROJECT_ID!,
-        sourcemaps: {
-          releaseVersion: appVersion,
-        },
-      })
-  : (config: NextConfig) => config
+const withPostHog =
+  process.env.POSTHOG_PROJECT_ID === undefined
+    ? (config: NextConfig) => config
+    : (config: NextConfig) =>
+        withPostHogConfig(config, {
+          personalApiKey: process.env.POSTHOG_API_KEY!,
+          projectId: process.env.POSTHOG_PROJECT_ID!,
+          sourcemaps: {
+            releaseVersion: appVersion,
+          },
+        })
 
 export default withPostHog(nextConfig)

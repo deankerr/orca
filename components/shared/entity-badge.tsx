@@ -80,7 +80,7 @@ export function EntityBadge({
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-              handleCopySlug()
+              void handleCopySlug()
             }}
             className={cn(
               'cursor-pointer truncate text-left text-muted-foreground hover:text-primary/90',

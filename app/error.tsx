@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 
 export default function ErrorPage({ error }: { error: Error & { digest?: string } }) {
   const isDev = process.env.NODE_ENV === 'development'
+  const hasDigest = error.digest !== undefined && error.digest !== ''
 
   useEffect(() => {
     posthog.captureException(error)
@@ -23,7 +24,12 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
         <AlertDescription>
           An error occurred while rendering this page. These options may help:
           <div className="mt-2 space-x-2">
-            <Button variant="secondary" onClick={() => window.location.reload()}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                window.location.reload()
+              }}
+            >
               Refresh Page
             </Button>
 
@@ -32,7 +38,7 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
             </Button>
           </div>
           {error?.message && isDev && <div className="py-3 font-mono text-sm">{error.message}</div>}
-          {error?.digest && <div className="py-3 font-mono text-xs">Digest: {error.digest}</div>}
+          {hasDigest && <div className="py-3 font-mono text-xs">Digest: {error.digest}</div>}
         </AlertDescription>
       </Alert>
     </PageContainer>

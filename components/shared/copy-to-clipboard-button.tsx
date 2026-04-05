@@ -11,20 +11,29 @@ export function CopyToClipboardButton({
   ...props
 }: { value: string } & React.ComponentProps<typeof Button>) {
   const [copied, setCopied] = useState(false)
-  const ariaLabel = props['aria-label'] ?? (children ? undefined : 'Copy to clipboard')
+  const hasChildren = children !== undefined && children !== null && children !== false
+  const ariaLabel = props['aria-label'] ?? (hasChildren ? undefined : 'Copy to clipboard')
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(value)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => {
+        setCopied(false)
+      }, 2000)
     } catch (error) {
       console.error('Failed to copy text:', error)
     }
   }
 
   return (
-    <Button onClick={handleCopy} aria-label={ariaLabel} {...props}>
+    <Button
+      onClick={() => {
+        void handleCopy()
+      }}
+      aria-label={ariaLabel}
+      {...props}
+    >
       {copied ? <CheckIcon /> : <CopyIcon />} {children}
     </Button>
   )

@@ -12,7 +12,7 @@ import { OrcaPublicApiV2Schema } from '../convex/public_api/preview_v2'
 function getApiUrl() {
   const apiUrl = process.argv.at(2)
 
-  if (!apiUrl) {
+  if (apiUrl === undefined || apiUrl === '') {
     throw new Error('Missing API URL argument. Usage: bun scripts/validate-public-api.ts <url>')
   }
 
@@ -27,8 +27,7 @@ async function validatePublicApi(apiUrl: string) {
     throw new Error(`Failed to fetch API: ${response.status} ${response.statusText}`)
   }
 
-  const data = await response.json()
-  const parsed = OrcaPublicApiV2Schema.parse(data)
+  const parsed = OrcaPublicApiV2Schema.parse(await response.json())
 
   const providerCount = parsed.models.reduce((count, model) => count + model.providers.length, 0)
 

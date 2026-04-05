@@ -1,9 +1,24 @@
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { z } from 'zod'
+
 import { OUTPUT_DIR, SOURCES_OPENROUTER_DIR } from './config'
 import { slugToTitle } from './utils'
 import type { LogoStyle } from './utils'
+
+const ProviderSchema = z.object({
+  slug: z.string(),
+  icon: z
+    .object({
+      url: z.string().optional(),
+    })
+    .optional(),
+})
+
+const ProvidersResponseSchema = z.object({
+  data: z.array(ProviderSchema),
+})
 
 /**
  * Process icons from OpenRouter API
@@ -21,8 +36,8 @@ export async function processOpenRouterIcons(
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    const data = await response.json()
-    const providers = data.data || []
+    const data = ProvidersResponseSchema.parse(await response.json())
+    const providers = data.data
 
     if (providers.length === 0) {
       return styles
@@ -44,7 +59,7 @@ export async function processOpenRouterIcons(
       }
 
       // * Skip if icon URL doesn't start with http
-      if (!iconUrl || !iconUrl.startsWith('http')) {
+      if (iconUrl === undefined || iconUrl === '' || !iconUrl.startsWith('http')) {
         skippedCount += 1
         continue
       }

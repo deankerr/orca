@@ -95,8 +95,14 @@ export function EndpointsDataGrid() {
 
   // Compute row-level data attributes for status-based styling
   const rowDataAttributes = useCallback((row: EndpointRow) => {
-    const status = row.unavailable_at ? 'gone' : row.disabled ? 'disabled' : undefined
-    return status ? { 'data-row-status': status } : {}
+    let status: 'gone' | 'disabled' | undefined
+    if (row.unavailable_at !== undefined && row.unavailable_at !== null) {
+      status = 'gone'
+    } else if (row.disabled) {
+      status = 'disabled'
+    }
+
+    return status === undefined ? {} : { 'data-row-status': status }
   }, [])
 
   // Derive row selection from highlight UUID

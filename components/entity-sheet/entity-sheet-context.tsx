@@ -21,9 +21,15 @@ export function EntitySheetProvider({ children }: { children: ReactNode }) {
     <EntitySheetContext.Provider
       value={{
         entity,
-        openModel: (slug) => setEntity({ type: 'model', slug }),
-        openProvider: (slug) => setEntity({ type: 'provider', slug }),
-        close: () => setEntity(null),
+        openModel: (slug) => {
+          setEntity({ type: 'model', slug })
+        },
+        openProvider: (slug) => {
+          setEntity({ type: 'provider', slug })
+        },
+        close: () => {
+          setEntity(null)
+        },
       }}
     >
       {children}

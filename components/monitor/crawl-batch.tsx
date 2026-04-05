@@ -109,7 +109,7 @@ function changeKey(change: EntityChange): string {
     return change.event.change_id
   }
   const [firstField] = change.event.fields
-  if (firstField) {
+  if (firstField !== undefined) {
     return firstField.change_id
   }
   return `${change.entity_type}:${change.event.kind}`

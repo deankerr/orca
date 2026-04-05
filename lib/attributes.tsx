@@ -30,6 +30,10 @@ function defineAttributes<T extends AttributeDefinitions>(definitions: T): T {
   return definitions
 }
 
+function hasValue<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined
+}
+
 export const attributes = defineAttributes({
   // Features (model)
   reasoning: {
@@ -47,13 +51,14 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.model?.reasoning ?? false
       const items = []
+      const reasoningOutputPrice = endpoint.pricing?.reasoning_output
 
-      if (endpoint.pricing?.reasoning_output) {
+      if (hasValue(reasoningOutputPrice)) {
         items.push({
           label: 'Output',
           value: formatPrice({
             priceKey: 'reasoning_output',
-            priceValue: endpoint.pricing.reasoning_output,
+            priceValue: reasoningOutputPrice,
           }),
         })
       }
@@ -123,25 +128,27 @@ export const attributes = defineAttributes({
     color: 'cyan',
     referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
     resolve: (endpoint) => {
-      const active = !!endpoint.pricing?.text_cache_read
+      const textCacheRead = endpoint.pricing?.text_cache_read
+      const textCacheWrite = endpoint.pricing?.text_cache_write
+      const active = hasValue(textCacheRead)
       const items = []
 
-      if (endpoint.pricing?.text_cache_read) {
+      if (hasValue(textCacheRead)) {
         items.push({
           label: 'Read',
           value: formatPrice({
             priceKey: 'text_cache_read',
-            priceValue: endpoint.pricing.text_cache_read,
+            priceValue: textCacheRead,
           }),
         })
       }
 
-      if (endpoint.pricing?.text_cache_write) {
+      if (hasValue(textCacheWrite)) {
         items.push({
           label: 'Write',
           value: formatPrice({
             priceKey: 'text_cache_write',
-            priceValue: endpoint.pricing.text_cache_write,
+            priceValue: textCacheWrite,
           }),
         })
       }
@@ -168,23 +175,25 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.implicit_caching ?? false
       const items = []
+      const textCacheRead = endpoint.pricing?.text_cache_read
+      const textCacheWrite = endpoint.pricing?.text_cache_write
 
-      if (endpoint.pricing?.text_cache_read) {
+      if (hasValue(textCacheRead)) {
         items.push({
           label: 'Read',
           value: formatPrice({
             priceKey: 'text_cache_read',
-            priceValue: endpoint.pricing.text_cache_read,
+            priceValue: textCacheRead,
           }),
         })
       }
 
-      if (endpoint.pricing?.text_cache_write) {
+      if (hasValue(textCacheWrite)) {
         items.push({
           label: 'Write',
           value: formatPrice({
             priceKey: 'text_cache_write',
-            priceValue: endpoint.pricing.text_cache_write,
+            priceValue: textCacheWrite,
           }),
         })
       }
@@ -218,13 +227,14 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.native_web_search ?? false
       const items = []
+      const webSearchPrice = endpoint.pricing?.web_search
 
-      if (endpoint.pricing?.web_search) {
+      if (hasValue(webSearchPrice)) {
         items.push({
           label: 'Per Request',
           value: formatPrice({
             priceKey: 'web_search',
-            priceValue: endpoint.pricing.web_search,
+            priceValue: webSearchPrice,
           }),
         })
       }
@@ -312,8 +322,8 @@ export const attributes = defineAttributes({
     description: 'This endpoint is no longer available.',
     color: 'rose',
     resolve: (endpoint) => ({
-      active: !!endpoint.unavailable_at,
-      details: endpoint.unavailable_at
+      active: hasValue(endpoint.unavailable_at),
+      details: hasValue(endpoint.unavailable_at)
         ? [
             {
               label: 'Last Seen',
@@ -371,7 +381,7 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.data_policy?.may_retain_data === true
       const days = endpoint.data_policy?.data_retention_days?.toLocaleString()
-      const value = days ? `${days} days` : '? days'
+      const value = days === undefined ? '? days' : `${days} days`
       return {
         active,
         value,
@@ -464,13 +474,14 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('image') ?? false
       const items = []
+      const imageInputPrice = endpoint.pricing?.image_input
 
-      if (endpoint.pricing?.image_input) {
+      if (hasValue(imageInputPrice)) {
         items.push({
           label: 'Input',
           value: formatPrice({
             priceKey: 'image_input',
-            priceValue: endpoint.pricing.image_input,
+            priceValue: imageInputPrice,
           }),
         })
       }
@@ -492,13 +503,14 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.model?.output_modalities?.includes('image') ?? false
       const items = []
+      const imageOutputPrice = endpoint.pricing?.image_output
 
-      if (endpoint.pricing?.image_output) {
+      if (hasValue(imageOutputPrice)) {
         items.push({
           label: 'Output',
           value: formatPrice({
             priceKey: 'image_output',
-            priceValue: endpoint.pricing.image_output,
+            priceValue: imageOutputPrice,
           }),
         })
       }
@@ -532,23 +544,25 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.model?.input_modalities?.includes('audio') ?? false
       const items = []
+      const audioInputPrice = endpoint.pricing?.audio_input
+      const audioCacheWritePrice = endpoint.pricing?.audio_cache_write
 
-      if (endpoint.pricing?.audio_input) {
+      if (hasValue(audioInputPrice)) {
         items.push({
           label: 'Input',
           value: formatPrice({
             priceKey: 'audio_input',
-            priceValue: endpoint.pricing.audio_input,
+            priceValue: audioInputPrice,
           }),
         })
       }
 
-      if (endpoint.pricing?.audio_cache_write) {
+      if (hasValue(audioCacheWritePrice)) {
         items.push({
           label: 'Cache',
           value: formatPrice({
             priceKey: 'audio_cache_write',
-            priceValue: endpoint.pricing.audio_cache_write,
+            priceValue: audioCacheWritePrice,
           }),
         })
       }
@@ -646,7 +660,7 @@ export const attributes = defineAttributes({
         },
       ]
 
-      if (variablePricing.cache_read) {
+      if (hasValue(variablePricing.cache_read)) {
         details.push({
           label: 'Cache Read',
           value: formatPrice({
@@ -656,7 +670,7 @@ export const attributes = defineAttributes({
         })
       }
 
-      if (variablePricing.cache_write) {
+      if (hasValue(variablePricing.cache_write)) {
         details.push({
           label: 'Cache Write',
           value: formatPrice({
@@ -676,7 +690,7 @@ export const attributes = defineAttributes({
 
 export type AttributeKey = keyof typeof attributes
 export type AttributeSlots = AttributeKey[][]
-export type Attribute = AttributeDefinition & { key: AttributeKey }
+export type Attribute = (typeof attributes)[AttributeKey]
 
 export function isAttributeKey(value: string): value is AttributeKey {
   return Object.hasOwn(attributes, value)
@@ -686,7 +700,7 @@ export function resolveEndpointAttribute(endpoint: EndpointPartial, key: Attribu
   const attribute = attributes[key]
   const data = attribute.resolve(endpoint)
 
-  return { attribute, data } as { attribute: Attribute; data: AttributeState }
+  return { attribute, data }
 }
 
 export function resolveEndpointAttributeSlot(endpoint: EndpointPartial, slot: AttributeKey[]) {

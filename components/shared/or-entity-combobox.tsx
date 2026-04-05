@@ -169,7 +169,9 @@ function EntityCombobox({
             <Input
               placeholder={searchPlaceholder}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+              }}
               className="rounded-b-none border-0 dark:bg-transparent"
               autoFocus
             />
@@ -257,7 +259,9 @@ function VirtualizedEntityList({
                 height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-              onClick={() => onSelect(item)}
+              onClick={() => {
+                onSelect(item)
+              }}
             >
               <EntityBadge
                 name={item.name}

@@ -23,7 +23,9 @@ export function useTouchPrimary() {
 
     handleTouch()
 
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+    }
   }, [])
 
   return isTouchPrimary

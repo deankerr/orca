@@ -103,6 +103,8 @@ function FilterMenuSection({
   title: string
   description?: string
 } & React.ComponentProps<'section'>) {
+  const hasDescription = description !== undefined && description !== ''
+
   return (
     <section
       className={cn('flex flex-col gap-2 rounded-lg border p-2 shadow', className)}
@@ -114,7 +116,7 @@ function FilterMenuSection({
           {title}
         </div>
 
-        {description && (
+        {hasDescription && (
           <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
         )}
       </div>
