@@ -79,6 +79,10 @@ const ApplicationInfoSchema = z.object({
 type RegisteredCommand = z.infer<typeof RegisteredCommandSchema>
 type ApplicationInfo = z.infer<typeof ApplicationInfoSchema>
 
+function hasText(value: string | undefined): value is string {
+  return value !== undefined && value !== ''
+}
+
 /**
  * Register slash commands with Discord
  *
@@ -95,11 +99,11 @@ export const registerCommands = internalAction({
     const applicationId = process.env.DISCORD_APPLICATION_ID
     const botToken = process.env.DISCORD_BOT_TOKEN
 
-    if (!applicationId) {
+    if (!hasText(applicationId)) {
       return { success: false, error: 'DISCORD_APPLICATION_ID not configured' }
     }
 
-    if (!botToken) {
+    if (!hasText(botToken)) {
       return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
     }
 
@@ -130,9 +134,9 @@ export const registerCommands = internalAction({
           description: c.description,
         })),
       }
-    } catch (err) {
-      console.error('[discord:admin] registration failed', { error: err })
-      return { success: false, error: String(err) }
+    } catch (error) {
+      console.error('[discord:admin] registration failed', { error: error })
+      return { success: false, error: String(error) }
     }
   },
 })
@@ -151,7 +155,7 @@ export const getApplicationInfo = internalAction({
   }> => {
     const botToken = process.env.DISCORD_BOT_TOKEN
 
-    if (!botToken) {
+    if (!hasText(botToken)) {
       return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
     }
 
@@ -179,9 +183,9 @@ export const getApplicationInfo = internalAction({
           icon: app.icon,
         },
       }
-    } catch (err) {
-      console.error('[discord:admin] failed to get application info', { error: err })
-      return { success: false, error: String(err) }
+    } catch (error) {
+      console.error('[discord:admin] failed to get application info', { error: error })
+      return { success: false, error: String(error) }
     }
   },
 })

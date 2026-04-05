@@ -29,12 +29,30 @@ export function createDiscordClient(botToken: string) {
 
 export type DiscordClient = ReturnType<typeof createDiscordClient>
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getResponseData(error: { data: unknown }): unknown {
+  return error.data
+}
+
 /**
  * Format error for logging - extracts status and data from up-fetch response errors
  */
 export function formatDiscordError(err: unknown): unknown {
-  if (!isResponseError(err)) return String(err)
+  if (!isResponseError(err)) {
+    return String(err)
+  }
+  const responseData = getResponseData(err)
   // data may be a string (HTML error page) instead of a JSON object
-  const data = typeof err.data === 'string' ? { body: err.data.slice(0, 2000) } : err.data
+  let data: Record<string, unknown>
+  if (typeof responseData === 'string') {
+    data = { body: responseData.slice(0, 2000) }
+  } else if (isRecord(responseData)) {
+    data = responseData
+  } else {
+    data = {}
+  }
   return { status: err.status, ...data }
 }

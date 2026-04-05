@@ -9,8 +9,7 @@ import { SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
 
 export const countByUser = internalQuery({
   args: { user_id: v.string() },
-  handler: async (ctx, args) =>
-    await db.alerts.discord.subscriptions.countByUser(ctx, args.user_id),
+  handler: async (ctx, args) => db.alerts.discord.subscriptions.countByUser(ctx, args.user_id),
 })
 
 export const list = internalQuery({
@@ -20,13 +19,12 @@ export const list = internalQuery({
       v.object({ type: v.literal('dm'), user_id: v.string() }),
     ),
   },
-  handler: async (ctx, args) =>
-    await db.alerts.discord.subscriptions.listByContext(ctx, args.context),
+  handler: async (ctx, args) => db.alerts.discord.subscriptions.listByContext(ctx, args.context),
 })
 
 export const getActive = internalQuery({
   args: {},
-  handler: async (ctx) => await db.alerts.discord.subscriptions.getActive(ctx),
+  handler: async (ctx) => db.alerts.discord.subscriptions.getActive(ctx),
 })
 
 // * Internal Mutations
@@ -53,7 +51,9 @@ export const create = internalMutation({
       context,
       input.pattern,
     )
-    if (existing) return 'exists'
+    if (existing) {
+      return 'exists'
+    }
 
     return db.alerts.discord.subscriptions.insert(ctx, input)
   },
@@ -71,7 +71,9 @@ export const remove = internalMutation({
     const { context, pattern } = args
 
     const sub = await db.alerts.discord.subscriptions.findByContextAndPattern(ctx, context, pattern)
-    if (!sub) return null
+    if (!sub) {
+      return null
+    }
 
     await db.alerts.discord.subscriptions.softDelete(ctx, sub._id)
     return sub
