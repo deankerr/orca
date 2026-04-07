@@ -22,6 +22,27 @@ export type ChangeGroup = {
   changes: EntityChange[]
 }
 
+function groupByToMap<TItem, TKey>(
+  items: TItem[],
+  getKey: (item: TItem) => TKey,
+): Map<TKey, TItem[]> {
+  const groups = new Map<TKey, TItem[]>()
+
+  for (const item of items) {
+    const key = getKey(item)
+    const group = groups.get(key)
+
+    if (group) {
+      group.push(item)
+      continue
+    }
+
+    groups.set(key, [item])
+  }
+
+  return groups
+}
+
 export function groupChanges(changes: EntityChange[]): ChangeGroup[] {
   const groups: ChangeGroup[] = []
 
@@ -30,7 +51,7 @@ export function groupChanges(changes: EntityChange[]): ChangeGroup[] {
   const providers = changes.filter((c): c is ProviderChange => c.entity_type === 'provider')
 
   // index endpoints by model slug + event kind
-  const epByModelAndKind = Map.groupBy(endpoints, (c) => `${c.model.slug}:${c.event.kind}`)
+  const epByModelAndKind = groupByToMap(endpoints, (c) => `${c.model.slug}:${c.event.kind}`)
   const claimed = new Set<EndpointChange>()
 
   // model lifecycle claims matching endpoint lifecycle
