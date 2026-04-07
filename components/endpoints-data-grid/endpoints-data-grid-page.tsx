@@ -26,7 +26,6 @@ import {
   DataGridCardFooter,
   DataGridCardToolbar,
 } from '../data-grid/data-grid-card'
-import { fuzzyFilter } from '../data-grid/data-grid-fuzzy'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
 import { Button } from '../ui/button'
 import { useEndpointsData } from './api'
@@ -90,7 +89,7 @@ function EndpointsEmptyState() {
 export function EndpointsDataGrid() {
   'use no memo'
   const { filteredEndpoints, isLoading } = useEndpointsData()
-  const { globalFilter, highlightUuid, sorting, onSortingChange } = useEndpointFilters()
+  const { highlightUuid, sorting, onSortingChange } = useEndpointFilters()
   const isMobile = useIsMobile()
 
   // Compute row-level data attributes for status-based styling
@@ -118,12 +117,7 @@ export function EndpointsDataGrid() {
   const table = useReactTable({
     columns,
     data: filteredEndpoints,
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    globalFilterFn: 'fuzzy',
     state: {
-      globalFilter,
       sorting,
       rowSelection,
       columnPinning: isMobile === false ? { left: ['uuid', 'model', 'provider'] } : {},
