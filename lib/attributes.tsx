@@ -1,10 +1,41 @@
+import type { LucideIcon } from 'lucide-react'
+import {
+  AlarmClock,
+  AudioLines,
+  BrainCog,
+  Braces,
+  CakeSlice,
+  Calendar,
+  ChevronsDown,
+  Database,
+  FileDigit,
+  FileSpreadsheet,
+  Fingerprint,
+  Flag,
+  Globe,
+  Image,
+  ImageDown,
+  ImageUp,
+  LetterText,
+  MessageSquare,
+  MessagesSquare,
+  OctagonX,
+  Save,
+  ScanEye,
+  ScrollText,
+  ShieldAlert,
+  Skull,
+  Video,
+  Wrench,
+} from 'lucide-react'
+
+import type { ColorIconBadgeColor } from '@/components/shared/color-icon-badge'
 import { InlineCode } from '@/components/shared/inline-code'
-import type { SpriteIconBadgeColor } from '@/components/shared/sprite-icon-badge'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
-import type { SpriteIconName } from '@/lib/sprite-icons'
 import { formatPricing } from '@/shared/formatters'
 
 type EndpointPartial = Partial<ORCAEndpoint>
+type AttributeIcon = LucideIcon
 
 export interface AttributeState {
   active: boolean
@@ -13,10 +44,10 @@ export interface AttributeState {
 }
 
 interface AttributeDefinition {
-  icon: SpriteIconName
+  icon: AttributeIcon
   label: string
   description: React.ReactNode
-  color: SpriteIconBadgeColor
+  color: ColorIconBadgeColor
   referenceUrl?: string
   resolve: (endpoint: EndpointPartial) => AttributeState
 }
@@ -59,7 +90,7 @@ export const attributes = defineAttributes({
   // Features (model)
   reasoning: {
     key: 'reasoning',
-    icon: 'brain-cog',
+    icon: BrainCog,
     label: 'Reasoning',
     description: (
       <>
@@ -90,7 +121,7 @@ export const attributes = defineAttributes({
 
   tools: {
     key: 'tools',
-    icon: 'wrench',
+    icon: Wrench,
     label: 'Tools',
     description: (
       <>
@@ -106,7 +137,7 @@ export const attributes = defineAttributes({
 
   response_format: {
     key: 'response_format',
-    icon: 'braces',
+    icon: Braces,
     label: 'Response Format',
     description: (
       <>
@@ -123,7 +154,7 @@ export const attributes = defineAttributes({
 
   structured_outputs: {
     key: 'structured_outputs',
-    icon: 'braces',
+    icon: Braces,
     label: 'Structured Outputs',
     description: (
       <>
@@ -140,7 +171,7 @@ export const attributes = defineAttributes({
 
   caching: {
     key: 'caching',
-    icon: 'database',
+    icon: Database,
     label: 'Caching',
     description: 'Reduced pricing on cache hits for repeated prompt content.',
     color: 'cyan',
@@ -174,7 +205,7 @@ export const attributes = defineAttributes({
 
   implicit_caching: {
     key: 'implicit_caching',
-    icon: 'database',
+    icon: Database,
     label: 'Implicit Caching',
     description: (
       <>
@@ -214,7 +245,7 @@ export const attributes = defineAttributes({
   // Features (OpenRouter)
   moderated: {
     key: 'moderated',
-    icon: 'shield-alert',
+    icon: ShieldAlert,
     label: 'Moderated',
     description: 'OpenRouter applies content filtering before forwarding to the provider.',
     color: 'amber',
@@ -225,7 +256,7 @@ export const attributes = defineAttributes({
 
   native_web_search: {
     key: 'native_web_search',
-    icon: 'globe',
+    icon: Globe,
     label: 'Native Web Search',
     description: 'Provider handles web search natively, without the OpenRouter plugin.',
     color: 'emerald',
@@ -251,7 +282,7 @@ export const attributes = defineAttributes({
 
   completions: {
     key: 'completions',
-    icon: 'message-square',
+    icon: MessageSquare,
     label: 'Completions',
     description: (
       <>
@@ -267,7 +298,7 @@ export const attributes = defineAttributes({
 
   chat_completions: {
     key: 'chat_completions',
-    icon: 'messages-square',
+    icon: MessagesSquare,
     label: 'Chat Completions',
     description: (
       <>
@@ -284,7 +315,7 @@ export const attributes = defineAttributes({
   // Variant
   free: {
     key: 'free',
-    icon: 'cake-slice',
+    icon: CakeSlice,
     label: 'Free',
     description: 'Zero-cost inference. May have stricter rate limits and lower availability.',
     color: 'pink',
@@ -297,7 +328,7 @@ export const attributes = defineAttributes({
   // Status Flags
   deranked: {
     key: 'deranked',
-    icon: 'chevrons-down',
+    icon: ChevronsDown,
     label: 'Deranked',
     description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
     color: 'amber',
@@ -309,7 +340,7 @@ export const attributes = defineAttributes({
 
   disabled: {
     key: 'disabled',
-    icon: 'octagon-x',
+    icon: OctagonX,
     label: 'Disabled',
     description: 'Temporarily unavailable; requests will fail or route elsewhere.',
     color: 'red',
@@ -320,7 +351,7 @@ export const attributes = defineAttributes({
 
   gone: {
     key: 'gone',
-    icon: 'skull',
+    icon: Skull,
     label: 'Gone',
     description: 'This endpoint is no longer available.',
     color: 'rose',
@@ -340,7 +371,7 @@ export const attributes = defineAttributes({
   // Data Policy
   training: {
     key: 'training',
-    icon: 'scan-eye',
+    icon: ScanEye,
     label: 'Training',
     description: 'Provider may use your prompts and completions for model training.',
     color: 'orange',
@@ -352,7 +383,7 @@ export const attributes = defineAttributes({
 
   data_publishing: {
     key: 'data_publishing',
-    icon: 'scroll-text',
+    icon: ScrollText,
     label: 'Data Publishing',
     description: 'Provider may publish or share your data in research or datasets.',
     color: 'orange',
@@ -364,7 +395,7 @@ export const attributes = defineAttributes({
 
   user_id: {
     key: 'user_id',
-    icon: 'fingerprint',
+    icon: Fingerprint,
     label: 'User ID',
     description: 'An anonymized ID is forwarded to the provider with your request.',
     color: 'orange',
@@ -376,7 +407,7 @@ export const attributes = defineAttributes({
 
   data_retention: {
     key: 'data_retention',
-    icon: 'save',
+    icon: Save,
     label: 'Data Retention',
     description: 'Provider stores prompts and completions for a limited period.',
     color: 'orange',
@@ -395,7 +426,7 @@ export const attributes = defineAttributes({
   // Limits
   max_text_input_tokens: {
     key: 'max_text_input_tokens',
-    icon: 'letter-text',
+    icon: LetterText,
     label: 'Max Context',
     description: 'Context window limit for this endpoint (may differ from model maximum).',
     color: 'yellow',
@@ -410,7 +441,7 @@ export const attributes = defineAttributes({
 
   max_image_input_tokens: {
     key: 'max_image_input_tokens',
-    icon: 'image',
+    icon: Image,
     label: 'Max Image Tokens',
     description: 'Token budget consumed by image inputs.',
     color: 'yellow',
@@ -424,7 +455,7 @@ export const attributes = defineAttributes({
 
   max_images_per_input: {
     key: 'max_images_per_input',
-    icon: 'image',
+    icon: Image,
     label: 'Max Images',
     description: 'Number of images allowed in a single request.',
     color: 'yellow',
@@ -438,7 +469,7 @@ export const attributes = defineAttributes({
 
   max_requests_per_minute: {
     key: 'max_requests_per_minute',
-    icon: 'alarm-clock',
+    icon: AlarmClock,
     label: 'Max Requests/Min',
     description: 'Rate limit enforced by this endpoint.',
     color: 'yellow',
@@ -453,7 +484,7 @@ export const attributes = defineAttributes({
 
   max_requests_per_day: {
     key: 'max_requests_per_day',
-    icon: 'calendar',
+    icon: Calendar,
     label: 'Max Requests/Day',
     description: 'Daily request quota enforced by this endpoint.',
     color: 'yellow',
@@ -469,7 +500,7 @@ export const attributes = defineAttributes({
   // Modalities
   image_input: {
     key: 'image_input',
-    icon: 'image-up',
+    icon: ImageUp,
     label: 'Image Input',
     description: 'Accepts images via URL or base64 content parts.',
     color: 'violet',
@@ -495,7 +526,7 @@ export const attributes = defineAttributes({
 
   image_output: {
     key: 'image_output',
-    icon: 'image-down',
+    icon: ImageDown,
     label: 'Image Output',
     description: 'Generates images inline in the completion response.',
     color: 'violet',
@@ -521,7 +552,7 @@ export const attributes = defineAttributes({
 
   file_input: {
     key: 'file_input',
-    icon: 'file-spreadsheet',
+    icon: FileSpreadsheet,
     label: 'File Input',
     description: 'Accepts document and file uploads as input.',
     color: 'sky',
@@ -533,7 +564,7 @@ export const attributes = defineAttributes({
 
   audio_input: {
     key: 'audio_input',
-    icon: 'audio-lines',
+    icon: AudioLines,
     label: 'Audio Input',
     description: 'Natively processes audio without a separate transcription step.',
     color: 'fuchsia',
@@ -567,7 +598,7 @@ export const attributes = defineAttributes({
 
   audio_output: {
     key: 'audio_output',
-    icon: 'audio-lines',
+    icon: AudioLines,
     label: 'Audio Output',
     description: 'Generates audio inline in the completion response.',
     color: 'fuchsia',
@@ -579,7 +610,7 @@ export const attributes = defineAttributes({
 
   video_input: {
     key: 'video_input',
-    icon: 'video',
+    icon: Video,
     label: 'Video Input',
     description: 'Accepts video content via URL or base64.',
     color: 'emerald',
@@ -591,7 +622,7 @@ export const attributes = defineAttributes({
 
   video_output: {
     key: 'video_output',
-    icon: 'video',
+    icon: Video,
     label: 'Video Output',
     description: 'Generates video inline in the completion response.',
     color: 'emerald',
@@ -603,7 +634,7 @@ export const attributes = defineAttributes({
 
   embeddings_output: {
     key: 'embeddings_output',
-    icon: 'file-digit',
+    icon: FileDigit,
     label: 'Embeddings',
     description: 'Returns vector representations for semantic search and RAG.',
     color: 'amber',
@@ -616,7 +647,7 @@ export const attributes = defineAttributes({
   // Request Pricing & Limits
   long_context_pricing: {
     key: 'long_context_pricing',
-    icon: 'flag',
+    icon: Flag,
     label: 'Long Context Pricing',
     description: 'Higher rates apply when prompt length exceeds a token threshold.',
     color: 'yellow',
