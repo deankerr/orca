@@ -6,7 +6,6 @@ import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 import { formatPricing } from '@/shared/formatters'
 
-import { fuzzySort } from '../data-grid/data-grid-fuzzy'
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
@@ -69,7 +68,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 230,
-    sortingFn: fuzzySort,
     enableHiding: false,
 
     meta: {
@@ -93,7 +91,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 200,
-    sortingFn: fuzzySort,
     enableHiding: false,
     meta: {
       headerTitle: 'Provider',
