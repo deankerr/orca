@@ -39,7 +39,7 @@ export function ModelSheet({ slug }: { slug: string }) {
     )
   }
 
-  const { hugging_face_id: huggingFaceId, tokenizer, instruct_type: instructType } = model
+  const { hugging_face_id: huggingFaceId } = model
 
   return (
     <>
@@ -80,20 +80,6 @@ export function ModelSheet({ slug }: { slug: string }) {
               <DataListLabel>Reasoning</DataListLabel>
               <DataListValue>{model.reasoning ? 'Yes' : 'No'}</DataListValue>
             </DataListItem>
-
-            {tokenizer !== undefined && tokenizer !== '' && (
-              <DataListItem>
-                <DataListLabel>Tokenizer</DataListLabel>
-                <DataListValue>{tokenizer}</DataListValue>
-              </DataListItem>
-            )}
-
-            {instructType !== undefined && instructType !== '' && (
-              <DataListItem>
-                <DataListLabel>Instruct Type</DataListLabel>
-                <DataListValue>{instructType}</DataListValue>
-              </DataListItem>
-            )}
           </DataList>
         </EntitySheetSection>
 
