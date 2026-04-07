@@ -10,9 +10,11 @@
 import { $ } from 'bun'
 import { z } from 'zod'
 
+const PackageVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/)
 const PackageJsonSchema = z.looseObject({
-  version: z.string(),
+  version: PackageVersionSchema,
 })
+const packageJsonVersionPattern = /^(\s*"version":\s*")([^"]+)(".*)$/m
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
@@ -74,9 +76,40 @@ function failIfReleasePreconditionsNotMet() {
   }
 }
 
+function failIfUnexpectedFilesChanged(expectedChangedFiles: Array<string>) {
+  const changedFiles = getStdout(['git', 'diff', '--name-only']).split('\n').filter(Boolean)
+  const unexpectedFiles = changedFiles.filter((file) => !expectedChangedFiles.includes(file))
+
+  if (unexpectedFiles.length > 0) {
+    console.error('[release] bun run check modified unexpected files')
+    console.error(unexpectedFiles.join('\n'))
+    process.exit(1)
+  }
+}
+
+function getCurrentVersion(packageJsonText: string) {
+  const packageJson = PackageJsonSchema.parse(JSON.parse(packageJsonText))
+  return PackageVersionSchema.parse(packageJson.version)
+}
+
+function replacePackageVersion(packageJsonText: string, nextVersion: string) {
+  const nextPackageJsonText = packageJsonText.replace(
+    packageJsonVersionPattern,
+    `$1${nextVersion}$3`,
+  )
+
+  if (nextPackageJsonText === packageJsonText) {
+    throw new Error('[release] could not update the version in package.json')
+  }
+
+  return nextPackageJsonText
+}
+
 // read current version from package.json
-const pkg = PackageJsonSchema.parse(await Bun.file('package.json').json())
-const current = Number(pkg.version.split('.')[0])
+const packageJsonPath = 'package.json'
+const packageJsonText = await Bun.file(packageJsonPath).text()
+const currentVersion = getCurrentVersion(packageJsonText)
+const current = Number(currentVersion.split('.')[0])
 const next = current + 1
 const tag = `v${next}`
 const displayTitle = title === undefined ? tag : `${tag}: ${title}`
@@ -92,11 +125,16 @@ if (dryRun) {
 }
 
 // bump version in package.json
-pkg.version = `${next}.0.0`
-await Bun.write('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
+const nextVersion = `${next}.0.0`
+const nextPackageJsonText = replacePackageVersion(packageJsonText, nextVersion)
+await Bun.write(packageJsonPath, nextPackageJsonText)
+
+console.log('[release] running bun run check')
+await $`bun run check`
+failIfUnexpectedFilesChanged([packageJsonPath])
 
 // commit the version bump
-await $`git add package.json`
+await $`git add ${packageJsonPath}`
 await $`git commit -m ${tag}`
 
 // push the commit to main
