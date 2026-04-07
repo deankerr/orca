@@ -1,8 +1,8 @@
-import { SpriteIcon } from '@/components/ui/sprite-icon'
-import type { SpriteIconName } from '@/lib/sprite-icons'
+import type { LucideIcon } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
-const spriteIconBadgeColorClasses = {
+const colorIconBadgeColorClasses = {
   red: 'bg-red-950/30 text-red-400 border-red-400/30',
   orange: 'bg-orange-950/30 text-orange-400 border-orange-400/30',
   amber: 'bg-amber-950/30 text-amber-400 border-amber-400/30',
@@ -27,24 +27,24 @@ const spriteIconBadgeColorClasses = {
   stone: 'bg-stone-900/50 text-stone-400 border-stone-700',
 } as const
 
-export type SpriteIconBadgeColor = keyof typeof spriteIconBadgeColorClasses
+export type ColorIconBadgeColor = keyof typeof colorIconBadgeColorClasses
 
-interface SpriteIconBadgeProps extends Omit<React.ComponentProps<'div'>, 'color'> {
-  icon: SpriteIconName
-  color: SpriteIconBadgeColor
+interface ColorIconBadgeProps extends Omit<React.ComponentProps<'div'>, 'color'> {
+  icon: LucideIcon
+  color: ColorIconBadgeColor
 }
 
-export function SpriteIconBadge({ icon, color, className, ...props }: SpriteIconBadgeProps) {
+export function ColorIconBadge({ icon: Icon, color, className, ...props }: ColorIconBadgeProps) {
   return (
     <div
       className={cn(
         'inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border px-1 py-1 [&>svg]:pointer-events-none',
-        spriteIconBadgeColorClasses[color],
+        colorIconBadgeColorClasses[color],
         className,
       )}
       {...props}
     >
-      <SpriteIcon name={icon} className="size-full" />
+      <Icon aria-hidden className="size-full" />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import type { Attribute, AttributeSlots, AttributeState } from '@/lib/attributes'
 import { resolveEndpointAttributeSlot } from '@/lib/attributes'
 
+import { ColorIconBadge } from './color-icon-badge'
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 import {
   PopoverCardContent,
@@ -9,7 +10,6 @@ import {
   PopoverCardTitle,
   PopoverCardTrigger,
 } from './popover-card'
-import { SpriteIconBadge } from './sprite-icon-badge'
 
 // --- Popover content ---
 
@@ -69,7 +69,7 @@ export function AttributeBadge({
     <PopoverCardTrigger
       nativeButton={false}
       payload={{ type: 'attribute', label, description, badge, details }}
-      render={<SpriteIconBadge icon={icon} color={color} aria-label={key} />}
+      render={<ColorIconBadge icon={icon} color={color} aria-label={key} />}
       {...props}
     />
   )
