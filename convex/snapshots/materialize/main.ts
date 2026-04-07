@@ -1,15 +1,18 @@
+import type { WithoutSystemFields } from 'convex/server'
 import { v } from 'convex/values'
-import type { Infer } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import type { db } from '@/convex/db'
-
 import { internal } from '../../_generated/api'
+import type { Doc } from '../../_generated/dataModel'
 import { internalAction } from '../../_generated/server'
 import type { CrawlArchiveBundle } from '../crawl/main'
 import { getArchiveBundleOrThrow } from '../shared/bundle'
 import { EndpointTransformSchema } from './validators/endpoints'
+
+type MaterializedModel = Omit<WithoutSystemFields<Doc<'or_views_models'>>, 'updated_at'>
+type MaterializedEndpoint = Omit<WithoutSystemFields<Doc<'or_views_endpoints'>>, 'updated_at'>
+type MaterializedProvider = Omit<WithoutSystemFields<Doc<'or_views_providers'>>, 'updated_at'>
 
 export const run = internalAction({
   args: { crawl_id: v.optional(v.string()) },
@@ -68,18 +71,9 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
     Array.isArray(m.endpoints) ? m.endpoints : [],
   )
 
-  const modelsMap = new Map<
-    string,
-    Omit<Infer<typeof db.or.views.models.vTable.validator>, 'updated_at'>
-  >()
-  const endpointsMap = new Map<
-    string,
-    Omit<Infer<typeof db.or.views.endpoints.vTable.validator>, 'updated_at'>
-  >()
-  const providersMap = new Map<
-    string,
-    Omit<Infer<typeof db.or.views.providers.vTable.validator>, 'updated_at'>
-  >()
+  const modelsMap = new Map<string, MaterializedModel>()
+  const endpointsMap = new Map<string, MaterializedEndpoint>()
+  const providersMap = new Map<string, MaterializedProvider>()
 
   // * sources - raw API artifacts keyed by entity key
   const modelSourcesMap = new Map<string, Record<string, unknown>>()

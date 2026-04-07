@@ -1,7 +1,7 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-import type { MutationCtx, QueryCtx } from '../../_generated/server'
+import type { QueryCtx } from '../../_generated/server'
 import { createTableVHelper } from '../../lib/vTable'
 
 export const table = defineTable({
@@ -12,21 +12,6 @@ export const table = defineTable({
 }).index('by_entity', ['entity_type', 'entity_key'])
 
 export const vTable = createTableVHelper('or_sources', table.validator)
-
-export async function insert(
-  ctx: MutationCtx,
-  data: Omit<typeof vTable.validator.type, 'updated_at'>,
-) {
-  return ctx.db.insert(vTable.name, { ...data, updated_at: Date.now() })
-}
-
-export async function replace(
-  ctx: MutationCtx,
-  id: typeof vTable._id.type,
-  data: Omit<typeof vTable.validator.type, 'updated_at'>,
-) {
-  await ctx.db.replace(id, { ...data, updated_at: Date.now() })
-}
 
 export async function getModelDescription(ctx: QueryCtx, modelSlug: string) {
   const model = await ctx.db

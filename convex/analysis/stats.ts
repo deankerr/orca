@@ -1,5 +1,3 @@
-import { db } from '@/convex/db'
-
 import { internalMutation } from '../_generated/server'
 
 const SAMPLE_LIMIT = 20
@@ -21,9 +19,9 @@ const takeRandomSample = <T>(items: T[], limit = SAMPLE_LIMIT) => {
 export const run = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const models = await db.or.views.models.collect(ctx)
-    const providers = await db.or.views.providers.collect(ctx)
-    const endpoints = await db.or.views.endpoints.collect(ctx)
+    const models = await ctx.db.query('or_views_models').collect()
+    const providers = await ctx.db.query('or_views_providers').collect()
+    const endpoints = await ctx.db.query('or_views_endpoints').collect()
 
     const availableModels = models.filter((model) => model.unavailable_at === undefined)
     const availableProviders = providers.filter((provider) => provider.unavailable_at === undefined)

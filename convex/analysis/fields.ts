@@ -1,7 +1,5 @@
 import { v } from 'convex/values'
 
-import { db } from '@/convex/db'
-
 import { internalMutation } from '../_generated/server'
 
 type CountAndPct = {
@@ -300,7 +298,7 @@ const createFieldReport = <T extends DocumentShape>(docs: T[]): FieldUsageReport
 export const model = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
-    const allModels = await db.or.views.models.collect(ctx)
+    const allModels = await ctx.db.query('or_views_models').collect()
     const models = excludeUnavailable
       ? allModels.filter((modelDoc) => modelDoc.unavailable_at === undefined)
       : allModels
@@ -312,7 +310,7 @@ export const model = internalMutation({
 export const provider = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
-    const allProviders = await db.or.views.providers.collect(ctx)
+    const allProviders = await ctx.db.query('or_views_providers').collect()
     const providers = excludeUnavailable
       ? allProviders.filter((providerDoc) => providerDoc.unavailable_at === undefined)
       : allProviders
@@ -324,7 +322,7 @@ export const provider = internalMutation({
 export const endpoint = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
-    const allEndpoints = await db.or.views.endpoints.collect(ctx)
+    const allEndpoints = await ctx.db.query('or_views_endpoints').collect()
     const endpoints = excludeUnavailable
       ? allEndpoints.filter((endpointDoc) => endpointDoc.unavailable_at === undefined)
       : allEndpoints
