@@ -31,6 +31,7 @@
     "typescript/no-explicit-any": "off",
     "typescript/no-non-null-assertion": "off",
     "complexity": "off",
+    "unicorn/consistent-function-scoping": "off",
 
     // React
     "react/react-in-jsx-scope": "off",

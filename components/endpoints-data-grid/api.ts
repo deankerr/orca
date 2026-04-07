@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { api } from '@/convex/_generated/api'
 import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { attributes, isAttributeKey } from '@/lib/attributes'
+import { createSlugSearcher } from '@/lib/slug-search'
 
 import { useEndpointFilters } from './use-endpoint-filters'
 
@@ -14,14 +15,23 @@ export function useEndpointsData() {
     convexQuery(api.endpoints.list, { maxTimeUnavailable: ms('30d') }),
   )
 
-  const { attributeFilters } = useEndpointFilters()
+  const { attributeFilters, globalFilter } = useEndpointFilters()
+  const allEndpoints = useMemo(() => {
+    const endpoints = rawEndpoints ?? []
 
-  const filteredEndpoints = useMemo(() => {
-    if (!rawEndpoints) {
+    if (process.env.NODE_ENV === 'development') {
+      return [FAKE_ENDPOINT, ...endpoints]
+    }
+
+    return endpoints
+  }, [rawEndpoints])
+
+  const attributeFilteredEndpoints = useMemo(() => {
+    if (allEndpoints.length === 0) {
       return []
     }
 
-    const filtered = rawEndpoints.filter((endpoint) => {
+    return allEndpoints.filter((endpoint) => {
       for (const [filterName, mode] of Object.entries(attributeFilters)) {
         if (!isAttributeKey(filterName)) {
           continue
@@ -42,17 +52,34 @@ export function useEndpointsData() {
 
       return true
     })
+  }, [allEndpoints, attributeFilters])
 
-    // Inject fake endpoint in development
-    if (process.env.NODE_ENV === 'development') {
-      return [FAKE_ENDPOINT, ...filtered]
+  const endpointSearcher = useMemo(
+    () =>
+      createSlugSearcher(attributeFilteredEndpoints, {
+        getFields: (endpoint) => [
+          { name: 'model.slug', value: endpoint.model.slug },
+          { name: 'model.version_slug', value: endpoint.model.version_slug },
+          { name: 'provider.tag_slug', value: endpoint.provider.tag_slug },
+        ],
+        compareItems: (left, right) =>
+          right.model.or_added_at - left.model.or_added_at ||
+          left.model.slug.localeCompare(right.model.slug) ||
+          left.provider.tag_slug.localeCompare(right.provider.tag_slug),
+      }),
+    [attributeFilteredEndpoints],
+  )
+
+  const filteredEndpoints = useMemo(() => {
+    if (!globalFilter.trim()) {
+      return attributeFilteredEndpoints
     }
 
-    return filtered
-  }, [rawEndpoints, attributeFilters])
+    return endpointSearcher.search(globalFilter).map((result) => result.record)
+  }, [attributeFilteredEndpoints, endpointSearcher, globalFilter])
 
   return {
-    rawEndpoints: rawEndpoints ?? [],
+    rawEndpoints: allEndpoints,
     filteredEndpoints,
     isLoading: isPending,
   }
