@@ -1,5 +1,7 @@
 import { useRouter } from 'next/navigation'
 
+import { buildEndpointGridHref } from '@/components/endpoints-data-grid/use-endpoint-query-state'
+
 import { useEntitySheet } from './entity-sheet-context'
 
 export function useFindAllEndpoints() {
@@ -7,7 +9,7 @@ export function useFindAllEndpoints() {
   const { close } = useEntitySheet()
 
   return (query: string) => {
-    router.push(`/?q=${query}`)
+    router.push(buildEndpointGridHref({ query }))
     close()
   }
 }
