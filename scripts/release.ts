@@ -17,6 +17,62 @@ const PackageJsonSchema = z.looseObject({
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const title = args.find((a) => !a.startsWith('--'))
+const textDecoder = new TextDecoder()
+
+function getStdout(command: Array<string>) {
+  const result = Bun.spawnSync({
+    cmd: command,
+    stderr: 'pipe',
+    stdout: 'pipe',
+  })
+
+  if (result.exitCode !== 0) {
+    throw new Error(textDecoder.decode(result.stderr).trim())
+  }
+
+  return textDecoder.decode(result.stdout).trim()
+}
+
+function failIfReleasePreconditionsNotMet() {
+  const branch = getStdout(['git', 'branch', '--show-current'])
+  if (branch !== 'main') {
+    console.error(
+      `[release] expected current branch to be "main", got "${branch || '(detached HEAD)'}"`,
+    )
+    console.error('[release] switch to main yourself before running release')
+    process.exit(1)
+  }
+
+  const status = getStdout(['git', 'status', '--short'])
+  if (status !== '') {
+    console.error('[release] working tree must be clean before running release')
+    console.error(status)
+    process.exit(1)
+  }
+
+  let upstream = ''
+  try {
+    upstream = getStdout(['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
+  } catch {
+    console.error('[release] main must track a remote branch before running release')
+    console.error('[release] set upstream for main and re-run')
+    process.exit(1)
+  }
+
+  if (upstream !== 'origin/main') {
+    console.error(`[release] expected main to track "origin/main", got "${upstream}"`)
+    console.error('[release] check out the correct branch/upstream and re-run')
+    process.exit(1)
+  }
+
+  const headSha = getStdout(['git', 'rev-parse', 'HEAD'])
+  const upstreamSha = getStdout(['git', 'rev-parse', 'origin/main'])
+  if (headSha !== upstreamSha) {
+    console.error('[release] local main does not match origin/main')
+    console.error('[release] sync main yourself before running release')
+    process.exit(1)
+  }
+}
 
 // read current version from package.json
 const pkg = PackageJsonSchema.parse(await Bun.file('package.json').json())
@@ -27,6 +83,8 @@ const displayTitle = title === undefined ? tag : `${tag}: ${title}`
 
 console.log(`[release] v${current} -> ${tag}`)
 console.log(`[release] title: ${displayTitle}`)
+
+failIfReleasePreconditionsNotMet()
 
 if (dryRun) {
   console.log('[release] dry run, stopping here')

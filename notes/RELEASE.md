@@ -6,19 +6,20 @@ Simple incrementing version: `v35`, `v36`, `v37`, etc. Source of truth is `packa
 
 - **Version lives in package.json.** Always available at build time, no git tag tricks needed.
 - **Production deploys are gated.** Vercel auto-deploy on main push is disabled (`vercel.json`). Production only deploys when a GitHub release is created.
-- **Preview deploys are automatic.** PR branches still get Vercel preview deployments.
+- **Preview deploys are automatic.** PR branches still get Vercel preview deployments, except Graphite's temporary `graphite-base/*` branches.
 - **CI checks on PRs.** GitHub Actions runs `bun check` (typecheck + lint) on every pull request.
 - **GitHub Actions triggers the deploy.** Release created → Action curls the Vercel Deploy Hook.
 
 ## How It Works
 
 1. `bun run release` reads the current major version from `package.json`
-2. Bumps it (e.g. `35.0.0` → `36.0.0`), commits, pushes to main
-3. `gh release create` creates the git tag + GitHub release with auto-generated changelog
-4. GitHub Action (`deploy-production.yml`) triggers on `release: created`
-5. Action curls the Vercel Deploy Hook, triggering a production build from `main`
-6. `next.config.ts` reads `package.json` version → `NEXT_PUBLIC_APP_VERSION` = `v36`
-7. `instrumentation-client.ts` registers it as a PostHog super property (`app_version`)
+2. Verifies you are already on a clean local `main` that exactly matches `origin/main`
+3. Bumps it (e.g. `35.0.0` → `36.0.0`), commits, pushes to main
+4. `gh release create` creates the git tag + GitHub release with auto-generated changelog
+5. GitHub Action (`deploy-production.yml`) triggers on `release: created`
+6. Action curls the Vercel Deploy Hook, triggering a production build from `main`
+7. `next.config.ts` reads `package.json` version → `NEXT_PUBLIC_APP_VERSION` = `v36`
+8. `instrumentation-client.ts` registers it as a PostHog super property (`app_version`)
 
 ## Commands
 
@@ -38,14 +39,16 @@ bun run release --dry-run          # preview without creating or deploying
    - Preview builds work
    - No production deploy happens
 4. Wait for the entire stack to land on main
-5. Run: bun run release "table perf"
+5. Check out `main` yourself and sync it with `origin/main`
+6. Run: bun run release "table perf"
+   - Verifies branch / cleanliness / sync state
    - Bumps package.json to v36, commits, pushes
    - Creates GitHub release with changelog
    - GitHub Action fires, curls deploy hook
    - Vercel builds main → version is v36
 ```
 
-**Important:** Only run `bun run release` after the full stack has landed.
+**Important:** Only run `bun run release` after the full stack has landed, from a clean local `main` that already matches `origin/main`.
 
 ## Manual Redeploy
 
