@@ -1,5 +1,6 @@
 'use client'
 
+import type { LucideIcon } from 'lucide-react'
 import { CheckIcon, SparklesIcon, XIcon } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +26,7 @@ function FilterMenuTrigger({
   label,
   activeCount,
 }: {
-  icon: React.ComponentType<React.ComponentProps<'svg'>>
+  icon: LucideIcon
   label: string
   activeCount: number
 }) {
@@ -70,7 +71,7 @@ function FilterMenuHeader({
   description,
   action,
 }: {
-  icon: React.ComponentType<React.ComponentProps<'svg'>>
+  icon: LucideIcon
   title: string
   description: string
   action: React.ReactNode
@@ -142,7 +143,7 @@ function FilterMenuToggleItem({
   mode,
   onChange,
 }: {
-  icon: React.ComponentType<React.ComponentProps<'svg'>>
+  icon: LucideIcon
   label: string
   mode: FilterMode
   onChange: (mode: FilterMode) => void

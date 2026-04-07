@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
   AudioLines,
@@ -34,7 +35,7 @@ import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { formatPricing } from '@/shared/formatters'
 
 type EndpointPartial = Partial<ORCAEndpoint>
-type AttributeIcon = React.ComponentType<React.ComponentProps<'svg'>>
+type AttributeIcon = LucideIcon
 
 export interface AttributeState {
   active: boolean

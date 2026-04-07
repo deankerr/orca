@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 const colorIconBadgeColorClasses = {
@@ -28,7 +30,7 @@ const colorIconBadgeColorClasses = {
 export type ColorIconBadgeColor = keyof typeof colorIconBadgeColorClasses
 
 interface ColorIconBadgeProps extends Omit<React.ComponentProps<'div'>, 'color'> {
-  icon: React.ComponentType<React.ComponentProps<'svg'>>
+  icon: LucideIcon
   color: ColorIconBadgeColor
 }
 
