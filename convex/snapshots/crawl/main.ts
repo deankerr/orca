@@ -10,7 +10,7 @@ import { internal } from '../../_generated/api'
 import { internalAction } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 
-export const orFetch = up(fetch, () => ({
+const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
   retry: {
     attempts: 3,
@@ -240,7 +240,7 @@ async function fetchModelData(
   return result
 }
 
-export async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundle) {
+async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundle) {
   const parsed = CrawlArchiveBundleSchema.parse(bundle)
   const jsonString = JSON.stringify(parsed)
   const encoded = new TextEncoder().encode(jsonString)

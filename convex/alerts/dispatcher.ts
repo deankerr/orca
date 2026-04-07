@@ -15,7 +15,7 @@ import type { DiscordPayload } from '../discord/utils'
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
 
 // Pattern matching — "*" for all, otherwise simple includes
-export function matchPattern(pattern: string, slug: string): boolean {
+function matchPattern(pattern: string, slug: string): boolean {
   if (pattern === '*') {
     return true
   }

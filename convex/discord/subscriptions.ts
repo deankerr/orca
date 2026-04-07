@@ -5,13 +5,6 @@ import { internalMutation, internalQuery } from '../_generated/server'
 import { db } from '../db'
 import { SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
 
-// * Internal Queries
-
-export const countByUser = internalQuery({
-  args: { user_id: v.string() },
-  handler: async (ctx, args) => db.alerts.discord.subscriptions.countByUser(ctx, args.user_id),
-})
-
 export const list = internalQuery({
   args: {
     context: v.union(

@@ -5,7 +5,6 @@ import { omit } from 'remeda'
 import type { Doc } from '../../../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../../../_generated/server'
 import { createTableVHelper } from '../../../lib/vTable'
-import { getModelDescription } from '../sources'
 
 export const table = defineTable({
   slug: v.string(),
@@ -69,34 +68,11 @@ export async function replace(
   await ctx.db.replace(id, { ...data, updated_at: Date.now() })
 }
 
-export type ModelDocWithDescription = Doc<'or_views_models'> & { description: string }
-export async function getWithDescription(
-  ctx: QueryCtx,
-  slug: string,
-): Promise<ModelDocWithDescription | null> {
-  const model = await ctx.db
-    .query(vTable.name)
-    .withIndex('by_slug', (q) => q.eq('slug', slug))
-    .order('desc')
-    .first()
-  if (!model) {
-    return null
-  }
-
-  const description = (await getModelDescription(ctx, slug)) ?? ''
-  return {
-    ...model,
-    description,
-  }
-}
-
 // -- Model transform
 
-export function transformModel(doc: Doc<'or_views_models'>) {
+function transformModel(doc: Doc<'or_views_models'>) {
   return omit(doc, ['icon_url', 'tokenizer', 'instruct_type'])
 }
-
-export type ORCAModel = ReturnType<typeof transformModel>
 
 export async function get(ctx: QueryCtx, slug: string) {
   const doc = await ctx.db

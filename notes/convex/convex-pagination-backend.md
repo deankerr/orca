@@ -90,22 +90,29 @@ export const listByChannelAndStatus = query({
 
 ### Return Type Validator
 
-Use the shared validator from `@convex/lib/validator.ts`:
+Define the paginated return validator inline with native Convex validators:
 
 ```typescript
-import { vPaginatedQueryReturn } from '@convex/lib/validator'
-import { vTable } from '@convex/lib/vTable'
+import { v } from 'convex/values'
 
 export const list = query({
   args: { paginationOpts: paginationOptsValidator },
-  returns: vPaginatedQueryReturn(vTable.doc), // Use shared validator
+  returns: v.object({
+    page: v.array(v.any()),
+    isDone: v.boolean(),
+    continueCursor: v.union(v.string(), v.null()),
+    splitCursor: v.optional(v.union(v.string(), v.null())),
+    pageStatus: v.optional(
+      v.union(v.literal('SplitRecommended'), v.literal('SplitRequired'), v.null()),
+    ),
+  }),
   handler: async (ctx, args) => {
     // Your query logic
   },
 })
 ```
 
-**Important**: Always use shared validators rather than defining them manually. Create one if it doesn't exist.
+If you want stronger typing, replace `v.any()` with the item validator for that specific query.
 
 ## Manual Pagination (Actions/Mutations)
 

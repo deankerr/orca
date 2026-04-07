@@ -132,7 +132,7 @@ type LimitsOutput = z.infer<typeof LimitsOutputSchema>
 
 // * Output Schema: Endpoint (Provider in API terms)
 
-export const OrcaPublicApiV2EndpointSchema = z.object({
+const OrcaPublicApiV2EndpointSchema = z.object({
   provider_id: z.string(),
   provider_name: z.string(),
   provider_region: z.string().nullable(),
@@ -152,7 +152,7 @@ export const OrcaPublicApiV2EndpointSchema = z.object({
 
 type OrcaPublicApiV2Endpoint = z.infer<typeof OrcaPublicApiV2EndpointSchema>
 
-export const OrcaPublicApiV2ModelSchema = z.object({
+const OrcaPublicApiV2ModelSchema = z.object({
   id: z.string(),
   version_id: z.string(),
   name: z.string(),
