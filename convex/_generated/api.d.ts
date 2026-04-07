@@ -41,7 +41,6 @@ import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
 import type * as lib_vTable from "../lib/vTable.js";
-import type * as lib_validator from "../lib/validator.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
@@ -58,7 +57,6 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
-import type * as storage from "../storage.js";
 
 import type {
   ApiFromModules,
@@ -100,7 +98,6 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/paginateAndProcess": typeof lib_paginateAndProcess;
   "lib/vTable": typeof lib_vTable;
-  "lib/validator": typeof lib_validator;
   models: typeof models;
   monitor: typeof monitor;
   providers: typeof providers;
@@ -117,7 +114,6 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
-  storage: typeof storage;
 }>;
 
 /**

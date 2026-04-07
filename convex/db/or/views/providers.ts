@@ -56,11 +56,9 @@ export async function replace(
 
 // -- Provider transform
 
-export function transformProvider(doc: Doc<'or_views_providers'>) {
+function transformProvider(doc: Doc<'or_views_providers'>) {
   return omit(doc, ['icon_url'])
 }
-
-export type ORCAProvider = ReturnType<typeof transformProvider>
 
 export async function get(ctx: QueryCtx, slug: string) {
   const doc = await ctx.db

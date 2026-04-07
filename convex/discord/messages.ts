@@ -49,7 +49,7 @@ const CHARS = {
 
 // -- Public API
 
-export type DiscordMessage = {
+type DiscordMessage = {
   slug: string
   embeds: EmbedBuilder[]
 }

@@ -147,20 +147,6 @@ export async function collect(ctx: QueryCtx) {
   return ctx.db.query(vTable.name).collect()
 }
 
-export async function listByModelSlug(ctx: QueryCtx, modelSlug: string) {
-  return ctx.db
-    .query(vTable.name)
-    .withIndex('by_model_slug', (q) => q.eq('model.slug', modelSlug))
-    .collect()
-}
-
-export async function listByProviderSlug(ctx: QueryCtx, providerSlug: string) {
-  return ctx.db
-    .query(vTable.name)
-    .withIndex('by_provider_slug', (q) => q.eq('provider.slug', providerSlug))
-    .collect()
-}
-
 export async function insert(
   ctx: MutationCtx,
   data: Omit<typeof vTable.validator.type, 'updated_at'>,
@@ -220,7 +206,7 @@ function transformLimits(l: EndpointDoc['limits']) {
 
 // * Transform
 
-export function transformEndpoint(doc: EndpointDoc) {
+function transformEndpoint(doc: EndpointDoc) {
   return {
     ...omit(doc, [
       // sub-objects handled below
