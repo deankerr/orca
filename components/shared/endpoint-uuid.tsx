@@ -1,6 +1,7 @@
 import { LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 
+import { buildEndpointGridHref } from '@/components/endpoints-data-grid/use-endpoint-query-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -17,7 +18,7 @@ export function EndpointUuidPopoverContent({
   modelSlug: string
 }) {
   const copy = useCopyToClipboard()
-  const endpointUrl = `/?q=${modelSlug}&uuid=${uuid.slice(0, 6)}`
+  const endpointUrl = buildEndpointGridHref({ query: modelSlug, uuid: uuid.slice(0, 6) })
 
   return (
     <PopoverCardContent>
@@ -56,8 +57,6 @@ export function EndpointUuid({
   handle,
   ...props
 }: { uuid: string; modelSlug: string } & React.ComponentProps<typeof PopoverCardTrigger>) {
-  const shortUuid = uuid.slice(0, 6)
-
   return (
     <PopoverCardTrigger
       handle={handle}
@@ -66,7 +65,7 @@ export function EndpointUuid({
       render={<Badge variant="outline" className="bg-card/50 font-mono tracking-wider shadow" />}
       {...props}
     >
-      {shortUuid}
+      {uuid.slice(0, 6)}
     </PopoverCardTrigger>
   )
 }

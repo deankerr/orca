@@ -1,12 +1,16 @@
 import { useDataGrid } from '../data-grid/data-grid'
-import { useEndpointsData } from './api'
-import { useEndpointFilters } from './use-endpoint-filters'
 
-export function DataGridFooter() {
+export function DataGridFooter({
+  totalCount,
+  hasActiveFilters,
+  isLoading,
+}: {
+  totalCount: number
+  hasActiveFilters: boolean
+  isLoading: boolean
+}) {
   'use no memo'
   const { table } = useDataGrid()
-  const { rawEndpoints, isLoading } = useEndpointsData()
-  const { hasActiveFilters } = useEndpointFilters()
 
   if (isLoading) {
     return null
@@ -16,7 +20,7 @@ export function DataGridFooter() {
 
   return (
     <div>
-      {hasActiveFilters ? `${filteredCount} /` : ''} {rawEndpoints.length} endpoints
+      {hasActiveFilters ? `${filteredCount} /` : ''} {totalCount} endpoints
     </div>
   )
 }

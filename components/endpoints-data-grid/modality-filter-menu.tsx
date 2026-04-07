@@ -20,7 +20,7 @@ import {
   FilterMenuToggleItem,
   FilterMenuTrigger,
 } from './filter-menu'
-import { useEndpointFilters } from './use-endpoint-filters'
+import { useEndpointFacetState } from './use-endpoint-facet-state'
 
 function getModalityFilterLabel(name: EndpointModalityAttribute) {
   return attributes[name].label.replace(/ (Input|Output)$/, '')
@@ -28,7 +28,7 @@ function getModalityFilterLabel(name: EndpointModalityAttribute) {
 
 export function ModalityFilterMenu() {
   const { modalityFilters, setModalityFilter, clearModalityFilters, activeModalityCount } =
-    useEndpointFilters()
+    useEndpointFacetState()
 
   const renderModalityToggle = (name: EndpointModalityAttribute) => (
     <FilterMenuToggleItem

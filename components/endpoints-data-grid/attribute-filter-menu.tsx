@@ -17,11 +17,11 @@ import {
   FilterMenuToggleItem,
   FilterMenuTrigger,
 } from './filter-menu'
-import { useEndpointFilters } from './use-endpoint-filters'
+import { useEndpointFacetState } from './use-endpoint-facet-state'
 
 export function AttributeFilterMenu() {
   const { attributeFilters, setAttributeFilter, clearAttributeFilters, activeAttributeCount } =
-    useEndpointFilters()
+    useEndpointFacetState()
 
   const renderAttributeToggle = (name: AttributeKey) => (
     <FilterMenuToggleItem
