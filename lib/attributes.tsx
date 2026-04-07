@@ -8,6 +8,7 @@ import {
   Calendar,
   ChevronsDown,
   Database,
+  FileChartColumn,
   FileDigit,
   FileSpreadsheet,
   Fingerprint,
@@ -641,6 +642,17 @@ export const attributes = defineAttributes({
     referenceUrl: 'https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings',
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('embeddings') ?? false,
+    }),
+  },
+
+  rerank_output: {
+    key: 'rerank_output',
+    icon: FileChartColumn,
+    label: 'Rerank Output',
+    description: 'Returns ranked results with relevance scores for reranking workloads.',
+    color: 'amber',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('rerank') ?? false,
     }),
   },
 

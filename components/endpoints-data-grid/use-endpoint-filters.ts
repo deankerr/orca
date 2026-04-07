@@ -51,6 +51,7 @@ function getModalityFilters(hasFilters: string[], notFilters: string[]): Modalit
     audio_output: resolveFilterMode(hasFilters, notFilters, 'audio_output'),
     video_output: resolveFilterMode(hasFilters, notFilters, 'video_output'),
     embeddings_output: resolveFilterMode(hasFilters, notFilters, 'embeddings_output'),
+    rerank_output: resolveFilterMode(hasFilters, notFilters, 'rerank_output'),
   }
 }
 
