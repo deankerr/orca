@@ -56,8 +56,12 @@ export async function replace(
 
 // -- Provider transform
 
-function transformProvider(doc: Doc<'or_views_providers'>) {
+export function transformProvider(doc: Doc<'or_views_providers'>) {
   return omit(doc, ['icon_url'])
+}
+
+export function transformProviders(docs: Doc<'or_views_providers'>[]) {
+  return docs.map(transformProvider)
 }
 
 export async function get(ctx: QueryCtx, slug: string) {

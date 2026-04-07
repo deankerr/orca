@@ -70,8 +70,12 @@ export async function replace(
 
 // -- Model transform
 
-function transformModel(doc: Doc<'or_views_models'>) {
+export function transformModel(doc: Doc<'or_views_models'>) {
   return omit(doc, ['icon_url', 'tokenizer', 'instruct_type'])
+}
+
+export function transformModels(docs: Doc<'or_views_models'>[]) {
+  return docs.map(transformModel)
 }
 
 export async function get(ctx: QueryCtx, slug: string) {
