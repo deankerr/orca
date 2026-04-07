@@ -11,9 +11,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { SpriteIcon } from '@/components/ui/sprite-icon'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import type { SpriteIconName } from '@/lib/sprite-icons'
 import { cn } from '@/lib/utils'
 
 import type { FilterMode } from './use-endpoint-filters'
@@ -139,12 +137,12 @@ function FilterMenuClearAction({
 }
 
 function FilterMenuToggleItem({
-  icon,
+  icon: Icon,
   label,
   mode,
   onChange,
 }: {
-  icon: SpriteIconName
+  icon: React.ComponentType<React.ComponentProps<'svg'>>
   label: string
   mode: FilterMode
   onChange: (mode: FilterMode) => void
@@ -162,7 +160,7 @@ function FilterMenuToggleItem({
         'flex items-center gap-1.5 rounded-md border px-1.5 py-1.5 shadow transition-colors',
       )}
     >
-      <SpriteIcon name={icon} className="size-6 shrink-0 rounded-sm border p-1.25 shadow-sm" />
+      <Icon aria-hidden className="size-6 shrink-0 rounded-sm border p-1.25 shadow-sm" />
       <span className="flex-1 truncate text-xs">{label}</span>
 
       <ToggleGroup
