@@ -1,23 +1,21 @@
 'use client'
 
+import { convexQuery } from '@convex-dev/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { SearchXIcon } from 'lucide-react'
+import ms from 'ms'
 import { useCallback, useMemo } from 'react'
 
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty'
+import { api } from '@/convex/_generated/api'
+import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { attributes, isAttributeKey } from '@/lib/attributes'
+import { createSlugSearcher } from '@/lib/slug-search'
 
 import { DataGrid } from '../data-grid/data-grid'
 import {
@@ -27,69 +25,102 @@ import {
   DataGridCardToolbar,
 } from '../data-grid/data-grid-card'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
-import { Button } from '../ui/button'
-import { useEndpointsData } from './api'
 import type { EndpointRow } from './columns'
 import { columns } from './columns'
 import { DataGridControls } from './controls'
+import { EndpointsEmptyState } from './endpoints-empty-state'
 import { DataGridFooter } from './footer'
 import { DataGridPopoverProvider } from './popover-handle'
-import { useEndpointFilters } from './use-endpoint-filters'
+import type { FacetFilterState } from './use-endpoint-facet-state'
+import { useEndpointFacetState } from './use-endpoint-facet-state'
+import { useEndpointFocusState } from './use-endpoint-focus-state'
+import { hasEndpointGridQuery, useEndpointQueryState } from './use-endpoint-query-state'
+import { useEndpointSortState } from './use-endpoint-sort-state'
 
-function EndpointsEmptyState() {
-  const {
-    globalFilter,
-    clearAllFilters,
-    setGlobalFilter,
-    activeAttributeCount,
-    activeModalityCount,
-  } = useEndpointFilters()
+function useEndpointsList() {
+  return useQuery(convexQuery(api.endpoints.list, { maxTimeUnavailable: ms('30d') }))
+}
 
-  const filterCount = activeAttributeCount + activeModalityCount
-  const hasSearch = !!globalFilter
+function filterEndpointsByFacets(
+  endpoints: readonly ORCAEndpoint[],
+  facetFilters: FacetFilterState,
+) {
+  return endpoints.filter((endpoint) => {
+    for (const [filterName, mode] of Object.entries(facetFilters)) {
+      if (!isAttributeKey(filterName)) {
+        continue
+      }
 
-  const clearEverything = () => {
-    clearAllFilters()
-    setGlobalFilter('')
-  }
+      const hasAttribute = attributes[filterName].resolve(endpoint).active
 
-  return (
-    <Empty className="border-none">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <SearchXIcon />
-        </EmptyMedia>
-        {hasSearch ? (
-          <>
-            <EmptyTitle>No results for &ldquo;{globalFilter}&rdquo;</EmptyTitle>
-            <EmptyDescription>
-              {filterCount > 0
-                ? `${filterCount} active filter${filterCount > 1 ? 's' : ''} may be narrowing results`
-                : 'Check your spelling or try a broader search'}
-            </EmptyDescription>
-          </>
-        ) : (
-          <>
-            <EmptyTitle>No endpoints match your filters</EmptyTitle>
-            <EmptyDescription>
-              {filterCount} active filter{filterCount > 1 ? 's' : ''} returned no results
-            </EmptyDescription>
-          </>
-        )}
-      </EmptyHeader>
-      <EmptyContent>
-        <Button variant="secondary" size="sm" onClick={clearEverything}>
-          Reset
-        </Button>
-      </EmptyContent>
-    </Empty>
+      if (mode === 'include' && !hasAttribute) {
+        return false
+      }
+
+      if (mode === 'exclude' && hasAttribute) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
+function useEndpointGridRows({
+  endpoints,
+  facetFilters,
+  query,
+}: {
+  endpoints: readonly ORCAEndpoint[]
+  facetFilters: FacetFilterState
+  query: string
+}) {
+  const facetRows = useMemo(
+    () => filterEndpointsByFacets(endpoints, facetFilters),
+    [endpoints, facetFilters],
   )
+
+  const endpointSearcher = useMemo(
+    () =>
+      createSlugSearcher(facetRows, {
+        getFields: (endpoint) => [
+          { name: 'model.slug', value: endpoint.model.slug },
+          { name: 'model.version_slug', value: endpoint.model.version_slug },
+          { name: 'provider.tag_slug', value: endpoint.provider.tag_slug },
+        ],
+        compareItems: (left, right) =>
+          right.model.or_added_at - left.model.or_added_at ||
+          left.model.slug.localeCompare(right.model.slug) ||
+          left.provider.tag_slug.localeCompare(right.provider.tag_slug),
+      }),
+    [facetRows],
+  )
+
+  const rows = useMemo(() => {
+    if (!hasEndpointGridQuery(query)) {
+      return facetRows
+    }
+
+    return endpointSearcher.search(query).map((result) => result.record)
+  }, [endpointSearcher, facetRows, query])
+
+  return {
+    rows,
+  }
 }
 
 export function EndpointsDataGrid() {
   'use no memo'
-  const { filteredEndpoints, isLoading } = useEndpointsData()
-  const { highlightUuid, sorting, onSortingChange } = useEndpointFilters()
+  const query = useEndpointQueryState()
+  const focus = useEndpointFocusState()
+  const facets = useEndpointFacetState()
+  const sort = useEndpointSortState({ hasActiveQuery: query.hasQuery })
+  const { data: rawEndpoints = [], isPending } = useEndpointsList()
+  const { rows } = useEndpointGridRows({
+    endpoints: rawEndpoints,
+    facetFilters: facets.facetFilters,
+    query: query.query,
+  })
   const isMobile = useIsMobile()
 
   // Compute row-level data attributes for status-based styling
@@ -106,24 +137,24 @@ export function EndpointsDataGrid() {
 
   // Derive row selection from highlight UUID
   const rowSelection = useMemo(() => {
-    if (!highlightUuid) {
+    if (!focus.highlightUuid) {
       return {}
     }
-    const match = filteredEndpoints.find((e) => e.uuid.startsWith(highlightUuid))
+    const match = rows.find((endpoint) => endpoint.uuid.startsWith(focus.highlightUuid))
     return match ? { [match._id]: true } : {}
-  }, [highlightUuid, filteredEndpoints])
+  }, [focus.highlightUuid, rows])
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const table = useReactTable({
     columns,
-    data: filteredEndpoints,
+    data: rows,
     state: {
-      sorting,
+      sorting: sort.sorting,
       rowSelection,
       columnPinning: isMobile === false ? { left: ['uuid', 'model', 'provider'] } : {},
     },
     columnResizeMode: 'onChange',
-    onSortingChange,
+    onSortingChange: sort.onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -137,7 +168,7 @@ export function EndpointsDataGrid() {
       <DataGrid
         table={table}
         recordCount={table.getFilteredRowModel().rows.length}
-        isLoading={isLoading}
+        isLoading={isPending}
         emptyMessage={<EndpointsEmptyState />}
         rowDataAttributes={rowDataAttributes}
         tableLayout={{
@@ -167,7 +198,11 @@ export function EndpointsDataGrid() {
           </DataGridCardContent>
 
           <DataGridCardFooter>
-            <DataGridFooter />
+            <DataGridFooter
+              totalCount={rawEndpoints.length}
+              hasActiveFilters={query.hasQuery || facets.hasActiveFacets}
+              isLoading={isPending}
+            />
           </DataGridCardFooter>
         </DataGridCard>
       </DataGrid>
