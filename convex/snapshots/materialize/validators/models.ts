@@ -10,6 +10,7 @@ export const ModelTransformSchema = z
       .pipe(z.number()),
     name: z.string(),
     short_name: z.string(),
+    description: z.string(),
     author: z.string(),
     context_length: z.number(),
     input_modalities: z.array(z.string()).transform((arr) => arr.sort()),
@@ -45,6 +46,7 @@ export const ModelTransformSchema = z
 
       name: raw.short_name,
       icon_url: '', // deprecated
+      description: raw.description,
 
       author_slug: raw.author,
       author_name,

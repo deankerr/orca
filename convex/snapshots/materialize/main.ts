@@ -11,6 +11,10 @@ import { getArchiveBundleOrThrow } from '../shared/bundle'
 import { EndpointTransformSchema } from './validators/endpoints'
 
 type MaterializedModel = Omit<WithoutSystemFields<Doc<'or_views_models'>>, 'updated_at'>
+type MaterializedModelDescription = Omit<
+  WithoutSystemFields<Doc<'or_views_model_descriptions'>>,
+  'updated_at'
+>
 type MaterializedEndpoint = Omit<WithoutSystemFields<Doc<'or_views_endpoints'>>, 'updated_at'>
 type MaterializedProvider = Omit<WithoutSystemFields<Doc<'or_views_providers'>>, 'updated_at'>
 
@@ -21,7 +25,7 @@ export const run = internalAction({
 
     console.log(`[materialize]`, { crawl_id: bundle.crawl_id })
 
-    const { models, endpoints, providers, sources, failedModelKeys } =
+    const { models, modelDescriptions, endpoints, providers, failedModelKeys } =
       materializeModelEndpoints(bundle)
 
     if (endpoints.length === 0) {
@@ -31,23 +35,11 @@ export const run = internalAction({
 
     await ctx.runMutation(internal.snapshots.materialize.output.upsert, {
       models,
+      modelDescriptions,
       endpoints,
       providers,
       crawl_id: bundle.crawl_id,
       failedModelKeys: [...failedModelKeys],
-    })
-
-    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
-      entityType: 'model',
-      items: sources.models,
-    })
-    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
-      entityType: 'endpoint',
-      items: sources.endpoints,
-    })
-    await ctx.runMutation(internal.snapshots.materialize.output.upsertSources, {
-      entityType: 'provider',
-      items: sources.providers,
     })
 
     // * schedule materializeChanges
@@ -72,13 +64,9 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
   )
 
   const modelsMap = new Map<string, MaterializedModel>()
+  const modelDescriptionsMap = new Map<string, MaterializedModelDescription>()
   const endpointsMap = new Map<string, MaterializedEndpoint>()
   const providersMap = new Map<string, MaterializedProvider>()
-
-  // * sources - raw API artifacts keyed by entity key
-  const modelSourcesMap = new Map<string, Record<string, unknown>>()
-  const endpointSourcesMap = new Map<string, Record<string, unknown>>()
-  const providerSourcesMap = new Map<string, Record<string, unknown>>()
 
   const issues: string[] = []
 
@@ -91,23 +79,13 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
     }
 
     const { model, endpoint, provider } = parsed.data
-    modelsMap.set(model.slug, model)
     endpointsMap.set(endpoint.uuid, endpoint)
     providersMap.set(provider.slug, provider)
 
-    // * collect raw sources - use model_variant_slug as key (matches transformed model.slug)
-    const rawRecord = raw as Record<string, unknown>
-    modelSourcesMap.set(model.slug, rawRecord.model as Record<string, unknown>)
-    endpointSourcesMap.set(endpoint.uuid, rawRecord)
-    // provider sources come from bundle.data.providers, collected separately
-  }
-
-  // * collect provider sources from bundle
-  for (const rawProvider of bundle.data.providers) {
-    const slug = rawProvider.slug as string
-    if (slug && providersMap.has(slug)) {
-      providerSourcesMap.set(slug, rawProvider)
-    }
+    // split description from model
+    const { description, ...rest } = model
+    modelsMap.set(model.slug, rest)
+    modelDescriptionsMap.set(model.slug, { slug: model.slug, description })
   }
 
   if (issues.length) {
@@ -122,13 +100,9 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
 
   return {
     models: [...modelsMap.values()],
+    modelDescriptions: [...modelDescriptionsMap.values()],
     endpoints: [...endpointsMap.values()],
     providers: [...providersMap.values()],
-    sources: {
-      models: [...modelSourcesMap.entries()].map(([key, data]) => ({ key, data })),
-      endpoints: [...endpointSourcesMap.entries()].map(([key, data]) => ({ key, data })),
-      providers: [...providerSourcesMap.entries()].map(([key, data]) => ({ key, data })),
-    },
     failedModelKeys,
     issues,
   }

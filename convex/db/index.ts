@@ -1,5 +1,4 @@
 import * as alerts_discord_subscriptions from './alerts/discord/subscriptions'
-import * as or_sources from './or/sources'
 import * as or_views_changes from './or/views/changes'
 import * as snapshot_crawl_archives from './snapshot/crawl/archives'
 import * as snapshot_crawl_config from './snapshot/crawl/config'
@@ -11,7 +10,6 @@ export const db = {
     },
   },
   or: {
-    sources: or_sources,
     views: {
       changes: or_views_changes,
     },

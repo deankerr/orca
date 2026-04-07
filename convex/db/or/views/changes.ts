@@ -9,7 +9,6 @@ import { baseProviderSlug } from '@/shared/utils'
 
 import type { Doc, Id } from '../../../_generated/dataModel'
 import type { QueryCtx } from '../../../_generated/server'
-import { getModelDescription } from '../sources'
 
 const changeKindValidator = v.union(v.literal('create'), v.literal('update'), v.literal('delete'))
 
@@ -268,11 +267,10 @@ async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
   if (!m) {
     return { slug }
   }
-  const description = (await getModelDescription(ctx, slug)) ?? undefined
   return {
     slug,
     name: m.name,
-    description,
+    description: m.description,
     input_modalities: m.input_modalities,
     output_modalities: m.output_modalities,
     reasoning: m.reasoning,
