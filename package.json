@@ -1,6 +1,6 @@
 {
+  "version": "43.0.0",
   "name": "orca",
-  "version": "42.0.0",
   "private": true,
   "scripts": {
     "build": "next build",
