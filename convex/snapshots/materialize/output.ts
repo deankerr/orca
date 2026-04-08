@@ -1,16 +1,16 @@
 import { v } from 'convex/values'
 import { diff } from 'json-diff-ts'
 
-import { endpointsTable } from '@/convex/catalog/endpoints'
-import { modelDescriptionsTable, modelsTable } from '@/convex/catalog/models'
-import { providersTable } from '@/convex/catalog/providers'
+import { endpointsSchema } from '@/convex/catalog/endpoints'
+import { modelsSchema } from '@/convex/catalog/models'
+import { providersSchema } from '@/convex/catalog/providers'
 
 import { internalMutation } from '../../_generated/server'
 
-const vUpsertModel = modelsTable.validator.omit('updated_at')
-const vUpsertModelDescription = modelDescriptionsTable.validator.omit('updated_at')
-const vUpsertEndpoint = endpointsTable.validator.omit('updated_at')
-const vUpsertProvider = providersTable.validator.omit('updated_at')
+const vUpsertModel = modelsSchema.table.validator.omit('updated_at')
+const vUpsertModelDescription = modelsSchema.descriptions.table.validator.omit('updated_at')
+const vUpsertEndpoint = endpointsSchema.table.validator.omit('updated_at')
+const vUpsertProvider = providersSchema.table.validator.omit('updated_at')
 
 function isEqual(from: Record<string, unknown>, to: Record<string, unknown>) {
   const changes = diff(from, to, {

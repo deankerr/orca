@@ -10,7 +10,7 @@ import { baseProviderSlug, isNonEmptyString } from '@/shared/utils'
 
 import { query } from './_generated/server'
 import type { QueryCtx } from './_generated/server'
-import { getByCrawlId, getByCrawlIdArgs } from './changes'
+import { changes } from './changes'
 import type { EntityChange } from './changes'
 import schema from './schema'
 
@@ -93,9 +93,9 @@ export const feedIds = query({
 })
 
 export const batch = query({
-  args: getByCrawlIdArgs,
+  args: changes.get.args,
   handler: async (ctx, args): Promise<CrawlBatch> => {
-    const changes = await getByCrawlId(ctx, args)
-    return { crawl_id: args.crawl_id, changes }
+    const batchChanges = await changes.get.handler(ctx, args)
+    return { crawl_id: args.crawl_id, changes: batchChanges }
   },
 })

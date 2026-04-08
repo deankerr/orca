@@ -4,9 +4,6 @@
 // Consumers handle any nesting or grouping they need for display.
 
 import { query } from './_generated/server'
-import { getByCrawlId, getByCrawlIdArgs } from './changes'
+import { changes } from './changes'
 
-export const byCrawlId = query({
-  args: getByCrawlIdArgs,
-  handler: async (ctx, args) => getByCrawlId(ctx, args),
-})
+export const byCrawlId = query(changes.get)
