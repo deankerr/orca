@@ -1,7 +1,6 @@
 import { v } from 'convex/values'
 
 import { internalMutation } from '../../_generated/server'
-import { db } from '../../db'
 
 export const insert = internalMutation({
   args: {
@@ -9,6 +8,5 @@ export const insert = internalMutation({
     storage_id: v.id('_storage'),
     data: v.record(v.string(), v.any()),
   },
-  returns: db.snapshot.crawl.archives.vTable._id,
   handler: async (ctx, args) => ctx.db.insert('snapshot_crawl_archives', args),
 })
