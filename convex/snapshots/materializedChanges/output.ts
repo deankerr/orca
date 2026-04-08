@@ -4,7 +4,7 @@ import { diff } from 'json-diff-ts'
 
 import type { Doc } from '../../_generated/dataModel'
 import { internalMutation } from '../../_generated/server'
-import { db } from '../../db'
+import { changesTable } from '../../changes'
 
 function changeKey(change: WithoutSystemFields<Doc<'or_views_changes'>>) {
   return [
@@ -22,7 +22,7 @@ export const upsert = internalMutation({
   args: {
     previous_crawl_id: v.string(),
     crawl_id: v.string(),
-    changes: v.array(db.or.views.changes.table.validator),
+    changes: v.array(changesTable.validator),
   },
   returns: v.object({
     insert: v.number(),

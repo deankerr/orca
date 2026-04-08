@@ -17,7 +17,7 @@ import type {
   ModelChange,
   ModelRef,
   ProviderChange,
-} from '../db/or/views/changes'
+} from '../changes'
 import { COLORS } from './constants'
 import { getAuthorUrl, getColorIconUrl } from './utils'
 
