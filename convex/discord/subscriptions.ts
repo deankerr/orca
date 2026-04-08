@@ -2,8 +2,10 @@ import { v } from 'convex/values'
 
 import type { Id } from '../_generated/dataModel'
 import { internalMutation, internalQuery } from '../_generated/server'
-import { db } from '../db'
 import { SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'
+import { vSubscriptionInput } from './subscriptions/table'
+
+const TABLE_NAME = 'alerts_discord_subscriptions' as const
 
 export const list = internalQuery({
   args: {
@@ -12,43 +14,81 @@ export const list = internalQuery({
       v.object({ type: v.literal('dm'), user_id: v.string() }),
     ),
   },
-  handler: async (ctx, args) => db.alerts.discord.subscriptions.listByContext(ctx, args.context),
+  handler: async (ctx, args) => {
+    const { context } = args
+
+    if (context.type === 'channel') {
+      const { channel_id } = context
+      return ctx.db
+        .query(TABLE_NAME)
+        .withIndex('by_channel_id', (q) =>
+          q.eq('channel_id', channel_id).eq('deleted_at', undefined),
+        )
+        .collect()
+    }
+
+    const { user_id } = context
+    const subs = await ctx.db
+      .query(TABLE_NAME)
+      .withIndex('by_user_id', (q) => q.eq('user_id', user_id).eq('deleted_at', undefined))
+      .collect()
+    return subs.filter((sub) => sub.type === 'dm')
+  },
 })
 
 export const getActive = internalQuery({
   args: {},
-  handler: async (ctx) => db.alerts.discord.subscriptions.getActive(ctx),
+  handler: async (ctx) =>
+    ctx.db
+      .query(TABLE_NAME)
+      .withIndex('by_deleted_at', (q) => q.eq('deleted_at', undefined))
+      .collect(),
 })
 
 // * Internal Mutations
 
 export const create = internalMutation({
-  args: { input: db.alerts.discord.subscriptions.vSubscriptionInput },
+  args: { input: vSubscriptionInput },
   handler: async (ctx, args): Promise<Id<'alerts_discord_subscriptions'> | 'limit' | 'exists'> => {
     const { input } = args
 
     // Check global user limit
-    const count = await db.alerts.discord.subscriptions.countByUser(ctx, input.user_id)
-    if (count >= SUBSCRIPTIONS_PER_USER_LIMIT) {
+    const userSubscriptions = await ctx.db
+      .query(TABLE_NAME)
+      .withIndex('by_user_id', (q) => q.eq('user_id', input.user_id).eq('deleted_at', undefined))
+      .take(SUBSCRIPTIONS_PER_USER_LIMIT)
+
+    if (userSubscriptions.length >= SUBSCRIPTIONS_PER_USER_LIMIT) {
       return 'limit'
     }
 
     // Check for duplicate pattern in context
-    const context =
+    const existing =
       input.type === 'channel'
-        ? { type: 'channel' as const, channel_id: input.channel_id }
-        : { type: 'dm' as const, user_id: input.user_id }
+        ? await ctx.db
+            .query(TABLE_NAME)
+            .withIndex('by_channel_id_and_pattern', (q) =>
+              q
+                .eq('channel_id', input.channel_id)
+                .eq('pattern', input.pattern)
+                .eq('deleted_at', undefined),
+            )
+            .first()
+        : await ctx.db
+            .query(TABLE_NAME)
+            .withIndex('by_user_id_and_pattern', (q) =>
+              q
+                .eq('user_id', input.user_id)
+                .eq('pattern', input.pattern)
+                .eq('deleted_at', undefined),
+            )
+            .first()
 
-    const existing = await db.alerts.discord.subscriptions.findByContextAndPattern(
-      ctx,
-      context,
-      input.pattern,
-    )
-    if (existing) {
+    if (existing && (input.type === 'channel' || existing.type === 'dm')) {
       return 'exists'
     }
 
-    return db.alerts.discord.subscriptions.insert(ctx, input)
+    return ctx.db.insert(TABLE_NAME, input)
   },
 })
 
@@ -63,12 +103,32 @@ export const remove = internalMutation({
   handler: async (ctx, args) => {
     const { context, pattern } = args
 
-    const sub = await db.alerts.discord.subscriptions.findByContextAndPattern(ctx, context, pattern)
+    const sub =
+      context.type === 'channel'
+        ? await ctx.db
+            .query(TABLE_NAME)
+            .withIndex('by_channel_id_and_pattern', (q) =>
+              q
+                .eq('channel_id', context.channel_id)
+                .eq('pattern', pattern)
+                .eq('deleted_at', undefined),
+            )
+            .first()
+        : await ctx.db
+            .query(TABLE_NAME)
+            .withIndex('by_user_id_and_pattern', (q) =>
+              q.eq('user_id', context.user_id).eq('pattern', pattern).eq('deleted_at', undefined),
+            )
+            .first()
     if (!sub) {
       return null
     }
 
-    await db.alerts.discord.subscriptions.softDelete(ctx, sub._id)
+    if (context.type === 'dm' && sub.type !== 'dm') {
+      return null
+    }
+
+    await ctx.db.patch(sub._id, { deleted_at: Date.now() })
     return sub
   },
 })
