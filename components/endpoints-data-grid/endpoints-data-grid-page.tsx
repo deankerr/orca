@@ -12,7 +12,7 @@ import ms from 'ms'
 import { useCallback, useMemo } from 'react'
 
 import { api } from '@/convex/_generated/api'
-import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
+import type { EndpointProjection } from '@/convex/catalog/endpoints'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { attributes, isAttributeKey } from '@/lib/attributes'
 import { createSlugSearcher } from '@/lib/slug-search'
@@ -42,7 +42,7 @@ function useEndpointsList() {
 }
 
 function filterEndpointsByFacets(
-  endpoints: readonly ORCAEndpoint[],
+  endpoints: readonly EndpointProjection[],
   facetFilters: FacetFilterState,
 ) {
   return endpoints.filter((endpoint) => {
@@ -71,7 +71,7 @@ function useEndpointGridRows({
   facetFilters,
   query,
 }: {
-  endpoints: readonly ORCAEndpoint[]
+  endpoints: readonly EndpointProjection[]
   facetFilters: FacetFilterState
   query: string
 }) {

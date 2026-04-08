@@ -2,12 +2,7 @@
 
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
 
-import type {
-  EndpointChange,
-  EntityChange,
-  ModelChange,
-  ProviderChange,
-} from '@/convex/db/or/views/changes'
+import type { EndpointChange, EntityChange, ModelChange, ProviderChange } from '@/convex/changes'
 import { cn } from '@/lib/utils'
 import { formatPricingFields } from '@/shared/formatters'
 

@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from 'date-fns'
 
-import type { EntityChange } from '@/convex/db/or/views/changes'
+import type { EntityChange } from '@/convex/changes'
 import type { CrawlBatch } from '@/convex/monitor'
 import { cn } from '@/lib/utils'
 import { groupChanges } from '@/shared/groups'

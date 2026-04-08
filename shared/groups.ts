@@ -10,12 +10,7 @@
 // - Each group carries a slug for subscription/pattern matching
 // - Provider groups use "*" as slug (only matched by wildcard subscriptions)
 
-import type {
-  EndpointChange,
-  EntityChange,
-  ModelChange,
-  ProviderChange,
-} from '@/convex/db/or/views/changes'
+import type { EndpointChange, EntityChange, ModelChange, ProviderChange } from '@/convex/changes'
 
 export type ChangeGroup = {
   slug: string
