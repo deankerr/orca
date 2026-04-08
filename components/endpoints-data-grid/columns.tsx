@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
-import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
+import type { EndpointProjection } from '@/convex/catalog/endpoints'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 import { formatPricing } from '@/shared/formatters'
 
@@ -12,7 +12,7 @@ import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
 import { dataGridPopoverHandle } from './popover-handle'
 
-export type EndpointRow = ORCAEndpoint
+export type EndpointRow = EndpointProjection
 
 function formatGridDate(timestamp: number): string {
   return new Date(timestamp)

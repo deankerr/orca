@@ -5,15 +5,15 @@
 
 import * as R from 'remeda'
 
-import type { ORCAEndpoint } from '@/convex/db/or/views/endpoints'
+import type { EndpointProjection } from '@/convex/catalog/endpoints'
 
 // -- Pricing fields
 //
 // Single source of truth for pricing field metadata and display formatting.
 // Object key order determines display order in shared helpers.
 
-type ORCAEndpointPricing = ORCAEndpoint['pricing']
-type PricingKey = keyof ORCAEndpointPricing
+type EndpointProjectionPricing = EndpointProjection['pricing']
+type PricingKey = keyof EndpointProjectionPricing
 
 type PricingConfig = {
   scale: number
@@ -76,7 +76,9 @@ export function formatPricing(
   return { field, value: display, unit: PRICING_FIELDS[field].unit }
 }
 
-export function formatPricingFields(pricing: Partial<ORCAEndpointPricing>): PricingFormatResult[] {
+export function formatPricingFields(
+  pricing: Partial<EndpointProjectionPricing>,
+): PricingFormatResult[] {
   return PRICING_FIELD_KEYS.flatMap((field) => {
     const formatted = formatPricing(field, pricing[field])
     if (!formatted) {
