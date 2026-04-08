@@ -1,13 +1,15 @@
 import { v } from 'convex/values'
 import { diff } from 'json-diff-ts'
 
-import { db } from '@/convex/db'
+import { endpointsTable } from '@/convex/catalog/endpoints'
+import { modelsTable } from '@/convex/catalog/models'
+import { providersTable } from '@/convex/catalog/providers'
 
 import { internalMutation } from '../../_generated/server'
 
-const vUpsertModel = db.or.views.models.vTable.validator.omit('updated_at')
-const vUpsertEndpoint = db.or.views.endpoints.vTable.validator.omit('updated_at')
-const vUpsertProvider = db.or.views.providers.vTable.validator.omit('updated_at')
+const vUpsertModel = modelsTable.validator.omit('updated_at')
+const vUpsertEndpoint = endpointsTable.validator.omit('updated_at')
+const vUpsertProvider = providersTable.validator.omit('updated_at')
 
 const vSourceItem = v.object({
   key: v.string(),
@@ -19,6 +21,13 @@ function isEqual(from: Record<string, unknown>, to: Record<string, unknown>) {
     keysToSkip: ['_id', '_creationTime', 'updated_at'],
   })
   return changes.length === 0
+}
+
+function withUpdatedAt<T extends Record<string, unknown>>(value: T) {
+  return {
+    ...value,
+    updated_at: Date.now(),
+  }
 }
 
 export const upsert = internalMutation({
@@ -44,7 +53,7 @@ export const upsert = internalMutation({
     async function upsertModels() {
       const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-      const currentModels = await db.or.views.models.collect(ctx)
+      const currentModels = await ctx.db.query('or_views_models').collect()
       const currentModelsMap = new Map(currentModels.map((m) => [m.slug, m]))
 
       for (const model of args.models) {
@@ -56,11 +65,11 @@ export const upsert = internalMutation({
           if (isEqual(currentModel, model)) {
             counters.stable += 1
           } else {
-            await db.or.views.models.replace(ctx, currentModel._id, model)
+            await ctx.db.replace(currentModel._id, withUpdatedAt(model))
             counters.update += 1
           }
         } else {
-          await db.or.views.models.insert(ctx, model)
+          await ctx.db.insert('or_views_models', withUpdatedAt(model))
           counters.insert += 1
         }
       }
@@ -74,9 +83,12 @@ export const upsert = internalMutation({
             continue
           }
 
-          await db.or.views.models.patch(ctx, currentModel._id, {
-            unavailable_at: Number.parseInt(args.crawl_id, 10),
-          })
+          await ctx.db.patch(
+            currentModel._id,
+            withUpdatedAt({
+              unavailable_at: Number.parseInt(args.crawl_id, 10),
+            }),
+          )
           counters.unavailable += 1
         }
       }
@@ -88,7 +100,7 @@ export const upsert = internalMutation({
     async function upsertEndpoints() {
       const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-      const currentEndpoints = await db.or.views.endpoints.collect(ctx)
+      const currentEndpoints = await ctx.db.query('or_views_endpoints').collect()
       const currentEndpointsMap = new Map(currentEndpoints.map((e) => [e.uuid, e]))
 
       for (const endpoint of args.endpoints) {
@@ -100,11 +112,11 @@ export const upsert = internalMutation({
           if (isEqual(currentEndpoint, endpoint)) {
             counters.stable += 1
           } else {
-            await db.or.views.endpoints.replace(ctx, currentEndpoint._id, endpoint)
+            await ctx.db.replace(currentEndpoint._id, withUpdatedAt(endpoint))
             counters.update += 1
           }
         } else {
-          await db.or.views.endpoints.insert(ctx, endpoint)
+          await ctx.db.insert('or_views_endpoints', withUpdatedAt(endpoint))
           counters.insert += 1
         }
       }
@@ -118,9 +130,12 @@ export const upsert = internalMutation({
             continue
           }
 
-          await db.or.views.endpoints.patch(ctx, currentEndpoint._id, {
-            unavailable_at: Number.parseInt(args.crawl_id, 10),
-          })
+          await ctx.db.patch(
+            currentEndpoint._id,
+            withUpdatedAt({
+              unavailable_at: Number.parseInt(args.crawl_id, 10),
+            }),
+          )
           counters.unavailable += 1
         }
       }
@@ -132,7 +147,7 @@ export const upsert = internalMutation({
     async function upsertProviders() {
       const counters = { stable: 0, update: 0, insert: 0, unavailable: 0 }
 
-      const currentProviders = await db.or.views.providers.collect(ctx)
+      const currentProviders = await ctx.db.query('or_views_providers').collect()
       const currentProvidersMap = new Map(currentProviders.map((p) => [p.slug, p]))
 
       for (const provider of args.providers) {
@@ -144,11 +159,11 @@ export const upsert = internalMutation({
           if (isEqual(currentProvider, provider)) {
             counters.stable += 1
           } else {
-            await db.or.views.providers.replace(ctx, currentProvider._id, provider)
+            await ctx.db.replace(currentProvider._id, withUpdatedAt(provider))
             counters.update += 1
           }
         } else {
-          await db.or.views.providers.insert(ctx, provider)
+          await ctx.db.insert('or_views_providers', withUpdatedAt(provider))
           counters.insert += 1
         }
       }
@@ -156,9 +171,12 @@ export const upsert = internalMutation({
       // update unavailable_at for providers that are no longer advertised
       for (const currentProvider of currentProvidersMap.values()) {
         if (currentProvider.unavailable_at === undefined) {
-          await db.or.views.providers.patch(ctx, currentProvider._id, {
-            unavailable_at: Number.parseInt(args.crawl_id, 10),
-          })
+          await ctx.db.patch(
+            currentProvider._id,
+            withUpdatedAt({
+              unavailable_at: Number.parseInt(args.crawl_id, 10),
+            }),
+          )
           counters.unavailable += 1
         }
       }
@@ -192,19 +210,25 @@ export const upsertSources = internalMutation({
         if (isEqual(currentSource.data, item.data)) {
           counters.stable += 1
         } else {
-          await db.or.sources.replace(ctx, currentSource._id, {
-            entity_type: args.entityType,
-            entity_key: item.key,
-            data: item.data,
-          })
+          await ctx.db.replace(
+            currentSource._id,
+            withUpdatedAt({
+              entity_type: args.entityType,
+              entity_key: item.key,
+              data: item.data,
+            }),
+          )
           counters.update += 1
         }
       } else {
-        await db.or.sources.insert(ctx, {
-          entity_type: args.entityType,
-          entity_key: item.key,
-          data: item.data,
-        })
+        await ctx.db.insert(
+          'or_sources',
+          withUpdatedAt({
+            entity_type: args.entityType,
+            entity_key: item.key,
+            data: item.data,
+          }),
+        )
         counters.insert += 1
       }
     }

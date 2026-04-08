@@ -1,15 +1,15 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import type { EndpointProjection } from '@/convex/catalog/endpoints'
+import { getByUuid as getEndpoint } from '@/convex/catalog/endpoints'
+import { getBySlug as getModel } from '@/convex/catalog/models'
+import { getBySlug as getProvider } from '@/convex/catalog/providers'
 import { baseProviderSlug } from '@/shared/utils'
 
 import type { Doc, Id } from '../../../_generated/dataModel'
 import type { QueryCtx } from '../../../_generated/server'
 import { getModelDescription } from '../sources'
-import { get as getEndpoint } from './endpoints'
-import type { ORCAEndpoint } from './endpoints'
-import { get as getModel } from './models'
-import { get as getProvider } from './providers'
 
 const changeKindValidator = v.union(v.literal('create'), v.literal('update'), v.literal('delete'))
 
@@ -97,7 +97,7 @@ export type EndpointRef = {
   uuid: string
   context_length?: number
   max_output?: number
-  pricing?: ORCAEndpoint['pricing']
+  pricing?: EndpointProjection['pricing']
 }
 
 // * Field-level diffs — pure change payload, no entity context
@@ -264,7 +264,7 @@ function entityKey(doc: Doc<'or_views_changes'>): string {
 // repeated lookups for the same entity are free. No manual dedup needed.
 
 async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
-  const m = await getModel(ctx, slug)
+  const m = await getModel(ctx, { slug })
   if (!m) {
     return { slug }
   }
@@ -284,7 +284,7 @@ async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
 async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderRef> {
   // provider tag slugs may include a variant suffix (e.g. "deepinfra/fp4")
   const baseSlug = baseProviderSlug(slug)
-  const p = await getProvider(ctx, baseSlug)
+  const p = await getProvider(ctx, { slug: baseSlug })
   if (!p) {
     return { slug }
   }
@@ -292,7 +292,7 @@ async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderR
 }
 
 async function enrichEndpointRef(ctx: QueryCtx, uuid: string): Promise<EndpointRef> {
-  const ep = await getEndpoint(ctx, uuid)
+  const ep = await getEndpoint(ctx, { uuid })
   if (!ep) {
     return { uuid }
   }

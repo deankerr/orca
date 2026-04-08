@@ -1,5 +1,8 @@
 # ORCA (OpenRouter Capability Analysis)
 
+**Major backend refactor in progress**
+@notes/convex/convex-feature-organisation-design.md
+
 ## Commands
 
 - `bun run check`: run when work is complete.
