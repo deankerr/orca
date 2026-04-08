@@ -4,6 +4,7 @@ import { endpointsTable } from './catalog/endpoints'
 import { modelDescriptionsTable, modelsTable } from './catalog/models'
 import { providersTable } from './catalog/providers'
 import { db } from './db'
+import { archivesTable } from './snapshots/archives/table'
 
 export default defineSchema(
   {
@@ -15,7 +16,7 @@ export default defineSchema(
     or_views_models: modelsTable,
     or_views_model_descriptions: modelDescriptionsTable,
 
-    snapshot_crawl_archives: db.snapshot.crawl.archives.table,
+    snapshot_crawl_archives: archivesTable,
   },
   {
     strictTableNameTypes: true,

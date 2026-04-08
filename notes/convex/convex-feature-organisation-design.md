@@ -198,3 +198,7 @@ The areas that still deserve ongoing design attention are:
 This document tracks an active human-LLM design process.
 
 We are using code changes, validation, snapshots, and live backend behavior to expose the real details of the system as we reorganise it. The document exists to capture those decisions as they become clear in the codebase.
+
+## Status
+
+As an initial step, we are first focusing on dismantling the `db` directory, relocating or replacing tables, removing the vTable helper, and no longer co-locating query helper functions with schemas - while avoiding major changes to background processes like `snapshots` and Discord alerts, and public APIs. Breaking this coupling will prepare for upcoming larger process refactors, while realising immediate benefits from co-location.

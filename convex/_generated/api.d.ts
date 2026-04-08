@@ -33,7 +33,6 @@ import type * as db_alerts_discord_subscriptions from "../db/alerts/discord/subs
 import type * as db_index from "../db/index.js";
 import type * as db_or_views_changes from "../db/or/views/changes.js";
 import type * as db_or_views_endpoints from "../db/or/views/endpoints.js";
-import type * as db_snapshot_crawl_archives from "../db/snapshot/crawl/archives.js";
 import type * as discord_admin from "../discord/admin.js";
 import type * as discord_api from "../discord/api.js";
 import type * as discord_bot from "../discord/bot.js";
@@ -53,6 +52,7 @@ import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
 import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
+import type * as snapshots_archives_table from "../snapshots/archives/table.js";
 import type * as snapshots_crawl_cron from "../snapshots/crawl/cron.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
 import type * as snapshots_crawl_outputs from "../snapshots/crawl/outputs.js";
@@ -99,7 +99,6 @@ declare const fullApi: ApiFromModules<{
   "db/index": typeof db_index;
   "db/or/views/changes": typeof db_or_views_changes;
   "db/or/views/endpoints": typeof db_or_views_endpoints;
-  "db/snapshot/crawl/archives": typeof db_snapshot_crawl_archives;
   "discord/admin": typeof discord_admin;
   "discord/api": typeof discord_api;
   "discord/bot": typeof discord_bot;
@@ -119,6 +118,7 @@ declare const fullApi: ApiFromModules<{
   monitor: typeof monitor;
   providers: typeof providers;
   "public_api/preview_v2": typeof public_api_preview_v2;
+  "snapshots/archives/table": typeof snapshots_archives_table;
   "snapshots/crawl/cron": typeof snapshots_crawl_cron;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
   "snapshots/crawl/outputs": typeof snapshots_crawl_outputs;

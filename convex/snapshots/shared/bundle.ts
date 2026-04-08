@@ -1,17 +1,14 @@
-import { nullable } from 'convex-helpers/validators'
 import { v } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
-import { internalQuery } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
-import { db } from '../../db'
+import { internalQuery } from '../../_generated/server'
 import type { CrawlArchiveBundle } from '../crawl/main'
 
 const textDecoder = new TextDecoder()
 
 export const getLatestCrawlId = internalQuery({
-  returns: nullable(v.string()),
   handler: async (ctx) =>
     ctx.db
       .query('snapshot_crawl_archives')
@@ -25,7 +22,6 @@ export const getByCrawlId = internalQuery({
   args: {
     crawl_id: v.string(),
   },
-  returns: nullable(db.snapshot.crawl.archives.vTable.doc),
   handler: async (ctx, args) =>
     ctx.db
       .query('snapshot_crawl_archives')
