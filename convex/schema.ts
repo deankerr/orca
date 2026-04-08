@@ -15,7 +15,6 @@ export default defineSchema(
     or_views_models: modelsTable,
     or_views_model_descriptions: modelDescriptionsTable,
 
-    snapshot_crawl_config: db.snapshot.crawl.config.table,
     snapshot_crawl_archives: db.snapshot.crawl.archives.table,
   },
   {
