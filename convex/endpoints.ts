@@ -1,7 +1,6 @@
 import { query } from './_generated/server'
-import { list as listEndpoints, listArgs } from './catalog/endpoints'
+import { endpoints } from './catalog/endpoints'
 
-export const list = query({
-  args: listArgs,
-  handler: listEndpoints,
-})
+export const list = query(endpoints.list)
+
+export const getByUuid = query(endpoints.get)

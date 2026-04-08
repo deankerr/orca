@@ -1,7 +1,7 @@
 import type { EndpointProjection } from '@/convex/catalog/endpoints'
-import { getByUuid as getEndpoint } from '@/convex/catalog/endpoints'
-import { getBySlug as getModel } from '@/convex/catalog/models'
-import { getBySlug as getProvider } from '@/convex/catalog/providers'
+import { endpoints } from '@/convex/catalog/endpoints'
+import { models } from '@/convex/catalog/models'
+import { providers } from '@/convex/catalog/providers'
 import { baseProviderSlug } from '@/shared/utils'
 
 import type { Doc, Id } from '../_generated/dataModel'
@@ -184,7 +184,7 @@ function entityKey(doc: Doc<'or_views_changes'>): string {
 }
 
 async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
-  const model = await getModel(ctx, { slug })
+  const model = await models.get.handler(ctx, { slug })
   if (!model) {
     return { slug }
   }
@@ -203,7 +203,7 @@ async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
 
 async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderRef> {
   const baseSlug = baseProviderSlug(slug)
-  const provider = await getProvider(ctx, { slug: baseSlug })
+  const provider = await providers.get.handler(ctx, { slug: baseSlug })
   if (!provider) {
     return { slug }
   }
@@ -212,7 +212,7 @@ async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderR
 }
 
 async function enrichEndpointRef(ctx: QueryCtx, uuid: string): Promise<EndpointRef> {
-  const endpoint = await getEndpoint(ctx, { uuid })
+  const endpoint = await endpoints.get.handler(ctx, { uuid })
   if (!endpoint) {
     return { uuid }
   }

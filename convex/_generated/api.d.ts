@@ -47,6 +47,7 @@ import type * as endpoints from "../endpoints.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
+import type * as lib_functionSpec from "../lib/functionSpec.js";
 import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
@@ -113,6 +114,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   init: typeof init;
   "lib/env": typeof lib_env;
+  "lib/functionSpec": typeof lib_functionSpec;
   "lib/paginateAndProcess": typeof lib_paginateAndProcess;
   models: typeof models;
   monitor: typeof monitor;

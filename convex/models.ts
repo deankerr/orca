@@ -1,17 +1,6 @@
 import { query } from './_generated/server'
-import {
-  getBySlug as getModelBySlug,
-  getBySlugArgs,
-  list as listModels,
-  listArgs,
-} from './catalog/models'
+import { models } from './catalog/models'
 
-export const list = query({
-  args: listArgs,
-  handler: listModels,
-})
+export const list = query(models.list)
 
-export const getBySlug = query({
-  args: getBySlugArgs,
-  handler: getModelBySlug,
-})
+export const getBySlug = query(models.get)

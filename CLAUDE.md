@@ -115,24 +115,11 @@ OpenRouter API
 - Skips non-user-facing fields (stats, timestamps)
 - Outputs to `or_views_changes` with create/update/delete types
 
-**Database Queries** (`convex/db/`)
-
-- `or/views/` - Queries for endpoints, models, providers, changes
-- `snapshot/crawl/` - Archive and config management
-
 ## Key Concepts
 
 ### crawl_id
 
 Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
-
-### Derived State is Expendable
-
-All views can be regenerated from archive bundles. This enables:
-
-- Recovery by regeneration (rebuild from snapshots)
-- Graceful degradation (partial failures don't cascade)
-- Resilience to schema changes (reprocess historical data)
 
 ## Development Notes
 

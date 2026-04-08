@@ -35,6 +35,32 @@ The feature modules that currently look durable are:
 - `platform`
   Owns generic Convex helpers and infrastructure utilities.
 
+## Module Kinds
+
+We should treat the directories under `convex/` primarily as backend modules.
+
+`module` is the most useful general term because it stays neutral about implementation details and works for both domain areas and process areas.
+
+Within that broad category, several more specific module kinds already seem to be emerging:
+
+- `entity module`
+  Owns a durable domain object and its app-facing shape.
+  Current examples include `catalog/models`, `catalog/providers`, and `catalog/endpoints`.
+  `alerts/subscriptions` likely belongs here after refactoring.
+- `event module`
+  Owns historical records or event-like data whose subject is an entity rather than being an entity itself.
+  `changes` currently fits this shape more than it fits an entity-module shape.
+- `workflow module`
+  Owns multi-step background processes and operational orchestration.
+  Current examples include crawl, materialization, and dispatch flows.
+- `integration module`
+  Owns communication with an external system or external contract.
+  Current examples include Discord and the public API.
+- `platform module`
+  Owns generic backend helpers, utilities, and reusable Convex infrastructure.
+
+These names do not need to be enforced rigidly, but they provide better language for reasoning about responsibility and module boundaries.
+
 ## Top-Level Convex Shape
 
 Convex convention-driven files remain at the top level:
@@ -62,6 +88,21 @@ These files provide the stable public query names that the app and clients use:
 - `api.providers.getBySlug`
 
 They act as the registration layer for Convex functions and delegate to feature-owned handlers.
+
+## Module Surface Sketch
+
+We should start to think of each module `index.ts` as a manifest or facade, not just as a barrel file.
+
+In this backend, the purpose of `index.ts` is not bundler convenience. The purpose is to define the stable surface of the module.
+
+That surface should be:
+
+- deliberate rather than accidental
+- easy to consume without understanding the module internals
+- compact enough that humans and agents can discover the main capabilities quickly
+- flexible enough that the internals can continue evolving behind it
+
+This suggests a pattern where `index.ts` curates a stable module interface rather than forwarding everything from sibling files.
 
 ## Catalog Pattern
 
@@ -114,6 +155,58 @@ The catalog layer owns:
 
 This gives each entity module a single home for the concept of that entity in ORCA.
 
+## Entity Module Interface Sketch
+
+The current direction for entity modules is:
+
+- internal query helpers can use short standardized verbs like `get` and `list`
+- the selector detail belongs in the args object, not necessarily in the function name
+- the module manifest should expose an interface object with a clear surface
+- schema composition concerns can remain available separately
+
+An example shape for `catalog/models` could look like:
+
+```ts
+export const models = {
+  list,
+  get,
+  descriptions: {
+    get: getDescription,
+  },
+} as const
+
+export const modelsSchema = {
+  table: modelsTable,
+  descriptionTable: modelDescriptionsTable,
+} as const
+```
+
+This gives two distinct surfaces:
+
+- `models`
+  The primary interface for backend consumers.
+- `modelsSchema`
+  The schema-facing and infrastructure-facing exports.
+
+This would let consumers write code like:
+
+```ts
+import { models } from '@/convex/catalog/models'
+
+const model = await models.get.handler(ctx, { slug })
+```
+
+while top-level Convex registration files can still provide explicit public API names:
+
+```ts
+import { models } from './catalog/models'
+
+export const list = query(models.list)
+export const getBySlug = query(models.get)
+```
+
+This keeps the public API explicit, while keeping the internal module surface compact and standardized.
+
 ## Projection Layers
 
 ORCA currently has two projection layers with different roles:
@@ -133,6 +226,7 @@ Catalog query helpers follow a consistent pattern:
 - helper args are inferred directly from the validator
 - helpers accept a single `args` object
 - helpers can be used directly as Convex query handlers
+- helper names inside an entity module can be standardized around compact verbs like `get` and `list`
 
 This keeps the query surface compact and makes the handler contract obvious at the call site.
 
@@ -174,14 +268,35 @@ This means the catalog pattern now exists as live backend code rather than a hyp
 
 ## Current Catalog Surface
 
-The current `index.ts` entrypoint for each entity exports:
+The current `index.ts` entrypoint for each entity is evolving from a simple re-export file toward a more deliberate module manifest.
 
-- the projection type
-- the public read helpers
-- the arg validators used by those helpers
-- the table definition
+The intended longer-term direction is:
 
-That surface gives schema composition, query registration, and backend consumers one stable import point per catalog entity.
+- export a compact interface object for ordinary backend consumers
+- export schema-related elements separately for schema composition and infrastructure usage
+- avoid requiring consumers to understand internal file layout just to use the module
+
+This should make each entity module easier to consume as a stable backend component even while the internal organization continues evolving.
+
+## Naming Direction
+
+Some terminology seems worth establishing early:
+
+- use `module` as the default word for top-level backend areas and durable sub-areas
+- use `surface` for the stable exported interface of a module
+- use `entity` for durable domain objects like models, providers, endpoints, and likely subscriptions
+- use `event` or `change record` for historical records whose subject is an entity
+
+This distinction matters because not every module should be forced into the same mental model.
+
+For example:
+
+- models, providers, endpoints, subscriptions
+  naturally read as entities
+- changes
+  reads more naturally as an event-oriented module whose records reference entities
+
+Keeping that distinction sharp should help us design clearer interfaces and avoid muddy naming as the backend grows.
 
 ## Design Areas In Focus
 

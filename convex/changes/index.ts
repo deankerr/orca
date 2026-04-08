@@ -1,3 +1,5 @@
+import { get } from './queries'
+import { changesTable } from './table'
 export type {
   ArrayDiffItem,
   EndpointChange,
@@ -10,5 +12,11 @@ export type {
   ProviderChange,
   ProviderRef,
 } from './projection'
-export { getByCrawlId, getByCrawlIdArgs } from './queries'
-export { changesTable } from './table'
+
+export const changes = {
+  get,
+} as const
+
+export const changesSchema = {
+  table: changesTable,
+} as const
