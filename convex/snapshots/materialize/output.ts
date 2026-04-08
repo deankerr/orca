@@ -2,19 +2,15 @@ import { v } from 'convex/values'
 import { diff } from 'json-diff-ts'
 
 import { endpointsTable } from '@/convex/catalog/endpoints'
-import { modelsTable } from '@/convex/catalog/models'
+import { modelDescriptionsTable, modelsTable } from '@/convex/catalog/models'
 import { providersTable } from '@/convex/catalog/providers'
 
 import { internalMutation } from '../../_generated/server'
 
 const vUpsertModel = modelsTable.validator.omit('updated_at')
+const vUpsertModelDescription = modelDescriptionsTable.validator.omit('updated_at')
 const vUpsertEndpoint = endpointsTable.validator.omit('updated_at')
 const vUpsertProvider = providersTable.validator.omit('updated_at')
-
-const vSourceItem = v.object({
-  key: v.string(),
-  data: v.record(v.string(), v.any()),
-})
 
 function isEqual(from: Record<string, unknown>, to: Record<string, unknown>) {
   const changes = diff(from, to, {
@@ -33,6 +29,7 @@ function withUpdatedAt<T extends Record<string, unknown>>(value: T) {
 export const upsert = internalMutation({
   args: {
     models: v.array(vUpsertModel),
+    modelDescriptions: v.array(vUpsertModelDescription),
     endpoints: v.array(vUpsertEndpoint),
     providers: v.array(vUpsertProvider),
     crawl_id: v.string(),
@@ -41,13 +38,14 @@ export const upsert = internalMutation({
   handler: async (ctx, args) => {
     const failedModelKeys = new Set(args.failedModelKeys)
     // * run all entity upserts in parallel
-    const [models, endpoints, providers] = await Promise.all([
+    const [models, modelDescriptions, endpoints, providers] = await Promise.all([
       upsertModels(),
+      upsertModelDescriptions(),
       upsertEndpoints(),
       upsertProviders(),
     ])
 
-    console.log(`[materialize:upsert]`, { models, endpoints, providers })
+    console.log(`[materialize:upsert]`, { models, modelDescriptions, endpoints, providers })
 
     // * models
     async function upsertModels() {
@@ -90,6 +88,31 @@ export const upsert = internalMutation({
             }),
           )
           counters.unavailable += 1
+        }
+      }
+
+      return counters
+    }
+
+    async function upsertModelDescriptions() {
+      const counters = { stable: 0, update: 0, insert: 0 }
+
+      const currentDescriptions = await ctx.db.query('or_views_model_descriptions').collect()
+      const currentDescriptionsMap = new Map(currentDescriptions.map((d) => [d.slug, d]))
+
+      for (const description of args.modelDescriptions) {
+        const currentDescription = currentDescriptionsMap.get(description.slug)
+
+        if (currentDescription) {
+          if (currentDescription.description === description.description) {
+            counters.stable += 1
+          } else {
+            await ctx.db.replace(currentDescription._id, withUpdatedAt(description))
+            counters.update += 1
+          }
+        } else {
+          await ctx.db.insert('or_views_model_descriptions', withUpdatedAt(description))
+          counters.insert += 1
         }
       }
 
@@ -183,56 +206,5 @@ export const upsert = internalMutation({
 
       return counters
     }
-  },
-})
-
-const vEntityType = v.union(v.literal('model'), v.literal('endpoint'), v.literal('provider'))
-
-export const upsertSources = internalMutation({
-  args: {
-    entityType: vEntityType,
-    items: v.array(vSourceItem),
-  },
-  handler: async (ctx, args) => {
-    const counters = { stable: 0, update: 0, insert: 0 }
-
-    // * query only the sources for this entity type
-    const currentSources = await ctx.db
-      .query('or_sources')
-      .withIndex('by_entity', (q) => q.eq('entity_type', args.entityType))
-      .collect()
-    const currentSourcesMap = new Map(currentSources.map((s) => [s.entity_key, s]))
-
-    for (const item of args.items) {
-      const currentSource = currentSourcesMap.get(item.key)
-
-      if (currentSource) {
-        if (isEqual(currentSource.data, item.data)) {
-          counters.stable += 1
-        } else {
-          await ctx.db.replace(
-            currentSource._id,
-            withUpdatedAt({
-              entity_type: args.entityType,
-              entity_key: item.key,
-              data: item.data,
-            }),
-          )
-          counters.update += 1
-        }
-      } else {
-        await ctx.db.insert(
-          'or_sources',
-          withUpdatedAt({
-            entity_type: args.entityType,
-            entity_key: item.key,
-            data: item.data,
-          }),
-        )
-        counters.insert += 1
-      }
-    }
-
-    console.log(`[materialize:upsertSources:${args.entityType}]`, counters)
   },
 })

@@ -32,3 +32,9 @@ export const modelsTable = defineTable({
 })
   .index('by_or_added_at', ['or_added_at'])
   .index('by_slug', ['slug'])
+
+export const modelDescriptionsTable = defineTable({
+  slug: v.string(),
+  description: v.string(),
+  updated_at: v.number(),
+}).index('by_slug', ['slug'])

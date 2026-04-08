@@ -32,7 +32,6 @@ import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as db_alerts_discord_subscriptions from "../db/alerts/discord/subscriptions.js";
 import type * as db_index from "../db/index.js";
-import type * as db_or_sources from "../db/or/sources.js";
 import type * as db_or_views_changes from "../db/or/views/changes.js";
 import type * as db_or_views_endpoints from "../db/or/views/endpoints.js";
 import type * as db_snapshot_crawl_archives from "../db/snapshot/crawl/archives.js";
@@ -100,7 +99,6 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   "db/alerts/discord/subscriptions": typeof db_alerts_discord_subscriptions;
   "db/index": typeof db_index;
-  "db/or/sources": typeof db_or_sources;
   "db/or/views/changes": typeof db_or_views_changes;
   "db/or/views/endpoints": typeof db_or_views_endpoints;
   "db/snapshot/crawl/archives": typeof db_snapshot_crawl_archives;
