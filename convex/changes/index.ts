@@ -1,4 +1,3 @@
-// deprecated - frontend only
 export type {
   ArrayDiffItem,
   EndpointChange,
@@ -10,4 +9,6 @@ export type {
   ModelRef,
   ProviderChange,
   ProviderRef,
-} from '../../../changes/projection'
+} from './projection'
+export { getByCrawlId, getByCrawlIdArgs } from './queries'
+export { changesTable } from './table'

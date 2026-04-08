@@ -28,8 +28,11 @@ import type * as catalog_providers_queries from "../catalog/providers/queries.js
 import type * as catalog_providers_table from "../catalog/providers/table.js";
 import type * as catalog_shared_availability from "../catalog/shared/availability.js";
 import type * as changeBatch from "../changeBatch.js";
+import type * as changes_index from "../changes/index.js";
+import type * as changes_projection from "../changes/projection.js";
+import type * as changes_queries from "../changes/queries.js";
+import type * as changes_table from "../changes/table.js";
 import type * as crons from "../crons.js";
-import type * as db_index from "../db/index.js";
 import type * as db_or_views_changes from "../db/or/views/changes.js";
 import type * as db_or_views_endpoints from "../db/or/views/endpoints.js";
 import type * as discord_admin from "../discord/admin.js";
@@ -94,8 +97,11 @@ declare const fullApi: ApiFromModules<{
   "catalog/providers/table": typeof catalog_providers_table;
   "catalog/shared/availability": typeof catalog_shared_availability;
   changeBatch: typeof changeBatch;
+  "changes/index": typeof changes_index;
+  "changes/projection": typeof changes_projection;
+  "changes/queries": typeof changes_queries;
+  "changes/table": typeof changes_table;
   crons: typeof crons;
-  "db/index": typeof db_index;
   "db/or/views/changes": typeof db_or_views_changes;
   "db/or/views/endpoints": typeof db_or_views_endpoints;
   "discord/admin": typeof discord_admin;
