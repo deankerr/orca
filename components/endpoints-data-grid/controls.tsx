@@ -63,7 +63,7 @@ export function DataGridControls() {
   }
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-3">
+    <div className="flex items-center gap-2 overflow-x-auto px-3 py-3">
       <EndpointsSearchInput />
       <ModalityFilterMenu />
       <AttributeFilterMenu />

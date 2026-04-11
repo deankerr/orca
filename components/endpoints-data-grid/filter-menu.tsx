@@ -3,7 +3,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { CheckIcon, SparklesIcon, XIcon } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -33,10 +32,22 @@ function FilterMenuTrigger({
   return (
     <PopoverTrigger
       render={
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          data-active-count={activeCount}
+          data-has-active={activeCount > 0}
+          className={cn(
+            'relative',
+            'after:pointer-events-none after:absolute after:-top-1.5 after:-right-2 after:z-10',
+            'after:flex after:h-4 after:min-w-4 after:items-center after:justify-center',
+            'after:rounded-full after:border after:bg-secondary after:px-1',
+            'after:text-[0.625rem] after:font-medium after:text-secondary-foreground',
+            'after:content-[attr(data-active-count)]',
+            'data-[has-active=false]:after:hidden',
+          )}
+        >
           <Icon data-icon="inline-start" />
           {label}
-          {activeCount > 0 && <Badge variant="secondary">{activeCount}</Badge>}
         </Button>
       }
     />
