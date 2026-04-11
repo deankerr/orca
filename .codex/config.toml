@@ -1,0 +1,4 @@
+[mcp_servers.convex]
+command = "bunx"
+args = ["-y", "convex@latest", "mcp", "start"]
+enabled = true

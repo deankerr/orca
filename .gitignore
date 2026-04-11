@@ -40,6 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.config/
-.claude/worktrees
 backend-redesign/node_modules
