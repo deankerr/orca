@@ -11,9 +11,4 @@ bun install
 [[actions]]
 name = "convex dev"
 icon = "run"
-command = "CONVEX_AGENT_MODE=anonymous bun run dev:convex"
-
-[[actions]]
-name = "next dev"
-icon = "run"
-command = "bun next dev"
+command = "CONVEX_AGENT_MODE=anonymous bunx convex dev --run init"
