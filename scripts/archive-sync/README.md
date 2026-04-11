@@ -18,7 +18,9 @@ CONVEX_ARCHIVE_SYNC_TARGET_URL=http://127.0.0.1:3210 bun run archive-sync
 ## Behavior
 
 - Sync stores compressed bundles under `data/<target>/archives/`.
+- Sync anchors on the latest full remote bundle, then walks backward by UTC calendar day locally.
 - Sync always refreshes `data/<target>/raw/latest.bundle.json` to the newest selected archive.
+- `--days N` is a calendar-day cap, not a promise to find `N` available bundles.
 - If a requested UTC day has no full bundle, sync reports that gap instead of silently substituting an older day.
 - `unzip` writes a named JSON file like `data/<target>/raw/2026-04-11__1775910600308.bundle.json` for an already-downloaded archive.
 - Unzipped JSON output is pretty-printed for easier local inspection.

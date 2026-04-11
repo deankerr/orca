@@ -1,31 +1,5 @@
 import { z } from 'zod'
 
-export const availableDailyArchiveSchema = z.looseObject({
-  status: z.literal('available'),
-  crawl_id: z.string(),
-  day: z.string(),
-  size: z
-    .looseObject({
-      blob: z.number().optional(),
-      raw: z.number().optional(),
-    })
-    .nullable()
-    .optional(),
-  totals: z.record(z.string(), z.number()).nullable().optional(),
-})
-
-export const missingDailyArchiveSchema = z.looseObject({
-  status: z.literal('missing_full_bundle'),
-  day: z.string(),
-})
-
-export const dailyArchiveEntrySchema = z.union([
-  availableDailyArchiveSchema,
-  missingDailyArchiveSchema,
-])
-
-export const dailyArchivesResponseSchema = z.array(dailyArchiveEntrySchema)
-
 export const localBundleSchema = z.looseObject({
   crawl_id: z.string(),
   data: z.looseObject({
@@ -39,14 +13,6 @@ export const manifestArchiveSchema = z.looseObject({
   day: z.string(),
   downloadedAt: z.string().nullable(),
   fileGzip: z.string(),
-  size: z
-    .looseObject({
-      blob: z.number().optional(),
-      raw: z.number().optional(),
-    })
-    .nullable()
-    .optional(),
-  totals: z.record(z.string(), z.number()).nullable().optional(),
 })
 
 export const manifestSchema = z.looseObject({
@@ -63,8 +29,6 @@ export const manifestSchema = z.looseObject({
     .optional(),
 })
 
-export type DailyArchive = z.infer<typeof availableDailyArchiveSchema>
-export type DailyArchiveEntry = z.infer<typeof dailyArchiveEntrySchema>
 export type ManifestArchive = z.infer<typeof manifestArchiveSchema>
 export type ManifestPointer = {
   crawlId: string
@@ -82,6 +46,11 @@ export type LocalArchive = {
   crawlId: string
   day: string
   fileGzip: string
+}
+export type RemoteArchive = {
+  crawlId: string
+  day: string
+  fileName: string
 }
 export type SyncOptions = {
   days: number
