@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@/shared/utils'
 
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
+import { archiveSyncBundleGzip, archiveSyncDaily } from './admin/archiveSync'
 import { handleInteraction } from './discord/interactions'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
@@ -57,6 +58,18 @@ http.route({
 
     return Response.json(bundle)
   }),
+})
+
+http.route({
+  path: '/archive-sync/daily',
+  method: 'GET',
+  handler: archiveSyncDaily,
+})
+
+http.route({
+  path: '/archive-sync/bundle.gz',
+  method: 'GET',
+  handler: archiveSyncBundleGzip,
 })
 
 http.route({

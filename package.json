@@ -3,6 +3,7 @@
   "version": "43.0.0",
   "private": true,
   "scripts": {
+    "archive-sync": "bun scripts/archive-sync/index.ts",
     "build": "next build",
     "check": "oxlint --type-check --type-aware --report-unused-disable-directives --fix . && oxfmt --write . && echo '✓ check passed'",
     "dev:convex": "convex dev",
@@ -26,6 +27,7 @@
     "@tanstack/react-virtual": "^3.13.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "commander": "^14.0.3",
     "convex": "^1.35.1",
     "convex-helpers": "^0.1.114",
     "date-fns": "^4.1.0",
