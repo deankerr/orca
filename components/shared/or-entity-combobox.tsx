@@ -54,7 +54,7 @@ function EntityCombobox({
 
   const dedupedItems = useMemo(() => {
     if (items === undefined) {
-      return
+      return undefined
     }
 
     const seenSlugs = new Set<string>()
@@ -69,7 +69,7 @@ function EntityCombobox({
 
   const filtered = useMemo(() => {
     if (dedupedItems === undefined) {
-      return
+      return undefined
     }
 
     let nextItems = search

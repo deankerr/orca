@@ -32,6 +32,7 @@
     "typescript/no-non-null-assertion": "off",
     "complexity": "off",
     "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-useless-undefined": "off",
 
     // React
     "react/react-in-jsx-scope": "off",

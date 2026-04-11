@@ -97,7 +97,7 @@ function JsonApiCodeBlock({ code, isLoading, error }: JsonApiCodeBlock) {
     let isActive = true
 
     if (!hasCode || isPending || hasError) {
-      return
+      return undefined
     }
 
     const loadHighlight = async () => {

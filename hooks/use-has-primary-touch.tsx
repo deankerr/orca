@@ -5,7 +5,7 @@ export function useTouchPrimary() {
 
   useEffect(() => {
     if (typeof window === 'undefined') {
-      return
+      return undefined
     }
 
     const controller = new AbortController()

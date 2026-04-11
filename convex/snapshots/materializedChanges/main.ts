@@ -77,6 +77,8 @@ export const run = internalAction({
             return false
           }
         }
+
+        return undefined
       },
       batchSize: BATCH_SIZE_INNER,
     })

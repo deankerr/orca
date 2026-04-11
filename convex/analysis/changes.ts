@@ -154,11 +154,11 @@ export const run = internalMutation({
         ]),
       ),
 
-      topPaths: topPaths,
-      entityChangeDistribution: entityChangeDistribution,
-      modelSlugFrequency: modelSlugFrequency,
-      providerSlugFrequency: providerSlugFrequency,
-      providerTagSlugFrequency: providerTagSlugFrequency,
+      topPaths,
+      entityChangeDistribution,
+      modelSlugFrequency,
+      providerSlugFrequency,
+      providerTagSlugFrequency,
 
       changesPerCrawl: {
         min: Math.min(...crawlStats),

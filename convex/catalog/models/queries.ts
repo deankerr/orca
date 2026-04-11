@@ -42,6 +42,6 @@ export const get = defineQuerySpec({
     }
 
     const description = await getDescription.handler(ctx, { slug: args.slug })
-    return createModelProjection(doc, { description: description })
+    return createModelProjection(doc, { description })
   },
 })
