@@ -6,21 +6,40 @@ import prettyBytes from 'pretty-bytes'
 
 import { resolveArchiveSyncContext, resolveArchiveSyncPathsForUnzip } from './paths'
 import type { ArchiveSyncPaths, ArchiveSyncTarget } from './paths'
-import { dailyArchivesResponseSchema, localBundleSchema, manifestSchema } from './schemas'
+import { localBundleSchema, manifestSchema } from './schemas'
 import type {
-  DailyArchive,
-  DailyArchiveEntry,
   LocalArchive,
   Manifest,
   ManifestArchive,
+  RemoteArchive,
   SyncOptions,
   UnzipOptions,
 } from './schemas'
 
-const localArchiveFilePattern = /^(\d{4}-\d{2}-\d{2})__(\d+)\.bundle\.json\.gz$/
+const archiveFilePattern = /^(\d{4}-\d{2}-\d{2})__(\d+)\.bundle\.json\.gz$/
 
 function byNewestCrawlIdDesc<T extends { crawlId: string }>(left: T, right: T): number {
   return Number(right.crawlId) - Number(left.crawlId)
+}
+
+function subtractUtcDays(day: string, days: number): string {
+  const date = new Date(`${day}T00:00:00.000Z`)
+  date.setUTCDate(date.getUTCDate() - days)
+  return date.toISOString().slice(0, 10)
+}
+
+function parseArchiveFileName(fileName: string): RemoteArchive | null {
+  const match = archiveFilePattern.exec(fileName)
+  if (match === null) {
+    return null
+  }
+
+  const [, day, crawlId] = match
+  return {
+    crawlId,
+    day,
+    fileName,
+  }
 }
 
 async function ensureOutputDirectories(paths: ArchiveSyncPaths): Promise<void> {
@@ -60,16 +79,15 @@ async function listLocalArchives(paths: ArchiveSyncPaths): Promise<LocalArchive[
   const archives = entries
     .filter((entry) => entry.isFile())
     .map((entry) => {
-      const match = localArchiveFilePattern.exec(entry.name)
-      if (match === null) {
+      const parsed = parseArchiveFileName(entry.name)
+      if (parsed === null) {
         return null
       }
 
-      const [, day, crawlId] = match
       return {
         absolutePath: resolve(paths.archivesDir, entry.name),
-        crawlId,
-        day,
+        crawlId: parsed.crawlId,
+        day: parsed.day,
         fileGzip: relative(paths.rootDir, resolve(paths.archivesDir, entry.name)),
       } satisfies LocalArchive
     })
@@ -78,39 +96,103 @@ async function listLocalArchives(paths: ArchiveSyncPaths): Promise<LocalArchive[
   return archives.toSorted(byNewestCrawlIdDesc)
 }
 
-async function fetchDailyArchives(args: {
-  days: number
+function buildArchiveSyncUrl(args: {
   target: ArchiveSyncTarget
-}): Promise<DailyArchiveEntry[]> {
-  const response = await fetch(`${args.target.httpOrigin}/archive-sync/daily?days=${args.days}`)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch daily archives: ${response.status} ${response.statusText}`)
+  crawlId?: string
+  day?: string
+}): string {
+  const url = new URL('/archive-sync/bundle.gz', args.target.httpOrigin)
+  if (args.crawlId !== undefined) {
+    url.searchParams.set('crawl_id', args.crawlId)
+  }
+  if (args.day !== undefined) {
+    url.searchParams.set('day', args.day)
+  }
+  return url.toString()
+}
+
+function parseArchiveFromHeaders(response: Response): RemoteArchive {
+  const contentDisposition = response.headers.get('content-disposition')
+  if (contentDisposition === null) {
+    throw new Error('Archive response is missing a Content-Disposition header')
   }
 
-  return dailyArchivesResponseSchema.parse(await response.json())
+  const filenameMatch = /filename="([^"]+)"/i.exec(contentDisposition)
+  if (filenameMatch === null) {
+    throw new Error(`Archive response has an invalid filename header: ${contentDisposition}`)
+  }
+
+  const archive = parseArchiveFileName(filenameMatch[1])
+  if (archive === null) {
+    throw new Error(`Archive response filename is invalid: ${filenameMatch[1]}`)
+  }
+
+  return archive
 }
 
-function isAvailableDailyArchive(entry: DailyArchiveEntry): entry is DailyArchive {
-  return entry.status === 'available'
+async function discardResponseBody(response: Response): Promise<void> {
+  if (response.body === null) {
+    return
+  }
+
+  try {
+    await response.body.cancel()
+  } catch (error) {
+    void error
+  }
 }
 
-async function downloadArchiveBlob(args: {
-  archive: DailyArchive
-  paths: ArchiveSyncPaths
+async function fetchArchiveResponse(args: {
   target: ArchiveSyncTarget
-}): Promise<string> {
+  crawlId?: string
+  day?: string
+}): Promise<Response | null> {
   const response = await fetch(
-    `${args.target.httpOrigin}/archive-sync/bundle.gz?crawl_id=${encodeURIComponent(args.archive.crawl_id)}`,
+    buildArchiveSyncUrl({
+      crawlId: args.crawlId,
+      day: args.day,
+      target: args.target,
+    }),
   )
+
+  if (response.status === 404) {
+    await discardResponseBody(response)
+    return null
+  }
+
   if (!response.ok) {
+    throw new Error(`Failed to fetch archive bundle: ${response.status} ${response.statusText}`)
+  }
+
+  return response
+}
+
+async function fetchRemoteArchive(args: {
+  target: ArchiveSyncTarget
+  crawlId?: string
+  day?: string
+}): Promise<{ archive: RemoteArchive; response: Response } | null> {
+  const response = await fetchArchiveResponse(args)
+  if (response === null) {
+    return null
+  }
+
+  const archive = parseArchiveFromHeaders(response)
+  if (args.day !== undefined && archive.day !== args.day) {
+    await discardResponseBody(response)
+    throw new Error(`Archive response day mismatch: expected ${args.day}, got ${archive.day}`)
+  }
+  if (args.crawlId !== undefined && archive.crawlId !== args.crawlId) {
+    await discardResponseBody(response)
     throw new Error(
-      `Failed to fetch archive blob for ${args.archive.crawl_id}: ${response.status} ${response.statusText}`,
+      `Archive response crawl_id mismatch: expected ${args.crawlId}, got ${archive.crawlId}`,
     )
   }
 
-  const archivePath = args.paths.archiveGzipPath(args.archive)
-  await Bun.write(archivePath, await response.arrayBuffer())
-  return archivePath
+  return {
+    archive,
+    response,
+  }
 }
 
 async function inflateArchive(args: { archivePath: string; expectedCrawlId?: string }): Promise<{
@@ -165,19 +247,14 @@ function buildManifest(args: {
   downloadedAtByCrawlId: Map<string, string>
   localArchives: LocalArchive[]
   previous: Manifest
-  selectedDailyArchives: DailyArchive[]
   targetUrl: string | null
 }): Manifest {
   const previousByCrawlId = new Map(
     args.previous.archives.map((archive) => [archive.crawlId, archive]),
   )
-  const selectedByCrawlId = new Map(
-    args.selectedDailyArchives.map((archive) => [archive.crawl_id, archive]),
-  )
 
   const archives: ManifestArchive[] = args.localArchives.map((localArchive) => {
     const previousArchive = previousByCrawlId.get(localArchive.crawlId)
-    const selectedArchive = selectedByCrawlId.get(localArchive.crawlId)
 
     return {
       crawlId: localArchive.crawlId,
@@ -187,8 +264,6 @@ function buildManifest(args: {
         previousArchive?.downloadedAt ??
         null,
       fileGzip: localArchive.fileGzip,
-      size: selectedArchive?.size ?? previousArchive?.size ?? null,
-      totals: selectedArchive?.totals ?? previousArchive?.totals ?? null,
     }
   })
 
@@ -255,11 +330,14 @@ export async function runSync(options: SyncOptions): Promise<void> {
   await ensureOutputDirectories(paths)
 
   const previousManifest = await loadManifest(paths)
-  const dailyArchiveEntries = await fetchDailyArchives({
-    days: options.days,
-    target,
-  })
-  const availableDailyArchives = dailyArchiveEntries.filter(isAvailableDailyArchive)
+  const latestRemoteArchive = await fetchRemoteArchive({ target })
+  if (latestRemoteArchive === null) {
+    throw new Error('No remote archive bundle found.')
+  }
+
+  const targetDays = Array.from({ length: options.days }, (_, index) =>
+    subtractUtcDays(latestRemoteArchive.archive.day, index),
+  )
 
   logHeader({
     days: options.days,
@@ -268,45 +346,61 @@ export async function runSync(options: SyncOptions): Promise<void> {
   })
 
   const downloadedAtByCrawlId = new Map<string, string>()
+  const selectedArchives: RemoteArchive[] = []
 
-  for (const archiveEntry of dailyArchiveEntries) {
-    if (!isAvailableDailyArchive(archiveEntry)) {
-      logProgress(`skip ${archiveEntry.day} (no full bundle found)`)
+  for (const targetDay of targetDays) {
+    const remoteArchive =
+      targetDay === latestRemoteArchive.archive.day
+        ? latestRemoteArchive
+        : await fetchRemoteArchive({
+            day: targetDay,
+            target,
+          })
+
+    if (remoteArchive === null) {
+      logProgress(`skip ${targetDay} (no full bundle found)`)
       continue
     }
 
-    const archive = archiveEntry
-    const archivePath = paths.archiveGzipPath(archive)
+    const { archive, response } = remoteArchive
+    selectedArchives.push(archive)
+
+    const archivePath = paths.archiveGzipPath({
+      crawl_id: archive.crawlId,
+      day: archive.day,
+    })
     const fileGzip = relative(paths.rootDir, archivePath)
     const alreadyExists = await Bun.file(archivePath).exists()
 
     if (!options.force && alreadyExists) {
+      await discardResponseBody(response)
       logProgress(`exists ${fileGzip}`)
       continue
     }
 
     if (!options.dryRun) {
-      await downloadArchiveBlob({
-        archive,
-        paths,
-        target,
-      })
-      downloadedAtByCrawlId.set(archive.crawl_id, new Date().toISOString())
+      await Bun.write(archivePath, await response.arrayBuffer())
+      downloadedAtByCrawlId.set(archive.crawlId, new Date().toISOString())
       logProgress(`create ${fileGzip}`)
       continue
     }
 
+    await discardResponseBody(response)
     logProgress(`would create ${fileGzip}`)
   }
 
   let { latest } = previousManifest
 
-  const [latestArchive] = availableDailyArchives
+  const [latestArchive] = selectedArchives
   if (!options.dryRun && latestArchive !== undefined) {
-    const latestArchiveFileGzip = relative(paths.rootDir, paths.archiveGzipPath(latestArchive))
+    const latestArchivePath = paths.archiveGzipPath({
+      crawl_id: latestArchive.crawlId,
+      day: latestArchive.day,
+    })
+    const latestArchiveFileGzip = relative(paths.rootDir, latestArchivePath)
     const unzipped = await writeUnzippedArchive({
-      archivePath: paths.archiveGzipPath(latestArchive),
-      expectedCrawlId: latestArchive.crawl_id,
+      archivePath: latestArchivePath,
+      expectedCrawlId: latestArchive.crawlId,
       outputPath: paths.latestBundlePath,
     })
     logProgress(
@@ -319,7 +413,13 @@ export async function runSync(options: SyncOptions): Promise<void> {
       updatedAt: new Date().toISOString(),
     }
   } else if (options.dryRun && latestArchive !== undefined) {
-    const latestArchiveFileGzip = relative(paths.rootDir, paths.archiveGzipPath(latestArchive))
+    const latestArchiveFileGzip = relative(
+      paths.rootDir,
+      paths.archiveGzipPath({
+        crawl_id: latestArchive.crawlId,
+        day: latestArchive.day,
+      }),
+    )
     logProgress(
       `would unzip ${latestArchiveFileGzip} -> ${relative(paths.rootDir, paths.latestBundlePath)}`,
     )
@@ -331,7 +431,6 @@ export async function runSync(options: SyncOptions): Promise<void> {
     downloadedAtByCrawlId,
     localArchives,
     previous: previousManifest,
-    selectedDailyArchives: availableDailyArchives,
     targetUrl: target.httpOrigin,
   })
 

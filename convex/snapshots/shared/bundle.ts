@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { gunzipSync } from 'fflate'
+import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
 import type { ActionCtx } from '../../_generated/server'
@@ -7,6 +8,20 @@ import { internalQuery } from '../../_generated/server'
 import type { CrawlArchiveBundle } from '../crawl/main'
 
 const textDecoder = new TextDecoder()
+const archiveMetadataSchema = z.looseObject({
+  totals: z.record(z.string(), z.number()).optional(),
+})
+
+function getUtcDayRange(day: string): { start: string; endExclusive: string } {
+  const start = new Date(`${day}T00:00:00.000Z`)
+  const endExclusive = new Date(start)
+  endExclusive.setUTCDate(endExclusive.getUTCDate() + 1)
+
+  return {
+    start: String(start.valueOf()),
+    endExclusive: String(endExclusive.valueOf()),
+  }
+}
 
 export const getLatestCrawlId = internalQuery({
   handler: async (ctx) =>
@@ -27,6 +42,35 @@ export const getByCrawlId = internalQuery({
       .query('snapshot_crawl_archives')
       .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
       .first(),
+})
+
+export const getLatestFull = internalQuery({
+  args: {
+    day: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { day } = args
+    const query =
+      day === undefined
+        ? ctx.db.query('snapshot_crawl_archives').withIndex('by_crawl_id').order('desc')
+        : ctx.db
+            .query('snapshot_crawl_archives')
+            .withIndex('by_crawl_id', (q) => {
+              const range = getUtcDayRange(day)
+              return q.gte('crawl_id', range.start).lt('crawl_id', range.endExclusive)
+            })
+            .order('desc')
+
+    for await (const archive of query) {
+      const parsed = archiveMetadataSchema.safeParse(archive.data)
+      const totals = parsed.success ? (parsed.data.totals ?? {}) : {}
+      if ((totals.analytics ?? 0) > 0 && (totals.topApps ?? 0) > 0 && (totals.uptimes ?? 0) > 0) {
+        return archive
+      }
+    }
+
+    return null
+  },
 })
 
 export async function getArchiveBundleOrThrow(
