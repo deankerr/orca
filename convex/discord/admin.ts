@@ -133,7 +133,7 @@ export const registerCommands = internalAction({
         })),
       }
     } catch (error) {
-      console.error('[discord:admin] registration failed', { error: error })
+      console.error('[discord:admin] registration failed', { error })
       return { success: false, error: String(error) }
     }
   },
@@ -182,7 +182,7 @@ export const getApplicationInfo = internalAction({
         },
       }
     } catch (error) {
-      console.error('[discord:admin] failed to get application info', { error: error })
+      console.error('[discord:admin] failed to get application info', { error })
       return { success: false, error: String(error) }
     }
   },

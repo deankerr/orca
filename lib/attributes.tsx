@@ -732,4 +732,6 @@ export function resolveEndpointAttributeSlot(endpoint: EndpointPartial, slot: At
       return result
     }
   }
+
+  return undefined
 }

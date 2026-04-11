@@ -40,8 +40,8 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
     const avatarPath = join(LOBEHUB_ICONS, componentName, 'components', 'Avatar.js')
 
     try {
-      const styleContent = await readFile(stylePath, 'utf8')
-      const avatarContent = await readFile(avatarPath, 'utf8').catch(() => '')
+      const styleContent = await readFile(stylePath, 'utf-8')
+      const avatarContent = await readFile(avatarPath, 'utf-8').catch(() => '')
 
       // * Extract style constants
       const title = /export var TITLE = ['"](.+?)['"]/.exec(styleContent)?.[1]

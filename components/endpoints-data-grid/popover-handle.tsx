@@ -35,6 +35,8 @@ export function DataGridPopoverProvider({ children }: { children: React.ReactNod
           if (payload?.type === 'endpoint-uuid') {
             return <EndpointUuidPopoverContent {...payload} />
           }
+
+          return null
         }}
       </PopoverCard>
     </>

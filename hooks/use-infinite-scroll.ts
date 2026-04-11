@@ -58,7 +58,7 @@ export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteSc
   useEffect(() => {
     const scrollElement = scrollElementRef.current
     if (!scrollElement) {
-      return
+      return undefined
     }
 
     scrollElement.addEventListener('scroll', handleScroll, { passive: true })

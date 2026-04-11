@@ -418,6 +418,8 @@ export const columns: ColumnDef<EndpointRow>[] = [
       if (timestamp) {
         return formatGridDate(timestamp)
       }
+
+      return undefined
     },
     size: 120,
     sortUndefined: -1,

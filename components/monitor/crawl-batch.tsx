@@ -28,7 +28,7 @@ export type MonitorFeedRow = MonitorBatchHeaderRow | MonitorChangeRow
 
 function getTopSpacingClassName(groupIndex: number, changeIndex: number) {
   if (groupIndex === 0 && changeIndex === 0) {
-    return
+    return undefined
   }
 
   return changeIndex === 0 ? 'mt-4' : 'mt-3'

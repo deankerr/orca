@@ -41,10 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 .config/
-
-# claude-mem plugin issue
-**/CLAUDE.md
-!/CLAUDE.md
-!/.claude/**/CLAUDE.md
-
 .claude/worktrees
+backend-redesign/node_modules
