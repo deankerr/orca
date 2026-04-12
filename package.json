@@ -1,6 +1,6 @@
 {
   "name": "orca",
-  "version": "43.0.0",
+  "version": "44.0.0",
   "private": true,
   "scripts": {
     "archive-sync": "bun scripts/archive-sync/index.ts",
