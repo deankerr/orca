@@ -5,5 +5,8 @@
   "singleQuote": true,
   "sortImports": {},
   "sortPackageJson": { "sortScripts": true },
-  "sortTailwindcss": { "functions": ["cn", "clsx", "twMerge"], "stylesheet": "app/globals.css" }
+  "sortTailwindcss": {
+    "functions": ["cn", "clsx", "twMerge"],
+    "stylesheet": "apps/web/app/globals.css"
+  }
 }

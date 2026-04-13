@@ -59,10 +59,10 @@ export const ModelTransformSchema = z
       reasoning: raw.reasoning_config !== undefined && raw.reasoning_config !== null,
 
       // details
-      tokenizer: raw.group || undefined,
-      hugging_face_id: raw.hf_slug || undefined,
-      instruct_type: raw.instruct_type || undefined,
-      promotion_message: raw.promotion_message || undefined,
-      warning_message: raw.warning_message || undefined,
+      tokenizer: raw.group ?? undefined,
+      hugging_face_id: raw.hf_slug ?? undefined,
+      instruct_type: raw.instruct_type ?? undefined,
+      promotion_message: raw.promotion_message ?? undefined,
+      warning_message: raw.warning_message ?? undefined,
     }
   })

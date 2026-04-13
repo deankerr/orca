@@ -240,7 +240,7 @@ export const EndpointTransformSchema = z
       moderated: raw.moderation_required,
       deranked: raw.is_deranked,
       disabled: raw.is_disabled,
-      status: raw.status || 0,
+      status: raw.status ?? 0,
 
       // * stats
       stats: raw.stats,
