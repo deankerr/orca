@@ -1,6 +1,5 @@
+import { baseProviderSlug } from '@orca/backend/shared/utils'
 import { parseAsString, useQueryStates } from 'nuqs'
-
-import { baseProviderSlug } from '@/shared/utils'
 
 export function useMonitorFilters() {
   const [params, setParams] = useQueryStates(

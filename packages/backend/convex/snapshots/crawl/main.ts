@@ -4,8 +4,7 @@ import prettyBytes from 'pretty-bytes'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import { getErrorMessage } from '@/shared/utils'
-
+import { getErrorMessage } from '../../../shared/utils'
 import { internal } from '../../_generated/api'
 import { internalAction } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'

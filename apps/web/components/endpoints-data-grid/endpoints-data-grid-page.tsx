@@ -1,6 +1,8 @@
 'use client'
 
 import { convexQuery } from '@convex-dev/react-query'
+import { api } from '@orca/backend/convex/_generated/api'
+import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
 import { useQuery } from '@tanstack/react-query'
 import {
   getCoreRowModel,
@@ -11,8 +13,6 @@ import {
 import ms from 'ms'
 import { useCallback, useMemo } from 'react'
 
-import { api } from '@/convex/_generated/api'
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { attributes, isAttributeKey } from '@/lib/attributes'
 import { createSlugSearcher } from '@/lib/slug-search'

@@ -1,9 +1,10 @@
 'use client'
 
-import type { FieldChange } from '@/convex/changes'
+import type { FieldChange } from '@orca/backend/convex/changes'
+import { computeDelta, fmtUnit, fmtValue, splitPath } from '@orca/backend/shared/formatters'
+import { truncate } from '@orca/backend/shared/utils'
+
 import { cn } from '@/lib/utils'
-import { computeDelta, fmtUnit, fmtValue, splitPath } from '@/shared/formatters'
-import { truncate } from '@/shared/utils'
 
 import { InlineMarkdown } from './inline-markdown'
 

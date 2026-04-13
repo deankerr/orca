@@ -6,10 +6,9 @@
 
 import { EmbedBuilder } from '@discordjs/builders'
 
-import { computeDelta, fmtValue, formatPricingFields, splitPath } from '@/shared/formatters'
-import { groupChanges } from '@/shared/groups'
-import { isNonEmptyString, truncate } from '@/shared/utils'
-
+import { computeDelta, fmtValue, formatPricingFields, splitPath } from '../../shared/formatters'
+import { groupChanges } from '../../shared/groups'
+import { isNonEmptyString, truncate } from '../../shared/utils'
 import type {
   EndpointChange,
   EntityChange,

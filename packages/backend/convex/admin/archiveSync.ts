@@ -1,5 +1,4 @@
-import { isNonEmptyString } from '@/shared/utils'
-
+import { isNonEmptyString } from '../../shared/utils'
 import { internal } from '../_generated/api'
 import { httpAction } from '../_generated/server'
 

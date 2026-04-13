@@ -12,10 +12,6 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
-    "paths": {
-      "@/*": ["../*"]
-    },
-
     /* These compiler options are required by Convex */
     "target": "ESNext",
     "lib": ["ESNext", "dom"],

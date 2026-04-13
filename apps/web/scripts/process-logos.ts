@@ -17,7 +17,7 @@ import { fileExists } from './logos/utils'
 
 const SUPPORTED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp']
 
-const MANIFEST_FILE = 'shared/logos-manifest.json'
+const MANIFEST_FILE = '../../packages/backend/shared/logos-manifest.json'
 
 /**
  * Process color icons for webhooks (simpler - just copy color variants)

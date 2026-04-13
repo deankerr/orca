@@ -1,11 +1,10 @@
 import { v } from 'convex/values'
 import { diff } from 'json-diff-ts'
 
-import { endpointsSchema } from '@/convex/catalog/endpoints'
-import { modelsSchema } from '@/convex/catalog/models'
-import { providersSchema } from '@/convex/catalog/providers'
-
 import { internalMutation } from '../../_generated/server'
+import { endpointsSchema } from '../../catalog/endpoints'
+import { modelsSchema } from '../../catalog/models'
+import { providersSchema } from '../../catalog/providers'
 
 const vUpsertModel = modelsSchema.table.validator.omit('updated_at')
 const vUpsertModelDescription = modelsSchema.descriptions.table.validator.omit('updated_at')

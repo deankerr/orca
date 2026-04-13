@@ -1,11 +1,10 @@
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
-import { endpoints } from '@/convex/catalog/endpoints'
-import { models } from '@/convex/catalog/models'
-import { providers } from '@/convex/catalog/providers'
-import { baseProviderSlug } from '@/shared/utils'
-
+import { baseProviderSlug } from '../../shared/utils'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { QueryCtx } from '../_generated/server'
+import type { EndpointProjection } from '../catalog/endpoints'
+import { endpoints } from '../catalog/endpoints'
+import { models } from '../catalog/models'
+import { providers } from '../catalog/providers'
 
 export type ProviderRef = {
   slug: string

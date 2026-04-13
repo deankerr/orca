@@ -1,4 +1,5 @@
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
+import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
+
 import type { Attribute, AttributeSlots, AttributeState } from '@/lib/attributes'
 import { resolveEndpointAttributeSlot } from '@/lib/attributes'
 

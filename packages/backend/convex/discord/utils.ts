@@ -1,8 +1,7 @@
 import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { getLogo } from '@/shared/logos'
-import { isNonEmptyString } from '@/shared/utils'
-
+import { getLogo } from '../../shared/logos'
+import { isNonEmptyString } from '../../shared/utils'
 import { getEnv } from '../lib/env'
 
 export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {

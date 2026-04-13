@@ -1,7 +1,6 @@
 import { httpRouter } from 'convex/server'
 
-import { isNonEmptyString } from '@/shared/utils'
-
+import { isNonEmptyString } from '../shared/utils'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'

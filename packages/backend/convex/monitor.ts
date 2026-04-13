@@ -6,8 +6,7 @@
 import { stream } from 'convex-helpers/server/stream'
 import { v } from 'convex/values'
 
-import { baseProviderSlug, isNonEmptyString } from '@/shared/utils'
-
+import { baseProviderSlug, isNonEmptyString } from '../shared/utils'
 import { query } from './_generated/server'
 import type { QueryCtx } from './_generated/server'
 import { changes } from './changes'

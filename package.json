@@ -9,8 +9,9 @@
     "archive-sync": "turbo run archive-sync --filter=web",
     "build": "turbo run build --filter=web",
     "check": "oxlint --type-check --type-aware --report-unused-disable-directives --fix . && oxfmt --write . && echo '✓ check passed'",
-    "dev:convex": "turbo run dev:convex --filter=web",
-    "dev:next": "turbo run dev:next --filter=web",
+    "dev": "turbo run dev --ui=stream",
+    "dev:convex": "turbo run dev --filter=@orca/backend",
+    "dev:next": "turbo run dev --filter=web",
     "process-logos": "turbo run process-logos --filter=web",
     "release": "turbo run release --filter=web",
     "start": "turbo run start --filter=web"

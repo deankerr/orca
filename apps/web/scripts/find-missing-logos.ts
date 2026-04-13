@@ -5,10 +5,9 @@
  * Run with: bun scripts/find-missing-logos.ts
  */
 
+import { getLogo } from '@orca/backend/shared/logos'
 import { ConvexHttpClient } from 'convex/browser'
 import { makeFunctionReference } from 'convex/server'
-
-import { getLogo } from '@/shared/logos'
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL
 if (CONVEX_URL === undefined || CONVEX_URL === '') {

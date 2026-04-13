@@ -1,10 +1,15 @@
 'use client'
 
+import type {
+  EndpointChange,
+  EntityChange,
+  ModelChange,
+  ProviderChange,
+} from '@orca/backend/convex/changes'
+import { formatPricingFields } from '@orca/backend/shared/formatters'
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
 
-import type { EndpointChange, EntityChange, ModelChange, ProviderChange } from '@/convex/changes'
 import { cn } from '@/lib/utils'
-import { formatPricingFields } from '@/shared/formatters'
 
 import { EntityAvatar } from '../shared/entity-avatar'
 import { Badge } from '../ui/badge'

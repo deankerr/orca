@@ -1,8 +1,8 @@
 import { convexQuery } from '@convex-dev/react-query'
+import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
 
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { api } from '@/convex/_generated/api'
 
 import { ActionLink } from '../shared/action-link'
 import { DataList, DataListItem, DataListLabel, DataListValue } from '../shared/data-list'

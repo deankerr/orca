@@ -96,7 +96,7 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/convex/**/*.{ts,tsx}"],
+      "files": ["packages/backend/convex/**/*.{ts,tsx}"],
       "rules": {
         // useful pattern with convex ctx.* functions
         "promise/prefer-await-to-then": "off",
@@ -109,7 +109,10 @@
       }
     },
     {
-      "files": ["apps/web/convex/snapshots/**/*.{ts,tsx}", "apps/web/convex/db/or/sources.ts"],
+      "files": [
+        "packages/backend/convex/snapshots/**/*.{ts,tsx}",
+        "packages/backend/convex/db/or/sources.ts"
+      ],
       "rules": {
         "typescript/no-unsafe-assignment": "off",
         "typescript/no-unsafe-member-access": "off",

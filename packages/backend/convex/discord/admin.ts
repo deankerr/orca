@@ -12,8 +12,7 @@
 
 import { z } from 'zod'
 
-import { isNonEmptyString } from '@/shared/utils'
-
+import { isNonEmptyString } from '../../shared/utils'
 import { internalAction } from '../_generated/server'
 import { createDiscordClient } from './api'
 

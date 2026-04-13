@@ -1,10 +1,10 @@
+import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
+import { formatPricing } from '@orca/backend/shared/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
-import { formatPricing } from '@/shared/formatters'
 
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
 import { AttributeBadgeSet } from '../shared/attribute-badge'

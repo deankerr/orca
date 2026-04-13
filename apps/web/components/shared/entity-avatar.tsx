@@ -1,7 +1,7 @@
+import { getLogo } from '@orca/backend/shared/logos'
 import Image from 'next/image'
 
 import { cn } from '@/lib/utils'
-import { getLogo } from '@/shared/logos'
 
 export function EntityAvatar({
   slug,

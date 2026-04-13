@@ -1,3 +1,5 @@
+import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
+import { formatPricing } from '@orca/backend/shared/formatters'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
@@ -32,8 +34,6 @@ import {
 
 import type { ColorIconBadgeColor } from '@/components/shared/color-icon-badge'
 import { InlineCode } from '@/components/shared/inline-code'
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
-import { formatPricing } from '@/shared/formatters'
 
 type EndpointPartial = Partial<EndpointProjection>
 type AttributeIcon = LucideIcon

@@ -2,8 +2,7 @@ import { InteractionType } from 'discord-api-types/v10'
 import { InteractionResponseFlags, InteractionResponseType, verifyKey } from 'discord-interactions'
 import { z } from 'zod'
 
-import { isNonEmptyString } from '@/shared/utils'
-
+import { isNonEmptyString } from '../../shared/utils'
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
 import { COLORS, PATTERN_MAX_LENGTH, SUBSCRIPTIONS_PER_USER_LIMIT } from './constants'

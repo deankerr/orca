@@ -5,9 +5,8 @@
  *   bun scripts/validate-public-api.ts <url>
  */
 
+import { OrcaPublicApiV2Schema } from '@orca/backend/convex/public_api/preview_v2'
 import { ZodError } from 'zod'
-
-import { OrcaPublicApiV2Schema } from '../convex/public_api/preview_v2'
 
 function getApiUrl() {
   const apiUrl = process.argv.at(2)

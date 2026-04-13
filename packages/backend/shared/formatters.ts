@@ -5,7 +5,7 @@
 
 import * as R from 'remeda'
 
-import type { EndpointProjection } from '@/convex/catalog/endpoints'
+import type { EndpointProjection } from '../convex/catalog/endpoints'
 
 // -- Pricing fields
 //
