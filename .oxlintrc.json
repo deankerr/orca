@@ -96,7 +96,7 @@
   },
   "overrides": [
     {
-      "files": ["packages/backend/convex/**/*.{ts,tsx}"],
+      "files": ["**/convex/**/*.{ts,tsx}"],
       "rules": {
         // useful pattern with convex ctx.* functions
         "promise/prefer-await-to-then": "off",
