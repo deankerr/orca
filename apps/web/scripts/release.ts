@@ -130,8 +130,8 @@ const nextPackageJsonText = replacePackageVersion(packageJsonText, nextVersion)
 await Bun.write(packageJsonPath, nextPackageJsonText)
 
 console.log('[release] running bun run check')
-await $`bun run check`
-failIfUnexpectedFilesChanged([packageJsonPath])
+await $`bun run --cwd ../.. check`
+failIfUnexpectedFilesChanged(['apps/web/package.json'])
 
 // commit the version bump
 await $`git add ${packageJsonPath}`
