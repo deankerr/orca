@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run --cwd ../../packages/backend convex deploy --preview-run init --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL --cmd 'bun run --cwd ../../apps/web build'",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "graphite-base/*": false
+    }
+  }
+}
