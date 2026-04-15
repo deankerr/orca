@@ -1,12 +1,12 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-import { catalogAvailabilityFields, catalogStateFields } from '../shared'
+import { catalogVersionFields } from '../shared'
 
 const endpointIdentityFields = {
-  uuid: v.string(),
-  model_slug: v.string(),
-  provider_slug: v.string(),
+  id: v.string(),
+  model_id: v.string(),
+  provider_id: v.string(),
 }
 
 // endpoints
@@ -56,11 +56,10 @@ export const endpointCoreDataFields = {
 
 export const catalogEndpointsTable = defineTable({
   ...endpointCoreDataFields,
-  ...catalogStateFields,
-  ...catalogAvailabilityFields,
+  ...catalogVersionFields,
 })
-  .index('by_uuid_and_since_at', ['uuid', 'since_at'])
-  .index('by_uuid_and_sequence', ['uuid', 'sequence'])
+  .index('by_id__first_seen_at', ['id', 'first_seen_at'])
+  .index('by_id__version', ['id', 'version'])
 
 // endpoints_pricing
 
@@ -82,7 +81,7 @@ export const endpointPricingDataFields = {
 
 export const catalogEndpointPricingTable = defineTable({
   ...endpointPricingDataFields,
-  ...catalogStateFields,
+  ...catalogVersionFields,
 })
-  .index('by_uuid_and_since_at', ['uuid', 'since_at'])
-  .index('by_uuid_and_sequence', ['uuid', 'sequence'])
+  .index('by_id__first_seen_at', ['id', 'first_seen_at'])
+  .index('by_id__version', ['id', 'version'])

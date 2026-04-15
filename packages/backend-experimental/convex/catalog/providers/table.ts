@@ -1,10 +1,10 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-import { catalogAvailabilityFields, catalogStateFields } from '../shared'
+import { catalogVersionFields } from '../shared'
 
 export const providerDataFields = {
-  slug: v.string(),
+  id: v.string(),
   name: v.string(),
   headquarters: v.optional(v.string()),
   datacenters: v.optional(v.array(v.string())),
@@ -16,8 +16,7 @@ export const providerDataFields = {
 
 export const catalogProvidersTable = defineTable({
   ...providerDataFields,
-  ...catalogStateFields,
-  ...catalogAvailabilityFields,
+  ...catalogVersionFields,
 })
-  .index('by_slug_and_since_at', ['slug', 'since_at'])
-  .index('by_slug_and_sequence', ['slug', 'sequence'])
+  .index('by_id__first_seen_at', ['id', 'first_seen_at'])
+  .index('by_id__version', ['id', 'version'])

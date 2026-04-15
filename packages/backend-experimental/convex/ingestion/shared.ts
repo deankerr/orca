@@ -1,22 +1,12 @@
 import { v } from 'convex/values'
 
-export const ingestSourceValidator = v.object({
-  locator: v.string(),
-  storageId: v.optional(v.string()),
-})
+import { catalogSourceValidator } from '../catalog/shared'
 
 export const ingestArgsValidator = {
   items: v.array(v.record(v.string(), v.any())),
-  sinceAt: v.number(),
-  source: ingestSourceValidator,
+  firstSeenAt: v.number(),
+  source: catalogSourceValidator,
 }
-
-export const ingestSummaryValidator = v.object({
-  processed: v.number(),
-  changed: v.number(),
-  unchanged: v.number(),
-  failed: v.number(),
-})
 
 export function createIngestSummary() {
   return {

@@ -1,9 +1,9 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { registry } from '../catalog/registry'
+import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator, ingestSummaryValidator } from './shared'
+import { createIngestSummary, ingestArgsValidator } from './shared'
 
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
@@ -27,8 +27,8 @@ const rawProviderSchema = z
     sendClientIp: z.boolean(),
   })
   .transform((raw) => {
-    const provider_base = compact({
-      slug: raw.slug,
+    const providerRecord = compact({
+      id: raw.slug,
       name: raw.displayName,
       headquarters: raw.headquarters,
       datacenters: raw.datacenters,
@@ -38,7 +38,7 @@ const rawProviderSchema = z
       send_client_ip: raw.sendClientIp,
     })
 
-    return { provider_base }
+    return { providerRecord }
   })
 
 export function parseProviderBundle(args: { item: Record<string, unknown> }) {
@@ -47,7 +47,6 @@ export function parseProviderBundle(args: { item: Record<string, unknown> }) {
 
 export const ingestProviders = defineMutationSpec({
   args: ingestArgsValidator,
-  returns: ingestSummaryValidator,
   handler: async (ctx, args) => {
     const summary = createIngestSummary()
 
@@ -55,36 +54,35 @@ export const ingestProviders = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { provider_base } = parseProviderBundle({ item })
-        const entityKey = provider_base.slug
-        const data = provider_base
+        const { providerRecord } = parseProviderBundle({ item })
+        const { id } = providerRecord
+        const data = providerRecord
 
-        const state = await registry.bump.handler(ctx, {
-          entityKind: 'provider',
-          entityAspect: 'base',
-          entityKey,
-          sinceAt: args.sinceAt,
+        const currentVersion = await versions.bump.handler(ctx, {
+          scopeTable: 'catalog_providers',
+          id,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           data,
         })
 
-        if (!state) {
+        if (!currentVersion) {
           summary.unchanged += 1
           continue
         }
 
-        await ctx.db.insert('catalog_providers_base', {
+        await ctx.db.insert('catalog_providers', {
           ...data,
-          since_at: args.sinceAt,
-          state_id: state.stateId,
-          sequence: state.sequence,
+          first_seen_at: args.firstSeenAt,
+          version_id: currentVersion.versionId,
+          version: currentVersion.version,
         })
 
         summary.changed += 1
       } catch (error) {
         summary.failed += 1
         console.log('[ingestion:provider] failed to parse or store item', {
-          sinceAt: args.sinceAt,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           item,
           error: error instanceof Error ? error.message : String(error),

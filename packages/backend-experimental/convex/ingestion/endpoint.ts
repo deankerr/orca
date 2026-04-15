@@ -1,9 +1,9 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { registry } from '../catalog/registry'
+import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator, ingestSummaryValidator } from './shared'
+import { createIngestSummary, ingestArgsValidator } from './shared'
 
 const zPrice = z.coerce
   .number()
@@ -75,10 +75,10 @@ const rawEndpointSchema = z
     const uuid = raw.id
     const [provider_slug = raw.provider_slug, provider_variant] = raw.provider_slug.split('/')
 
-    const endpoint_base = compact({
-      uuid,
-      model_slug: raw.model_variant_slug,
-      provider_slug,
+    const endpointRecord = compact({
+      id: uuid,
+      model_id: raw.model_variant_slug,
+      provider_id: provider_slug,
       model_version_slug: raw.model_variant_permaslug,
       model_variant: raw.variant,
       provider_variant,
@@ -114,10 +114,10 @@ const rawEndpointSchema = z
       },
     })
 
-    const endpoint_pricing = compact({
-      uuid,
-      model_slug: raw.model_variant_slug,
-      provider_slug,
+    const endpointPricingRecord = compact({
+      id: uuid,
+      model_id: raw.model_variant_slug,
+      provider_id: provider_slug,
       text_input: raw.pricing.prompt,
       text_output: raw.pricing.completion,
       reasoning_output: raw.pricing.internal_reasoning,
@@ -133,8 +133,8 @@ const rawEndpointSchema = z
     })
 
     return {
-      endpoint_base,
-      endpoint_pricing,
+      endpointRecord,
+      endpointPricingRecord,
     }
   })
 
@@ -144,7 +144,6 @@ export function parseEndpointBundle(args: { item: Record<string, unknown> }) {
 
 export const ingestEndpoints = defineMutationSpec({
   args: ingestArgsValidator,
-  returns: ingestSummaryValidator,
   handler: async (ctx, args) => {
     const summary = createIngestSummary()
 
@@ -152,48 +151,46 @@ export const ingestEndpoints = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { endpoint_base, endpoint_pricing } = parseEndpointBundle({ item })
-        const entityKey = endpoint_base.uuid
-        const baseData = endpoint_base
-        const pricingData = endpoint_pricing
+        const { endpointRecord, endpointPricingRecord } = parseEndpointBundle({ item })
+        const { id } = endpointRecord
+        const baseData = endpointRecord
+        const pricingData = endpointPricingRecord
 
         let itemChanged = false
 
-        const baseState = await registry.bump.handler(ctx, {
-          entityKind: 'endpoint',
-          entityAspect: 'base',
-          entityKey,
-          sinceAt: args.sinceAt,
+        const baseVersion = await versions.bump.handler(ctx, {
+          scopeTable: 'catalog_endpoints',
+          id,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           data: baseData,
         })
 
-        if (baseState) {
-          await ctx.db.insert('catalog_endpoints_base', {
+        if (baseVersion) {
+          await ctx.db.insert('catalog_endpoints', {
             ...baseData,
-            since_at: args.sinceAt,
-            state_id: baseState.stateId,
-            sequence: baseState.sequence,
+            first_seen_at: args.firstSeenAt,
+            version_id: baseVersion.versionId,
+            version: baseVersion.version,
           })
 
           itemChanged = true
         }
 
-        const pricingState = await registry.bump.handler(ctx, {
-          entityKind: 'endpoint',
-          entityAspect: 'pricing',
-          entityKey,
-          sinceAt: args.sinceAt,
+        const pricingVersion = await versions.bump.handler(ctx, {
+          scopeTable: 'catalog_endpoint_pricing',
+          id,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           data: pricingData,
         })
 
-        if (pricingState) {
+        if (pricingVersion) {
           await ctx.db.insert('catalog_endpoint_pricing', {
             ...pricingData,
-            since_at: args.sinceAt,
-            state_id: pricingState.stateId,
-            sequence: pricingState.sequence,
+            first_seen_at: args.firstSeenAt,
+            version_id: pricingVersion.versionId,
+            version: pricingVersion.version,
           })
 
           itemChanged = true
@@ -207,7 +204,7 @@ export const ingestEndpoints = defineMutationSpec({
       } catch (error) {
         summary.failed += 1
         console.log('[ingestion:endpoint] failed to parse or store item', {
-          sinceAt: args.sinceAt,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           item,
           error: error instanceof Error ? error.message : String(error),

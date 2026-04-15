@@ -7,21 +7,21 @@ import type { QueryCtx } from '../../_generated/server'
 import { defineQuerySpec } from '../../lib/functionSpec'
 import schema from '../../schema'
 
-type EndpointVersion = Doc<'catalog_endpoints_base'>
+type EndpointVersion = Doc<'catalog_endpoints'>
 type EndpointPricingVersion = Doc<'catalog_endpoint_pricing'>
 
-async function getEndpointBase(ctx: QueryCtx, uuid: string) {
+async function getEndpointBase(ctx: QueryCtx, id: string) {
   return ctx.db
-    .query('catalog_endpoints_base')
-    .withIndex('by_uuid_and_since_at', (q) => q.eq('uuid', uuid))
+    .query('catalog_endpoints')
+    .withIndex('by_id__first_seen_at', (q) => q.eq('id', id))
     .order('desc')
     .first()
 }
 
-async function getPricing(ctx: QueryCtx, uuid: string) {
+async function getPricing(ctx: QueryCtx, id: string) {
   return ctx.db
     .query('catalog_endpoint_pricing')
-    .withIndex('by_uuid_and_since_at', (q) => q.eq('uuid', uuid))
+    .withIndex('by_id__first_seen_at', (q) => q.eq('id', id))
     .order('desc')
     .first()
 }
@@ -37,10 +37,10 @@ async function withCurrentPricing(
   ctx: QueryCtx,
   endpointBase: EndpointVersion,
 ): Promise<ReturnType<typeof withPricing>> {
-  const pricing = await getPricing(ctx, endpointBase.uuid)
+  const pricing = await getPricing(ctx, endpointBase.id)
 
   if (!pricing) {
-    throw new Error(`Missing endpoint pricing row for endpoint uuid "${endpointBase.uuid}"`)
+    throw new Error(`Missing endpoint pricing row for endpoint id "${endpointBase.id}"`)
   }
 
   return withPricing(endpointBase, pricing)
@@ -48,10 +48,10 @@ async function withCurrentPricing(
 
 export const get = defineQuerySpec({
   args: {
-    uuid: v.string(),
+    id: v.string(),
   },
   handler: async (ctx, args) => {
-    const endpointBase = await getEndpointBase(ctx, args.uuid)
+    const endpointBase = await getEndpointBase(ctx, args.id)
 
     if (!endpointBase) {
       return null
@@ -67,10 +67,10 @@ export const list = defineQuerySpec({
   },
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
-      .query('catalog_endpoints_base')
-      .withIndex('by_uuid_and_since_at')
+      .query('catalog_endpoints')
+      .withIndex('by_id__first_seen_at')
       .order('desc')
-      .distinct(['uuid'])
+      .distinct(['id'])
       .map(async (endpointBase) => withCurrentPricing(ctx, endpointBase))
       .paginate(args.paginationOpts),
 })

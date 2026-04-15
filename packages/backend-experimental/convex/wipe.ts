@@ -5,19 +5,21 @@ import type { TableNames } from './_generated/dataModel'
 import { internalAction, internalMutation } from './_generated/server'
 
 const tableNames: TableNames[] = [
-  'catalog_registry',
-  'catalog_endpoints_base',
+  'catalog_versions',
+  'catalog_endpoints',
   'catalog_endpoint_pricing',
-  'catalog_models_base',
-  'catalog_providers_base',
+  'catalog_models',
+  'catalog_model_descriptions',
+  'catalog_providers',
 ]
 
 const tableNameValidator = v.union(
-  v.literal('catalog_registry'),
-  v.literal('catalog_endpoints_base'),
+  v.literal('catalog_versions'),
+  v.literal('catalog_endpoints'),
   v.literal('catalog_endpoint_pricing'),
-  v.literal('catalog_models_base'),
-  v.literal('catalog_providers_base'),
+  v.literal('catalog_models'),
+  v.literal('catalog_model_descriptions'),
+  v.literal('catalog_providers'),
 )
 
 const deleteBatchSize = 128

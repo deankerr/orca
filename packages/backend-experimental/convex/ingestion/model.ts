@@ -1,9 +1,9 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { registry } from '../catalog/registry'
+import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator, ingestSummaryValidator } from './shared'
+import { createIngestSummary, ingestArgsValidator } from './shared'
 
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
@@ -40,12 +40,11 @@ const rawModelSchema = z
     const variant = raw.endpoint ?? 'standard'
     const slug = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
 
-    const model_base = compact({
-      slug,
+    const modelRecord = compact({
+      id: slug,
       version_slug: raw.permaslug,
       variant,
       name: raw.short_name,
-      description: raw.description,
       author_slug: raw.author,
       author_name: raw.author_display_name ?? raw.author,
       or_added_at: raw.created_at,
@@ -58,7 +57,12 @@ const rawModelSchema = z
       routing_error_message: raw.routing_error_message,
     })
 
-    return { model_base }
+    const modelDescriptionRecord = {
+      id: slug,
+      description: raw.description,
+    }
+
+    return { modelRecord, modelDescriptionRecord }
   })
 
 export function parseModelBundle(args: { item: Record<string, unknown> }) {
@@ -67,7 +71,6 @@ export function parseModelBundle(args: { item: Record<string, unknown> }) {
 
 export const ingestModels = defineMutationSpec({
   args: ingestArgsValidator,
-  returns: ingestSummaryValidator,
   handler: async (ctx, args) => {
     const summary = createIngestSummary()
 
@@ -75,36 +78,59 @@ export const ingestModels = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { model_base } = parseModelBundle({ item })
-        const entityKey = model_base.slug
-        const data = model_base
+        const { modelRecord, modelDescriptionRecord } = parseModelBundle({ item })
+        const { id } = modelRecord
+        const baseData = modelRecord
+        const descriptionData = modelDescriptionRecord
+        let itemChanged = false
 
-        const state = await registry.bump.handler(ctx, {
-          entityKind: 'model',
-          entityAspect: 'base',
-          entityKey,
-          sinceAt: args.sinceAt,
+        const currentBaseVersion = await versions.bump.handler(ctx, {
+          scopeTable: 'catalog_models',
+          id,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data,
+          data: baseData,
         })
 
-        if (!state) {
-          summary.unchanged += 1
-          continue
+        if (currentBaseVersion) {
+          await ctx.db.insert('catalog_models', {
+            ...baseData,
+            first_seen_at: args.firstSeenAt,
+            version_id: currentBaseVersion.versionId,
+            version: currentBaseVersion.version,
+          })
+
+          itemChanged = true
         }
 
-        await ctx.db.insert('catalog_models_base', {
-          ...data,
-          since_at: args.sinceAt,
-          state_id: state.stateId,
-          sequence: state.sequence,
+        const currentDescriptionVersion = await versions.bump.handler(ctx, {
+          scopeTable: 'catalog_model_descriptions',
+          id,
+          firstSeenAt: args.firstSeenAt,
+          source: args.source,
+          data: descriptionData,
         })
 
-        summary.changed += 1
+        if (currentDescriptionVersion) {
+          await ctx.db.insert('catalog_model_descriptions', {
+            ...descriptionData,
+            first_seen_at: args.firstSeenAt,
+            version_id: currentDescriptionVersion.versionId,
+            version: currentDescriptionVersion.version,
+          })
+
+          itemChanged = true
+        }
+
+        if (itemChanged) {
+          summary.changed += 1
+        } else {
+          summary.unchanged += 1
+        }
       } catch (error) {
         summary.failed += 1
         console.log('[ingestion:model] failed to parse or store item', {
-          sinceAt: args.sinceAt,
+          firstSeenAt: args.firstSeenAt,
           source: args.source,
           item,
           error: error instanceof Error ? error.message : String(error),

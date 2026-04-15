@@ -1,6 +1,6 @@
 import { bump, get } from './queries'
 
-export const registry = {
+export const versions = {
   get,
   bump,
 }

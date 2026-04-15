@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as _temp_fetchers_fetchers from "../_temp_fetchers/fetchers.js";
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
 import type * as catalog_endpoints_queries from "../catalog/endpoints/queries.js";
 import type * as catalog_endpoints_table from "../catalog/endpoints/table.js";
@@ -17,11 +18,11 @@ import type * as catalog_models_table from "../catalog/models/table.js";
 import type * as catalog_providers_index from "../catalog/providers/index.js";
 import type * as catalog_providers_queries from "../catalog/providers/queries.js";
 import type * as catalog_providers_table from "../catalog/providers/table.js";
-import type * as catalog_registry_hash from "../catalog/registry/hash.js";
-import type * as catalog_registry_index from "../catalog/registry/index.js";
-import type * as catalog_registry_queries from "../catalog/registry/queries.js";
-import type * as catalog_registry_table from "../catalog/registry/table.js";
 import type * as catalog_shared from "../catalog/shared.js";
+import type * as catalog_versions_hash from "../catalog/versions/hash.js";
+import type * as catalog_versions_index from "../catalog/versions/index.js";
+import type * as catalog_versions_queries from "../catalog/versions/queries.js";
+import type * as catalog_versions_table from "../catalog/versions/table.js";
 import type * as endpoints from "../endpoints.js";
 import type * as ingest from "../ingest.js";
 import type * as ingestion_endpoint from "../ingestion/endpoint.js";
@@ -41,6 +42,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "_temp_fetchers/fetchers": typeof _temp_fetchers_fetchers;
   "catalog/endpoints/index": typeof catalog_endpoints_index;
   "catalog/endpoints/queries": typeof catalog_endpoints_queries;
   "catalog/endpoints/table": typeof catalog_endpoints_table;
@@ -50,11 +52,11 @@ declare const fullApi: ApiFromModules<{
   "catalog/providers/index": typeof catalog_providers_index;
   "catalog/providers/queries": typeof catalog_providers_queries;
   "catalog/providers/table": typeof catalog_providers_table;
-  "catalog/registry/hash": typeof catalog_registry_hash;
-  "catalog/registry/index": typeof catalog_registry_index;
-  "catalog/registry/queries": typeof catalog_registry_queries;
-  "catalog/registry/table": typeof catalog_registry_table;
   "catalog/shared": typeof catalog_shared;
+  "catalog/versions/hash": typeof catalog_versions_hash;
+  "catalog/versions/index": typeof catalog_versions_index;
+  "catalog/versions/queries": typeof catalog_versions_queries;
+  "catalog/versions/table": typeof catalog_versions_table;
   endpoints: typeof endpoints;
   ingest: typeof ingest;
   "ingestion/endpoint": typeof ingestion_endpoint;

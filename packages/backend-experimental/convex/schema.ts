@@ -1,17 +1,18 @@
 import { defineSchema } from 'convex/server'
 
 import { catalogEndpointsTable, catalogEndpointPricingTable } from './catalog/endpoints/table'
-import { catalogModelsTable } from './catalog/models/table'
+import { catalogModelDescriptionsTable, catalogModelsTable } from './catalog/models/table'
 import { catalogProvidersTable } from './catalog/providers/table'
-import { catalogRegistryTable } from './catalog/registry/table'
+import { catalogVersionsTable } from './catalog/versions/table'
 
 export default defineSchema(
   {
-    catalog_registry: catalogRegistryTable,
-    catalog_endpoints_base: catalogEndpointsTable,
+    catalog_versions: catalogVersionsTable,
+    catalog_endpoints: catalogEndpointsTable,
     catalog_endpoint_pricing: catalogEndpointPricingTable,
-    catalog_models_base: catalogModelsTable,
-    catalog_providers_base: catalogProvidersTable,
+    catalog_models: catalogModelsTable,
+    catalog_model_descriptions: catalogModelDescriptionsTable,
+    catalog_providers: catalogProvidersTable,
   },
   {
     strictTableNameTypes: true,

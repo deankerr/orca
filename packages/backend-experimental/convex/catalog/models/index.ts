@@ -1,5 +1,5 @@
 import { get, list } from './queries'
-import { catalogModelsTable } from './table'
+import { catalogModelDescriptionsTable, catalogModelsTable } from './table'
 
 export const models = {
   get,
@@ -8,4 +8,5 @@ export const models = {
 
 export const modelsSchema = {
   table: catalogModelsTable,
+  descriptionTable: catalogModelDescriptionsTable,
 } as const
