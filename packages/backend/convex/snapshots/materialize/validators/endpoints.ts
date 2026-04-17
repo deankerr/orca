@@ -79,7 +79,7 @@ export const EndpointTransformSchema = z
       discount: zPrice,
     }),
 
-    variable_pricings: z.any().array(),
+    variable_pricings: z.any().array().optional(),
 
     can_abort: z.boolean(),
     has_completions: z.boolean(),
@@ -127,7 +127,7 @@ export const EndpointTransformSchema = z
     }
 
     // * parse known variable pricing types
-    const variable_pricings = raw.variable_pricings
+    const variable_pricings = (raw.variable_pricings ?? [])
       .map((pricing) => {
         const parsed = zVariablePricingPromptThreshold.safeParse(pricing)
         if (parsed.success) {
