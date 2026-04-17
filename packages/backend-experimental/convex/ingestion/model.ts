@@ -1,9 +1,8 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
 
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
@@ -42,19 +41,19 @@ const rawModelSchema = z
 
     const modelRecord = compact({
       id: slug,
-      version_slug: raw.permaslug,
+      versionSlug: raw.permaslug,
       variant,
       name: raw.short_name,
-      author_slug: raw.author,
-      author_name: raw.author_display_name ?? raw.author,
-      or_added_at: raw.created_at,
-      input_modalities: raw.input_modalities,
-      output_modalities: raw.output_modalities,
+      authorSlug: raw.author,
+      authorName: raw.author_display_name ?? raw.author,
+      orAddedAt: raw.created_at,
+      inputModalities: raw.input_modalities,
+      outputModalities: raw.output_modalities,
       reasoning: raw.supports_reasoning,
-      hugging_face_id: raw.hf_slug,
-      promotion_message: raw.promotion_message,
-      warning_message: raw.warning_message,
-      routing_error_message: raw.routing_error_message,
+      huggingFaceId: raw.hf_slug,
+      promotionMessage: raw.promotion_message,
+      warningMessage: raw.warning_message,
+      routingErrorMessage: raw.routing_error_message,
     })
 
     const modelDescriptionRecord = {
@@ -62,7 +61,11 @@ const rawModelSchema = z
       description: raw.description,
     }
 
-    return { modelRecord, modelDescriptionRecord }
+    return {
+      id: slug,
+      modelRecord,
+      modelDescriptionRecord,
+    }
   })
 
 export function parseModelBundle(args: { item: Record<string, unknown> }) {
@@ -78,47 +81,33 @@ export const ingestModels = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { modelRecord, modelDescriptionRecord } = parseModelBundle({ item })
-        const { id } = modelRecord
-        const baseData = modelRecord
-        const descriptionData = modelDescriptionRecord
+        const { id, modelRecord, modelDescriptionRecord } = parseModelBundle({ item })
+
         let itemChanged = false
 
-        const currentBaseVersion = await versions.bump.handler(ctx, {
-          scopeTable: 'catalog_models',
+        // Check version and insert model base record if changed
+        const modelWithVersion = await bumpVersion(ctx, {
+          table: 'catalog_models',
           id,
+          data: modelRecord,
           firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data: baseData,
         })
-
-        if (currentBaseVersion) {
-          await ctx.db.insert('catalog_models', {
-            ...baseData,
-            first_seen_at: args.firstSeenAt,
-            version_id: currentBaseVersion.versionId,
-            version: currentBaseVersion.version,
-          })
-
+        if (modelWithVersion) {
+          await ctx.db.insert('catalog_models', modelWithVersion)
           itemChanged = true
         }
 
-        const currentDescriptionVersion = await versions.bump.handler(ctx, {
-          scopeTable: 'catalog_model_descriptions',
+        // Check version and insert model description record if changed
+        const descriptionWithVersion = await bumpVersion(ctx, {
+          table: 'catalog_model_descriptions',
           id,
+          data: modelDescriptionRecord,
           firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data: descriptionData,
         })
-
-        if (currentDescriptionVersion) {
-          await ctx.db.insert('catalog_model_descriptions', {
-            ...descriptionData,
-            first_seen_at: args.firstSeenAt,
-            version_id: currentDescriptionVersion.versionId,
-            version: currentDescriptionVersion.version,
-          })
-
+        if (descriptionWithVersion) {
+          await ctx.db.insert('catalog_model_descriptions', descriptionWithVersion)
           itemChanged = true
         }
 

@@ -1,9 +1,8 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
 
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
@@ -32,13 +31,16 @@ const rawProviderSchema = z
       name: raw.displayName,
       headquarters: raw.headquarters,
       datacenters: raw.datacenters,
-      status_page_url: raw.statusPageUrl,
-      terms_of_service_url: raw.dataPolicy.termsOfServiceURL,
-      privacy_policy_url: raw.dataPolicy.privacyPolicyURL,
-      send_client_ip: raw.sendClientIp,
+      statusPageUrl: raw.statusPageUrl,
+      termsOfServiceUrl: raw.dataPolicy.termsOfServiceURL,
+      privacyPolicyUrl: raw.dataPolicy.privacyPolicyURL,
+      sendClientIp: raw.sendClientIp,
     })
 
-    return { providerRecord }
+    return {
+      id: providerRecord.id,
+      providerRecord,
+    }
   })
 
 export function parseProviderBundle(args: { item: Record<string, unknown> }) {
@@ -54,31 +56,22 @@ export const ingestProviders = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { providerRecord } = parseProviderBundle({ item })
-        const { id } = providerRecord
-        const data = providerRecord
+        const { id, providerRecord } = parseProviderBundle({ item })
 
-        const currentVersion = await versions.bump.handler(ctx, {
-          scopeTable: 'catalog_providers',
+        const providerWithVersion = await bumpVersion(ctx, {
+          table: 'catalog_providers',
           id,
+          data: providerRecord,
           firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data,
         })
 
-        if (!currentVersion) {
+        if (providerWithVersion) {
+          await ctx.db.insert('catalog_providers', providerWithVersion)
+          summary.changed += 1
+        } else {
           summary.unchanged += 1
-          continue
         }
-
-        await ctx.db.insert('catalog_providers', {
-          ...data,
-          first_seen_at: args.firstSeenAt,
-          version_id: currentVersion.versionId,
-          version: currentVersion.version,
-        })
-
-        summary.changed += 1
       } catch (error) {
         summary.failed += 1
         console.log('[ingestion:provider] failed to parse or store item', {

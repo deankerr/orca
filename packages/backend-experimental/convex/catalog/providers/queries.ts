@@ -9,7 +9,7 @@ import schema from '../../schema'
 async function getProvider(ctx: QueryCtx, id: string) {
   return ctx.db
     .query('catalog_providers')
-    .withIndex('by_id__first_seen_at', (q) => q.eq('id', id))
+    .withIndex('by_id__firstSeenAt', (q) => q.eq('id', id))
     .order('desc')
     .first()
 }
@@ -28,7 +28,7 @@ export const list = defineQuerySpec({
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
       .query('catalog_providers')
-      .withIndex('by_id__first_seen_at')
+      .withIndex('by_id__firstSeenAt')
       .order('desc')
       .distinct(['id'])
       .paginate(args.paginationOpts),

@@ -1,9 +1,8 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import { versions } from '../catalog/versions'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
 
 const zPrice = z.coerce
   .number()
@@ -73,39 +72,39 @@ const rawEndpointSchema = z
   })
   .transform((raw) => {
     const uuid = raw.id
-    const [provider_slug = raw.provider_slug, provider_variant] = raw.provider_slug.split('/')
+    const [providerSlug = raw.provider_slug, providerVariant] = raw.provider_slug.split('/')
 
     const endpointRecord = compact({
       id: uuid,
-      model_id: raw.model_variant_slug,
-      provider_id: provider_slug,
-      model_version_slug: raw.model_variant_permaslug,
-      model_variant: raw.variant,
-      provider_variant,
-      provider_name: raw.provider_display_name,
-      provider_region: raw.provider_region,
-      context_length: raw.context_length,
-      max_output: raw.max_completion_tokens,
+      modelId: raw.model_variant_slug,
+      providerId: providerSlug,
+      modelVersionSlug: raw.model_variant_permaslug,
+      modelVariant: raw.variant,
+      providerVariant,
+      providerName: raw.provider_display_name,
+      providerRegion: raw.provider_region,
+      contextLength: raw.context_length,
+      maxOutput: raw.max_completion_tokens,
       quantization: raw.quantization,
-      supported_parameters: raw.supported_parameters,
-      data_policy: compact({
-        may_train_on_data: raw.data_policy.training,
-        may_publish_data: raw.data_policy.canPublish,
-        shares_user_id: raw.data_policy.requiresUserIDs,
-        may_retain_data: raw.data_policy.retainsPrompts,
-        data_retention_days: raw.data_policy.retentionDays,
+      supportedParameters: raw.supported_parameters,
+      dataPolicy: compact({
+        mayTrainOnData: raw.data_policy.training,
+        mayPublishData: raw.data_policy.canPublish,
+        sharesUserId: raw.data_policy.requiresUserIDs,
+        mayRetainData: raw.data_policy.retainsPrompts,
+        dataRetentionDays: raw.data_policy.retentionDays,
       }),
       limits: compact({
-        text_input_tokens: raw.max_prompt_tokens,
-        image_input_tokens: raw.max_tokens_per_image,
-        requests_per_minute: raw.limit_rpm,
-        requests_per_day: raw.limit_rpd,
+        textInputTokens: raw.max_prompt_tokens,
+        imageInputTokens: raw.max_tokens_per_image,
+        requestsPerMinute: raw.limit_rpm,
+        requestsPerDay: raw.limit_rpd,
       }),
       capabilities: {
         completions: raw.has_completions,
-        chat_completions: raw.has_chat_completions,
-        implicit_caching: raw.features.supports_implicit_caching,
-        native_web_search: raw.features.supports_native_web_search,
+        chatCompletions: raw.has_chat_completions,
+        implicitCaching: raw.features.supports_implicit_caching,
+        nativeWebSearch: raw.features.supports_native_web_search,
       },
       flags: {
         moderated: raw.moderation_required,
@@ -116,23 +115,24 @@ const rawEndpointSchema = z
 
     const endpointPricingRecord = compact({
       id: uuid,
-      model_id: raw.model_variant_slug,
-      provider_id: provider_slug,
-      text_input: raw.pricing.prompt,
-      text_output: raw.pricing.completion,
-      reasoning_output: raw.pricing.internal_reasoning,
-      audio_input: raw.pricing.audio,
-      audio_cache_write: raw.pricing.input_audio_cache,
-      text_cache_read: raw.pricing.input_cache_read,
-      text_cache_write: raw.pricing.input_cache_write,
-      image_input: raw.pricing.image,
-      image_output: raw.pricing.image_output,
-      per_request: raw.pricing.request,
-      web_search: raw.pricing.web_search,
+      modelId: raw.model_variant_slug,
+      providerId: providerSlug,
+      textInput: raw.pricing.prompt,
+      textOutput: raw.pricing.completion,
+      reasoningOutput: raw.pricing.internal_reasoning,
+      audioInput: raw.pricing.audio,
+      audioCacheWrite: raw.pricing.input_audio_cache,
+      textCacheRead: raw.pricing.input_cache_read,
+      textCacheWrite: raw.pricing.input_cache_write,
+      imageInput: raw.pricing.image,
+      imageOutput: raw.pricing.image_output,
+      perRequest: raw.pricing.request,
+      webSearch: raw.pricing.web_search,
       discount: raw.pricing.discount,
     })
 
     return {
+      id: uuid,
       endpointRecord,
       endpointPricingRecord,
     }
@@ -151,48 +151,33 @@ export const ingestEndpoints = defineMutationSpec({
       summary.processed += 1
 
       try {
-        const { endpointRecord, endpointPricingRecord } = parseEndpointBundle({ item })
-        const { id } = endpointRecord
-        const baseData = endpointRecord
-        const pricingData = endpointPricingRecord
+        const { id, endpointRecord, endpointPricingRecord } = parseEndpointBundle({ item })
 
         let itemChanged = false
 
-        const baseVersion = await versions.bump.handler(ctx, {
-          scopeTable: 'catalog_endpoints',
+        // Check version and insert endpoint base record if changed
+        const endpointWithVersion = await bumpVersion(ctx, {
+          table: 'catalog_endpoints',
           id,
+          data: endpointRecord,
           firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data: baseData,
         })
-
-        if (baseVersion) {
-          await ctx.db.insert('catalog_endpoints', {
-            ...baseData,
-            first_seen_at: args.firstSeenAt,
-            version_id: baseVersion.versionId,
-            version: baseVersion.version,
-          })
-
+        if (endpointWithVersion) {
+          await ctx.db.insert('catalog_endpoints', endpointWithVersion)
           itemChanged = true
         }
 
-        const pricingVersion = await versions.bump.handler(ctx, {
-          scopeTable: 'catalog_endpoint_pricing',
+        // Check version and insert endpoint pricing record if changed
+        const pricingWithVersion = await bumpVersion(ctx, {
+          table: 'catalog_endpoint_pricing',
           id,
+          data: endpointPricingRecord,
           firstSeenAt: args.firstSeenAt,
           source: args.source,
-          data: pricingData,
         })
-
-        if (pricingVersion) {
-          await ctx.db.insert('catalog_endpoint_pricing', {
-            ...pricingData,
-            first_seen_at: args.firstSeenAt,
-            version_id: pricingVersion.versionId,
-            version: pricingVersion.version,
-          })
-
+        if (pricingWithVersion) {
+          await ctx.db.insert('catalog_endpoint_pricing', pricingWithVersion)
           itemChanged = true
         }
 

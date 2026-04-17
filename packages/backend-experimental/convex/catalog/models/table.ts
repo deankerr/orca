@@ -5,31 +5,31 @@ import { catalogVersionFields } from '../shared'
 
 export const modelDataFields = {
   id: v.string(),
-  version_slug: v.string(),
+  versionSlug: v.string(),
   variant: v.string(),
 
   name: v.string(),
-  author_slug: v.string(),
-  author_name: v.string(),
+  authorSlug: v.string(),
+  authorName: v.string(),
 
-  or_added_at: v.number(),
+  orAddedAt: v.number(),
 
-  input_modalities: v.array(v.string()),
-  output_modalities: v.array(v.string()),
+  inputModalities: v.array(v.string()),
+  outputModalities: v.array(v.string()),
 
   reasoning: v.boolean(),
 
-  hugging_face_id: v.optional(v.string()),
-  promotion_message: v.optional(v.string()),
-  warning_message: v.optional(v.string()),
-  routing_error_message: v.optional(v.string()),
+  huggingFaceId: v.optional(v.string()),
+  promotionMessage: v.optional(v.string()),
+  warningMessage: v.optional(v.string()),
+  routingErrorMessage: v.optional(v.string()),
 }
 
 export const catalogModelsTable = defineTable({
   ...modelDataFields,
   ...catalogVersionFields,
 })
-  .index('by_id__first_seen_at', ['id', 'first_seen_at'])
+  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
   .index('by_id__version', ['id', 'version'])
 
 export const modelDescriptionDataFields = {
@@ -41,5 +41,5 @@ export const catalogModelDescriptionsTable = defineTable({
   ...modelDescriptionDataFields,
   ...catalogVersionFields,
 })
-  .index('by_id__first_seen_at', ['id', 'first_seen_at'])
+  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
   .index('by_id__version', ['id', 'version'])

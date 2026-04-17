@@ -8,6 +8,8 @@ export const catalogScopeTableNames = [
   'catalog_endpoint_pricing',
 ] as const
 
+export type CatalogScopeTable = (typeof catalogScopeTableNames)[number]
+
 export const catalogScopeTableValidator = v.union(
   v.literal('catalog_models'),
   v.literal('catalog_model_descriptions'),
@@ -23,7 +25,7 @@ export const catalogSourceValidator = v.object({
 
 export const catalogVersionFields = {
   id: v.string(),
-  version_id: v.id('catalog_versions'),
-  first_seen_at: v.number(),
+  versionId: v.id('catalog_versions'),
+  firstSeenAt: v.number(),
   version: v.number(),
 }

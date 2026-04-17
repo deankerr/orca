@@ -26,8 +26,8 @@ export const get = defineQuerySpec({
   handler: async (ctx, args) =>
     ctx.db
       .query('catalog_versions')
-      .withIndex('by_scope_table__id__first_seen_at', (q) =>
-        q.eq('scope_table', args.scopeTable).eq('id', args.id),
+      .withIndex('by_scopeTable__id__firstSeenAt', (q) =>
+        q.eq('scopeTable', args.scopeTable).eq('id', args.id),
       )
       .order('desc')
       .first(),
@@ -40,7 +40,7 @@ export const check = defineQuerySpec({
   handler: async (ctx, args) =>
     ctx.db
       .query('catalog_versions')
-      .withIndex('by_content_hash', (q) => q.eq('content_hash', args.contentHash))
+      .withIndex('by_contentHash', (q) => q.eq('contentHash', args.contentHash))
       .first(),
 })
 
@@ -58,19 +58,19 @@ export const bump = defineMutationSpec({
     const { scopeTable, id } = args
     const record = await get.handler(ctx, { scopeTable, id })
 
-    if (record?.content_hash === contentHash) {
+    if (record?.contentHash === contentHash) {
       return null
     }
 
     const version = (record?.version ?? 0) + 1
 
     const versionId = await ctx.db.insert('catalog_versions', {
-      scope_table: args.scopeTable,
+      scopeTable: args.scopeTable,
       id: args.id,
-      first_seen_at: args.firstSeenAt,
+      firstSeenAt: args.firstSeenAt,
       version,
       source: args.source,
-      content_hash: contentHash,
+      contentHash,
     })
 
     return { versionId, version }
