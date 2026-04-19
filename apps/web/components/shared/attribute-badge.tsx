@@ -54,7 +54,7 @@ export function AttributeBadgePopoverContent({
 
 // --- Badge ---
 
-export function AttributeBadge({
+function AttributeBadge({
   attribute,
   data,
   ...props

@@ -32,13 +32,7 @@ export function FieldUnit({ children }: { children: React.ReactNode }) {
 
 // -- FieldCategory — container for a group of field change items
 
-export function FieldCategory({
-  name,
-  children,
-}: {
-  name?: string | null
-  children: React.ReactNode
-}) {
+function FieldCategory({ name, children }: { name?: string | null; children: React.ReactNode }) {
   const hasName = name !== null && name !== undefined && name !== ''
 
   return (

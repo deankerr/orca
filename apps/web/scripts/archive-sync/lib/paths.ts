@@ -31,7 +31,7 @@ export type ArchiveSyncPaths = {
   archiveJsonPath: (archive: ArchiveJsonFile) => string
 }
 
-export type ArchiveSyncContext = {
+type ArchiveSyncContext = {
   baseOutputDir: string
   paths: ArchiveSyncPaths
   target: ArchiveSyncTarget

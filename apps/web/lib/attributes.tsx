@@ -718,7 +718,7 @@ export function isAttributeKey(value: string): value is AttributeKey {
   return Object.hasOwn(attributes, value)
 }
 
-export function resolveEndpointAttribute(endpoint: EndpointPartial, key: AttributeKey) {
+function resolveEndpointAttribute(endpoint: EndpointPartial, key: AttributeKey) {
   const attribute = attributes[key]
   const data = attribute.resolve(endpoint)
 

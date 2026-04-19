@@ -19,7 +19,7 @@ export interface LogoStyle {
 /**
  * Check if a color is white
  */
-export function isWhite(color: string): boolean {
+function isWhite(color: string): boolean {
   const normalized = color.toLowerCase()
   return normalized === '#fff' || normalized === '#ffffff' || normalized === 'white'
 }
@@ -27,7 +27,7 @@ export function isWhite(color: string): boolean {
 /**
  * Check if a color is black
  */
-export function isBlack(color: string): boolean {
+function isBlack(color: string): boolean {
   const normalized = color.toLowerCase()
   return normalized === '#000' || normalized === '#000000' || normalized === 'black'
 }

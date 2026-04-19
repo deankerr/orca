@@ -1,11 +1,10 @@
 'use client'
 
-import './data-grid.css'
 import type { RowData, Table } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useMemo } from 'react'
 
-import { cn } from '@/lib/utils'
+import './data-grid.css'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -149,8 +148,4 @@ function DataGrid<TData extends object>({ children, table, ...props }: DataGridP
   )
 }
 
-function DataGridContainer({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div data-slot="data-grid" className={cn('grid border', className)} {...props} />
-}
-
-export { useDataGrid, DataGridProvider, DataGrid, DataGridContainer }
+export { DataGrid, useDataGrid }

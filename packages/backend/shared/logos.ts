@@ -1,7 +1,7 @@
 import manifest from './logos-manifest.json'
 import { isNonEmptyString } from './utils'
 
-export interface LogoStyle {
+interface LogoStyle {
   slug: string
   title: string
   background: string

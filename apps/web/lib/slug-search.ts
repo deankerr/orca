@@ -2,7 +2,7 @@ const QUERY_SEPARATOR_RE = /\s+/g
 const SLUG_BOUNDARY_CHARS = new Set(['/', '-', ':'])
 
 /** A single slug-like field to be indexed for one record. */
-export interface SlugSearchField {
+interface SlugSearchField {
   name: string
   value: string
 }
@@ -23,7 +23,7 @@ interface SlugSearchRank {
 }
 
 /** Result returned by the generic slug search engine. */
-export interface SlugSearchResult<T> {
+interface SlugSearchResult<T> {
   record: T
   score: number
 }

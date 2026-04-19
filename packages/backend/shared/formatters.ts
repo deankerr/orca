@@ -20,7 +20,7 @@ type PricingConfig = {
   unit: string
 }
 
-export const PRICING_FIELDS = {
+const PRICING_FIELDS = {
   text_input: { scale: 1_000_000, unit: 'MTOK' },
   text_output: { scale: 1_000_000, unit: 'MTOK' },
   text_cache_read: { scale: 1_000_000, unit: 'MTOK' },
@@ -48,7 +48,7 @@ const PRICING_FIELD_KEYS = [
   'discount',
 ] as const satisfies readonly PricingKey[]
 
-export type PricingFormatResult = {
+type PricingFormatResult = {
   field: string
   value: string
   unit: string
@@ -98,7 +98,7 @@ export function splitPath(path: string): { category: string | null; key: string 
   return { category: path.slice(0, dotIndex), key: path.slice(dotIndex + 1) }
 }
 
-export function parsePricingPath(path: string): PricingKey | null {
+function parsePricingPath(path: string): PricingKey | null {
   if (!path.startsWith('pricing.')) {
     return null
   }
@@ -130,7 +130,7 @@ export function fmtUnit(path: string): string | null {
   return unit || null
 }
 
-export function fmtScalar(value: unknown): string {
+function fmtScalar(value: unknown): string {
   if (!R.isDefined(value)) {
     return 'null'
   }
@@ -148,7 +148,7 @@ export function fmtScalar(value: unknown): string {
 
 // -- Delta computation
 
-export type Delta = {
+type Delta = {
   pct: number
   isUp: boolean
   isGood: boolean

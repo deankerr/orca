@@ -7,7 +7,7 @@ import { LOBEHUB_ICONS, LOBEHUB_STATIC_PNG, OUTPUT_DIR, SOURCES_LOBEHUB_DIR } fr
 import { needsInversion, needsTint } from './utils'
 import type { LogoStyle } from './utils'
 
-export interface ProcessLobehubResult {
+interface ProcessLobehubResult {
   styles: Record<string, LogoStyle>
   processedCount: number
   tintedCount: number
