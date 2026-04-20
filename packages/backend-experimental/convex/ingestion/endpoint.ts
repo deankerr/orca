@@ -1,18 +1,22 @@
+import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
+import { endpointCoreDataFields, endpointPricingDataFields } from '../catalog/endpoints/table'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, commitMetadataValidator } from './shared'
 
 const zPrice = z.coerce
   .number()
   .transform((value) => (value === 0 ? undefined : value))
   .optional()
 
+// Drop nullish values so version hashes only track meaningful pricing and capability changes.
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
 }
 
+// Normalize one raw endpoint payload into the independent endpoint streams we store.
 const rawEndpointSchema = z
   .object({
     id: z.string(),
@@ -138,65 +142,58 @@ const rawEndpointSchema = z
     }
   })
 
+// Endpoint identity is stable enough that failures should halt collection.
+const rawEndpointIdentitySchema = z
+  .object({
+    id: z.string(),
+  })
+  .transform((raw) => ({
+    id: raw.id,
+  }))
+
 export function parseEndpointBundle(args: { item: Record<string, unknown> }) {
   return rawEndpointSchema.parse(args.item)
 }
 
+export function parseEndpointIdentity(args: { item: Record<string, unknown> }) {
+  return rawEndpointIdentitySchema.parse(args.item)
+}
+
+// Commit both endpoint streams together so read-side joins stay coherent.
 export const ingestEndpoints = defineMutationSpec({
-  args: ingestArgsValidator,
+  args: {
+    ...commitMetadataValidator,
+    entity: v.object({
+      id: v.string(),
+      endpointRecord: v.object(endpointCoreDataFields),
+      endpointPricingRecord: v.object(endpointPricingDataFields),
+    }),
+  },
   handler: async (ctx, args) => {
-    const summary = createIngestSummary()
+    const endpointWithVersion = await bumpVersion(ctx, {
+      table: 'catalog_endpoints',
+      id: args.entity.id,
+      data: args.entity.endpointRecord,
+      firstSeenAt: args.firstSeenAt,
+    })
 
-    for (const item of args.items) {
-      summary.processed += 1
+    const pricingWithVersion = await bumpVersion(ctx, {
+      table: 'catalog_endpoint_pricing',
+      id: args.entity.id,
+      data: args.entity.endpointPricingRecord,
+      firstSeenAt: args.firstSeenAt,
+    })
 
-      try {
-        const { id, endpointRecord, endpointPricingRecord } = parseEndpointBundle({ item })
-
-        let itemChanged = false
-
-        // Check version and insert endpoint base record if changed
-        const endpointWithVersion = await bumpVersion(ctx, {
-          table: 'catalog_endpoints',
-          id,
-          data: endpointRecord,
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-        })
-        if (endpointWithVersion) {
-          await ctx.db.insert('catalog_endpoints', endpointWithVersion)
-          itemChanged = true
-        }
-
-        // Check version and insert endpoint pricing record if changed
-        const pricingWithVersion = await bumpVersion(ctx, {
-          table: 'catalog_endpoint_pricing',
-          id,
-          data: endpointPricingRecord,
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-        })
-        if (pricingWithVersion) {
-          await ctx.db.insert('catalog_endpoint_pricing', pricingWithVersion)
-          itemChanged = true
-        }
-
-        if (itemChanged) {
-          summary.changed += 1
-        } else {
-          summary.unchanged += 1
-        }
-      } catch (error) {
-        summary.failed += 1
-        console.log('[ingestion:endpoint] failed to parse or store item', {
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-          item,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+    if (endpointWithVersion) {
+      await ctx.db.insert('catalog_endpoints', endpointWithVersion)
     }
 
-    return summary
+    if (pricingWithVersion) {
+      await ctx.db.insert('catalog_endpoint_pricing', pricingWithVersion)
+    }
+
+    return {
+      changed: endpointWithVersion !== null || pricingWithVersion !== null,
+    }
   },
 })

@@ -1,13 +1,17 @@
+import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
+import { providerDataFields } from '../catalog/providers/table'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, commitMetadataValidator } from './shared'
 
+// Drop nullish values so the catalog payload stays compact and stable.
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
 }
 
+// Normalize one raw provider payload into the canonical catalog shape.
 const rawProviderSchema = z
   .object({
     slug: z.string(),
@@ -43,46 +47,46 @@ const rawProviderSchema = z
     }
   })
 
+// Provider identity is stable enough that failures should halt collection.
+const rawProviderIdentitySchema = z
+  .object({
+    slug: z.string(),
+  })
+  .transform((raw) => ({
+    id: raw.slug,
+  }))
+
 export function parseProviderBundle(args: { item: Record<string, unknown> }) {
   return rawProviderSchema.parse(args.item)
 }
 
+export function parseProviderIdentity(args: { item: Record<string, unknown> }) {
+  return rawProviderIdentitySchema.parse(args.item)
+}
+
+// Commit exactly one provider so the action can report parse and commit failures separately.
 export const ingestProviders = defineMutationSpec({
-  args: ingestArgsValidator,
+  args: {
+    ...commitMetadataValidator,
+    entity: v.object({
+      id: v.string(),
+      providerRecord: v.object(providerDataFields),
+    }),
+  },
   handler: async (ctx, args) => {
-    const summary = createIngestSummary()
+    const providerWithVersion = await bumpVersion(ctx, {
+      table: 'catalog_providers',
+      id: args.entity.id,
+      data: args.entity.providerRecord,
+      firstSeenAt: args.firstSeenAt,
+    })
 
-    for (const item of args.items) {
-      summary.processed += 1
-
-      try {
-        const { id, providerRecord } = parseProviderBundle({ item })
-
-        const providerWithVersion = await bumpVersion(ctx, {
-          table: 'catalog_providers',
-          id,
-          data: providerRecord,
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-        })
-
-        if (providerWithVersion) {
-          await ctx.db.insert('catalog_providers', providerWithVersion)
-          summary.changed += 1
-        } else {
-          summary.unchanged += 1
-        }
-      } catch (error) {
-        summary.failed += 1
-        console.log('[ingestion:provider] failed to parse or store item', {
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-          item,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+    if (providerWithVersion) {
+      await ctx.db.insert('catalog_providers', providerWithVersion)
     }
 
-    return summary
+    return {
+      changed: providerWithVersion !== null,
+    }
   },
 })

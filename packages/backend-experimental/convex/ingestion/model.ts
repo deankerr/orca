@@ -1,13 +1,17 @@
+import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
+import { modelDataFields, modelDescriptionDataFields } from '../catalog/models/table'
 import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, createIngestSummary, ingestArgsValidator } from './shared'
+import { bumpVersion, commitMetadataValidator } from './shared'
 
+// Drop nullish values so version hashes only reflect meaningful payload changes.
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
 }
 
+// Normalize one raw model payload into the independent model streams we store.
 const rawModelSchema = z
   .object({
     slug: z.string(),
@@ -68,65 +72,76 @@ const rawModelSchema = z
     }
   })
 
+// Model identity and endpoint targeting are stable enough to gate the whole workflow.
+const rawModelIdentitySchema = z
+  .object({
+    slug: z.string(),
+    permaslug: z.string(),
+    endpoint: z
+      .object({
+        variant: z.string(),
+      })
+      .nullable(),
+  })
+  .transform((raw) => {
+    const variant = raw.endpoint?.variant ?? 'standard'
+    const id = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
+
+    return {
+      id,
+      target:
+        raw.endpoint === null
+          ? null
+          : {
+              permaslug: raw.permaslug,
+              variant: raw.endpoint.variant,
+            },
+    }
+  })
+
 export function parseModelBundle(args: { item: Record<string, unknown> }) {
   return rawModelSchema.parse(args.item)
 }
 
+export function parseModelIdentity(args: { item: Record<string, unknown> }) {
+  return rawModelIdentitySchema.parse(args.item)
+}
+
+// Commit both model streams together so the catalog never exposes a split write.
 export const ingestModels = defineMutationSpec({
-  args: ingestArgsValidator,
+  args: {
+    ...commitMetadataValidator,
+    entity: v.object({
+      id: v.string(),
+      modelRecord: v.object(modelDataFields),
+      modelDescriptionRecord: v.object(modelDescriptionDataFields),
+    }),
+  },
   handler: async (ctx, args) => {
-    const summary = createIngestSummary()
+    const modelWithVersion = await bumpVersion(ctx, {
+      table: 'catalog_models',
+      id: args.entity.id,
+      data: args.entity.modelRecord,
+      firstSeenAt: args.firstSeenAt,
+    })
 
-    for (const item of args.items) {
-      summary.processed += 1
+    const descriptionWithVersion = await bumpVersion(ctx, {
+      table: 'catalog_model_descriptions',
+      id: args.entity.id,
+      data: args.entity.modelDescriptionRecord,
+      firstSeenAt: args.firstSeenAt,
+    })
 
-      try {
-        const { id, modelRecord, modelDescriptionRecord } = parseModelBundle({ item })
-
-        let itemChanged = false
-
-        // Check version and insert model base record if changed
-        const modelWithVersion = await bumpVersion(ctx, {
-          table: 'catalog_models',
-          id,
-          data: modelRecord,
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-        })
-        if (modelWithVersion) {
-          await ctx.db.insert('catalog_models', modelWithVersion)
-          itemChanged = true
-        }
-
-        // Check version and insert model description record if changed
-        const descriptionWithVersion = await bumpVersion(ctx, {
-          table: 'catalog_model_descriptions',
-          id,
-          data: modelDescriptionRecord,
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-        })
-        if (descriptionWithVersion) {
-          await ctx.db.insert('catalog_model_descriptions', descriptionWithVersion)
-          itemChanged = true
-        }
-
-        if (itemChanged) {
-          summary.changed += 1
-        } else {
-          summary.unchanged += 1
-        }
-      } catch (error) {
-        summary.failed += 1
-        console.log('[ingestion:model] failed to parse or store item', {
-          firstSeenAt: args.firstSeenAt,
-          source: args.source,
-          item,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+    if (modelWithVersion) {
+      await ctx.db.insert('catalog_models', modelWithVersion)
     }
 
-    return summary
+    if (descriptionWithVersion) {
+      await ctx.db.insert('catalog_model_descriptions', descriptionWithVersion)
+    }
+
+    return {
+      changed: modelWithVersion !== null || descriptionWithVersion !== null,
+    }
   },
 })

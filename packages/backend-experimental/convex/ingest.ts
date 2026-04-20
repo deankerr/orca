@@ -1,6 +1,7 @@
-import { mutation } from './_generated/server'
+import { internalMutation } from './_generated/server'
 import { ingest } from './ingestion'
 
-export const endpoints = mutation(ingest.endpoint)
-export const models = mutation(ingest.model)
-export const providers = mutation(ingest.provider)
+// These commit boundaries are internal implementation details of collection.
+export const endpoints = internalMutation(ingest.endpoint)
+export const models = internalMutation(ingest.model)
+export const providers = internalMutation(ingest.provider)

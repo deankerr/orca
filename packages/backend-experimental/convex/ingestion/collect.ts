@@ -1,12 +1,12 @@
 import { createFetch, createSchema } from '@better-fetch/fetch'
-import * as R from 'remeda'
 import { z } from 'zod'
 
-import { api } from '../_generated/api'
+import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
 import { internalAction } from '../_generated/server'
-import { createIngestSummary } from './shared'
-import type { IngestSummary } from './shared'
+import { parseEndpointBundle } from './endpoint'
+import { parseModelBundle, parseModelIdentity } from './model'
+import { parseProviderBundle, parseProviderIdentity } from './provider'
 
 const DataRecordsSchema = z
   .object({ data: z.record(z.string(), z.unknown()).array() })
@@ -50,143 +50,121 @@ type EndpointTarget = {
   variant: string
 }
 
-type CollectResult = {
-  firstSeenAt: number
-  providers: IngestSummary
-  models: IngestSummary
-  endpoints: IngestSummary
-  endpointRequests: {
-    total: number
-    failed: Array<
-      EndpointTarget & {
-        error: string
-      }
-    >
-  }
-}
-
-const providersUrl = 'https://openrouter.ai/api/frontend/all-providers'
-const modelsUrl = 'https://openrouter.ai/api/frontend/models'
-const endpointStatsUrl = 'https://openrouter.ai/api/frontend/stats/endpoint'
-
-const EndpointTargetsSchema = z
-  .array(
-    z.object({
-      permaslug: z.string(),
-      endpoint: z
-        .object({
-          variant: z.string(),
-        })
-        .nullable(),
-    }),
-  )
-  .transform((items) =>
-    items.flatMap((item) =>
-      item.endpoint === null ? [] : [{ permaslug: item.permaslug, variant: item.endpoint.variant }],
-    ),
-  )
-
-function mergeIngestSummary(total: IngestSummary, next: IngestSummary) {
-  total.processed += next.processed
-  total.changed += next.changed
-  total.unchanged += next.unchanged
-  total.failed += next.failed
-}
-
-function createEndpointRequestUrl(target: EndpointTarget) {
-  const url = new URL(endpointStatsUrl)
-  url.searchParams.set('permaslug', target.permaslug)
-  url.searchParams.set('variant', target.variant)
-  return url.toString()
-}
-
 function getErrorMessage(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return z.prettifyError(error)
+  }
+
   return error instanceof Error ? error.message : String(error)
 }
 
-async function fetchEndpointBundle(target: EndpointTarget): Promise<
-  | {
-      ok: true
-      target: EndpointTarget
-      items: Record<string, unknown>[]
-    }
-  | {
-      ok: false
-      target: EndpointTarget
-      error: string
-    }
-> {
-  try {
-    const items = await $fetch('/frontend/stats/endpoint', {
-      query: {
-        permaslug: target.permaslug,
-        variant: target.variant,
-      },
-      throw: true,
-    })
+// Providers parse in the action and commit one entity per mutation.
+async function collectProviders(
+  ctx: ActionCtx,
+  args: {
+    items: Record<string, unknown>[]
+    firstSeenAt: number
+  },
+) {
+  for (const item of args.items) {
+    const identity = parseProviderIdentity({ item })
 
-    return {
-      ok: true,
-      target,
-      items,
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      target,
-      error: getErrorMessage(error),
+    try {
+      const entity = parseProviderBundle({ item })
+      await ctx.runMutation(internal.ingest.providers, {
+        entity,
+        firstSeenAt: args.firstSeenAt,
+      })
+    } catch (error) {
+      const message = getErrorMessage(error)
+
+      console.error('[ingestion:collect] failed to collect provider', {
+        firstSeenAt: args.firstSeenAt,
+        id: identity.id,
+        error: message,
+      })
     }
   }
 }
 
+// Models also surface endpoint targets for the follow-up endpoint collection phase.
+async function collectModels(
+  ctx: ActionCtx,
+  args: {
+    items: Record<string, unknown>[]
+    firstSeenAt: number
+  },
+): Promise<EndpointTarget[]> {
+  const endpointTargets: EndpointTarget[] = []
+
+  for (const item of args.items) {
+    const identity = parseModelIdentity({ item })
+
+    if (identity.target) {
+      endpointTargets.push(identity.target)
+    }
+
+    try {
+      const entity = parseModelBundle({ item })
+      await ctx.runMutation(internal.ingest.models, {
+        entity,
+        firstSeenAt: args.firstSeenAt,
+      })
+    } catch (error) {
+      const message = getErrorMessage(error)
+
+      console.error('[ingestion:collect] failed to collect model', {
+        firstSeenAt: args.firstSeenAt,
+        id: identity.id,
+        error: message,
+      })
+    }
+  }
+
+  return endpointTargets
+}
+
+// Endpoints now run one target at a time so fetch, parse, and commit share one failure boundary.
 async function collectEndpoints(
   ctx: ActionCtx,
   args: {
     targets: EndpointTarget[]
     firstSeenAt: number
   },
-): Promise<{
-  summary: IngestSummary
-  failedTargets: CollectResult['endpointRequests']['failed']
-}> {
-  const summary = createIngestSummary()
-  const failedTargets: CollectResult['endpointRequests']['failed'] = []
-
-  for (const batch of R.chunk(args.targets, 10)) {
-    const results = await Promise.all(batch.map(fetchEndpointBundle))
-
-    for (const result of results) {
-      if (!result.ok) {
-        const failedTarget: CollectResult['endpointRequests']['failed'][number] = {
-          permaslug: result.target.permaslug,
-          variant: result.target.variant,
-          error: result.error,
-        }
-        failedTargets.push(failedTarget)
-        console.log('[ingestion:collect] failed to fetch endpoint bundle', failedTarget)
-        continue
-      }
-
-      const nextSummary = await ctx.runMutation(api.ingest.endpoints, {
-        items: result.items,
-        firstSeenAt: args.firstSeenAt,
-        source: {
-          locator: createEndpointRequestUrl(result.target),
+) {
+  for (const target of args.targets) {
+    try {
+      const items = await $fetch('/frontend/stats/endpoint', {
+        query: {
+          permaslug: target.permaslug,
+          variant: target.variant,
         },
+        throw: true,
       })
-      mergeIngestSummary(summary, nextSummary)
-    }
-  }
 
-  return {
-    summary,
-    failedTargets,
+      for (const item of items) {
+        const entity = parseEndpointBundle({ item })
+        await ctx.runMutation(internal.ingest.endpoints, {
+          entity,
+          firstSeenAt: args.firstSeenAt,
+        })
+      }
+    } catch (error) {
+      const message = getErrorMessage(error)
+
+      console.error('[ingestion:collect] failed to collect endpoint target', {
+        firstSeenAt: args.firstSeenAt,
+        permaslug: target.permaslug,
+        variant: target.variant,
+        error: message,
+      })
+    }
   }
 }
 
 export const run = internalAction({
   args: {},
-  handler: async (ctx): Promise<CollectResult> => {
+  handler: async (ctx) => {
     const firstSeenAt = Date.now()
 
     const [providerItems, modelItems] = await Promise.all([
@@ -194,34 +172,19 @@ export const run = internalAction({
       $fetch('/frontend/models', { throw: true }),
     ])
 
-    const providers: IngestSummary = await ctx.runMutation(api.ingest.providers, {
+    await collectProviders(ctx, {
       items: providerItems,
       firstSeenAt,
-      source: {
-        locator: providersUrl,
-      },
     })
 
-    const models: IngestSummary = await ctx.runMutation(api.ingest.models, {
+    const endpointTargets = await collectModels(ctx, {
       items: modelItems,
       firstSeenAt,
-      source: {
-        locator: modelsUrl,
-      },
     })
 
-    const targets = EndpointTargetsSchema.parse(modelItems)
-    const endpointCollection = await collectEndpoints(ctx, { targets, firstSeenAt })
-
-    return {
+    await collectEndpoints(ctx, {
+      targets: endpointTargets,
       firstSeenAt,
-      providers,
-      models,
-      endpoints: endpointCollection.summary,
-      endpointRequests: {
-        total: targets.length,
-        failed: endpointCollection.failedTargets,
-      },
-    }
+    })
   },
 })

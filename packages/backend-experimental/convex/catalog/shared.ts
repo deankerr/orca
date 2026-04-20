@@ -18,11 +18,6 @@ export const catalogScopeTableValidator = v.union(
   v.literal('catalog_endpoint_pricing'),
 )
 
-export const catalogSourceValidator = v.object({
-  locator: v.string(),
-  storageId: v.optional(v.string()),
-})
-
 export const catalogVersionFields = {
   id: v.string(),
   versionId: v.id('catalog_versions'),

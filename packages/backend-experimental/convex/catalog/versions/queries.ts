@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 
 import { defineMutationSpec, defineQuerySpec } from '../../lib/functionSpec'
-import { catalogScopeTableValidator, catalogSourceValidator } from '../shared'
+import { catalogScopeTableValidator } from '../shared'
 import { createContentHash } from './hash'
 
 export type VersionIdentity = {
@@ -12,10 +12,6 @@ export type VersionIdentity = {
 export type VersionRecord = VersionIdentity & {
   firstSeenAt: number
   contentHash: string
-  source: {
-    locator: string
-    storageId?: string
-  }
 }
 
 export const get = defineQuerySpec({
@@ -49,7 +45,6 @@ export const bump = defineMutationSpec({
     scopeTable: catalogScopeTableValidator,
     id: v.string(),
     firstSeenAt: v.number(),
-    source: catalogSourceValidator,
     data: v.record(v.string(), v.any()),
   },
   handler: async (ctx, args) => {
@@ -69,7 +64,6 @@ export const bump = defineMutationSpec({
       id: args.id,
       firstSeenAt: args.firstSeenAt,
       version,
-      source: args.source,
       contentHash,
     })
 
