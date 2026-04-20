@@ -12,15 +12,6 @@ export const ingestArgsValidator = {
   source: catalogSourceValidator,
 }
 
-export type IngestArgs = {
-  items: Record<string, unknown>[]
-  firstSeenAt: number
-  source: {
-    locator: string
-    storageId?: string
-  }
-}
-
 export function createIngestSummary() {
   return {
     processed: 0,

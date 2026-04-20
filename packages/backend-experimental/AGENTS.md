@@ -2,8 +2,10 @@
 
 This directory is a greenfield prototype for ORCA's next backend architecture.
 
-- Do not share code or import from any other package.
+- Do not import code from the existing backend.
 - Do not use return validators.
+- The focus is a clean and thoughfully designed core implementation, for rapid iteration.
+- Out of scope: rigourous error handling (exceptions are valuable right now), testing.
 
 ## Background
 
@@ -31,22 +33,7 @@ replay whole archives to reconstruct change history.
 
 ## Current Scope
 
-Right now the redesign is focused only on model endpoints.
-
-The main catalog tables are:
-
-- `catalog_endpoints`
-  - Core endpoint state: model/provider identity, context, quantization,
-    supported parameters, capabilities, flags, limits, and data policy.
-- `catalog_endpoint_pricing`
-  - Pricing-only history: text/audio/image/request pricing, cache pricing,
-    reasoning pricing, discounts.
-- `catalog_versions`
-  - Shared catalog version header used to detect whether a canonical payload has
-    changed, assign the next row version, and hold provenance metadata.
-
-This split is intentional. Pricing changes much more often than the rest of an
-endpoint record, so it should not force a full endpoint rewrite every time.
+Ingestion and storage of versioned, materialized MEP data: `catalog`.
 
 ## How Versioning Works
 

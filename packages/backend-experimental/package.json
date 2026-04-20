@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@better-fetch/fetch": "^1.1.21",
     "convex": "^1.34.1",
     "convex-helpers": "^0.1.114",
     "remeda": "^2.33.7",

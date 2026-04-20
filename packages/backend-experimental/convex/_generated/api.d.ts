@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as _temp_fetchers_fetchers from "../_temp_fetchers/fetchers.js";
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
 import type * as catalog_endpoints_queries from "../catalog/endpoints/queries.js";
 import type * as catalog_endpoints_table from "../catalog/endpoints/table.js";
@@ -23,8 +22,10 @@ import type * as catalog_versions_hash from "../catalog/versions/hash.js";
 import type * as catalog_versions_index from "../catalog/versions/index.js";
 import type * as catalog_versions_queries from "../catalog/versions/queries.js";
 import type * as catalog_versions_table from "../catalog/versions/table.js";
+import type * as crons from "../crons.js";
 import type * as endpoints from "../endpoints.js";
 import type * as ingest from "../ingest.js";
+import type * as ingestion_collect from "../ingestion/collect.js";
 import type * as ingestion_endpoint from "../ingestion/endpoint.js";
 import type * as ingestion_index from "../ingestion/index.js";
 import type * as ingestion_model from "../ingestion/model.js";
@@ -42,7 +43,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "_temp_fetchers/fetchers": typeof _temp_fetchers_fetchers;
   "catalog/endpoints/index": typeof catalog_endpoints_index;
   "catalog/endpoints/queries": typeof catalog_endpoints_queries;
   "catalog/endpoints/table": typeof catalog_endpoints_table;
@@ -57,8 +57,10 @@ declare const fullApi: ApiFromModules<{
   "catalog/versions/index": typeof catalog_versions_index;
   "catalog/versions/queries": typeof catalog_versions_queries;
   "catalog/versions/table": typeof catalog_versions_table;
+  crons: typeof crons;
   endpoints: typeof endpoints;
   ingest: typeof ingest;
+  "ingestion/collect": typeof ingestion_collect;
   "ingestion/endpoint": typeof ingestion_endpoint;
   "ingestion/index": typeof ingestion_index;
   "ingestion/model": typeof ingestion_model;
