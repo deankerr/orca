@@ -1,21 +1,56 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-import { catalogVersionFields } from '../shared'
-
-const endpointIdentityFields = {
+const identityFields = {
   id: v.string(),
+}
+
+const modelSelectorFields = {
+  modelVersionSlug: v.string(),
+  modelVariant: v.string(),
+}
+
+const componentStateFields = {
+  coreVersion: v.number(),
+  coreContentHash: v.string(),
+  pricingVersion: v.number(),
+  pricingContentHash: v.string(),
+}
+
+// Entity State
+
+export const stateFields = {
+  ...identityFields,
+  ...modelSelectorFields,
+  ...componentStateFields,
+  firstSeenAt: v.number(),
+  version: v.number(),
+  unavailableAt: v.optional(v.number()),
+}
+
+export const stateTable = defineTable(stateFields)
+  .index('by_id__version', ['id', 'version'])
+  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
+  .index('by_modelVersionSlug__modelVariant__id__version', [
+    'modelVersionSlug',
+    'modelVariant',
+    'id',
+    'version',
+  ])
+  .index('by_unavailableAt', ['unavailableAt'])
+
+const componentIdentityFields = {
+  ...identityFields,
   modelId: v.string(),
   providerId: v.string(),
 }
 
-// endpoints
+// Core Component
 
-export const endpointCoreDataFields = {
-  ...endpointIdentityFields,
+export const coreContentFields = {
+  ...componentIdentityFields,
 
-  modelVersionSlug: v.string(),
-  modelVariant: v.string(),
+  ...modelSelectorFields,
   providerVariant: v.optional(v.string()),
   providerName: v.string(),
   providerRegion: v.optional(v.string()),
@@ -54,17 +89,19 @@ export const endpointCoreDataFields = {
   }),
 }
 
-export const catalogEndpointsTable = defineTable({
-  ...endpointCoreDataFields,
-  ...catalogVersionFields,
+export const coreTable = defineTable({
+  ...coreContentFields,
+  firstSeenAt: v.number(),
+  version: v.number(),
+  contentHash: v.string(),
 })
   .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
   .index('by_id__version', ['id', 'version'])
 
-// endpoints_pricing
+// Pricing Component
 
-export const endpointPricingDataFields = {
-  ...endpointIdentityFields,
+export const pricingContentFields = {
+  ...componentIdentityFields,
   textInput: v.optional(v.number()),
   textOutput: v.optional(v.number()),
   reasoningOutput: v.optional(v.number()),
@@ -79,9 +116,11 @@ export const endpointPricingDataFields = {
   discount: v.optional(v.number()),
 }
 
-export const catalogEndpointPricingTable = defineTable({
-  ...endpointPricingDataFields,
-  ...catalogVersionFields,
+export const pricingTable = defineTable({
+  ...pricingContentFields,
+  firstSeenAt: v.number(),
+  version: v.number(),
+  contentHash: v.string(),
 })
   .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
   .index('by_id__version', ['id', 'version'])

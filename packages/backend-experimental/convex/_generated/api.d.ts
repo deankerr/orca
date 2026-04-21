@@ -9,8 +9,10 @@
  */
 
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
+import type * as catalog_endpoints_ingest from "../catalog/endpoints/ingest.js";
 import type * as catalog_endpoints_queries from "../catalog/endpoints/queries.js";
 import type * as catalog_endpoints_table from "../catalog/endpoints/table.js";
+import type * as catalog_hash from "../catalog/hash.js";
 import type * as catalog_models_index from "../catalog/models/index.js";
 import type * as catalog_models_queries from "../catalog/models/queries.js";
 import type * as catalog_models_table from "../catalog/models/table.js";
@@ -18,7 +20,6 @@ import type * as catalog_providers_index from "../catalog/providers/index.js";
 import type * as catalog_providers_queries from "../catalog/providers/queries.js";
 import type * as catalog_providers_table from "../catalog/providers/table.js";
 import type * as catalog_shared from "../catalog/shared.js";
-import type * as catalog_versions_hash from "../catalog/versions/hash.js";
 import type * as catalog_versions_index from "../catalog/versions/index.js";
 import type * as catalog_versions_queries from "../catalog/versions/queries.js";
 import type * as catalog_versions_table from "../catalog/versions/table.js";
@@ -44,8 +45,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "catalog/endpoints/index": typeof catalog_endpoints_index;
+  "catalog/endpoints/ingest": typeof catalog_endpoints_ingest;
   "catalog/endpoints/queries": typeof catalog_endpoints_queries;
   "catalog/endpoints/table": typeof catalog_endpoints_table;
+  "catalog/hash": typeof catalog_hash;
   "catalog/models/index": typeof catalog_models_index;
   "catalog/models/queries": typeof catalog_models_queries;
   "catalog/models/table": typeof catalog_models_table;
@@ -53,7 +56,6 @@ declare const fullApi: ApiFromModules<{
   "catalog/providers/queries": typeof catalog_providers_queries;
   "catalog/providers/table": typeof catalog_providers_table;
   "catalog/shared": typeof catalog_shared;
-  "catalog/versions/hash": typeof catalog_versions_hash;
   "catalog/versions/index": typeof catalog_versions_index;
   "catalog/versions/queries": typeof catalog_versions_queries;
   "catalog/versions/table": typeof catalog_versions_table;

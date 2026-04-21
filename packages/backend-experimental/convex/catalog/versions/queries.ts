@@ -1,8 +1,8 @@
 import { v } from 'convex/values'
 
 import { defineMutationSpec, defineQuerySpec } from '../../lib/functionSpec'
+import { createContentHash } from '../hash'
 import { catalogScopeTableValidator } from '../shared'
-import { createContentHash } from './hash'
 
 export type VersionIdentity = {
   scopeTable: string

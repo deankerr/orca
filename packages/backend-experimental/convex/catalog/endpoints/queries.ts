@@ -7,70 +7,153 @@ import type { QueryCtx } from '../../_generated/server'
 import { defineQuerySpec } from '../../lib/functionSpec'
 import schema from '../../schema'
 
-type EndpointVersion = Doc<'catalog_endpoints'>
-type EndpointPricingVersion = Doc<'catalog_endpoint_pricing'>
+type State = Doc<'catalog_endpoints'>
 
-async function getEndpointBase(ctx: QueryCtx, id: string) {
+function withCatalogMetadata<
+  T extends {
+    _id: unknown
+    _creationTime: number
+    firstSeenAt: number
+    version: number
+    contentHash: string
+  },
+>(component: T) {
+  const { _id, _creationTime, firstSeenAt, version, contentHash, ...content } = component
+
+  return {
+    ...content,
+    _catalog: {
+      _id,
+      _creationTime,
+      firstSeenAt,
+      version,
+      contentHash,
+    },
+  }
+}
+
+export async function getState(ctx: QueryCtx, id: string) {
   return ctx.db
     .query('catalog_endpoints')
-    .withIndex('by_id__firstSeenAt', (q) => q.eq('id', id))
+    .withIndex('by_id__version', (q) => q.eq('id', id))
     .order('desc')
     .first()
 }
 
-async function getPricing(ctx: QueryCtx, id: string) {
-  return ctx.db
+export const listStatesByModel = defineQuerySpec({
+  args: {
+    modelVersionSlug: v.string(),
+    modelVariant: v.string(),
+  },
+  handler: async (ctx, args) =>
+    stream(ctx.db, schema)
+      .query('catalog_endpoints')
+      .withIndex('by_modelVersionSlug__modelVariant__id__version', (q) =>
+        q.eq('modelVersionSlug', args.modelVersionSlug).eq('modelVariant', args.modelVariant),
+      )
+      .order('desc')
+      .distinct(['id'])
+      .collect(),
+})
+
+// Component getters
+
+async function getCoreByIdAndVersion(ctx: QueryCtx, state: State) {
+  const core = await ctx.db
+    .query('catalog_endpoint_core')
+    .withIndex('by_id__version', (q) => q.eq('id', state.id).eq('version', state.coreVersion))
+    .first()
+
+  return core ? withCatalogMetadata(core) : null
+}
+
+async function getPricingByIdAndVersion(ctx: QueryCtx, state: State) {
+  const pricing = await ctx.db
     .query('catalog_endpoint_pricing')
-    .withIndex('by_id__firstSeenAt', (q) => q.eq('id', id))
-    .order('desc')
+    .withIndex('by_id__version', (q) => q.eq('id', state.id).eq('version', state.pricingVersion))
     .first()
+
+  return pricing ? withCatalogMetadata(pricing) : null
 }
 
-function withPricing(endpointBase: EndpointVersion, pricing: EndpointPricingVersion) {
+// Hydration
+
+async function hydrate(ctx: QueryCtx, state: State) {
+  const [core, pricing] = await Promise.all([
+    getCoreByIdAndVersion(ctx, state),
+    getPricingByIdAndVersion(ctx, state),
+  ])
+
+  if (!core) {
+    throw new Error(
+      `Missing endpoint core version ${state.coreVersion} for endpoint id "${state.id}"`,
+    )
+  }
+
+  if (!pricing) {
+    throw new Error(
+      `Missing endpoint pricing version ${state.pricingVersion} for endpoint id "${state.id}"`,
+    )
+  }
+
   return {
-    ...endpointBase,
+    state,
+    core,
     pricing,
   }
 }
 
-async function withCurrentPricing(
-  ctx: QueryCtx,
-  endpointBase: EndpointVersion,
-): Promise<ReturnType<typeof withPricing>> {
-  const pricing = await getPricing(ctx, endpointBase.id)
-
-  if (!pricing) {
-    throw new Error(`Missing endpoint pricing row for endpoint id "${endpointBase.id}"`)
+function isWithinAvailabilityWindow(state: State, maxUnavailable?: number) {
+  if (maxUnavailable === undefined) {
+    return true
   }
 
-  return withPricing(endpointBase, pricing)
+  return state.unavailableAt === undefined || state.unavailableAt >= Date.now() - maxUnavailable
 }
+
+// Queries
 
 export const get = defineQuerySpec({
   args: {
     id: v.string(),
   },
   handler: async (ctx, args) => {
-    const endpointBase = await getEndpointBase(ctx, args.id)
+    const state = await getState(ctx, args.id)
 
-    if (!endpointBase) {
+    if (!state) {
       return null
     }
 
-    return withCurrentPricing(ctx, endpointBase)
+    return hydrate(ctx, state)
   },
 })
 
 export const list = defineQuerySpec({
   args: {
     paginationOpts: paginationOptsValidator,
+    maxUnavailable: v.optional(v.number()),
   },
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
       .query('catalog_endpoints')
-      .withIndex('by_id__firstSeenAt')
+      .withIndex('by_id__version')
       .order('desc')
       .distinct(['id'])
-      .map(async (endpointBase) => withCurrentPricing(ctx, endpointBase))
+      .filterWith(async (state) => isWithinAvailabilityWindow(state, args.maxUnavailable))
+      .map(async (state) => hydrate(ctx, state))
+      .paginate(args.paginationOpts),
+})
+
+export const history = defineQuerySpec({
+  args: {
+    id: v.string(),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) =>
+    stream(ctx.db, schema)
+      .query('catalog_endpoints')
+      .withIndex('by_id__version', (q) => q.eq('id', args.id))
+      .order('desc')
+      .map(async (state) => hydrate(ctx, state))
       .paginate(args.paginationOpts),
 })

@@ -142,11 +142,29 @@ async function collectEndpoints(
         throw: true,
       })
 
-      for (const item of items) {
-        const entity = parseEndpointBundle({ item })
-        await ctx.runMutation(internal.ingest.endpoints, {
-          entity,
+      const entities = items.map((item) => parseEndpointBundle({ item }))
+      const states = await ctx.runQuery(internal.endpoints.listStatesByModel, {
+        modelVersionSlug: target.permaslug,
+        modelVariant: target.variant,
+      })
+      const currentlyAvailableIds = new Set(
+        states.filter((state) => state.unavailableAt === undefined).map((state) => state.id),
+      )
+
+      for (const entity of entities) {
+        currentlyAvailableIds.delete(entity.id)
+
+        await ctx.runMutation(internal.endpoints.ingest, {
           firstSeenAt: args.firstSeenAt,
+          entity,
+        })
+      }
+
+      for (const id of currentlyAvailableIds) {
+        await ctx.runMutation(internal.endpoints.setAvailability, {
+          id,
+          firstSeenAt: args.firstSeenAt,
+          unavailableAt: args.firstSeenAt,
         })
       }
     } catch (error) {

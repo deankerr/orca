@@ -1,10 +1,5 @@
-import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
-
-import { endpointCoreDataFields, endpointPricingDataFields } from '../catalog/endpoints/table'
-import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, commitMetadataValidator } from './shared'
 
 const zPrice = z.coerce
   .number()
@@ -16,7 +11,7 @@ function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
 }
 
-// Normalize one raw endpoint payload into the independent endpoint streams we store.
+// Normalize one raw endpoint payload into the independent endpoint components we store.
 const rawEndpointSchema = z
   .object({
     id: z.string(),
@@ -75,13 +70,13 @@ const rawEndpointSchema = z
     deprecation_date: z.string().nullable(),
   })
   .transform((raw) => {
-    const uuid = raw.id
-    const [providerSlug = raw.provider_slug, providerVariant] = raw.provider_slug.split('/')
+    const { id } = raw
+    const [providerId = raw.provider_slug, providerVariant] = raw.provider_slug.split('/')
 
-    const endpointRecord = compact({
-      id: uuid,
+    const core = compact({
+      id,
       modelId: raw.model_variant_slug,
-      providerId: providerSlug,
+      providerId,
       modelVersionSlug: raw.model_variant_permaslug,
       modelVariant: raw.variant,
       providerVariant,
@@ -117,10 +112,10 @@ const rawEndpointSchema = z
       },
     })
 
-    const endpointPricingRecord = compact({
-      id: uuid,
+    const pricing = compact({
+      id,
       modelId: raw.model_variant_slug,
-      providerId: providerSlug,
+      providerId,
       textInput: raw.pricing.prompt,
       textOutput: raw.pricing.completion,
       reasoningOutput: raw.pricing.internal_reasoning,
@@ -136,64 +131,14 @@ const rawEndpointSchema = z
     })
 
     return {
-      id: uuid,
-      endpointRecord,
-      endpointPricingRecord,
+      id,
+      modelVersionSlug: core.modelVersionSlug,
+      modelVariant: core.modelVariant,
+      core,
+      pricing,
     }
   })
-
-// Endpoint identity is stable enough that failures should halt collection.
-const rawEndpointIdentitySchema = z
-  .object({
-    id: z.string(),
-  })
-  .transform((raw) => ({
-    id: raw.id,
-  }))
 
 export function parseEndpointBundle(args: { item: Record<string, unknown> }) {
   return rawEndpointSchema.parse(args.item)
 }
-
-export function parseEndpointIdentity(args: { item: Record<string, unknown> }) {
-  return rawEndpointIdentitySchema.parse(args.item)
-}
-
-// Commit both endpoint streams together so read-side joins stay coherent.
-export const ingestEndpoints = defineMutationSpec({
-  args: {
-    ...commitMetadataValidator,
-    entity: v.object({
-      id: v.string(),
-      endpointRecord: v.object(endpointCoreDataFields),
-      endpointPricingRecord: v.object(endpointPricingDataFields),
-    }),
-  },
-  handler: async (ctx, args) => {
-    const endpointWithVersion = await bumpVersion(ctx, {
-      table: 'catalog_endpoints',
-      id: args.entity.id,
-      data: args.entity.endpointRecord,
-      firstSeenAt: args.firstSeenAt,
-    })
-
-    const pricingWithVersion = await bumpVersion(ctx, {
-      table: 'catalog_endpoint_pricing',
-      id: args.entity.id,
-      data: args.entity.endpointPricingRecord,
-      firstSeenAt: args.firstSeenAt,
-    })
-
-    if (endpointWithVersion) {
-      await ctx.db.insert('catalog_endpoints', endpointWithVersion)
-    }
-
-    if (pricingWithVersion) {
-      await ctx.db.insert('catalog_endpoint_pricing', pricingWithVersion)
-    }
-
-    return {
-      changed: endpointWithVersion !== null || pricingWithVersion !== null,
-    }
-  },
-})
