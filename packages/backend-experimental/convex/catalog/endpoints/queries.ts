@@ -18,17 +18,12 @@ export async function getState(ctx: QueryCtx, id: string) {
     .first()
 }
 
-export const listAvailableStatesByModel = defineQuerySpec({
-  args: {
-    modelVersionSlug: v.string(),
-    modelVariant: v.string(),
-  },
-  handler: async (ctx, args) =>
+export const listAvailableStates = defineQuerySpec({
+  args: {},
+  handler: async (ctx) =>
     stream(ctx.db, schema)
       .query('catalog_endpoints')
-      .withIndex('by_modelVersionSlug__modelVariant__id__version', (q) =>
-        q.eq('modelVersionSlug', args.modelVersionSlug).eq('modelVariant', args.modelVariant),
-      )
+      .withIndex('by_id__version')
       .order('desc')
       .distinct(['id'])
       .filterWith(async (state) => state.unavailableAt === undefined)

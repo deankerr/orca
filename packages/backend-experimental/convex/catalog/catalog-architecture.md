@@ -199,8 +199,6 @@ Examples:
 - use `getState` instead of `getCurrentState`
 - use `history` when reading historical Entity States
 
-Relationship selectors may name the related domain concept when it adds meaning, such as `listAvailableStatesByModel`.
-
 Use exact symbol names in this section only when the symbol expresses a durable architectural invariant.
 
 ## Extension Rules

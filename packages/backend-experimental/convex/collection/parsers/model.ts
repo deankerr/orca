@@ -30,20 +30,19 @@ const rawModelSchema = z
       .object({
         variant: z.string(),
       })
-      .transform((value) => value.variant)
       .nullable(),
     supports_reasoning: z.boolean(),
   })
   .transform((raw) => {
-    const variant = raw.endpoint ?? 'standard'
-    const slug = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
+    const variant = raw.endpoint?.variant ?? 'standard'
+    const id = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
 
     const core = compact({
-      id: slug,
-      versionSlug: raw.permaslug,
+      id,
+      versionId: raw.permaslug,
       variant,
       name: raw.short_name,
-      authorSlug: raw.author,
+      authorId: raw.author,
       authorName: raw.author_display_name ?? raw.author,
       orAddedAt: raw.created_at,
       inputModalities: raw.input_modalities,
@@ -56,12 +55,12 @@ const rawModelSchema = z
     })
 
     const description = {
-      id: slug,
+      id,
       description: raw.description,
     }
 
     return {
-      id: slug,
+      id,
       core,
       description,
     }

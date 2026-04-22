@@ -31,11 +31,11 @@ export const stateTable = defineTable(stateFields)
 
 export const coreContentFields = {
   ...identityFields,
-  versionSlug: v.string(),
+  versionId: v.string(),
   variant: v.string(),
 
   name: v.string(),
-  authorSlug: v.string(),
+  authorId: v.string(),
   authorName: v.string(),
 
   orAddedAt: v.number(),

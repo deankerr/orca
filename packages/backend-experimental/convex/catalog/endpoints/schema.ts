@@ -5,11 +5,6 @@ const identityFields = {
   id: v.string(),
 }
 
-const modelSelectorFields = {
-  modelVersionSlug: v.string(),
-  modelVariant: v.string(),
-}
-
 const componentStateFields = {
   coreVersion: v.number(),
   coreContentHash: v.string(),
@@ -21,7 +16,7 @@ const componentStateFields = {
 
 export const stateFields = {
   ...identityFields,
-  ...modelSelectorFields,
+  modelId: v.string(),
   ...componentStateFields,
   firstSeenAt: v.number(),
   version: v.number(),
@@ -31,12 +26,6 @@ export const stateFields = {
 export const stateTable = defineTable(stateFields)
   .index('by_id__version', ['id', 'version'])
   .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_modelVersionSlug__modelVariant__id__version', [
-    'modelVersionSlug',
-    'modelVariant',
-    'id',
-    'version',
-  ])
   .index('by_unavailableAt', ['unavailableAt'])
 
 const componentIdentityFields = {
@@ -49,8 +38,8 @@ const componentIdentityFields = {
 
 export const coreContentFields = {
   ...componentIdentityFields,
-
-  ...modelSelectorFields,
+  modelVersionId: v.string(),
+  modelVariant: v.string(),
   providerVariant: v.optional(v.string()),
   providerName: v.string(),
   providerRegion: v.optional(v.string()),

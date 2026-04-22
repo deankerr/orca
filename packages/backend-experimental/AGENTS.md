@@ -1,4 +1,4 @@
-# Backend Redesign
+# Backend Experimental
 
 This directory is a greenfield prototype for ORCA's next backend architecture.
 
@@ -46,11 +46,18 @@ Observational data should be kept distinct from our materialized records.
 - avoid "Everything Is OK" alarms - start from the basis that data is up-to-date
 - detect anomolies in the background - is an entity we know about no longer present in the upstream data?
 
-## Current Scope
+## Status
 
-Ingestion and storage of versioned, materialized MEP data: `catalog`.
+- Refining `collection` and `catalog` of MEP data.
+- Simple hourly `collection` cron.
 
-Not yet modelled:
+### Known Issues
+
+- Entities can be marked unavailable from a single fetch error
+- Catalog entities could share ingest code
+
+### Deferred
 
 - archival storage
-- formal collection orchestration, bookkeeping
+- collection orchestration
+- monitor/changes features
