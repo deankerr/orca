@@ -6,7 +6,7 @@ const endpointGridStateOptions = {
   shallow: true,
 }
 
-export function getEndpointGridSorting({
+function getEndpointGridSorting({
   sort,
   order,
   hasActiveQuery,

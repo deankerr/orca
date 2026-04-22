@@ -12,7 +12,7 @@
 
 import type { EndpointChange, EntityChange, ModelChange, ProviderChange } from '../convex/changes'
 
-export type ChangeGroup = {
+type ChangeGroup = {
   slug: string
   changes: EntityChange[]
 }

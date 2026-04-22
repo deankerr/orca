@@ -12,12 +12,15 @@
     "dev": "turbo run dev --ui=stream",
     "dev:convex": "turbo run dev --filter=@orca/backend",
     "dev:next": "turbo run dev --filter=web",
+    "knip": "knip",
+    "knip:production": "knip --production",
     "process-logos": "turbo run process-logos --filter=web",
     "release": "turbo run release --filter=web",
     "start": "turbo run start --filter=web"
   },
   "devDependencies": {
     "eslint-plugin-react-hooks": "^7.0.1",
+    "knip": "^6.4.1",
     "oxfmt": "^0.44.0",
     "oxlint": "^1.59.0",
     "oxlint-tsgolint": "^0.20.0",

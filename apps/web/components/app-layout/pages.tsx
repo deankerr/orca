@@ -30,10 +30,6 @@ export function PageTitle({ className, ...props }: React.ComponentProps<'h1'>) {
   )
 }
 
-export function PageDescription({ className, ...props }: React.ComponentProps<'p'>) {
-  return <p className={cn('text-sm text-muted-foreground', className)} {...props} />
-}
-
 export function PageLoading() {
   return <Spinner className="m-auto" />
 }

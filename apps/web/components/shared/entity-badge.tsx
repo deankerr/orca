@@ -97,24 +97,3 @@ export function EntityBadge({
     </div>
   )
 }
-
-export function EntityInline({
-  slug,
-  fallbackText,
-  className,
-  ...props
-}: {
-  slug: string
-  fallbackText?: string
-} & React.ComponentProps<'span'>) {
-  return (
-    <span className={cn('gap-1.5 font-mono text-muted-foreground', className)} {...props}>
-      <EntityAvatar
-        slug={slug}
-        fallbackText={fallbackText}
-        className="mr-1 size-4.5 align-text-bottom"
-      />
-      {slug}
-    </span>
-  )
-}

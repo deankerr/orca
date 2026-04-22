@@ -24,7 +24,7 @@ type MonitorChangeRow = {
   topSpacingClassName?: string
 }
 
-export type MonitorFeedRow = MonitorBatchHeaderRow | MonitorChangeRow
+type MonitorFeedRow = MonitorBatchHeaderRow | MonitorChangeRow
 
 function getTopSpacingClassName(groupIndex: number, changeIndex: number) {
   if (groupIndex === 0 && changeIndex === 0) {
