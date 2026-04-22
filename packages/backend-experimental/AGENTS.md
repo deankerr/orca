@@ -2,10 +2,18 @@
 
 This directory is a greenfield prototype for ORCA's next backend architecture.
 
-- Do not import code from the existing backend.
+- Create clean, straight-forward, and thoughtfully designed core implementations.
+- Review and iterate all features frequently - **nothing** is set in stone.
 - Do not use return validators.
-- The focus is a clean and thoughfully designed core implementation, for rapid iteration.
-- Out of scope: rigourous error handling (exceptions are valuable right now), testing, metrics.
+- Do not import code from the existing backend.
+
+## Observability
+
+We use the Convex to Axiom log drain connector, which is configured in the Convex dashboard and not visible in project code.
+
+- Runtime metrics with function names are captured for every execution, including on any `console.{log|warn|error}` or uncaught exception.
+- Use `ConvexError` to throw errors with relevant domain data and a concise `message`.
+- Minimize error boundaries - exceptions are valuable during development, and will roll back mutations if uncaught.
 
 ## Background
 
@@ -37,31 +45,3 @@ Not yet modelled:
 
 - archival storage
 - formal collection orchestration, bookkeeping
-
-## How Versioning Works
-
-Each endpoint has two independent streams:
-
-- base stream: `catalog_endpoints`
-- pricing stream: `catalog_endpoint_pricing`
-
-Each stream is keyed by endpoint UUID and uses an append-only `version`
-number. A catalog row also stores:
-
-- `first_seen_at`
-  - When this distinct state was first observed.
-- `version_id`
-  - Reference to the matching `catalog_versions` row for this state.
-
-Version rows hold the shared provenance and hash metadata for a state:
-
-- `scope_table`
-- `id`
-- `first_seen_at`
-- `version`
-- `content_hash`
-- `source`
-
-The catalog rows remain the source of truth for payload reads. Query-side
-current-state reads are derived from those streams using latest-per-entity
-scans over `first_seen_at`.

@@ -7,5 +7,5 @@ export const list = query(endpoints.list)
 
 // These commit boundaries are internal implementation details of collection.
 export const ingest = internalMutation(endpoints.ingest)
-export const listStatesByModel = internalQuery(endpoints.listStatesByModel)
+export const listAvailableStatesByModel = internalQuery(endpoints.listAvailableStatesByModel)
 export const setAvailability = internalMutation(endpoints.setAvailability)

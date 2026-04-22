@@ -3,7 +3,7 @@ import { ConvexError, v } from 'convex/values'
 import { defineMutationSpec } from '../../lib/functionSpec'
 import { processComponent } from '../components'
 import { getState } from './queries'
-import { coreContentFields, pricingContentFields } from './schema'
+import { coreContentFields } from './schema'
 
 export const setAvailability = defineMutationSpec({
   args: {
@@ -26,17 +26,13 @@ export const setAvailability = defineMutationSpec({
     }
 
     // append state row
-    await ctx.db.insert('catalog_endpoints', {
+    await ctx.db.insert('catalog_providers', {
       id: state.id,
       version: state.version + 1,
       firstSeenAt: args.firstSeenAt,
       unavailableAt: args.unavailableAt,
-      modelVersionSlug: state.modelVersionSlug,
-      modelVariant: state.modelVariant,
       coreVersion: state.coreVersion,
       coreContentHash: state.coreContentHash,
-      pricingVersion: state.pricingVersion,
-      pricingContentHash: state.pricingContentHash,
     })
   },
 })
@@ -46,10 +42,7 @@ export const ingest = defineMutationSpec({
     firstSeenAt: v.number(),
     entity: v.object({
       id: v.string(),
-      modelVersionSlug: v.string(),
-      modelVariant: v.string(),
       core: v.object(coreContentFields),
-      pricing: v.object(pricingContentFields),
     }),
   },
   handler: async (ctx, args) => {
@@ -68,40 +61,21 @@ export const ingest = defineMutationSpec({
         coreVersion: componentState.version,
         coreContentHash: componentState.contentHash,
       }),
-      appendComponentRow: async (row) => ctx.db.insert('catalog_endpoint_core', row),
-    })
-
-    const pricing = await processComponent({
-      state: state
-        ? {
-            version: state.pricingVersion,
-            contentHash: state.pricingContentHash,
-          }
-        : undefined,
-      content: args.entity.pricing,
-      firstSeenAt: args.firstSeenAt,
-      toStateFields: (componentState) => ({
-        pricingVersion: componentState.version,
-        pricingContentHash: componentState.contentHash,
-      }),
-      appendComponentRow: async (row) => ctx.db.insert('catalog_endpoint_pricing', row),
+      appendComponentRow: async (row) => ctx.db.insert('catalog_provider_core', row),
     })
 
     const nextUnavailableAt = undefined
-    const componentStateChanged = core.action === 'append' || pricing.action === 'append'
+    const componentStateChanged = core.action === 'append'
     const availabilityChanged = state?.unavailableAt !== nextUnavailableAt
 
     if (componentStateChanged || availabilityChanged) {
       // append state row
-      await ctx.db.insert('catalog_endpoints', {
+      await ctx.db.insert('catalog_providers', {
         id: args.entity.id,
         version: (state?.version ?? 0) + 1,
         firstSeenAt: args.firstSeenAt,
         unavailableAt: nextUnavailableAt,
-        modelVersionSlug: args.entity.modelVersionSlug,
-        modelVariant: args.entity.modelVariant,
         ...core.stateFields,
-        ...pricing.stateFields,
       })
     }
   },

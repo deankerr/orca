@@ -45,11 +45,6 @@ export const $fetch = createFetch({
   },
 })
 
-type EndpointTarget = {
-  permaslug: string
-  variant: string
-}
-
 function getErrorMessage(error: unknown) {
   if (error instanceof z.ZodError) {
     return z.prettifyError(error)
@@ -58,62 +53,76 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
-// Providers parse in the action and commit one entity per mutation.
-async function collectProviders(
-  ctx: ActionCtx,
-  args: {
-    items: Record<string, unknown>[]
-    firstSeenAt: number
-  },
-) {
-  for (const item of args.items) {
+// Providers are independent from model and endpoint collection.
+async function collectProviders(ctx: ActionCtx, args: { firstSeenAt: number }) {
+  const items = await $fetch('/frontend/all-providers', { throw: true })
+  const states = await ctx.runQuery(internal.providers.listAvailableStates, {})
+  const currentlyAvailableIds = new Set(states.map((state) => state.id))
+
+  for (const item of items) {
     const identity = parseProviderIdentity({ item })
+    currentlyAvailableIds.delete(identity.id)
 
     try {
       const entity = parseProviderBundle({ item })
-      await ctx.runMutation(internal.ingest.providers, {
+
+      await ctx.runMutation(internal.providers.ingest, {
         entity,
         firstSeenAt: args.firstSeenAt,
       })
     } catch (error) {
       const message = getErrorMessage(error)
 
-      console.error('[ingestion:collect] failed to collect provider', {
+      console.error('failed to collect provider', {
         firstSeenAt: args.firstSeenAt,
         id: identity.id,
         error: message,
       })
     }
   }
+
+  for (const id of currentlyAvailableIds) {
+    await ctx.runMutation(internal.providers.setAvailability, {
+      id,
+      firstSeenAt: args.firstSeenAt,
+      unavailableAt: args.firstSeenAt,
+    })
+  }
 }
 
-// Models also surface endpoint targets for the follow-up endpoint collection phase.
-async function collectModels(
-  ctx: ActionCtx,
-  args: {
-    items: Record<string, unknown>[]
-    firstSeenAt: number
-  },
-): Promise<EndpointTarget[]> {
-  const endpointTargets: EndpointTarget[] = []
+// Models and endpoints share a process so endpoints only run after their model is committed.
+async function collectModels(ctx: ActionCtx, args: { firstSeenAt: number }) {
+  const items = await $fetch('/frontend/models', { throw: true })
+  const states = await ctx.runQuery(internal.models.listAvailableStates, {})
+  const currentlyAvailableIds = new Set(states.map((state) => state.id))
 
-  for (const item of args.items) {
+  for (const item of items) {
     const identity = parseModelIdentity({ item })
-
-    if (identity.target) {
-      endpointTargets.push(identity.target)
-    }
+    currentlyAvailableIds.delete(identity.id)
 
     try {
       const entity = parseModelBundle({ item })
-      await ctx.runMutation(internal.ingest.models, {
+
+      await ctx.runMutation(internal.models.ingest, {
         entity,
+        firstSeenAt: args.firstSeenAt,
+      })
+
+      if (!identity.endpoint) {
+        continue
+      }
+
+      await collectEndpoints(ctx, {
+        model: {
+          id: identity.id,
+          endpoint: identity.endpoint,
+        },
         firstSeenAt: args.firstSeenAt,
       })
     } catch (error) {
       const message = getErrorMessage(error)
 
-      console.error('[ingestion:collect] failed to collect model', {
+      console.error('failed to collect model', {
         firstSeenAt: args.firstSeenAt,
         id: identity.id,
         error: message,
@@ -121,62 +130,71 @@ async function collectModels(
     }
   }
 
-  return endpointTargets
+  for (const id of currentlyAvailableIds) {
+    await ctx.runMutation(internal.models.setAvailability, {
+      id,
+      firstSeenAt: args.firstSeenAt,
+      unavailableAt: args.firstSeenAt,
+    })
+  }
 }
 
-// Endpoints now run one target at a time so fetch, parse, and commit share one failure boundary.
+// Endpoints run one model at a time so fetch, parse, and commit share one failure boundary.
 async function collectEndpoints(
   ctx: ActionCtx,
   args: {
-    targets: EndpointTarget[]
+    model: {
+      id: string
+      endpoint: {
+        permaslug: string
+        variant: string
+      }
+    }
     firstSeenAt: number
   },
 ) {
-  for (const target of args.targets) {
-    try {
-      const items = await $fetch('/frontend/stats/endpoint', {
-        query: {
-          permaslug: target.permaslug,
-          variant: target.variant,
-        },
-        throw: true,
-      })
+  try {
+    const items = await $fetch('/frontend/stats/endpoint', {
+      query: {
+        permaslug: args.model.endpoint.permaslug,
+        variant: args.model.endpoint.variant,
+      },
+      throw: true,
+    })
 
-      const entities = items.map((item) => parseEndpointBundle({ item }))
-      const states = await ctx.runQuery(internal.endpoints.listStatesByModel, {
-        modelVersionSlug: target.permaslug,
-        modelVariant: target.variant,
-      })
-      const currentlyAvailableIds = new Set(
-        states.filter((state) => state.unavailableAt === undefined).map((state) => state.id),
-      )
+    const entities = items.map((item) => parseEndpointBundle({ item }))
+    const states = await ctx.runQuery(internal.endpoints.listAvailableStatesByModel, {
+      modelVersionSlug: args.model.endpoint.permaslug,
+      modelVariant: args.model.endpoint.variant,
+    })
+    const currentlyAvailableIds = new Set(states.map((state) => state.id))
 
-      for (const entity of entities) {
-        currentlyAvailableIds.delete(entity.id)
+    for (const entity of entities) {
+      currentlyAvailableIds.delete(entity.id)
 
-        await ctx.runMutation(internal.endpoints.ingest, {
-          firstSeenAt: args.firstSeenAt,
-          entity,
-        })
-      }
-
-      for (const id of currentlyAvailableIds) {
-        await ctx.runMutation(internal.endpoints.setAvailability, {
-          id,
-          firstSeenAt: args.firstSeenAt,
-          unavailableAt: args.firstSeenAt,
-        })
-      }
-    } catch (error) {
-      const message = getErrorMessage(error)
-
-      console.error('[ingestion:collect] failed to collect endpoint target', {
+      await ctx.runMutation(internal.endpoints.ingest, {
         firstSeenAt: args.firstSeenAt,
-        permaslug: target.permaslug,
-        variant: target.variant,
-        error: message,
+        entity,
       })
     }
+
+    for (const id of currentlyAvailableIds) {
+      await ctx.runMutation(internal.endpoints.setAvailability, {
+        id,
+        firstSeenAt: args.firstSeenAt,
+        unavailableAt: args.firstSeenAt,
+      })
+    }
+  } catch (error) {
+    const message = getErrorMessage(error)
+
+    console.error('failed to collect model endpoints', {
+      firstSeenAt: args.firstSeenAt,
+      id: args.model.id,
+      permaslug: args.model.endpoint.permaslug,
+      variant: args.model.endpoint.variant,
+      error: message,
+    })
   }
 }
 
@@ -185,24 +203,20 @@ export const run = internalAction({
   handler: async (ctx) => {
     const firstSeenAt = Date.now()
 
-    const [providerItems, modelItems] = await Promise.all([
-      $fetch('/frontend/all-providers', { throw: true }),
-      $fetch('/frontend/models', { throw: true }),
+    const results = await Promise.allSettled([
+      collectProviders(ctx, { firstSeenAt }),
+      collectModels(ctx, { firstSeenAt }),
     ])
 
-    await collectProviders(ctx, {
-      items: providerItems,
-      firstSeenAt,
-    })
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        continue
+      }
 
-    const endpointTargets = await collectModels(ctx, {
-      items: modelItems,
-      firstSeenAt,
-    })
-
-    await collectEndpoints(ctx, {
-      targets: endpointTargets,
-      firstSeenAt,
-    })
+      console.error('failed to collect process', {
+        firstSeenAt,
+        error: getErrorMessage(result.reason),
+      })
+    }
   },
 })

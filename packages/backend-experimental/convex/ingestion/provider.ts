@@ -1,10 +1,5 @@
-import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
-
-import { providerDataFields } from '../catalog/providers/table'
-import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, commitMetadataValidator } from './shared'
 
 // Drop nullish values so the catalog payload stays compact and stable.
 function compact<T extends Record<string, unknown>>(value: T) {
@@ -30,7 +25,7 @@ const rawProviderSchema = z
     sendClientIp: z.boolean(),
   })
   .transform((raw) => {
-    const providerRecord = compact({
+    const core = compact({
       id: raw.slug,
       name: raw.displayName,
       headquarters: raw.headquarters,
@@ -42,8 +37,8 @@ const rawProviderSchema = z
     })
 
     return {
-      id: providerRecord.id,
-      providerRecord,
+      id: core.id,
+      core,
     }
   })
 
@@ -63,30 +58,3 @@ export function parseProviderBundle(args: { item: Record<string, unknown> }) {
 export function parseProviderIdentity(args: { item: Record<string, unknown> }) {
   return rawProviderIdentitySchema.parse(args.item)
 }
-
-// Commit exactly one provider so the action can report parse and commit failures separately.
-export const ingestProviders = defineMutationSpec({
-  args: {
-    ...commitMetadataValidator,
-    entity: v.object({
-      id: v.string(),
-      providerRecord: v.object(providerDataFields),
-    }),
-  },
-  handler: async (ctx, args) => {
-    const providerWithVersion = await bumpVersion(ctx, {
-      table: 'catalog_providers',
-      id: args.entity.id,
-      data: args.entity.providerRecord,
-      firstSeenAt: args.firstSeenAt,
-    })
-
-    if (providerWithVersion) {
-      await ctx.db.insert('catalog_providers', providerWithVersion)
-    }
-
-    return {
-      changed: providerWithVersion !== null,
-    }
-  },
-})

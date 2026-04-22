@@ -1,10 +1,5 @@
-import { v } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
-
-import { modelDataFields, modelDescriptionDataFields } from '../catalog/models/table'
-import { defineMutationSpec } from '../lib/functionSpec'
-import { bumpVersion, commitMetadataValidator } from './shared'
 
 // Drop nullish values so version hashes only reflect meaningful payload changes.
 function compact<T extends Record<string, unknown>>(value: T) {
@@ -43,7 +38,7 @@ const rawModelSchema = z
     const variant = raw.endpoint ?? 'standard'
     const slug = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
 
-    const modelRecord = compact({
+    const core = compact({
       id: slug,
       versionSlug: raw.permaslug,
       variant,
@@ -60,19 +55,19 @@ const rawModelSchema = z
       routingErrorMessage: raw.routing_error_message,
     })
 
-    const modelDescriptionRecord = {
+    const description = {
       id: slug,
       description: raw.description,
     }
 
     return {
       id: slug,
-      modelRecord,
-      modelDescriptionRecord,
+      core,
+      description,
     }
   })
 
-// Model identity and endpoint targeting are stable enough to gate the whole workflow.
+// Model identity and endpoint selectors are stable enough to gate the whole workflow.
 const rawModelIdentitySchema = z
   .object({
     slug: z.string(),
@@ -89,7 +84,7 @@ const rawModelIdentitySchema = z
 
     return {
       id,
-      target:
+      endpoint:
         raw.endpoint === null
           ? null
           : {
@@ -106,42 +101,3 @@ export function parseModelBundle(args: { item: Record<string, unknown> }) {
 export function parseModelIdentity(args: { item: Record<string, unknown> }) {
   return rawModelIdentitySchema.parse(args.item)
 }
-
-// Commit both model streams together so the catalog never exposes a split write.
-export const ingestModels = defineMutationSpec({
-  args: {
-    ...commitMetadataValidator,
-    entity: v.object({
-      id: v.string(),
-      modelRecord: v.object(modelDataFields),
-      modelDescriptionRecord: v.object(modelDescriptionDataFields),
-    }),
-  },
-  handler: async (ctx, args) => {
-    const modelWithVersion = await bumpVersion(ctx, {
-      table: 'catalog_models',
-      id: args.entity.id,
-      data: args.entity.modelRecord,
-      firstSeenAt: args.firstSeenAt,
-    })
-
-    const descriptionWithVersion = await bumpVersion(ctx, {
-      table: 'catalog_model_descriptions',
-      id: args.entity.id,
-      data: args.entity.modelDescriptionRecord,
-      firstSeenAt: args.firstSeenAt,
-    })
-
-    if (modelWithVersion) {
-      await ctx.db.insert('catalog_models', modelWithVersion)
-    }
-
-    if (descriptionWithVersion) {
-      await ctx.db.insert('catalog_model_descriptions', descriptionWithVersion)
-    }
-
-    return {
-      changed: modelWithVersion !== null || descriptionWithVersion !== null,
-    }
-  },
-})

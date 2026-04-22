@@ -1,12 +1,12 @@
 import { ingest, setAvailability } from './ingest'
-import { history, get, list, listStatesByModel } from './queries'
-import { coreTable, pricingTable, stateTable } from './table'
+import { history, get, list, listAvailableStatesByModel } from './queries'
+import { coreTable, pricingTable, stateTable } from './schema'
 
 export const endpoints = {
   get,
   history,
   list,
-  listStatesByModel,
+  listAvailableStatesByModel,
   ingest,
   setAvailability,
 } as const

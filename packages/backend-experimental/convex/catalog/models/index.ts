@@ -1,12 +1,18 @@
-import { get, list } from './queries'
-import { catalogModelDescriptionsTable, catalogModelsTable } from './table'
+import { ingest, setAvailability } from './ingest'
+import { history, get, list, listAvailableStates } from './queries'
+import { coreTable, descriptionTable, stateTable } from './schema'
 
 export const models = {
   get,
+  history,
+  ingest,
   list,
+  listAvailableStates,
+  setAvailability,
 } as const
 
 export const modelsSchema = {
-  table: catalogModelsTable,
-  descriptionTable: catalogModelDescriptionsTable,
+  stateTable,
+  coreTable,
+  descriptionTable,
 } as const

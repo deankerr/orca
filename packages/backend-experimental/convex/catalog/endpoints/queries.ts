@@ -1,36 +1,14 @@
 import { stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 
 import type { Doc } from '../../_generated/dataModel'
 import type { QueryCtx } from '../../_generated/server'
 import { defineQuerySpec } from '../../lib/functionSpec'
 import schema from '../../schema'
+import { withCatalogMetadata } from '../components'
 
 type State = Doc<'catalog_endpoints'>
-
-function withCatalogMetadata<
-  T extends {
-    _id: unknown
-    _creationTime: number
-    firstSeenAt: number
-    version: number
-    contentHash: string
-  },
->(component: T) {
-  const { _id, _creationTime, firstSeenAt, version, contentHash, ...content } = component
-
-  return {
-    ...content,
-    _catalog: {
-      _id,
-      _creationTime,
-      firstSeenAt,
-      version,
-      contentHash,
-    },
-  }
-}
 
 export async function getState(ctx: QueryCtx, id: string) {
   return ctx.db
@@ -40,7 +18,7 @@ export async function getState(ctx: QueryCtx, id: string) {
     .first()
 }
 
-export const listStatesByModel = defineQuerySpec({
+export const listAvailableStatesByModel = defineQuerySpec({
   args: {
     modelVersionSlug: v.string(),
     modelVariant: v.string(),
@@ -53,6 +31,7 @@ export const listStatesByModel = defineQuerySpec({
       )
       .order('desc')
       .distinct(['id'])
+      .filterWith(async (state) => state.unavailableAt === undefined)
       .collect(),
 })
 
@@ -85,15 +64,21 @@ async function hydrate(ctx: QueryCtx, state: State) {
   ])
 
   if (!core) {
-    throw new Error(
-      `Missing endpoint core version ${state.coreVersion} for endpoint id "${state.id}"`,
-    )
+    throw new ConvexError({
+      message: 'component not found',
+      component: 'core',
+      id: state.id,
+      version: state.coreVersion,
+    })
   }
 
   if (!pricing) {
-    throw new Error(
-      `Missing endpoint pricing version ${state.pricingVersion} for endpoint id "${state.id}"`,
-    )
+    throw new ConvexError({
+      message: 'component not found',
+      component: 'pricing',
+      id: state.id,
+      version: state.pricingVersion,
+    })
   }
 
   return {
@@ -103,12 +88,12 @@ async function hydrate(ctx: QueryCtx, state: State) {
   }
 }
 
-function isWithinAvailabilityWindow(state: State, maxUnavailable?: number) {
-  if (maxUnavailable === undefined) {
+function isWithinAvailabilityWindow(state: State, maxUnavailableMs?: number) {
+  if (maxUnavailableMs === undefined) {
     return true
   }
 
-  return state.unavailableAt === undefined || state.unavailableAt >= Date.now() - maxUnavailable
+  return state.unavailableAt === undefined || state.unavailableAt >= Date.now() - maxUnavailableMs
 }
 
 // Queries
@@ -131,7 +116,7 @@ export const get = defineQuerySpec({
 export const list = defineQuerySpec({
   args: {
     paginationOpts: paginationOptsValidator,
-    maxUnavailable: v.optional(v.number()),
+    maxUnavailableMs: v.optional(v.number()),
   },
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
@@ -139,7 +124,7 @@ export const list = defineQuerySpec({
       .withIndex('by_id__version')
       .order('desc')
       .distinct(['id'])
-      .filterWith(async (state) => isWithinAvailabilityWindow(state, args.maxUnavailable))
+      .filterWith(async (state) => isWithinAvailabilityWindow(state, args.maxUnavailableMs))
       .map(async (state) => hydrate(ctx, state))
       .paginate(args.paginationOpts),
 })

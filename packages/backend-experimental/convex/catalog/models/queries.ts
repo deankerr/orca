@@ -1,49 +1,89 @@
 import { stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 
 import type { Doc } from '../../_generated/dataModel'
 import type { QueryCtx } from '../../_generated/server'
 import { defineQuerySpec } from '../../lib/functionSpec'
 import schema from '../../schema'
+import { withCatalogMetadata } from '../components'
 
-type ModelVersion = Doc<'catalog_models'>
-type ModelDescriptionVersion = Doc<'catalog_model_descriptions'>
+type State = Doc<'catalog_models'>
 
-async function getModel(ctx: QueryCtx, id: string) {
+export async function getState(ctx: QueryCtx, id: string) {
   return ctx.db
     .query('catalog_models')
-    .withIndex('by_id__firstSeenAt', (q) => q.eq('id', id))
+    .withIndex('by_id__version', (q) => q.eq('id', id))
     .order('desc')
     .first()
 }
 
-async function getModelDescription(ctx: QueryCtx, id: string) {
-  return ctx.db
+export const listAvailableStates = defineQuerySpec({
+  args: {},
+  handler: async (ctx) =>
+    stream(ctx.db, schema)
+      .query('catalog_models')
+      .withIndex('by_id__version')
+      .order('desc')
+      .distinct(['id'])
+      .filterWith(async (state) => state.unavailableAt === undefined)
+      .collect(),
+})
+
+async function getCore(ctx: QueryCtx, state: State) {
+  const core = await ctx.db
+    .query('catalog_model_core')
+    .withIndex('by_id__version', (q) => q.eq('id', state.id).eq('version', state.coreVersion))
+    .first()
+
+  return core ? withCatalogMetadata(core) : null
+}
+
+async function getDescription(ctx: QueryCtx, state: State) {
+  const description = await ctx.db
     .query('catalog_model_descriptions')
-    .withIndex('by_id__firstSeenAt', (q) => q.eq('id', id))
-    .order('desc')
+    .withIndex('by_id__version', (q) =>
+      q.eq('id', state.id).eq('version', state.descriptionVersion),
+    )
     .first()
+
+  return description ? withCatalogMetadata(description) : null
 }
 
-function withDescription(model: ModelVersion, description: ModelDescriptionVersion) {
-  return {
-    ...model,
-    description: description.description,
+async function hydrate(ctx: QueryCtx, state: State) {
+  const [core, description] = await Promise.all([getCore(ctx, state), getDescription(ctx, state)])
+
+  if (!core) {
+    throw new ConvexError({
+      message: 'component not found',
+      component: 'core',
+      id: state.id,
+      version: state.coreVersion,
+    })
   }
-}
-
-async function withCurrentDescription(
-  ctx: QueryCtx,
-  model: ModelVersion,
-): Promise<ReturnType<typeof withDescription>> {
-  const description = await getModelDescription(ctx, model.id)
 
   if (!description) {
-    throw new Error(`Missing model description row for model id "${model.id}"`)
+    throw new ConvexError({
+      message: 'component not found',
+      component: 'description',
+      id: state.id,
+      version: state.descriptionVersion,
+    })
   }
 
-  return withDescription(model, description)
+  return {
+    state,
+    core,
+    description,
+  }
+}
+
+function isWithinAvailabilityWindow(state: State, maxUnavailableMs?: number) {
+  if (maxUnavailableMs === undefined) {
+    return true
+  }
+
+  return state.unavailableAt === undefined || state.unavailableAt >= Date.now() - maxUnavailableMs
 }
 
 export const get = defineQuerySpec({
@@ -51,26 +91,42 @@ export const get = defineQuerySpec({
     id: v.string(),
   },
   handler: async (ctx, args) => {
-    const model = await getModel(ctx, args.id)
+    const state = await getState(ctx, args.id)
 
-    if (!model) {
+    if (!state) {
       return null
     }
 
-    return withCurrentDescription(ctx, model)
+    return hydrate(ctx, state)
   },
 })
 
 export const list = defineQuerySpec({
   args: {
     paginationOpts: paginationOptsValidator,
+    maxUnavailableMs: v.optional(v.number()),
   },
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
       .query('catalog_models')
-      .withIndex('by_id__firstSeenAt')
+      .withIndex('by_id__version')
       .order('desc')
       .distinct(['id'])
-      .map(async (model) => withCurrentDescription(ctx, model))
+      .filterWith(async (state) => isWithinAvailabilityWindow(state, args.maxUnavailableMs))
+      .map(async (state) => hydrate(ctx, state))
+      .paginate(args.paginationOpts),
+})
+
+export const history = defineQuerySpec({
+  args: {
+    id: v.string(),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) =>
+    stream(ctx.db, schema)
+      .query('catalog_models')
+      .withIndex('by_id__version', (q) => q.eq('id', args.id))
+      .order('desc')
+      .map(async (state) => hydrate(ctx, state))
       .paginate(args.paginationOpts),
 })
