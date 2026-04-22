@@ -15,6 +15,15 @@ We use the Convex to Axiom log drain connector, which is configured in the Conve
 - Use `ConvexError` to throw errors with relevant domain data and a concise `message`.
 - Minimize error boundaries - exceptions are valuable during development, and will roll back mutations if uncaught.
 
+## Feature Structure
+
+Code is organised into top level _directories_ with the name of the _feature_, e.g. `catalog`, `collection`. Top level _files_ export the stable Convex API surface, delegating implementation details to the relevant feature.
+
+- Use `define{Query|Mutation|Action}Spec` to create a validator/handler combo which can be called internally with `func.handler`, and dropped directly into a Convex Function, e.g. `export const list = query(func)`.
+- Features may export a curated API as a namespaced object from `index.ts`, keeping implementation details private.
+  - Exception: Convex table definitions should be imported directly by the root `schema.ts` to prevent load order issues during codegen.
+- Internal background process workflows are not considered part of the Convex API surface.
+
 ## Background
 
 The current production pipeline is built around archived crawl bundles, later

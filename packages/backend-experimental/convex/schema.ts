@@ -1,33 +1,22 @@
 import { defineSchema } from 'convex/server'
 
-import {
-  coreTable as catalogEndpointCoreTable,
-  pricingTable as catalogEndpointPricingTable,
-  stateTable as catalogEndpointsTable,
-} from './catalog/endpoints/schema'
-import {
-  coreTable as catalogModelCoreTable,
-  descriptionTable as catalogModelDescriptionsTable,
-  stateTable as catalogModelsTable,
-} from './catalog/models/schema'
-import {
-  coreTable as catalogProviderCoreTable,
-  stateTable as catalogProvidersTable,
-} from './catalog/providers/schema'
+import * as catalogEndpoints from './catalog/endpoints/schema'
+import * as catalogModels from './catalog/models/schema'
+import * as catalogProviders from './catalog/providers/schema'
 
 export default defineSchema(
   {
-    catalog_endpoints: catalogEndpointsTable,
-    catalog_endpoint_core: catalogEndpointCoreTable,
-    catalog_endpoint_pricing: catalogEndpointPricingTable,
-    catalog_models: catalogModelsTable,
-    catalog_model_core: catalogModelCoreTable,
-    catalog_model_descriptions: catalogModelDescriptionsTable,
-    catalog_providers: catalogProvidersTable,
-    catalog_provider_core: catalogProviderCoreTable,
+    catalog_endpoints: catalogEndpoints.stateTable,
+    catalog_endpoint_core: catalogEndpoints.coreTable,
+    catalog_endpoint_pricing: catalogEndpoints.pricingTable,
+    catalog_models: catalogModels.stateTable,
+    catalog_model_core: catalogModels.coreTable,
+    catalog_model_descriptions: catalogModels.descriptionTable,
+    catalog_providers: catalogProviders.stateTable,
+    catalog_provider_core: catalogProviders.coreTable,
   },
   {
     strictTableNameTypes: true,
-    schemaValidation: false, // wipe dev data frequently
+    schemaValidation: true,
   },
 )

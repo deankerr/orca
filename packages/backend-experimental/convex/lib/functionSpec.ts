@@ -36,7 +36,6 @@ function createFunctionSpecBuilder<Ctx>() {
   return defineFunctionSpec
 }
 
-export const defineFunctionSpec = createFunctionSpecBuilder
 export const defineQuerySpec = createFunctionSpecBuilder<QueryCtx>()
 export const defineMutationSpec = createFunctionSpecBuilder<MutationCtx>()
 export const defineActionSpec = createFunctionSpecBuilder<ActionCtx>()

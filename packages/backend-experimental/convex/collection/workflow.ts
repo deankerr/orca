@@ -4,9 +4,9 @@ import { z } from 'zod'
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
 import { internalAction } from '../_generated/server'
-import { parseEndpointBundle } from './endpoint'
-import { parseModelBundle, parseModelIdentity } from './model'
-import { parseProviderBundle, parseProviderIdentity } from './provider'
+import { parseEndpointBundle } from './parsers/endpoint'
+import { parseModelBundle, parseModelIdentity } from './parsers/model'
+import { parseProviderBundle, parseProviderIdentity } from './parsers/provider'
 
 const DataRecordsSchema = z
   .object({ data: z.record(z.string(), z.unknown()).array() })

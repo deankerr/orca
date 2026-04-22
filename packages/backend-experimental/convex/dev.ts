@@ -26,9 +26,9 @@ const tableNameValidator = v.union(
   v.literal('catalog_provider_core'),
 )
 
-const deleteBatchSize = 128
+const deleteBatchSize = 4000
 
-export const deleteBatch = internalMutation({
+export const _deleteBatch = internalMutation({
   args: {
     tableName: tableNameValidator,
     take: v.number(),
@@ -47,7 +47,7 @@ export const deleteBatch = internalMutation({
   },
 })
 
-export const run = internalAction({
+export const wipe = internalAction({
   args: {},
   handler: async (ctx) => {
     const tables: { tableName: TableNames; deleted: number }[] = []
@@ -57,7 +57,7 @@ export const run = internalAction({
 
       while (true) {
         const result: { deleted: number; done: boolean } = await ctx.runMutation(
-          internal.wipe.deleteBatch,
+          internal.dev._deleteBatch,
           {
             tableName,
             take: deleteBatchSize,
