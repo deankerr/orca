@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-explicit-any required to match convex lib patterns
 import type { ArgsArrayForOptionalValidator, DefaultArgsForOptionalValidator } from 'convex/server'
 import type { PropertyValidators, Validator } from 'convex/values'
 

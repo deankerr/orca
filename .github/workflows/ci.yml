@@ -12,5 +12,4 @@ jobs:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun --bun oxlint --type-check --type-aware --report-unused-disable-directives .
-      - run: bun --bun oxfmt --check .
+      - run: bun run check

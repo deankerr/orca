@@ -18,41 +18,25 @@ export default defineConfig({
     '**/components/ui',
   ],
   rules: {
-    // Standard ultracite disables
+    // standard ultracite overrides
+    'array-type': 'off',
     'func-style': 'off',
-    'import/no-relative-parent-imports': 'off',
     'no-inline-comments': 'off',
     'no-use-before-define': 'off',
-    'no-void': 'off',
     'no-warning-comments': 'off',
-    'require-await': 'off',
-    'typescript/consistent-type-definitions': 'off',
-    'typescript/triple-slash-reference': 'off',
     'sort-keys': 'off',
-    'array-type': 'off',
-
-    // Project specific
-    'no-nested-ternary': 'off',
-    'unicorn/no-nested-ternary': 'off',
-    'unicorn/number-literal-case': 'off',
-    'typescript/no-explicit-any': 'off',
-    'typescript/no-non-null-assertion': 'off',
+    'typescript/consistent-type-definitions': 'off',
     'typescript/prefer-readonly-parameter-types': 'off',
-    complexity: 'off',
     'unicorn/consistent-function-scoping': 'off',
-    'unicorn/no-useless-undefined': 'off',
+
+    // conflicts
+    'require-await': 'off',
+    'unicorn/number-literal-case': 'off',
 
     // React
-    'react/react-in-jsx-scope': 'off',
-    'react/jsx-filename-extension': 'off',
-    'react/jsx-max-depth': 'off',
-    'react/no-multi-comp': 'off',
     'react/jsx-handler-names': 'off',
-    'react/jsx-props-no-spreading': 'off',
-    'react/only-export-components': 'off',
 
-    // Use the upstream React Hooks plugin to recover the React Compiler /
-    // Hooks rule surface that Oxlint's native react plugin does not fully cover.
+    // Use the upstream React Hooks plugin for its React Compiler rules.
     'react/rules-of-hooks': 'off',
     'react/exhaustive-deps': 'off',
     'react-hooks-js/rules-of-hooks': 'error',
@@ -74,24 +58,32 @@ export default defineConfig({
   },
   overrides: [
     {
+      // convex
       files: ['**/convex/**/*.{ts,tsx}'],
       rules: {
-        // Useful pattern with convex ctx.* functions.
-        'promise/prefer-await-to-then': 'off',
-
-        // Convex doesn't support kebab-case.
+        // incompatible
         'unicorn/filename-case': 'off',
-
-        // Incompatible with matching `undefined` in index queries.
+        'unicorn/no-useless-undefined': 'off',
+        // useful
+        'promise/prefer-await-to-then': 'off',
+      },
+    },
+    {
+      // legacy web/backend code
+      files: ['apps/web/**/*.{ts,tsx,js,jsx}', 'packages/backend/**/*.{ts,tsx,js,jsx}'],
+      rules: {
+        complexity: 'off',
+        'no-nested-ternary': 'off',
+        'unicorn/no-nested-ternary': 'off',
         'unicorn/no-useless-undefined': 'off',
       },
     },
     {
-      files: [
-        'packages/backend/convex/snapshots/**/*.{ts,tsx}',
-        'packages/backend/convex/db/or/sources.ts',
-      ],
+      // legacy snapshots workflows
+      files: ['packages/backend/convex/snapshots/**/*.{ts,tsx}'],
       rules: {
+        'typescript/no-non-null-assertion': 'off',
+        'typescript/no-explicit-any': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-member-access': 'off',
         'typescript/no-unsafe-argument': 'off',
