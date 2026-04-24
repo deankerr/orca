@@ -68,7 +68,7 @@ export async function processLobehubIcons(): Promise<ProcessLobehubResult> {
       // * Resolve background (prefer gradient if available)
       let background: string
       if (avatarBackgroundRaw === 'COLOR_PRIMARY') {
-        background = colorPrimary!
+        background = colorPrimary ?? '#000'
       } else if (avatarBackgroundRaw === 'COLOR_GRADIENT') {
         background = colorGradient ?? colorPrimary ?? '#000'
       } else {

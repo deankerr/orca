@@ -2,10 +2,10 @@
 
 ## OXC
 
-- Use `bun run check` to type check, lint, auto-fix, and format the entire project in moments with `oxlint`, `oxlint-tsgolint`, and `oxfmt`.
-- Strict, type-aware linting is enabled, based on the `ultracite` preset.
-- If a rule seems invalid or inappropriate, you must justify the reasoning before using an inline ignore comment.
-- We don't apply our strict rule set to component registry code, like shadcn-ui.
+- Run `bun run fix` at the repo root after edits in almost all cases.
+- `fix` is fast: it uses `oxlint`, `oxlint-tsgolint`, and `oxfmt`, not a slow ESLint/tsc stack.
+- Prefer root-wide `fix` over targeted checks so monorepo-wide issues are caught.
+- Use `bun run check` when you specifically need CI-equivalent, non-mutating verification.
 
 ## Overview
 

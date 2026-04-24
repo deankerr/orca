@@ -81,7 +81,7 @@ function failIfUnexpectedFilesChanged(expectedChangedFiles: Array<string>) {
   const unexpectedFiles = changedFiles.filter((file) => !expectedChangedFiles.includes(file))
 
   if (unexpectedFiles.length > 0) {
-    console.error('[release] bun run check modified unexpected files')
+    console.error('[release] bun run fix modified unexpected files')
     console.error(unexpectedFiles.join('\n'))
     process.exit(1)
   }
@@ -129,8 +129,8 @@ const nextVersion = `${next}.0.0`
 const nextPackageJsonText = replacePackageVersion(packageJsonText, nextVersion)
 await Bun.write(packageJsonPath, nextPackageJsonText)
 
-console.log('[release] running bun run check')
-await $`bun run --cwd ../.. check`
+console.log('[release] running bun run fix')
+await $`bun run --cwd ../.. fix`
 failIfUnexpectedFilesChanged(['apps/web/package.json'])
 
 // commit the version bump
