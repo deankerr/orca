@@ -4,14 +4,14 @@
   "type": "module",
   "dependencies": {
     "@better-fetch/fetch": "^1.1.21",
-    "convex": "^1.36.1",
-    "convex-helpers": "^0.1.115",
-    "remeda": "^2.33.7",
-    "zod": "^4.3.6"
+    "convex": "catalog:",
+    "convex-helpers": "catalog:",
+    "remeda": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.13",
-    "@types/node": "~24.10.15",
-    "typescript": "~5.9.3"
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }
