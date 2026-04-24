@@ -1,4 +1,4 @@
-import { copyFile, mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { z } from 'zod'
@@ -27,6 +27,49 @@ export async function processOpenRouterIcons(
   existingSlugs: Set<string>,
 ): Promise<Record<string, LogoStyle>> {
   const styles: Record<string, LogoStyle> = {}
+  const coveredSlugs = new Set(existingSlugs)
+
+  try {
+    await mkdir(SOURCES_OPENROUTER_DIR, { recursive: true })
+    await mkdir(OUTPUT_DIR, { recursive: true })
+
+    const files = await readdir(SOURCES_OPENROUTER_DIR)
+    const iconFiles = files.filter((file) => file.toLowerCase().endsWith('.png'))
+
+    if (iconFiles.length > 0) {
+      console.log(`\n📦 Processing ${iconFiles.length} local OpenRouter icons...\n`)
+    }
+
+    for (const file of iconFiles) {
+      // * Local OpenRouter icons are the lowest-priority fallback source.
+      const slug = file.replace(/\.png$/i, '').replaceAll('-', '')
+      if (coveredSlugs.has(slug)) {
+        continue
+      }
+
+      const title = slugToTitle(slug)
+      await copyFile(join(SOURCES_OPENROUTER_DIR, file), join(OUTPUT_DIR, `${slug}.png`))
+      styles[slug] = {
+        slug,
+        title,
+        background: '', // Empty - will use fallback color in frontend
+        scale: 1,
+      }
+      coveredSlugs.add(slug)
+
+      console.log(`  ✓ Added ${slug} (${title})`)
+    }
+  } catch (error) {
+    // * Directory might not exist or contain invalid files, but live OpenRouter can still work.
+    const errorCode = error instanceof Error && 'code' in error ? error.code : undefined
+
+    if (errorCode !== 'ENOENT') {
+      console.warn(
+        `  ⚠️  Could not process local OpenRouter icons:`,
+        error instanceof Error ? error.message : error,
+      )
+    }
+  }
 
   try {
     console.log(`\n🌐 Fetching providers from OpenRouter API...\n`)
@@ -42,9 +85,6 @@ export async function processOpenRouterIcons(
     if (providers.length === 0) {
       return styles
     }
-
-    await mkdir(SOURCES_OPENROUTER_DIR, { recursive: true })
-
     let downloadedCount = 0
     let skippedCount = 0
 
@@ -54,7 +94,7 @@ export async function processOpenRouterIcons(
       const iconUrl = provider.icon?.url
 
       // * Skip if slug already exists
-      if (existingSlugs.has(slug)) {
+      if (coveredSlugs.has(slug)) {
         continue
       }
 
@@ -86,6 +126,7 @@ export async function processOpenRouterIcons(
           background: '', // Empty - will use fallback color in frontend
           scale: 1,
         }
+        coveredSlugs.add(slug)
 
         console.log(`  ✓ Downloaded ${slug}.png (${title})`)
         downloadedCount += 1

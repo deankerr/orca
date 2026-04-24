@@ -126,6 +126,12 @@
       "background": "",
       "scale": 1
     },
+    "amazonnova": {
+      "slug": "amazonnova",
+      "title": "Amazonnova",
+      "background": "",
+      "scale": 1
+    },
     "ambient": {
       "slug": "ambient",
       "title": "Ambient",
@@ -198,11 +204,23 @@
       "background": "#7036F0",
       "scale": 0.6
     },
+    "atoma": {
+      "slug": "atoma",
+      "title": "Atoma",
+      "background": "",
+      "scale": 1
+    },
     "automatic": {
       "slug": "automatic",
       "title": "Automatic",
       "background": "#E00054",
       "scale": 0.75
+    },
+    "avian": {
+      "slug": "avian",
+      "title": "Avian",
+      "background": "",
+      "scale": 1
     },
     "aws": {
       "slug": "aws",
@@ -360,6 +378,12 @@
       "background": "",
       "scale": 1
     },
+    "cirrascale": {
+      "slug": "cirrascale",
+      "title": "Cirrascale",
+      "background": "#000",
+      "scale": 1
+    },
     "civitai": {
       "slug": "civitai",
       "title": "Civitai",
@@ -473,6 +497,12 @@
       "title": "CrewAI",
       "background": "#fff",
       "scale": 0.75
+    },
+    "crofai": {
+      "slug": "crofai",
+      "title": "Crofai",
+      "background": "",
+      "scale": 1
     },
     "crusoe": {
       "slug": "crusoe",
@@ -605,6 +635,12 @@
       "title": "Exa",
       "background": "#1f40ed",
       "scale": 0.6
+    },
+    "fakeprovider": {
+      "slug": "fakeprovider",
+      "title": "Fakeprovider",
+      "background": "",
+      "scale": 1
     },
     "fal": {
       "slug": "fal",
@@ -876,6 +912,12 @@
       "background": "#000",
       "scale": 0.6
     },
+    "inferencenet": {
+      "slug": "inferencenet",
+      "title": "Inferencenet",
+      "background": "",
+      "scale": 1
+    },
     "infermatic": {
       "slug": "infermatic",
       "title": "Infermatic",
@@ -947,6 +989,12 @@
       "title": "Kluster",
       "background": "#6525F7",
       "scale": 0.75
+    },
+    "klusterai": {
+      "slug": "klusterai",
+      "title": "Klusterai",
+      "background": "",
+      "scale": 1
     },
     "kolors": {
       "slug": "kolors",
@@ -1182,6 +1230,12 @@
       "background": "#624AFF",
       "scale": 0.75
     },
+    "modular": {
+      "slug": "modular",
+      "title": "Modular",
+      "background": "",
+      "scale": 1
+    },
     "monica": {
       "slug": "monica",
       "title": "Monica",
@@ -1224,6 +1278,12 @@
       "background": "#FCD53F",
       "scale": 0.8
     },
+    "ncompass": {
+      "slug": "ncompass",
+      "title": "Ncompass",
+      "background": "",
+      "scale": 1
+    },
     "nebius": {
       "slug": "nebius",
       "title": "Nebius",
@@ -1239,6 +1299,12 @@
     "nextbit": {
       "slug": "nextbit",
       "title": "Nextbit",
+      "background": "",
+      "scale": 1
+    },
+    "nineteen": {
+      "slug": "nineteen",
+      "title": "Nineteen",
       "background": "",
       "scale": 1
     },
@@ -1739,6 +1805,12 @@
       "title": "TuriX",
       "background": "linear-gradient(-45deg, #FAD076, #F7AD8A, #C768B9)",
       "scale": 0.7
+    },
+    "ubicloud": {
+      "slug": "ubicloud",
+      "title": "Ubicloud",
+      "background": "",
+      "scale": 1
     },
     "udio": {
       "slug": "udio",
