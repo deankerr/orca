@@ -24,6 +24,12 @@
       "background": "",
       "scale": 1
     },
+    "agentvoice": {
+      "slug": "agentvoice",
+      "title": "AgentVoice",
+      "background": "#0f6fff",
+      "scale": 0.7
+    },
     "agui": {
       "slug": "agui",
       "title": "AG-UI",
@@ -294,6 +300,12 @@
       "background": "",
       "scale": 1
     },
+    "briaai": {
+      "slug": "briaai",
+      "title": "BRIA AI",
+      "background": "#671ECC",
+      "scale": 0.8
+    },
     "burncloud": {
       "slug": "burncloud",
       "title": "BurnCloud",
@@ -346,12 +358,6 @@
       "slug": "chutes",
       "title": "Chutes",
       "background": "",
-      "scale": 1
-    },
-    "cirrascale": {
-      "slug": "cirrascale",
-      "title": "Cirrascale",
-      "background": "#000",
       "scale": 1
     },
     "civitai": {
@@ -534,6 +540,12 @@
       "background": "#4D6BFE",
       "scale": 0.75
     },
+    "dekallm": {
+      "slug": "dekallm",
+      "title": "Dekallm",
+      "background": "",
+      "scale": 1
+    },
     "doc2x": {
       "slug": "doc2x",
       "title": "Doc2X",
@@ -660,6 +672,12 @@
       "background": "#fff",
       "scale": 0.8
     },
+    "geminicli": {
+      "slug": "geminicli",
+      "title": "Gemini CLI",
+      "background": "#1E1E2E",
+      "scale": 0.7
+    },
     "gemma": {
       "slug": "gemma",
       "title": "Gemma",
@@ -772,6 +790,12 @@
       "slug": "hedra",
       "title": "Hedra",
       "background": "#000",
+      "scale": 0.75
+    },
+    "hermesagent": {
+      "slug": "hermesagent",
+      "title": "Hermes Agent",
+      "background": "#fff",
       "scale": 0.75
     },
     "higress": {
@@ -954,16 +978,10 @@
       "background": "#000",
       "scale": 0.6
     },
-    "langchain": {
-      "slug": "langchain",
-      "title": "LangChain",
-      "background": "#1C3C3C",
-      "scale": 0.75
-    },
     "langfuse": {
       "slug": "langfuse",
       "title": "Langfuse",
-      "background": "#000",
+      "background": "#1B1917",
       "scale": 0.75
     },
     "langgraph": {
@@ -1019,6 +1037,12 @@
       "title": "LLaVA",
       "background": "#CB2D30",
       "scale": 0.6
+    },
+    "llmapi": {
+      "slug": "llmapi",
+      "title": "LLM API",
+      "background": "#3F35FF",
+      "scale": 0.75
     },
     "lmstudio": {
       "slug": "lmstudio",
@@ -1103,6 +1127,12 @@
       "title": "MENLO",
       "background": "#FF5C00",
       "scale": 0.6
+    },
+    "meshy": {
+      "slug": "meshy",
+      "title": "Meshy",
+      "background": "#000",
+      "scale": 0.8
     },
     "meta": {
       "slug": "meta",
@@ -1226,9 +1256,9 @@
     },
     "nousresearch": {
       "slug": "nousresearch",
-      "title": "Nousresearch",
-      "background": "",
-      "scale": 1
+      "title": "NousResearch",
+      "background": "#fff",
+      "scale": 0.75
     },
     "nova": {
       "slug": "nova",
@@ -1386,6 +1416,12 @@
       "background": "#2874ff",
       "scale": 0.75
     },
+    "prunaai": {
+      "slug": "prunaai",
+      "title": "PrunaAI",
+      "background": "#AC51FF",
+      "scale": 0.8
+    },
     "pydanticai": {
       "slug": "pydanticai",
       "title": "PydanticAI",
@@ -1451,6 +1487,12 @@
       "title": "Replit",
       "background": "#FD5402",
       "scale": 0.6
+    },
+    "reve": {
+      "slug": "reve",
+      "title": "Reve",
+      "background": "#000",
+      "scale": 0.65
     },
     "roocode": {
       "slug": "roocode",
@@ -1566,6 +1608,12 @@
       "background": "#0070f0",
       "scale": 0.75
     },
+    "speedai": {
+      "slug": "speedai",
+      "title": "SpeedAI",
+      "background": "#6366F1",
+      "scale": 0.7
+    },
     "stability": {
       "slug": "stability",
       "title": "Stability",
@@ -1671,7 +1719,7 @@
     "together": {
       "slug": "together",
       "title": "together.ai",
-      "background": "#0f6fff",
+      "background": "#fff",
       "scale": 0.75
     },
     "topazlabs": {
@@ -1731,8 +1779,8 @@
     "venice": {
       "slug": "venice",
       "title": "Venice",
-      "background": "",
-      "scale": 1
+      "background": "#E05A2D",
+      "scale": 0.75
     },
     "vercel": {
       "slug": "vercel",
@@ -1823,6 +1871,12 @@
       "title": "Xinference",
       "background": "#781ff5",
       "scale": 0.7
+    },
+    "xpay": {
+      "slug": "xpay",
+      "title": "xpay",
+      "background": "#0F1C4D",
+      "scale": 0.6
     },
     "xuanyuan": {
       "slug": "xuanyuan",
