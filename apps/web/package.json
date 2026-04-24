@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "45.0.0",
+  "version": "46.0.0",
   "private": true,
   "scripts": {
     "archive-sync": "bun run scripts/archive-sync/index.ts",
