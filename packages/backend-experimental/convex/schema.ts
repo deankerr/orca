@@ -7,13 +7,11 @@ import * as catalogProviders from './catalog/providers/schema'
 export default defineSchema(
   {
     catalog_endpoints: catalogEndpoints.stateTable,
-    catalog_endpoint_core: catalogEndpoints.coreTable,
-    catalog_endpoint_pricing: catalogEndpoints.pricingTable,
+    catalog_endpoints_content: catalogEndpoints.contentTable,
     catalog_models: catalogModels.stateTable,
-    catalog_model_core: catalogModels.coreTable,
-    catalog_model_descriptions: catalogModels.descriptionTable,
+    catalog_models_content: catalogModels.contentTable,
     catalog_providers: catalogProviders.stateTable,
-    catalog_provider_core: catalogProviders.coreTable,
+    catalog_providers_content: catalogProviders.contentTable,
   },
   {
     strictTableNameTypes: true,

@@ -7,7 +7,7 @@ function compact<T extends Record<string, unknown>>(value: T) {
 }
 
 // Normalize one raw model payload into the independent model streams we store.
-const rawModelSchema = z
+export const rawModelTransformSchema = z
   .object({
     slug: z.string(),
     hf_slug: z.string().nullable(),
@@ -30,18 +30,19 @@ const rawModelSchema = z
       .object({
         variant: z.string(),
       })
-      .nullable(),
+      .nullish(),
     supports_reasoning: z.boolean(),
   })
   .transform((raw) => {
     const variant = raw.endpoint?.variant ?? 'standard'
     const id = variant === 'standard' ? raw.slug : `${raw.slug}:${variant}`
+    const name = raw.short_name
 
-    const core = compact({
+    const content = compact({
       id,
       versionId: raw.permaslug,
       variant,
-      name: raw.short_name,
+      name,
       authorId: raw.author,
       authorName: raw.author_display_name ?? raw.author,
       orAddedAt: raw.created_at,
@@ -49,33 +50,31 @@ const rawModelSchema = z
       outputModalities: raw.output_modalities,
       reasoning: raw.supports_reasoning,
       huggingFaceId: raw.hf_slug,
+      description: raw.description,
       promotionMessage: raw.promotion_message,
       warningMessage: raw.warning_message,
       routingErrorMessage: raw.routing_error_message,
     })
 
-    const description = {
-      id,
-      description: raw.description,
-    }
-
     return {
-      id,
-      core,
-      description,
+      entity: {
+        id,
+        label: name,
+      },
+      content,
     }
   })
 
 // Model identity and endpoint selectors are stable enough to gate the whole workflow.
-const rawModelIdentitySchema = z
-  .object({
+export const rawModelIdentitySchema = z
+  .looseObject({
     slug: z.string(),
     permaslug: z.string(),
     endpoint: z
       .object({
         variant: z.string(),
       })
-      .nullable(),
+      .nullish(),
   })
   .transform((raw) => {
     const variant = raw.endpoint?.variant ?? 'standard'
@@ -83,8 +82,9 @@ const rawModelIdentitySchema = z
 
     return {
       id,
+      rawModel: raw,
       endpoint:
-        raw.endpoint === null
+        raw.endpoint === null || raw.endpoint === undefined
           ? null
           : {
               permaslug: raw.permaslug,
@@ -92,11 +92,3 @@ const rawModelIdentitySchema = z
             },
     }
   })
-
-export function parseModelBundle(args: { item: Record<string, unknown> }) {
-  return rawModelSchema.parse(args.item)
-}
-
-export function parseModelIdentity(args: { item: Record<string, unknown> }) {
-  return rawModelIdentitySchema.parse(args.item)
-}

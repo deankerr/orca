@@ -1,34 +1,23 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-const identityFields = {
-  id: v.string(),
-}
-
-const componentStateFields = {
-  coreVersion: v.number(),
-  coreContentHash: v.string(),
-}
-
 // Entity State
 
-export const stateFields = {
-  ...identityFields,
-  ...componentStateFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
+export const stateTable = defineTable({
+  entity: v.object({
+    id: v.string(),
+    label: v.string(),
+  }),
+  observedAt: v.number(),
+  rowId: v.id('catalog_providers_content'),
+  contentHash: v.string(),
   unavailableAt: v.optional(v.number()),
-}
+}).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
 
-export const stateTable = defineTable(stateFields)
-  .index('by_id__version', ['id', 'version'])
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_unavailableAt', ['unavailableAt'])
+// Content
 
-// Core Component
-
-export const coreContentFields = {
-  ...identityFields,
+export const contentFields = {
+  id: v.string(),
   name: v.string(),
   headquarters: v.optional(v.string()),
   datacenters: v.optional(v.array(v.string())),
@@ -38,11 +27,4 @@ export const coreContentFields = {
   sendClientIp: v.boolean(),
 }
 
-export const coreTable = defineTable({
-  ...coreContentFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
-  contentHash: v.string(),
-})
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_id__version', ['id', 'version'])
+export const contentTable = defineTable(contentFields)

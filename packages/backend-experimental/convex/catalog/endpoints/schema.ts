@@ -1,43 +1,31 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-const identityFields = {
-  id: v.string(),
-}
-
-const componentStateFields = {
-  coreVersion: v.number(),
-  coreContentHash: v.string(),
-  pricingVersion: v.number(),
-  pricingContentHash: v.string(),
-}
-
 // Entity State
 
-export const stateFields = {
-  ...identityFields,
-  modelId: v.string(),
-  ...componentStateFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
+export const stateTable = defineTable({
+  entity: v.object({
+    id: v.string(),
+    label: v.string(),
+    modelId: v.string(),
+    providerId: v.string(),
+  }),
+  observedAt: v.number(),
+  rowId: v.id('catalog_endpoints_content'),
+  contentHash: v.string(),
   unavailableAt: v.optional(v.number()),
-}
+}).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
 
-export const stateTable = defineTable(stateFields)
-  .index('by_id__version', ['id', 'version'])
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_unavailableAt', ['unavailableAt'])
-
-const componentIdentityFields = {
-  ...identityFields,
+const identityFields = {
+  id: v.string(),
   modelId: v.string(),
   providerId: v.string(),
 }
 
-// Core Component
+// Content
 
-export const coreContentFields = {
-  ...componentIdentityFields,
+export const contentFields = {
+  ...identityFields,
   modelVersionId: v.string(),
   modelVariant: v.string(),
   providerVariant: v.optional(v.string()),
@@ -48,6 +36,21 @@ export const coreContentFields = {
   maxOutput: v.optional(v.number()),
   quantization: v.string(),
   supportedParameters: v.array(v.string()),
+
+  pricing: v.object({
+    textInput: v.optional(v.number()),
+    textOutput: v.optional(v.number()),
+    reasoningOutput: v.optional(v.number()),
+    audioInput: v.optional(v.number()),
+    audioCacheWrite: v.optional(v.number()),
+    textCacheRead: v.optional(v.number()),
+    textCacheWrite: v.optional(v.number()),
+    imageInput: v.optional(v.number()),
+    imageOutput: v.optional(v.number()),
+    perRequest: v.optional(v.number()),
+    webSearch: v.optional(v.number()),
+    discount: v.optional(v.number()),
+  }),
 
   dataPolicy: v.object({
     mayTrainOnData: v.optional(v.boolean()),
@@ -78,38 +81,4 @@ export const coreContentFields = {
   }),
 }
 
-export const coreTable = defineTable({
-  ...coreContentFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
-  contentHash: v.string(),
-})
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_id__version', ['id', 'version'])
-
-// Pricing Component
-
-export const pricingContentFields = {
-  ...componentIdentityFields,
-  textInput: v.optional(v.number()),
-  textOutput: v.optional(v.number()),
-  reasoningOutput: v.optional(v.number()),
-  audioInput: v.optional(v.number()),
-  audioCacheWrite: v.optional(v.number()),
-  textCacheRead: v.optional(v.number()),
-  textCacheWrite: v.optional(v.number()),
-  imageInput: v.optional(v.number()),
-  imageOutput: v.optional(v.number()),
-  perRequest: v.optional(v.number()),
-  webSearch: v.optional(v.number()),
-  discount: v.optional(v.number()),
-}
-
-export const pricingTable = defineTable({
-  ...pricingContentFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
-  contentHash: v.string(),
-})
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_id__version', ['id', 'version'])
+export const contentTable = defineTable(contentFields)

@@ -12,11 +12,11 @@ function compact<T extends Record<string, unknown>>(value: T) {
 }
 
 // Normalize one raw endpoint payload into the independent endpoint components we store.
-const rawEndpointSchema = z
+export const rawEndpointTransformSchema = z
   .object({
     id: z.string(),
-    name: z.string(),
     context_length: z.number(),
+    model_variant_slug: z.string(),
     model_variant_permaslug: z.string(),
     variant: z.string(),
 
@@ -78,10 +78,12 @@ const rawEndpointSchema = z
   })
   .transform((raw) => {
     const { id } = raw
+    const modelId = raw.model_variant_slug
     const [providerId = raw.provider_slug, providerVariant] = raw.provider_slug.split('/')
 
-    const core = compact({
+    const content = compact({
       id,
+      modelId,
       modelVersionId: raw.model_variant_permaslug,
       modelVariant: raw.variant,
 
@@ -94,6 +96,21 @@ const rawEndpointSchema = z
       maxOutput: raw.max_completion_tokens,
       quantization: raw.quantization,
       supportedParameters: raw.supported_parameters,
+
+      pricing: compact({
+        textInput: raw.pricing.prompt,
+        textOutput: raw.pricing.completion,
+        reasoningOutput: raw.pricing.internal_reasoning,
+        audioInput: raw.pricing.audio,
+        audioCacheWrite: raw.pricing.input_audio_cache,
+        textCacheRead: raw.pricing.input_cache_read,
+        textCacheWrite: raw.pricing.input_cache_write,
+        imageInput: raw.pricing.image,
+        imageOutput: raw.pricing.image_output,
+        perRequest: raw.pricing.request,
+        webSearch: raw.pricing.web_search,
+        discount: raw.pricing.discount,
+      }),
 
       dataPolicy: compact({
         mayTrainOnData: raw.data_policy.training,
@@ -124,43 +141,26 @@ const rawEndpointSchema = z
       },
     })
 
-    const pricing = compact({
-      id,
-      providerId,
-      textInput: raw.pricing.prompt,
-      textOutput: raw.pricing.completion,
-      reasoningOutput: raw.pricing.internal_reasoning,
-      audioInput: raw.pricing.audio,
-      audioCacheWrite: raw.pricing.input_audio_cache,
-      textCacheRead: raw.pricing.input_cache_read,
-      textCacheWrite: raw.pricing.input_cache_write,
-      imageInput: raw.pricing.image,
-      imageOutput: raw.pricing.image_output,
-      perRequest: raw.pricing.request,
-      webSearch: raw.pricing.web_search,
-      discount: raw.pricing.discount,
-    })
-
     return {
-      id,
-      core,
-      pricing,
+      entity: {
+        id,
+        label: `${id} ${providerId} ${providerVariant}`,
+        modelId,
+        providerId,
+      },
+      content,
     }
   })
 
-export function parseEndpointBundle(args: { item: Record<string, unknown>; modelId: string }) {
-  const entity = rawEndpointSchema.parse(args.item)
-
-  return {
-    id: entity.id,
-    modelId: args.modelId,
-    core: {
-      ...entity.core,
-      modelId: args.modelId,
-    },
-    pricing: {
-      ...entity.pricing,
-      modelId: args.modelId,
-    },
-  }
-}
+// Endpoint identity is the critical success boundary for a model's endpoint crawl.
+export const rawEndpointIdentitySchema = z
+  .looseObject({
+    id: z.string(),
+    model_variant_slug: z.string(),
+    variant: z.string(),
+    model_variant_permaslug: z.string(),
+  })
+  .transform((raw) => ({
+    id: raw.id,
+    rawEndpoint: raw,
+  }))

@@ -1,8 +1,11 @@
 # ORCA (OpenRouter Capability Analysis)
 
-## Commands
+## OXC
 
-- `bun run check`: run when work is complete.
+- Use `bun run check` to type check, lint, auto-fix, and format the entire project in moments with `oxlint`, `oxlint-tsgolint`, and `oxfmt`.
+- Strict, type-aware linting is enabled, based on the `ultracite` preset.
+- If a rule seems invalid or inappropriate, you must justify the reasoning before using an inline ignore comment.
+- We don't apply our strict rule set to component registry code, like shadcn-ui.
 
 ## Overview
 
@@ -56,8 +59,13 @@ Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely 
 - Use remeda to write functional code that is compact as easy to read.
 - Import with this conventinon: `import * as R from 'remeda` - full treeshaken, safe to use in the frontend and backend
 - It is maintained by TKDodo, is battle-tested and has excellent type-safety
-- Useful examples: `R.isDefined`, `R.isNonNullish`, `R.chunk`, `R.pickBy`, `R.omitBy`, `R.countBy`
+- Useful examples: `R.isDefined`, `R.isNullish`, `R.isNonNullish`, `R.chunk`, `R.pickBy`, `R.omitBy`, `R.countBy`
 
 ### Deployment
 
 - `apps/web` Vercel production and preview environments
+
+## Backend Rewrite
+
+- `packages/backend-experimental`
+- Greenfield re-implementation, no production deployment.

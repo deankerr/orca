@@ -1,36 +1,23 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-const identityFields = {
-  id: v.string(),
-}
-
-const componentStateFields = {
-  coreVersion: v.number(),
-  coreContentHash: v.string(),
-  descriptionVersion: v.number(),
-  descriptionContentHash: v.string(),
-}
-
 // Entity State
 
-export const stateFields = {
-  ...identityFields,
-  ...componentStateFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
+export const stateTable = defineTable({
+  entity: v.object({
+    id: v.string(),
+    label: v.string(),
+  }),
+  observedAt: v.number(),
+  rowId: v.id('catalog_models_content'),
+  contentHash: v.string(),
   unavailableAt: v.optional(v.number()),
-}
+}).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
 
-export const stateTable = defineTable(stateFields)
-  .index('by_id__version', ['id', 'version'])
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_unavailableAt', ['unavailableAt'])
+// Content
 
-// Core Component
-
-export const coreContentFields = {
-  ...identityFields,
+export const contentFields = {
+  id: v.string(),
   versionId: v.string(),
   variant: v.string(),
 
@@ -46,32 +33,10 @@ export const coreContentFields = {
   reasoning: v.boolean(),
 
   huggingFaceId: v.optional(v.string()),
+  description: v.string(),
   promotionMessage: v.optional(v.string()),
   warningMessage: v.optional(v.string()),
   routingErrorMessage: v.optional(v.string()),
 }
 
-export const coreTable = defineTable({
-  ...coreContentFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
-  contentHash: v.string(),
-})
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_id__version', ['id', 'version'])
-
-// Description Component
-
-export const descriptionContentFields = {
-  ...identityFields,
-  description: v.string(),
-}
-
-export const descriptionTable = defineTable({
-  ...descriptionContentFields,
-  firstSeenAt: v.number(),
-  version: v.number(),
-  contentHash: v.string(),
-})
-  .index('by_id__firstSeenAt', ['id', 'firstSeenAt'])
-  .index('by_id__version', ['id', 'version'])
+export const contentTable = defineTable(contentFields)

@@ -7,7 +7,7 @@ function compact<T extends Record<string, unknown>>(value: T) {
 }
 
 // Normalize one raw provider payload into the canonical catalog shape.
-const rawProviderSchema = z
+export const rawProviderTransformSchema = z
   .object({
     slug: z.string(),
     displayName: z.string(),
@@ -25,9 +25,12 @@ const rawProviderSchema = z
     sendClientIp: z.boolean(),
   })
   .transform((raw) => {
-    const core = compact({
-      id: raw.slug,
-      name: raw.displayName,
+    const id = raw.slug
+    const name = raw.displayName
+
+    const content = compact({
+      id,
+      name,
       headquarters: raw.headquarters,
       datacenters: raw.datacenters,
       statusPageUrl: raw.statusPageUrl,
@@ -37,24 +40,19 @@ const rawProviderSchema = z
     })
 
     return {
-      id: core.id,
-      core,
+      entity: {
+        id,
+        label: name,
+      },
+      content,
     }
   })
 
-// Provider identity is stable enough that failures should halt collection.
-const rawProviderIdentitySchema = z
-  .object({
+export const rawProviderIdentitySchema = z
+  .looseObject({
     slug: z.string(),
   })
   .transform((raw) => ({
     id: raw.slug,
+    rawProvider: raw,
   }))
-
-export function parseProviderBundle(args: { item: Record<string, unknown> }) {
-  return rawProviderSchema.parse(args.item)
-}
-
-export function parseProviderIdentity(args: { item: Record<string, unknown> }) {
-  return rawProviderIdentitySchema.parse(args.item)
-}

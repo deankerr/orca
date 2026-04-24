@@ -1,11 +1,11 @@
-import { ingest, setAvailability } from './ingest'
-import { history, get, list, listAvailableStates } from './queries'
+import { commit, markUnavailable } from './commit'
+import { history, get, list, listStates } from './queries'
 
 export const models = {
+  commit,
   get,
   history,
-  ingest,
   list,
-  listAvailableStates,
-  setAvailability,
+  listStates,
+  markUnavailable,
 } as const

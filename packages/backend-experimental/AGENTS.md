@@ -53,8 +53,7 @@ Observational data should be kept distinct from our materialized records.
 
 ### Known Issues
 
-- Entities can be marked unavailable from a single fetch error
-- Catalog entities could share ingest code
+- Parsers validate unused fields (desired fields are not finalized)
 
 ### Deferred
 

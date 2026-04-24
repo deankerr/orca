@@ -6,84 +6,57 @@ import type { Doc } from '../../_generated/dataModel'
 import type { QueryCtx } from '../../_generated/server'
 import { defineQuerySpec } from '../../lib/functionSpec'
 import schema from '../../schema'
-import { withCatalogMetadata } from '../components'
 
 type State = Doc<'catalog_models'>
 
 export async function getState(ctx: QueryCtx, id: string) {
   return ctx.db
     .query('catalog_models')
-    .withIndex('by_id__version', (q) => q.eq('id', id))
+    .withIndex('by_entity_id__observedAt', (q) => q.eq('entity.id', id))
     .order('desc')
     .first()
 }
 
-export const listAvailableStates = defineQuerySpec({
+export async function getStateAt(ctx: QueryCtx, args: { id: string; observedAt: number }) {
+  return ctx.db
+    .query('catalog_models')
+    .withIndex('by_entity_id__observedAt', (q) =>
+      q.eq('entity.id', args.id).lte('observedAt', args.observedAt),
+    )
+    .order('desc')
+    .first()
+}
+
+export const listStates = defineQuerySpec({
   args: {},
   handler: async (ctx) =>
     stream(ctx.db, schema)
       .query('catalog_models')
-      .withIndex('by_id__version')
+      .withIndex('by_entity_id__observedAt')
       .order('desc')
-      .distinct(['id'])
-      .filterWith(async (state) => state.unavailableAt === undefined)
+      .distinct(['entity.id'])
       .collect(),
 })
 
-async function getCore(ctx: QueryCtx, state: State) {
-  const core = await ctx.db
-    .query('catalog_model_core')
-    .withIndex('by_id__version', (q) => q.eq('id', state.id).eq('version', state.coreVersion))
-    .first()
-
-  return core ? withCatalogMetadata(core) : null
-}
-
-async function getDescription(ctx: QueryCtx, state: State) {
-  const description = await ctx.db
-    .query('catalog_model_descriptions')
-    .withIndex('by_id__version', (q) =>
-      q.eq('id', state.id).eq('version', state.descriptionVersion),
-    )
-    .first()
-
-  return description ? withCatalogMetadata(description) : null
+async function getContent(ctx: QueryCtx, state: State) {
+  return ctx.db.get(state.rowId)
 }
 
 async function hydrate(ctx: QueryCtx, state: State) {
-  const [core, description] = await Promise.all([getCore(ctx, state), getDescription(ctx, state)])
+  const content = await getContent(ctx, state)
 
-  if (!core) {
+  if (!content) {
     throw new ConvexError({
-      message: 'component not found',
-      component: 'core',
-      id: state.id,
-      version: state.coreVersion,
-    })
-  }
-
-  if (!description) {
-    throw new ConvexError({
-      message: 'component not found',
-      component: 'description',
-      id: state.id,
-      version: state.descriptionVersion,
+      message: 'content not found',
+      id: state.entity.id,
+      rowId: state.rowId,
     })
   }
 
   return {
     state,
-    core,
-    description,
+    content,
   }
-}
-
-function isWithinAvailabilityWindow(state: State, maxUnavailableMs?: number) {
-  if (maxUnavailableMs === undefined) {
-    return true
-  }
-
-  return state.unavailableAt === undefined || state.unavailableAt >= Date.now() - maxUnavailableMs
 }
 
 export const get = defineQuerySpec({
@@ -104,15 +77,13 @@ export const get = defineQuerySpec({
 export const list = defineQuerySpec({
   args: {
     paginationOpts: paginationOptsValidator,
-    maxUnavailableMs: v.optional(v.number()),
   },
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
       .query('catalog_models')
-      .withIndex('by_id__version')
+      .withIndex('by_entity_id__observedAt')
       .order('desc')
-      .distinct(['id'])
-      .filterWith(async (state) => isWithinAvailabilityWindow(state, args.maxUnavailableMs))
+      .distinct(['entity.id'])
       .map(async (state) => hydrate(ctx, state))
       .paginate(args.paginationOpts),
 })
@@ -125,7 +96,7 @@ export const history = defineQuerySpec({
   handler: async (ctx, args) =>
     stream(ctx.db, schema)
       .query('catalog_models')
-      .withIndex('by_id__version', (q) => q.eq('id', args.id))
+      .withIndex('by_entity_id__observedAt', (q) => q.eq('entity.id', args.id))
       .order('desc')
       .map(async (state) => hydrate(ctx, state))
       .paginate(args.paginationOpts),

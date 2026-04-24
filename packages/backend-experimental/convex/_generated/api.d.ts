@@ -8,17 +8,15 @@
  * @module
  */
 
-import type * as catalog_components from "../catalog/components.js";
+import type * as catalog_endpoints_commit from "../catalog/endpoints/commit.js";
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
-import type * as catalog_endpoints_ingest from "../catalog/endpoints/ingest.js";
 import type * as catalog_endpoints_queries from "../catalog/endpoints/queries.js";
-import type * as catalog_hash from "../catalog/hash.js";
 import type * as catalog_index from "../catalog/index.js";
+import type * as catalog_models_commit from "../catalog/models/commit.js";
 import type * as catalog_models_index from "../catalog/models/index.js";
-import type * as catalog_models_ingest from "../catalog/models/ingest.js";
 import type * as catalog_models_queries from "../catalog/models/queries.js";
+import type * as catalog_providers_commit from "../catalog/providers/commit.js";
 import type * as catalog_providers_index from "../catalog/providers/index.js";
-import type * as catalog_providers_ingest from "../catalog/providers/ingest.js";
 import type * as catalog_providers_queries from "../catalog/providers/queries.js";
 import type * as collection_parsers_endpoint from "../collection/parsers/endpoint.js";
 import type * as collection_parsers_model from "../collection/parsers/model.js";
@@ -28,6 +26,7 @@ import type * as crons from "../crons.js";
 import type * as dev from "../dev.js";
 import type * as endpoints from "../endpoints.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
+import type * as lib_hash from "../lib/hash.js";
 import type * as models from "../models.js";
 import type * as providers from "../providers.js";
 
@@ -38,17 +37,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "catalog/components": typeof catalog_components;
+  "catalog/endpoints/commit": typeof catalog_endpoints_commit;
   "catalog/endpoints/index": typeof catalog_endpoints_index;
-  "catalog/endpoints/ingest": typeof catalog_endpoints_ingest;
   "catalog/endpoints/queries": typeof catalog_endpoints_queries;
-  "catalog/hash": typeof catalog_hash;
   "catalog/index": typeof catalog_index;
+  "catalog/models/commit": typeof catalog_models_commit;
   "catalog/models/index": typeof catalog_models_index;
-  "catalog/models/ingest": typeof catalog_models_ingest;
   "catalog/models/queries": typeof catalog_models_queries;
+  "catalog/providers/commit": typeof catalog_providers_commit;
   "catalog/providers/index": typeof catalog_providers_index;
-  "catalog/providers/ingest": typeof catalog_providers_ingest;
   "catalog/providers/queries": typeof catalog_providers_queries;
   "collection/parsers/endpoint": typeof collection_parsers_endpoint;
   "collection/parsers/model": typeof collection_parsers_model;
@@ -58,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   dev: typeof dev;
   endpoints: typeof endpoints;
   "lib/functionSpec": typeof lib_functionSpec;
+  "lib/hash": typeof lib_hash;
   models: typeof models;
   providers: typeof providers;
 }>;
