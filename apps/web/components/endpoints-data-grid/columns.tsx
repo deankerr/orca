@@ -29,6 +29,10 @@ function formatGridDate(timestamp: number): string {
     .split(' ')[0]
 }
 
+function hasTextOutput(endpoint: EndpointRow) {
+  return endpoint.model.output_modalities.includes('text')
+}
+
 export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'uuid',
@@ -220,7 +224,15 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
       </div>
     ),
-    cell: ({ getValue }) => getValue<number>().toLocaleString(),
+    cell: ({ getValue, row }) => {
+      const contextLength = getValue<number>()
+
+      if (contextLength === 0 && !hasTextOutput(row.original)) {
+        return <span className="text-muted-foreground">&ndash;</span>
+      }
+
+      return contextLength.toLocaleString()
+    },
     size: 115,
     meta: {
       cellClassName: 'text-right',
@@ -236,7 +248,15 @@ export const columns: ColumnDef<EndpointRow>[] = [
         <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
       </div>
     ),
-    cell: ({ getValue }) => getValue<number | undefined>()?.toLocaleString(),
+    cell: ({ getValue, row }) => {
+      const maxOutput = getValue<number | undefined>()
+
+      if (maxOutput === 0 && !hasTextOutput(row.original)) {
+        return <span className="text-muted-foreground">&ndash;</span>
+      }
+
+      return maxOutput?.toLocaleString()
+    },
     size: 115,
     sortUndefined: -1,
     meta: {
@@ -247,20 +267,29 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'quantization',
-    accessorFn: ({ quantization = '?' }) => (quantization === 'unknown' ? '?' : quantization),
+    accessorFn: (row) => row.quantization,
     header: ({ column }) => (
       <div className="grow text-center">
         <DataGridColumnHeader column={column} title="QUANT." />
       </div>
     ),
-    cell: ({ getValue }) => (
-      <Badge
-        variant="outline"
-        className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
-      >
-        {getValue<string>()}
-      </Badge>
-    ),
+    cell: ({ getValue, row }) => {
+      const quantization = getValue<string | undefined>()
+      const label = quantization === undefined || quantization === 'unknown' ? '?' : quantization
+
+      if (label === '?' && !hasTextOutput(row.original)) {
+        return null
+      }
+
+      return (
+        <Badge
+          variant="outline"
+          className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
+        >
+          {label}
+        </Badge>
+      )
+    },
     size: 100,
     meta: {
       headerClassName: 'text-center',
