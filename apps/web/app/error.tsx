@@ -33,7 +33,12 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
               Refresh Page
             </Button>
 
-            <Button variant="secondary" onClick={() => (window.location.href = '/')}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                window.location.href = '/'
+              }}
+            >
               Go Home
             </Button>
           </div>

@@ -400,7 +400,7 @@ function DataGridTableRowSelectAll() {
   )
 }
 
-function DataGridTableVirtual<TData>() {
+function DataGridTableVirtual() {
   'use no memo'
   const { table, isLoading, props } = useDataGrid()
   const scrollElementRef = useRef<HTMLDivElement>(null)
@@ -435,7 +435,7 @@ function DataGridTableVirtual<TData>() {
     <div ref={scrollElementRef} className="flex-1 overflow-auto overscroll-none">
       <DataGridTableBase>
         <DataGridTableHead>
-          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => (
+          {table.getHeaderGroups().map((headerGroup) => (
             <DataGridTableHeadRow headerGroup={headerGroup} key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const { column } = header
@@ -474,7 +474,7 @@ function DataGridTableVirtual<TData>() {
               return (
                 <Fragment key={virtualRow.key}>
                   <DataGridTableBodyRow row={row}>
-                    {row.getVisibleCells().map((cell: Cell<TData, unknown>) => (
+                    {row.getVisibleCells().map((cell) => (
                       <DataGridTableBodyRowCell cell={cell} key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </DataGridTableBodyRowCell>

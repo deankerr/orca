@@ -171,7 +171,6 @@ function EntityCombobox({
                 setSearch(e.target.value)
               }}
               className="rounded-b-none border-0 dark:bg-transparent"
-              // oxlint-disable-next-line jsx-a11y/no-autofocus -- Focusing the search input when the combobox opens is intentional for keyboard-driven filtering.
               autoFocus
             />
           </div>

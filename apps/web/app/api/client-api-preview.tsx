@@ -105,7 +105,6 @@ function HighlightedJsonCode({ code }: { code: string }) {
         'dark:[&_.shiki]:!text-[var(--shiki-dark)]',
         'dark:[&_.shiki_span]:!text-[var(--shiki-dark)]',
       )}
-      // oxlint-disable-next-line react/no-danger -- html is generated from local Shiki highlighting, not untrusted user input.
       dangerouslySetInnerHTML={{ __html: highlighted.html }}
     />
   )
