@@ -26,7 +26,7 @@
   background-color: var(--color-muted-hover);
 }
 
-/* Edge borders + drop shadow on the last pinned column in each direction */
+/* Edge borders on the last pinned column in each direction */
 [data-slot='data-grid-table'] [data-pinned][data-last-col='left'] {
   border-inline-end: 1px solid var(--color-border-solid);
 }
