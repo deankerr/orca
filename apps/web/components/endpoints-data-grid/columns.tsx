@@ -182,7 +182,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 160,
+    size: 180,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Modalities',

@@ -552,6 +552,17 @@ export const attributes = defineAttributes({
     },
   },
 
+  text_output: {
+    key: 'text_output',
+    icon: LetterText,
+    label: 'Text Output',
+    description: 'Returns text in the completion response.',
+    color: 'zinc',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('text') ?? false,
+    }),
+  },
+
   file_input: {
     key: 'file_input',
     icon: FileSpreadsheet,
