@@ -143,7 +143,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 100,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'Input ($/MTOK)',
@@ -166,7 +166,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 100,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'Output ($/MTOK)',
@@ -218,22 +218,24 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'contextLength',
-    accessorFn: (row) => row.context_length,
+    accessorFn: (row) =>
+      row.context_length === 0 && !hasTextOutput(row) ? undefined : row.context_length,
     header: ({ column }) => (
       <div className="grow text-center">
         <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
       </div>
     ),
     cell: ({ getValue, row }) => {
-      const contextLength = getValue<number>()
+      const contextLength = getValue<number | undefined>()
 
-      if (contextLength === 0 && !hasTextOutput(row.original)) {
+      if (contextLength === undefined && !hasTextOutput(row.original)) {
         return <span className="text-muted-foreground">&ndash;</span>
       }
 
-      return contextLength.toLocaleString()
+      return contextLength?.toLocaleString()
     },
     size: 115,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'Context (TOK)',
@@ -242,7 +244,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'maxOutput',
-    accessorFn: (row) => row.max_output,
+    accessorFn: (row) => (row.max_output === 0 && !hasTextOutput(row) ? undefined : row.max_output),
     header: ({ column }) => (
       <div className="grow text-center">
         <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
@@ -251,14 +253,18 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ getValue, row }) => {
       const maxOutput = getValue<number | undefined>()
 
-      if (maxOutput === 0 && !hasTextOutput(row.original)) {
+      if (
+        maxOutput === undefined &&
+        row.original.max_output === 0 &&
+        !hasTextOutput(row.original)
+      ) {
         return <span className="text-muted-foreground">&ndash;</span>
       }
 
       return maxOutput?.toLocaleString()
     },
     size: 115,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'Max Output (TOK)',
@@ -267,14 +273,17 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'quantization',
-    accessorFn: (row) => row.quantization,
+    accessorFn: (row) =>
+      row.quantization === undefined || row.quantization === 'unknown'
+        ? undefined
+        : row.quantization,
     header: ({ column }) => (
       <div className="grow text-center">
         <DataGridColumnHeader column={column} title="QUANT." />
       </div>
     ),
-    cell: ({ getValue, row }) => {
-      const quantization = getValue<string | undefined>()
+    cell: ({ row }) => {
+      const { quantization } = row.original
       const label = quantization === undefined || quantization === 'unknown' ? '?' : quantization
 
       if (label === '?' && !hasTextOutput(row.original)) {
@@ -291,6 +300,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 100,
+    sortUndefined: 'last',
     meta: {
       headerClassName: 'text-center',
       cellClassName: 'text-center px-2',
@@ -316,7 +326,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 110,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'TOK/SEC',
@@ -341,7 +351,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 110,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'TTFT (MS)',
@@ -427,7 +437,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <span className="text-muted-foreground">&ndash;</span>
     },
     size: 120,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-center',
       headerTitle: 'Model Added',
@@ -451,7 +461,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return undefined
     },
     size: 120,
-    sortUndefined: -1,
+    sortUndefined: 'last',
     meta: {
       cellClassName: 'text-center',
       headerTitle: 'Endpoint Gone',
