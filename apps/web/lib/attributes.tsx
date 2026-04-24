@@ -28,6 +28,7 @@ import {
   ScrollText,
   ShieldAlert,
   Skull,
+  Speech,
   Video,
   Wrench,
 } from 'lucide-react'
@@ -606,6 +607,18 @@ export const attributes = defineAttributes({
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('audio') ?? false,
+    }),
+  },
+
+  speech_output: {
+    key: 'speech_output',
+    icon: Speech,
+    label: 'Speech Output',
+    description: 'Generates spoken audio output.',
+    color: 'cyan',
+    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('speech') ?? false,
     }),
   },
 

@@ -10,6 +10,7 @@ export const endpointModalityInputAttributes = [
 export const endpointModalityOutputAttributes = [
   'image_output',
   'audio_output',
+  'speech_output',
   'video_output',
   'embeddings_output',
   'rerank_output',
@@ -22,6 +23,7 @@ export const endpointModalityAttributes = [
   'video_input',
   'image_output',
   'audio_output',
+  'speech_output',
   'video_output',
   'embeddings_output',
   'rerank_output',
@@ -57,6 +59,7 @@ export const endpointAttributeSets = {
     ['video_input'],
     ['image_output'],
     ['audio_output'],
+    ['speech_output'],
     ['video_output'],
     ['embeddings_output'],
     ['rerank_output'],
