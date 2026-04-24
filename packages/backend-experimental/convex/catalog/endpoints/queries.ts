@@ -47,15 +47,15 @@ async function hydrate(ctx: QueryCtx, state: State) {
 
   if (!content) {
     throw new ConvexError({
-      message: 'content not found',
       id: state.entity.id,
+      message: 'content not found',
       rowId: state.rowId,
     })
   }
 
   return {
-    state,
     content,
+    state,
   }
 }
 

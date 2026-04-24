@@ -67,7 +67,7 @@ export const wipe = internalAction({
         }
       }
 
-      tables.push({ tableName, deleted })
+      tables.push({ deleted, tableName })
     }
 
     return {
