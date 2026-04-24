@@ -280,7 +280,7 @@ const finalizeFieldState = (state: FieldState, total: number): FieldReport => {
   }
 }
 
-const createFieldReport = <T extends DocumentShape>(docs: T[]): FieldUsageReport => {
+const createFieldReport = (docs: DocumentShape[]): FieldUsageReport => {
   const fields: Record<string, FieldState> = {}
 
   for (const doc of docs) {

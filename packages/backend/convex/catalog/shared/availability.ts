@@ -11,7 +11,7 @@ type AvailabilityShape = {
   updated_at: number
 }
 
-function getCurrentCatalogTimestamp<T extends AvailabilityShape>(items: T[]) {
+function getCurrentCatalogTimestamp(items: AvailabilityShape[]) {
   let currentTime = 0
 
   for (const item of items) {
