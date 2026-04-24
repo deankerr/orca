@@ -68,14 +68,14 @@ function createConvexWorkspaceConfig(workspaceName: string): WorkspaceProjectCon
 
 const config: KnipConfig = {
   ignoreIssues: {
-    'apps/web/components/ui/**': ['exports', 'types'],
     'apps/web/components/data-grid/**': ['exports', 'types'],
+    'apps/web/components/ui/**': ['exports', 'types'],
   },
   workspaces: {
     '.': {
       entry: ROOT_SOURCE_GLOBS,
-      project: ROOT_SOURCE_GLOBS,
       ignoreDependencies: ['ultracite'],
+      project: ROOT_SOURCE_GLOBS,
     },
     'apps/web': {
       entry: ['scripts/*.ts', '**/*.test.ts'],

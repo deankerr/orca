@@ -14,7 +14,7 @@ export default defineSchema(
     catalog_providers_content: catalogProviders.contentTable,
   },
   {
-    strictTableNameTypes: true,
     schemaValidation: true,
+    strictTableNameTypes: true,
   },
 )

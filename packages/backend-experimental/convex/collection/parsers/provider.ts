@@ -9,42 +9,42 @@ function compact<T extends Record<string, unknown>>(value: T) {
 // Normalize one raw provider payload into the canonical catalog shape.
 export const rawProviderTransformSchema = z
   .object({
-    slug: z.string(),
-    displayName: z.string(),
-    headquarters: z.string().optional(),
+    dataPolicy: z.object({
+      privacyPolicyURL: z.string().optional(),
+      termsOfServiceURL: z.string().optional(),
+    }),
     datacenters: z
       .string()
       .array()
       .transform((value) => value.toSorted())
       .optional(),
-    statusPageUrl: z.url().nullable(),
-    dataPolicy: z.object({
-      termsOfServiceURL: z.string().optional(),
-      privacyPolicyURL: z.string().optional(),
-    }),
+    displayName: z.string(),
+    headquarters: z.string().optional(),
     sendClientIp: z.boolean(),
+    slug: z.string(),
+    statusPageUrl: z.url().nullable(),
   })
   .transform((raw) => {
     const id = raw.slug
     const name = raw.displayName
 
     const content = compact({
+      datacenters: raw.datacenters,
+      headquarters: raw.headquarters,
       id,
       name,
-      headquarters: raw.headquarters,
-      datacenters: raw.datacenters,
-      statusPageUrl: raw.statusPageUrl,
-      termsOfServiceUrl: raw.dataPolicy.termsOfServiceURL,
       privacyPolicyUrl: raw.dataPolicy.privacyPolicyURL,
       sendClientIp: raw.sendClientIp,
+      statusPageUrl: raw.statusPageUrl,
+      termsOfServiceUrl: raw.dataPolicy.termsOfServiceURL,
     })
 
     return {
+      content,
       entity: {
         id,
         label: name,
       },
-      content,
     }
   })
 

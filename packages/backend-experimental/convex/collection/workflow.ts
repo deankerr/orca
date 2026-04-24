@@ -23,11 +23,11 @@ const schema = createSchema({
 
   '/frontend/stats/endpoint': {
     method: 'get',
+    output: z.object({ data: rawEndpointIdentitySchema.array() }),
     query: z.object({
       permaslug: z.string(),
       variant: z.string(),
     }),
-    output: z.object({ data: rawEndpointIdentitySchema.array() }),
   },
 
   '/frontend/all-providers': {
@@ -38,14 +38,14 @@ const schema = createSchema({
 
 export const $fetch = createFetch({
   baseURL: 'https://openrouter.ai/api',
-  schema,
-  timeout: 15_000,
   retry: {
-    type: 'exponential',
     attempts: 3,
     baseDelay: 1000,
     maxDelay: 9000,
+    type: 'exponential',
   },
+  schema,
+  timeout: 15_000,
 })
 
 function getErrorMessage(error: unknown) {
@@ -74,9 +74,9 @@ async function ingestCatalogEntity<Next extends { content: unknown }>(args: {
   }
 
   await args.commitFn({
+    contentHash,
     next: args.next,
     observedAt: args.observedAt,
-    contentHash,
   })
 }
 
@@ -98,9 +98,9 @@ async function collectProviders(ctx: ActionCtx, args: { observedAt: number }) {
 
     if (!providerEntity.success) {
       console.error('failed to parse provider', {
-        observedAt: args.observedAt,
-        id,
         error: getErrorMessage(providerEntity.error),
+        id,
+        observedAt: args.observedAt,
       })
 
       continue
@@ -146,9 +146,9 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
       })
     } else {
       console.error('failed to parse model', {
-        observedAt: args.observedAt,
-        id: identity.id,
         error: getErrorMessage(modelEntity.error),
+        id: identity.id,
+        observedAt: args.observedAt,
       })
     }
 
@@ -164,12 +164,12 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
 
     if (endpointResult.error) {
       console.error('failed to collect model endpoints', {
-        observedAt: args.observedAt,
-        model: {
-          id: identity.id,
-          endpoint: identity.endpoint,
-        },
         error: getErrorMessage(endpointResult.error),
+        model: {
+          endpoint: identity.endpoint,
+          id: identity.id,
+        },
+        observedAt: args.observedAt,
       })
 
       // A failed endpoint fetch leaves existing endpoint availability unchanged.
@@ -188,13 +188,13 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
 
       if (!endpointEntity.success) {
         console.error('failed to parse endpoint', {
-          observedAt: args.observedAt,
-          model: {
-            id: identity.id,
-            endpoint: identity.endpoint,
-          },
-          id,
           error: getErrorMessage(endpointEntity.error),
+          id,
+          model: {
+            endpoint: identity.endpoint,
+            id: identity.id,
+          },
+          observedAt: args.observedAt,
         })
 
         continue
@@ -272,8 +272,8 @@ export const run = internalAction({
       }
 
       console.error('failed to collect process', {
-        observedAt,
         error: getErrorMessage(result.reason),
+        observedAt,
       })
     }
   },

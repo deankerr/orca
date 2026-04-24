@@ -4,13 +4,13 @@ import { v } from 'convex/values'
 // Entity State
 
 export const stateTable = defineTable({
+  contentHash: v.string(),
   entity: v.object({
     id: v.string(),
     label: v.string(),
   }),
   observedAt: v.number(),
   rowId: v.id('catalog_models_content'),
-  contentHash: v.string(),
   unavailableAt: v.optional(v.number()),
 }).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
 
@@ -18,12 +18,12 @@ export const stateTable = defineTable({
 
 export const contentFields = {
   id: v.string(),
-  versionId: v.string(),
   variant: v.string(),
+  versionId: v.string(),
 
-  name: v.string(),
   authorId: v.string(),
   authorName: v.string(),
+  name: v.string(),
 
   orAddedAt: v.number(),
 
@@ -32,11 +32,11 @@ export const contentFields = {
 
   reasoning: v.boolean(),
 
-  huggingFaceId: v.optional(v.string()),
   description: v.string(),
+  huggingFaceId: v.optional(v.string()),
   promotionMessage: v.optional(v.string()),
-  warningMessage: v.optional(v.string()),
   routingErrorMessage: v.optional(v.string()),
+  warningMessage: v.optional(v.string()),
 }
 
 export const contentTable = defineTable(contentFields)

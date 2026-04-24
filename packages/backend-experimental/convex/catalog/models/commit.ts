@@ -6,15 +6,15 @@ import { contentFields } from './schema'
 
 export const commit = defineMutationSpec({
   args: {
+    contentHash: v.string(),
     next: v.object({
+      content: v.object(contentFields),
       entity: v.object({
         id: v.string(),
         label: v.string(),
       }),
-      content: v.object(contentFields),
     }),
     observedAt: v.number(),
-    contentHash: v.string(),
   },
   handler: async (ctx, args) => {
     // Re-read the prior model state inside the transaction boundary.
@@ -35,10 +35,10 @@ export const commit = defineMutationSpec({
       : state.rowId
 
     await ctx.db.insert('catalog_models', {
+      contentHash: args.contentHash,
       entity: args.next.entity,
       observedAt: args.observedAt,
       rowId,
-      contentHash: args.contentHash,
     })
   },
 })
@@ -57,10 +57,10 @@ export const markUnavailable = defineMutationSpec({
       }
 
       await ctx.db.insert('catalog_models', {
+        contentHash: state.contentHash,
         entity: state.entity,
         observedAt: args.observedAt,
         rowId: state.rowId,
-        contentHash: state.contentHash,
         unavailableAt: args.observedAt,
       })
     }
