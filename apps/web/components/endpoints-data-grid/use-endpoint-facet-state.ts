@@ -119,6 +119,7 @@ export function toModalityFilters(has: string[], not: string[]): ModalityFilterS
     video_input: resolveFilterMode(has, not, 'video_input'),
     image_output: resolveFilterMode(has, not, 'image_output'),
     audio_output: resolveFilterMode(has, not, 'audio_output'),
+    speech_output: resolveFilterMode(has, not, 'speech_output'),
     video_output: resolveFilterMode(has, not, 'video_output'),
     embeddings_output: resolveFilterMode(has, not, 'embeddings_output'),
     rerank_output: resolveFilterMode(has, not, 'rerank_output'),
