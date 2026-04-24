@@ -6,9 +6,9 @@
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
-    "convex": "^1.35.1",
-    "convex-helpers": "^0.1.114",
-    "discord-api-types": "^0.38.44",
+    "convex": "^1.36.1",
+    "convex-helpers": "^0.1.115",
+    "discord-api-types": "^0.38.47",
     "discord-interactions": "^4.4.0",
     "fflate": "^0.8.2",
     "json-diff-ts": "^4.10.4",
