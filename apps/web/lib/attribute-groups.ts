@@ -8,6 +8,7 @@ export const endpointModalityInputAttributes = [
 ] as const
 
 export const endpointModalityOutputAttributes = [
+  'text_output',
   'image_output',
   'audio_output',
   'speech_output',
@@ -17,6 +18,7 @@ export const endpointModalityOutputAttributes = [
 ] as const
 
 export const endpointModalityAttributes = [
+  'text_output',
   'image_input',
   'file_input',
   'audio_input',
@@ -53,6 +55,7 @@ export const endpointFilterAttributeGroups = {
 export const endpointAttributeSets = {
   status: [['gone', 'disabled', 'deranked']],
   modalities: [
+    ['text_output'],
     ['image_input'],
     ['file_input'],
     ['audio_input'],

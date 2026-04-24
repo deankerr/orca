@@ -36,15 +36,15 @@ describe('endpoint grid facet helpers', () => {
       disabled: 'exclude',
     })
 
-    expect(toModalityFilters(['tools', 'image_input'], ['speech_output'])).toMatchObject({
+    expect(toModalityFilters(['tools', 'image_input'], ['text_output'])).toMatchObject({
       image_input: 'include',
-      speech_output: 'exclude',
+      text_output: 'exclude',
       file_input: 'any',
     })
   })
 
   it('counts attribute and modality filters independently', () => {
     expect(countActiveAttributeFilters(['tools', 'image_input'], ['disabled'])).toBe(2)
-    expect(countActiveModalityFilters(['tools', 'image_input'], ['speech_output'])).toBe(2)
+    expect(countActiveModalityFilters(['tools', 'image_input'], ['text_output'])).toBe(2)
   })
 })
