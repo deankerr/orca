@@ -3,10 +3,7 @@ version = 1
 name = "orca"
 
 [setup]
-script = '''
-cd "$CODE_WORKTREE_PATH"
-bun install
-'''
+script = "bun install"
 
 [[actions]]
 name = "convex dev"

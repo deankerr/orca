@@ -133,8 +133,12 @@ console.log('[release] running bun run fix')
 await $`bun run --cwd ../.. fix`
 failIfUnexpectedFilesChanged(['apps/web/package.json'])
 
+// sync bun.lock with the bumped version
+console.log('[release] syncing bun.lock')
+await $`bun install --lockfile-only --no-summary --cwd ../..`
+
 // commit the version bump
-await $`git add ${packageJsonPath}`
+await $`git add ${packageJsonPath} ../../bun.lock`
 await $`git commit -m ${tag}`
 
 // push the commit to main
