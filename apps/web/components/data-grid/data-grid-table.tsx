@@ -9,7 +9,7 @@ import { Fragment, useCallback, useRef } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
@@ -435,7 +435,7 @@ function DataGridTableVirtual() {
   return (
     <ScrollArea
       viewportRef={viewportRef}
-      className="flex-1 [&>[data-slot=scroll-area-viewport]]:overscroll-none"
+      className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]]:overscroll-none"
     >
       <DataGridTableBase>
         <DataGridTableHead>
@@ -499,6 +499,7 @@ function DataGridTableVirtual() {
           )}
         </DataGridTableBody>
       </DataGridTableBase>
+      <ScrollBar orientation="horizontal" />
     </ScrollArea>
   )
 }
