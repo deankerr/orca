@@ -10,6 +10,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { EntityBadge, EntityBadgeSkeleton } from './entity-badge'
@@ -229,18 +230,18 @@ function VirtualizedEntityList({
   onSelect: (item: EntityItem) => void
 }) {
   'use no memo'
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => viewportRef.current,
     estimateSize: () => 42,
     overscan: 5,
   })
 
   return (
-    <div ref={scrollRef} className="h-[300px] overflow-y-auto">
+    <ScrollArea viewportRef={viewportRef} className="h-[300px]">
       <div className="relative py-1" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const item = items[virtualRow.index]
@@ -272,6 +273,6 @@ function VirtualizedEntityList({
           )
         })}
       </div>
-    </div>
+    </ScrollArea>
   )
 }

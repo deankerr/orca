@@ -9,6 +9,7 @@ import { Fragment, useCallback, useRef } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
@@ -403,7 +404,7 @@ function DataGridTableRowSelectAll() {
 function DataGridTableVirtual() {
   'use no memo'
   const { table, isLoading, props } = useDataGrid()
-  const scrollElementRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const rowHeight = props.tableLayout?.rowHeight ?? 58.5
   const overscan = props.tableLayout?.overscan ?? 3
   const columnsResizable = props.tableLayout?.columnsResizable === true
@@ -412,7 +413,7 @@ function DataGridTableVirtual() {
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
-    getScrollElement: () => scrollElementRef.current,
+    getScrollElement: () => viewportRef.current,
     estimateSize: () => rowHeight,
     overscan,
     getItemKey: useCallback(
@@ -432,7 +433,10 @@ function DataGridTableVirtual() {
   const paddingBottom = lastVirtualRow ? totalSize - lastVirtualRow.end : 0
 
   return (
-    <div ref={scrollElementRef} className="flex-1 overflow-auto overscroll-none">
+    <ScrollArea
+      viewportRef={viewportRef}
+      className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]]:overscroll-none"
+    >
       <DataGridTableBase>
         <DataGridTableHead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -495,7 +499,8 @@ function DataGridTableVirtual() {
           )}
         </DataGridTableBody>
       </DataGridTableBase>
-    </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   )
 }
 

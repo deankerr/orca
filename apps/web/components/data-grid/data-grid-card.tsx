@@ -24,7 +24,7 @@ export function DataGridCardContent({
   return (
     <div
       data-slot="data-grid"
-      className={cn('flex flex-1 overflow-hidden border', className)}
+      className={cn('flex min-h-0 min-w-0 flex-1 overflow-hidden border', className)}
       {...props}
     >
       {children}
