@@ -435,7 +435,7 @@ function DataGridTableVirtual() {
   return (
     <ScrollArea
       viewportRef={viewportRef}
-      className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]]:overscroll-none"
+      className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]]:overscroll-none [&_[data-slot=scroll-area-scrollbar]]:z-20"
     >
       <DataGridTableBase>
         <DataGridTableHead>
