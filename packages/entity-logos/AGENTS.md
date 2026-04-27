@@ -36,7 +36,7 @@ read, clean, or regenerate it.
 
 ## Key normalization
 
-No source of truth for entity slugs exists. Keys are produced by lowercasing and stripping all `-` characters. This is intentional — dashes are not meaningful for matching purposes and zero real collisions result.
+No source of truth for entity slugs exists. Keys are produced by lowercasing and stripping all `-` characters. This is intentional — dashes are not meaningful for matching purposes and zero real collisions result. This approach allows for new entities that are found in the upstream data to automatically have a correct logo available, even if it is not known at build time.
 
 ## Sources
 
