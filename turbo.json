@@ -17,9 +17,6 @@
     "archive-sync": {
       "cache": false
     },
-    "process-logos": {
-      "cache": false
-    },
     "release": {
       "cache": false
     }

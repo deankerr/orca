@@ -1,0 +1,1720 @@
+{
+  "logos": [
+    {
+      "color": "png",
+      "key": "ace",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "adobe",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "adobefirefly",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "agenticaorg"
+    },
+    {
+      "color": "png",
+      "key": "agentvoice",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "agui",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ai2",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ai21",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ai302",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ai360",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "aihubmix",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "aimass",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "aionlabs",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "aistudio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "akashchat",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "akashml"
+    },
+    {
+      "color": "png",
+      "key": "alephalpha",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "alibaba",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "alibabacloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "allenai"
+    },
+    {
+      "color": "png",
+      "key": "alpindale"
+    },
+    {
+      "color": "png",
+      "key": "amazonnova"
+    },
+    {
+      "color": "png",
+      "key": "ambient"
+    },
+    {
+      "color": "png",
+      "key": "amp",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "antgroup",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "anthraciteorg"
+    },
+    {
+      "color": "png",
+      "key": "anthropic",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "antigravity",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "anyscale",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "apertis",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "apple",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "arcee",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "arceeai"
+    },
+    {
+      "color": "png",
+      "key": "arliai"
+    },
+    {
+      "color": "png",
+      "key": "askverdict",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "assemblyai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "atlascloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "atoma"
+    },
+    {
+      "color": "png",
+      "key": "automatic",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "avian"
+    },
+    {
+      "color": "png",
+      "key": "aws",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "aya",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "azure",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "azureai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "baai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "baichuan",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "baidu",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "baiducloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bailian",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "baseten",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bedrock",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bfl",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bilibili",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bilibiliindex",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bing",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "blackforestlabs"
+    },
+    {
+      "color": "png",
+      "key": "briaai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "burncloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "bytedance",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "byteplus"
+    },
+    {
+      "color": "png",
+      "key": "capcut",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "centml",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cerebras",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "chatglm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cherrystudio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "chutes"
+    },
+    {
+      "color": "png",
+      "key": "cirrascale"
+    },
+    {
+      "color": "png",
+      "key": "civitai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "clarifai"
+    },
+    {
+      "color": "png",
+      "key": "claude",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "claudecode",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cline",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "clipdrop",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cloudflare",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "codeflicker",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "codegeex",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "codex",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cogvideo",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cogview",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cohere",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "colab",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cometapi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "comfyui",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "commanda",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "copilot",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "copilotkit",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "coqui",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "coze",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "crewai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "crofai"
+    },
+    {
+      "color": "png",
+      "key": "crusoe",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cursor",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "cybercut",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "dalle",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "dbrx",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepcogito",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepinfra",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepl",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepmind",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "deepseek",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "dekallm"
+    },
+    {
+      "color": "png",
+      "key": "dify",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "doc2x",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "docsearch",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "dolphin",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "doubao",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "dreammachine",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "eleuther"
+    },
+    {
+      "color": "png",
+      "key": "elevenlabs",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "elevenx",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "essentialai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "exa",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "fakeprovider"
+    },
+    {
+      "color": "png",
+      "key": "fal",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "fastgpt",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "featherless",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "figma",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "fireworks",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "fishaudio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "flora",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "flowith",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "flux",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "friendli",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "gemini",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "geminicli",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "gemma",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "giteeai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "github",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "githubcopilot",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "glama",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "glif",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "glmv",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "gmicloud"
+    },
+    {
+      "color": "png",
+      "key": "google",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "googlecloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "goose",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "gradio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "greptile",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "grok",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "groq",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "gryphe"
+    },
+    {
+      "color": "png",
+      "key": "hailuo",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "haiper",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "hedra",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "hermesagent",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "higress",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "huawei",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "huaweicloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "huggingface",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "hunyuan",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "hyperbolic",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ibm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ideogram",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "iflytekcloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "inception",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "inceptron"
+    },
+    {
+      "color": "png",
+      "key": "inclusionai"
+    },
+    {
+      "color": "png",
+      "key": "inference",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "inferencenet"
+    },
+    {
+      "color": "png",
+      "key": "infermatic",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "infinigence",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "inflection",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "internlm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ionet"
+    },
+    {
+      "color": "png",
+      "key": "ionstream"
+    },
+    {
+      "color": "png",
+      "key": "jimeng",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "jina",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "junie",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kilocode",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kimi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kling",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kluster",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "klusterai"
+    },
+    {
+      "color": "png",
+      "key": "kolors",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "krea",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kwaikat",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "kwaipilot",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lambda",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "langchain",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "langfuse",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "langgraph",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "langsmith",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "leptonai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lg",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lightricks",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "liquid",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "livekit",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "llamaindex",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "llava",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "llmapi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lmstudio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lobehub",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "longcat",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lovable",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "lovart",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "luma",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "magic",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "make",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "mancer"
+    },
+    {
+      "color": "png",
+      "key": "manus",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "mara"
+    },
+    {
+      "color": "png",
+      "key": "mastra",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "mcp",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "mcpso",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "menlo",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "meshy",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "meta",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "metaai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "metagpt",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "microsoft",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "midjourney",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "minimax",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "mistral",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "modelscope",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "modular"
+    },
+    {
+      "color": "png",
+      "key": "monica",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "moonshot",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "moonshotai"
+    },
+    {
+      "color": "png",
+      "key": "morph",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "myshell",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "n8n",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nanobanana",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ncompass"
+    },
+    {
+      "color": "png",
+      "key": "nebius",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "neversleep"
+    },
+    {
+      "color": "png",
+      "key": "newapi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nextbit"
+    },
+    {
+      "color": "png",
+      "key": "nineteen"
+    },
+    {
+      "color": "png",
+      "key": "notebooklm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "notion",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nousresearch",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nova",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "novelai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "novita",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nplcloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "nvidia",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "obsidian",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ollama",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "openai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "openchat",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "openclaw",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "opencode",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "opengvlab"
+    },
+    {
+      "color": "png",
+      "key": "openhands",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "openinference"
+    },
+    {
+      "color": "png",
+      "key": "openrouter",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "openwebui",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "palm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "parasail",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "perplexity",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "phala"
+    },
+    {
+      "color": "png",
+      "key": "phidata",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "phind",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "pika",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "pixverse",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "player2",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "poe",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "pollinations",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ppio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "prunaai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "pydanticai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "pygmalionai"
+    },
+    {
+      "color": "png",
+      "key": "qingyan",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "qiniu",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "qoder",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "qwen",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "railway",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "recraft",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "reka"
+    },
+    {
+      "color": "png",
+      "key": "relace",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "replicate",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "replit",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "reve",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "roocode",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "rsshub",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "runway",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "rwkv",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sambanova",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sao10k"
+    },
+    {
+      "color": "png",
+      "key": "search1api",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "searchapi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "seed"
+    },
+    {
+      "color": "png",
+      "key": "sensenova",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sentencetransformers"
+    },
+    {
+      "color": "png",
+      "key": "shisaai"
+    },
+    {
+      "color": "png",
+      "key": "siliconcloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "siliconflow"
+    },
+    {
+      "color": "png",
+      "key": "skywork",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "smithery",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "snowflake",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sophnet",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sora",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "sourceful"
+    },
+    {
+      "color": "png",
+      "key": "spark",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "speedai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "stability",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "statecloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "stepfun",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "straico",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "streamlake",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "submodel",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "suno",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "switchpoint"
+    },
+    {
+      "color": "png",
+      "key": "sync",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "targon",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "tavily",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "tencent",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "tencentcloud",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "thedrummer"
+    },
+    {
+      "color": "png",
+      "key": "thudm"
+    },
+    {
+      "color": "png",
+      "key": "tiangong",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "tii",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "together",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "topazlabs",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "trae",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "tripo",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "turix",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "ubicloud"
+    },
+    {
+      "color": "png",
+      "key": "udio",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "undi95"
+    },
+    {
+      "color": "png",
+      "key": "unstructured",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "upstage",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "v0",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "vectorizerai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "venice",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "vercel",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "vertexai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "vidu",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "viggle",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "vllm",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "volcengine",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "voyage",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "wandb"
+    },
+    {
+      "color": "png",
+      "key": "wenxin",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "windsurf",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "workersai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "xai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "xiaomi"
+    },
+    {
+      "color": "png",
+      "key": "xiaomimimo",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "xinference",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "xpay",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "xuanyuan",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "yandex",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "yi",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "youmind",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "yuanbao",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zai",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zapier",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zeabur",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zencoder",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zenmux",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zeroone",
+      "avatar": "webp"
+    },
+    {
+      "color": "png",
+      "key": "zhipu",
+      "avatar": "webp"
+    }
+  ]
+}
