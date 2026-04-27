@@ -1,6 +1,6 @@
+import { resolveLogo } from '@orca/entity-logos'
 import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { getLogo } from '../../shared/logos'
 import { isNonEmptyString } from '../../shared/utils'
 import { getEnv } from '../lib/env'
 
@@ -15,7 +15,7 @@ export function getAuthorUrl(slug: string, uuid?: string): string {
 }
 
 export function getColorIconUrl(model_slug: string): string | undefined {
-  const { colorPath } = getLogo(model_slug)
+  const colorPath = resolveLogo(model_slug)?.colorPath
   if (!isNonEmptyString(colorPath)) {
     return undefined
   }
