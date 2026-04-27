@@ -69,3 +69,9 @@ Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely 
 
 - `packages/backend-experimental`
 - Greenfield re-implementation, no production deployment.
+
+## Entity Logos
+
+- `packages/entity-logos`
+- Collects logo assets from multiple sources
+- Resolves entity slugs at runtime for backend and frontend

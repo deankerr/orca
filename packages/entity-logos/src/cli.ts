@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 
-import { build } from './build'
-import { pullRemoteLogos } from './remote'
+import { build } from './pipeline'
+import { pullRemoteLogos } from './pipeline/remote'
 
 const program = new Command()
 

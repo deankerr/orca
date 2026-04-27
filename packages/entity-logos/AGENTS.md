@@ -62,6 +62,20 @@ Avatar logos:
 
 - `@lobehub/icons-static-avatar/avatars` — WebP only, copied unchanged
 
+## Architecture
+
+Runtime code stays at the package root. `src/index.ts` must contain exports only;
+`src/resolve.ts` owns runtime manifest parsing and slug resolution.
+
+Build code lives under `src/pipeline/`. Source-specific quirks belong in
+`src/pipeline/sources/`: LobeHub owns both avatar collection and color variant
+selection, while local source directories use the shared local scanner.
+
+`src/pipeline/catalog.ts` owns source precedence and merging. `src/pipeline/emit.ts`
+owns generated public files. `src/pipeline/manifest.ts` owns the package manifest.
+`src/pipeline/stats.ts` owns console reporting. `src/pipeline/remote.ts` owns
+append-only remote pulls.
+
 ## Bun
 
 Default to Bun over Node.js. Prefer `Bun.Glob`, `Bun.file`, `Bun.write`, `Bun.$` over Node equivalents.

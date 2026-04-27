@@ -1,24 +1,21 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolveLogo } from './index'
-import { normalizeLogoKey } from './keys'
-
-describe('normalizeLogoKey', () => {
-  test('collapses dashed names', () => {
-    expect(normalizeLogoKey('sentence-transformers.png')).toBe('sentencetransformers')
-    expect(normalizeLogoKey('shisa-ai.png')).toBe('shisaai')
-    expect(normalizeLogoKey('anthracite-org.png')).toBe('anthraciteorg')
-    expect(normalizeLogoKey('io-net.png')).toBe('ionet')
-  })
-})
+import { resolveLogo } from './resolve'
 
 describe('resolveLogo', () => {
+  test('collapses dashed names', () => {
+    expect(resolveLogo('sentence-transformers/foo')?.key).toBe('sentencetransformers')
+    expect(resolveLogo('shisa-ai/foo')?.key).toBe('shisaai')
+    expect(resolveLogo('anthracite-org/foo')?.key).toBe('anthraciteorg')
+    expect(resolveLogo('io-net/foo')?.key).toBe('ionet')
+  })
+
   test('resolves namespaced slugs by useful parts', () => {
     expect(resolveLogo('openai/gpt-4o')?.key).toBe('openai')
     expect(resolveLogo('anthropic/claude-3-5-sonnet')?.key).toBe('claude')
   })
 
-  test('applies known runtime transforms', () => {
+  test('applies known runtime replacements', () => {
     expect(resolveLogo('google-ai-studio')?.key).toBe('aistudio')
     expect(resolveLogo('google-vertex')?.key).toBe('vertexai')
     expect(resolveLogo('amazon-bedrock')?.key).toBe('bedrock')
