@@ -10,8 +10,9 @@
     "archive-sync": "turbo run archive-sync --filter=web",
     "build": "turbo run build --filter=web",
     "check": "bun --bun oxlint --type-check --type-aware --report-unused-disable-directives . && bun --bun oxfmt --check . && echo '✓ check passed'",
-    "dev": "turbo run dev --ui=stream",
-    "dev:convex": "turbo run dev --filter=@orca/backend",
+    "dev": "turbo run dev",
+    "dev:backend": "turbo run dev --filter=@orca/backend",
+    "dev:backend-experimental": "turbo run dev --filter=@orca/backend-experimental",
     "dev:next": "turbo run dev --filter=web",
     "fix": "bun --bun oxlint --type-check --type-aware --report-unused-disable-directives --fix . && bun --bun oxfmt --write . && echo '✓ fix passed'",
     "knip": "knip",
@@ -21,6 +22,8 @@
     "start": "turbo run start --filter=web"
   },
   "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
     "eslint-plugin-react-hooks": "7.1.1",
     "knip": "6.6.0",
     "oxfmt": "0.46.0",

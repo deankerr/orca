@@ -1,6 +1,7 @@
 {
   "name": "@orca/backend",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "convex dev"
   },
