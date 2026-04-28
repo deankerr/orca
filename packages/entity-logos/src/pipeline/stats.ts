@@ -1,4 +1,4 @@
-import type { ColorSourceSummary, LogoCatalog } from './types'
+import type { LogoCatalog, LogoSourceSummary } from './types'
 
 export function printBuildStats(catalog: LogoCatalog): void {
   const avatarCount = catalog.logos.filter((logo) => logo.avatar !== undefined).length
@@ -20,6 +20,14 @@ export function printBuildStats(catalog: LogoCatalog): void {
   console.log(`  Complete entries: ${completeCount}`)
   console.log(`  Avatar-only entries: ${avatarOnlyCount}`)
   console.log(`  Color-only entries: ${colorOnlyCount}`)
+  console.log('Avatar sources, priority order:')
+
+  for (const summary of catalog.avatarSourceSummaries) {
+    console.log(
+      `  ${summary.source}: ${summary.used} used, ${summary.unused} unused, ${summary.total} total`,
+    )
+  }
+
   console.log('Color sources, priority order:')
 
   for (const summary of catalog.colorSourceSummaries) {
@@ -28,19 +36,22 @@ export function printBuildStats(catalog: LogoCatalog): void {
     )
   }
 
-  console.log(`Avatar source: lobehub-avatar: ${avatarCount} used, 0 unused, ${avatarCount} total`)
-  printUnusedColorLogos(catalog.colorSourceSummaries)
+  printUnusedLogos('avatar', catalog.avatarSourceSummaries)
+  printUnusedLogos('color', catalog.colorSourceSummaries)
 }
 
-function printUnusedColorLogos(sourceSummaries: ColorSourceSummary[]): void {
+function printUnusedLogos(
+  assetKind: 'avatar' | 'color',
+  sourceSummaries: LogoSourceSummary[],
+): void {
   const summariesWithUnused = sourceSummaries.filter((summary) => summary.unusedPaths.length > 0)
 
   if (summariesWithUnused.length === 0) {
-    console.log('Unused color logos: none')
+    console.log(`Unused ${assetKind} logos: none`)
     return
   }
 
-  console.log('Unused color logos:')
+  console.log(`Unused ${assetKind} logos:`)
   for (const summary of summariesWithUnused) {
     console.log(`  ${summary.source} (${summary.unusedPaths.length})`)
     for (const path of summary.unusedPaths) {

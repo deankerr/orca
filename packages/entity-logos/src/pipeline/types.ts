@@ -1,4 +1,4 @@
-export type LogoSource = 'lobehub' | 'curated' | 'remote'
+export type LogoSource = 'avatar' | 'lobehub' | 'curated' | 'remote'
 
 export type LogoAsset = {
   key: string
@@ -12,7 +12,7 @@ export type CatalogLogo = {
   color?: LogoAsset
 }
 
-export type ColorSourceSummary = {
+export type LogoSourceSummary = {
   source: LogoSource
   total: number
   used: number
@@ -22,5 +22,6 @@ export type ColorSourceSummary = {
 
 export type LogoCatalog = {
   logos: CatalogLogo[]
-  colorSourceSummaries: ColorSourceSummary[]
+  avatarSourceSummaries: LogoSourceSummary[]
+  colorSourceSummaries: LogoSourceSummary[]
 }

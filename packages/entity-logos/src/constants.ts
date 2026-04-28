@@ -1,5 +1,6 @@
 export const PACKAGE_OUTPUT_MANIFEST = 'output/manifest.json'
 
+export const AVATAR_SOURCE_DIR = 'sources/avatar'
 export const CURATED_SOURCE_DIR = 'sources/curated'
 export const REMOTE_SOURCE_DIR = 'sources/openrouter'
 

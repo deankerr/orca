@@ -1,4 +1,5 @@
 import {
+  AVATAR_SOURCE_DIR,
   CURATED_SOURCE_DIR,
   LOBEHUB_AVATAR_SOURCE_DIR,
   LOBEHUB_COLOR_SOURCE_DIR,
@@ -6,10 +7,10 @@ import {
 } from '../constants'
 import { displayPath, packagePath } from './paths'
 import { collectLobehubLogos } from './sources/lobehub'
-import { collectLocalColorLogos } from './sources/local'
-import type { ColorSourceSummary, CatalogLogo, LogoAsset, LogoCatalog, LogoSource } from './types'
+import { collectLocalColorLogos, collectLocalLogos } from './sources/local'
+import type { CatalogLogo, LogoAsset, LogoCatalog, LogoSource, LogoSourceSummary } from './types'
 
-type ColorSource = {
+type AssetSource = {
   source: LogoSource
   candidates: LogoAsset[]
 }
@@ -20,7 +21,18 @@ export async function buildCatalog(): Promise<LogoCatalog> {
     colorDir: packagePath(LOBEHUB_COLOR_SOURCE_DIR),
   })
 
-  const colorSources: ColorSource[] = [
+  const avatarSources: AssetSource[] = [
+    {
+      candidates: await collectLocalLogos({
+        source: 'avatar',
+        sourceDir: packagePath(AVATAR_SOURCE_DIR),
+      }),
+      source: 'avatar',
+    },
+    { candidates: lobehub.avatars, source: 'lobehub' },
+  ]
+
+  const colorSources: AssetSource[] = [
     { candidates: lobehub.colors, source: 'lobehub' },
     {
       candidates: await collectLocalColorLogos({
@@ -38,35 +50,37 @@ export async function buildCatalog(): Promise<LogoCatalog> {
     },
   ]
 
-  const colorWinners = chooseColorLogos(colorSources)
-  const logos = mergeLogos({ avatars: lobehub.avatars, colors: colorWinners.colors })
+  const avatarWinners = chooseLogos(avatarSources)
+  const colorWinners = chooseLogos(colorSources)
+  const logos = mergeLogos({ avatars: avatarWinners.logos, colors: colorWinners.logos })
 
   return {
-    colorSourceSummaries: summarizeColorSources(colorSources, colorWinners.used),
+    avatarSourceSummaries: summarizeSources(avatarSources, avatarWinners.used),
+    colorSourceSummaries: summarizeSources(colorSources, colorWinners.used),
     logos,
   }
 }
 
-function chooseColorLogos(colorSources: ColorSource[]): {
-  colors: LogoAsset[]
+function chooseLogos(sources: AssetSource[]): {
+  logos: LogoAsset[]
   used: Set<LogoAsset>
 } {
-  const colorsByKey = new Map<string, LogoAsset>()
+  const logosByKey = new Map<string, LogoAsset>()
   const used = new Set<LogoAsset>()
 
-  for (const colorSource of colorSources) {
-    for (const candidate of colorSource.candidates) {
-      if (colorsByKey.has(candidate.key)) {
+  for (const source of sources) {
+    for (const candidate of source.candidates) {
+      if (logosByKey.has(candidate.key)) {
         continue
       }
 
-      colorsByKey.set(candidate.key, candidate)
+      logosByKey.set(candidate.key, candidate)
       used.add(candidate)
     }
   }
 
   return {
-    colors: [...colorsByKey.values()],
+    logos: [...logosByKey.values()],
     used,
   }
 }
@@ -87,11 +101,11 @@ function mergeLogos(args: { avatars: LogoAsset[]; colors: LogoAsset[] }): Catalo
   return [...byKey.values()].toSorted((a, b) => a.key.localeCompare(b.key))
 }
 
-function summarizeColorSources(
-  colorSources: ColorSource[],
+function summarizeSources(
+  sources: AssetSource[],
   usedCandidates: Set<LogoAsset>,
-): ColorSourceSummary[] {
-  return colorSources.map(({ candidates, source }) => {
+): LogoSourceSummary[] {
+  return sources.map(({ candidates, source }) => {
     const unusedPaths = candidates
       .filter((candidate) => !usedCandidates.has(candidate))
       .map((candidate) => displayPath(candidate.sourcePath))
