@@ -10,7 +10,7 @@ type LocalSource = {
 
 const LOCAL_ICON_PATTERN = '*.{png,jpg,jpeg,svg,webp}'
 
-export async function collectLocalColorLogos(localSource: LocalSource): Promise<LogoAsset[]> {
+export async function collectLocalLogos(localSource: LocalSource): Promise<LogoAsset[]> {
   const glob = new Bun.Glob(LOCAL_ICON_PATTERN)
   const logos: LogoAsset[] = []
 

@@ -1259,6 +1259,11 @@
     {
       "avatar": "webp",
       "color": "png",
+      "key": "poolside"
+    },
+    {
+      "avatar": "webp",
+      "color": "png",
       "key": "ppio"
     },
     {

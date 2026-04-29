@@ -60,7 +60,8 @@ Color logos (priority order, first match wins):
 
 Avatar logos:
 
-- `@lobehub/icons-static-avatar/avatars` — WebP only, copied unchanged
+1. `sources/avatar` — local custom avatar-style logos (any supported image format, converted to WebP)
+2. `@lobehub/icons-static-avatar/avatars` — WebP avatar icons
 
 ## Architecture
 

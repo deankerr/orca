@@ -32,8 +32,15 @@ async function recreateOutputDirs(): Promise<void> {
 }
 
 async function emitAvatar(asset: LogoAsset): Promise<void> {
-  const bytes = await Bun.file(asset.sourcePath).arrayBuffer()
-  await Bun.write(join(PUBLIC_AVATAR_PATH, `${asset.key}.webp`), bytes)
+  const outputPath = join(PUBLIC_AVATAR_PATH, `${asset.key}.webp`)
+
+  if (asset.sourcePath.toLowerCase().endsWith('.webp')) {
+    const bytes = await Bun.file(asset.sourcePath).arrayBuffer()
+    await Bun.write(outputPath, bytes)
+    return
+  }
+
+  await sharp(asset.sourcePath).webp().toFile(outputPath)
 }
 
 async function emitColor(asset: LogoAsset): Promise<void> {
