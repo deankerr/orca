@@ -24,7 +24,3 @@ export async function collectLocalLogos(localSource: LocalSource): Promise<LogoA
 
   return logos.toSorted((a, b) => a.key.localeCompare(b.key))
 }
-
-export async function collectLocalColorLogos(localSource: LocalSource): Promise<LogoAsset[]> {
-  return collectLocalLogos(localSource)
-}

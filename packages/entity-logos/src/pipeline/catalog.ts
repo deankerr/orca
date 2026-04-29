@@ -7,7 +7,7 @@ import {
 } from '../constants'
 import { displayPath, packagePath } from './paths'
 import { collectLobehubLogos } from './sources/lobehub'
-import { collectLocalColorLogos, collectLocalLogos } from './sources/local'
+import { collectLocalLogos } from './sources/local'
 import type { CatalogLogo, LogoAsset, LogoCatalog, LogoSource, LogoSourceSummary } from './types'
 
 type AssetSource = {
@@ -35,14 +35,14 @@ export async function buildCatalog(): Promise<LogoCatalog> {
   const colorSources: AssetSource[] = [
     { candidates: lobehub.colors, source: 'lobehub' },
     {
-      candidates: await collectLocalColorLogos({
+      candidates: await collectLocalLogos({
         source: 'curated',
         sourceDir: packagePath(CURATED_SOURCE_DIR),
       }),
       source: 'curated',
     },
     {
-      candidates: await collectLocalColorLogos({
+      candidates: await collectLocalLogos({
         source: 'remote',
         sourceDir: packagePath(REMOTE_SOURCE_DIR),
       }),
