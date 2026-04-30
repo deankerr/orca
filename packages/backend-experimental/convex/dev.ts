@@ -5,21 +5,29 @@ import type { TableNames } from './_generated/dataModel'
 import { internalAction, internalMutation } from './_generated/server'
 
 const tableNames: TableNames[] = [
-  'catalog_endpoints',
-  'catalog_endpoints_content',
-  'catalog_models',
-  'catalog_models_content',
-  'catalog_providers',
-  'catalog_providers_content',
+  'catalog_endpoints_snapshots',
+  'catalog_endpoints_state',
+  'catalog_endpoints_views',
+  'catalog_models_snapshots',
+  'catalog_models_state',
+  'catalog_models_views',
+  'catalog_providers_snapshots',
+  'catalog_providers_state',
+  'catalog_providers_views',
+  'endpoint_stats_samples',
 ]
 
 const tableNameValidator = v.union(
-  v.literal('catalog_endpoints'),
-  v.literal('catalog_endpoints_content'),
-  v.literal('catalog_models'),
-  v.literal('catalog_models_content'),
-  v.literal('catalog_providers'),
-  v.literal('catalog_providers_content'),
+  v.literal('catalog_endpoints_snapshots'),
+  v.literal('catalog_endpoints_state'),
+  v.literal('catalog_endpoints_views'),
+  v.literal('catalog_models_snapshots'),
+  v.literal('catalog_models_state'),
+  v.literal('catalog_models_views'),
+  v.literal('catalog_providers_snapshots'),
+  v.literal('catalog_providers_state'),
+  v.literal('catalog_providers_views'),
+  v.literal('endpoint_stats_samples'),
 )
 
 const deleteBatchSize = 4000

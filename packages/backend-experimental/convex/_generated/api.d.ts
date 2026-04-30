@@ -24,6 +24,10 @@ import type * as collection_parsers_provider from "../collection/parsers/provide
 import type * as collection_workflow from "../collection/workflow.js";
 import type * as crons from "../crons.js";
 import type * as dev from "../dev.js";
+import type * as endpointStats from "../endpointStats.js";
+import type * as endpointStats_commit from "../endpointStats/commit.js";
+import type * as endpointStats_index from "../endpointStats/index.js";
+import type * as endpointStats_queries from "../endpointStats/queries.js";
 import type * as endpoints from "../endpoints.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
 import type * as lib_hash from "../lib/hash.js";
@@ -53,6 +57,10 @@ declare const fullApi: ApiFromModules<{
   "collection/workflow": typeof collection_workflow;
   crons: typeof crons;
   dev: typeof dev;
+  endpointStats: typeof endpointStats;
+  "endpointStats/commit": typeof endpointStats_commit;
+  "endpointStats/index": typeof endpointStats_index;
+  "endpointStats/queries": typeof endpointStats_queries;
   endpoints: typeof endpoints;
   "lib/functionSpec": typeof lib_functionSpec;
   "lib/hash": typeof lib_hash;

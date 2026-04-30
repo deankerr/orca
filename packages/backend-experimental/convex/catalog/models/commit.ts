@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 
 import { defineMutationSpec } from '../../lib/functionSpec'
-import { getState, getStateAt } from './queries'
+import { getStateAt } from './queries'
 import { contentFields } from './schema'
 
 export const commit = defineMutationSpec({
@@ -17,28 +17,40 @@ export const commit = defineMutationSpec({
     observedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    // Re-read the prior model state inside the transaction boundary.
-    const state = await getStateAt(ctx, {
-      id: args.next.entity.id,
-      observedAt: args.observedAt,
-    })
-    const contentChanged = state?.contentHash !== args.contentHash
-    const becameAvailable = state?.unavailableAt !== undefined
+    const state = await getStateAt(ctx, { id: args.next.entity.id, observedAt: args.observedAt })
 
-    if (!contentChanged && !becameAvailable) {
+    const isAvailable = state !== null && state.isAvailable
+    const isIdentical = state !== null && state.contentHash === args.contentHash
+
+    if (isAvailable && isIdentical) {
       return
     }
 
-    // Insert changed content, or reuse the prior content row for state-only changes.
-    const rowId = contentChanged
-      ? await ctx.db.insert('catalog_models_content', args.next.content)
-      : state.rowId
+    const materializedCurrent = {
+      ...args.next.content,
+      unavailableAt: undefined,
+      unavailableAtSortKey: Number.MAX_SAFE_INTEGER,
+    }
 
-    await ctx.db.insert('catalog_models', {
+    const viewId = await (async () => {
+      if (state === null) {
+        return ctx.db.insert('catalog_models_views', materializedCurrent)
+      }
+      await ctx.db.replace(state.viewId, materializedCurrent)
+      return state.viewId
+    })()
+
+    const snapshotId =
+      state !== null && isIdentical
+        ? state.snapshotId
+        : await ctx.db.insert('catalog_models_snapshots', args.next.content)
+
+    await ctx.db.insert('catalog_models_state', {
       contentHash: args.contentHash,
       entity: args.next.entity,
       observedAt: args.observedAt,
-      rowId,
+      snapshotId,
+      viewId,
     })
   },
 })
@@ -50,18 +62,24 @@ export const markUnavailable = defineMutationSpec({
   },
   handler: async (ctx, args) => {
     for (const id of args.ids) {
-      const state = await getState(ctx, id)
+      const state = await getStateAt(ctx, { id })
 
-      if (!state || state.unavailableAt !== undefined) {
+      if (state === null || !state.isAvailable) {
         continue
       }
 
-      await ctx.db.insert('catalog_models', {
+      await ctx.db.patch(state.viewId, {
+        unavailableAt: args.observedAt,
+        unavailableAtSortKey: args.observedAt,
+      })
+
+      await ctx.db.insert('catalog_models_state', {
         contentHash: state.contentHash,
         entity: state.entity,
         observedAt: args.observedAt,
-        rowId: state.rowId,
+        snapshotId: state.snapshotId,
         unavailableAt: args.observedAt,
+        viewId: state.viewId,
       })
     }
   },

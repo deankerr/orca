@@ -41,91 +41,71 @@ The Catalog stores ORCA's understanding of an entity, not a verbatim copy of ext
 That means the Catalog may model concepts that do not exist directly in incoming data, such as:
 
 - Availability over time
-- Entity labels optimized for default reads
+- Entity labels optimized for reads
 - temporal Entity State history
 
 ### Current Is The Default Read State
 
-The default state of Catalog data is **Current**: the most recent Entity State and its referenced Content Row.
+The default state of Catalog data is **Current**: the most recent Entity State and its Content, surfaced through the View.
 
-This is why default query names are simple names such as `get` and `list` rather than `getCurrent`, `getLatest`, `listCurrent`, or `listLatest`.
+This is why query names are simple names such as `get` and `list` rather than `getCurrent`, `getLatest`, `listCurrent`, or `listLatest`.
 
 Historical access must be explicit through a specific `history` query.
 
 ### Content History And Entity History Are Different Concerns
 
-A Content change and an Entity State change are not the same thing.
-
-Content may change without changing Availability.
-Availability may change without any Content change.
+Content may change without changing Availability. Availability may change without any Content change.
 
 The Catalog must represent both without forcing either one into the other's storage model.
 
 ### Historical Reads Must Be Exact
 
-The Catalog should not depend on reconstructing historical Entity States from timestamps alone.
+The Catalog does not depend on reconstructing historical Entity States from timestamps alone.
 
-If a historical Entity State matters, the Catalog stores the exact `rowId` that was true at that point in time.
+Each Entity State Row stores an explicit reference to the Snapshot that was true at that point in time.
 
 ### Rows Are Storage, Not Meaning
 
-A Row is the physical stored unit in a Catalog table.
-
-Higher-level concepts such as Entity State and Content are represented by Rows, but they are not interchangeable with Rows in language or design.
+Higher-level concepts such as Entity State, Snapshot, and View are represented by Rows, but they are not interchangeable with Rows in language or design.
 
 ## Storage Model
 
-Each entity type has:
+Each entity type has three tables:
 
 - one Entity State Table
-- one Content Table
+- one Snapshots Table
+- one Views Table
 
 ### Entity State Table
 
 The Entity State Table is append-only.
 
-Each Entity State Row records:
+Each Entity State Row records entity identity and label data, when it was observed (`observedAt`), a reference to its Snapshot (`snapshotId`), a reference to the entity's View (`viewId`), a hash for fast Content comparison (`contentHash`), and Availability.
 
-- entity identity and default-read label data
-- when this Entity State was observed by the Catalog
-- the `rowId` of the Content Row for this Entity State
-- the `contentHash` of that Content Row
-- Availability
+### Snapshots Table
 
-The `contentHash` is part of Entity State so incoming Content can be compared against the current state without hydrating the full Content Row.
+The Snapshots Table is append-only.
 
-The `rowId` is part of Entity State so historical reads know exactly which Content Row belonged to that Entity State.
+Each Snapshot stores normalized Content for one Catalog Entity at a point in time. Snapshots do not store Availability.
 
-### Content Table
+### Views Table
 
-The Content Table is append-only.
+The Views Table stores one mutable View per Catalog Entity.
 
-Each Content Row records normalized Content for one Catalog Entity.
-
-Content Rows do not store Availability.
+A View holds the current Content and Availability for its entity, maintained so default reads do not require traversing the Entity State Table. The View is created on first observation and replaced or patched on subsequent writes.
 
 ## Availability Model
 
-Availability is a property of Entity State, not Content.
+Availability is a property of Entity State and View, not Content.
 
-It is represented as a sparse property:
+It is represented by a sparse field `unavailableAt`:
 
-- `unavailableAt`
+- `unavailableAt = undefined` — the entity is available.
+- `unavailableAt = timestamp` — the entity has been unavailable since that time.
 
-Semantics:
-
-- `unavailableAt = undefined` means the entity is available in this Entity State.
-- `unavailableAt = timestamp` means the entity is unavailable from that time onward in this Entity State.
-
-This allows:
-
-- Availability changes without new Content Rows
-- reappearance without cloning content
-- exact availability history alongside content history
+This allows Availability changes without new Snapshots, reappearance without cloning content, and exact availability history alongside content history.
 
 ## Write Model
-
-A Catalog write may append zero or one Content Row and zero or one Entity State Row.
 
 Incoming entity data implicitly means the Catalog Entity is available.
 
@@ -135,38 +115,21 @@ An Entity State Row is appended when at least one of the following is true:
 - Availability changed
 - the entity appeared for the first time
 
-When Content changes, the Catalog appends a new Content Row and a new Entity State Row referencing it.
+When Content changes, the Catalog appends a new Snapshot, replaces the View with the new Content, and appends a new Entity State Row.
 
-When only Availability changes, the Catalog appends a new Entity State Row that references the existing Content Row.
+When only Availability changes, the Catalog patches the View and appends a new Entity State Row referencing the existing Snapshot.
 
-If neither Content nor Availability changed in a Catalog-visible way, the Catalog remains unchanged.
+If neither Content nor Availability changed, the Catalog remains unchanged.
 
-The write path must re-read the prior Entity State inside the transactional boundary before appending rows.
+The write path must re-read the prior Entity State inside the transactional boundary before writing.
 
 ## Read Model
 
-The Catalog supports two primary read shapes.
-
-### Default Query
-
-A Default query returns the Current Entity State and referenced Content for one or more Catalog Entities.
-
-It should:
-
-- read the most recent Entity State Row per entity
-- fetch the referenced Content Row
-- return both pieces without implying a flattened storage shape
-
 ### History Query
 
-A History query returns Entity States over time for one Catalog Entity.
+A History query returns Entity States over time for one Catalog Entity, reading Entity State Rows in descending observed-time order and hydrating each with its Snapshot.
 
-It should:
-
-- read Entity State Rows for the entity in descending observed-time order
-- optionally hydrate each Entity State with its referenced Content Row
-
-This yields exact historical reads because the Content Row reference is stored explicitly in the Entity State Row.
+Exact historical reads are possible because each Entity State Row carries an explicit Snapshot reference.
 
 ## Naming Patterns
 
@@ -175,82 +138,46 @@ Catalog entity modules are scoped to one entity type.
 Inside an entity module:
 
 - do not repeat the entity name in function, argument, variable, or local type names
-- use names such as `state`, `content`, `hydrate`, `getState`, `stateTable`, `contentTable`, and `contentFields`
+- use names such as `state`, `content`, `snapshot`, `view`, `hydrate`, `getState`, `stateTable`, `snapshotsTable`, `viewsTable`, and `contentFields`
 - reserve concrete entity names for physical database table names, public routing boundaries, and useful error messages
 
-Default query and mutation names should not include `current` or `latest`.
-
-The Catalog's default read surface is Current unless a query explicitly says otherwise.
-
-Examples:
+Query and mutation names should not include `current` or `latest`. Examples:
 
 - use `get` instead of `getCurrent`
 - use `list` instead of `listLatest`
 - use `getState` instead of `getCurrentState`
 - use `history` when reading historical Entity States
 
-Use exact symbol names in this section only when the symbol expresses a durable architectural invariant.
-
-## Extension Rules
-
-When adding or reshaping an entity type:
-
-- start with an Entity State Table and one Content Table
-- keep Entity State responsible for Availability, `rowId`, and `contentHash`
-- keep the Content Table responsible for normalized Content only
-- keep default reads Current by convention
-- add History queries when historical inspection is useful
-- avoid entity-specific names inside entity-local modules
-- avoid generic table-name-driven write helpers; entity modules should own concrete table inserts
-
-Shared helpers should own generic bookkeeping only.
-
-They may help with content hashing, skip decisions, or hydration, but they should not obscure which concrete table is being written.
-
 ## Example Timeline
 
 An entity can evolve like this:
 
 ```text
-state 1 -> available, rowId: content 1
-state 2 -> unavailable, rowId: content 1
-state 3 -> available, rowId: content 1
-state 4 -> available, rowId: content 2
+state 1 -> available, snapshot: A
+state 2 -> unavailable, snapshot: A
+state 3 -> available, snapshot: A
+state 4 -> available, snapshot: B
 ```
 
-This expresses:
-
-- content changes
-- unavailable transitions
-- reappearance without new content
-
-without cloning any Content Rows.
+This expresses content changes, unavailable transitions, and reappearance without new content — without cloning any Snapshots.
 
 ## Why This Model
 
-This architecture deliberately avoids several weaker alternatives.
-
 ### Not A Single Mutable State Row
 
-A mutable row cannot preserve exact historical Entity States.
+A mutable entity state cannot preserve exact historical Entity States. The Views Table is mutable, but it stores only current state — history is preserved in the append-only State and Snapshots Tables.
 
 ### Not Content Cloning For Availability
 
-Availability is not content.
-
-Cloning Content Rows to represent unavailable states pollutes content history with non-content changes.
+Availability is not content. Cloning Snapshots to represent unavailable states would pollute content history with non-content changes.
 
 ### Not Timestamp-Only Historical Reconstruction
 
-Reconstructing Content Row references from timestamps alone makes exact history implicit and fragile.
-
-The Catalog stores the `rowId` explicitly.
+Reconstructing Snapshot references from timestamps alone makes exact history implicit and fragile. The Catalog stores the Snapshot reference explicitly in every Entity State Row.
 
 ### Not Generic Table-Name-Driven Writes
 
-A fully generic write path tends to hide concrete table ownership and weakens type clarity.
-
-The Catalog can share bookkeeping helpers, but entity modules should retain responsibility for concrete Entity State and Content writes.
+A fully generic write path tends to hide concrete table ownership and weakens type clarity. The Catalog can share bookkeeping helpers, but entity modules should retain responsibility for concrete writes.
 
 ## Non-Goals
 
@@ -262,17 +189,12 @@ This architecture does not define:
 - a domain-specific glossary for any concrete entity type
 - frontend presentation details
 
-Those concerns matter, but they are outside the scope of the core Catalog architecture.
-
 ## Result
 
-The result is a Catalog with two complementary histories:
+The result is a Catalog with three complementary tables per entity:
 
-- Content history: how normalized content changed
 - Entity State history: how the entity as a whole changed over time
+- Snapshot history: how normalized content changed
+- View: the current materialized state for efficient reads
 
-That split is the core mechanism that makes the Catalog both precise and practical:
-
-- precise enough for exact history
-- practical enough for efficient default reads
-- generic enough to apply across entity types
+That structure makes the Catalog precise enough for exact history, practical enough for efficient default reads, and generic enough to apply across entity types.

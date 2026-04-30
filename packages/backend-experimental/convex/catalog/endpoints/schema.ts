@@ -12,25 +12,30 @@ export const stateTable = defineTable({
     providerId: v.string(),
   }),
   observedAt: v.number(),
-  rowId: v.id('catalog_endpoints_content'),
+  snapshotId: v.id('catalog_endpoints_snapshots'),
   unavailableAt: v.optional(v.number()),
+  viewId: v.id('catalog_endpoints_views'),
 }).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
-
-const identityFields = {
-  id: v.string(),
-  modelId: v.string(),
-  providerId: v.string(),
-}
 
 // Content
 
 export const contentFields = {
-  ...identityFields,
+  id: v.string(),
+  modelId: v.string(),
+  providerId: v.string(),
+
+  modelCreatedAt: v.number(),
+  modelName: v.string(),
   modelVariant: v.string(),
   modelVersionId: v.string(),
+
   providerName: v.string(),
   providerRegion: v.optional(v.string()),
   providerVariant: v.optional(v.string()),
+
+  inputModalities: v.array(v.string()),
+  outputModalities: v.array(v.string()),
+  reasoning: v.boolean(),
 
   contextLength: v.number(),
   maxOutput: v.optional(v.number()),
@@ -81,4 +86,15 @@ export const contentFields = {
   }),
 }
 
-export const contentTable = defineTable(contentFields)
+export const snapshotsTable = defineTable(contentFields)
+
+export const viewsTable = defineTable({
+  ...contentFields,
+  unavailableAt: v.optional(v.number()),
+  // MAX_SAFE_INTEGER when available, actual unavailableAt when not — enables single range query
+  unavailableAtSortKey: v.number(),
+})
+  .index('by_entityId', ['id'])
+  .index('by_modelId__unavailableAtSortKey', ['modelId', 'unavailableAtSortKey'])
+  .index('by_providerId__unavailableAtSortKey', ['providerId', 'unavailableAtSortKey'])
+  .index('by_unavailableAtSortKey', ['unavailableAtSortKey'])
