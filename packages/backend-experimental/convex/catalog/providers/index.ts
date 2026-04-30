@@ -1,5 +1,5 @@
 import { commit, markUnavailable } from './commit'
-import { history, get, list, listStates } from './queries'
+import { get, history, list, listStates } from './queries'
 
 export const providers = {
   commit,

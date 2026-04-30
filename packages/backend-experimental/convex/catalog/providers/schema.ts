@@ -10,8 +10,9 @@ export const stateTable = defineTable({
     label: v.string(),
   }),
   observedAt: v.number(),
-  rowId: v.id('catalog_providers_content'),
+  snapshotId: v.id('catalog_providers_snapshots'),
   unavailableAt: v.optional(v.number()),
+  viewId: v.id('catalog_providers_views'),
 }).index('by_entity_id__observedAt', ['entity.id', 'observedAt'])
 
 // Content
@@ -27,4 +28,13 @@ export const contentFields = {
   termsOfServiceUrl: v.optional(v.string()),
 }
 
-export const contentTable = defineTable(contentFields)
+export const snapshotsTable = defineTable(contentFields)
+
+export const viewsTable = defineTable({
+  ...contentFields,
+  unavailableAt: v.optional(v.number()),
+  // MAX_SAFE_INTEGER when available, actual unavailableAt when not — enables single range query
+  unavailableAtSortKey: v.number(),
+})
+  .index('by_entityId', ['id'])
+  .index('by_unavailableAtSortKey', ['unavailableAtSortKey'])

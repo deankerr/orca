@@ -48,12 +48,13 @@ Observational data should be kept distinct from our materialized records.
 
 ## Status
 
-- Refining `collection` and `catalog` of MEP data.
-- Simple hourly `collection` cron.
+- Experimental adoption of backend-experimental for endpoints data grid
+- additional model page
+- expanded stats tracking
 
 ### Known Issues
 
-- Parsers validate unused fields (desired fields are not finalized)
+- Collection parsers may validate unused fields (desired fields are not finalized)
 
 ### Deferred
 

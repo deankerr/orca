@@ -12,7 +12,7 @@ import { rawProviderIdentitySchema, rawProviderTransformSchema } from './parsers
 type StateWithContentHash = {
   observedAt: number
   contentHash: string
-  unavailableAt?: number
+  isAvailable: boolean
 }
 
 const schema = createSchema({
@@ -56,20 +56,19 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
-// Keep the common no-change collection path out of mutation execution.
 async function ingestCatalogEntity<Next extends { content: unknown }>(args: {
   commitFn: (args: { next: Next; observedAt: number; contentHash: string }) => Promise<unknown>
-  currentState?: StateWithContentHash
+  state?: StateWithContentHash
   next: Next
   observedAt: number
 }) {
   const contentHash = await createContentHash(args.next.content)
-  const contentChanged = args.currentState?.contentHash !== contentHash
-  const becameAvailable = args.currentState?.unavailableAt !== undefined
-  const latestStateIsNotNewer =
-    args.currentState === undefined || args.currentState.observedAt <= args.observedAt
 
-  if (!contentChanged && !becameAvailable && latestStateIsNotNewer) {
+  const { state = null } = args
+  // check eligibility filter
+  const isAvailable = state?.isAvailable ?? false
+  const isIdentical = state !== null && state.contentHash === contentHash
+  if (isAvailable && isIdentical) {
     return
   }
 
@@ -88,8 +87,7 @@ async function collectProviders(ctx: ActionCtx, args: { observedAt: number }) {
   const unavailableProviderIds = states
     .filter(
       (state) =>
-        state.unavailableAt === undefined &&
-        !rawProviders.some((provider) => provider.id === state.entity.id),
+        state.isAvailable && !rawProviders.some((provider) => provider.id === state.entity.id),
     )
     .map((state) => state.entity.id)
 
@@ -108,9 +106,9 @@ async function collectProviders(ctx: ActionCtx, args: { observedAt: number }) {
 
     await ingestCatalogEntity({
       commitFn: async (commitArgs) => ctx.runMutation(internal.providers.commit, commitArgs),
-      currentState: states.find((state) => state.entity.id === id),
       next: providerEntity.data,
       observedAt: args.observedAt,
+      state: states.find((state) => state.entity.id === id),
     })
   }
 
@@ -140,9 +138,9 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
     if (modelEntity.success) {
       await ingestCatalogEntity({
         commitFn: async (commitArgs) => ctx.runMutation(internal.models.commit, commitArgs),
-        currentState: modelStates.find((state) => state.entity.id === identity.id),
         next: modelEntity.data,
         observedAt: args.observedAt,
+        state: modelStates.find((state) => state.entity.id === identity.id),
       })
     } else {
       console.error('failed to parse model', {
@@ -200,18 +198,28 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
         continue
       }
 
+      const { catalog, stats } = endpointEntity.data
+
+      await ctx.runMutation(internal.endpointStats.insertSample, {
+        endpointId: catalog.entity.id,
+        modelId: catalog.entity.modelId,
+        observedAt: args.observedAt,
+        providerId: catalog.entity.providerId,
+        stats,
+      })
+
       await ingestCatalogEntity({
         commitFn: async (commitArgs) => ctx.runMutation(internal.endpoints.commit, commitArgs),
-        currentState: endpointStates.find((state) => state.entity.id === id),
-        next: endpointEntity.data,
+        next: catalog,
         observedAt: args.observedAt,
+        state: endpointStates.find((state) => state.entity.id === id),
       })
     }
   }
 
   // Endpoint unavailability is derived once all model endpoint evidence is known.
   const unavailableEndpointIds = endpointStates
-    .filter((state) => state.unavailableAt === undefined)
+    .filter((state) => state.isAvailable)
     .filter((state) => {
       const modelIdentity = rawModels.find((identity) => identity.id === state.entity.modelId)
 
@@ -244,7 +252,7 @@ async function collectModels(ctx: ActionCtx, args: { observedAt: number }) {
 
   // mark any missing model ids as unavailable
   const unavailableModelIds = modelStates
-    .filter((state) => state.unavailableAt === undefined)
+    .filter((state) => state.isAvailable)
     .filter((state) => !rawModels.some((identity) => identity.id === state.entity.id))
     .map((state) => state.entity.id)
 

@@ -6,6 +6,37 @@ const zPrice = z.coerce
   .transform((value) => (value === 0 ? undefined : value))
   .optional()
 
+const zStatNumber = z.preprocess((value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  return undefined
+}, z.number().optional())
+
+const zStats = z
+  .looseObject({
+    p50_latency: zStatNumber,
+    p50_throughput: zStatNumber,
+    p75_latency: zStatNumber,
+    p75_throughput: zStatNumber,
+    p90_latency: zStatNumber,
+    p90_throughput: zStatNumber,
+    p95_latency: zStatNumber,
+    p95_throughput: zStatNumber,
+    p99_latency: zStatNumber,
+    p99_throughput: zStatNumber,
+    request_count: zStatNumber,
+    window_minutes: zStatNumber,
+  })
+  .optional()
+  .catch(undefined)
+
 // Drop nullish values so version hashes only track meaningful pricing and capability changes.
 function compact<T extends Record<string, unknown>>(value: T) {
   return R.pickBy(value, R.isNonNullish)
@@ -35,6 +66,22 @@ export const rawEndpointTransformSchema = z
 
     quantization: z.string(),
     supported_parameters: z.array(z.string()).transform((value) => value.toSorted()),
+
+    model: z.object({
+      created_at: z
+        .string()
+        .transform((value) => Date.parse(value))
+        .pipe(z.number()),
+      input_modalities: z
+        .string()
+        .array()
+        .transform((value) => value.toSorted()),
+      output_modalities: z
+        .string()
+        .array()
+        .transform((value) => value.toSorted()),
+      short_name: z.string(),
+    }),
 
     data_policy: z.object({
       canPublish: z.boolean().optional(),
@@ -72,6 +119,7 @@ export const rawEndpointTransformSchema = z
     is_deranked: z.boolean(),
     is_disabled: z.boolean(),
     moderation_required: z.boolean(),
+    stats: zStats,
     status: z.number().optional(),
   })
   .transform((raw) => {
@@ -81,7 +129,9 @@ export const rawEndpointTransformSchema = z
 
     const content = compact({
       id,
+      modelCreatedAt: raw.model.created_at,
       modelId,
+      modelName: raw.model.short_name,
       modelVariant: raw.variant,
       modelVersionId: raw.model_variant_permaslug,
 
@@ -90,8 +140,11 @@ export const rawEndpointTransformSchema = z
       providerRegion: raw.provider_region,
       providerVariant,
 
-      contextLength: raw.context_length,
+      inputModalities: raw.model.input_modalities,
+      outputModalities: raw.model.output_modalities,
+      reasoning: raw.supports_reasoning,
 
+      contextLength: raw.context_length,
       maxOutput: raw.max_completion_tokens,
       quantization: raw.quantization,
       supportedParameters: raw.supported_parameters,
@@ -140,14 +193,35 @@ export const rawEndpointTransformSchema = z
       },
     })
 
+    const stats =
+      raw.stats === undefined
+        ? undefined
+        : compact({
+            p50Latency: raw.stats.p50_latency,
+            p50Throughput: raw.stats.p50_throughput,
+            p75Latency: raw.stats.p75_latency,
+            p75Throughput: raw.stats.p75_throughput,
+            p90Latency: raw.stats.p90_latency,
+            p90Throughput: raw.stats.p90_throughput,
+            p95Latency: raw.stats.p95_latency,
+            p95Throughput: raw.stats.p95_throughput,
+            p99Latency: raw.stats.p99_latency,
+            p99Throughput: raw.stats.p99_throughput,
+            requestCount: raw.stats.request_count,
+            windowMinutes: raw.stats.window_minutes,
+          })
+
     return {
-      content,
-      entity: {
-        id,
-        label: `${id} ${providerId} ${providerVariant}`,
-        modelId,
-        providerId,
+      catalog: {
+        content,
+        entity: {
+          id,
+          label: `${id} ${providerId} ${providerVariant}`,
+          modelId,
+          providerId,
+        },
       },
+      stats,
     }
   })
 
