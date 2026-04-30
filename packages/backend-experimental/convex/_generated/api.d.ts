@@ -22,6 +22,7 @@ import type * as collection_parsers_endpoint from "../collection/parsers/endpoin
 import type * as collection_parsers_model from "../collection/parsers/model.js";
 import type * as collection_parsers_provider from "../collection/parsers/provider.js";
 import type * as collection_workflow from "../collection/workflow.js";
+import type * as compat_endpoints from "../compat/endpoints.js";
 import type * as crons from "../crons.js";
 import type * as dev from "../dev.js";
 import type * as endpointStats from "../endpointStats.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   "collection/parsers/model": typeof collection_parsers_model;
   "collection/parsers/provider": typeof collection_parsers_provider;
   "collection/workflow": typeof collection_workflow;
+  "compat/endpoints": typeof compat_endpoints;
   crons: typeof crons;
   dev: typeof dev;
   endpointStats: typeof endpointStats;

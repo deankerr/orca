@@ -1,16 +1,12 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { useQuery } from '@tanstack/react-query'
 import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import ms from 'ms'
 import { useCallback, useMemo } from 'react'
 
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -37,12 +33,10 @@ import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { hasEndpointGridQuery, useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'
 
-function useEndpointsList() {
-  return useQuery(convexQuery(api.endpoints.list, { maxTimeUnavailable: ms('30d') }))
-}
+type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
 
 function filterEndpointsByFacets(
-  endpoints: readonly EndpointProjection[],
+  endpoints: readonly EndpointProjectionLike[],
   facetFilters: FacetFilterState,
 ) {
   return endpoints.filter((endpoint) => {
@@ -71,7 +65,7 @@ function useEndpointGridRows({
   facetFilters,
   query,
 }: {
-  endpoints: readonly EndpointProjection[]
+  endpoints: EndpointProjectionLike[]
   facetFilters: FacetFilterState
   query: string
 }) {
@@ -109,15 +103,20 @@ function useEndpointGridRows({
   }
 }
 
-export function EndpointsDataGrid() {
+export function EndpointsDataGrid({
+  endpoints,
+  isPending,
+}: {
+  endpoints: EndpointProjectionLike[]
+  isPending: boolean
+}) {
   'use no memo'
   const query = useEndpointQueryState()
   const focus = useEndpointFocusState()
   const facets = useEndpointFacetState()
   const sort = useEndpointSortState({ hasActiveQuery: query.hasQuery })
-  const { data: rawEndpoints = [], isPending } = useEndpointsList()
   const { rows } = useEndpointGridRows({
-    endpoints: rawEndpoints,
+    endpoints,
     facetFilters: facets.facetFilters,
     query: query.query,
   })
@@ -199,7 +198,7 @@ export function EndpointsDataGrid() {
 
           <DataGridCardFooter>
             <DataGridFooter
-              totalCount={rawEndpoints.length}
+              totalCount={endpoints.length}
               hasActiveFilters={query.hasQuery || facets.hasActiveFacets}
               isLoading={isPending}
             />

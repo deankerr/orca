@@ -1,14 +1,15 @@
 import { Suspense } from 'react'
 
-import { EndpointsDataGrid } from '@/components/endpoints-data-grid/endpoints-data-grid-page'
 import { ClientOnly } from '@/components/shared/client-only'
+
+import { EndpointsDataGridClient } from './endpoints-data-grid-client'
 
 export default function Page() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Suspense>
         <ClientOnly>
-          <EndpointsDataGrid />
+          <EndpointsDataGridClient />
         </ClientOnly>
       </Suspense>
     </div>
