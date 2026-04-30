@@ -12,7 +12,8 @@ import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityBadge } from '../shared/entity-badge'
 import { dataGridPopoverHandle } from './popover-handle'
 
-export type EndpointRow = EndpointProjection
+type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
+export type EndpointRow = EndpointProjectionLike
 
 function formatGridDate(timestamp: number): string {
   return new Date(timestamp)

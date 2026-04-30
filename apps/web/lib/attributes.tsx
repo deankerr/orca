@@ -36,7 +36,8 @@ import {
 import type { ColorIconBadgeColor } from '@/components/shared/color-icon-badge'
 import { InlineCode } from '@/components/shared/inline-code'
 
-type EndpointPartial = Partial<EndpointProjection>
+type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
+type EndpointPartial = Partial<EndpointProjectionLike>
 type AttributeIcon = LucideIcon
 
 export interface AttributeState {

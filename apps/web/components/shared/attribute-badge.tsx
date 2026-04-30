@@ -12,6 +12,8 @@ import {
   PopoverCardTrigger,
 } from './popover-card'
 
+type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
+
 // --- Popover content ---
 
 export function AttributeBadgePopoverContent({
@@ -84,7 +86,7 @@ export function AttributeBadgeSet({
   reserve = false,
   handle,
 }: {
-  endpoint: EndpointProjection
+  endpoint: EndpointProjectionLike
   slots: AttributeSlots
   reserve?: boolean
   handle: React.ComponentProps<typeof PopoverCardTrigger>['handle']
