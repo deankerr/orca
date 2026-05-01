@@ -12,10 +12,10 @@ import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'l
 import { cn } from '@/lib/utils'
 
 import { EntityAvatar } from '../shared/entity-avatar'
+import { InlineMarkdown } from '../shared/inline-markdown'
 import { Badge } from '../ui/badge'
 import { EventCard, EventCardBody } from './event-card'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
-import { InlineMarkdown } from './inline-markdown'
 
 // -- Identity helper
 

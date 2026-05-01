@@ -4,9 +4,8 @@ import type { FieldChange } from '@orca/backend/convex/changes'
 import { computeDelta, fmtUnit, fmtValue, splitPath } from '@orca/backend/shared/formatters'
 import { truncate } from '@orca/backend/shared/utils'
 
+import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'
-
-import { InlineMarkdown } from './inline-markdown'
 
 const TRUNCATE_LENGTH = 800
 const LONG_STRING_LENGTH = 30

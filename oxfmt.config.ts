@@ -3,7 +3,13 @@ import { defineConfig } from 'oxfmt'
 import { ignorePatterns } from './node_modules/ultracite/config/shared/ignores.mjs'
 
 export default defineConfig({
-  ignorePatterns: [...ignorePatterns, '.agents/skills', '.claude/skills', '**/components/ui'],
+  ignorePatterns: [
+    ...ignorePatterns,
+    '.agents/skills',
+    '.claude/skills',
+    '**/components/ui',
+    '**/components/evilcharts',
+  ],
   semi: false,
   singleQuote: true,
   sortImports: {},
