@@ -1,7 +1,9 @@
 'use client'
 
+import { getErrorMessage } from '@orca/backend/shared/utils'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '../ui/button'
 
@@ -22,7 +24,7 @@ export function CopyToClipboardButton({
         setCopied(false)
       }, 2000)
     } catch (error) {
-      console.error('Failed to copy text:', error)
+      toast.error(`Failed to copy text: ${getErrorMessage(error)}`)
     }
   }
 
@@ -34,7 +36,8 @@ export function CopyToClipboardButton({
       aria-label={ariaLabel}
       {...props}
     >
-      {copied ? <CheckIcon /> : <CopyIcon />} {children}
+      {copied ? <CheckIcon data-icon="inline-start" /> : <CopyIcon data-icon="inline-start" />}{' '}
+      {children}
     </Button>
   )
 }

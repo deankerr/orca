@@ -1,6 +1,8 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
+import { BadgeInfoIcon } from 'lucide-react'
+import Link from 'next/link'
 
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
@@ -94,6 +96,15 @@ export function ModelSheet({ slug }: { slug: string }) {
             >
               Find all Endpoints
             </ActionLink>
+          }
+        />
+        <EntitySheetSection
+          title="Model"
+          action={
+            <Link href={`/model/${model.slug}`} className="inline-flex items-center gap-1">
+              Page
+              <BadgeInfoIcon className="size-3" />
+            </Link>
           }
         />
       </div>

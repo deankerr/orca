@@ -9,6 +9,7 @@ export default defineConfig({
     ...(core.ignorePatterns ?? []),
     '.agents/skills',
     '.claude/skills',
+    '**/components/evilcharts',
     '**/components/ui',
   ],
   jsPlugins: [
