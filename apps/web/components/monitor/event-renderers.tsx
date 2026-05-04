@@ -11,59 +11,12 @@ import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'l
 
 import { cn } from '@/lib/utils'
 
-import { EntityAvatar } from '../shared/entity-avatar'
+import { EntityIdentity } from '../shared/entity-identity'
 import { InlineMarkdown } from '../shared/inline-markdown'
 import { Badge } from '../ui/badge'
-import { EventCard, EventCardBody } from './event-card'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
 
 // -- Identity helper
-
-function EventCardIdentity({
-  slug,
-  name,
-  removed,
-  avatarClassName,
-  className,
-  ...props
-}: {
-  slug: string
-  name?: string
-  removed?: boolean
-  avatarClassName?: string
-} & React.ComponentProps<'div'>) {
-  const isRemoved = removed === true
-  const hasName = name !== undefined && name !== ''
-
-  return (
-    <div className={cn('flex min-w-0 items-center gap-2', className)} {...props}>
-      <EntityAvatar
-        slug={slug}
-        className={cn('size-6', isRemoved && 'brightness-50', avatarClassName)}
-      />
-      <div className="min-w-0">
-        {hasName && (
-          <div
-            className={cn(
-              'truncate text-xs leading-tight font-medium',
-              isRemoved && 'text-muted-foreground',
-            )}
-          >
-            {name}
-          </div>
-        )}
-        <div
-          className={cn(
-            'truncate font-mono text-xs leading-none text-muted-foreground',
-            isRemoved && 'line-through',
-          )}
-        >
-          {slug}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // -- Public API
 
@@ -77,6 +30,80 @@ export function EntityEventCard({ change }: { change: EntityChange }) {
   return <ProviderEventCard change={change} />
 }
 
+export function EventCard({ children, className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div className={cn('rounded-none border bg-card/50', className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export function EventCardBody({ className, children, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div className={cn('px-6 py-2.5 empty:hidden', className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export function EventCardHeader({ children, className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      className={cn(
+        'grid auto-cols-fr grid-flow-col items-center border-border/50 not-only:border-b [&>div]:flex [&>div]:px-3 [&>div]:py-1.5 [&>div]:not-first:justify-end',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+// -- Provider events
+
+function ProviderEventCard({ change }: { change: ProviderChange }) {
+  const { provider, event } = change
+
+  return (
+    <EventCard>
+      <EventCardHeader>
+        <div>
+          <EntityIdentity
+            slug={provider.slug}
+            name={provider.name}
+            isAvailable={event.kind !== 'entity_unavailable'}
+          />
+        </div>
+
+        {event.kind === 'entity_available' && (
+          <div>
+            <Badge>
+              <CheckCircle2Icon />
+              provider available
+            </Badge>
+          </div>
+        )}
+
+        {event.kind === 'entity_unavailable' && (
+          <div>
+            <Badge variant="destructive">
+              <AlertTriangleIcon />
+              provider unavailable
+            </Badge>
+          </div>
+        )}
+      </EventCardHeader>
+
+      {event.kind === 'entity_updated' && (
+        <EventCardBody>
+          <FieldChangeList fields={event.fields} />
+        </EventCardBody>
+      )}
+    </EventCard>
+  )
+}
+
 // -- Model events
 
 function ModelEventCard({ change }: { change: ModelChange }) {
@@ -86,27 +113,33 @@ function ModelEventCard({ change }: { change: ModelChange }) {
 
   return (
     <EventCard>
-      <EventCardBody className="flex items-center gap-2 border-b border-border/50 px-3 py-2.5">
-        <EventCardIdentity
-          slug={model.slug}
-          name={model.name}
-          removed={event.kind === 'entity_unavailable'}
-        />
+      <EventCardHeader>
+        <div>
+          <EntityIdentity
+            slug={model.slug}
+            name={model.name}
+            isAvailable={event.kind !== 'entity_unavailable'}
+          />
+        </div>
 
         {event.kind === 'entity_available' && (
-          <Badge className="ml-auto">
-            <PlusCircleIcon />
-            model available
-          </Badge>
+          <div>
+            <Badge>
+              <PlusCircleIcon />
+              model available
+            </Badge>
+          </div>
         )}
 
         {event.kind === 'entity_unavailable' && (
-          <Badge className="ml-auto" variant="destructive">
-            <AlertTriangleIcon />
-            model unavailable
-          </Badge>
+          <div>
+            <Badge variant="destructive">
+              <AlertTriangleIcon />
+              model unavailable
+            </Badge>
+          </div>
         )}
-      </EventCardBody>
+      </EventCardHeader>
 
       {event.kind === 'entity_available' && hasDescription && (
         <EventCardBody>
@@ -157,20 +190,20 @@ function EndpointEventCard({ change }: { change: EndpointChange }) {
 
   return (
     <EventCard>
-      <div className="grid grid-cols-2 border-b border-border/50">
-        <div className="px-3 py-2.5">
-          <EventCardIdentity slug={model.slug} name={model.name} />
+      <EventCardHeader>
+        <div>
+          <EntityIdentity slug={model.slug} name={model.name} />
         </div>
 
-        <div className="flex justify-end border-l border-border/50 bg-card px-3 py-2.5">
-          <EventCardIdentity
+        <div className="border-l border-border/50 bg-card">
+          <EntityIdentity
             className="flex-row-reverse text-right"
             slug={provider.slug}
             name={provider.name}
-            removed={event.kind === 'entity_unavailable'}
+            isAvailable={event.kind !== 'entity_unavailable'}
           />
         </div>
-      </div>
+      </EventCardHeader>
 
       {event.kind === 'entity_available' && (
         <EventCardBody>
@@ -234,42 +267,5 @@ function NewEndpointFields({ endpoint }: { endpoint: EndpointChange['endpoint'] 
         )
       })}
     </FieldItemSet>
-  )
-}
-
-// -- Provider events
-
-function ProviderEventCard({ change }: { change: ProviderChange }) {
-  const { provider, event } = change
-
-  return (
-    <EventCard>
-      <EventCardBody className="flex border-b border-border/50 px-3 py-2.5">
-        <EventCardIdentity
-          slug={provider.slug}
-          name={provider.name}
-          removed={event.kind === 'entity_unavailable'}
-        />
-        {event.kind === 'entity_available' && (
-          <Badge className="ml-auto">
-            <CheckCircle2Icon />
-            provider available
-          </Badge>
-        )}
-
-        {event.kind === 'entity_unavailable' && (
-          <Badge className="ml-auto" variant="destructive">
-            <AlertTriangleIcon />
-            provider unavailable
-          </Badge>
-        )}
-      </EventCardBody>
-
-      {event.kind === 'entity_updated' && (
-        <EventCardBody>
-          <FieldChangeList fields={event.fields} />
-        </EventCardBody>
-      )}
-    </EventCard>
   )
 }
