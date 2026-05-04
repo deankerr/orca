@@ -179,12 +179,13 @@ export function EndpointsDataGrid({
           overscan: 10,
           columnsResizable: true,
           columnsPinnable: true,
+          dense: true,
         }}
         tableClassNames={{
           headerRow: 'uppercase font-mono',
           bodyRow:
             '[&>td]:bg-background hover:[&>td]:bg-muted-hover data-[row-status]:[&_td_>_*]:opacity-50 data-[row-status]:[&_td]:text-foreground/50',
-          body: 'font-mono',
+          body: 'font-mono text-xs',
         }}
       >
         <DataGridCard>
