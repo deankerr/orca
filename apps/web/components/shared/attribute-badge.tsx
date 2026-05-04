@@ -108,7 +108,7 @@ export function AttributeBadgeSet({
         }
 
         if (reserve) {
-          return <div key={`slot:${slotKey}`} className="size-7 shrink-0" />
+          return <div key={`slot:${slotKey}`} className="size-6 shrink-0" />
         }
 
         return null

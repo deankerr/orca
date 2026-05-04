@@ -9,7 +9,7 @@ import { endpointAttributeSets } from '@/lib/attribute-groups'
 import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
-import { EntityBadge } from '../shared/entity-badge'
+import { EntityIdentity } from '../shared/entity-identity'
 import { dataGridPopoverHandle } from './popover-handle'
 
 type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
@@ -68,7 +68,11 @@ export const columns: ColumnDef<EndpointRow>[] = [
       const endpoint = row.original
       return (
         <EntitySheetTrigger type="model" slug={endpoint.model.slug} asChild>
-          <EntityBadge name={endpoint.model.name} slug={endpoint.model.slug} />
+          <EntityIdentity
+            name={endpoint.model.name}
+            slug={endpoint.model.slug}
+            className="font-sans"
+          />
         </EntitySheetTrigger>
       )
     },
@@ -77,7 +81,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
     meta: {
       headerTitle: 'Model',
-      cellClassName: 'px-3',
+      cellClassName: 'px-2',
     },
   },
 
@@ -91,40 +95,19 @@ export const columns: ColumnDef<EndpointRow>[] = [
       const endpoint = row.original
       return (
         <EntitySheetTrigger type="provider" slug={endpoint.provider.slug} asChild>
-          <EntityBadge name={endpoint.provider.name} slug={endpoint.provider.tag_slug} />
+          <EntityIdentity
+            name={endpoint.provider.name}
+            slug={endpoint.provider.tag_slug}
+            className="font-sans"
+          />
         </EntitySheetTrigger>
       )
     },
-    size: 200,
+    size: 180,
     enableHiding: false,
     meta: {
       headerTitle: 'Provider',
-      cellClassName: 'px-3',
-    },
-  },
-
-  {
-    id: 'status',
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="STATUS" />
-      </div>
-    ),
-    cell: ({ row }) => {
-      const endpoint = row.original
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          slots={endpointAttributeSets.status}
-          handle={dataGridPopoverHandle}
-        />
-      )
-    },
-    size: 75,
-    enableHiding: true,
-    meta: {
-      headerTitle: 'Status',
-      cellClassName: 'justify-center',
+      cellClassName: 'px-2',
     },
   },
 
@@ -143,7 +126,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
-    size: 100,
+    size: 110,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -166,7 +149,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
-    size: 100,
+    size: 110,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -187,7 +170,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 180,
+    size: 155,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Modalities',
@@ -209,7 +192,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 254,
+    size: 215,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Features',
@@ -292,10 +275,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
 
       return (
-        <Badge
-          variant="outline"
-          className="h-7 rounded-sm font-mono text-sm tracking-wide uppercase shadow-sm"
-        >
+        <Badge variant="outline" className="font-mono text-xs uppercase">
           {label}
         </Badge>
       )
@@ -356,27 +336,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     meta: {
       cellClassName: 'text-right',
       headerTitle: 'TTFT (MS)',
-    },
-  },
-
-  {
-    id: 'miscPricing',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="MISC $" />,
-    cell: ({ row }) => {
-      const endpoint = row.original
-      return (
-        <AttributeBadgeSet
-          endpoint={endpoint}
-          slots={endpointAttributeSets.miscPricing}
-          handle={dataGridPopoverHandle}
-        />
-      )
-    },
-    size: 80,
-    meta: {
-      headerClassName: 'text-center',
-      headerTitle: 'Misc $',
-      cellClassName: 'px-2',
     },
   },
 
@@ -446,26 +405,27 @@ export const columns: ColumnDef<EndpointRow>[] = [
   },
 
   {
-    id: 'unavailableAt',
-    accessorFn: (row) => row.unavailable_at,
+    id: 'status',
     header: ({ column }) => (
       <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="GONE" subtitle="ENDPOINT" />
+        <DataGridColumnHeader column={column} title="STATUS" />
       </div>
     ),
-    cell: ({ getValue }) => {
-      const timestamp = getValue<number>()
-      if (timestamp) {
-        return formatGridDate(timestamp)
-      }
-
-      return undefined
+    cell: ({ row }) => {
+      const endpoint = row.original
+      return (
+        <AttributeBadgeSet
+          endpoint={endpoint}
+          slots={endpointAttributeSets.status}
+          handle={dataGridPopoverHandle}
+        />
+      )
     },
-    size: 120,
-    sortUndefined: 'last',
+    size: 75,
+    enableHiding: true,
     meta: {
-      cellClassName: 'text-center',
-      headerTitle: 'Endpoint Gone',
+      headerTitle: 'Status',
+      cellClassName: 'justify-center',
     },
   },
 ]

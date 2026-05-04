@@ -69,11 +69,24 @@ export function formatPricing(
   const scaled = value * PRICING_FIELDS[field].scale
   const formatted = scaled.toLocaleString('en-US', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
+    maximumFractionDigits: scaleFractionalDigits(scaled),
   })
 
   const display = field === 'discount' ? `${formatted}%` : `$${formatted}`
   return { field, value: display, unit: PRICING_FIELDS[field].unit }
+}
+
+// Compute decimal places to show the first significant digit plus one more,
+// but only for sub-cent values — anything >= $0.01 uses standard 2 decimal places.
+function scaleFractionalDigits(value: number): number {
+  if (value <= 0 || !Number.isFinite(value)) {
+    return 2
+  }
+  if (value >= 0.01) {
+    return 2
+  }
+  const magnitude = Math.floor(Math.log10(value))
+  return Math.max(2, -magnitude + 1)
 }
 
 export function formatPricingFields(

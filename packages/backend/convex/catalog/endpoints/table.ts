@@ -66,6 +66,7 @@ export const endpointsTable = defineTable({
     discount: v.optional(v.number()),
   }),
 
+  // deprecated (no longer used upstream)
   variable_pricings: v.optional(
     v.array(
       v.object({
@@ -101,7 +102,7 @@ export const endpointsTable = defineTable({
   file_urls: v.boolean(), // ignore
   native_web_search: v.boolean(),
   multipart: v.boolean(), // ignore
-  mandatory_reasoning: v.optional(v.boolean()), // broken - source location changed
+  mandatory_reasoning: v.optional(v.boolean()), // deprecated (no longer used upstream)
 
   moderated: v.boolean(),
   deranked: v.boolean(),
