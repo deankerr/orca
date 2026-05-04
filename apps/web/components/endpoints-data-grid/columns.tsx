@@ -50,7 +50,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         handle={dataGridPopoverHandle}
       />
     ),
-    size: 75,
+    size: 70,
     enableSorting: false,
     meta: {
       headerTitle: 'UUID',
@@ -81,7 +81,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
     meta: {
       headerTitle: 'Model',
-      cellClassName: 'px-2',
+      cellClassName: 'px-1.5',
     },
   },
 
@@ -107,7 +107,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     enableHiding: false,
     meta: {
       headerTitle: 'Provider',
-      cellClassName: 'px-2',
+      cellClassName: 'px-1.5',
     },
   },
 
@@ -174,7 +174,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Modalities',
-      cellClassName: 'px-2',
     },
   },
 
@@ -196,7 +195,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Features',
-      cellClassName: 'px-2',
     },
   },
 
@@ -218,7 +216,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
       return contextLength?.toLocaleString()
     },
-    size: 115,
+    size: 105,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -247,7 +245,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
       return maxOutput?.toLocaleString()
     },
-    size: 115,
+    size: 105,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -280,7 +278,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         </Badge>
       )
     },
-    size: 100,
+    size: 90,
     sortUndefined: 'last',
     meta: {
       headerClassName: 'text-center',
@@ -294,7 +292,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     accessorFn: (row) => row.stats?.p50_throughput,
     header: ({ column }) => (
       <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="TOK/SEC" />
+        <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />
       </div>
     ),
     cell: ({ getValue }) => {
@@ -306,7 +304,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
-    size: 110,
+    size: 90,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -319,7 +317,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     accessorFn: (row) => row.stats?.p50_latency,
     header: ({ column }) => (
       <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="TTFT" subtitle="MS" />
+        <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />
       </div>
     ),
     cell: ({ getValue }) => {
@@ -331,7 +329,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
-    size: 110,
+    size: 90,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -352,11 +350,10 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 150,
+    size: 110,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Data Policy',
-      cellClassName: 'px-2',
     },
   },
 
@@ -373,11 +370,10 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 110,
+    size: 95,
     meta: {
       headerClassName: 'text-center',
       headerTitle: 'Limits',
-      cellClassName: 'px-2',
     },
   },
 
@@ -386,7 +382,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     accessorFn: (row) => row.model.or_added_at,
     header: ({ column }) => (
       <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="ADDED" subtitle="MODEL" />
+        <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />
       </div>
     ),
     cell: ({ getValue }) => {
@@ -396,7 +392,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       }
       return <span className="text-muted-foreground">&ndash;</span>
     },
-    size: 120,
+    size: 100,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-center',
@@ -421,7 +417,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         />
       )
     },
-    size: 75,
+    size: 70,
     enableHiding: true,
     meta: {
       headerTitle: 'Status',

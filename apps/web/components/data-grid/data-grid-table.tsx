@@ -1,7 +1,6 @@
 import type { Cell, Column, Header, HeaderGroup, Row } from '@tanstack/react-table'
 import { flexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { cva } from 'class-variance-authority'
 import { InboxIcon } from 'lucide-react'
 import * as React from 'react'
 import type { CSSProperties, ReactNode } from 'react'
@@ -14,30 +13,6 @@ import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
 import { DataGridSkeleton } from './data-grid-skeleton'
-
-const headerCellSpacingVariants = cva('', {
-  variants: {
-    size: {
-      dense: 'px-2.5 h-8',
-      default: 'px-4',
-    },
-  },
-  defaultVariants: {
-    size: 'default',
-  },
-})
-
-const bodyCellSpacingVariants = cva('', {
-  variants: {
-    size: {
-      dense: 'px-2.5 py-2',
-      default: 'px-4 py-3',
-    },
-  },
-  defaultVariants: {
-    size: 'default',
-  },
-})
 
 function getPinningStyles<TData>(column: Column<TData>): CSSProperties {
   const isPinned = column.getIsPinned()
@@ -136,15 +111,12 @@ function DataGridTableHeadRowCell<TData>({
   const pinnedSide = isPinned === false ? undefined : isPinned
   const isLastLeftPinned = isPinned === 'left' && column.getIsLastColumn('left')
   const isFirstRightPinned = isPinned === 'right' && column.getIsFirstColumn('right')
-  const isDense = props.tableLayout?.dense === true
   const columnsPinnable = props.tableLayout?.columnsPinnable === true
   const widthFixed = props.tableLayout?.width === 'fixed'
   const hasCellBorder = props.tableLayout?.cellBorder === true
   const columnsResizable = props.tableLayout?.columnsResizable === true
   const hasHeaderBorder = props.tableLayout?.headerBorder === true
-  const headerCellSpacing = headerCellSpacingVariants({
-    size: isDense ? 'dense' : 'default',
-  })
+  const headerCellClassName = props.tableLayout?.headerCellClassName ?? 'px-4'
 
   const pinningStyles = columnsPinnable && column.getCanPin() ? getPinningStyles(column) : undefined
   const needsStickyTop =
@@ -167,7 +139,7 @@ function DataGridTableHeadRowCell<TData>({
       data-slot="data-grid-table-head-row-cell"
       className={cn(
         'h-12 align-middle text-xs font-normal text-accent-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
-        headerCellSpacing,
+        headerCellClassName,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',
         columnsPinnable &&
@@ -303,14 +275,11 @@ function DataGridTableBodyRowCell<TData>({
   const pinnedSide = isPinned === false ? undefined : isPinned
   const isLastLeftPinned = isPinned === 'left' && column.getIsLastColumn('left')
   const isFirstRightPinned = isPinned === 'right' && column.getIsFirstColumn('right')
-  const isDense = props.tableLayout?.dense === true
   const columnsDraggable = props.tableLayout?.columnsDraggable === true
   const columnsPinnable = props.tableLayout?.columnsPinnable === true
   const hasCellBorder = props.tableLayout?.cellBorder === true
   const columnsResizable = props.tableLayout?.columnsResizable === true
-  const bodyCellSpacing = bodyCellSpacingVariants({
-    size: isDense ? 'dense' : 'default',
-  })
+  const bodyCellClassName = props.tableLayout?.bodyCellClassName ?? 'px-4 py-3'
 
   return (
     <td
@@ -325,7 +294,7 @@ function DataGridTableBodyRowCell<TData>({
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
       className={cn(
         'align-middle',
-        bodyCellSpacing,
+        bodyCellClassName,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',
         cell.column.columnDef.meta?.cellClassName,

@@ -31,7 +31,8 @@ export interface DataGridProps<TData extends object> {
   isLoading?: boolean
   emptyMessage?: ReactNode | string
   tableLayout?: {
-    dense?: boolean
+    headerCellClassName?: string
+    bodyCellClassName?: string
     cellBorder?: boolean
     rowBorder?: boolean
     rowRounded?: boolean
@@ -95,7 +96,6 @@ function DataGrid<TData extends object>({ children, table, ...props }: DataGridP
   'use no memo'
   const defaultProps: Partial<DataGridProps<TData>> = {
     tableLayout: {
-      dense: false,
       cellBorder: false,
       rowBorder: true,
       rowRounded: false,
