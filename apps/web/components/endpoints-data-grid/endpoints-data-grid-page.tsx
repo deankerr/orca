@@ -175,11 +175,12 @@ export function EndpointsDataGrid({
           headerBorder: true,
           width: 'fixed',
           cellBorder: true,
-          rowHeight: 57,
-          overscan: 10,
+          rowHeight: 48,
+          overscan: 5,
           columnsResizable: true,
           columnsPinnable: true,
-          dense: true,
+          headerCellClassName: 'px-1 py-1',
+          bodyCellClassName: 'px-2.5 py-1.5',
         }}
         tableClassNames={{
           headerRow: 'uppercase font-mono',
