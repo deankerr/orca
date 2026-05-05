@@ -22,7 +22,7 @@ const schema = createSchema({
       data: rawModelIdentitySchema
         .array()
         // reject OR aliases like `~anthropic/claude-opus-latest`
-        .transform((model) => model.filter((m) => !m.id.startsWith('~'))),
+        .transform((models) => models.filter((m) => !m.id.startsWith('~'))),
     }),
   },
 
