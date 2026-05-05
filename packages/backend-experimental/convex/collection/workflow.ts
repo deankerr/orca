@@ -18,7 +18,12 @@ type StateWithContentHash = {
 const schema = createSchema({
   '/frontend/models': {
     method: 'get',
-    output: z.object({ data: rawModelIdentitySchema.array() }),
+    output: z.object({
+      data: rawModelIdentitySchema
+        .array()
+        // reject OR aliases like `~anthropic/claude-opus-latest`
+        .transform((models) => models.filter((m) => !m.id.startsWith('~'))),
+    }),
   },
 
   '/frontend/stats/endpoint': {

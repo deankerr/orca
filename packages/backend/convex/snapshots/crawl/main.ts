@@ -185,7 +185,8 @@ async function fetchModelData(
     apps: [],
   }
 
-  if (!model.endpoint) {
+  // skip unavailable models and OR aliases like `~anthropic/claude-opus-latest`
+  if (!model.endpoint || model.slug.startsWith('~')) {
     return result
   }
 
