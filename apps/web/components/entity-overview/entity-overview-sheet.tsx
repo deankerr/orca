@@ -250,7 +250,7 @@ function OverviewSection({ label, children }: { label: string; children: React.R
   )
 }
 
-function OverviewRow({ label, value }: { label: string; value: React.ReactNode | undefined }) {
+function OverviewRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === false) {
     return null
   }
@@ -297,7 +297,12 @@ function ExternalLinkChip({ href, label }: { href: string; label: string }) {
 }
 
 function InlineExternalLink({ href }: { href: string }) {
-  const { hostname } = new URL(href)
+  let hostname = href
+  try {
+    ;({ hostname } = new URL(href))
+  } catch {
+    /* fall back to displaying the raw href */
+  }
   return (
     <a
       href={href}

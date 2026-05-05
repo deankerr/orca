@@ -30,6 +30,7 @@ export function EntityOverviewTrigger({
     render,
     props: mergeProps<'button'>(
       {
+        type: 'button',
         className: cn(
           'cursor-pointer rounded-md outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:hover:bg-muted/50',
           className,
