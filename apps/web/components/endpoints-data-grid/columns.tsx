@@ -6,7 +6,7 @@ import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-he
 import { Badge } from '@/components/ui/badge'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 
-import { EntitySheetTrigger } from '../entity-sheet/entity-sheet'
+import { EntityOverviewTrigger } from '../entity-overview/entity-overview-trigger'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityIdentity } from '../shared/entity-identity'
@@ -67,13 +67,17 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ row }) => {
       const endpoint = row.original
       return (
-        <EntitySheetTrigger type="model" slug={endpoint.model.slug} asChild>
-          <EntityIdentity
-            name={endpoint.model.name}
-            slug={endpoint.model.slug}
-            className="font-sans"
-          />
-        </EntitySheetTrigger>
+        <EntityOverviewTrigger
+          type="model"
+          slug={endpoint.model.slug}
+          render={
+            <EntityIdentity
+              name={endpoint.model.name}
+              slug={endpoint.model.slug}
+              className="font-sans"
+            />
+          }
+        />
       )
     },
     size: 230,
@@ -94,13 +98,17 @@ export const columns: ColumnDef<EndpointRow>[] = [
     cell: ({ row }) => {
       const endpoint = row.original
       return (
-        <EntitySheetTrigger type="provider" slug={endpoint.provider.slug} asChild>
-          <EntityIdentity
-            name={endpoint.provider.name}
-            slug={endpoint.provider.tag_slug}
-            className="font-sans"
-          />
-        </EntitySheetTrigger>
+        <EntityOverviewTrigger
+          type="provider"
+          slug={endpoint.provider.slug}
+          render={
+            <EntityIdentity
+              name={endpoint.provider.name}
+              slug={endpoint.provider.tag_slug}
+              className="font-sans"
+            />
+          }
+        />
       )
     },
     size: 180,
