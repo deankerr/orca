@@ -19,7 +19,7 @@
     },
     "apps/web": {
       "name": "web",
-      "version": "49.0.0",
+      "version": "50.0.0",
       "dependencies": {
         "@base-ui/react": "^1.4.1",
         "@convex-dev/react-query": "^0.1.0",
