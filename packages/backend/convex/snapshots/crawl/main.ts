@@ -206,21 +206,6 @@ async function fetchModelData(
     result.endpoints = { error: errorMessage }
   }
 
-  // * uptimes
-  if (crawlArgs.uptimes && Array.isArray(result.endpoints) && result.endpoints.length) {
-    for (const { id } of result.endpoints) {
-      try {
-        const uptime = await orFetch('/api/frontend/stats/uptime-hourly', {
-          params: { id },
-          schema: DataRecord,
-        })
-        result.uptimes.push([id, uptime])
-      } catch (error) {
-        console.error('[crawl:uptimes]', { id, error: getErrorMessage(error) })
-      }
-    }
-  }
-
   // * topApps
   if (crawlArgs.topApps) {
     try {
