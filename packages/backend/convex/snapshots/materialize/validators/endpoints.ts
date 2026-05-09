@@ -89,10 +89,10 @@ export const EndpointTransformSchema = z
     supports_multipart: z.boolean(),
 
     features: z.object({
-      is_mandatory_reasoning: z.coerce.boolean(),
-      supports_implicit_caching: z.coerce.boolean(),
-      supports_file_urls: z.coerce.boolean(),
-      supports_native_web_search: z.coerce.boolean(),
+      is_mandatory_reasoning: z.boolean().optional(),
+      supports_implicit_caching: z.boolean().optional(),
+      supports_file_urls: z.boolean().optional(),
+      supports_native_web_search: z.boolean().optional(),
     }),
 
     moderation_required: z.boolean(),
@@ -230,11 +230,11 @@ export const EndpointTransformSchema = z
       completions: raw.has_completions,
       chat_completions: raw.has_chat_completions,
       stream_cancellation: raw.can_abort,
-      implicit_caching: raw.features.supports_implicit_caching,
-      file_urls: raw.features.supports_file_urls,
-      native_web_search: raw.features.supports_native_web_search,
+      implicit_caching: raw.features.supports_implicit_caching ?? false,
+      file_urls: raw.features.supports_file_urls ?? false,
+      native_web_search: raw.features.supports_native_web_search ?? false,
       multipart: raw.supports_multipart,
-      mandatory_reasoning: raw.features.is_mandatory_reasoning,
+      mandatory_reasoning: raw.features.is_mandatory_reasoning ?? false,
 
       // * openrouter
       moderated: raw.moderation_required,
