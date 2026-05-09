@@ -35,67 +35,70 @@ Analysis of all 1,747 endpoints as of 2026-05-04.
 
 ## Value Ranges (display-scaled)
 
-| Field               | n     | Min          | Median     | Max             | Unique values |
-| ------------------- | ----- | ------------ | ---------- | --------------- | ------------- |
-| `text_input`        | 1,577 | $0.003/MTOK  | $0.30/MTOK | $111,000/MTOK\* | 190           |
-| `text_output`       | 1,534 | $0.006/MTOK  | $1.10/MTOK | $600/MTOK       | 224           |
-| `text_cache_read`   | 563   | $0.003/MTOK  | $0.13/MTOK | $7.50/MTOK      | 100           |
-| `text_cache_write`  | 128   | $0.058/MTOK  | $2.88/MTOK | $37.5/MTOK      | 25            |
-| `reasoning_output`  | 33    | $0.30/MTOK   | $2.50/MTOK | $12.0/MTOK      | 7             |
-| `audio_input`       | 40    | $0.075/MTOK  | $1.00/MTOK | $100/MTOK       | 12            |
-| `audio_cache_write` | 33    | $0.030/MTOK  | $0.10/MTOK | $0.20/MTOK      | 6             |
-| `image_input`       | 62    | $0.000075/1K | $0.002/1K  | $24.00/1K       | 25            |
-| `image_output`      | 21    | $0.003/1K    | $0.030/1K  | $0.12/1K        | 15            |
-| `web_search`        | 157   | $0.005/req   | $0.010/req | $0.035/req      | 6             |
-| `discount`          | 56    | 5%           | 35%        | 100%            | 9             |
+| Field               | n     | Min          | Median     | Max            | Unique values |
+| ------------------- | ----- | ------------ | ---------- | -------------- | ------------- |
+| `text_input`        | 1,577 | $0.003/MTOK  | $0.30/MTOK | $111,000/MTOK† | 190           |
+| `text_output`       | 1,534 | $0.006/MTOK  | $1.10/MTOK | $600/MTOK      | 224           |
+| `text_cache_read`   | 563   | $0.003/MTOK  | $0.13/MTOK | $7.50/MTOK     | 100           |
+| `text_cache_write`  | 128   | $0.058/MTOK  | $2.88/MTOK | $37.5/MTOK     | 25            |
+| `reasoning_output`  | 33    | $0.30/MTOK   | $2.50/MTOK | $12.0/MTOK     | 7             |
+| `audio_input`       | 40    | $0.075/MTOK  | $1.00/MTOK | $100/MTOK      | 12            |
+| `audio_cache_write` | 33    | $0.030/MTOK  | $0.10/MTOK | $0.20/MTOK     | 6             |
+| `image_input`       | 62    | $0.000075/1K | $0.002/1K  | $24.00/1K      | 25            |
+| `image_output`      | 21    | $0.003/1K    | $0.030/1K  | $0.12/1K       | 15            |
+| `web_search`        | 157   | $0.005/req   | $0.010/req | $0.035/req     | 6             |
+| `discount`          | 56    | 5%           | 35%        | 100%           | 9             |
 
-\*Groq whisper audio models, priced per audio token — not comparable to language model pricing, see below.
+†Groq whisper audio models, priced per audio token — not comparable to language model pricing, see below.
 
 ---
 
 ## Structural Patterns
 
-### text_output / text_input ratio
+These ratios reflect **provider pricing decisions**, not intrinsic model properties. 131 out of the models with both fields set appear with different output/input ratios across providers — the same model can be 4:1 on its native provider and 1:1 on an inference aggregator.
 
-The output/input price ratio is highly standardised — most providers pick a round multiplier. 4:1 is the dominant convention.
+### `text_output` / `text_input` ratio
 
-| Ratio  | Endpoints | Notes                                                           |
-| ------ | --------- | --------------------------------------------------------------- |
-| 4:1    | 222       | Most common — OpenAI, Google, many others                       |
-| 1:1    | 173       | Same price both directions — typically cheaper/commodity models |
-| 5:1    | 151       | Common on mid-tier models                                       |
-| 3:1    | 147       |                                                                 |
-| 8:1    | 65        | Premium/frontier models                                         |
-| 2:1    | 62        |                                                                 |
-| 6:1    | 43        |                                                                 |
-| 3.67:1 | 28        | CNY→USD conversion artefact (11/3)                              |
-| 1.5:1  | 27        |                                                                 |
-| 4.17:1 | 21        | CNY→USD conversion artefact (5/1.2)                             |
+| Ratio  | Endpoints | Unique models | Notes                                                                                                             |
+| ------ | --------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 4:1    | 222       | 117           | Most common — OpenAI, Google, many others                                                                         |
+| 1:1    | 173       | 94            | Flat per-token rate — inference aggregators (Together 41, Hyperbolic 26, DeepInfra 18, Novita 15, Fireworks 9, …) |
+| 5:1    | 151       | 68            |                                                                                                                   |
+| 3:1    | 147       | 93            |                                                                                                                   |
+| 8:1    | 65        | 30            |                                                                                                                   |
+| 2:1    | 62        | 47            |                                                                                                                   |
+| 6:1    | 42        | 26            |                                                                                                                   |
+| 3.67:1 | 28        | 15            | CNY→USD artefact                                                                                                  |
+| 1.5:1  | 27        | 20            |                                                                                                                   |
+| 4.17:1 | 21        | 7             | CNY→USD artefact                                                                                                  |
 
-Non-integer ratios (3.67, 4.17, 3.33, etc.) consistently originate from CNY-denominated source pricing converted to USD at a fixed exchange rate.
+The long tail continues — there are ~30 more distinct ratios beyond the top 10, almost all from CNY-denominated or provider-specific pricing. Non-integer ratios (3.67, 4.17, 3.33, 3.2, 3.14, etc.) consistently originate from CNY-denominated prices converted to USD at a fixed exchange rate.
 
-### text_cache_read / text_input ratio
+### `text_cache_read` / `text_input` ratio
 
-Cache read pricing is almost always expressed as a clean fraction of the input price. The two dominant conventions account for the majority of endpoints.
+The dominant buckets are clean fractions, but the actual distribution has a long tail — 95 unique ratios total across 564 endpoints. Outside the top five buckets, every remaining ratio has ≤10 endpoints and most have 1.
 
-| Ratio  | Endpoints | Convention                              |
-| ------ | --------- | --------------------------------------- |
-| 1/10   | 181       | OpenAI, Google — 10× cheaper than input |
-| 1/2    | 84        | Anthropic-style                         |
-| 1/5    | 53        |                                         |
-| 1:1    | 50        | No cache discount — same as input       |
-| 1/4    | 43        |                                         |
-| 1/8    | 5         |                                         |
-| ~0.183 | 10        | CNY/FX artefact                         |
-| ~0.186 | 9         | CNY/FX artefact                         |
+| Ratio           | Endpoints | Notes                                             |
+| --------------- | --------- | ------------------------------------------------- |
+| 1/10            | 181       | OpenAI, Google — 10× cheaper than input           |
+| 1:1             | 50        | No cache discount                                 |
+| 1/2             | 83        | Anthropic-style                                   |
+| 1/5             | 53        |                                                   |
+| 1/4             | 42        |                                                   |
+| 1/6             | 7         |                                                   |
+| ~0.183          | 10        | CNY/FX artefact                                   |
+| ~0.186          | 9         | CNY/FX artefact                                   |
+| 1/8             | 5         |                                                   |
+| 1/12            | 6         |                                                   |
+| everything else | ~118      | One-off provider pricing, mostly single endpoints |
 
-The 1:1 case (no discount) is notable — providers who set `cache_read = text_input` are presumably signalling that caching is available but not cheaper.
+The 1:1 case (50 endpoints) means caching is available but not cheaper — the provider charges the same rate to read from cache as to process fresh input.
 
-### reasoning_output / text_output ratio
+### `reasoning_output` / `text_output` ratio
 
 32 of 33 reasoning endpoints price thinking tokens at exactly **1:1 with output**. The sole exception is `perplexity/sonar-deep-research` at 0.375 (thinking tokens cheaper than output). All are Google Gemini models, which charge the same rate regardless of whether a token is a thinking token or a response token.
 
-### web_search pricing
+### `web_search` pricing
 
 Only 6 price points across 157 endpoints — effectively a surcharge per search call.
 
