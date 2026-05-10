@@ -41,7 +41,11 @@ function PopoverCardContent({
 } & React.ComponentProps<typeof Popover.Popup>) {
   return (
     <Popover.Portal>
-      <Popover.Positioner side={side} sideOffset={sideOffset}>
+      <Popover.Positioner
+        side={side}
+        sideOffset={sideOffset}
+        className="data-[anchor-hidden]:hidden"
+      >
         <Popover.Popup
           data-slot="popover-card-content"
           className={cn(
