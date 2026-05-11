@@ -1,21 +1,21 @@
-/* --- Data grid: selected row styling --- */
+/* --- Data grid: highlighted row styling --- */
 /* Borders use color-mix to simulate the additive lightening effect that
    transparent borders get naturally when painted over a colored background.
    Without this, solid borders look muddy against the highlight bg. */
 
-/* Row above selected: match its bottom border to the highlight blend */
-[data-slot='data-grid-table'] tbody tr:has(+ tr[data-state='selected']) > td {
+/* Row above highlighted: match its bottom border to the highlight blend */
+[data-slot='data-grid-table'] tbody tr:has(+ tr[data-highlighted='true']) > td {
   border-bottom-color: color-mix(in oklab, var(--color-highlight), white 15%);
 }
 
-/* Selected row: highlight bg + blended borders on all sides */
-[data-slot='data-grid-table'] tbody tr[data-state='selected'] > td {
+/* Highlighted row: highlight bg + blended borders on all sides */
+[data-slot='data-grid-table'] tbody tr[data-highlighted='true'] > td {
   border-color: color-mix(in oklab, var(--color-highlight), white 15%);
   background-color: var(--color-highlight);
 }
 
-/* Selected row hover: subtle lift so it doesn't feel static */
-[data-slot='data-grid-table'] tbody tr[data-state='selected']:hover > td {
+/* Highlighted row hover: subtle lift so it doesn't feel static */
+[data-slot='data-grid-table'] tbody tr[data-highlighted='true']:hover > td {
   background-color: color-mix(in oklab, var(--color-highlight), white 2%);
 }
 

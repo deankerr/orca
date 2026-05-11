@@ -6,7 +6,6 @@ import * as React from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Fragment, useCallback, useRef } from 'react'
 
-import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -210,9 +209,7 @@ function DataGridTableBodyRow<TData>({
   'use no memo'
   const { props } = useDataGrid()
 
-  // Compute dynamic data attributes from row data
   const dynamicAttrs = props.rowDataAttributes?.(row.original)
-  const isSelectableRow = row.getCanSelect()
   const hasRowClick = props.onRowClick !== undefined
   const hasRowBorder = props.tableLayout?.rowBorder === true
   const hasCellBorder = props.tableLayout?.cellBorder === true
@@ -221,17 +218,15 @@ function DataGridTableBodyRow<TData>({
     <tr
       ref={dndRef}
       style={dndStyle ?? undefined}
-      data-state={isSelectableRow && row.getIsSelected() ? 'selected' : undefined}
       {...dynamicAttrs}
       onClick={() => {
         props.onRowClick?.(row.original)
       }}
       className={cn(
-        'group data-[state=selected]:bg-muted/50',
+        'group',
         hasRowClick && 'cursor-pointer',
         hasRowBorder && '[&>td]:border-b [&>td]:border-border-solid',
         hasCellBorder && '*:last:border-e-0',
-        isSelectableRow && '*:first:relative',
         props.tableClassNames?.bodyRow,
       )}
     >
@@ -329,44 +324,6 @@ function DataGridTableEmpty() {
         </div>
       </td>
     </tr>
-  )
-}
-
-function DataGridTableRowSelect<TData>({ row }: { row: Row<TData> }) {
-  return (
-    <>
-      <div
-        className={cn(
-          'absolute start-0 top-0 bottom-0 hidden w-[2px] bg-primary',
-          row.getIsSelected() && 'block',
-        )}
-      />
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => {
-          row.toggleSelected(value)
-        }}
-        aria-label="Select row"
-        className="align-[inherit]"
-      />
-    </>
-  )
-}
-
-function DataGridTableRowSelectAll() {
-  const { table, recordCount, isLoading } = useDataGrid()
-
-  return (
-    <Checkbox
-      checked={table.getIsAllPageRowsSelected()}
-      indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
-      disabled={isLoading || recordCount === 0}
-      onCheckedChange={(value) => {
-        table.toggleAllPageRowsSelected(value)
-      }}
-      aria-label="Select all"
-      className="align-[inherit]"
-    />
   )
 }
 
@@ -485,7 +442,5 @@ export {
   DataGridTableHeadRow,
   DataGridTableHeadRowCell,
   DataGridTableHeadRowCellResize,
-  DataGridTableRowSelect,
-  DataGridTableRowSelectAll,
   DataGridTableRowSpacer,
 }
