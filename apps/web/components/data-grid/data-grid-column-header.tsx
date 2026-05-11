@@ -12,9 +12,6 @@ interface DataGridColumnHeaderProps<TData, TValue> extends HTMLAttributes<HTMLDi
   title?: string
   subtitle?: string
   icon?: ReactNode
-  pinnable?: boolean
-  filter?: ReactNode
-  visibility?: boolean
 }
 
 function getSortIcon(sortDirection: false | 'asc' | 'desc') {

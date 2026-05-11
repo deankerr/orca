@@ -165,20 +165,17 @@ export function EndpointsDataGrid({
         rowDataAttributes={rowDataAttributes}
         tableLayout={{
           headerSticky: true,
-          headerBorder: true,
-          width: 'fixed',
           cellBorder: true,
           rowHeight: 48,
-          overscan: 5,
           columnsResizable: true,
           columnsPinnable: true,
-          headerCellClassName: 'px-1 py-1',
-          bodyCellClassName: 'px-2.5 py-1.5',
         }}
         tableClassNames={{
           headerRow: 'uppercase font-mono',
+          headerCell: 'px-1 py-1',
           bodyRow:
             '[&>td]:bg-background hover:[&>td]:bg-muted-hover data-[row-status]:[&_td_>_*]:opacity-50 data-[row-status]:[&_td]:text-foreground/50',
+          bodyCell: 'px-2.5 py-1.5',
           body: 'font-mono text-xs',
         }}
       >

@@ -2,50 +2,39 @@
 
 import type { RowData, Table } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
-import { createContext, useContext, useMemo } from 'react'
+import { createContext, useContext } from 'react'
 
 import './data-grid.css'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
-    headerTitle?: string
     headerClassName?: string
     cellClassName?: string
-    expandedContent?: (row: TData) => ReactNode
   }
 }
 
 export interface DataGridContextProps<TData extends object> {
-  props: DataGridProps<TData>
+  props: DataGridProviderProps<TData>
   table: Table<TData>
   recordCount: number
   isLoading: boolean
 }
 
 export interface DataGridProps<TData extends object> {
-  className?: string
-  table?: Table<TData>
+  table: Table<TData>
   recordCount: number
   children?: ReactNode
   onRowClick?: (row: TData) => void
   isLoading?: boolean
   emptyMessage?: ReactNode | string
   tableLayout?: {
-    headerCellClassName?: string
-    bodyCellClassName?: string
     cellBorder?: boolean
     rowBorder?: boolean
-    rowRounded?: boolean
-    headerBackground?: boolean
     headerBorder?: boolean
     headerSticky?: boolean
     width?: 'auto' | 'fixed'
-    columnsVisibility?: boolean
     columnsResizable?: boolean
     columnsPinnable?: boolean
-    columnsMovable?: boolean
-    columnsDraggable?: boolean
-    rowsDraggable?: boolean
     rowHeight?: number
     overscan?: number
   }
@@ -54,13 +43,16 @@ export interface DataGridProps<TData extends object> {
     base?: string
     header?: string
     headerRow?: string
+    headerCell?: string
     headerSticky?: string
     body?: string
     bodyRow?: string
-    footer?: string
+    bodyCell?: string
     edgeCell?: string
   }
 }
+
+type DataGridProviderProps<TData extends object> = Omit<DataGridProps<TData>, 'table'>
 
 // oxlint-disable-next-line typescript/no-explicit-any required for generic params
 const DataGridContext = createContext<DataGridContextProps<any> | undefined>(undefined)
@@ -77,38 +69,29 @@ function DataGridProvider<TData extends object>({
   children,
   table,
   ...props
-}: DataGridProps<TData> & { table: Table<TData> }) {
+}: DataGridProps<TData>) {
   'use no memo'
-  const contextValue = useMemo(
-    () => ({
-      props,
-      table,
-      recordCount: props.recordCount,
-      isLoading: props.isLoading ?? false,
-    }),
-    [props, table],
-  )
+  const contextValue = {
+    props,
+    table,
+    recordCount: props.recordCount,
+    isLoading: props.isLoading ?? false,
+  }
 
   return <DataGridContext.Provider value={contextValue}>{children}</DataGridContext.Provider>
 }
 
 function DataGrid<TData extends object>({ children, table, ...props }: DataGridProps<TData>) {
   'use no memo'
-  const defaultProps: Partial<DataGridProps<TData>> = {
+  const defaultProps: Partial<DataGridProviderProps<TData>> = {
     tableLayout: {
       cellBorder: false,
       rowBorder: true,
-      rowRounded: false,
       headerSticky: false,
-      headerBackground: true,
       headerBorder: true,
       width: 'fixed',
-      columnsVisibility: false,
       columnsResizable: false,
       columnsPinnable: false,
-      columnsMovable: false,
-      columnsDraggable: false,
-      rowsDraggable: false,
       rowHeight: 58.5,
       overscan: 5,
     },
@@ -116,15 +99,16 @@ function DataGrid<TData extends object>({ children, table, ...props }: DataGridP
       base: '',
       header: '',
       headerRow: '',
+      headerCell: 'px-4',
       headerSticky: 'sticky top-0 z-10 bg-background',
       body: '',
       bodyRow: '',
-      footer: '',
+      bodyCell: 'px-4 py-3',
       edgeCell: '',
     },
   }
 
-  const mergedProps: DataGridProps<TData> = {
+  const mergedProps: DataGridProviderProps<TData> = {
     ...defaultProps,
     ...props,
     tableLayout: {
@@ -137,13 +121,8 @@ function DataGrid<TData extends object>({ children, table, ...props }: DataGridP
     },
   }
 
-  // Ensure table is provided
-  if (!table) {
-    throw new Error('DataGrid requires a "table" prop')
-  }
-
   return (
-    <DataGridProvider table={table} {...mergedProps}>
+    <DataGridProvider {...mergedProps} table={table}>
       {children}
     </DataGridProvider>
   )
