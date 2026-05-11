@@ -19,8 +19,8 @@ We use the Convex to Axiom log drain connector, which is configured in the Conve
 
 ### Workflows & R2
 
-- A process in `workflows` has been added for `analytics` data collection (currently unused), to store in an R2 bucket
-- Once the process has been proved in production, it will be removed from standard archive bundle
+- A process in `workflows` has been added for `analytics` and `topApps` data collection (currently unused), to store in an R2 bucket
+- Once the processes have been proved in production, they will be removed from standard archive bundle
 
 <!-- convex-ai-start -->
 

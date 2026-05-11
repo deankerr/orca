@@ -73,6 +73,9 @@ import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
 import type * as workflows_analytics_process from "../workflows/analytics/process.js";
 import type * as workflows_analytics_scheduled from "../workflows/analytics/scheduled.js";
+import type * as workflows_topApps_manual from "../workflows/topApps/manual.js";
+import type * as workflows_topApps_process from "../workflows/topApps/process.js";
+import type * as workflows_topApps_scheduled from "../workflows/topApps/scheduled.js";
 
 import type {
   ApiFromModules,
@@ -146,6 +149,9 @@ declare const fullApi: ApiFromModules<{
   "workflows/analytics/manual": typeof workflows_analytics_manual;
   "workflows/analytics/process": typeof workflows_analytics_process;
   "workflows/analytics/scheduled": typeof workflows_analytics_scheduled;
+  "workflows/topApps/manual": typeof workflows_topApps_manual;
+  "workflows/topApps/process": typeof workflows_topApps_process;
+  "workflows/topApps/scheduled": typeof workflows_topApps_scheduled;
 }>;
 
 /**
