@@ -172,7 +172,7 @@ export function EndpointsDataGrid({
         }}
         tableClassNames={{
           headerRow: 'uppercase font-mono',
-          headerCell: 'px-1 py-1',
+          headerCell: 'text-center',
           bodyRow:
             '[&>td]:bg-background hover:[&>td]:bg-muted-hover data-[row-status]:[&_td_>_*]:opacity-50 data-[row-status]:[&_td]:text-foreground/50',
           bodyCell: 'px-2.5 py-1.5',
