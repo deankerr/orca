@@ -3,18 +3,24 @@
 - `shared/` runtime code used by both the convex backend and web app.
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 
-### Logging
-
-- The Convex backend is linked to Axiom, which captures all console.logs automatically
-- We use an simple ad-hoc structured logging format, e.g. `console.log('[function] optional short message', { someData, otherData })`
-- Optionally use `[function:subFunction]` only when necessary.
-- A single Convex function can emit a total of 256 log messages, with any further being truncated - keep in mind during processing loops.
-
 ### Validation - zod v4
 
 - Always validate unknown data with `zod` before use.
 - New: `z.codec`, `z.looseObject`, `z.strictObject`, `z.prettifyError`
 - Changes: specific validators like `z.string().url` have been moved to the top level, e.g. `z.url`
+
+### Observability
+
+We use the Convex to Axiom log drain connector, which is configured in the Convex dashboard and not visible in project code.
+
+- Runtime metrics with function names are captured for every execution, including on any `console.{log|warn|error}` or uncaught exception.
+- Use `ConvexError` to throw errors with relevant domain data and a concise `message`.
+- Minimize error boundaries - exception data is captured with full detail, and will roll back mutations if uncaught.
+
+### Workflows & R2
+
+- A process in `workflows` has been added for `analytics` data collection (currently unused), to store in an R2 bucket
+- Once the process has been proved in production, it will be removed from standard archive bundle
 
 <!-- convex-ai-start -->
 

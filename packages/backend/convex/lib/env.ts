@@ -30,3 +30,22 @@ export function getBooleanEnv(name: string, fallback?: boolean): boolean {
 
   throw new Error(`Invalid boolean environment variable: ${name}=${value}`)
 }
+
+export function getNumberEnv(name: string, fallback?: number): number {
+  const value = process.env[name]
+
+  if (value === undefined) {
+    if (fallback === undefined) {
+      throw new Error(`Missing required environment variable: ${name}`)
+    }
+
+    return fallback
+  }
+
+  const parsed = Number(value)
+  if (Number.isFinite(parsed)) {
+    return parsed
+  }
+
+  throw new Error(`Invalid number environment variable: ${name}=${value}`)
+}

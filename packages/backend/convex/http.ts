@@ -5,6 +5,7 @@ import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'
 import { handleInteraction } from './discord/interactions'
+import { getR2Artifact } from './lib/r2'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
@@ -63,6 +64,27 @@ http.route({
   path: '/archive-sync/bundle.gz',
   method: 'GET',
   handler: archiveSyncBundleGzip,
+})
+
+http.route({
+  path: '/r2/artifact',
+  method: 'GET',
+  handler: httpAction(async (_ctx, req) => {
+    const url = new URL(req.url)
+    const artifact_id = url.searchParams.get('artifact_id')
+
+    if (!isNonEmptyString(artifact_id)) {
+      return new Response('Missing artifact_id parameter', { status: 400 })
+    }
+
+    const record = await getR2Artifact(artifact_id)
+
+    if (record === null) {
+      return new Response('Artifact not found', { status: 404 })
+    }
+
+    return Response.json(record)
+  }),
 })
 
 http.route({
