@@ -148,6 +148,12 @@ const OrcaPublicApiV2EndpointSchema = z.object({
   implicit_caching: z.boolean(),
   moderated: z.boolean(),
   native_web_search: z.boolean(),
+  stats_last_30m: z
+    .object({
+      latency_ms_p50: z.number(),
+      tokens_per_sec_p50: z.number(),
+    })
+    .nullable(),
 })
 
 type OrcaPublicApiV2Endpoint = z.infer<typeof OrcaPublicApiV2EndpointSchema>
@@ -228,5 +234,11 @@ function transformEndpointV2(input: Doc<'or_views_endpoints'>): OrcaPublicApiV2E
     implicit_caching: input.implicit_caching,
     moderated: input.moderated,
     native_web_search: input.native_web_search,
+    stats_last_30m: input.stats
+      ? {
+          latency_ms_p50: input.stats.p50_latency,
+          tokens_per_sec_p50: input.stats.p50_throughput,
+        }
+      : null,
   }
 }
