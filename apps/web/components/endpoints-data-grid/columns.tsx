@@ -53,7 +53,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 70,
     enableSorting: false,
     meta: {
-      headerTitle: 'UUID',
       cellClassName: 'text-center px-1',
     },
   },
@@ -84,7 +83,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     enableHiding: false,
 
     meta: {
-      headerTitle: 'Model',
       cellClassName: 'px-1.5',
     },
   },
@@ -114,7 +112,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 180,
     enableHiding: false,
     meta: {
-      headerTitle: 'Provider',
       cellClassName: 'px-1.5',
     },
   },
@@ -138,7 +135,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'Input ($/MTOK)',
     },
   },
 
@@ -161,7 +157,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'Output ($/MTOK)',
     },
   },
 
@@ -181,7 +176,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 155,
     meta: {
       headerClassName: 'text-center',
-      headerTitle: 'Modalities',
     },
   },
 
@@ -202,7 +196,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 215,
     meta: {
       headerClassName: 'text-center',
-      headerTitle: 'Features',
     },
   },
 
@@ -228,7 +221,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'Context (TOK)',
     },
   },
 
@@ -257,7 +249,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'Max Output (TOK)',
     },
   },
 
@@ -291,7 +282,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     meta: {
       headerClassName: 'text-center',
       cellClassName: 'text-center px-2',
-      headerTitle: 'Quant.',
     },
   },
 
@@ -316,7 +306,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'TOK/SEC',
     },
   },
 
@@ -341,7 +330,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
-      headerTitle: 'TTFT (MS)',
     },
   },
 
@@ -361,7 +349,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 110,
     meta: {
       headerClassName: 'text-center',
-      headerTitle: 'Data Policy',
     },
   },
 
@@ -381,7 +368,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 95,
     meta: {
       headerClassName: 'text-center',
-      headerTitle: 'Limits',
     },
   },
 
@@ -404,7 +390,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-center',
-      headerTitle: 'Model Added',
     },
   },
 
@@ -428,7 +413,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 70,
     enableHiding: true,
     meta: {
-      headerTitle: 'Status',
       cellClassName: 'justify-center',
     },
   },

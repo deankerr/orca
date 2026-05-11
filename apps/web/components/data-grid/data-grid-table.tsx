@@ -30,7 +30,6 @@ function getPinningStyles<TData>(column: Column<TData>): CSSProperties {
 
 function DataGridTableBase({ children }: { children: ReactNode }) {
   const { props } = useDataGrid()
-  const columnsDraggable = props.tableLayout?.columnsDraggable === true
   const fixedWidth = props.tableLayout?.width === 'fixed'
 
   return (
@@ -38,7 +37,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
       data-slot="data-grid-table"
       className={cn(
         'w-full caption-bottom text-left align-middle text-sm font-normal text-foreground rtl:text-right',
-        !columnsDraggable && 'border-separate border-spacing-0',
+        'border-separate border-spacing-0',
         fixedWidth ? 'table-fixed' : 'table-auto',
         props.tableClassNames?.base,
       )}
@@ -73,7 +72,6 @@ function DataGridTableHeadRow<TData>({
 }) {
   const { props } = useDataGrid()
   const hasCellBorder = props.tableLayout?.cellBorder === true
-  const transparentHeaderBackground = props.tableLayout?.headerBackground === false
 
   return (
     <tr
@@ -82,7 +80,6 @@ function DataGridTableHeadRow<TData>({
       className={cn(
         'bg-muted/40',
         hasCellBorder && '*:last:border-e-0',
-        transparentHeaderBackground && 'bg-transparent',
         props.tableClassNames?.headerRow,
       )}
     >
@@ -94,13 +91,9 @@ function DataGridTableHeadRow<TData>({
 function DataGridTableHeadRowCell<TData>({
   children,
   header,
-  dndRef,
-  dndStyle,
 }: {
   children: ReactNode
   header: Header<TData, unknown>
-  dndRef?: React.Ref<HTMLTableCellElement>
-  dndStyle?: CSSProperties
 }) {
   'use no memo'
   const { props } = useDataGrid()
@@ -115,7 +108,6 @@ function DataGridTableHeadRowCell<TData>({
   const hasCellBorder = props.tableLayout?.cellBorder === true
   const columnsResizable = props.tableLayout?.columnsResizable === true
   const hasHeaderBorder = props.tableLayout?.headerBorder === true
-  const headerCellClassName = props.tableLayout?.headerCellClassName ?? 'px-4'
 
   const pinningStyles = columnsPinnable && column.getCanPin() ? getPinningStyles(column) : undefined
   const needsStickyTop =
@@ -124,21 +116,19 @@ function DataGridTableHeadRowCell<TData>({
   return (
     <th
       key={header.id}
-      ref={dndRef}
       style={{
         ...(widthFixed && {
           width: `${header.getSize()}px`,
         }),
         ...pinningStyles,
         ...(needsStickyTop && { top: 0, zIndex: 11 }),
-        ...dndStyle,
       }}
       data-pinned={pinnedSide}
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
       data-slot="data-grid-table-head-row-cell"
       className={cn(
         'h-12 align-middle text-xs font-normal text-accent-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
-        headerCellClassName,
+        props.tableClassNames?.headerCell,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',
         columnsPinnable &&
@@ -181,31 +171,11 @@ function DataGridTableRowSpacer() {
 
 function DataGridTableBody({ children }: { children: ReactNode }) {
   const { props } = useDataGrid()
-  const rowRounded = props.tableLayout?.rowRounded === true
 
-  return (
-    <tbody
-      className={cn(
-        rowRounded && '[&_td:first-child]:rounded-s-lg [&_td:last-child]:rounded-e-lg',
-        props.tableClassNames?.body,
-      )}
-    >
-      {children}
-    </tbody>
-  )
+  return <tbody className={props.tableClassNames?.body}>{children}</tbody>
 }
 
-function DataGridTableBodyRow<TData>({
-  children,
-  row,
-  dndRef,
-  dndStyle,
-}: {
-  children: ReactNode
-  row: Row<TData>
-  dndRef?: React.Ref<HTMLTableRowElement>
-  dndStyle?: CSSProperties
-}) {
+function DataGridTableBodyRow<TData>({ children, row }: { children: ReactNode; row: Row<TData> }) {
   'use no memo'
   const { props } = useDataGrid()
 
@@ -216,8 +186,6 @@ function DataGridTableBodyRow<TData>({
 
   return (
     <tr
-      ref={dndRef}
-      style={dndStyle ?? undefined}
       {...dynamicAttrs}
       onClick={() => {
         props.onRowClick?.(row.original)
@@ -235,32 +203,12 @@ function DataGridTableBodyRow<TData>({
   )
 }
 
-function DataGridTableBodyRowExpanded<TData>({ row }: { row: Row<TData> }) {
-  const { props, table } = useDataGrid()
-  const hasRowBorder = props.tableLayout?.rowBorder === true
-
-  return (
-    <tr className={cn(hasRowBorder && '[&>td]:border-b [&>td]:border-border-solid')}>
-      <td colSpan={row.getVisibleCells().length}>
-        {table
-          .getAllColumns()
-          .find((column) => column.columnDef.meta?.expandedContent)
-          ?.columnDef.meta?.expandedContent?.(row.original)}
-      </td>
-    </tr>
-  )
-}
-
 function DataGridTableBodyRowCell<TData>({
   children,
   cell,
-  dndRef,
-  dndStyle,
 }: {
   children: ReactNode
   cell: Cell<TData, unknown>
-  dndRef?: React.Ref<HTMLTableCellElement>
-  dndStyle?: CSSProperties
 }) {
   'use no memo'
   const { props } = useDataGrid()
@@ -270,26 +218,21 @@ function DataGridTableBodyRowCell<TData>({
   const pinnedSide = isPinned === false ? undefined : isPinned
   const isLastLeftPinned = isPinned === 'left' && column.getIsLastColumn('left')
   const isFirstRightPinned = isPinned === 'right' && column.getIsFirstColumn('right')
-  const columnsDraggable = props.tableLayout?.columnsDraggable === true
   const columnsPinnable = props.tableLayout?.columnsPinnable === true
   const hasCellBorder = props.tableLayout?.cellBorder === true
   const columnsResizable = props.tableLayout?.columnsResizable === true
-  const bodyCellClassName = props.tableLayout?.bodyCellClassName ?? 'px-4 py-3'
 
   return (
     <td
       key={cell.id}
-      ref={dndRef}
-      {...(columnsDraggable && isPinned === false ? { cell } : {})}
       style={{
         ...(columnsPinnable && column.getCanPin() && getPinningStyles(column)),
-        ...dndStyle,
       }}
       data-pinned={pinnedSide}
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
       className={cn(
         'align-middle',
-        bodyCellClassName,
+        props.tableClassNames?.bodyCell,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',
         cell.column.columnDef.meta?.cellClassName,
@@ -410,7 +353,6 @@ function DataGridTableVirtual() {
                       </DataGridTableBodyRowCell>
                     ))}
                   </DataGridTableBodyRow>
-                  {row.getIsExpanded() && <DataGridTableBodyRowExpanded row={row} />}
                 </Fragment>
               )
             })
@@ -430,17 +372,4 @@ function DataGridTableVirtual() {
   )
 }
 
-export {
-  DataGridTableVirtual,
-  DataGridTableBase,
-  DataGridTableBody,
-  DataGridTableBodyRow,
-  DataGridTableBodyRowCell,
-  DataGridTableBodyRowExpanded,
-  DataGridTableEmpty,
-  DataGridTableHead,
-  DataGridTableHeadRow,
-  DataGridTableHeadRowCell,
-  DataGridTableHeadRowCellResize,
-  DataGridTableRowSpacer,
-}
+export { DataGridTableVirtual }
