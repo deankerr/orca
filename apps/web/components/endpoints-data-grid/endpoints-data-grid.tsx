@@ -7,7 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { attributes, isAttributeKey } from '@/lib/attributes'
@@ -122,8 +122,7 @@ export function EndpointsDataGrid({
   })
   const isMobile = useIsMobile()
 
-  // Compute row-level data attributes for status-based styling
-  const rowDataAttributes = useCallback((row: EndpointRow) => {
+  const rowDataAttributes = (row: EndpointRow) => {
     let status: 'gone' | 'disabled' | undefined
     if (row.unavailable_at !== undefined && row.unavailable_at !== null) {
       status = 'gone'
@@ -131,17 +130,13 @@ export function EndpointsDataGrid({
       status = 'disabled'
     }
 
-    return status === undefined ? {} : { 'data-row-status': status }
-  }, [])
-
-  // Derive row selection from highlight UUID
-  const rowSelection = useMemo(() => {
-    if (!focus.highlightUuid) {
-      return {}
+    return {
+      ...(status === undefined ? {} : { 'data-row-status': status }),
+      ...(focus.highlightUuid && row.uuid.startsWith(focus.highlightUuid)
+        ? { 'data-highlighted': 'true' }
+        : {}),
     }
-    const match = rows.find((endpoint) => endpoint.uuid.startsWith(focus.highlightUuid))
-    return match ? { [match._id]: true } : {}
-  }, [focus.highlightUuid, rows])
+  }
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const table = useReactTable({
@@ -149,7 +144,6 @@ export function EndpointsDataGrid({
     data: rows,
     state: {
       sorting: sort.sorting,
-      rowSelection,
       columnPinning: isMobile === false ? { left: ['uuid', 'model', 'provider'] } : {},
     },
     columnResizeMode: 'onChange',
@@ -159,7 +153,6 @@ export function EndpointsDataGrid({
     getFilteredRowModel: getFilteredRowModel(),
     getRowId: (row) => row._id,
     manualPagination: true,
-    enableRowSelection: true,
   })
 
   return (
