@@ -2,7 +2,6 @@ import type { Cell, Column, Header, HeaderGroup, Row } from '@tanstack/react-tab
 import { flexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { InboxIcon } from 'lucide-react'
-import * as React from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Fragment, useCallback, useRef } from 'react'
 
@@ -128,6 +127,7 @@ function DataGridTableHeadRowCell<TData>({
       data-slot="data-grid-table-head-row-cell"
       className={cn(
         'h-12 align-middle text-xs font-normal text-accent-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
+        'data-pinned:bg-muted-hover data-[last-col=left]:border-e data-[last-col=left]:border-border-solid data-[last-col=right]:border-s data-[last-col=right]:border-border-solid',
         props.tableClassNames?.headerCell,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',
@@ -232,6 +232,7 @@ function DataGridTableBodyRowCell<TData>({
       data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
       className={cn(
         'align-middle',
+        'data-[last-col=left]:border-e data-[last-col=left]:border-border-solid data-[last-col=right]:border-s data-[last-col=right]:border-border-solid',
         props.tableClassNames?.bodyCell,
         hasCellBorder && 'border-e',
         columnsResizable && column.getCanResize() && 'truncate',

@@ -4,8 +4,6 @@ import type { RowData, Table } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 
-import './data-grid.css'
-
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
     headerClassName?: string

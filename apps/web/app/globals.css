@@ -170,3 +170,19 @@
     cursor: pointer;
   }
 }
+
+@layer utilities {
+  /* Borders use color-mix to match transparent borders painted over highlight bg. */
+  [data-slot='data-grid-table'] tbody tr:has(+ tr[data-highlighted='true']) > td {
+    border-bottom-color: color-mix(in oklab, var(--color-highlight), white 15%);
+  }
+
+  [data-slot='data-grid-table'] tbody tr[data-highlighted='true'] > td {
+    border-color: color-mix(in oklab, var(--color-highlight), white 15%);
+    background-color: var(--color-highlight);
+  }
+
+  [data-slot='data-grid-table'] tbody tr[data-highlighted='true']:hover > td {
+    background-color: color-mix(in oklab, var(--color-highlight), white 2%);
+  }
+}
