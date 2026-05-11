@@ -111,8 +111,8 @@ export const rawEndpointTransformSchema = z
     supports_reasoning: z.boolean(),
 
     features: z.object({
-      supports_implicit_caching: z.coerce.boolean(),
-      supports_native_web_search: z.coerce.boolean(),
+      supports_implicit_caching: z.boolean().optional(),
+      supports_native_web_search: z.boolean().optional(),
     }),
 
     deprecation_date: z.string().nullable(),
@@ -182,8 +182,8 @@ export const rawEndpointTransformSchema = z
       capabilities: {
         chatCompletions: raw.has_chat_completions,
         completions: raw.has_completions,
-        implicitCaching: raw.features.supports_implicit_caching,
-        nativeWebSearch: raw.features.supports_native_web_search,
+        implicitCaching: raw.features.supports_implicit_caching ?? false,
+        nativeWebSearch: raw.features.supports_native_web_search ?? false,
       },
 
       flags: {
