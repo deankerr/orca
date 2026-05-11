@@ -15,5 +15,6 @@ crons.hourly('snapshot-50', { minuteUTC: 50 }, internal.snapshots.crawl.cron.run
 })
 
 crons.cron('workflows/analytics', '5 * * * *', internal.workflows.analytics.scheduled.start, {})
+crons.cron('workflows/topApps', '15 * * * *', internal.workflows.topApps.scheduled.start, {})
 
 export default crons
