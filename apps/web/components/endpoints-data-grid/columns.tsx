@@ -16,33 +16,22 @@ type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
 export type EndpointRow = EndpointProjectionLike
 
 function formatGridDate(timestamp: number): string {
-  return new Date(timestamp)
-    .toLocaleString('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-    .replace(',', '')
-    .split(' ')[0]
+  return new Date(timestamp).toLocaleDateString('en-CA')
 }
 
 function hasTextOutput(endpoint: EndpointRow) {
   return endpoint.model.output_modalities.includes('text')
 }
 
+function EmptyCell() {
+  return <span className="text-muted-foreground">&ndash;</span>
+}
+
 export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'uuid',
     accessorFn: (row) => row.uuid,
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="UUID" />
-      </div>
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
     cell: ({ row }) => (
       <EndpointUuid
         uuid={row.original.uuid}
@@ -60,28 +49,19 @@ export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'model',
     accessorFn: (row) => `${row.model.name} ${row.model.slug}`,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="MODEL" className="justify-start" />
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
         <EntityOverviewTrigger
           type="model"
           slug={endpoint.model.slug}
-          render={
-            <EntityIdentity
-              name={endpoint.model.name}
-              slug={endpoint.model.slug}
-              className="font-sans"
-            />
-          }
+          render={<EntityIdentity name={endpoint.model.name} slug={endpoint.model.slug} />}
         />
       )
     },
     size: 230,
     enableHiding: false,
-
     meta: {
       cellClassName: 'px-1.5',
     },
@@ -90,9 +70,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'provider',
     accessorFn: (row) => `${row.provider.name} ${row.provider.slug}`,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="PROVIDER" className="justify-start" />
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="PROVIDER" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -100,11 +78,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
           type="provider"
           slug={endpoint.provider.slug}
           render={
-            <EntityIdentity
-              name={endpoint.provider.name}
-              slug={endpoint.provider.tag_slug}
-              className="font-sans"
-            />
+            <EntityIdentity name={endpoint.provider.name} slug={endpoint.provider.tag_slug} />
           }
         />
       )
@@ -120,16 +94,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
     id: 'inputPrice',
     accessorFn: (row) => row.pricing.text_input,
     header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="INPUT" subtitle="$/MTOK" />
-      </div>
+      <DataGridColumnHeader column={column} title="INPUT" subtitle="$/MTOK" />
     ),
     cell: ({ getValue }) => {
-      const inputPrice = getValue<number>()
-      if (inputPrice) {
+      const inputPrice = getValue<number | undefined>()
+      if (inputPrice !== undefined) {
         return formatPricing('text_input', inputPrice)?.value
       }
-      return <span className="text-muted-foreground">&ndash;</span>
+      return <EmptyCell />
     },
     size: 110,
     sortUndefined: 'last',
@@ -142,16 +114,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
     id: 'outputPrice',
     accessorFn: (row) => row.pricing.text_output,
     header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="OUTPUT" subtitle="$/MTOK" />
-      </div>
+      <DataGridColumnHeader column={column} title="OUTPUT" subtitle="$/MTOK" />
     ),
     cell: ({ getValue }) => {
-      const outputPrice = getValue<number>()
-      if (outputPrice) {
+      const outputPrice = getValue<number | undefined>()
+      if (outputPrice !== undefined) {
         return formatPricing('text_output', outputPrice)?.value
       }
-      return <span className="text-muted-foreground">&ndash;</span>
+      return <EmptyCell />
     },
     size: 110,
     sortUndefined: 'last',
@@ -174,9 +144,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 155,
-    meta: {
-      headerClassName: 'text-center',
-    },
+    enableSorting: false,
   },
 
   {
@@ -194,9 +162,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 215,
-    meta: {
-      headerClassName: 'text-center',
-    },
+    enableSorting: false,
   },
 
   {
@@ -204,15 +170,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
     accessorFn: (row) =>
       row.context_length === 0 && !hasTextOutput(row) ? undefined : row.context_length,
     header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
-      </div>
+      <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
     ),
     cell: ({ getValue, row }) => {
       const contextLength = getValue<number | undefined>()
 
       if (contextLength === undefined && !hasTextOutput(row.original)) {
-        return <span className="text-muted-foreground">&ndash;</span>
+        return <EmptyCell />
       }
 
       return contextLength?.toLocaleString()
@@ -228,9 +192,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
     id: 'maxOutput',
     accessorFn: (row) => (row.max_output === 0 && !hasTextOutput(row) ? undefined : row.max_output),
     header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
-      </div>
+      <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
     ),
     cell: ({ getValue, row }) => {
       const maxOutput = getValue<number | undefined>()
@@ -240,7 +202,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
         row.original.max_output === 0 &&
         !hasTextOutput(row.original)
       ) {
-        return <span className="text-muted-foreground">&ndash;</span>
+        return <EmptyCell />
       }
 
       return maxOutput?.toLocaleString()
@@ -258,11 +220,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       row.quantization === undefined || row.quantization === 'unknown'
         ? undefined
         : row.quantization,
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="QUANT." />
-      </div>
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="QUANT." />,
     cell: ({ row }) => {
       const { quantization } = row.original
       const label = quantization === undefined || quantization === 'unknown' ? '?' : quantization
@@ -280,7 +238,6 @@ export const columns: ColumnDef<EndpointRow>[] = [
     size: 90,
     sortUndefined: 'last',
     meta: {
-      headerClassName: 'text-center',
       cellClassName: 'text-center px-2',
     },
   },
@@ -288,11 +245,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'throughput',
     accessorFn: (row) => row.stats?.p50_throughput,
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />
-      </div>
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />,
     cell: ({ getValue }) => {
       const throughput = getValue<number | undefined>()
       if (throughput !== undefined) {
@@ -300,7 +253,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
           maximumFractionDigits: 0,
         })
       }
-      return <span className="text-muted-foreground">&ndash;</span>
+      return <EmptyCell />
     },
     size: 90,
     sortUndefined: 'last',
@@ -312,11 +265,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'latency',
     accessorFn: (row) => row.stats?.p50_latency,
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />
-      </div>
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />,
     cell: ({ getValue }) => {
       const latency = getValue<number | undefined>()
       if (latency !== undefined) {
@@ -324,9 +273,9 @@ export const columns: ColumnDef<EndpointRow>[] = [
           maximumFractionDigits: 0,
         })
       }
-      return <span className="text-muted-foreground">&ndash;</span>
+      return <EmptyCell />
     },
-    size: 90,
+    size: 95,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -347,9 +296,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 110,
-    meta: {
-      headerClassName: 'text-center',
-    },
+    enableSorting: false,
   },
 
   {
@@ -366,25 +313,21 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 95,
-    meta: {
-      headerClassName: 'text-center',
-    },
+    enableSorting: false,
   },
 
   {
     id: 'modelAddedAt',
     accessorFn: (row) => row.model.or_added_at,
     header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />
-      </div>
+      <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />
     ),
     cell: ({ getValue }) => {
       const timestamp = getValue<number>()
       if (timestamp) {
         return formatGridDate(timestamp)
       }
-      return <span className="text-muted-foreground">&ndash;</span>
+      return <EmptyCell />
     },
     size: 100,
     sortUndefined: 'last',
@@ -395,11 +338,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'status',
-    header: ({ column }) => (
-      <div className="grow text-center">
-        <DataGridColumnHeader column={column} title="STATUS" />
-      </div>
-    ),
+    header: ({ column }) => <DataGridColumnHeader column={column} title="STATUS" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -411,7 +350,7 @@ export const columns: ColumnDef<EndpointRow>[] = [
       )
     },
     size: 70,
-    enableHiding: true,
+    enableSorting: false,
     meta: {
       cellClassName: 'justify-center',
     },
