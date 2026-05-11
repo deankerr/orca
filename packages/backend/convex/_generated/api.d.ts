@@ -51,6 +51,7 @@ import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
 import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
+import type * as lib_r2 from "../lib/r2.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
@@ -69,6 +70,9 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
+import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
+import type * as workflows_analytics_process from "../workflows/analytics/process.js";
+import type * as workflows_analytics_scheduled from "../workflows/analytics/scheduled.js";
 
 import type {
   ApiFromModules,
@@ -120,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/functionSpec": typeof lib_functionSpec;
   "lib/paginateAndProcess": typeof lib_paginateAndProcess;
+  "lib/r2": typeof lib_r2;
   models: typeof models;
   monitor: typeof monitor;
   providers: typeof providers;
@@ -138,6 +143,9 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
+  "workflows/analytics/manual": typeof workflows_analytics_manual;
+  "workflows/analytics/process": typeof workflows_analytics_process;
+  "workflows/analytics/scheduled": typeof workflows_analytics_scheduled;
 }>;
 
 /**
