@@ -1,9 +1,6 @@
 'use client'
 
-import { api } from '@orca/backend-experimental/convex/_generated/api'
-import { ConvexProvider, ConvexReactClient, useQuery } from 'convex/react'
-import ms from 'ms'
-import { useState } from 'react'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import type { ReactNode } from 'react'
 
 function createExpConvexClient() {
@@ -19,7 +16,7 @@ function createExpConvexClient() {
 }
 
 const convex = createExpConvexClient()
-export const expConvexAvailable = convex !== null
+export const isConvexExperimentalAvailable = convex !== null
 
 export function ExpConvexClientProvider({ children }: { children: ReactNode }) {
   if (convex === null) {
@@ -27,14 +24,4 @@ export function ExpConvexClientProvider({ children }: { children: ReactNode }) {
   }
 
   return <ConvexProvider client={convex}>{children}</ConvexProvider>
-}
-
-export function useExpEndpointsList() {
-  const [unavailableSince] = useState(() => Date.now() - ms('30d'))
-  const data = useQuery(api.compat.endpoints.list, { unavailableSince })
-
-  return {
-    data,
-    isPending: data === undefined,
-  }
 }
