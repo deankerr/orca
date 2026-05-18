@@ -1213,6 +1213,10 @@
       "key": "parasail"
     },
     {
+      "color": "png",
+      "key": "perceptron"
+    },
+    {
       "avatar": "webp",
       "color": "png",
       "key": "perplexity"
