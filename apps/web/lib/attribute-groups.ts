@@ -15,6 +15,7 @@ export const endpointModalityOutputAttributes = [
   'video_output',
   'embeddings_output',
   'rerank_output',
+  'transcription_output',
 ] as const
 
 export const endpointModalityAttributes = [
@@ -29,6 +30,7 @@ export const endpointModalityAttributes = [
   'video_output',
   'embeddings_output',
   'rerank_output',
+  'transcription_output',
 ] as const
 
 export type EndpointModalityAttribute = (typeof endpointModalityAttributes)[number]
@@ -66,6 +68,7 @@ export const endpointAttributeSets = {
     ['video_output'],
     ['embeddings_output'],
     ['rerank_output'],
+    ['transcription_output'],
   ],
   features: [
     ['reasoning'],

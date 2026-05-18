@@ -8,6 +8,7 @@ import {
   Braces,
   CakeSlice,
   Calendar,
+  Captions,
   ChevronsDown,
   Database,
   FileChartColumn,
@@ -677,6 +678,18 @@ export const attributes = defineAttributes({
     color: 'amber',
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('rerank') ?? false,
+    }),
+  },
+
+  transcription_output: {
+    key: 'transcription_output',
+    icon: Captions,
+    label: 'Transcription Output',
+    description: 'Converts audio input to text via the transcriptions endpoint.',
+    color: 'lime',
+    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/audio/create-transcription',
+    resolve: (endpoint) => ({
+      active: endpoint.model?.output_modalities?.includes('transcription') ?? false,
     }),
   },
 })
