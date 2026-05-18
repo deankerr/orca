@@ -124,6 +124,7 @@ export function toModalityFilters(has: string[], not: string[]): ModalityFilterS
     video_output: resolveFilterMode(has, not, 'video_output'),
     embeddings_output: resolveFilterMode(has, not, 'embeddings_output'),
     rerank_output: resolveFilterMode(has, not, 'rerank_output'),
+    transcription_output: resolveFilterMode(has, not, 'transcription_output'),
   }
 }
 
