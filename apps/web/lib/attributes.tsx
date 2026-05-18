@@ -14,7 +14,6 @@ import {
   FileDigit,
   FileSpreadsheet,
   Fingerprint,
-  Flag,
   Globe,
   Image,
   ImageDown,
@@ -679,59 +678,6 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => ({
       active: endpoint.model?.output_modalities?.includes('rerank') ?? false,
     }),
-  },
-
-  // Request Pricing & Limits
-  long_context_pricing: {
-    key: 'long_context_pricing',
-    icon: Flag,
-    label: 'Long Context Pricing',
-    description: 'Higher rates apply when prompt length exceeds a token threshold.',
-    color: 'yellow',
-    resolve: (endpoint) => {
-      // only a single 'prompt-threshold' item can exist
-      const variablePricing = endpoint.variable_pricings?.find(
-        (vp) => vp.type === 'prompt-threshold',
-      )
-
-      if (!variablePricing) {
-        return { active: false }
-      }
-
-      const details: { label: string; value: string }[] = [
-        {
-          label: 'Threshold',
-          value: `> ${variablePricing.threshold.toLocaleString()} tokens`,
-        },
-        {
-          label: 'Text Input',
-          value: formatAttributePrice('text_input', variablePricing.text_input),
-        },
-        {
-          label: 'Text Output',
-          value: formatAttributePrice('text_output', variablePricing.text_output),
-        },
-      ]
-
-      if (hasValue(variablePricing.cache_read)) {
-        details.push({
-          label: 'Cache Read',
-          value: formatAttributePrice('text_cache_read', variablePricing.cache_read),
-        })
-      }
-
-      if (hasValue(variablePricing.cache_write)) {
-        details.push({
-          label: 'Cache Write',
-          value: formatAttributePrice('text_cache_write', variablePricing.cache_write),
-        })
-      }
-
-      return {
-        active: true,
-        details,
-      }
-    },
   },
 })
 
