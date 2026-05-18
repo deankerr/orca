@@ -3,7 +3,7 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
-import { ActivityIcon, ExternalLinkIcon, SearchIcon } from 'lucide-react'
+import { ActivityIcon, AlertTriangleIcon, ExternalLinkIcon, SearchIcon } from 'lucide-react'
 import Link from 'next/link'
 import * as R from 'remeda'
 
@@ -11,7 +11,6 @@ import { EntityAvatar } from '@/components/shared/entity-avatar'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { cn } from '@/lib/utils'
 
 import { useEntityOverview } from './entity-overview-context'
 
@@ -93,7 +92,7 @@ function ModelContent({ slug }: { slug: string }) {
         </>
       }
     >
-      <OverviewSection className="has-[:only-child]:hidden">
+      <OverviewSection>
         <OverviewLabel>Details</OverviewLabel>
         <OverviewRow label="Author" value={model.author_name} />
         <OverviewRow label="Input" value={model.input_modalities.join(', ')} />
@@ -134,31 +133,41 @@ function ProviderContent({ slug }: { slug: string }) {
         />
       }
     >
-      <OverviewSection className="has-[:only-child]:hidden">
+      <OverviewSection>
         <OverviewLabel>Details</OverviewLabel>
         <OverviewRow label="Headquarters" value={provider.headquarters} />
         <OverviewRow label="Datacenters" value={provider.datacenters?.join(', ')} />
         <OverviewRow
-          label="Status Page"
-          value={
-            R.isDefined(provider.status_page_url) && (
-              <InlineExternalLink href={provider.status_page_url} />
-            )
-          }
-        />
-        <OverviewRow
           label="Terms of Service"
           value={
-            R.isDefined(provider.terms_of_service_url) && (
+            R.isDefined(provider.terms_of_service_url) ? (
               <InlineExternalLink href={provider.terms_of_service_url} />
+            ) : (
+              <div className="flex items-center gap-1 text-amber-500">
+                not provided
+                <AlertTriangleIcon className="size-3" />
+              </div>
             )
           }
         />
         <OverviewRow
           label="Privacy Policy"
           value={
-            R.isDefined(provider.privacy_policy_url) && (
+            R.isDefined(provider.privacy_policy_url) ? (
               <InlineExternalLink href={provider.privacy_policy_url} />
+            ) : (
+              <div className="flex items-center gap-1 text-amber-500">
+                not provided
+                <AlertTriangleIcon className="size-3" />
+              </div>
+            )
+          }
+        />
+        <OverviewRow
+          label="Status Page"
+          value={
+            R.isDefined(provider.status_page_url) && (
+              <InlineExternalLink href={provider.status_page_url} />
             )
           }
         />
@@ -201,60 +210,28 @@ function OverviewLayout({
       <div className="flex flex-col gap-3 p-4">
         {children}
 
-        <OverviewSection>
+        <div className="rounded-md border bg-card/60 p-3">
           <OverviewLabel>Endpoints</OverviewLabel>
           <ActionLink href={`/?q=${slug}`} onClick={close}>
             Filter by this {type}
             <SearchIcon className="size-3" />
           </ActionLink>
-        </OverviewSection>
+        </div>
 
-        <OverviewSection>
+        <div className="rounded-md border bg-card/60 p-3">
           <OverviewLabel>Monitor</OverviewLabel>
           <ActionLink href={`/monitor?${type}=${slug}`} onClick={close}>
             Filter by this {type}
             <ActivityIcon className="size-3" />
           </ActionLink>
-        </OverviewSection>
+        </div>
       </div>
     </>
   )
 }
 
-function OverviewSkeleton() {
-  return (
-    <>
-      <SheetTitle className="sr-only">Loading</SheetTitle>
-      <div className="border-b p-6">
-        <Skeleton className="mb-4 h-2.5 w-14" />
-        <div className="flex gap-4">
-          <Skeleton className="size-12 shrink-0 rounded-md" />
-          <div className="flex flex-1 flex-col gap-2 pt-0.5">
-            <Skeleton className="h-4 w-44" />
-            <Skeleton className="h-3 w-60" />
-          </div>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <Skeleton className="h-6 w-28 rounded-md" />
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 p-4">
-        <Skeleton className="h-24 rounded-md" />
-        <Skeleton className="h-14 rounded-md" />
-        <Skeleton className="h-14 rounded-md" />
-      </div>
-    </>
-  )
-}
-
-function OverviewSection({
-  className,
-  children,
-}: {
-  className?: string
-  children: React.ReactNode
-}) {
-  return <section className={cn('rounded-md border bg-card/60 p-3', className)}>{children}</section>
+function OverviewSection({ children }: { children: React.ReactNode }) {
+  return <section className="space-y-2 rounded-md border bg-card/60 p-3">{children}</section>
 }
 
 function OverviewLabel({ children }: { children: React.ReactNode }) {
@@ -270,7 +247,7 @@ function OverviewRow({ label, value }: { label: string; value: React.ReactNode }
     return null
   }
   return (
-    <div className="flex items-baseline justify-between gap-3 text-xs">
+    <div className="flex justify-between gap-3 text-xs">
       <div className="text-muted-foreground">{label}</div>
       <div className="min-w-0 text-right font-mono">{value}</div>
     </div>
@@ -328,5 +305,31 @@ function InlineExternalLink({ href }: { href: string }) {
       {hostname}
       <ExternalLinkIcon className="size-3" />
     </a>
+  )
+}
+
+function OverviewSkeleton() {
+  return (
+    <>
+      <SheetTitle className="sr-only">Loading</SheetTitle>
+      <div className="border-b p-6">
+        <Skeleton className="mb-4 h-2.5 w-14" />
+        <div className="flex gap-4">
+          <Skeleton className="size-12 shrink-0 rounded-md" />
+          <div className="flex flex-1 flex-col gap-2 pt-0.5">
+            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-3 w-60" />
+          </div>
+        </div>
+        <div className="mt-5 flex gap-2">
+          <Skeleton className="h-6 w-28 rounded-md" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 p-4">
+        <Skeleton className="h-24 rounded-md" />
+        <Skeleton className="h-14 rounded-md" />
+        <Skeleton className="h-14 rounded-md" />
+      </div>
+    </>
   )
 }
