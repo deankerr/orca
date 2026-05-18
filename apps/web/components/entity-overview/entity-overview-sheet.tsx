@@ -11,6 +11,7 @@ import { EntityAvatar } from '@/components/shared/entity-avatar'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { cn } from '@/lib/utils'
 
 import { useEntityOverview } from './entity-overview-context'
 
@@ -33,6 +34,27 @@ export function EntityOverview() {
         {entity?.type === 'provider' && <ProviderContent slug={entity.slug} />}
       </SheetContent>
     </Sheet>
+  )
+}
+
+function EntityHeader({ slug, name }: { slug: string; name: string }) {
+  const copyToClipboard = useCopyToClipboard()
+
+  return (
+    <div className="flex gap-4">
+      <EntityAvatar slug={slug} fallbackText={name} className="size-11 shrink-0 rounded-md" />
+      <div className="min-w-0">
+        <div className="truncate text-base leading-snug font-semibold">{name}</div>
+        <button
+          type="button"
+          onClick={() => void copyToClipboard(slug, `Copied: ${slug}`)}
+          title="Click to copy"
+          className="mt-1 cursor-pointer truncate text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary/90"
+        >
+          {slug}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -71,7 +93,8 @@ function ModelContent({ slug }: { slug: string }) {
         </>
       }
     >
-      <OverviewSection label="Details">
+      <OverviewSection className="has-[:only-child]:hidden">
+        <OverviewLabel>Details</OverviewLabel>
         <OverviewRow label="Author" value={model.author_name} />
         <OverviewRow label="Input" value={model.input_modalities.join(', ')} />
         <OverviewRow label="Output" value={model.output_modalities.join(', ')} />
@@ -111,7 +134,8 @@ function ProviderContent({ slug }: { slug: string }) {
         />
       }
     >
-      <OverviewSection label="Details">
+      <OverviewSection className="has-[:only-child]:hidden">
+        <OverviewLabel>Details</OverviewLabel>
         <OverviewRow label="Headquarters" value={provider.headquarters} />
         <OverviewRow label="Datacenters" value={provider.datacenters?.join(', ')} />
         <OverviewRow
@@ -157,11 +181,6 @@ function OverviewLayout({
   children: React.ReactNode
 }) {
   const { close } = useEntityOverview()
-  const copyToClipboard = useCopyToClipboard()
-
-  const isModel = type === 'model'
-  const filterLabel = isModel ? 'Filter by this model' : 'Filter by this provider'
-  const monitorHref = isModel ? `/monitor?model=${slug}` : `/monitor?provider=${slug}`
 
   return (
     <>
@@ -170,23 +189,10 @@ function OverviewLayout({
       {/* Header */}
       <div className="border-b p-6">
         <div className="mb-4 font-mono text-[0.625rem] tracking-widest text-muted-foreground uppercase">
-          {isModel ? 'Model' : 'Provider'}
+          {type}
         </div>
 
-        <div className="flex gap-4">
-          <EntityAvatar slug={slug} fallbackText={name} className="size-11 shrink-0 rounded-md" />
-          <div className="min-w-0">
-            <div className="truncate text-base leading-snug font-semibold">{name}</div>
-            <button
-              type="button"
-              onClick={() => void copyToClipboard(slug, `Copied: ${slug}`)}
-              title="Click to copy"
-              className="mt-1 cursor-pointer truncate text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary/90"
-            >
-              {slug}
-            </button>
-          </div>
-        </div>
+        <EntityHeader name={name} slug={slug} />
 
         <div className="mt-5 flex flex-wrap gap-2">{externalLinks}</div>
       </div>
@@ -195,16 +201,18 @@ function OverviewLayout({
       <div className="flex flex-col gap-3 p-4">
         {children}
 
-        <OverviewSection label="Endpoints">
+        <OverviewSection>
+          <OverviewLabel>Endpoints</OverviewLabel>
           <ActionLink href={`/?q=${slug}`} onClick={close}>
-            {filterLabel}
+            Filter by this {type}
             <SearchIcon className="size-3" />
           </ActionLink>
         </OverviewSection>
 
-        <OverviewSection label="Monitor">
-          <ActionLink href={monitorHref} onClick={close}>
-            {filterLabel}
+        <OverviewSection>
+          <OverviewLabel>Monitor</OverviewLabel>
+          <ActionLink href={`/monitor?${type}=${slug}`} onClick={close}>
+            Filter by this {type}
             <ActivityIcon className="size-3" />
           </ActionLink>
         </OverviewSection>
@@ -239,19 +247,26 @@ function OverviewSkeleton() {
   )
 }
 
-function OverviewSection({ label, children }: { label: string; children: React.ReactNode }) {
+function OverviewSection({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return <section className={cn('rounded-md border bg-card/60 p-3', className)}>{children}</section>
+}
+
+function OverviewLabel({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-md border bg-card/60 p-3">
-      <div className="mb-2.5 font-mono text-[0.625rem] tracking-widest text-muted-foreground uppercase">
-        {label}
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </section>
+    <div className="mb-2.5 font-mono text-[0.625rem] tracking-widest text-muted-foreground uppercase">
+      {children}
+    </div>
   )
 }
 
 function OverviewRow({ label, value }: { label: string; value: React.ReactNode }) {
-  if (value === null || value === undefined || value === false) {
+  if (!R.isTruthy(value)) {
     return null
   }
   return (
