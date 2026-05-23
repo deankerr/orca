@@ -33,6 +33,11 @@ export const run = internalAction({
         for (const archive of archives) {
           const current = await loadMaterializedSnapshot(ctx, archive.crawl_id)
 
+          // skip invalid bundle without advancing previous
+          if (!current) {
+            continue
+          }
+
           if (!previous) {
             previous = current
             lastProcessedCrawlId = current.crawl_id
@@ -113,19 +118,23 @@ type LoadedMaterializedSnapshot = {
 async function loadMaterializedSnapshot(
   ctx: ActionCtx,
   crawl_id: string,
-): Promise<LoadedMaterializedSnapshot> {
+): Promise<LoadedMaterializedSnapshot | null> {
   const bundle = await getArchiveBundle(ctx, crawl_id)
   if (!bundle) {
     throw new Error(`[materializedChanges] missing bundle for crawl_id: ${crawl_id}`)
   }
 
   const materialized = materializeModelEndpoints(bundle)
+
+  // invalid bundle - same abort condition as materialize/main.ts
+  if (materialized.endpoints.length === 0) {
+    console.warn(`[materializedChanges] skip: no endpoints found for crawl_id: ${crawl_id}`)
+    return null
+  }
+
   if (materialized.issues.length) {
     throw new Error(`[materializedChanges] validation issues for crawl ${crawl_id}`)
   }
 
-  return {
-    crawl_id,
-    materialized,
-  }
+  return { crawl_id, materialized }
 }
