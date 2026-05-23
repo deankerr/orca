@@ -110,9 +110,9 @@ const CrawlArchiveBundleSchema = z.strictObject({
 
 export const run = internalAction({
   args: {
-    uptimes: v.boolean(),
-    topApps: v.boolean(),
-    analytics: v.boolean(),
+    uptimes: v.optional(v.boolean()),
+    topApps: v.optional(v.boolean()),
+    analytics: v.optional(v.boolean()),
     onComplete: v.object({
       materialize: v.boolean(),
     }),
@@ -145,19 +145,8 @@ export const run = internalAction({
     const models = await orFetch('/api/frontend/models', { schema: ModelsDataRecordArray })
 
     for (const model of models) {
-      const modelData = await fetchModelData(args, model)
+      const modelData = await fetchModelData(model)
       bundle.data.models.push(modelData)
-    }
-
-    // * analytics
-    if (args.analytics) {
-      try {
-        bundle.data.analytics = await orFetch('/api/frontend/models/find', {
-          schema: DataRecord,
-        })
-      } catch (error) {
-        console.error('[crawl:analytics]', { error: getErrorMessage(error) })
-      }
     }
 
     try {
@@ -174,10 +163,7 @@ export const run = internalAction({
   },
 })
 
-async function fetchModelData(
-  crawlArgs: { uptimes: boolean; topApps: boolean },
-  model: z.infer<typeof ModelsDataRecordArray>[number],
-) {
+async function fetchModelData(model: z.infer<typeof ModelsDataRecordArray>[number]) {
   const result: CrawlArchiveBundle['data']['models'][number] = {
     model,
     endpoints: [],
@@ -206,22 +192,6 @@ async function fetchModelData(
     result.endpoints = { error: errorMessage }
   }
 
-  // * topApps
-  if (crawlArgs.topApps) {
-    try {
-      const topApps = await orFetch('/api/frontend/stats/top-apps-for-model', {
-        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-        schema: DataRecord,
-      })
-      result.topApps = topApps
-    } catch (error) {
-      console.error('[crawl:topApps]', {
-        params: { permaslug: model.permaslug, variant: model.endpoint.variant },
-        error: getErrorMessage(error),
-      })
-    }
-  }
-
   return result
 }
 
@@ -245,10 +215,7 @@ async function storeCrawlBundle(ctx: ActionCtx, bundle: CrawlArchiveBundle) {
       (sum, m) => sum + (Array.isArray(m.endpoints) ? m.endpoints.length : 0),
       0,
     ),
-    uptimes: parsed.data.models.reduce((sum, m) => sum + m.uptimes.length, 0),
-    topApps: parsed.data.models.reduce((sum, m) => sum + (m.topApps ? 1 : 0), 0),
     providers: parsed.data.providers.length,
-    analytics: parsed.data.analytics ? 1 : 0,
   }
 
   await ctx.runMutation(internal.snapshots.crawl.outputs.insert, {

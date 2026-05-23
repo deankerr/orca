@@ -35,10 +35,3 @@ export const run = internalAction({
 ```
 
 Not: complex logic embedded in action bodies.
-
-## Module Boundaries by Knowledge
-
-Group code by what it knows about, not what it does.
-
-- If it requires Discord-specific knowledge (embed limits, payload format), it belongs in the Discord module
-- If it's just "send HTTP request", it doesn't need to know what's inside the payload
