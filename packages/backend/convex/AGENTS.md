@@ -60,7 +60,7 @@ User-facing data is a projection of stored snapshot data.
 
 **Two separate servers run in this project:**
 
-1. **Next.js dev server** (`localhost:3020`) - Frontend application
+1. **Next.js dev server** (`localhost`) - Frontend application
    - Runs via `bun dev` or similar
    - Serves the React app from `app/` directory
    - Handles frontend routes like `/`, `/monitor`
