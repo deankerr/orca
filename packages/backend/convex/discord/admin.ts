@@ -1,20 +1,8 @@
-/**
- * Discord bot administration actions
- *
- * Run these from the Convex dashboard to manage the bot:
- * - registerCommands: Register slash commands with Discord
- * - getApplicationInfo: Fetch bot/application details
- *
- * Required environment variables:
- *   DISCORD_APPLICATION_ID - From Discord Developer Portal
- *   DISCORD_BOT_TOKEN - Bot token from Discord Developer Portal
- */
-
 import { z } from 'zod'
 
 import { isNonEmptyString } from '../../shared/utils'
 import { internalAction } from '../_generated/server'
-import { createDiscordClient } from './api'
+import { createDiscordClient } from './client'
 
 // Command definitions following Discord's ApplicationCommand structure
 const COMMANDS = [
@@ -94,14 +82,9 @@ export const registerCommands = internalAction({
     error?: string
   }> => {
     const applicationId = process.env.DISCORD_APPLICATION_ID
-    const botToken = process.env.DISCORD_BOT_TOKEN
 
     if (!isNonEmptyString(applicationId)) {
       return { success: false, error: 'DISCORD_APPLICATION_ID not configured' }
-    }
-
-    if (!isNonEmptyString(botToken)) {
-      return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
     }
 
     console.log('[discord:admin] registering commands', {
@@ -109,14 +92,14 @@ export const registerCommands = internalAction({
       commands: COMMANDS.map((c) => c.name),
     })
 
-    const discord = createDiscordClient(botToken)
+    const discord = createDiscordClient()
 
     try {
-      const result = await discord(`/applications/${applicationId}/commands`, {
+      const raw = await discord<unknown>(`/applications/${applicationId}/commands`, {
         method: 'PUT',
         body: COMMANDS,
-        schema: z.array(RegisteredCommandSchema),
       })
+      const result = z.array(RegisteredCommandSchema).parse(raw)
 
       console.log('[discord:admin] commands registered', {
         count: result.length,
@@ -150,18 +133,11 @@ export const getApplicationInfo = internalAction({
     application?: ApplicationInfo
     error?: string
   }> => {
-    const botToken = process.env.DISCORD_BOT_TOKEN
-
-    if (!isNonEmptyString(botToken)) {
-      return { success: false, error: 'DISCORD_BOT_TOKEN not configured' }
-    }
-
-    const discord = createDiscordClient(botToken)
+    const discord = createDiscordClient()
 
     try {
-      const app = await discord('/applications/@me', {
-        schema: ApplicationInfoSchema,
-      })
+      const raw = await discord<unknown>('/applications/@me', { method: 'GET' })
+      const app = ApplicationInfoSchema.parse(raw)
 
       console.log('[discord:admin] application info', {
         id: app.id,

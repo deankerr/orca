@@ -6,12 +6,23 @@ import { api, internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
 import type { EntityChange } from '../changes'
-import type { ChannelDelivery, DiscordDelivery, DMDelivery } from '../discord/bot'
-import { sendDiscordDeliveries } from '../discord/bot'
+import { sendToChannel, sendToDM } from '../discord/client'
 import { buildMessages } from '../discord/messages'
 import type { DiscordPayload } from '../discord/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
+
+type Delivery =
+  | { type: 'channel'; channel_id: string; pattern: string; payloads: DiscordPayload[] }
+  | { type: 'dm'; user_id: string; pattern: string; payloads: DiscordPayload[] }
+
+const DELAY_BETWEEN_MESSAGES_MS = 1000
+
+const sleep = async (ms: number) =>
+  // oxlint-disable-next-line promise/avoid-new
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms)
+  })
 
 // Pattern matching — "*" for all, otherwise simple includes
 function matchPattern(pattern: string, slug: string): boolean {
@@ -35,8 +46,8 @@ function stampPayload(payload: DiscordPayload, pattern: string): DiscordPayload 
 function buildDeliveries(
   messages: { slug: string; payload: DiscordPayload }[],
   subscriptions: DiscordSubscription[],
-): DiscordDelivery[] {
-  const deliveries: DiscordDelivery[] = []
+): Delivery[] {
+  const deliveries: Delivery[] = []
 
   for (const sub of subscriptions) {
     const matching = messages.filter((m) => matchPattern(sub.pattern, m.slug))
@@ -47,25 +58,48 @@ function buildDeliveries(
     const payloads = matching.map((m) => stampPayload(m.payload, sub.pattern))
 
     if (sub.type === 'channel' && sub.channel_id) {
-      const delivery: ChannelDelivery = {
+      deliveries.push({
         type: 'channel',
         channel_id: sub.channel_id,
         pattern: sub.pattern,
         payloads,
-      }
-      deliveries.push(delivery)
+      })
     } else if (sub.type === 'dm') {
-      const delivery: DMDelivery = {
-        type: 'dm',
-        user_id: sub.user_id,
-        pattern: sub.pattern,
-        payloads,
-      }
-      deliveries.push(delivery)
+      deliveries.push({ type: 'dm', user_id: sub.user_id, pattern: sub.pattern, payloads })
     }
   }
 
   return deliveries
+}
+
+async function sendDeliveries(deliveries: Delivery[]): Promise<void> {
+  const totalPayloads = deliveries.reduce((sum, d) => sum + d.payloads.length, 0)
+  let sent = 0
+  let failed = 0
+
+  console.log('[discord:bot] starting', { deliveries: deliveries.length, payloads: totalPayloads })
+
+  for (const delivery of deliveries) {
+    for (const payload of delivery.payloads) {
+      try {
+        await (delivery.type === 'channel'
+          ? sendToChannel({ channelId: delivery.channel_id, payload })
+          : sendToDM({ userId: delivery.user_id, payload }))
+        sent += 1
+      } catch (error) {
+        failed += 1
+        console.error('[discord:bot] send failed', {
+          type: delivery.type,
+          pattern: delivery.pattern,
+          error,
+        })
+      }
+
+      await sleep(DELAY_BETWEEN_MESSAGES_MS)
+    }
+  }
+
+  console.log('[discord:bot] complete', { sent, failed })
 }
 
 // Main dispatcher action
@@ -74,12 +108,6 @@ export const run = internalAction({
     crawl_id: v.string(),
   },
   handler: async (ctx, args) => {
-    const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!isNonEmptyString(botToken)) {
-      console.log('[alerts:dispatcher] DISCORD_BOT_TOKEN not configured, skipping')
-      return
-    }
-
     const subscriptions: DiscordSubscription[] = await ctx.runQuery(
       internal.discord.subscriptions.getActive,
     )
@@ -121,7 +149,7 @@ export const run = internalAction({
     const deliveries = buildDeliveries(messages, subscriptions)
 
     if (deliveries.length > 0) {
-      await sendDiscordDeliveries(deliveries, botToken)
+      await sendDeliveries(deliveries)
     } else {
       console.log('[alerts:dispatcher] no matching deliveries')
     }
