@@ -56,7 +56,7 @@ export const run = internalAction({
 
     for (const target of targets) {
       try {
-        const topApps = await orFetch('/api/frontend/stats/top-apps-for-model', {
+        const topApps = await orFetch('/api/frontend/v1/stats/top-apps-for-model', {
           params: { permaslug: target.version_slug, variant: target.variant },
           schema: DataRecord,
         })

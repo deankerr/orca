@@ -23,7 +23,7 @@ export const run = internalAction({
   },
   returns: v.null(),
   handler: async (_ctx, args) => {
-    const data = await orFetch('/api/frontend/models/find', { schema: DataRecord })
+    const data = await orFetch('/api/frontend/v1/models/find', { schema: DataRecord })
     await storeR2Artifact({
       workflow: 'analytics',
       timestamp: args.timestamp,

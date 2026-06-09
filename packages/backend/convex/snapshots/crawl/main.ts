@@ -67,13 +67,13 @@ export type CrawlArchiveBundle = {
     models: Array<{
       model: ModelsArray[number]
       endpoints: EndpointsArray | FetchError
-      uptimes: Array<[string, DataRecordItem]>
-      apps: DataRecordItemArray // deprecated - no longer fetched
-      topApps?: DataRecordItem // new endpoint format
+      uptimes: Array<[string, DataRecordItem]> // deprecated
+      apps: DataRecordItemArray // deprecated
+      topApps?: DataRecordItem // deprecated
     }>
-    providers: DataRecordItemArray
-    modelAuthors: Array<DataRecordItem> // deprecated - no longer fetched
-    analytics?: DataRecordItem
+    providers: DataRecordItemArray // deprecated
+    modelAuthors: Array<DataRecordItem> // deprecated
+    analytics?: DataRecordItem // deprecated
   }
 }
 
@@ -132,17 +132,10 @@ export const run = internalAction({
       },
     }
 
-    // * providers
-    try {
-      bundle.data.providers = await orFetch('/api/frontend/all-providers', {
-        schema: DataRecordArray,
-      })
-    } catch (error) {
-      console.error('[crawl:providers]', { error: getErrorMessage(error) })
-    }
-
     // * models
-    const models = await orFetch('/api/frontend/models', { schema: ModelsDataRecordArray })
+    const models = await orFetch('/api/frontend/v1/catalog/models', {
+      schema: ModelsDataRecordArray,
+    })
 
     for (const model of models) {
       const modelData = await fetchModelData(model)
@@ -178,7 +171,7 @@ async function fetchModelData(model: z.infer<typeof ModelsDataRecordArray>[numbe
 
   // * endpoints
   try {
-    const endpoints = await orFetch('/api/frontend/stats/endpoint', {
+    const endpoints = await orFetch('/api/frontend/v1/stats/endpoint', {
       params: { permaslug: model.permaslug, variant: model.endpoint.variant },
       schema: EndpointsDataRecordArray,
     })
