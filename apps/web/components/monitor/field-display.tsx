@@ -112,7 +112,7 @@ function FieldUpdatedItem({
     <div className="flex flex-wrap items-center gap-x-1.5" data-change-id={field.change_id}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <span className={cn(label, 'line-through')}>{before}</span>
-      <span className={labelDimmer}>-&gt;</span>
+      <span className={labelDimmer}>→</span>
       <span className="text-foreground">{after}</span>
       {hasUnit && <FieldUnit>{unit}</FieldUnit>}
       {delta && <DeltaBadge delta={delta} />}
