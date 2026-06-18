@@ -86,6 +86,7 @@ const IGNORED_ENDPOINT_FIELDS = new Set([
   'multipart',
   'status',
   'mandatory_reasoning',
+  'supported_parameters',
 ])
 
 const EXCLUDED_PATHS = new Set(['variable_pricings'])
