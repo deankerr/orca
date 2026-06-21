@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 
-import { CapabilitiesCard } from './capabilities-card'
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
 import { ProviderComparisonCard } from './provider-comparison-card'
@@ -58,7 +57,6 @@ export function ModelPage({ modelId }: { modelId: string }) {
           <LoadingBadge label="Loading endpoints" />
         ) : (
           <>
-            <CapabilitiesCard model={model} />
             <ParameterComparisonCard endpoints={endpoints} />
             <ProviderComparisonCard endpoints={endpoints} />
 
