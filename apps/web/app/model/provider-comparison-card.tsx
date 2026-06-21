@@ -1,6 +1,6 @@
 'use client'
 
-import { EntityAvatar } from '@/components/shared/entity-avatar'
+import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { CardContent } from '@/components/ui/card'
 import {
@@ -57,19 +57,12 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
             {sorted.map((endpoint) => (
               <TableRow key={endpoint.id}>
                 <TableCell>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <EntityAvatar
-                      slug={endpoint.providerId}
-                      fallbackText={endpoint.providerName}
-                      className="size-7"
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{endpoint.providerName}</div>
-                      <div className="truncate font-mono text-xs text-muted-foreground">
-                        {endpoint.providerId}
-                      </div>
-                    </div>
-                  </div>
+                  <EntityIdentity
+                    slug={endpoint.providerId}
+                    name={endpoint.providerName}
+                    isAvailable={endpoint.unavailableAt === undefined}
+                    className="px-0 py-0"
+                  />
                 </TableCell>
                 <TableCell>
                   <Badge
