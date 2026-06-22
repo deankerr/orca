@@ -17,15 +17,15 @@ import type { ModelEndpoint } from './types'
 import { formatMtokPrice, formatNumber } from './utils'
 
 function getEndpointAvailability(endpoint: ModelEndpoint) {
-  if (endpoint.unavailableAt !== undefined) {
+  if (endpoint.unavailable_at !== undefined) {
     return 'Gone'
   }
 
-  if (endpoint.flags.disabled) {
+  if (endpoint.disabled) {
     return 'Disabled'
   }
 
-  if (endpoint.flags.deranked) {
+  if (endpoint.deranked) {
     return 'Deranked'
   }
 
@@ -35,8 +35,8 @@ function getEndpointAvailability(endpoint: ModelEndpoint) {
 export function ProviderComparisonCard({ endpoints }: { endpoints: readonly ModelEndpoint[] }) {
   const sorted = [...endpoints].toSorted(
     (left, right) =>
-      Number(left.unavailableAt !== undefined) - Number(right.unavailableAt !== undefined) ||
-      left.providerName.localeCompare(right.providerName),
+      Number(left.unavailable_at !== undefined) - Number(right.unavailable_at !== undefined) ||
+      left.provider.name.localeCompare(right.provider.name),
   )
 
   return (
@@ -55,34 +55,34 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
           </TableHeader>
           <TableBody>
             {sorted.map((endpoint) => (
-              <TableRow key={endpoint.id}>
+              <TableRow key={endpoint.uuid}>
                 <TableCell>
                   <EntityIdentity
-                    slug={endpoint.providerId}
-                    name={endpoint.providerName}
-                    isAvailable={endpoint.unavailableAt === undefined}
+                    slug={endpoint.provider.slug}
+                    name={endpoint.provider.name}
+                    isAvailable={endpoint.unavailable_at === undefined}
                     className="px-0 py-0"
                   />
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={endpoint.unavailableAt === undefined ? 'outline' : 'destructive'}
+                    variant={endpoint.unavailable_at === undefined ? 'outline' : 'destructive'}
                     className="rounded-sm"
                   >
                     {getEndpointAvailability(endpoint)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {formatMtokPrice(endpoint.pricing.textInput)}
+                  {formatMtokPrice(endpoint.pricing.text_input)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {formatMtokPrice(endpoint.pricing.textOutput)}
+                  {formatMtokPrice(endpoint.pricing.text_output)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {formatNumber(endpoint.contextLength)}
+                  {formatNumber(endpoint.context_length)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {formatNumber(endpoint.maxOutput)}
+                  {formatNumber(endpoint.max_output)}
                 </TableCell>
               </TableRow>
             ))}

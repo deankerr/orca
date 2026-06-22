@@ -1,10 +1,10 @@
 'use client'
 
-import { api } from '@orca/backend-experimental/convex/_generated/api'
+import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from 'convex/react'
 import { ArrowLeft, Boxes } from 'lucide-react'
+import ms from 'ms'
 import Link from 'next/link'
-import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,19 +21,16 @@ import { Spinner } from '@/components/ui/spinner'
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
 import { ProviderComparisonCard } from './provider-comparison-card'
-import { ProviderStatsCard } from './provider-stats-card'
 
-const DAY_MS = 24 * 60 * 60 * 1000
-const UNAVAILABLE_WINDOW_MS = 30 * DAY_MS
+const UNAVAILABLE_WINDOW_MS = ms('30d')
 
 export function ModelPage({ modelId }: { modelId: string }) {
-  const [now] = useState(() => Date.now())
-  const model = useQuery(api.models.get, {
-    id: modelId,
+  const model = useQuery(api.models.getBySlug, {
+    slug: modelId,
   })
   const endpoints = useQuery(api.endpoints.listForModel, {
-    modelId,
-    unavailableSince: now - UNAVAILABLE_WINDOW_MS,
+    modelSlug: modelId,
+    maxTimeUnavailable: UNAVAILABLE_WINDOW_MS,
   })
 
   if (model === undefined) {
@@ -59,20 +56,6 @@ export function ModelPage({ modelId }: { modelId: string }) {
           <>
             <ParameterComparisonCard endpoints={endpoints} />
             <ProviderComparisonCard endpoints={endpoints} />
-
-            <ProviderStatsCard
-              endpoints={endpoints}
-              metric="p50Latency"
-              modelId={model.id}
-              title="P50 Latency"
-            />
-
-            <ProviderStatsCard
-              endpoints={endpoints}
-              metric="p50Throughput"
-              modelId={model.id}
-              title="P50 Throughput"
-            />
           </>
         )}
       </div>
@@ -99,8 +82,7 @@ function NotFoundState({ modelId }: { modelId: string }) {
           </EmptyMedia>
           <EmptyTitle>Model not found</EmptyTitle>
           <EmptyDescription>
-            No current experimental catalog model matched{' '}
-            <code className="font-mono">{modelId}</code>.
+            No current catalog model matched <code className="font-mono">{modelId}</code>.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
