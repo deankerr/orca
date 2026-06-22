@@ -72,6 +72,21 @@ export function ModelHeader({ model }: { model: Model }) {
               )}
             </div>
 
+            <dl className="mt-3 flex min-w-0 flex-wrap gap-x-4 gap-y-2 text-xs">
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="text-muted-foreground">Input</dt>
+                <dd className="min-w-0 truncate font-mono">{model.inputModalities.join(', ')}</dd>
+              </div>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="text-muted-foreground">Output</dt>
+                <dd className="min-w-0 truncate font-mono">{model.outputModalities.join(', ')}</dd>
+              </div>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="text-muted-foreground">Reasoning</dt>
+                <dd className="font-mono">{model.reasoning ? 'yes' : 'no'}</dd>
+              </div>
+            </dl>
+
             {model.description !== '' && (
               <p className="mt-4 max-w-4xl text-sm leading-6 text-muted-foreground">
                 <InlineMarkdown text={model.description} />

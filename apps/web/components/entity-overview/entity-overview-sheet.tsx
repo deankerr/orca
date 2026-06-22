@@ -198,7 +198,7 @@ function OverviewLayout({
       {/* Header */}
       <div className="border-b p-6">
         <div className="mb-4 font-mono text-[0.625rem] tracking-widest text-muted-foreground uppercase">
-          {type}
+          <Link href={`/model/${slug}`}>{type}</Link>
         </div>
 
         <EntityHeader name={name} slug={slug} />
