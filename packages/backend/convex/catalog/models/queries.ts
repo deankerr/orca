@@ -6,10 +6,19 @@ import { createModelProjection } from './projection'
 const TABLE_NAME = 'or_views_models'
 
 export const list = defineQuerySpec({
-  args: v.object({}),
-  async handler(ctx, _args) {
+  args: v.object({
+    requireTextOutput: v.optional(v.boolean()),
+  }),
+  async handler(ctx, args) {
     const docs = await ctx.db.query(TABLE_NAME).withIndex('by_or_added_at').order('desc').collect()
-    return docs.map((doc) => createModelProjection(doc))
+
+    // Narrow public selection controls to models that can produce text.
+    const filteredDocs =
+      args.requireTextOutput === true
+        ? docs.filter((doc) => doc.output_modalities.includes('text'))
+        : docs
+
+    return filteredDocs.map((doc) => createModelProjection(doc))
   },
 })
 
