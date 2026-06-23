@@ -11,7 +11,7 @@ type AvailabilityShape = {
   updated_at: number
 }
 
-function getCurrentCatalogTimestamp(items: AvailabilityShape[]) {
+export function getCurrentCatalogTimestamp(items: AvailabilityShape[]) {
   let currentTime = 0
 
   for (const item of items) {
@@ -23,15 +23,21 @@ function getCurrentCatalogTimestamp(items: AvailabilityShape[]) {
   return currentTime
 }
 
+type AvailabilityWindowOptions = {
+  currentTime?: number
+  maxTimeUnavailable?: number
+}
+
 export function filterByAvailabilityWindow<T extends AvailabilityShape>(
   items: T[],
-  maxTimeUnavailable?: number,
+  options: AvailabilityWindowOptions = {},
 ) {
-  if (!R.isDefined(maxTimeUnavailable)) {
+  if (!R.isDefined(options.maxTimeUnavailable)) {
     return items
   }
 
-  const currentTime = getCurrentCatalogTimestamp(items)
+  const { maxTimeUnavailable } = options
+  const currentTime = options.currentTime ?? getCurrentCatalogTimestamp(items)
 
   return items.filter(
     (item) =>

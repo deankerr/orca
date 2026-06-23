@@ -9,7 +9,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn, withEnvironmentPrefix } from '@/lib/utils'
 
 import { ConvexClientProvider } from './convex-client-provider'
-import { ExperimentalFeaturesProvider } from './experimental-features-provider'
 
 const geistSans = Geist({
   variable: '--font-sans',
@@ -43,12 +42,10 @@ export default function RootLayout({
       <body>
         <NuqsAdapter>
           <ConvexClientProvider>
-            <ExperimentalFeaturesProvider>
-              <TooltipProvider>
-                <AppShell>{children}</AppShell>
-                <Toaster position="top-center" theme="dark" />
-              </TooltipProvider>
-            </ExperimentalFeaturesProvider>
+            <TooltipProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster position="top-center" theme="dark" />
+            </TooltipProvider>
           </ConvexClientProvider>
         </NuqsAdapter>
       </body>

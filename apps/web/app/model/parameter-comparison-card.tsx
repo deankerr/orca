@@ -43,7 +43,7 @@ function buildParameterMatrix(endpoints: readonly ModelEndpoint[]) {
   const supportCounts = new Map<string, number>()
 
   for (const endpoint of endpoints) {
-    for (const parameter of endpoint.supportedParameters) {
+    for (const parameter of endpoint.supported_parameters) {
       supportCounts.set(parameter, (supportCounts.get(parameter) ?? 0) + 1)
     }
   }
@@ -56,8 +56,8 @@ function buildParameterMatrix(endpoints: readonly ModelEndpoint[]) {
   // Match Provider Comparison: available first, then alphabetical.
   const sortedEndpoints = [...endpoints].toSorted(
     (left, right) =>
-      Number(left.unavailableAt !== undefined) - Number(right.unavailableAt !== undefined) ||
-      left.providerName.localeCompare(right.providerName),
+      Number(left.unavailable_at !== undefined) - Number(right.unavailable_at !== undefined) ||
+      left.provider.name.localeCompare(right.provider.name),
   )
 
   return { parameters, sortedEndpoints }
@@ -197,13 +197,13 @@ export function ParameterComparisonCard({ endpoints }: { endpoints: readonly Mod
               </div>
 
               {sortedEndpoints.map((endpoint) => {
-                const supported = new Set(endpoint.supportedParameters)
-                const isUnavailable = endpoint.unavailableAt !== undefined
-                const isHoveredRow = hoveredRowId === endpoint.id
+                const supported = new Set(endpoint.supported_parameters)
+                const isUnavailable = endpoint.unavailable_at !== undefined
+                const isHoveredRow = hoveredRowId === endpoint.uuid
 
                 return (
                   <div
-                    key={endpoint.id}
+                    key={endpoint.uuid}
                     role="row"
                     style={{ minHeight: 'var(--row-h)' }}
                     className={cn(
@@ -218,12 +218,12 @@ export function ParameterComparisonCard({ endpoints }: { endpoints: readonly Mod
                         hoveredRowId !== null && !isHoveredRow && 'opacity-50',
                       )}
                       onMouseEnter={() => {
-                        setHover({ kind: 'row', endpointId: endpoint.id })
+                        setHover({ kind: 'row', endpointId: endpoint.uuid })
                       }}
                     >
                       <EntityIdentity
-                        slug={endpoint.providerId}
-                        name={endpoint.providerName}
+                        slug={endpoint.provider.slug}
+                        name={endpoint.provider.name}
                         className="px-0 py-0"
                       />
                     </div>
@@ -232,16 +232,16 @@ export function ParameterComparisonCard({ endpoints }: { endpoints: readonly Mod
                       const isHoveredColumn = hoveredColumn === index
                       const isHoveredCell =
                         hover?.kind === 'cell' &&
-                        hover.endpointId === endpoint.id &&
+                        hover.endpointId === endpoint.uuid &&
                         hover.column === index
 
                       return (
                         <div
                           key={parameter}
                           role="gridcell"
-                          aria-label={`${endpoint.providerName} ${isSupported ? 'supports' : 'does not support'} ${parameter}`}
+                          aria-label={`${endpoint.provider.name} ${isSupported ? 'supports' : 'does not support'} ${parameter}`}
                           onMouseEnter={() => {
-                            setHover({ kind: 'cell', endpointId: endpoint.id, column: index })
+                            setHover({ kind: 'cell', endpointId: endpoint.uuid, column: index })
                           }}
                           className={cn(
                             'flex items-center justify-center',

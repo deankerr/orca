@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
 
-import { ExpConvexClientProvider } from '@/app/exp-convex-client-provider'
-
 import { ModelPage } from '../model-page'
 
 type PageProps = {
@@ -23,9 +21,5 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function Page({ params }: PageProps) {
   const modelId = getModelId(await params)
 
-  return (
-    <ExpConvexClientProvider>
-      <ModelPage modelId={modelId} />
-    </ExpConvexClientProvider>
-  )
+  return <ModelPage modelId={modelId} />
 }
