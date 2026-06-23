@@ -3,10 +3,10 @@
 import { api } from '@orca/backend/convex/_generated/api'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
-import { EntityBadge } from '@/components/shared/entity-badge'
+import { EntityIdentity } from '@/components/shared/entity-identity'
 import { ExternalLink } from '@/components/shared/external-link'
 import { useCachedQuery } from '@/hooks/use-cached-query'
-import { cn, getConvexHttpUrl } from '@/lib/utils'
+import { getConvexHttpUrl } from '@/lib/utils'
 
 export default function Page() {
   const models = useCachedQuery(api.models.list, {}, 'models-list')
@@ -37,14 +37,13 @@ export default function Page() {
           {models
             ?.toSorted((a, b) => a.name.localeCompare(b.name))
             .map((m) => (
-              <div
-                key={m._id}
-                className={cn(
-                  'flex w-64 justify-between gap-2 border px-1 py-1',
-                  m.unavailable_at !== undefined && 'opacity-50',
-                )}
-              >
-                <EntityBadge name={m.name} slug={m.slug} />
+              <div key={m._id} className="flex w-64 justify-between gap-2 border px-1 py-1">
+                <EntityIdentity
+                  name={m.name}
+                  slug={m.slug}
+                  isAvailable={m.unavailable_at === undefined}
+                  className="min-w-0 flex-1 px-0 py-0"
+                />
                 <div className="grid shrink-0 font-mono text-xs">
                   <ExternalLink href={`https://openrouter.ai/api/v1/models/${m.slug}/endpoints`}>
                     V1
@@ -64,14 +63,13 @@ export default function Page() {
           {providers
             ?.toSorted((a, b) => a.name.localeCompare(b.name))
             .map((p) => (
-              <div
-                key={p._id}
-                className={cn(
-                  'flex w-64 justify-between gap-2 border px-1 py-1',
-                  p.unavailable_at !== undefined && 'opacity-50',
-                )}
-              >
-                <EntityBadge name={p.name} slug={p.slug} />
+              <div key={p._id} className="flex w-64 justify-between gap-2 border px-1 py-1">
+                <EntityIdentity
+                  name={p.name}
+                  slug={p.slug}
+                  isAvailable={p.unavailable_at === undefined}
+                  className="min-w-0 flex-1 px-0 py-0"
+                />
               </div>
             ))}
         </div>
