@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
-import { EntityBadge, EntityBadgeSkeleton } from './entity-badge'
+import { EntityIdentity, EntityIdentitySkeleton } from './entity-identity'
 
 type EntityItem = {
   name: string
@@ -114,7 +114,7 @@ function EntityCombobox({
     if (isPending) {
       return (
         <div className="flex p-2">
-          <EntityBadgeSkeleton className="flex-1" />
+          <EntityIdentitySkeleton className="flex-1" />
         </div>
       )
     }
@@ -148,14 +148,9 @@ function EntityCombobox({
         }
       >
         {selected ? (
-          <EntityBadge
-            name={selected.name}
-            slug={selected.slug}
-            clickToCopy={false}
-            className="flex-1"
-          />
+          <EntityIdentity name={selected.name} slug={selected.slug} className="flex-1" />
         ) : value && isPending ? (
-          <EntityBadgeSkeleton className="flex-1" />
+          <EntityIdentitySkeleton className="flex-1" />
         ) : (
           <span className="w-full text-muted-foreground">{placeholder}</span>
         )}
@@ -264,12 +259,7 @@ function VirtualizedEntityList({
                 onSelect(item)
               }}
             >
-              <EntityBadge
-                name={item.name}
-                slug={item.slug}
-                clickToCopy={false}
-                className="flex-1"
-              />
+              <EntityIdentity name={item.name} slug={item.slug} className="flex-1" />
               {isSelected && <CheckIcon className="size-4 shrink-0 text-primary" />}
             </button>
           )
