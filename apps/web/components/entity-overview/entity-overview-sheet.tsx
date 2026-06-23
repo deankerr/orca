@@ -7,7 +7,9 @@ import { ActivityIcon, AlertTriangleIcon, ExternalLinkIcon, SearchIcon } from 'l
 import Link from 'next/link'
 import * as R from 'remeda'
 
+import { useExperimentalFeatures } from '@/app/experimental-features-provider'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
+import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -190,6 +192,8 @@ function OverviewLayout({
   children: React.ReactNode
 }) {
   const { close } = useEntityOverview()
+  const { enabled: experimentalFeaturesEnabled } = useExperimentalFeatures()
+  const showModelPageLink = experimentalFeaturesEnabled && type === 'model'
 
   return (
     <>
@@ -198,7 +202,7 @@ function OverviewLayout({
       {/* Header */}
       <div className="border-b p-6">
         <div className="mb-4 font-mono text-[0.625rem] tracking-widest text-muted-foreground uppercase">
-          <Link href={`/model/${slug}`}>{type}</Link>
+          {type}
         </div>
 
         <EntityHeader name={name} slug={slug} />
@@ -225,6 +229,16 @@ function OverviewLayout({
             <ActivityIcon className="size-3" />
           </ActionLink>
         </div>
+
+        {showModelPageLink && (
+          <Button
+            nativeButton={false}
+            variant="outline"
+            render={<Link href={`/model/${slug}`} onClick={close} />}
+          >
+            Open model page
+          </Button>
+        )}
       </div>
     </>
   )
