@@ -188,7 +188,9 @@ export function ModelCombobox({
   placeholder = 'Filter by model...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { data: models, isPending } = useQuery(convexQuery(api.models.list, {}))
+  const { data: models, isPending } = useQuery(
+    convexQuery(api.models.list, { requireTextOutput: true }),
+  )
 
   return (
     <EntityCombobox

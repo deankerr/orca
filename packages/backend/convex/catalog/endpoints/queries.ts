@@ -9,10 +9,18 @@ const TABLE_NAME = 'or_views_endpoints'
 export const list = defineQuerySpec({
   args: v.object({
     maxTimeUnavailable: v.optional(v.number()),
+    requireTextOutput: v.optional(v.boolean()),
   }),
   async handler(ctx, args) {
     const docs = await ctx.db.query(TABLE_NAME).collect()
-    return filterByAvailabilityWindow(createEndpointProjections(docs), {
+
+    // Narrow public browsing views to endpoints whose model can produce text.
+    const filteredDocs =
+      args.requireTextOutput === true
+        ? docs.filter((doc) => doc.model.output_modalities.includes('text'))
+        : docs
+
+    return filterByAvailabilityWindow(createEndpointProjections(filteredDocs), {
       maxTimeUnavailable: args.maxTimeUnavailable,
     })
   },
