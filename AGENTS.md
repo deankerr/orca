@@ -65,11 +65,6 @@ Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely 
 
 - `apps/web` Vercel production and preview environments
 
-## Backend Rewrite
-
-- `packages/backend-experimental`
-- Greenfield re-implementation, no production deployment.
-
 ## Entity Logos
 
 - `packages/entity-logos`

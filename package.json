@@ -12,7 +12,6 @@
     "check": "bun --bun oxlint --type-check --type-aware --report-unused-disable-directives . && bun --bun oxfmt --check . && echo '✓ check passed'",
     "dev": "turbo run dev",
     "dev:backend": "turbo run dev --filter=@orca/backend",
-    "dev:backend-experimental": "turbo run dev --filter=@orca/backend-experimental",
     "dev:next": "turbo run dev --filter=web",
     "fix": "bun --bun oxlint --type-check --type-aware --report-unused-disable-directives --fix . && bun --bun oxfmt --write . && echo '✓ fix passed'",
     "knip": "knip",
