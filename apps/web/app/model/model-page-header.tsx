@@ -46,11 +46,7 @@ export function ModelHeader({ model }: { model: Model }) {
         </div>
 
         <div className="flex min-w-0 gap-3">
-          <EntityAvatar
-            slug={model.slug}
-            fallbackText={model.name}
-            className="mt-1 size-11 rounded-md"
-          />
+          <EntityAvatar slug={model.slug} className="mt-1 size-11 rounded-md" />
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold tracking-normal md:text-3xl">
               {model.name}

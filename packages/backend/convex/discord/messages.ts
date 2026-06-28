@@ -18,7 +18,7 @@ import type {
   ProviderChange,
 } from '../changes'
 import { COLORS } from './constants'
-import { getAuthorUrl, getColorIconUrl } from './utils'
+import { getAuthorUrl, getLogoIconUrl } from './utils'
 
 // -- Characters and symbols
 
@@ -83,7 +83,7 @@ function buildEmbed(change: EntityChange): EmbedBuilder | null {
 function modelAuthor(model: ModelChange) {
   return {
     name: model.model.slug,
-    iconURL: getColorIconUrl(model.model.slug),
+    iconURL: getLogoIconUrl(model.model.slug),
     url: getAuthorUrl(model.model.slug),
   }
 }
@@ -132,7 +132,7 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
 function endpointAuthor(ep: EndpointChange) {
   return {
     name: ep.model.slug,
-    iconURL: getColorIconUrl(ep.model.slug),
+    iconURL: getLogoIconUrl(ep.model.slug),
     url: getAuthorUrl(ep.model.slug, ep.endpoint.uuid),
   }
 }
@@ -140,7 +140,7 @@ function endpointAuthor(ep: EndpointChange) {
 function endpointFooter(ep: EndpointChange, cross = false) {
   return {
     text: cross ? `${ep.provider.slug}${CHARS.cross}` : ep.provider.slug,
-    iconURL: getColorIconUrl(ep.provider.slug),
+    iconURL: getLogoIconUrl(ep.provider.slug),
   }
 }
 
@@ -186,7 +186,7 @@ function buildProviderEmbed(provider: ProviderChange): EmbedBuilder | null {
   const name = provider.provider.name ?? provider.provider.slug
   const author = {
     name: provider.provider.slug,
-    iconURL: getColorIconUrl(provider.provider.slug),
+    iconURL: getLogoIconUrl(provider.provider.slug),
   }
 
   if (provider.event.kind === 'entity_available') {

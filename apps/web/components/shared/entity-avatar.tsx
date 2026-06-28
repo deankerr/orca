@@ -1,19 +1,19 @@
-import { resolveLogo } from '@orca/entity-logos'
+import { entityLogoUrl } from '@orca/backend/shared/entity-logo'
 import Image from 'next/image'
 
 import { cn } from '@/lib/utils'
 
+const LOGO_SERVICE_ORIGIN =
+  process.env.NEXT_PUBLIC_ENTITY_LOGO_SERVICE_ORIGIN ?? 'http://localhost:8787'
+
 export function EntityAvatar({
   slug,
-  fallbackText,
   className,
   ...props
 }: {
   slug: string
-  fallbackText?: string
 } & React.ComponentProps<'span'>) {
-  const logo = resolveLogo(slug)
-  const logoPath = logo?.avatarPath ?? logo?.colorPath
+  const logoPath = entityLogoUrl({ origin: LOGO_SERVICE_ORIGIN, slug, variant: 'avatar' })
 
   return (
     <span
@@ -24,13 +24,7 @@ export function EntityAvatar({
       )}
       {...props}
     >
-      {logoPath === undefined ? (
-        <span className="font-mono text-[55cqi] text-foreground/90 uppercase">
-          {(fallbackText ?? slug).replaceAll(/[^a-zA-Z0-9]/g, '').slice(0, 2)}
-        </span>
-      ) : (
-        <Image src={logoPath} alt="" fill sizes="40px" className="object-contain" />
-      )}
+      <Image src={logoPath} alt="" fill unoptimized sizes="40px" className="object-contain" />
     </span>
   )
 }

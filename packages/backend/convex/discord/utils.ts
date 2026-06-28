@@ -1,6 +1,6 @@
-import { resolveLogo } from '@orca/entity-logos'
 import type { APIEmbed, RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
+import { entityLogoUrl } from '../../shared/entity-logo'
 import { isNonEmptyString } from '../../shared/utils'
 import { getEnv } from '../lib/env'
 
@@ -14,12 +14,8 @@ export function getAuthorUrl(slug: string, uuid?: string): string {
   return `${baseUrl}/?q=${slug}${uuidParam}`
 }
 
-export function getColorIconUrl(model_slug: string): string | undefined {
-  const colorPath = resolveLogo(model_slug)?.colorPath
-  if (!isNonEmptyString(colorPath)) {
-    return undefined
-  }
-
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  return `${baseUrl}/_next/image?url=${colorPath}&w=32&q=75`
+// Discord renders embed icons from absolute URLs, so always use the deployed logo service
+// origin (never localhost) and the dark variant that reads well on Discord's dark surfaces.
+export function getLogoIconUrl(slug: string): string {
+  return entityLogoUrl({ origin: getEnv('ENTITY_LOGO_SERVICE_ORIGIN'), slug, variant: 'dark' })
 }
