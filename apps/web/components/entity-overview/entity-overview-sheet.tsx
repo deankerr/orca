@@ -43,7 +43,7 @@ function EntityHeader({ slug, name }: { slug: string; name: string }) {
 
   return (
     <div className="flex gap-4">
-      <EntityAvatar slug={slug} fallbackText={name} className="size-11 shrink-0 rounded-md" />
+      <EntityAvatar slug={slug} className="size-11 shrink-0 rounded-md" />
       <div className="min-w-0">
         <div className="truncate text-base leading-snug font-semibold">{name}</div>
         <button
