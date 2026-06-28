@@ -11,6 +11,7 @@ export default defineConfig({
     '.claude/skills',
     '**/components/evilcharts',
     '**/components/ui',
+    '**/worker-configuration.d.ts',
   ],
   jsPlugins: [
     {

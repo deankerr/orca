@@ -1,0 +1,23 @@
+{
+  "name": "entity-logo-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run src/build.ts",
+    "deploy": "bun run build && bun run types && wrangler deploy",
+    "dev": "bun run build && bun run types && wrangler dev",
+    "test": "bun test",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "@lobehub/icons-static-avatar": "1.8.0",
+    "@lobehub/icons-static-webp": "1.91.0",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "sharp": "^0.34.5",
+    "typescript": "catalog:",
+    "wrangler": "^4.0.0",
+    "zod": "catalog:"
+  }
+}

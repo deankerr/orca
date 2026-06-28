@@ -1,0 +1,18 @@
+{
+  "aliases": {
+    "amazon": "nova",
+    "amazonbedrock": "bedrock",
+    "arcee-ai": "arcee",
+    "bytedance-seed": "seed",
+    "google-ai-studio": "aistudio",
+    "google-vertex": "vertexai",
+    "ibm-granite": "ibm",
+    "meta-llama": "meta",
+    "mistralai": "mistral",
+    "moonshotai": "moonshot",
+    "nebius-fast": "nebius",
+    "rekaai": "reka",
+    "sambanova-turbo": "sambanova",
+    "xiaomi": "xiaomimimo"
+  }
+}

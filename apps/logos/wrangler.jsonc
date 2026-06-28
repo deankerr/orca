@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "entity-logo-service",
+  "main": "src/worker.ts",
+  // Keep this at the newest date supported by the pinned Wrangler/workerd pair.
+  "compatibility_date": "2026-06-24",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

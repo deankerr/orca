@@ -9,6 +9,7 @@ export default defineConfig({
     '.claude/skills',
     '**/components/ui',
     '**/components/evilcharts',
+    '**/worker-configuration.d.ts',
   ],
   semi: false,
   singleQuote: true,
