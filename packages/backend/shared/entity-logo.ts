@@ -15,12 +15,12 @@ const MODEL_LOGO_KEYS_BY_AUTHOR: Record<string, readonly string[]> = {
 
 export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 
-// Derive the public logo key from an OpenRouter entity slug. Keys are lowercase and
-// dash-free; an empty key means the slug had no usable author segment.
+// Derive the public logo key from an OpenRouter entity slug. Keys preserve the upstream
+// author/provider spelling; an empty key means the slug had no usable author segment.
 export function entityLogoKey(slug: string): string {
   const [author = '', model = ''] = slug.toLowerCase().split('/')
   const modelKey = MODEL_LOGO_KEYS_BY_AUTHOR[author]?.find((key) => model.includes(key))
-  return (modelKey ?? author).replaceAll('-', '')
+  return modelKey ?? author
 }
 
 // Build the logo-service URL for a slug. The service returns its own fallback image for

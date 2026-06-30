@@ -58,7 +58,7 @@ type BuildFixture = {
 test('builds reviewable static output through the build module interface', async () => {
   const fixture = await createBuildFixture({
     aliases: {
-      sharedalias: 'shared',
+      'shared-alias': 'shared',
     },
   })
   const logs: string[] = []
@@ -72,7 +72,7 @@ test('builds reviewable static output through the build module interface', async
       sourcePackageRoots: fixture.sourcePackageRoots,
     })
 
-    expect(result.sourceAssetsWritten).toBe(10)
+    expect(result.sourceAssetsWritten).toBe(13)
     expect(result.aliasAssetsWritten).toBe(3)
     expect(result.shadowedManualAssets).toHaveLength(3)
     expect(result.manualSourceCoverageWarnings).toEqual([
@@ -88,7 +88,7 @@ test('builds reviewable static output through the build module interface', async
     expect(
       logs.filter((line) => line.startsWith('Warning: manual logo asset shadowed')),
     ).toHaveLength(3)
-    expect(logs.at(-1)).toBe('Built 13 logo assets into dist/v1 (3 manual assets shadowed)')
+    expect(logs.at(-1)).toBe('Built 16 logo assets into dist/v1 (3 manual assets shadowed)')
 
     const manifest = await readManifest(fixture.appRoot)
     expect(manifest.version).toBe('v1')
@@ -109,21 +109,28 @@ test('builds reviewable static output through the build module interface', async
     expect(manualOnly.dark?.source).toBe('sources/base/manualonly.svg')
     expect(manualOnly.avatar?.source).toBe('sources/base/manualonly.svg')
 
+    const manualDashed = findLogo(manifest, 'manual-dashed')
+    expect(manualDashed.light?.source).toBe('sources/base/manual-dashed.svg')
+    expect(manualDashed.dark?.source).toBe('sources/base/manual-dashed.svg')
+    expect(manualDashed.avatar?.source).toBe('sources/base/manual-dashed.svg')
+
     const overridden = findLogo(manifest, 'overridden')
     expect(overridden.light?.source).toBe('sources/base/overridden.svg')
     expect(overridden.dark?.source).toBe('sources/base/overridden.svg')
     expect(overridden.avatar?.source).toBe('sources/avatar/overridden.svg')
 
-    const alias = findLogo(manifest, 'sharedalias')
+    const alias = findLogo(manifest, 'shared-alias')
     expect(alias.aliasOf).toBe('shared')
-    expect(alias.light?.file).toBe('v1/light/sharedalias.webp')
-    expect(alias.dark?.file).toBe('v1/dark/sharedalias.webp')
-    expect(alias.avatar?.file).toBe('v1/avatar/sharedalias.webp')
+    expect(alias.light?.file).toBe('v1/light/shared-alias.webp')
+    expect(alias.dark?.file).toBe('v1/dark/shared-alias.webp')
+    expect(alias.avatar?.file).toBe('v1/avatar/shared-alias.webp')
 
     expect(manifest.logos.find((logo) => logo.key === 'ignored')).toBeUndefined()
+    expect(manifest.logos.find((logo) => logo.key === 'manualdashed')).toBeUndefined()
     await expectWebpOutput(fixture.appRoot, 'v1/light/shared.webp')
-    await expectWebpOutput(fixture.appRoot, 'v1/light/sharedalias.webp')
+    await expectWebpOutput(fixture.appRoot, 'v1/light/shared-alias.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/manualonly.webp')
+    await expectWebpOutput(fixture.appRoot, 'v1/light/manual-dashed.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/avatar/overridden.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/partial.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/fallback.webp')
@@ -190,6 +197,7 @@ async function createBuildFixture(args: {
   await writeWebp(join(avatarRoot, 'avatars', 'shared.webp'), '#38bdf8')
 
   await writeSvg(join(appRoot, 'sources', 'base', 'manualonly.svg'), '#f59e0b')
+  await writeSvg(join(appRoot, 'sources', 'base', 'manual-dashed.svg'), '#22c55e')
   await writeSvg(join(appRoot, 'sources', 'base', 'overridden.svg'), '#64748b')
   await writeSvg(join(appRoot, 'sources', 'base', 'shared.svg'), '#a855f7')
   await writeSvg(join(appRoot, 'sources', 'avatar', 'overridden.svg'), '#f97316')

@@ -188,9 +188,9 @@ function createBuildContext(options: BuildLogosOptions): BuildContext {
   }
 }
 
-// Public keys are lowercase, extension-free, and dash-free.
+// Public keys are lowercase and extension-free; provider punctuation stays part of the contract.
 function normalizeLogoKey(input: string): string {
-  return input.replace(FILE_EXTENSION, '').toLowerCase().replaceAll('-', '')
+  return input.replace(FILE_EXTENSION, '').toLowerCase()
 }
 
 // Only bare icons and direct color variants are eligible.
