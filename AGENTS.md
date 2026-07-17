@@ -67,6 +67,6 @@ Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely 
 
 ## Entity Logos
 
-- `packages/entity-logos`
-- Collects logo assets from multiple sources
-- Resolves entity slugs at runtime for backend and frontend
+- `apps/logos`
+- Builds and serves logo assets through a standalone Cloudflare Worker
+- Shared slug-to-service-URL resolution lives in `packages/backend/shared/entity-logo.ts`

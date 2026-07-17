@@ -22,11 +22,11 @@ It's aimed at people who work with OpenRouter and LLMs directly — the kind of 
 
 Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage, scheduling, the crawl pipeline, Discord, and the public API.
 
-| Workspace               | Role                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| `apps/web`              | Next.js 16 / React 19 frontend — data grid, monitor, model pages, public API docs page      |
-| `packages/backend`      | Convex backend — schema, crons, snapshot pipeline, change tracking, Discord bot, public API |
-| `packages/entity-logos` | Resolves provider/author logo assets from multiple sources, with runtime slug mapping       |
+| Workspace          | Role                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `apps/logos`       | Cloudflare Worker serving generated provider and model logo assets                          |
+| `apps/web`         | Next.js 16 / React 19 frontend — data grid, monitor, model pages, public API docs page      |
+| `packages/backend` | Convex backend — schema, crons, snapshot pipeline, change tracking, Discord bot, public API |
 
 ### Data pipeline
 

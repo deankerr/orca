@@ -16,7 +16,7 @@
     "fix": "bun --bun oxlint --type-check --type-aware --report-unused-disable-directives --fix . && bun --bun oxfmt --write . && echo '✓ fix passed'",
     "knip": "knip",
     "knip:production": "knip --production",
-    "logos": "bun packages/entity-logos/src/cli.ts",
+    "logos": "bun run --cwd apps/logos build",
     "release": "turbo run release --filter=web",
     "start": "turbo run start --filter=web"
   },

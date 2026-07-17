@@ -15,7 +15,6 @@ import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
 import type * as analysis_changes from "../analysis/changes.js";
 import type * as analysis_fields from "../analysis/fields.js";
-import type * as analysis_logos from "../analysis/logos.js";
 import type * as analysis_stats from "../analysis/stats.js";
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
 import type * as catalog_endpoints_projection from "../catalog/endpoints/projection.js";
@@ -90,7 +89,6 @@ declare const fullApi: ApiFromModules<{
   "alerts/dispatcher": typeof alerts_dispatcher;
   "analysis/changes": typeof analysis_changes;
   "analysis/fields": typeof analysis_fields;
-  "analysis/logos": typeof analysis_logos;
   "analysis/stats": typeof analysis_stats;
   "catalog/endpoints/index": typeof catalog_endpoints_index;
   "catalog/endpoints/projection": typeof catalog_endpoints_projection;

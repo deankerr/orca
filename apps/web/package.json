@@ -14,7 +14,6 @@
     "@base-ui/react": "^1.4.1",
     "@convex-dev/react-query": "^0.1.0",
     "@orca/backend": "workspace:*",
-    "@orca/entity-logos": "workspace:*",
     "@posthog/nextjs-config": "^1.9.16",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-use-controllable-state": "^1.2.2",

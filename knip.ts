@@ -11,9 +11,6 @@ const config: KnipConfig = {
       ignoreBinaries: ['gh'],
       ignoreDependencies: ['remeda', '@radix-ui/colors', 'postcss'],
     },
-    'packages/entity-logos': {
-      ignoreDependencies: ['@lobehub/icons-static-avatar', '@lobehub/icons-static-png'],
-    },
   },
 }
 

@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
-    "@orca/entity-logos": "workspace:*",
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
