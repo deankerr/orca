@@ -40,7 +40,7 @@
     "convex-helpers": "0.1.120",
     "pretty-bytes": "7.1.0",
     "remeda": "2.39.0",
-    "typescript": "5.9.3",
+    "typescript": "^6",
     "zod": "4.4.3"
   }
 }
