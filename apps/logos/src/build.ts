@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, relative } from 'node:path'
 
 import sharp from 'sharp'
+import type { Sharp } from 'sharp'
 import { z } from 'zod'
 
 import {
@@ -662,7 +663,7 @@ async function emitAsset(args: {
 
 // SVGs rasterize at their viewBox pixel size by default, freezing small icons well below the
 // target. Scale the render density so vector sources fill the output box at full resolution.
-async function loadSourceImage(sourcePath: string): Promise<sharp.Sharp> {
+async function loadSourceImage(sourcePath: string): Promise<Sharp> {
   if (!sourcePath.endsWith('.svg')) {
     return sharp(sourcePath)
   }

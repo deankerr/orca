@@ -10,14 +10,14 @@
     "types": "wrangler types"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.0.0",
-    "@lobehub/icons-static-avatar": "1.8.0",
-    "@lobehub/icons-static-webp": "1.91.0",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "@lobehub/icons-static-avatar": "1.12.0",
+    "@lobehub/icons-static-webp": "1.92.0",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "typescript": "catalog:",
-    "wrangler": "^4.0.0",
+    "wrangler": "^4.110.0",
     "zod": "catalog:"
   }
 }
