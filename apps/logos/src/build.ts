@@ -1,6 +1,6 @@
 import { access, mkdir, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, relative } from 'node:path'
+import nodePath from 'node:path'
 
 import sharp from 'sharp'
 import type { Sharp } from 'sharp'
@@ -18,7 +18,7 @@ import type { AssetGroup } from './contract'
 import { emitFallbackAsset } from './fallback-image'
 
 // Keep the public key parser and output image size easy to change while the service is young.
-const FILE_EXTENSION = /\.(png|jpe?g|svg|webp)$/i
+const FILE_EXTENSION = /\.(?:png|jpe?g|svg|webp)$/i
 const THEME_GROUPS = ['light', 'dark'] as const
 const MANUAL_SOURCE_GROUPS = ['base', ...ASSET_GROUPS] as const
 const OUTPUT_IMAGE_MAX_SIZE_PX = 128
@@ -26,7 +26,7 @@ const OUTPUT_WEBP_QUALITY = 92
 
 // Resolve defaults from this app, not from ORCA packages.
 const require = createRequire(import.meta.url)
-const DEFAULT_APP_ROOT = dirname(import.meta.dirname)
+const DEFAULT_APP_ROOT = nodePath.dirname(import.meta.dirname)
 
 // Parse external JSON and package metadata before using it to write files.
 const AliasCatalogSchema = z.object({
@@ -159,7 +159,7 @@ export async function buildLogos(options: BuildLogosOptions = {}): Promise<Build
   emitBuildWarnings({ context, sources })
 
   context.log(
-    `Built ${output.sourceAssetsWritten + output.aliasAssetsWritten} logo assets into ${relative(
+    `Built ${output.sourceAssetsWritten + output.aliasAssetsWritten} logo assets into ${nodePath.relative(
       context.appRoot,
       context.publicDir,
     )} (${sources.shadowedManualAssets.length} manual assets shadowed)`,
@@ -177,15 +177,15 @@ export async function buildLogos(options: BuildLogosOptions = {}): Promise<Build
 // Keep filesystem choices at the module seam so tests can use isolated fixtures.
 function createBuildContext(options: BuildLogosOptions): BuildContext {
   const appRoot = options.appRoot ?? DEFAULT_APP_ROOT
-  const distDir = join(appRoot, 'dist')
+  const distDir = nodePath.join(appRoot, 'dist')
 
   return {
     appRoot,
-    catalogPath: join(appRoot, 'sources', 'aliases.json'),
+    catalogPath: nodePath.join(appRoot, 'sources', 'aliases.json'),
     distDir,
     log: options.log ?? console.log,
-    manualSourceDir: join(appRoot, 'sources'),
-    publicDir: join(distDir, PUBLIC_VERSION),
+    manualSourceDir: nodePath.join(appRoot, 'sources'),
+    publicDir: nodePath.join(distDir, PUBLIC_VERSION),
   }
 }
 
@@ -230,8 +230,8 @@ async function resolveSourcePackages(roots?: SourcePackageRoots): Promise<{
   webp: SourcePackage
 }> {
   const packageRoots = roots ?? {
-    avatar: dirname(require.resolve('@lobehub/icons-static-avatar/package.json')),
-    webp: dirname(require.resolve('@lobehub/icons-static-webp/package.json')),
+    avatar: nodePath.dirname(require.resolve('@lobehub/icons-static-avatar/package.json')),
+    webp: nodePath.dirname(require.resolve('@lobehub/icons-static-webp/package.json')),
   }
 
   return {
@@ -241,7 +241,9 @@ async function resolveSourcePackages(roots?: SourcePackageRoots): Promise<{
 }
 
 async function readSourcePackage(root: string): Promise<SourcePackage> {
-  const packageJson = PackageJsonSchema.parse(await readJsonFile(join(root, 'package.json')))
+  const packageJson = PackageJsonSchema.parse(
+    await readJsonFile(nodePath.join(root, 'package.json')),
+  )
 
   return {
     name: packageJson.name,
@@ -285,7 +287,7 @@ async function collectLobehubThemeAssets(args: {
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
   const glob = new Bun.Glob('*.{png,jpg,jpeg,svg,webp}')
-  const sourceDir = join(args.sourcePackage.root, args.group)
+  const sourceDir = nodePath.join(args.sourcePackage.root, args.group)
 
   for await (const file of glob.scan({ cwd: sourceDir })) {
     const variant = parseLobehubThemeVariant(file)
@@ -312,7 +314,7 @@ async function collectLobehubThemeAssets(args: {
       packageName: args.sourcePackage.name,
       packageVersion: args.sourcePackage.version,
       sourceKind: 'lobehub',
-      sourcePath: join(sourceDir, file),
+      sourcePath: nodePath.join(sourceDir, file),
       variant: variant.isColor ? 'color' : 'mono',
     })
   }
@@ -326,7 +328,7 @@ async function collectLobehubAvatars(
 ): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
   const glob = new Bun.Glob('*.webp')
-  const sourceDir = join(sourcePackage.root, 'avatars')
+  const sourceDir = nodePath.join(sourcePackage.root, 'avatars')
 
   for await (const file of glob.scan({ cwd: sourceDir })) {
     const key = normalizeLogoKey(file)
@@ -340,7 +342,7 @@ async function collectLobehubAvatars(
       packageName: sourcePackage.name,
       packageVersion: sourcePackage.version,
       sourceKind: 'lobehub',
-      sourcePath: join(sourceDir, file),
+      sourcePath: nodePath.join(sourceDir, file),
       variant: 'avatar',
     })
   }
@@ -364,7 +366,7 @@ async function collectManualGroup(args: {
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
   const glob = new Bun.Glob('*.{png,jpg,jpeg,svg,webp}')
-  const sourceDir = join(args.context.manualSourceDir, args.group)
+  const sourceDir = nodePath.join(args.context.manualSourceDir, args.group)
 
   if (!(await pathExists(sourceDir))) {
     return assets
@@ -382,7 +384,7 @@ async function collectManualGroup(args: {
       packageName: 'manual',
       packageVersion: 'source-controlled',
       sourceKind: 'manual',
-      sourcePath: join(sourceDir, file),
+      sourcePath: nodePath.join(sourceDir, file),
       variant: 'manual',
     })
   }
@@ -547,7 +549,7 @@ async function recreateDist(context: BuildContext): Promise<void> {
   await rm(context.distDir, { force: true, recursive: true })
 
   for (const group of ASSET_GROUPS) {
-    await mkdir(join(context.publicDir, group), { recursive: true })
+    await mkdir(nodePath.join(context.publicDir, group), { recursive: true })
   }
 }
 
@@ -637,7 +639,7 @@ async function emitAsset(args: {
   manifest: Manifest
 }): Promise<void> {
   const outputFile = logoAssetFile(args.key)
-  const outputPath = join(args.context.publicDir, args.group, outputFile)
+  const outputPath = nodePath.join(args.context.publicDir, args.group, outputFile)
   const input = await loadSourceImage(args.asset.sourcePath)
   const output = await input
     .resize({
@@ -720,7 +722,7 @@ async function emitFallback(context: BuildContext): Promise<void> {
   for (const group of ASSET_GROUPS) {
     await emitFallbackAsset({
       group,
-      outputPath: join(context.distDir, fallbackAssetPath(group)),
+      outputPath: nodePath.join(context.distDir, fallbackAssetPath(group)),
       sizePx: OUTPUT_IMAGE_MAX_SIZE_PX,
       webpQuality: OUTPUT_WEBP_QUALITY,
     })
@@ -729,7 +731,7 @@ async function emitFallback(context: BuildContext): Promise<void> {
 
 async function writeManifest(args: { context: BuildContext; manifest: Manifest }): Promise<void> {
   await Bun.write(
-    join(args.context.publicDir, 'manifest.json'),
+    nodePath.join(args.context.publicDir, 'manifest.json'),
     `${JSON.stringify(args.manifest, null, 2)}\n`,
   )
 }

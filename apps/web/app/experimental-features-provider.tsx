@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, use, useState } from 'react'
+import { createContext, use, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useKeys } from 'rooks'
 
@@ -10,13 +10,14 @@ const ExperimentalFeaturesContext = createContext<{
 
 export function ExperimentalFeaturesProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false)
+  const value = useMemo(() => ({ enabled }), [enabled])
 
   useKeys(['ControlLeft', 'KeyE'], () => {
     setEnabled((current) => !current)
   })
 
   return (
-    <ExperimentalFeaturesContext value={{ enabled }}>
+    <ExperimentalFeaturesContext value={value}>
       {children}
       {enabled && <div className="absolute top-1 right-1">E</div>}
     </ExperimentalFeaturesContext>

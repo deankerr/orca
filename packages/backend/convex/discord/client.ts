@@ -31,7 +31,7 @@ export function createDiscordClient() {
         if (response?.status === 429) {
           const retryAfter = response.headers.get('Retry-After')
           if (retryAfter !== null) {
-            return Number.parseFloat(retryAfter) * 1000
+            return Number(retryAfter) * 1000
           }
         }
         return Math.min(attempt ** 2 * 1000, 10_000)

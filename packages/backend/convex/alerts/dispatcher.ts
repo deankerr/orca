@@ -18,11 +18,12 @@ type Delivery =
 
 const DELAY_BETWEEN_MESSAGES_MS = 1000
 
-const sleep = async (ms: number) =>
+const sleep = async (ms: number) => {
   // oxlint-disable-next-line promise/avoid-new
-  new Promise<void>((resolve) => {
+  await new Promise<void>((resolve) => {
     setTimeout(resolve, ms)
   })
+}
 
 // Pattern matching — "*" for all, otherwise simple includes
 function matchPattern(pattern: string, slug: string): boolean {

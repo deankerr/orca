@@ -30,7 +30,7 @@ http.route({
 
     const body = await req.text()
 
-    return handleInteraction(ctx, {
+    return await handleInteraction(ctx, {
       body,
       signature,
       timestamp,

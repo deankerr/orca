@@ -19,7 +19,7 @@ const PACKAGE_JSON = `${ROOT}/apps/web/package.json`
 
 const VersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/)
 const PackageJsonSchema = z.looseObject({ version: VersionSchema })
-const VERSION_PATTERN = /^(\s*"version":\s*")([^"]+)(".*)$/m
+const VERSION_PATTERN = /^\s*"version":\s*"[^"]+".*$/m
 
 // --- Args ---
 
@@ -45,7 +45,10 @@ function parseVersion(packageJsonText: string) {
 }
 
 function bumpVersion(packageJsonText: string, nextVersion: string) {
-  const updated = packageJsonText.replace(VERSION_PATTERN, `$1${nextVersion}$3`)
+  const currentVersion = parseVersion(packageJsonText)
+  const updated = packageJsonText.replace(VERSION_PATTERN, (versionLine) =>
+    versionLine.replace(currentVersion, nextVersion),
+  )
   if (updated === packageJsonText) {
     throw new Error('[release] could not update the version in package.json')
   }

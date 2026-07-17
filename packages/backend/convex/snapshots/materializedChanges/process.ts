@@ -126,7 +126,7 @@ function computeEntityChanges<T>(
         entity_type: entityType,
         change_kind: 'delete',
         ...getIdentifiers(before!),
-      } as ChangeDraft)
+      })
       continue
     }
 
@@ -135,12 +135,12 @@ function computeEntityChanges<T>(
         entity_type: entityType,
         change_kind: 'create',
         ...getIdentifiers(after),
-      } as ChangeDraft)
+      })
       continue
     }
 
     const identifiers = getIdentifiers(before)
-    const diffItems = processDiff(before as any, after as any)
+    const diffItems = processDiff(before, after)
 
     for (const item of diffItems) {
       changes.push({
@@ -148,7 +148,7 @@ function computeEntityChanges<T>(
         ...item,
         entity_type: entityType,
         change_kind: 'update',
-      } as ChangeDraft)
+      })
     }
   }
 

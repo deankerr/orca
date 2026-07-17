@@ -19,7 +19,7 @@ export const list = internalQuery({
 
     if (context.type === 'channel') {
       const { channel_id } = context
-      return ctx.db
+      return await ctx.db
         .query(TABLE_NAME)
         .withIndex('by_channel_id', (q) =>
           q.eq('channel_id', channel_id).eq('deleted_at', undefined),
@@ -39,7 +39,7 @@ export const list = internalQuery({
 export const getActive = internalQuery({
   args: {},
   handler: async (ctx) =>
-    ctx.db
+    await ctx.db
       .query(TABLE_NAME)
       .withIndex('by_deleted_at', (q) => q.eq('deleted_at', undefined))
       .collect(),
@@ -88,7 +88,7 @@ export const create = internalMutation({
       return 'exists'
     }
 
-    return ctx.db.insert(TABLE_NAME, input)
+    return await ctx.db.insert(TABLE_NAME, input)
   },
 })
 

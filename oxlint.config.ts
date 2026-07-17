@@ -74,13 +74,15 @@ export default defineConfig({
     'require-await': 'off',
     'unicorn/number-literal-case': 'off',
 
-    // React
-    // 'react/jsx-handler-names': 'off',
+    // legacy code
+    'no-await-in-loop': 'off',
+    'react/jsx-handler-names': 'off',
+    'require-unicode-regexp': 'off',
 
+    // React
     // Use the upstream React Hooks plugin for its React Compiler rules.
     'react-hooks-js/config': 'error',
     'react-hooks-js/error-boundaries': 'error',
-    'react-hooks-js/exhaustive-deps': 'warn',
     'react-hooks-js/gating': 'error',
     'react-hooks-js/globals': 'error',
     'react-hooks-js/immutability': 'error',
@@ -88,13 +90,10 @@ export default defineConfig({
     'react-hooks-js/preserve-manual-memoization': 'error',
     'react-hooks-js/purity': 'error',
     'react-hooks-js/refs': 'error',
-    'react-hooks-js/rules-of-hooks': 'error',
     'react-hooks-js/set-state-in-effect': 'error',
     'react-hooks-js/set-state-in-render': 'error',
     'react-hooks-js/static-components': 'error',
     'react-hooks-js/unsupported-syntax': 'warn',
     'react-hooks-js/use-memo': 'error',
-    'react/exhaustive-deps': 'off',
-    'react/rules-of-hooks': 'off',
   },
 })

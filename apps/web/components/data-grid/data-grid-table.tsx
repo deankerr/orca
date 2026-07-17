@@ -271,6 +271,7 @@ function DataGridTableEmpty() {
   )
 }
 
+// oxlint-disable-next-line react/react-compiler
 function DataGridTableVirtual() {
   'use no memo'
   const { table, isLoading, props } = useDataGrid()

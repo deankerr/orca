@@ -22,7 +22,7 @@ export const listArchives = internalQuery({
     order: v.optional(literals('asc', 'desc')),
   },
   handler: async (ctx, args) =>
-    ctx.db
+    await ctx.db
       .query('snapshot_crawl_archives')
       .withIndex('by_crawl_id', (q) => q.gte('crawl_id', args.fromCrawlId ?? ''))
       .order(args.order ?? 'asc')

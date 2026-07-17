@@ -30,10 +30,10 @@
     "lint-staged": "^17.0.8",
     "oxfmt": "^0.59.0",
     "oxlint": "^1.74.0",
-    "oxlint-tsgolint": "0.21.1",
+    "oxlint-tsgolint": "^0.24.0",
     "turbo": "^2.10.5",
     "typescript": "catalog:",
-    "ultracite": "7.6.0"
+    "ultracite": "7.9.4"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [

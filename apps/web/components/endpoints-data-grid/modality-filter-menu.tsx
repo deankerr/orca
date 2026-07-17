@@ -23,7 +23,7 @@ import {
 import { useEndpointFacetState } from './use-endpoint-facet-state'
 
 function getModalityFilterLabel(name: EndpointModalityAttribute) {
-  return attributes[name].label.replace(/ (Input|Output)$/, '')
+  return attributes[name].label.replace(/ (?:Input|Output)$/, '')
 }
 
 export function ModalityFilterMenu() {

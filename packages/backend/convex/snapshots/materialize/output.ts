@@ -83,7 +83,7 @@ export const upsert = internalMutation({
           await ctx.db.patch(
             currentModel._id,
             withUpdatedAt({
-              unavailable_at: Number.parseInt(args.crawl_id, 10),
+              unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
           counters.unavailable += 1
@@ -155,7 +155,7 @@ export const upsert = internalMutation({
           await ctx.db.patch(
             currentEndpoint._id,
             withUpdatedAt({
-              unavailable_at: Number.parseInt(args.crawl_id, 10),
+              unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
           counters.unavailable += 1
@@ -196,7 +196,7 @@ export const upsert = internalMutation({
           await ctx.db.patch(
             currentProvider._id,
             withUpdatedAt({
-              unavailable_at: Number.parseInt(args.crawl_id, 10),
+              unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
           counters.unavailable += 1

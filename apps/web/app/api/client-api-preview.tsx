@@ -43,7 +43,7 @@ export function ClientApiCodeBlock() {
 }
 
 async function highlight(code: string) {
-  return codeToHtml(code, {
+  return await codeToHtml(code, {
     lang: 'json',
     themes: {
       light: 'github-light',
@@ -105,6 +105,7 @@ function HighlightedJsonCode({ code }: { code: string }) {
         'dark:[&_.shiki]:!text-[var(--shiki-dark)]',
         'dark:[&_.shiki_span]:!text-[var(--shiki-dark)]',
       )}
+      // oxlint-disable-next-line react/no-danger required by shiki
       dangerouslySetInnerHTML={{ __html: highlighted.html }}
     />
   )

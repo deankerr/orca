@@ -1,5 +1,6 @@
 import { get, getDescription, list } from './queries'
 import { modelDescriptionsTable, modelsTable } from './table'
+
 export type { ModelProjection } from './projection'
 
 export const models = {

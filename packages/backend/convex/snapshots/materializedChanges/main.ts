@@ -28,7 +28,10 @@ export const run = internalAction({
     await paginateAndProcess(ctx, {
       queryFnArgs: { fromCrawlId },
       queryFn: async (innerCtx, queryArgs) =>
-        innerCtx.runQuery(internal.snapshots.materializedChanges.inputs.listArchives, queryArgs),
+        await innerCtx.runQuery(
+          internal.snapshots.materializedChanges.inputs.listArchives,
+          queryArgs,
+        ),
       processFn: async (archives) => {
         for (const archive of archives) {
           const current = await loadMaterializedSnapshot(ctx, archive.crawl_id)

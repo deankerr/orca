@@ -482,13 +482,13 @@ export async function handleInteraction(
 
     switch (subcommand) {
       case 'subscribe': {
-        return handleSubscribe(ctx, interaction, options)
+        return await handleSubscribe(ctx, interaction, options)
       }
       case 'list': {
-        return handleList(ctx, interaction)
+        return await handleList(ctx, interaction)
       }
       case 'delete': {
-        return handleDelete(ctx, interaction, options)
+        return await handleDelete(ctx, interaction, options)
       }
       case 'help': {
         return handleHelp()

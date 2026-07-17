@@ -22,6 +22,6 @@ export default {
       method: request.method,
     })
 
-    return env.ASSETS.fetch(fallbackRequest)
+    return await env.ASSETS.fetch(fallbackRequest)
   },
 } satisfies ExportedHandler<Env>

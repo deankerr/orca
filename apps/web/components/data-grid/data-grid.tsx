@@ -68,7 +68,6 @@ function DataGridProvider<TData extends object>({
   table,
   ...props
 }: DataGridProps<TData>) {
-  'use no memo'
   const contextValue = {
     props,
     table,
@@ -76,6 +75,7 @@ function DataGridProvider<TData extends object>({
     isLoading: props.isLoading ?? false,
   }
 
+  // oxlint-disable-next-line react/jsx-no-constructed-context-values -- rest props intentionally define context identity
   return <DataGridContext.Provider value={contextValue}>{children}</DataGridContext.Provider>
 }
 

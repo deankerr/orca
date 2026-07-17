@@ -103,6 +103,7 @@ function useEndpointGridRows({
   }
 }
 
+// oxlint-disable-next-line react/react-compiler
 export function EndpointsDataGrid({
   endpoints,
   isPending,

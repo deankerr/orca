@@ -15,6 +15,6 @@ export const get = defineQuerySpec({
       .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
       .collect()
 
-    return createEntityChanges(ctx, filterChangeDocs(docs))
+    return await createEntityChanges(ctx, filterChangeDocs(docs))
   },
 })

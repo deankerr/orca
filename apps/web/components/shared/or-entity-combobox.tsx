@@ -216,6 +216,7 @@ export function ProviderCombobox({
   )
 }
 
+// oxlint-disable-next-line react/react-compiler
 function VirtualizedEntityList({
   items,
   selectedSlug,
@@ -225,7 +226,6 @@ function VirtualizedEntityList({
   selectedSlug?: string
   onSelect: (item: EntityItem) => void
 }) {
-  'use no memo'
   const viewportRef = useRef<HTMLDivElement>(null)
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library

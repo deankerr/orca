@@ -1,4 +1,4 @@
-const inlinePattern = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s)\]]+)/g
+const inlinePattern = /`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)\]]+/g
 
 export function InlineMarkdown({ text }: { text: string }) {
   const parts: React.ReactNode[] = []
@@ -10,34 +10,40 @@ export function InlineMarkdown({ text }: { text: string }) {
       parts.push(text.slice(lastIndex, match.index))
     }
 
-    if (match[1] !== undefined) {
+    const [matchedText] = match
+
+    if (matchedText.startsWith('`')) {
       parts.push(
         <code key={match.index} className="rounded-xs bg-muted px-1 py-0.5 font-mono">
-          {match[1]}
+          {matchedText.slice(1, -1)}
         </code>,
       )
-    } else if (match[2] !== undefined && match[3] !== undefined) {
+    } else if (matchedText.startsWith('[')) {
+      const linkSeparatorIndex = matchedText.indexOf('](')
+      const linkText = matchedText.slice(1, linkSeparatorIndex)
+      const linkHref = matchedText.slice(linkSeparatorIndex + 2, -1)
+
       parts.push(
         <a
           key={match.index}
-          href={match[3]}
+          href={linkHref}
           target="_blank"
           rel="noopener noreferrer"
           className="text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:text-foreground"
         >
-          {match[2]}
+          {linkText}
         </a>,
       )
-    } else if (match[4] !== undefined) {
+    } else {
       parts.push(
         <a
           key={match.index}
-          href={match[4]}
+          href={matchedText}
           target="_blank"
           rel="noopener noreferrer"
           className="break-all text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:text-foreground"
         >
-          {match[4]}
+          {matchedText}
         </a>,
       )
     }

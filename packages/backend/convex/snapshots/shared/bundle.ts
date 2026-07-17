@@ -25,7 +25,7 @@ function getUtcDayRange(day: string): { start: string; endExclusive: string } {
 
 export const getLatestCrawlId = internalQuery({
   handler: async (ctx) =>
-    ctx.db
+    await ctx.db
       .query('snapshot_crawl_archives')
       .withIndex('by_crawl_id')
       .order('desc')
@@ -38,7 +38,7 @@ export const getByCrawlId = internalQuery({
     crawl_id: v.string(),
   },
   handler: async (ctx, args) =>
-    ctx.db
+    await ctx.db
       .query('snapshot_crawl_archives')
       .withIndex('by_crawl_id', (q) => q.eq('crawl_id', args.crawl_id))
       .first(),

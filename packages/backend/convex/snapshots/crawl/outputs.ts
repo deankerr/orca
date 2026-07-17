@@ -8,5 +8,5 @@ export const insert = internalMutation({
     storage_id: v.id('_storage'),
     data: v.record(v.string(), v.any()),
   },
-  handler: async (ctx, args) => ctx.db.insert('snapshot_crawl_archives', args),
+  handler: async (ctx, args) => await ctx.db.insert('snapshot_crawl_archives', args),
 })

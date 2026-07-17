@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import nodePath from 'node:path'
 
 import sharp from 'sharp'
 import { z } from 'zod'
@@ -174,34 +174,34 @@ test('fails fast when an alias target is missing', async () => {
 async function createBuildFixture(args: {
   aliases: Record<string, string>
 }): Promise<BuildFixture> {
-  const root = await mkdtemp(join(tmpdir(), 'logos-build-'))
-  const appRoot = join(root, 'app')
-  const webpRoot = join(root, 'lobehub-webp')
-  const avatarRoot = join(root, 'lobehub-avatar')
+  const root = await mkdtemp(nodePath.join(tmpdir(), 'logos-build-'))
+  const appRoot = nodePath.join(root, 'app')
+  const webpRoot = nodePath.join(root, 'lobehub-webp')
+  const avatarRoot = nodePath.join(root, 'lobehub-avatar')
 
-  await writeJson(join(appRoot, 'sources', 'aliases.json'), { aliases: args.aliases })
-  await writeJson(join(webpRoot, 'package.json'), {
+  await writeJson(nodePath.join(appRoot, 'sources', 'aliases.json'), { aliases: args.aliases })
+  await writeJson(nodePath.join(webpRoot, 'package.json'), {
     name: '@lobehub/icons-static-webp',
     version: '9.9.9',
   })
-  await writeJson(join(avatarRoot, 'package.json'), {
+  await writeJson(nodePath.join(avatarRoot, 'package.json'), {
     name: '@lobehub/icons-static-avatar',
     version: '8.8.8',
   })
 
-  await writeSvg(join(webpRoot, 'light', 'shared.svg'), '#64748b')
-  await writeSvg(join(webpRoot, 'light', 'shared-color.svg'), '#ef4444')
-  await writeSvg(join(webpRoot, 'light', 'ignored-brand-color.svg'), '#22c55e')
-  await writeSvg(join(webpRoot, 'light', 'ignored-text.svg'), '#22c55e')
-  await writeSvg(join(webpRoot, 'dark', 'shared.svg'), '#0f172a')
-  await writeWebp(join(avatarRoot, 'avatars', 'shared.webp'), '#38bdf8')
+  await writeSvg(nodePath.join(webpRoot, 'light', 'shared.svg'), '#64748b')
+  await writeSvg(nodePath.join(webpRoot, 'light', 'shared-color.svg'), '#ef4444')
+  await writeSvg(nodePath.join(webpRoot, 'light', 'ignored-brand-color.svg'), '#22c55e')
+  await writeSvg(nodePath.join(webpRoot, 'light', 'ignored-text.svg'), '#22c55e')
+  await writeSvg(nodePath.join(webpRoot, 'dark', 'shared.svg'), '#0f172a')
+  await writeWebp(nodePath.join(avatarRoot, 'avatars', 'shared.webp'), '#38bdf8')
 
-  await writeSvg(join(appRoot, 'sources', 'base', 'manualonly.svg'), '#f59e0b')
-  await writeSvg(join(appRoot, 'sources', 'base', 'manual-dashed.svg'), '#22c55e')
-  await writeSvg(join(appRoot, 'sources', 'base', 'overridden.svg'), '#64748b')
-  await writeSvg(join(appRoot, 'sources', 'base', 'shared.svg'), '#a855f7')
-  await writeSvg(join(appRoot, 'sources', 'avatar', 'overridden.svg'), '#f97316')
-  await writeSvg(join(appRoot, 'sources', 'light', 'partial.svg'), '#14b8a6')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'manualonly.svg'), '#f59e0b')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'manual-dashed.svg'), '#22c55e')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'overridden.svg'), '#64748b')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'shared.svg'), '#a855f7')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'avatar', 'overridden.svg'), '#f97316')
+  await writeSvg(nodePath.join(appRoot, 'sources', 'light', 'partial.svg'), '#14b8a6')
 
   return {
     appRoot,
@@ -214,17 +214,17 @@ async function createBuildFixture(args: {
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
+  await mkdir(nodePath.dirname(path), { recursive: true })
   await Bun.write(path, `${JSON.stringify(value, null, 2)}\n`)
 }
 
 async function writeSvg(path: string, fill: string): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
+  await mkdir(nodePath.dirname(path), { recursive: true })
   await Bun.write(path, createSvg(fill))
 }
 
 async function writeWebp(path: string, fill: string): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
+  await mkdir(nodePath.dirname(path), { recursive: true })
   await sharp(Buffer.from(createSvg(fill)))
     .webp()
     .toFile(path)
@@ -236,7 +236,7 @@ function createSvg(fill: string): string {
 
 async function readManifest(appRoot: string): Promise<TestManifest> {
   return TestManifestSchema.parse(
-    JSON.parse(await Bun.file(join(appRoot, 'dist', 'v1', 'manifest.json')).text()),
+    JSON.parse(await Bun.file(nodePath.join(appRoot, 'dist', 'v1', 'manifest.json')).text()),
   )
 }
 
@@ -250,7 +250,7 @@ function findLogo(manifest: TestManifest, key: string): TestManifest['logos'][nu
 }
 
 async function expectWebpOutput(appRoot: string, path: string): Promise<void> {
-  const outputPath = join(appRoot, 'dist', path)
+  const outputPath = nodePath.join(appRoot, 'dist', path)
   const output = await sharp(outputPath).metadata()
 
   expect(output.format).toBe('webp')

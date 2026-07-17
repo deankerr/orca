@@ -1,5 +1,6 @@
 import { get } from './queries'
 import { changesTable } from './table'
+
 export type {
   ArrayDiffItem,
   EndpointChange,

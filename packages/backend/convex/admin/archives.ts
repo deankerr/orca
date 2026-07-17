@@ -7,5 +7,5 @@ export const feed = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) =>
-    ctx.db.query('snapshot_crawl_archives').order('desc').paginate(args.paginationOpts),
+    await ctx.db.query('snapshot_crawl_archives').order('desc').paginate(args.paginationOpts),
 })

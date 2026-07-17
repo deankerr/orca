@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 type EntityState = { type: 'model' | 'provider'; slug: string } | null
@@ -15,22 +15,22 @@ const EntityOverviewContext = createContext<EntityOverviewContextValue | null>(n
 
 export function EntityOverviewProvider({ children }: { children: ReactNode }) {
   const [entity, setEntity] = useState<EntityState>(null)
-
-  return (
-    <EntityOverviewContext.Provider
-      value={{
-        entity,
-        openOverview: (next) => {
-          setEntity(next)
-        },
-        close: () => {
-          setEntity(null)
-        },
-      }}
-    >
-      {children}
-    </EntityOverviewContext.Provider>
+  const openOverview = useCallback((next: NonNullable<EntityState>) => {
+    setEntity(next)
+  }, [])
+  const close = useCallback(() => {
+    setEntity(null)
+  }, [])
+  const value = useMemo(
+    () => ({
+      entity,
+      openOverview,
+      close,
+    }),
+    [entity, openOverview, close],
   )
+
+  return <EntityOverviewContext.Provider value={value}>{children}</EntityOverviewContext.Provider>
 }
 
 export function useEntityOverview() {
