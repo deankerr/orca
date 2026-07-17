@@ -7,7 +7,6 @@
   ],
   "type": "module",
   "scripts": {
-    "archive-sync": "turbo run archive-sync --filter=web",
     "build": "turbo run build --filter=web",
     "check": "ultracite check --type-aware --type-check",
     "dev": "turbo run dev",

@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "archive-sync": "bun run scripts/archive-sync/index.ts",
     "build": "next build",
     "dev": "next dev --turbopack",
     "release": "bun run scripts/release.ts",
@@ -24,7 +23,6 @@
     "@tanstack/react-virtual": "^3.14.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "commander": "^15.0.0",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
     "date-fns": "^4.4.0",
