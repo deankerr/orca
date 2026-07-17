@@ -17,7 +17,7 @@ export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 
 // Derive the public logo key from an OpenRouter entity slug. Keys preserve the upstream
 // author/provider spelling; an empty key means the slug had no usable author segment.
-export function entityLogoKey(slug: string): string {
+function entityLogoKey(slug: string): string {
   const [author = '', model = ''] = slug.toLowerCase().split('/')
   const modelKey = MODEL_LOGO_KEYS_BY_AUTHOR[author]?.find((key) => model.includes(key))
   return modelKey ?? author

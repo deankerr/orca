@@ -8,7 +8,7 @@ export const localBundleSchema = z.looseObject({
   }),
 })
 
-export const manifestArchiveSchema = z.looseObject({
+const manifestArchiveSchema = z.looseObject({
   crawlId: z.string(),
   day: z.string(),
   downloadedAt: z.string().nullable(),
@@ -30,7 +30,7 @@ export const manifestSchema = z.looseObject({
 })
 
 export type ManifestArchive = z.infer<typeof manifestArchiveSchema>
-export type ManifestPointer = {
+type ManifestPointer = {
   crawlId: string
   fileJson: string
   updatedAt: string

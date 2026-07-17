@@ -8,8 +8,7 @@ const config: KnipConfig = {
   workspaces: {
     'apps/web': {
       entry: ['scripts/*.ts', '**/*.test.ts'],
-      ignoreBinaries: ['gh'],
-      ignoreDependencies: ['remeda', '@radix-ui/colors', 'postcss'],
+      ignoreDependencies: ['@radix-ui/colors'],
     },
   },
 }

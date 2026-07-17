@@ -30,7 +30,7 @@ export function EntityEventCard({ change }: { change: EntityChange }) {
   return <ProviderEventCard change={change} />
 }
 
-export function EventCard({ children, className, ...props }: React.ComponentProps<'div'>) {
+function EventCard({ children, className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div className={cn('rounded-none border bg-card/50', className)} {...props}>
       {children}
@@ -38,7 +38,7 @@ export function EventCard({ children, className, ...props }: React.ComponentProp
   )
 }
 
-export function EventCardBody({ className, children, ...props }: React.ComponentProps<'div'>) {
+function EventCardBody({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
     <div className={cn('px-6 py-2.5 empty:hidden', className)} {...props}>
       {children}
@@ -46,7 +46,7 @@ export function EventCardBody({ className, children, ...props }: React.Component
   )
 }
 
-export function EventCardHeader({ children, className, ...props }: React.ComponentProps<'div'>) {
+function EventCardHeader({ children, className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
