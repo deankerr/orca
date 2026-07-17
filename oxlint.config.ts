@@ -75,7 +75,7 @@ export default defineConfig({
     'unicorn/number-literal-case': 'off',
 
     // React
-    'react/jsx-handler-names': 'off',
+    // 'react/jsx-handler-names': 'off',
 
     // Use the upstream React Hooks plugin for its React Compiler rules.
     'react-hooks-js/config': 'error',

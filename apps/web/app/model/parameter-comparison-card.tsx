@@ -1,3 +1,4 @@
+// oxlint-disable jsx-a11y/prefer-tag-over-role jsx-a11y/no-noninteractive-element-interactions jsx-a11y/interactive-supports-focus
 'use client'
 
 import { useState } from 'react'

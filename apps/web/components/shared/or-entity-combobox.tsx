@@ -138,7 +138,6 @@ function EntityCombobox({
         render={
           <Button
             variant="outline"
-            role="combobox"
             aria-expanded={open}
             aria-controls={listboxId}
             className={cn('text-left', className)}

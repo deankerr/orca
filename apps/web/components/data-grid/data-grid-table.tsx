@@ -334,6 +334,7 @@ function DataGridTableVirtual() {
         <DataGridTableBody>
           {paddingTop > 0 && (
             <tr>
+              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label - not a control */}
               <td style={{ height: `${paddingTop}px` }} />
             </tr>
           )}
@@ -363,6 +364,7 @@ function DataGridTableVirtual() {
 
           {paddingBottom > 0 && (
             <tr>
+              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label - not a control */}
               <td style={{ height: `${paddingBottom}px` }} />
             </tr>
           )}

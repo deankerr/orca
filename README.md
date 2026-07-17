@@ -72,7 +72,3 @@ bun run check   # CI-equivalent, non-mutating
 ## Environment
 
 - `ORCA_CRAWL_CRON_ENABLED` — set to `true` only in environments that should run the scheduled snapshot crawls. Unset by default, which keeps automatic crawls off (preview deployments included).
-
-## Status
-
-A personal project, actively maintained and running in production. The public API is a preview, so don't assume its shape is stable.
