@@ -31,6 +31,12 @@
       "sourceType": "github",
       "computedHash": "f60559165edd5b616fda726ed5726c798e33f905361ed9892ab6013e53ab2588"
     },
+    "fallow": {
+      "source": "fallow-rs/fallow-skills",
+      "sourceType": "github",
+      "skillPath": "fallow/skills/fallow/SKILL.md",
+      "computedHash": "c2cd356f8c0d33f2001be4817b0b78d016017a0918346490642169381a26d546"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",

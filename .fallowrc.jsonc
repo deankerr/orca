@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+
+  // Migrated from apps/web's Knip workspace configuration.
+  "entry": [
+    "apps/web/scripts/release.ts",
+    "apps/web/scripts/validate-public-api.ts",
+    "apps/web/**/*.test.ts",
+    "knip.ts",
+    "oxfmt.config.ts",
+  ],
+  "ignorePatterns": [
+    // Framework and tool output.
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/.wrangler/**",
+    "**/next-env.d.ts",
+    "**/worker-configuration.d.ts",
+
+    // Generated Convex bindings and archived crawl fixtures are not authored source.
+    "**/convex/_generated/**",
+    "apps/web/scripts/archive-sync/data/**",
+  ],
+  "ignoreDependencies": ["@radix-ui/colors"],
+
+  // Preserve Knip's path-scoped ignoreIssues rules.
+  "overrides": [
+    {
+      "files": ["apps/web/components/data-grid/**"],
+      "rules": {
+        "unused-exports": "off",
+        "unused-types": "off",
+      },
+    },
+    {
+      "files": ["apps/web/components/ui/**"],
+      "rules": {
+        "unused-files": "off",
+        "unused-exports": "off",
+        "unused-types": "off",
+      },
+    },
+  ],
+}

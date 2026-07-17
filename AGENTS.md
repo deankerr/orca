@@ -2,10 +2,9 @@
 
 ## OXC
 
-- Run `bun run fix` at the repo root after edits in almost all cases.
-- `fix` is fast: it uses `oxlint`, `oxlint-tsgolint`, and `oxfmt`, not a slow ESLint/tsc stack.
-- Prefer root-wide `fix` over targeted checks so monorepo-wide issues are caught.
-- Use `bun run check` when you specifically need CI-equivalent, non-mutating verification.
+- Always run `bun run fix` after you have completed your changes, to check and auto-fix errors where possible.
+- Inline disables may be used with a short explanation to justify it.
+- The script may change files that you didn't touch - this is acceptable and changes should be retained.
 
 ## Overview
 

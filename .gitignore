@@ -12,3 +12,4 @@ build
 
 *.tsbuildinfo
 next-env.d.ts
+.fallow/

@@ -13,7 +13,6 @@
 Do not modify vendored components without a very clear and specific reason that should apply to all uses of the component throughout the app, including future uses.
 
 - `components/ui` shadcn/ui
-- `components/evil-charts` Evil Charts
 
 ### vercel.json
 
