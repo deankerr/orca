@@ -9,7 +9,6 @@ export default defineConfig({
     ...(core.ignorePatterns ?? []),
     '.agents/skills',
     '.claude/skills',
-    '**/components/evilcharts',
     '**/components/ui',
     '**/worker-configuration.d.ts',
   ],

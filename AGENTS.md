@@ -15,6 +15,12 @@ ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRo
 - Convex
 - Production/preview deployments: Vercel
 
+## Agent skills
+
+- Convex owns and updates its skills under `packages/backend/.agents/skills/`.
+- The matching entries under the root `.agents/skills/` are symlinks so monorepo-level agents can discover them. Keep the symlinks instead of copying the managed skills back to the root.
+- Run `bunx convex ai-files update` from `packages/backend/` to refresh the Convex guidelines and skills.
+
 ## Target Users
 
 Highly technical users who work with OpenRouter and LLMs professionally:

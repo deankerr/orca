@@ -5,7 +5,7 @@
 - MEPs = Models, Endpoints, Providers
 - Top level files export the stable public interface.
 - `public_api` is completely self-contained, and never impacted by changes to backend code.
-- Catalog entities use full table scans deliberately - `views` tables have a controlled, low number of rows, and this enables **perfect caching** by Convex, meaning the database is actually rarely hit during higher traffic periods.
+- Catalog entity queries deliberately scan the bounded `views` tables. These tables have a controlled, low number of rows, and Convex's automatic query caching keeps repeated reads cheap while their dependencies are unchanged.
 - `defineQuerySpec` creates reusable functions that can be called directly via `.handler` and dropped into Convex functions like `query`.
 
 ## Core Principles
@@ -51,29 +51,7 @@ User-facing data is a projection of stored snapshot data.
 
 # Convex
 
-- The only requirement for valid Convex code is for it to type check successfully.
-- Files in the Convex folder cannot use hyphens. A pascalCase convention is normally used, even if the rest of the project is kebab-case.
-- Convex has first class support for objects as fields on documents, including indexes on nested fields.
-- All documents have an immutable `_id` and `_creationTime` field.
-
-## HTTP Endpoints and Deployment URLs
-
-**Two separate servers run in this project:**
-
-1. **Next.js dev server** (`localhost`) - Frontend application
-   - Runs via `bun dev` or similar
-   - Serves the React app from `app/` directory
-   - Handles frontend routes like `/`, `/monitor`
-
-2. **Convex backend** (`https://<deployment-name>.convex.site`) - Serverless backend
-   - Runs independently in Convex cloud
-   - Handles all database queries, mutations, actions
-   - Serves HTTP endpoints defined in `convex/http.ts`
-
-**Convex URL format:**
-
-- Main: `https://<deployment-name>.convex.cloud`
-- HTTP endpoints: `https://<deployment-name>.convex.site`
+- Use camelCase filenames without hyphens for Convex modules.
 
 ## Utilities
 
@@ -86,70 +64,4 @@ import { v, type Infer } from 'convex/values'
 import { api, components, internal } from './_generated/api'
 import type { Doc, Id, TableNames } from './_generated/dataModel'
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server'
-```
-
-## Common Issues
-
-Working around the TypeScript error: some action implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
-When the return value of an action depends on the result of calling ctx.runQuery or ctx.runMutation, TypeScript will complain that it cannot infer the return type of the action. This is a minimal example of the issue:
-
-```typescript
-// convex/myFunctions.ts
-// TypeScript reports an error on `myAction`
-export const myAction = action({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.runQuery(api.myFunctions.getSomething)
-  },
-})
-
-export const getSomething = query({
-  args: {},
-  handler: () => {
-    return null
-  },
-})
-```
-
-To work around this, there are three options:
-
-Type the return value of the handler function explicitly. Note that the handler return type is not affected by a return validator - they will not prevent this issue:
-
-```typescript
-// convex/myFunctions.ts
-export const myAction = action({
-  args: {},
-  handler: async (ctx): Promise<null> => {
-    const result = await ctx.runQuery(api.myFunctions.getSomething)
-    return result
-  },
-})
-```
-
-Type the result of the ctx.runQuery or ctx.runMutation call explicitly:
-
-```typescript
-// convex/myFunctions.ts
-export const myAction = action({
-  args: {},
-  handler: async (ctx) => {
-    const result: null = await ctx.runQuery(api.myFunctions.getSomething)
-    return result
-  },
-})
-```
-
-TypeScript will check that the type annotation matches what the called query or mutation returns, so you don't lose any type safety.
-
-In this trivial example the return type of the query was null. Another option is to not return anything from an action if it isn't required:
-
-```typescript
-// convex/myFunctions.ts
-export const myAction = action({
-  args: {},
-  handler: async (ctx) => {
-    const result = await ctx.runQuery(api.myFunctions.getSomething)
-    console.log({ result })
-  },
-})
 ```

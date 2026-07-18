@@ -8,7 +8,6 @@ export default defineConfig({
     '.agents/skills',
     '.claude/skills',
     '**/components/ui',
-    '**/components/evilcharts',
     '**/worker-configuration.d.ts',
   ],
   semi: false,
