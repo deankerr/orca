@@ -20,6 +20,7 @@ import { Spinner } from '@/components/ui/spinner'
 
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
+import { PricingHistoryCard } from './pricing-history-card'
 import { ProviderComparisonCard } from './provider-comparison-card'
 
 const UNAVAILABLE_WINDOW_MS = ms('30d')
@@ -54,8 +55,9 @@ export function ModelPage({ modelId }: { modelId: string }) {
           <LoadingBadge label="Loading endpoints" />
         ) : (
           <>
-            <ParameterComparisonCard endpoints={endpoints} />
             <ProviderComparisonCard endpoints={endpoints} />
+            <PricingHistoryCard modelSlug={modelId} />
+            <ParameterComparisonCard endpoints={endpoints} />
           </>
         )}
       </div>

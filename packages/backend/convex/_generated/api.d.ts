@@ -43,6 +43,8 @@ import type * as discord_messages from "../discord/messages.js";
 import type * as discord_subscriptions from "../discord/subscriptions.js";
 import type * as discord_subscriptions_table from "../discord/subscriptions/table.js";
 import type * as discord_utils from "../discord/utils.js";
+import type * as endpointPricingHistory from "../endpointPricingHistory.js";
+import type * as endpointPricingHistory_reconstruct from "../endpointPricingHistory/reconstruct.js";
 import type * as endpoints from "../endpoints.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
@@ -117,6 +119,8 @@ declare const fullApi: ApiFromModules<{
   "discord/subscriptions": typeof discord_subscriptions;
   "discord/subscriptions/table": typeof discord_subscriptions_table;
   "discord/utils": typeof discord_utils;
+  endpointPricingHistory: typeof endpointPricingHistory;
+  "endpointPricingHistory/reconstruct": typeof endpointPricingHistory_reconstruct;
   endpoints: typeof endpoints;
   http: typeof http;
   init: typeof init;
