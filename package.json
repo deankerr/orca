@@ -9,7 +9,7 @@
   "scripts": {
     "build": "turbo run build --filter=web",
     "check": "ultracite check --type-aware --type-check",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=!entity-logo-service",
     "dev:backend": "turbo run dev --filter=@orca/backend",
     "dev:next": "turbo run dev --filter=web",
     "fix": "ultracite fix --type-aware --type-check",
@@ -23,14 +23,13 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "eslint-plugin-react-hooks": "7.1.1",
     "fallow": "^3.3.0",
     "husky": "^9.1.7",
     "knip": "6.26.0",
     "lint-staged": "^17.0.8",
-    "oxfmt": "^0.59.0",
-    "oxlint": "^1.74.0",
-    "oxlint-tsgolint": "^0.24.0",
+    "oxfmt": "0.59.0",
+    "oxlint": "1.74.0",
+    "oxlint-tsgolint": "0.24.0",
     "turbo": "^2.10.5",
     "typescript": "catalog:",
     "ultracite": "7.9.4"
