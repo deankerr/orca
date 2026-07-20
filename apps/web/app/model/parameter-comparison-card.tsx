@@ -5,7 +5,7 @@ import { EntityIdentity } from '@/components/shared/entity-identity'
 import { CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-import { ModelPageCard } from './model-page-card'
+import { ModelPageCard, ModelPageCardLoading } from './model-page-card'
 import { buildColumnHoverStyles, buildParameterMatrix } from './parameter-comparison-matrix'
 import type {
   ParameterColumn,
@@ -13,6 +13,7 @@ import type {
   ParameterRow,
 } from './parameter-comparison-matrix'
 import type { ModelEndpoint } from './types'
+import { useModelEndpoints } from './use-model-endpoints'
 
 const LABEL_ANGLE_DEGREES = 45
 const ROW_HEIGHT_REM = 2.75
@@ -21,7 +22,13 @@ const MARK_SIZE_REM = 1.75
 const LABEL_LIFT_REM = 0.25
 const PROVIDER_COLUMN_REM = 10
 
-export function ParameterComparisonCard({ endpoints }: { endpoints: readonly ModelEndpoint[] }) {
+export function ParameterComparisonCard({ modelSlug }: { modelSlug: string }) {
+  const endpoints = useModelEndpoints(modelSlug)
+
+  if (endpoints === undefined) {
+    return <ModelPageCardLoading title="Parameter Comparison" label="Loading endpoints" />
+  }
+
   const matrix = buildParameterMatrix(endpoints)
 
   return (

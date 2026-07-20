@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 
 import { EntityOverviewTrigger } from '@/components/entity-overview/entity-overview-trigger'
 import { EntityIdentity } from '@/components/shared/entity-identity'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardContent } from '@/components/ui/card'
 import {
@@ -18,12 +19,20 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { ModelPageCard } from './model-page-card'
+import { ModelPageCard, ModelPageCardLoading } from './model-page-card'
 import { PRICING_METRICS } from './pricing-fields'
 import type { ModelEndpoint, PricingMetric } from './types'
+import { useModelEndpoints } from './use-model-endpoints'
 import { formatNumber } from './utils'
 
-type SortKey = 'provider' | 'context_length' | 'max_output' | PricingMetric
+type SortKey =
+  | 'provider'
+  | 'context_length'
+  | 'max_output'
+  | 'quantization'
+  | 'throughput'
+  | 'latency'
+  | PricingMetric
 type SortDirection = 'asc' | 'desc'
 
 function SortableHeader({
@@ -88,6 +97,41 @@ function compareOptionalNumbers(
   return (left - right) * (direction === 'asc' ? 1 : -1)
 }
 
+function compareOptionalStrings(
+  left: string | undefined,
+  right: string | undefined,
+  direction: SortDirection,
+): number {
+  if (left === undefined) {
+    return right === undefined ? 0 : 1
+  }
+  if (right === undefined) {
+    return -1
+  }
+  return left.localeCompare(right) * (direction === 'asc' ? 1 : -1)
+}
+
+/** Upstream reports missing quantization as the string "unknown". */
+function quantizationOf(endpoint: ModelEndpoint) {
+  return endpoint.quantization === 'unknown' ? undefined : endpoint.quantization
+}
+
+function numericSortValue(
+  endpoint: ModelEndpoint,
+  column: Exclude<SortKey, 'provider' | 'quantization'>,
+) {
+  if (column === 'context_length' || column === 'max_output') {
+    return endpoint[column]
+  }
+  if (column === 'throughput') {
+    return endpoint.stats?.p50_throughput
+  }
+  if (column === 'latency') {
+    return endpoint.stats?.p50_latency
+  }
+  return endpoint.pricing[column]
+}
+
 function EndpointPrice({
   endpoint,
   pricingKey,
@@ -110,7 +154,17 @@ function EndpointPrice({
   )
 }
 
-export function ProviderComparisonCard({ endpoints }: { endpoints: readonly ModelEndpoint[] }) {
+export function ProviderComparisonCard({ modelSlug }: { modelSlug: string }) {
+  const endpoints = useModelEndpoints(modelSlug)
+
+  if (endpoints === undefined) {
+    return <ModelPageCardLoading title="Provider Comparison" label="Loading endpoints" />
+  }
+
+  return <ProviderComparison endpoints={endpoints} />
+}
+
+function ProviderComparison({ endpoints }: { endpoints: readonly ModelEndpoint[] }) {
   const [sort, setSort] = useState<{ column: SortKey; direction: SortDirection }>({
     column: 'provider',
     direction: 'asc',
@@ -128,15 +182,13 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
           sort.column === 'provider'
             ? left.provider.name.localeCompare(right.provider.name) *
               (sort.direction === 'asc' ? 1 : -1)
-            : compareOptionalNumbers(
-                sort.column === 'context_length' || sort.column === 'max_output'
-                  ? left[sort.column]
-                  : left.pricing[sort.column],
-                sort.column === 'context_length' || sort.column === 'max_output'
-                  ? right[sort.column]
-                  : right.pricing[sort.column],
-                sort.direction,
-              )
+            : sort.column === 'quantization'
+              ? compareOptionalStrings(quantizationOf(left), quantizationOf(right), sort.direction)
+              : compareOptionalNumbers(
+                  numericSortValue(left, sort.column),
+                  numericSortValue(right, sort.column),
+                  sort.direction,
+                )
 
         return (
           comparison ||
@@ -161,7 +213,7 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
   return (
     <ModelPageCard title="Provider Comparison">
       <CardContent className="px-2">
-        <Table className="min-w-[44rem]">
+        <Table className="min-w-[62rem]">
           <TableHeader className="text-muted-foreground">
             <TableRow>
               <SortableHeader
@@ -196,6 +248,27 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
               >
                 Max Out.
               </SortableHeader>
+              <SortableHeader
+                column="quantization"
+                direction={sort.column === 'quantization' ? sort.direction : undefined}
+                onSort={handleSort}
+              >
+                Quant.
+              </SortableHeader>
+              <SortableHeader
+                column="throughput"
+                direction={sort.column === 'throughput' ? sort.direction : undefined}
+                onSort={handleSort}
+              >
+                Throughput
+              </SortableHeader>
+              <SortableHeader
+                column="latency"
+                direction={sort.column === 'latency' ? sort.direction : undefined}
+                onSort={handleSort}
+              >
+                Latency
+              </SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -225,6 +298,35 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {formatNumber(endpoint.max_output)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {quantizationOf(endpoint) === undefined ? (
+                    <span className="font-mono text-muted-foreground">-</span>
+                  ) : (
+                    <Badge variant="outline" className="font-mono text-xs uppercase">
+                      {endpoint.quantization}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {endpoint.stats === undefined ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <>
+                      {formatNumber(endpoint.stats.p50_throughput)}
+                      <span className="ml-1 text-xs text-muted-foreground">tok/s</span>
+                    </>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {endpoint.stats === undefined ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <>
+                      {formatNumber(endpoint.stats.p50_latency)}
+                      <span className="ml-1 text-xs text-muted-foreground">ms</span>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

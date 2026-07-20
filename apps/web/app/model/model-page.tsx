@@ -1,12 +1,11 @@
 'use client'
 
 import { api } from '@orca/backend/convex/_generated/api'
-import { useQuery } from 'convex/react'
 import { ArrowLeft, Boxes } from 'lucide-react'
-import ms from 'ms'
 import Link from 'next/link'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useEffect } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -16,65 +15,88 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useCachedQuery } from '@/hooks/use-cached-query'
 
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
 import { PricingHistoryCard } from './pricing-history-card'
 import { ProviderComparisonCard } from './provider-comparison-card'
+import type { Model } from './types'
+import { useModelEndpoints } from './use-model-endpoints'
 
-const UNAVAILABLE_WINDOW_MS = ms('30d')
+const MODEL_PAGE_TABS = ['provider-comparison', 'pricing-history', 'parameter-comparison'] as const
 
-export function ModelPage({ modelId }: { modelId: string }) {
-  const model = useQuery(api.models.getBySlug, {
-    slug: modelId,
-  })
-  const endpoints = useQuery(api.endpoints.listForModel, {
-    modelSlug: modelId,
-    maxTimeUnavailable: UNAVAILABLE_WINDOW_MS,
-  })
+type ModelPageTab = (typeof MODEL_PAGE_TABS)[number]
 
-  if (model === undefined) {
-    return (
-      <div className="mx-auto w-full max-w-6xl px-3 py-5">
-        <LoadingBadge label="Loading model" />
-      </div>
-    )
-  }
+// The tab lives in the URL so sections are directly linkable, and it renders
+// correctly on the server - there is no "no tab selected yet" frame.
+const tabParser = parseAsStringLiteral(MODEL_PAGE_TABS).withDefault('provider-comparison')
 
-  if (model === null) {
-    return <NotFoundState modelId={modelId} />
-  }
+export function ModelPage({ model }: { model: Model }) {
+  const [activeTab, setActiveTab] = useQueryState('tab', tabParser)
+
+  // Warm every tab's Convex subscription while the user reads the first one,
+  // so switching tabs swaps in data that is already cached.
+  useModelEndpoints(model.slug)
+  useCachedQuery(api.endpointPricingHistory.get, { modelSlug: model.slug })
+
+  useEffect(() => {
+    // Prefetch the ECharts chunk for the same reason.
+    void import('./pricing-history-plot')
+  }, [])
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2">
+    <div className="flex min-h-0 min-w-0 flex-1 [scrollbar-gutter:stable] flex-col overflow-y-auto overscroll-contain px-2">
       <ModelHeader model={model} />
 
-      <div className="mx-auto grid w-full max-w-6xl gap-4 px-3 py-4">
-        {endpoints === undefined ? (
-          <LoadingBadge label="Loading endpoints" />
-        ) : (
-          <>
-            <ProviderComparisonCard endpoints={endpoints} />
-            <PricingHistoryCard modelSlug={modelId} />
-            <ParameterComparisonCard endpoints={endpoints} />
-          </>
-        )}
-      </div>
+      <Tabs
+        className="gap-0"
+        onValueChange={(value) => {
+          if (isModelPageTab(value)) {
+            void setActiveTab(value)
+          }
+        }}
+        value={activeTab}
+      >
+        <div className="border-b">
+          <div className="mx-auto w-full max-w-6xl px-3">
+            <TabsList variant="line" className="max-w-full overflow-x-auto">
+              <TabsTrigger value="provider-comparison">Providers</TabsTrigger>
+              <TabsTrigger value="pricing-history">Pricing history</TabsTrigger>
+              <TabsTrigger value="parameter-comparison">Parameters</TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
+
+        <TabsContent
+          value="provider-comparison"
+          className="mx-auto w-full max-w-6xl px-3 py-4 text-sm/normal"
+        >
+          <ProviderComparisonCard modelSlug={model.slug} />
+        </TabsContent>
+        <TabsContent
+          value="pricing-history"
+          className="mx-auto w-full max-w-6xl px-3 py-4 text-sm/normal"
+        >
+          <PricingHistoryCard modelSlug={model.slug} />
+        </TabsContent>
+        <TabsContent
+          value="parameter-comparison"
+          className="mx-auto w-full max-w-6xl px-3 py-4 text-sm/normal"
+        >
+          <ParameterComparisonCard modelSlug={model.slug} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
-function LoadingBadge({ label }: { label: string }) {
-  return (
-    <Badge variant="outline" className="rounded-sm">
-      <Spinner data-icon="inline-start" />
-      {label}
-    </Badge>
-  )
+function isModelPageTab(value: unknown): value is ModelPageTab {
+  return typeof value === 'string' && MODEL_PAGE_TABS.some((tab) => tab === value)
 }
 
-function NotFoundState({ modelId }: { modelId: string }) {
+export function ModelNotFound({ modelId }: { modelId: string }) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-y-auto overscroll-contain p-6">
       <Empty className="max-w-lg border">

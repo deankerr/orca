@@ -26,7 +26,22 @@ export type ZoomWindow = {
 /** ECharts expresses data-zoom windows as percentages of the complete X-axis. */
 export const FULL_HISTORY_WINDOW: ZoomWindow = { start: 0, end: 100 }
 
+/** Whether a series ever had an observable price for the metric. Shared by the
+ * card's legend (runtime-light module) and the plot's rendered-series filter. */
+export function hasMetricHistory(series: PricingSeries, metric: PricingMetric) {
+  return series.points.some((point) => point.available && point.pricing[metric] !== undefined)
+}
+
+/** History stores state transitions, so an endpoint's price at any instant is
+ * its most recent observation at or before it. Undefined while unavailable. */
+export function priceAt(series: PricingSeries, metric: PricingMetric, at: number) {
+  const state = stateAt(series, at)
+  return state?.available === true ? state.pricing[metric] : undefined
+}
+
 const DATA_ZOOM_THROTTLE = ms('16ms')
+// 390px chart height comfortably fits ~18 tooltip rows plus its heading.
+const TOOLTIP_SINGLE_COLUMN_MAX_ROWS = 16
 const INTRADAY_LABEL_WINDOW = ms('5d')
 const DAILY_LABEL_WINDOW = ms('90d')
 const MONO_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
@@ -85,12 +100,6 @@ export function createPricingHistoryChartOption(args: {
     showSymbol: true,
     symbol: 'circle',
     symbolSize: 6,
-    tooltip: {
-      valueFormatter: (value) => {
-        const price = Array.isArray(value) ? Number(value[1]) : Number(value)
-        return formatChartPrice(args.context.metric, price, true)
-      },
-    },
   }))
 
   return {
@@ -173,6 +182,24 @@ export function createPricingHistoryChartOption(args: {
       axisPointer: {
         type: 'line',
         lineStyle: { color: theme.mutedForeground, opacity: 0.45, width: 1 },
+      },
+      // The hovered X always snaps to a change event, and the legend below the
+      // chart is the full standings board. The tooltip only tells the event's
+      // story: which endpoints have an observation here, and what moved.
+      formatter: (params: unknown) => {
+        const at = axisTimestampFromTooltipParams(params)
+        if (at === null) {
+          return ''
+        }
+
+        return buildTooltipHtml({
+          at,
+          context: args.context,
+          endpointCount: args.allSeries.length,
+          endpointIndexes,
+          mutedColor: theme.mutedForeground,
+          params: Array.isArray(params) ? (params as unknown[]) : [params],
+        })
       },
     },
     xAxis: {
@@ -286,6 +313,172 @@ function buildAvailablePriceSegments(
   }
 
   return segments
+}
+
+/** The axis-trigger payload is an array of matched points; the hovered X value rides on each. */
+function axisTimestampFromTooltipParams(params: unknown): number | null {
+  const first: unknown = Array.isArray(params) ? (params as unknown[])[0] : params
+  if (typeof first !== 'object' || first === null || !('axisValue' in first)) {
+    return null
+  }
+
+  const { axisValue } = first
+  if (typeof axisValue === 'number') {
+    return axisValue
+  }
+  if (typeof axisValue === 'string' || axisValue instanceof Date) {
+    const timestamp = Number(new Date(axisValue))
+    return Number.isNaN(timestamp) ? null : timestamp
+  }
+  return null
+}
+
+/** History stores state transitions, so an endpoint's price at any instant is
+ * its most recent observation at or before it. */
+function stateAt(series: PricingSeries, at: number) {
+  let state: PricingSeries['points'][number] | undefined
+  for (const point of series.points) {
+    if (point.at > at) {
+      break
+    }
+    state = point
+  }
+  return state
+}
+
+function buildTooltipHtml(args: {
+  at: number
+  context: ZoomContext
+  endpointCount: number
+  endpointIndexes: ReadonlyMap<string, number>
+  mutedColor: string
+  params: readonly unknown[]
+}) {
+  const seenSeriesNames = new Set<string>()
+  const rows: { color: string; name: string; price: number; priceCell: string }[] = []
+
+  // Availability gaps split one endpoint into several chart series with the
+  // same name, so the matched params are deduplicated per endpoint.
+  for (const param of args.params) {
+    const seriesName = seriesNameFromTooltipParam(param)
+    if (seriesName === null || seenSeriesNames.has(seriesName)) {
+      continue
+    }
+    seenSeriesNames.add(seriesName)
+
+    const series = args.context.series.find(
+      (candidate) => candidate.provider.tag_slug === seriesName,
+    )
+    const colorIndex =
+      series === undefined ? undefined : args.endpointIndexes.get(series.endpointUuid)
+    const price = priceFromTooltipParam(param)
+    if (series === undefined || colorIndex === undefined || price === undefined) {
+      continue
+    }
+
+    rows.push({
+      color: endpointSrgbColor(colorIndex, args.endpointCount),
+      name: seriesName,
+      price,
+      priceCell: describePriceEvent(series, args.context.metric, args.at, price, args.mutedColor),
+    })
+  }
+
+  rows.sort((left, right) => right.price - left.price)
+
+  if (rows.length === 0) {
+    return ''
+  }
+
+  const heading = new Date(args.at).toLocaleString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const items = rows.map(
+    (row) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;break-inside:avoid">
+        <span style="display:flex;align-items:center;gap:6px;min-width:0">
+          <span style="flex-shrink:0;width:8px;height:8px;border-radius:9999px;background:${row.color}"></span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(row.name)}</span>
+        </span>
+        <span>${row.priceCell}</span>
+      </div>`,
+  )
+  // Long lists flow into two columns so the docked tooltip stays shorter than
+  // the chart instead of spilling past its bottom edge.
+  const columnCount = rows.length > TOOLTIP_SINGLE_COLUMN_MAX_ROWS ? 2 : 1
+
+  return `<div style="line-height:1.5">
+    <div style="margin-bottom:4px;color:${args.mutedColor}">${escapeHtml(heading)}</div>
+    <div style="columns:${columnCount};column-gap:24px;min-width:${columnCount * 200}px">${items.join('')}</div>
+  </div>`
+}
+
+/** Describes what happened to an endpoint's price at a change event: a delta
+ * for repricing, "new" for a first observation, "unlisted" when the matched
+ * datum is the synthetic point that closes a segment at a disappearance. */
+function describePriceEvent(
+  series: PricingSeries,
+  metric: PricingMetric,
+  at: number,
+  price: number,
+  mutedColor: string,
+) {
+  const muted = (text: string) => `<span style="color:${mutedColor}">${text}</span>`
+  const current = escapeHtml(formatChartPrice(metric, price, true))
+
+  const eventPoint = series.points.find((point) => point.at === at)
+  if (
+    eventPoint !== undefined &&
+    (!eventPoint.available || eventPoint.pricing[metric] === undefined)
+  ) {
+    return `${escapeHtml(formatChartPrice(metric, price, false))} ${muted('→ unlisted')}`
+  }
+
+  const previous = priceAt(series, metric, at - 1)
+  if (previous === undefined) {
+    return `${muted('new ·')} ${current}`
+  }
+  if (previous !== price) {
+    return `${muted(`${escapeHtml(formatChartPrice(metric, previous, false))} →`)} ${current}`
+  }
+  return current
+}
+
+function seriesNameFromTooltipParam(param: unknown): string | null {
+  if (typeof param !== 'object' || param === null) {
+    return null
+  }
+
+  const candidate = param as { seriesName?: unknown }
+  return typeof candidate.seriesName === 'string' ? candidate.seriesName : null
+}
+
+function priceFromTooltipParam(param: unknown): number | undefined {
+  if (typeof param !== 'object' || param === null) {
+    return undefined
+  }
+
+  const { value } = param as { value?: unknown }
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  const [, price] = value as unknown[]
+  return typeof price === 'number' ? price : undefined
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 }
 
 function axesForZoomWindow(context: ZoomContext, zoom: ZoomWindow) {

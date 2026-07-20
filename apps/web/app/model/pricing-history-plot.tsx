@@ -10,20 +10,18 @@ import {
 import { init, use as registerEChartsModules } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { useTheme } from 'next-themes'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-
+import { pricingMetricMetadata } from './pricing-fields'
 import {
   createPricingHistoryChartOption,
   createZoomedAxesOption,
   FULL_HISTORY_WINDOW,
+  hasMetricHistory,
   ZOOM_ANIMATION_DURATION,
 } from './pricing-history-chart-option'
-import type { PricingSeries, ZoomContext, ZoomWindow } from './pricing-history-chart-option'
-import { endpointColor } from './pricing-history-colors'
+import type { ZoomContext, ZoomWindow } from './pricing-history-chart-option'
 import type { EndpointPricingHistory, PricingMetric } from './types'
 
 // The core ECharts build stays out of the client bundle unless each required
@@ -37,73 +35,48 @@ registerEChartsModules([
   CanvasRenderer,
 ])
 
+export type PricingHistoryPlotHandle = {
+  resetZoom: () => void
+  /** Emphasizes every chart segment belonging to the named provider series. */
+  setSeriesEmphasis: (seriesName: string, emphasized: boolean) => void
+}
+
 /**
- * React owns durable UI state (metric and visible endpoints), while ECharts
- * owns the high-frequency zoom interaction. Refs bridge those two lifecycles
- * without rerendering React for every pixel the slider moves.
+ * Pure canvas: the card owns all durable UI state (metric, hidden endpoints)
+ * and the surrounding layout, while this component owns the ECharts instance
+ * and the high-frequency zoom interaction. The handle ref bridges those two
+ * lifecycles without rerendering React for every pixel the slider moves.
  */
 export function PricingHistoryPlot({
+  disabledEndpointUuids,
+  handleRef,
   history,
   metric,
+  onAxisHoverChange,
+  onSeriesHoverChange,
+  onZoomedChange,
 }: {
+  disabledEndpointUuids: ReadonlySet<string>
+  handleRef: RefObject<PricingHistoryPlotHandle | null>
   history: EndpointPricingHistory
   metric: PricingMetric
+  onAxisHoverChange: (timestamp: number | null) => void
+  onSeriesHoverChange: (seriesName: string | null) => void
+  onZoomedChange: (isZoomed: boolean) => void
 }) {
-  const { resolvedTheme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<ECharts | null>(null)
   const zoomContextRef = useRef<ZoomContext | null>(null)
   const zoomWindowRef = useRef<ZoomWindow>(FULL_HISTORY_WINDOW)
   const zoomAnimationRef = useRef<number | null>(null)
   const historyBoundsKeyRef = useRef('')
-  const [disabledEndpointUuids, setDisabledEndpointUuids] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  )
-  const [isZoomed, setIsZoomed] = useState(false)
+  // Chart events fire from listeners registered once at mount; the ref keeps
+  // them calling the latest callbacks without re-subscribing.
+  const callbacksRef = useRef({ onAxisHoverChange, onSeriesHoverChange, onZoomedChange })
 
-  const renderableSeries = history.series
-    .map((series, colorIndex) => ({ series, colorIndex }))
-    .filter(({ series }) => hasMetricHistory(series, metric))
-  const visibleSeries = renderableSeries.filter(
-    ({ series }) => !disabledEndpointUuids.has(series.endpointUuid),
-  )
-
-  const toggleEndpoint = (endpointUuid: string) => {
-    setDisabledEndpointUuids((current) => {
-      const next = new Set(current)
-      if (next.has(endpointUuid)) {
-        next.delete(endpointUuid)
-      } else {
-        next.add(endpointUuid)
-      }
-      return next
-    })
-  }
-
-  const toggleAllEndpoints = () => {
-    if (visibleSeries.length === renderableSeries.length) {
-      setDisabledEndpointUuids(
-        (current) =>
-          new Set([...current, ...renderableSeries.map(({ series }) => series.endpointUuid)]),
-      )
-      return
-    }
-
-    setDisabledEndpointUuids(new Set())
-  }
-
-  const setEndpointEmphasis = (series: PricingSeries, emphasized: boolean) => {
-    if (disabledEndpointUuids.has(series.endpointUuid)) {
-      return
-    }
-
-    chartRef.current?.dispatchAction({
-      type: emphasized ? 'highlight' : 'downplay',
-      // Availability gaps are separate chart series with the same provider
-      // name, so targeting by name emphasizes every segment together.
-      seriesName: providerId(series),
-    })
-  }
+  useEffect(() => {
+    callbacksRef.current = { onAxisHoverChange, onSeriesHoverChange, onZoomedChange }
+  })
 
   const resetZoom = () => {
     const chart = chartRef.current
@@ -145,6 +118,23 @@ export function PricingHistoryPlot({
     zoomAnimationRef.current = requestAnimationFrame(startAnimation)
   }
 
+  const setSeriesEmphasis = (seriesName: string, emphasized: boolean) => {
+    chartRef.current?.dispatchAction({
+      type: emphasized ? 'highlight' : 'downplay',
+      // Availability gaps are separate chart series with the same provider
+      // name, so targeting by name emphasizes every segment together.
+      seriesName,
+    })
+  }
+
+  // Republish on every render so the handle always closes over fresh state.
+  useEffect(() => {
+    handleRef.current = { resetZoom, setSeriesEmphasis }
+    return () => {
+      handleRef.current = null
+    }
+  })
+
   useEffect(() => {
     const container = containerRef.current
     if (container === null) {
@@ -164,10 +154,7 @@ export function PricingHistoryPlot({
     const handleDataZoom = (event: unknown) => {
       const zoom = zoomWindowFromEvent(event, zoomWindowRef.current)
       zoomWindowRef.current = zoom
-      setIsZoomed((current) => {
-        const next = !isFullHistoryWindow(zoom)
-        return current === next ? current : next
-      })
+      callbacksRef.current.onZoomedChange(!isFullHistoryWindow(zoom))
 
       const context = zoomContextRef.current
       if (context !== null) {
@@ -177,9 +164,40 @@ export function PricingHistoryPlot({
       }
     }
 
+    const handleSeriesMouseOver = (event: unknown) => {
+      const seriesName = seriesNameFromEvent(event)
+      if (seriesName !== null) {
+        callbacksRef.current.onSeriesHoverChange(seriesName)
+      }
+    }
+
+    const handleSeriesMouseOut = (event: unknown) => {
+      if (seriesNameFromEvent(event) !== null) {
+        callbacksRef.current.onSeriesHoverChange(null)
+      }
+    }
+
+    // The axis pointer snaps to change-event timestamps, so the value only
+    // changes when the pointer crosses an event; identical updates are
+    // no-op setStates for the card.
+    const handleUpdateAxisPointer = (event: unknown) => {
+      const timestamp = axisPointerTimestamp(event)
+      if (timestamp !== null) {
+        callbacksRef.current.onAxisHoverChange(timestamp)
+      }
+    }
+
+    const handleGlobalOut = () => {
+      callbacksRef.current.onAxisHoverChange(null)
+    }
+
     chart.on('datazoom', handleDataZoom)
+    chart.on('mouseover', handleSeriesMouseOver)
+    chart.on('mouseout', handleSeriesMouseOut)
+    chart.on('updateAxisPointer', handleUpdateAxisPointer)
     chart.getZr().on('mousedown', handleDirectManipulation)
     chart.getZr().on('mousewheel', handleDirectManipulation)
+    chart.getZr().on('globalout', handleGlobalOut)
 
     const observer = new ResizeObserver(() => {
       chart.resize()
@@ -190,8 +208,12 @@ export function PricingHistoryPlot({
       cancelZoomAnimation(zoomAnimationRef)
       observer.disconnect()
       chart.off('datazoom', handleDataZoom)
+      chart.off('mouseover', handleSeriesMouseOver)
+      chart.off('mouseout', handleSeriesMouseOut)
+      chart.off('updateAxisPointer', handleUpdateAxisPointer)
       chart.getZr().off('mousedown', handleDirectManipulation)
       chart.getZr().off('mousewheel', handleDirectManipulation)
+      chart.getZr().off('globalout', handleGlobalOut)
       chart.dispose()
       chartRef.current = null
     }
@@ -209,7 +231,7 @@ export function PricingHistoryPlot({
       // Zoom is percentage-based, so carrying it into a differently bounded
       // history would silently point at a different period.
       zoomWindowRef.current = FULL_HISTORY_WINDOW
-      setIsZoomed(false)
+      callbacksRef.current.onZoomedChange(false)
     }
 
     const renderedSeries = history.series.filter(
@@ -225,7 +247,7 @@ export function PricingHistoryPlot({
     }
     zoomContextRef.current = context
 
-    // Endpoint selection, metric, history, and theme are low-frequency changes.
+    // Endpoint selection, metric, and history are low-frequency changes.
     // Replacing the option here also removes stale segment series cleanly.
     chart.setOption(
       createPricingHistoryChartOption({
@@ -237,97 +259,55 @@ export function PricingHistoryPlot({
       }),
       { lazyUpdate: false, notMerge: true },
     )
-  }, [disabledEndpointUuids, history, metric, resolvedTheme])
+  }, [disabledEndpointUuids, history, metric])
 
   return (
-    <div className="space-y-3">
-      <div className="relative min-h-[390px] w-full overflow-hidden rounded-md bg-muted/15">
-        <div
-          aria-label={`${metric === 'text_input' ? 'Input' : 'Output'} pricing history chart`}
-          className={cn(
-            'h-[390px] w-full transition-opacity duration-150',
-            visibleSeries.length === 0 && 'pointer-events-none opacity-0',
-          )}
-          data-testid="pricing-history-plot"
-          ref={containerRef}
-        />
-        {visibleSeries.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-muted-foreground">
-            Select an endpoint below to render its pricing history.
-          </div>
-        ) : null}
-      </div>
-      <div className="flex min-h-10 items-center justify-between gap-3">
-        <p aria-live="polite" className="text-muted-foreground tabular-nums">
-          {visibleSeries.length} of {renderableSeries.length} endpoints shown
-        </p>
-        <div className="flex items-center gap-1">
-          <Button
-            className="active:scale-[0.96]"
-            disabled={!isZoomed}
-            onClick={resetZoom}
-            variant="ghost"
-          >
-            Reset zoom
-          </Button>
-          <Button className="active:scale-[0.96]" onClick={toggleAllEndpoints} variant="ghost">
-            {visibleSeries.length === renderableSeries.length ? 'Hide all' : 'Show all'}
-          </Button>
-        </div>
-      </div>
-      <ul className="flex flex-wrap gap-x-2" aria-label="Endpoints">
-        {renderableSeries.map(({ series, colorIndex }) => (
-          <li className="min-w-0" key={series.endpointUuid}>
-            <button
-              aria-label={`${disabledEndpointUuids.has(series.endpointUuid) ? 'Show' : 'Hide'} ${providerId(series)} endpoint`}
-              aria-pressed={!disabledEndpointUuids.has(series.endpointUuid)}
-              className={cn(
-                'flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-muted-foreground transition-[background-color,opacity,scale] outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]',
-                disabledEndpointUuids.has(series.endpointUuid) && 'opacity-40',
-              )}
-              onClick={() => {
-                toggleEndpoint(series.endpointUuid)
-              }}
-              onBlur={() => {
-                setEndpointEmphasis(series, false)
-              }}
-              onFocus={() => {
-                setEndpointEmphasis(series, true)
-              }}
-              onPointerEnter={() => {
-                setEndpointEmphasis(series, true)
-              }}
-              onPointerLeave={() => {
-                setEndpointEmphasis(series, false)
-              }}
-              type="button"
-            >
-              <span
-                aria-hidden
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: endpointColor(colorIndex, history.series.length) }}
-              />
-              <span className="max-w-52 truncate" title={providerId(series)}>
-                {providerId(series)}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <div
+      aria-label={`${pricingMetricMetadata(metric).label} pricing history chart`}
+      className="h-full w-full"
+      data-testid="pricing-history-plot"
+      ref={containerRef}
+    />
   )
-}
-
-function hasMetricHistory(series: PricingSeries, metric: PricingMetric) {
-  return series.points.some((point) => point.available && point.pricing[metric] !== undefined)
-}
-
-function providerId(series: PricingSeries) {
-  return series.provider.tag_slug
 }
 
 function dispatchZoomWindow(chart: ECharts, zoom: ZoomWindow) {
   chart.dispatchAction({ type: 'dataZoom', start: zoom.start, end: zoom.end })
+}
+
+/** Extracts the hovered X-axis timestamp from an updateAxisPointer event. */
+function axisPointerTimestamp(event: unknown): number | null {
+  if (typeof event !== 'object' || event === null) {
+    return null
+  }
+
+  const { axesInfo } = event as { axesInfo?: unknown }
+  if (!Array.isArray(axesInfo)) {
+    return null
+  }
+
+  for (const axis of axesInfo as unknown[]) {
+    if (typeof axis !== 'object' || axis === null) {
+      continue
+    }
+    const { value } = axis as { value?: unknown }
+    if (typeof value === 'number') {
+      return value
+    }
+  }
+  return null
+}
+
+/** Extracts the provider series name from a chart mouse event, if it has one. */
+function seriesNameFromEvent(event: unknown): string | null {
+  if (typeof event !== 'object' || event === null) {
+    return null
+  }
+
+  const candidate = event as { componentType?: unknown; seriesName?: unknown }
+  return candidate.componentType === 'series' && typeof candidate.seriesName === 'string'
+    ? candidate.seriesName
+    : null
 }
 
 function cancelZoomAnimation(animationRef: { current: number | null }) {
