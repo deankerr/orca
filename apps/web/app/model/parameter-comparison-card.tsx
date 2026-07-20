@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 
+import { EntityOverviewTrigger } from '@/components/entity-overview/entity-overview-trigger'
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ import type { ModelEndpoint } from './types'
 
 const LABEL_ANGLE_DEGREES = 45
 const ROW_HEIGHT_REM = 2.75
-const COLUMN_WIDTH_REM = 2.5
+const COLUMN_WIDTH_REM = 2.625
 const MARK_SIZE_REM = 1.75
 const LABEL_LIFT_REM = 0.25
 const PROVIDER_COLUMN_REM = 10
@@ -24,8 +25,8 @@ export function ParameterComparisonCard({ endpoints }: { endpoints: readonly Mod
   const matrix = buildParameterMatrix(endpoints)
 
   return (
-    <ModelPageCard title="Parameter Comparison" className="pb-0">
-      <CardContent className="grid gap-3">
+    <ModelPageCard title="Parameter Comparison">
+      <CardContent className="grid gap-3 px-4">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <p className="min-w-64 flex-1 text-pretty">
             Parameter support varies by provider. Rare parameters constrain which providers can
@@ -173,12 +174,18 @@ function ProviderParameterRow({
       )}
     >
       <th scope="row" className="flex min-w-0 items-center pr-3 text-left font-normal">
-        <EntityIdentity
+        <EntityOverviewTrigger
+          type="provider"
           slug={endpoint.provider.slug}
-          name={endpoint.provider.name}
-          isAvailable={!isUnavailable}
-          className="px-0 py-0"
-        />
+          className="max-w-full min-w-0 text-left"
+        >
+          <EntityIdentity
+            slug={endpoint.provider.tag_slug}
+            name={endpoint.provider.name}
+            isAvailable={!isUnavailable}
+            className="px-0 py-0"
+          />
+        </EntityOverviewTrigger>
         {isUnavailable ? <span className="sr-only">, unavailable</span> : null}
       </th>
       {columns.map(({ parameter }) => (

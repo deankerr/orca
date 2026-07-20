@@ -61,7 +61,7 @@ export function PricingHistoryCard({ modelSlug }: { modelSlug: string }) {
 
   return (
     <ModelPageCard title="Pricing History">
-      <CardContent className="space-y-4 px-4 pb-4">
+      <CardContent className="space-y-4 px-2">
         <ToggleGroup
           aria-label="Pricing metric"
           className="shadow-sm"

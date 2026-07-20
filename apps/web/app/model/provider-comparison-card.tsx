@@ -2,6 +2,7 @@
 
 import { formatPricing } from '@orca/backend/shared/formatters'
 
+import { EntityOverviewTrigger } from '@/components/entity-overview/entity-overview-trigger'
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { CardContent } from '@/components/ui/card'
 import {
@@ -54,7 +55,7 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
 
   return (
     <ModelPageCard title="Provider Comparison">
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-2">
         <Table className="min-w-[44rem]">
           <TableHeader className="text-muted-foreground">
             <TableRow>
@@ -72,12 +73,18 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
             {sorted.map((endpoint) => (
               <TableRow key={endpoint.uuid}>
                 <TableCell>
-                  <EntityIdentity
+                  <EntityOverviewTrigger
+                    type="provider"
                     slug={endpoint.provider.slug}
-                    name={endpoint.provider.name}
-                    isAvailable={endpoint.unavailable_at === undefined}
-                    className="px-0 py-0"
-                  />
+                    className="max-w-full min-w-0 text-left"
+                  >
+                    <EntityIdentity
+                      slug={endpoint.provider.tag_slug}
+                      name={endpoint.provider.name}
+                      isAvailable={endpoint.unavailable_at === undefined}
+                      className="px-0 py-0"
+                    />
+                  </EntityOverviewTrigger>
                 </TableCell>
                 {pricingColumns.map((metric) => (
                   <TableCell key={metric.key} className="text-right font-mono">

@@ -47,7 +47,7 @@ export function ModelPage({ modelId }: { modelId: string }) {
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2">
       <ModelHeader model={model} />
 
       <div className="mx-auto grid w-full max-w-6xl gap-4 px-3 py-4">
