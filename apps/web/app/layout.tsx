@@ -38,9 +38,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn('antialiased', geistMono.variable, 'font-sans', geistSans.variable, 'dark')}
+      className={cn(
+        'h-full overflow-hidden antialiased',
+        geistMono.variable,
+        'font-sans',
+        geistSans.variable,
+        'dark',
+      )}
     >
-      <body>
+      <body className="h-full overflow-hidden">
         <NuqsAdapter>
           <ConvexClientProvider>
             <TooltipProvider>

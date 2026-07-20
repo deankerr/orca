@@ -47,7 +47,7 @@ export function ModelPage({ modelId }: { modelId: string }) {
   }
 
   return (
-    <main className="flex flex-1 flex-col overflow-y-auto">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
       <ModelHeader model={model} />
 
       <div className="mx-auto grid w-full max-w-6xl gap-4 px-3 py-4">
@@ -61,7 +61,7 @@ export function ModelPage({ modelId }: { modelId: string }) {
           </>
         )}
       </div>
-    </main>
+    </div>
   )
 }
 
@@ -76,7 +76,7 @@ function LoadingBadge({ label }: { label: string }) {
 
 function NotFoundState({ modelId }: { modelId: string }) {
   return (
-    <main className="flex flex-1 items-center justify-center p-6">
+    <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-y-auto overscroll-contain p-6">
       <Empty className="max-w-lg border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
@@ -94,6 +94,6 @@ function NotFoundState({ modelId }: { modelId: string }) {
           </Button>
         </EmptyContent>
       </Empty>
-    </main>
+    </div>
   )
 }

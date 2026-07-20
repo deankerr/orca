@@ -2,11 +2,14 @@ import { cn } from '@/lib/utils'
 
 import { Spinner } from '../ui/spinner'
 
-export function PageContainer({ className, ...props }: React.ComponentProps<'main'>) {
+export function PageContainer({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <main
+    <div
       data-slot="page-container"
-      className={cn('flex flex-1 flex-col gap-1.5 px-2 py-4', className)}
+      className={cn(
+        'flex min-h-0 min-w-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-2 py-4',
+        className,
+      )}
       {...props}
     />
   )
