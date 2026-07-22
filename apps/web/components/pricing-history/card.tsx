@@ -230,7 +230,7 @@ export function PricingHistoryCard({
       <Card aria-busy="true" className="bg-card/50" size="sm">
         <PricingHistoryHeader modelName={modelName} modelSlug={modelSlug} />
         <CardContent>
-          <output className="flex h-[390px] flex-col items-center justify-center gap-2 text-muted-foreground">
+          <output className="flex h-[414px] flex-col items-center justify-center gap-2 text-muted-foreground">
             <Spinner />
             <span>Loading pricing history…</span>
           </output>
@@ -249,7 +249,7 @@ export function PricingHistoryCard({
 
       <CardContent className="flex flex-col gap-3">
         {/* Chart with history slider */}
-        <div className="relative h-[390px] overflow-hidden">
+        <div className="relative h-[414px] overflow-hidden">
           {hasPricingHistory ? (
             <>
               <div
@@ -363,7 +363,7 @@ export function PricingHistoryCard({
         {/* Legend section */}
         <div className="flex w-full flex-col gap-1">
           <div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1">
-            <div className="flex min-w-0 grow basis-1/2 items-center gap-2">
+            <div className="flex items-center gap-2">
               <p className="font-medium">{metricMetadata.label}</p>
               <p className="shrink-0 text-muted-foreground">{metricMetadata.historyUnitLabel}</p>
               <span aria-hidden className="text-muted-foreground/70">

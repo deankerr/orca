@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${modelName} Pricing History`,
-    description: `Historical OpenRouter provider pricing for ${modelName}.`,
+    description: `Track historical ${modelName} pricing across providers on OpenRouter.`,
   }
 }
 

@@ -46,7 +46,12 @@ export function zoomWindowsEqual(a: ZoomWindow, b: ZoomWindow) {
 const DATA_ZOOM_THROTTLE = ms('16ms')
 // Zooming below a day just shows empty space between snapshot points.
 const MIN_ZOOM_SPAN = ms('1d')
-// 390px chart height comfortably fits ~18 tooltip rows plus its heading.
+// ECharts hit-tests the handle path's bounds. The two opposing outer paths
+// cancel visually while preserving a 44px square touch target around the pill.
+const SLIDER_HANDLE_ICON =
+  'path://M-22-22H22V22H-22ZM-22-22V22H22V-22H-22ZM-3-16Q-5-16-5-14V14Q-5 16-3 16H3Q5 16 5 14V-14Q5-16 3-16Z'
+// 414px chart height comfortably fits ~18 tooltip rows plus its heading and
+// leaves a distinct gutter between the two-line X-axis labels and navigator.
 const TOOLTIP_SINGLE_COLUMN_MAX_ROWS = 16
 const MONO_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 // Hex mirrors of the dark-theme palette in globals.css - ECharts canvas paints
@@ -178,7 +183,7 @@ export function createPricingHistoryChartOption(args: {
         type: 'slider',
         start: args.zoom.start,
         end: args.zoom.end,
-        bottom: 8,
+        bottom: 12,
         height: 24,
         // Untethered from the plot area: the navigator spans the full card
         // width instead of leaving a stub of dead space under the Y-axis
@@ -200,13 +205,15 @@ export function createPricingHistoryChartOption(args: {
         // The selected window between the two handles.
         fillerColor: theme.secondary,
         filterMode: 'none',
+        handleIcon: SLIDER_HANDLE_ICON,
         handleLabel: { show: false },
+        handleSize: 44,
         handleStyle: {
           // Handle fill: the brightest solid on the control, like any primary
           // action. A soft drop shadow lifts it off the flat track.
           color: theme.primary,
-          borderColor: theme.border,
-          borderWidth: 1,
+          // A stroke would reveal the otherwise-cancelled hit-target paths.
+          borderWidth: 0,
           shadowBlur: 4,
           shadowColor: 'rgba(0, 0, 0, 0.5)',
           shadowOffsetY: 1,
@@ -229,7 +236,7 @@ export function createPricingHistoryChartOption(args: {
       left: 58,
       right: 16,
       top: 16,
-      bottom: 66,
+      bottom: 90,
     },
     series: lineSeries,
     tooltip: {
