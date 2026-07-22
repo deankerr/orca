@@ -10,14 +10,7 @@ import { useMemo, useRef, useState } from 'react'
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -414,11 +407,9 @@ function PricingHistoryHeader({
   visibleSpan?: number
 }) {
   return (
-    <CardHeader className="border-b">
-      <CardTitle className="flex h-full items-center">
-        <EntityIdentity slug={modelSlug} name={modelName} />
-      </CardTitle>
-      <CardAction className="flex h-full items-center gap-1 text-right text-xs">
+    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-(--card-spacing) pb-(--card-spacing)">
+      <EntityIdentity className="shrink-0" slug={modelSlug} name={modelName} />
+      <div className="ml-auto flex shrink-0 items-center gap-1 text-right text-xs">
         <Badge className="mt-px self-start font-mono uppercase" variant="outline">
           Beta
         </Badge>
@@ -430,8 +421,8 @@ function PricingHistoryHeader({
               : `Showing ${durationLabel(visibleSpan)}`}
           </p>
         </div>
-      </CardAction>
-    </CardHeader>
+      </div>
+    </header>
   )
 }
 
