@@ -8,7 +8,7 @@ import { ClientApiCodeBlock } from './client-api-preview'
 export const metadata: Metadata = {
   title: 'ORCA API',
   description:
-    'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
+    'The curated OpenRouter dataset, as JSON — provider-level pricing, context lengths, and capabilities for every model.',
 }
 
 const API_URL = 'https://orca.orb.town/api/preview/v2/models'

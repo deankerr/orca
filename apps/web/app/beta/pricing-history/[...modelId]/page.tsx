@@ -25,7 +25,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${modelName} Pricing History`,
-    description: `Historical OpenRouter provider pricing for ${modelName}.`,
+    description: `How provider pricing for ${modelName} has moved over time on OpenRouter.`,
+    // openGraph replaces (not merges with) the root layout's, so restate siteName.
+    openGraph: {
+      siteName: 'ORCA',
+      type: 'website',
+      images: [
+        {
+          url: `/og/pricing-history/${modelId}`,
+          width: 1200,
+          height: 630,
+          alt: `${modelName} pricing history on ORCA`,
+        },
+      ],
+    },
   }
 }
 

@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
@@ -22,11 +22,31 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.VERCEL_ENV === 'production'
+      ? 'https://orca.orb.town'
+      : process.env.VERCEL_URL === undefined
+        ? 'http://localhost:3000'
+        : `https://${process.env.VERCEL_URL}`,
+  ),
   title: {
     template: withEnvironmentPrefix('ORCA ⋅ %s'),
     default: withEnvironmentPrefix('ORCA'),
   },
-  description: 'Compare models and providers available on OpenRouter',
+  description:
+    'Every model, endpoint, and provider on OpenRouter — compared, priced, and tracked over time.',
+  openGraph: {
+    siteName: 'ORCA',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+}
+
+// Discord (among others) uses theme-color as the embed accent strip.
+export const viewport: Viewport = {
+  themeColor: '#0a0a0a',
 }
 
 export default function RootLayout({

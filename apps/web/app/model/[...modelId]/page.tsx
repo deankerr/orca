@@ -21,8 +21,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const modelId = getModelId(await params)
   const model = await getModel(modelId)
 
+  const modelName = model?.name ?? modelId
   return {
-    title: model?.name ?? modelId,
+    title: modelName,
+    description: `${modelName} on OpenRouter — compare providers, pricing, context limits, and capabilities.`,
+    // openGraph replaces (not merges with) the root layout's, so restate siteName.
+    openGraph: {
+      siteName: 'ORCA',
+      type: 'website',
+      images: [
+        { url: `/og/model/${modelId}`, width: 1200, height: 630, alt: `${modelName} on ORCA` },
+      ],
+    },
   }
 }
 

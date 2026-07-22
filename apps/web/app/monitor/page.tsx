@@ -6,7 +6,8 @@ import { ClientOnly } from '@/components/shared/client-only'
 
 export const metadata: Metadata = {
   title: 'Monitor',
-  description: 'Updates detected between OpenRouter API snapshots',
+  description:
+    'Every change to every OpenRouter model, endpoint, and provider — field-level diffs between snapshots, as they happen.',
 }
 
 export default function Page() {
