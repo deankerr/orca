@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { endpointColor, endpointSrgbColor } from './pricing-history-colors'
+import { endpointColor, endpointSrgbColor } from './colors'
 
 describe('endpointColor', () => {
   test('uses a vivid curated palette for the common endpoint counts', () => {

@@ -1,15 +1,27 @@
 import { formatPricing, pricingScale } from '@orca/backend/shared/formatters'
+import {
+  addDays,
+  addHours,
+  addMonths,
+  addWeeks,
+  addYears,
+  startOfDay,
+  startOfHour,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns'
 import type { LineSeriesOption } from 'echarts/charts'
 import type { EChartsCoreOption } from 'echarts/core'
 import ms from 'ms'
 
-import { pricingMetricMetadata } from './pricing-fields'
-import { endpointSrgbColor } from './pricing-history-colors'
-import type { EndpointPricingHistory, PricingMetric } from './types'
+import { pricingMetricMetadata } from '../pricing-fields'
+import type { PricingMetric } from '../types'
+import { endpointSrgbColor } from './colors'
+import { priceAt } from './series'
+import type { PricingSeries } from './series'
 
 export const ZOOM_ANIMATION_DURATION = ms('220ms')
-
-export type PricingSeries = EndpointPricingHistory['series'][number]
 
 export type ZoomContext = {
   since: number
@@ -26,25 +38,55 @@ export type ZoomWindow = {
 /** ECharts expresses data-zoom windows as percentages of the complete X-axis. */
 export const FULL_HISTORY_WINDOW: ZoomWindow = { start: 0, end: 100 }
 
-/** Whether a series ever had an observable price for the metric. Shared by the
- * card's legend (runtime-light module) and the plot's rendered-series filter. */
-export function hasMetricHistory(series: PricingSeries, metric: PricingMetric) {
-  return series.points.some((point) => point.available && point.pricing[metric] !== undefined)
-}
-
-/** History stores state transitions, so an endpoint's price at any instant is
- * its most recent observation at or before it. Undefined while unavailable. */
-export function priceAt(series: PricingSeries, metric: PricingMetric, at: number) {
-  const state = stateAt(series, at)
-  return state?.available === true ? state.pricing[metric] : undefined
+/** Dispatched zoom windows accrue float error, so compare with a tolerance. */
+export function zoomWindowsEqual(a: ZoomWindow, b: ZoomWindow) {
+  return Math.abs(a.start - b.start) < 0.01 && Math.abs(a.end - b.end) < 0.01
 }
 
 const DATA_ZOOM_THROTTLE = ms('16ms')
+// Zooming below a day just shows empty space between snapshot points.
+const MIN_ZOOM_SPAN = ms('1d')
 // 390px chart height comfortably fits ~18 tooltip rows plus its heading.
 const TOOLTIP_SINGLE_COLUMN_MAX_ROWS = 16
-const INTRADAY_LABEL_WINDOW = ms('5d')
-const DAILY_LABEL_WINDOW = ms('90d')
 const MONO_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+const CHART_THEME = {
+  border: 'rgba(255, 255, 255, 0.1)',
+  card: '#171717',
+  foreground: '#fafafa',
+  markerKeyline: 'rgba(10, 10, 10, 0.72)',
+  mutedForeground: '#a3a3a3',
+  navigatorBackground: 'rgba(255, 255, 255, 0.04)',
+  navigatorFiller: 'rgba(163, 163, 163, 0.16)',
+  navigatorSelectedBackground: 'rgba(163, 163, 163, 0.1)',
+}
+
+// X-axis ticks land on calendar boundaries (midnight, Monday, the 1st) at a
+// regular stride instead of ECharts' auto-picked "nice" timestamps, which read
+// as random dates. The coarsest stride keeping at most MAX_X_TICKS wins.
+const MAX_X_TICKS = 12
+type TickUnit = 'hour' | 'day' | 'week' | 'month' | 'year'
+const TICK_UNIT_MS: Record<TickUnit, number> = {
+  hour: ms('1h'),
+  day: ms('1d'),
+  week: ms('7d'),
+  month: ms('30d'),
+  year: ms('365d'),
+}
+const TICK_STRIDES: { unit: TickUnit; count: number }[] = [
+  { unit: 'hour', count: 1 },
+  { unit: 'hour', count: 3 },
+  { unit: 'hour', count: 6 },
+  { unit: 'hour', count: 12 },
+  { unit: 'day', count: 1 },
+  { unit: 'day', count: 2 },
+  { unit: 'day', count: 3 },
+  { unit: 'week', count: 1 },
+  { unit: 'week', count: 2 },
+  { unit: 'month', count: 1 },
+  { unit: 'month', count: 3 },
+  { unit: 'month', count: 6 },
+  { unit: 'year', count: 1 },
+]
 
 type AvailablePriceSegment = {
   id: string
@@ -57,7 +99,6 @@ export function createPricingHistoryChartOption(args: {
   allSeries: readonly PricingSeries[]
   animateUpdates: boolean
   context: ZoomContext
-  isDark: boolean
   zoom: ZoomWindow
 }): EChartsCoreOption {
   // Keep colors tied to the complete endpoint list. Hiding an endpoint must not
@@ -71,8 +112,11 @@ export function createPricingHistoryChartOption(args: {
     endpointIndexes,
     args.allSeries.length,
   )
-  const theme = chartTheme(args.isDark)
+  const theme = CHART_THEME
   const axes = axesForZoomWindow(args.context, args.zoom)
+  // Slider detail labels only need a year once the retained history crosses one.
+  const spansMultipleYears =
+    new Date(args.context.since).getFullYear() !== new Date(args.context.asOf).getFullYear()
 
   const lineSeries: LineSeriesOption[] = segments.map((segment) => ({
     id: segment.id,
@@ -119,10 +163,13 @@ export function createPricingHistoryChartOption(args: {
         // The full series remains available while zoomed so the navigator and
         // our viewport-aware Y-axis can derive state at the left boundary.
         filterMode: 'none',
+        minValueSpan: MIN_ZOOM_SPAN,
         moveOnMouseMove: true,
         moveOnMouseWheel: false,
         throttle: DATA_ZOOM_THROTTLE,
-        zoomOnMouseWheel: true,
+        // Plain wheel scrolls the page; ctrl+wheel zooms. Trackpad pinches
+        // arrive as ctrl+wheel events, so pinch-to-zoom works untouched.
+        zoomOnMouseWheel: 'ctrl',
       },
       {
         id: 'pricing-history-slider',
@@ -131,32 +178,47 @@ export function createPricingHistoryChartOption(args: {
         end: args.zoom.end,
         bottom: 8,
         height: 24,
+        // A visible groove plus a tinted filler keeps the control readable as
+        // a range slider even in its resting full-history state.
+        backgroundColor: theme.navigatorBackground,
         borderColor: theme.border,
         borderRadius: 4,
-        brushSelect: true,
+        // With brush-select off, dragging the track pans the window instead of
+        // discarding it for a new selection - the friendlier default for the
+        // easiest area to land on.
+        brushSelect: false,
         dataBackground: {
           areaStyle: { color: 'transparent' },
           lineStyle: { color: theme.mutedForeground, opacity: 0.25 },
         },
-        fillerColor: args.isDark ? 'rgba(163, 163, 163, 0.14)' : 'rgba(115, 115, 115, 0.14)',
+        emphasis: {
+          handleStyle: { borderColor: theme.foreground },
+          moveHandleStyle: { color: theme.foreground, opacity: 0.6 },
+        },
+        fillerColor: theme.navigatorFiller,
         filterMode: 'none',
         handleLabel: { show: false },
-        handleSize: 18,
+        handleSize: 22,
         handleStyle: {
           borderColor: theme.mutedForeground,
-          borderWidth: 1,
+          borderWidth: 1.5,
           color: theme.card,
         },
-        moveHandleSize: 8,
-        moveHandleStyle: { color: theme.mutedForeground, opacity: 0.35 },
+        labelFormatter: (value: number) => formatSliderDetailDate(value, spansMultipleYears),
+        minValueSpan: MIN_ZOOM_SPAN,
+        moveHandleSize: 10,
+        moveHandleStyle: { color: theme.mutedForeground, opacity: 0.5 },
         selectedDataBackground: {
           areaStyle: {
-            color: args.isDark ? 'rgba(163, 163, 163, 0.1)' : 'rgba(115, 115, 115, 0.1)',
+            color: theme.navigatorSelectedBackground,
           },
           lineStyle: { color: theme.mutedForeground, opacity: 0.6 },
         },
         showDataShadow: false,
-        showDetail: false,
+        // While a handle is dragged, its selected date renders beside it -
+        // live feedback for what period the window now covers.
+        showDetail: true,
+        textStyle: { color: theme.mutedForeground, fontFamily: MONO_FONT_FAMILY },
         throttle: DATA_ZOOM_THROTTLE,
       },
     ],
@@ -208,12 +270,13 @@ export function createPricingHistoryChartOption(args: {
       max: args.context.asOf,
       axisLabel: {
         color: theme.mutedForeground,
+        customValues: axes.xTicks.values,
         fontFamily: MONO_FONT_FAMILY,
-        formatter: axes.xAxisLabelFormatter,
+        formatter: axes.xTicks.labelFormatter,
         hideOverlap: true,
       },
       axisLine: { lineStyle: { color: theme.border } },
-      axisTick: { lineStyle: { color: theme.border } },
+      axisTick: { customValues: axes.xTicks.values, lineStyle: { color: theme.border } },
       splitLine: { show: false },
     },
     yAxis: {
@@ -240,7 +303,10 @@ export function createZoomedAxesOption(context: ZoomContext, zoom: ZoomWindow): 
   const axes = axesForZoomWindow(context, zoom)
 
   return {
-    xAxis: { axisLabel: { formatter: axes.xAxisLabelFormatter } },
+    xAxis: {
+      axisLabel: { customValues: axes.xTicks.values, formatter: axes.xTicks.labelFormatter },
+      axisTick: { customValues: axes.xTicks.values },
+    },
     yAxis: { interval: axes.priceAxis.interval, max: axes.priceAxis.max },
   }
 }
@@ -333,19 +399,6 @@ function axisTimestampFromTooltipParams(params: unknown): number | null {
   return null
 }
 
-/** History stores state transitions, so an endpoint's price at any instant is
- * its most recent observation at or before it. */
-function stateAt(series: PricingSeries, at: number) {
-  let state: PricingSeries['points'][number] | undefined
-  for (const point of series.points) {
-    if (point.at > at) {
-      break
-    }
-    state = point
-  }
-  return state
-}
-
 function buildTooltipHtml(args: {
   at: number
   context: ZoomContext
@@ -390,7 +443,7 @@ function buildTooltipHtml(args: {
     return ''
   }
 
-  const heading = new Date(args.at).toLocaleString('en-AU', {
+  const heading = new Date(args.at).toLocaleString('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -482,12 +535,76 @@ function escapeHtml(value: string) {
 }
 
 function axesForZoomWindow(context: ZoomContext, zoom: ZoomWindow) {
-  const windowDuration = ((context.asOf - context.since) * (zoom.end - zoom.start)) / 100
+  const span = context.asOf - context.since
+  const windowStart = context.since + (span * zoom.start) / 100
+  const windowEnd = context.since + (span * zoom.end) / 100
+  const ticks = calendarTicks(windowStart, windowEnd)
 
   return {
     priceAxis: priceAxisForWindow(context, zoom),
-    xAxisLabelFormatter: (value: number) => formatAxisDate(value, windowDuration),
+    xTicks: {
+      values: ticks.values,
+      labelFormatter: (value: number) => formatTickDate(value, ticks.unit),
+    },
   }
+}
+
+/** Calendar-boundary tick timestamps covering the visible window. */
+function calendarTicks(windowStart: number, windowEnd: number) {
+  const duration = windowEnd - windowStart
+  const stride = TICK_STRIDES.find(
+    ({ unit, count }) => duration / (TICK_UNIT_MS[unit] * count) <= MAX_X_TICKS,
+  ) ??
+    TICK_STRIDES.at(-1) ?? { unit: 'year' as const, count: 1 }
+
+  const floorToUnit: Record<TickUnit, (date: Date) => Date> = {
+    hour: startOfHour,
+    day: startOfDay,
+    week: (date) => startOfWeek(date, { weekStartsOn: 1 }),
+    month: startOfMonth,
+    year: startOfYear,
+  }
+  const addUnits: Record<TickUnit, (date: Date, amount: number) => Date> = {
+    hour: addHours,
+    day: addDays,
+    week: addWeeks,
+    month: addMonths,
+    year: addYears,
+  }
+
+  const values: number[] = []
+  let cursor = floorToUnit[stride.unit](new Date(windowStart))
+  while (cursor.getTime() < windowStart) {
+    cursor = addUnits[stride.unit](cursor, stride.count)
+  }
+  while (cursor.getTime() <= windowEnd) {
+    values.push(cursor.getTime())
+    cursor = addUnits[stride.unit](cursor, stride.count)
+  }
+  return { values, unit: stride.unit }
+}
+
+function formatTickDate(value: number, unit: TickUnit) {
+  const date = new Date(value)
+  if (unit === 'hour') {
+    const day = date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+    })
+    return `${day}\n${time}`
+  }
+
+  if (unit === 'day' || unit === 'week') {
+    return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
+  }
+
+  if (unit === 'month') {
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  }
+
+  return date.toLocaleDateString('en-US', { year: 'numeric' })
 }
 
 function priceAxisForWindow(context: ZoomContext, zoom: ZoomWindow) {
@@ -538,23 +655,12 @@ function priceAxisForWindow(context: ZoomContext, zoom: ZoomWindow) {
   return { interval: intervalMultiplier * magnitude, max }
 }
 
-function formatAxisDate(value: number, windowDuration: number) {
-  const date = new Date(value)
-  if (windowDuration <= INTRADAY_LABEL_WINDOW) {
-    const day = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
-    const time = date.toLocaleTimeString('en-AU', {
-      hour: '2-digit',
-      hour12: false,
-      minute: '2-digit',
-    })
-    return `${day}\n${time}`
-  }
-
-  if (windowDuration <= DAILY_LABEL_WINDOW) {
-    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
-  }
-
-  return date.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
+function formatSliderDetailDate(value: number, includeYear: boolean) {
+  return new Date(value).toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    ...(includeYear ? { year: 'numeric' } : {}),
+  })
 }
 
 function formatChartPrice(metric: PricingMetric, value: number, includeUnit: boolean) {
@@ -564,14 +670,4 @@ function formatChartPrice(metric: PricingMetric, value: number, includeUnit: boo
   }
 
   return includeUnit && formatted.unit ? `${formatted.value}/${formatted.unit}` : formatted.value
-}
-
-function chartTheme(isDark: boolean) {
-  return {
-    border: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e5e5',
-    card: isDark ? '#171717' : '#ffffff',
-    foreground: isDark ? '#fafafa' : '#171717',
-    markerKeyline: isDark ? 'rgba(10, 10, 10, 0.72)' : 'rgba(255, 255, 255, 0.82)',
-    mutedForeground: isDark ? '#a3a3a3' : '#737373',
-  }
 }

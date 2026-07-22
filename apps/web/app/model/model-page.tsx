@@ -20,7 +20,7 @@ import { useCachedQuery } from '@/hooks/use-cached-query'
 
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
-import { PricingHistoryCard } from './pricing-history-card'
+import { PricingHistoryCard } from './pricing-history/card'
 import { ProviderComparisonCard } from './provider-comparison-card'
 import type { Model } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
@@ -43,11 +43,11 @@ export function ModelPage({ model }: { model: Model }) {
 
   useEffect(() => {
     // Prefetch the ECharts chunk for the same reason.
-    void import('./pricing-history-plot')
+    void import('./pricing-history/plot')
   }, [])
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 [scrollbar-gutter:stable] flex-col overflow-y-auto overscroll-contain px-2">
+    <div className="flex min-h-0 min-w-0 flex-1 [scrollbar-gutter:stable] flex-col overflow-y-auto overscroll-contain sm:px-2">
       <ModelHeader model={model} />
 
       <Tabs

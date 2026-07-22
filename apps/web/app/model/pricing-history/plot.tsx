@@ -13,16 +13,17 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 
-import { pricingMetricMetadata } from './pricing-fields'
+import { pricingMetricMetadata } from '../pricing-fields'
+import type { EndpointPricingHistory, PricingMetric } from '../types'
 import {
   createPricingHistoryChartOption,
   createZoomedAxesOption,
   FULL_HISTORY_WINDOW,
-  hasMetricHistory,
   ZOOM_ANIMATION_DURATION,
-} from './pricing-history-chart-option'
-import type { ZoomContext, ZoomWindow } from './pricing-history-chart-option'
-import type { EndpointPricingHistory, PricingMetric } from './types'
+  zoomWindowsEqual,
+} from './chart-option'
+import type { ZoomContext, ZoomWindow } from './chart-option'
+import { hasMetricHistory } from './series'
 
 // The core ECharts build stays out of the client bundle unless each required
 // chart, component, and renderer is registered explicitly.
@@ -36,7 +37,8 @@ registerEChartsModules([
 ])
 
 export type PricingHistoryPlotHandle = {
-  resetZoom: () => void
+  /** Animates the visible window to the given percentage range. */
+  zoomTo: (target: ZoomWindow) => void
   /** Emphasizes every chart segment belonging to the named provider series. */
   setSeriesEmphasis: (seriesName: string, emphasized: boolean) => void
 }
@@ -54,7 +56,7 @@ export function PricingHistoryPlot({
   metric,
   onAxisHoverChange,
   onSeriesHoverChange,
-  onZoomedChange,
+  onZoomWindowChange,
 }: {
   disabledEndpointUuids: ReadonlySet<string>
   handleRef: RefObject<PricingHistoryPlotHandle | null>
@@ -62,23 +64,23 @@ export function PricingHistoryPlot({
   metric: PricingMetric
   onAxisHoverChange: (timestamp: number | null) => void
   onSeriesHoverChange: (seriesName: string | null) => void
-  onZoomedChange: (isZoomed: boolean) => void
+  onZoomWindowChange: (window: ZoomWindow) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<ECharts | null>(null)
   const zoomContextRef = useRef<ZoomContext | null>(null)
   const zoomWindowRef = useRef<ZoomWindow>(FULL_HISTORY_WINDOW)
   const zoomAnimationRef = useRef<number | null>(null)
-  const historyBoundsKeyRef = useRef('')
+  const historyBoundsRef = useRef<HistoryBounds | null>(null)
   // Chart events fire from listeners registered once at mount; the ref keeps
   // them calling the latest callbacks without re-subscribing.
-  const callbacksRef = useRef({ onAxisHoverChange, onSeriesHoverChange, onZoomedChange })
+  const callbacksRef = useRef({ onAxisHoverChange, onSeriesHoverChange, onZoomWindowChange })
 
   useEffect(() => {
-    callbacksRef.current = { onAxisHoverChange, onSeriesHoverChange, onZoomedChange }
+    callbacksRef.current = { onAxisHoverChange, onSeriesHoverChange, onZoomWindowChange }
   })
 
-  const resetZoom = () => {
+  const zoomTo = (target: ZoomWindow) => {
     const chart = chartRef.current
     if (chart === null) {
       return
@@ -87,26 +89,25 @@ export function PricingHistoryPlot({
     cancelZoomAnimation(zoomAnimationRef)
 
     const initialWindow = zoomWindowRef.current
-    if (isFullHistoryWindow(initialWindow)) {
+    if (zoomWindowsEqual(initialWindow, target)) {
       return
     }
 
     if (prefersReducedMotion()) {
-      dispatchZoomWindow(chart, FULL_HISTORY_WINDOW)
+      dispatchZoomWindow(chart, target)
       return
     }
 
     // ECharts does not interpolate a dataZoom dispatch for us. Driving the
-    // percentage window frame-by-frame keeps reset smooth and interruptible.
+    // percentage window frame-by-frame keeps the transition smooth and interruptible.
     const startAnimation = (startedAt: number) => {
       const animate = (now: number) => {
         const progress = Math.min(1, (now - startedAt) / ZOOM_ANIMATION_DURATION)
         const easedProgress = 1 - (1 - progress) ** 3
 
         dispatchZoomWindow(chart, {
-          start:
-            initialWindow.start + (FULL_HISTORY_WINDOW.start - initialWindow.start) * easedProgress,
-          end: initialWindow.end + (FULL_HISTORY_WINDOW.end - initialWindow.end) * easedProgress,
+          start: initialWindow.start + (target.start - initialWindow.start) * easedProgress,
+          end: initialWindow.end + (target.end - initialWindow.end) * easedProgress,
         })
 
         zoomAnimationRef.current = progress < 1 ? requestAnimationFrame(animate) : null
@@ -129,7 +130,7 @@ export function PricingHistoryPlot({
 
   // Republish on every render so the handle always closes over fresh state.
   useEffect(() => {
-    handleRef.current = { resetZoom, setSeriesEmphasis }
+    handleRef.current = { zoomTo, setSeriesEmphasis }
     return () => {
       handleRef.current = null
     }
@@ -154,7 +155,7 @@ export function PricingHistoryPlot({
     const handleDataZoom = (event: unknown) => {
       const zoom = zoomWindowFromEvent(event, zoomWindowRef.current)
       zoomWindowRef.current = zoom
-      callbacksRef.current.onZoomedChange(!isFullHistoryWindow(zoom))
+      callbacksRef.current.onZoomWindowChange(zoom)
 
       const context = zoomContextRef.current
       if (context !== null) {
@@ -191,6 +192,17 @@ export function PricingHistoryPlot({
       callbacksRef.current.onAxisHoverChange(null)
     }
 
+    // zrender preventDefaults every wheel event over the canvas, even though
+    // zooming requires ctrl - trapping page scroll whenever the cursor lands
+    // on the chart. Divert plain wheel events before zrender sees them so the
+    // page keeps scrolling; ctrl+wheel (and trackpad pinch) still zooms.
+    const handleWheelCapture = (event: WheelEvent) => {
+      if (!event.ctrlKey) {
+        event.stopPropagation()
+      }
+    }
+    container.addEventListener('wheel', handleWheelCapture, { capture: true })
+
     chart.on('datazoom', handleDataZoom)
     chart.on('mouseover', handleSeriesMouseOver)
     chart.on('mouseout', handleSeriesMouseOut)
@@ -207,6 +219,7 @@ export function PricingHistoryPlot({
     return () => {
       cancelZoomAnimation(zoomAnimationRef)
       observer.disconnect()
+      container.removeEventListener('wheel', handleWheelCapture, { capture: true })
       chart.off('datazoom', handleDataZoom)
       chart.off('mouseover', handleSeriesMouseOver)
       chart.off('mouseout', handleSeriesMouseOut)
@@ -225,13 +238,21 @@ export function PricingHistoryPlot({
       return
     }
 
-    const historyBoundsKey = `${history.since}:${history.asOf}`
-    if (historyBoundsKeyRef.current !== historyBoundsKey) {
-      historyBoundsKeyRef.current = historyBoundsKey
-      // Zoom is percentage-based, so carrying it into a differently bounded
-      // history would silently point at a different period.
-      zoomWindowRef.current = FULL_HISTORY_WINDOW
-      callbacksRef.current.onZoomedChange(false)
+    const previousBounds = historyBoundsRef.current
+    historyBoundsRef.current = { since: history.since, asOf: history.asOf }
+    if (
+      previousBounds !== null &&
+      (previousBounds.since !== history.since || previousBounds.asOf !== history.asOf)
+    ) {
+      // Zoom is percentage-based, so a fresh snapshot extending the bounds
+      // would silently shift the window onto different dates. Re-express it
+      // against the new bounds so the user keeps looking at the same period.
+      const rescaled = rescaleZoomWindow(zoomWindowRef.current, previousBounds, {
+        since: history.since,
+        asOf: history.asOf,
+      })
+      zoomWindowRef.current = rescaled
+      callbacksRef.current.onZoomWindowChange(rescaled)
     }
 
     const renderedSeries = history.series.filter(
@@ -254,7 +275,6 @@ export function PricingHistoryPlot({
         allSeries: history.series,
         animateUpdates: !prefersReducedMotion(),
         context,
-        isDark: true,
         zoom,
       }),
       { lazyUpdate: false, notMerge: true },
@@ -273,6 +293,28 @@ export function PricingHistoryPlot({
 
 function dispatchZoomWindow(chart: ECharts, zoom: ZoomWindow) {
   chart.dispatchAction({ type: 'dataZoom', start: zoom.start, end: zoom.end })
+}
+
+type HistoryBounds = { since: number; asOf: number }
+
+/**
+ * Re-expresses a percentage window against new history bounds so it covers
+ * the same dates. A window touching the live edge stays pinned to it, which
+ * keeps "most recent" views tracking the latest data as snapshots arrive.
+ */
+function rescaleZoomWindow(zoom: ZoomWindow, from: HistoryBounds, to: HistoryBounds): ZoomWindow {
+  const toSpan = to.asOf - to.since
+  if (toSpan <= 0) {
+    return FULL_HISTORY_WINDOW
+  }
+
+  const fromSpan = from.asOf - from.since
+  const startAt = from.since + (fromSpan * zoom.start) / 100
+  const endAt = from.since + (fromSpan * zoom.end) / 100
+  const toPercent = (at: number) => Math.min(100, Math.max(0, ((at - to.since) / toSpan) * 100))
+
+  const end = zoom.end >= 99.99 ? 100 : toPercent(endAt)
+  return { start: Math.min(toPercent(startAt), end), end }
 }
 
 /** Extracts the hovered X-axis timestamp from an updateAxisPointer event. */
@@ -321,13 +363,6 @@ function cancelZoomAnimation(animationRef: { current: number | null }) {
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function isFullHistoryWindow(zoom: ZoomWindow) {
-  return (
-    Math.abs(zoom.start - FULL_HISTORY_WINDOW.start) < 0.01 &&
-    Math.abs(zoom.end - FULL_HISTORY_WINDOW.end) < 0.01
-  )
 }
 
 /** ECharts uses either a direct payload or a `batch` payload depending on how zoom was initiated. */
