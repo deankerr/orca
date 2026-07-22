@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
 export function ModelPageCard({
@@ -19,5 +20,16 @@ export function ModelPageCard({
       </CardHeader>
       {children}
     </Card>
+  )
+}
+
+export function ModelPageCardLoading({ title, label }: { title: string; label: string }) {
+  return (
+    <ModelPageCard title={title} aria-busy="true">
+      <output className="flex min-h-72 items-center justify-center text-muted-foreground">
+        <Spinner />
+        <span className="sr-only">{label}</span>
+      </output>
+    </ModelPageCard>
   )
 }
