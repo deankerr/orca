@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- scope orb: monitoring instrument, cardinal ticks + live dot -->
+  <circle cx="32" cy="32" r="22" fill="none" stroke="#ededed" stroke-width="4"/>
+  <g stroke="#ededed" stroke-width="4" stroke-linecap="round">
+    <line x1="32" y1="3"  x2="32" y2="9"/>
+    <line x1="32" y1="55" x2="32" y2="61"/>
+    <line x1="3"  y1="32" x2="9"  y2="32"/>
+    <line x1="55" y1="32" x2="61" y2="32"/>
+  </g>
+  <circle cx="32" cy="32" r="4" fill="#ededed"/>
+</svg>

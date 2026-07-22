@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- ledger orb: data rows inside the O -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="3.5"/>
+  <g fill="#ededed">
+    <rect x="19" y="21.5" width="26" height="5"/>
+    <rect x="19" y="29.5" width="32" height="5"/>
+    <rect x="19" y="37.5" width="20" height="5"/>
+  </g>
+</svg>

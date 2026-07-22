@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ORCA — logo candidates</title>
+    <style>
+      :root {
+        --bg: #101010;
+        --card: #161616;
+        --border: #2a2a2a;
+        --ink: #ededed;
+        --muted: #8a8a8a;
+        --mono: ui-monospace, 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--mono);
+        padding: 48px 32px 96px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      h2 {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 48px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .card .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .card .name {
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .card .file {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 22px;
+        padding: 10px 2px;
+      }
+      .desc {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.55;
+      }
+      .mini {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: auto;
+      }
+      .mini .bar {
+        height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      .mini .body {
+        height: 30px;
+        background: repeating-linear-gradient(0deg, #131313 0 14px, #1b1b1b 14px 15px);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .nav {
+        display: flex;
+        gap: 14px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .nav .active {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ORCA — logo candidates</h1>
+    <div class="sub">
+      shortlist from rounds 2 &amp; 3 + new variations ⋅ sources in branding/svg/
+    </div>
+
+    <h2>round 2 — orca orb (eye patch)</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="top">
+          <span class="name">tonal orb</span><span class="file">orb-mark.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <defs>
+              <radialGradient id="gA" cx="0.38" cy="0.3" r="0.85">
+                <stop offset="0" stop-color="#333" />
+                <stop offset="1" stop-color="#161616" />
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#4a4a4a" stroke-width="2.5" />
+            <ellipse rx="13" ry="5.5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">
+          Glossy orb / orca body: the white ellipse is a specular highlight and an eye patch at
+          once.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="url(#gA)"
+                  stroke="#4a4a4a"
+                  stroke-width="2.5"
+                />
+                <ellipse
+                  rx="13"
+                  ry="5.5"
+                  transform="translate(40 23) rotate(-33)"
+                  fill="#ededed"
+                /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">flat orb</span><span class="file">orb-flat.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="28" fill="#1f1f1f" stroke="#3a3a3a" stroke-width="1.5" />
+            <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="28" fill="#1f1f1f" stroke="#3a3a3a" stroke-width="1.5" />
+            <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="28" fill="#1f1f1f" stroke="#4a4a4a" stroke-width="2.5" />
+            <ellipse rx="13" ry="5.5" transform="translate(40 23) rotate(-33)" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">
+          Same mark without the gradient — fully flat, closest to the app's surfaces.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <circle cx="32" cy="32" r="28" fill="#1f1f1f" stroke="#4a4a4a" stroke-width="2.5" />
+                <ellipse
+                  rx="13"
+                  ry="5.5"
+                  transform="translate(40 23) rotate(-33)"
+                  fill="#ededed"
+                /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">ring orb (the O, evolved)</span
+          ><span class="file">orb-ring-mark.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="4" />
+            <ellipse rx="12" ry="4.8" transform="translate(39 24) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="4" />
+            <ellipse rx="12" ry="4.8" transform="translate(39 24) rotate(-33)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="6" />
+            <ellipse rx="13" ry="5.5" transform="translate(39 24) rotate(-33)" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">Outline O with the patch inside — continuous with the current O favicon.</p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="15" height="15">
+                <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="6" />
+                <ellipse
+                  rx="13"
+                  ry="5.5"
+                  transform="translate(39 24) rotate(-33)"
+                  fill="#ededed"
+                /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>round 3 — picks</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="top">
+          <span class="name">scanline orb</span><span class="file">orb-scan.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <clipPath id="cS"><circle cx="32" cy="32" r="28" /></clipPath>
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+        </div>
+        <p class="desc">A sphere built from rows — the endpoints grid rolled into an orb.</p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <g clip-path="url(#cS)" fill="#ededed">
+                  <rect y="5" width="64" height="6" />
+                  <rect y="15" width="64" height="6" />
+                  <rect y="25" width="64" height="6" />
+                  <rect y="35" width="64" height="6" />
+                  <rect y="45" width="64" height="6" />
+                  <rect y="55" width="64" height="6" />
+                </g></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">diff orb</span><span class="file">orb-split.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="3.5" />
+            <path d="M32 6 A26 26 0 0 0 32 58 Z" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="3.5" />
+            <path d="M32 6 A26 26 0 0 0 32 58 Z" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="5" />
+            <path d="M32 7 A25 25 0 0 0 32 57 Z" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">Filled half → outline half: before/after, and the black/white duality.</p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="15" height="15">
+                <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="5" />
+                <path d="M32 7 A25 25 0 0 0 32 57 Z" fill="#ededed" /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">scope orb</span><span class="file">orb-scope.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="22" fill="none" stroke="#ededed" stroke-width="4" />
+            <g stroke="#ededed" stroke-width="4" stroke-linecap="round">
+              <line x1="32" y1="3" x2="32" y2="9" />
+              <line x1="32" y1="55" x2="32" y2="61" />
+              <line x1="3" y1="32" x2="9" y2="32" />
+              <line x1="55" y1="32" x2="61" y2="32" />
+            </g>
+            <circle cx="32" cy="32" r="4" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="22" fill="none" stroke="#ededed" stroke-width="4" />
+            <g stroke="#ededed" stroke-width="4" stroke-linecap="round">
+              <line x1="32" y1="3" x2="32" y2="9" />
+              <line x1="32" y1="55" x2="32" y2="61" />
+              <line x1="3" y1="32" x2="9" y2="32" />
+              <line x1="55" y1="32" x2="61" y2="32" />
+            </g>
+            <circle cx="32" cy="32" r="4" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="21" fill="none" stroke="#ededed" stroke-width="6" />
+            <g stroke="#ededed" stroke-width="6" stroke-linecap="round">
+              <line x1="32" y1="3" x2="32" y2="8" />
+              <line x1="32" y1="56" x2="32" y2="61" />
+              <line x1="3" y1="32" x2="8" y2="32" />
+              <line x1="56" y1="32" x2="61" y2="32" />
+            </g>
+            <circle cx="32" cy="32" r="5.5" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">An instrument: ring, cardinal ticks, live dot. Says "monitoring".</p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="15" height="15">
+                <circle cx="32" cy="32" r="21" fill="none" stroke="#ededed" stroke-width="6" />
+                <g stroke="#ededed" stroke-width="6" stroke-linecap="round">
+                  <line x1="32" y1="3" x2="32" y2="8" />
+                  <line x1="32" y1="56" x2="32" y2="61" />
+                  <line x1="3" y1="32" x2="8" y2="32" />
+                  <line x1="56" y1="32" x2="61" y2="32" />
+                </g>
+                <circle cx="32" cy="32" r="5.5" fill="#ededed" /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>new variations</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="top">
+          <span class="name">banded orb (tonal × scanline)</span
+          ><span class="file">orb-tonal-scan.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <defs>
+              <clipPath id="cT"><circle cx="32" cy="32" r="27" /></clipPath>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <g clip-path="url(#cT)" fill="#ededed">
+              <rect y="9" width="64" height="3.5" />
+              <rect y="19" width="64" height="3.5" />
+              <rect y="29" width="64" height="3.5" />
+              <rect y="39" width="64" height="3.5" />
+              <rect y="49" width="64" height="3.5" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <g clip-path="url(#cT)" fill="#ededed">
+              <rect y="9" width="64" height="3.5" />
+              <rect y="19" width="64" height="3.5" />
+              <rect y="29" width="64" height="3.5" />
+              <rect y="39" width="64" height="3.5" />
+              <rect y="49" width="64" height="3.5" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#4a4a4a" stroke-width="2.5" />
+            <g clip-path="url(#cT)" fill="#ededed">
+              <rect y="9" width="64" height="4.5" />
+              <rect y="21" width="64" height="4.5" />
+              <rect y="33" width="64" height="4.5" />
+              <rect y="45" width="64" height="4.5" />
+            </g>
+          </svg>
+        </div>
+        <p class="desc">
+          The round-2 sphere with data latitudes instead of the eye patch — black-and-white banding,
+          no anatomy. The most "orca-colored" mark without a whale.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="url(#gA)"
+                  stroke="#4a4a4a"
+                  stroke-width="2.5"
+                />
+                <g clip-path="url(#cT)" fill="#ededed">
+                  <rect y="9" width="64" height="4.5" />
+                  <rect y="21" width="64" height="4.5" />
+                  <rect y="33" width="64" height="4.5" />
+                  <rect y="45" width="64" height="4.5" />
+                </g></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">selected-row orb</span><span class="file">orb-row.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <rect y="35" width="64" height="7" clip-path="url(#cT)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#3f3f3f" stroke-width="1.5" />
+            <rect y="35" width="64" height="7" clip-path="url(#cT)" fill="#ededed" />
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="28" fill="url(#gA)" stroke="#4a4a4a" stroke-width="2.5" />
+            <rect y="34" width="64" height="9" clip-path="url(#cT)" fill="#ededed" />
+          </svg>
+        </div>
+        <p class="desc">
+          Dark sphere, one highlighted band — the selected row in the grid, or a planet's ring seen
+          edge-on. Two shapes, very quiet.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="url(#gA)"
+                  stroke="#4a4a4a"
+                  stroke-width="2.5"
+                />
+                <rect y="34" width="64" height="9" clip-path="url(#cT)" fill="#ededed" /></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">changed-row orb (scanline diff)</span
+          ><span class="file">orb-scan-shift.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect x="11" y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect x="11" y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <g clip-path="url(#cS)" fill="#ededed">
+              <rect y="5" width="64" height="6" />
+              <rect y="15" width="64" height="6" />
+              <rect x="11" y="25" width="64" height="6" />
+              <rect y="35" width="64" height="6" />
+              <rect y="45" width="64" height="6" />
+              <rect y="55" width="64" height="6" />
+            </g>
+          </svg>
+        </div>
+        <p class="desc">
+          The scanline orb with one row nudged — the Monitor's whole job: spotting the row that
+          changed. The asymmetry also gives it a face-like directionality.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="16" height="16">
+                <g clip-path="url(#cS)" fill="#ededed">
+                  <rect y="5" width="64" height="6" />
+                  <rect y="15" width="64" height="6" />
+                  <rect x="11" y="25" width="64" height="6" />
+                  <rect y="35" width="64" height="6" />
+                  <rect y="45" width="64" height="6" />
+                  <rect y="55" width="64" height="6" />
+                </g></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top">
+          <span class="name">ledger orb</span><span class="file">orb-ledger.svg</span>
+        </div>
+        <div class="sizes">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="3.5" />
+            <g fill="#ededed">
+              <rect x="19" y="21.5" width="26" height="5" />
+              <rect x="19" y="29.5" width="32" height="5" />
+              <rect x="19" y="37.5" width="20" height="5" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="32" height="32">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#ededed" stroke-width="3.5" />
+            <g fill="#ededed">
+              <rect x="19" y="21.5" width="26" height="5" />
+              <rect x="19" y="29.5" width="32" height="5" />
+              <rect x="19" y="37.5" width="20" height="5" />
+            </g>
+          </svg>
+          <svg viewBox="0 0 64 64" width="16" height="16">
+            <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="5" />
+            <g fill="#ededed">
+              <rect x="19" y="20.5" width="26" height="6" />
+              <rect x="19" y="29.5" width="32" height="6" />
+              <rect x="19" y="38.5" width="20" height="6" />
+            </g>
+          </svg>
+        </div>
+        <p class="desc">
+          Left-aligned data rows inside the O — the ledger the whole product maintains. Risk: reads
+          close to a generic list/menu icon.
+        </p>
+        <div class="mini">
+          <div class="bar">
+            <div class="brand">
+              <svg viewBox="0 0 64 64" width="15" height="15">
+                <circle cx="32" cy="32" r="25" fill="none" stroke="#ededed" stroke-width="5" />
+                <g fill="#ededed">
+                  <rect x="19" y="20.5" width="26" height="6" />
+                  <rect x="19" y="29.5" width="32" height="6" />
+                  <rect x="19" y="38.5" width="20" height="6" />
+                </g></svg
+              >ORCA
+            </div>
+            <div class="nav">
+              <span class="active">Endpoints</span><span>Monitor</span><span>API</span>
+            </div>
+          </div>
+          <div class="body"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
