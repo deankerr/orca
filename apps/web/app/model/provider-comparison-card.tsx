@@ -1,7 +1,8 @@
 'use client'
 
+import { formatPricing } from '@orca/backend/shared/formatters'
+
 import { EntityIdentity } from '@/components/shared/entity-identity'
-import { Badge } from '@/components/ui/badge'
 import { CardContent } from '@/components/ui/card'
 import {
   Table,
@@ -13,23 +14,30 @@ import {
 } from '@/components/ui/table'
 
 import { ModelPageCard } from './model-page-card'
-import type { ModelEndpoint } from './types'
-import { formatMtokPrice, formatNumber } from './utils'
+import { PRICING_METRICS } from './pricing-fields'
+import type { ModelEndpoint, PricingMetric } from './types'
+import { formatNumber } from './utils'
 
-function getEndpointAvailability(endpoint: ModelEndpoint) {
-  if (endpoint.unavailable_at !== undefined) {
-    return 'Gone'
+function EndpointPrice({
+  endpoint,
+  pricingKey,
+}: {
+  endpoint: ModelEndpoint
+  pricingKey: PricingMetric
+}) {
+  const formatted = formatPricing(pricingKey, endpoint.pricing[pricingKey])
+  if (!formatted) {
+    return <span className="text-muted-foreground">-</span>
   }
 
-  if (endpoint.disabled) {
-    return 'Disabled'
-  }
-
-  if (endpoint.deranked) {
-    return 'Deranked'
-  }
-
-  return 'Available'
+  return (
+    <>
+      {formatted.value}
+      {formatted.unit ? (
+        <span className="ml-1 text-xs text-muted-foreground">/{formatted.unit}</span>
+      ) : null}
+    </>
+  )
 }
 
 export function ProviderComparisonCard({ endpoints }: { endpoints: readonly ModelEndpoint[] }) {
@@ -38,17 +46,24 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
       Number(left.unavailable_at !== undefined) - Number(right.unavailable_at !== undefined) ||
       left.provider.name.localeCompare(right.provider.name),
   )
+  const pricingColumns = PRICING_METRICS.filter((metric) =>
+    metric.alwaysCompare
+      ? true
+      : endpoints.some((endpoint) => endpoint.pricing[metric.key] !== undefined),
+  )
 
   return (
     <ModelPageCard title="Provider Comparison">
       <CardContent className="px-4 pb-4">
         <Table className="min-w-[44rem]">
-          <TableHeader className="text-muted-foreground uppercase">
+          <TableHeader className="text-muted-foreground">
             <TableRow>
               <TableHead>Provider</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Input</TableHead>
-              <TableHead className="text-right">Output</TableHead>
+              {pricingColumns.map((metric) => (
+                <TableHead key={metric.key} className="text-right">
+                  {metric.label}
+                </TableHead>
+              ))}
               <TableHead className="text-right">Context</TableHead>
               <TableHead className="text-right">Max Out.</TableHead>
             </TableRow>
@@ -64,20 +79,11 @@ export function ProviderComparisonCard({ endpoints }: { endpoints: readonly Mode
                     className="px-0 py-0"
                   />
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={endpoint.unavailable_at === undefined ? 'outline' : 'destructive'}
-                    className="rounded-sm"
-                  >
-                    {getEndpointAvailability(endpoint)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatMtokPrice(endpoint.pricing.text_input)}
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatMtokPrice(endpoint.pricing.text_output)}
-                </TableCell>
+                {pricingColumns.map((metric) => (
+                  <TableCell key={metric.key} className="text-right font-mono">
+                    <EndpointPrice endpoint={endpoint} pricingKey={metric.key} />
+                  </TableCell>
+                ))}
                 <TableCell className="text-right font-mono">
                   {formatNumber(endpoint.context_length)}
                 </TableCell>

@@ -13,7 +13,7 @@ import type { EndpointProjection } from '../convex/catalog/endpoints'
 // Object key order determines display order in shared helpers.
 
 type EndpointProjectionPricing = EndpointProjection['pricing']
-type PricingKey = keyof EndpointProjectionPricing
+export type PricingKey = keyof EndpointProjectionPricing
 
 type PricingConfig = {
   scale: number
@@ -28,13 +28,13 @@ const PRICING_FIELDS = {
   reasoning_output: { scale: 1_000_000, unit: 'MTOK' },
   audio_input: { scale: 1_000_000, unit: 'MTOK' },
   audio_cache_write: { scale: 1_000_000, unit: 'MTOK' },
-  image_input: { scale: 1000, unit: '1K IMG' },
-  image_output: { scale: 1000, unit: '1K IMG' },
+  image_input: { scale: 1000, unit: 'K' },
+  image_output: { scale: 1000, unit: 'K' },
   web_search: { scale: 1, unit: 'REQ' },
   discount: { scale: 100, unit: '' },
 } as const satisfies Record<PricingKey, PricingConfig>
 
-const PRICING_FIELD_KEYS = [
+export const PRICING_FIELD_KEYS = [
   'text_input',
   'text_output',
   'text_cache_read',
@@ -74,6 +74,11 @@ export function formatPricing(
 
   const display = field === 'discount' ? `${formatted}%` : `$${formatted}`
   return { field, value: display, unit: PRICING_FIELDS[field].unit }
+}
+
+/** Scale used by product surfaces that plot raw catalog prices on an axis. */
+export function pricingScale(field: PricingKey): number {
+  return PRICING_FIELDS[field].scale
 }
 
 // Compute decimal places to show the first significant digit plus one more,
