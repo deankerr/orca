@@ -1,11 +1,10 @@
 'use client'
 
-import { api } from '@orca/backend/convex/_generated/api'
 import { ArrowLeft, Boxes } from 'lucide-react'
 import Link from 'next/link'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect } from 'react'
 
+import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -16,16 +15,14 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useCachedQuery } from '@/hooks/use-cached-query'
 
 import { ModelHeader } from './model-page-header'
 import { ParameterComparisonCard } from './parameter-comparison-card'
-import { PricingHistoryCard } from './pricing-history/card'
 import { ProviderComparisonCard } from './provider-comparison-card'
 import type { Model } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
 
-const MODEL_PAGE_TABS = ['provider-comparison', 'pricing-history', 'parameter-comparison'] as const
+const MODEL_PAGE_TABS = ['provider-comparison', 'parameter-comparison', 'about'] as const
 
 type ModelPageTab = (typeof MODEL_PAGE_TABS)[number]
 
@@ -34,17 +31,16 @@ type ModelPageTab = (typeof MODEL_PAGE_TABS)[number]
 const tabParser = parseAsStringLiteral(MODEL_PAGE_TABS).withDefault('provider-comparison')
 
 export function ModelPage({ model }: { model: Model }) {
-  const [activeTab, setActiveTab] = useQueryState('tab', tabParser)
+  const [requestedTab, setActiveTab] = useQueryState('tab', tabParser)
+  // The About tab only exists when OpenRouter published a description, so a
+  // stale ?tab=about link on a descriptionless model falls back to the default.
+  const hasDescription = model.description !== undefined && model.description !== ''
+  const activeTab =
+    requestedTab === 'about' && !hasDescription ? 'provider-comparison' : requestedTab
 
   // Warm every tab's Convex subscription while the user reads the first one,
   // so switching tabs swaps in data that is already cached.
   useModelEndpoints(model.slug)
-  useCachedQuery(api.endpointPricingHistory.get, { modelSlug: model.slug })
-
-  useEffect(() => {
-    // Prefetch the ECharts chunk for the same reason.
-    void import('./pricing-history/plot')
-  }, [])
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 [scrollbar-gutter:stable] flex-col overflow-y-auto overscroll-contain sm:px-2">
@@ -59,14 +55,20 @@ export function ModelPage({ model }: { model: Model }) {
         }}
         value={activeTab}
       >
-        <div className="border-b">
-          <div className="mx-auto w-full max-w-6xl px-3">
-            <TabsList variant="line" className="max-w-full overflow-x-auto">
-              <TabsTrigger value="provider-comparison">Providers</TabsTrigger>
-              <TabsTrigger value="pricing-history">Pricing history</TabsTrigger>
-              <TabsTrigger value="parameter-comparison">Parameters</TabsTrigger>
-            </TabsList>
-          </div>
+        <div className="mx-auto w-full max-w-6xl border-b px-3">
+          <TabsList variant="line" className="overflow-x-auto overflow-y-hidden">
+            <TabsTrigger className="text-sm" value="provider-comparison">
+              Providers
+            </TabsTrigger>
+            <TabsTrigger className="text-sm" value="parameter-comparison">
+              Parameters
+            </TabsTrigger>
+            {hasDescription && (
+              <TabsTrigger className="text-sm" value="about">
+                About
+              </TabsTrigger>
+            )}
+          </TabsList>
         </div>
 
         <TabsContent
@@ -76,17 +78,18 @@ export function ModelPage({ model }: { model: Model }) {
           <ProviderComparisonCard modelSlug={model.slug} />
         </TabsContent>
         <TabsContent
-          value="pricing-history"
-          className="mx-auto w-full max-w-6xl px-3 py-4 text-sm/normal"
-        >
-          <PricingHistoryCard modelSlug={model.slug} />
-        </TabsContent>
-        <TabsContent
           value="parameter-comparison"
           className="mx-auto w-full max-w-6xl px-3 py-4 text-sm/normal"
         >
           <ParameterComparisonCard modelSlug={model.slug} />
         </TabsContent>
+        {hasDescription && (
+          <TabsContent value="about" className="mx-auto w-full max-w-6xl px-3 py-4">
+            <p className="max-w-[75ch] text-sm leading-6 text-pretty">
+              <InlineMarkdown text={model.description ?? ''} />
+            </p>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

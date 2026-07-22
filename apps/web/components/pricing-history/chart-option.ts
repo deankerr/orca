@@ -15,11 +15,11 @@ import type { LineSeriesOption } from 'echarts/charts'
 import type { EChartsCoreOption } from 'echarts/core'
 import ms from 'ms'
 
-import { pricingMetricMetadata } from '../pricing-fields'
-import type { PricingMetric } from '../types'
 import { endpointSrgbColor } from './colors'
+import { pricingMetricMetadata } from './pricing-fields'
 import { priceAt } from './series'
 import type { PricingSeries } from './series'
+import type { PricingMetric } from './types'
 
 export const ZOOM_ANIMATION_DURATION = ms('220ms')
 
@@ -49,15 +49,17 @@ const MIN_ZOOM_SPAN = ms('1d')
 // 390px chart height comfortably fits ~18 tooltip rows plus its heading.
 const TOOLTIP_SINGLE_COLUMN_MAX_ROWS = 16
 const MONO_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+// Hex mirrors of the dark-theme palette in globals.css - ECharts canvas paints
+// cannot reference the CSS custom properties directly.
 const CHART_THEME = {
-  border: 'rgba(255, 255, 255, 0.1)',
-  card: '#171717',
-  foreground: '#fafafa',
+  background: '#0a0a0a', // --background
+  border: 'rgba(255, 255, 255, 0.1)', // --border
+  card: '#171717', // --card
+  foreground: '#fafafa', // --foreground
   markerKeyline: 'rgba(10, 10, 10, 0.72)',
-  mutedForeground: '#a3a3a3',
-  navigatorBackground: 'rgba(255, 255, 255, 0.04)',
-  navigatorFiller: 'rgba(163, 163, 163, 0.16)',
-  navigatorSelectedBackground: 'rgba(163, 163, 163, 0.1)',
+  mutedForeground: '#a3a3a3', // --muted-foreground
+  primary: '#e5e5e5', // --primary
+  secondary: '#262626', // --secondary
 }
 
 // X-axis ticks land on calendar boundaries (midnight, Monday, the 1st) at a
@@ -101,16 +103,16 @@ export function createPricingHistoryChartOption(args: {
   context: ZoomContext
   zoom: ZoomWindow
 }): EChartsCoreOption {
-  // Keep colors tied to the complete endpoint list. Hiding an endpoint must not
+  // Keep colors tied to the complete provider list. Replacement endpoint UUIDs
+  // sharing a provider tag get the same color, and hiding a provider must not
   // cause every remaining line and legend control to change identity.
-  const endpointIndexes = new Map(
-    args.allSeries.map((series, index) => [series.endpointUuid, index]),
-  )
+  const providerIds = [...new Set(args.allSeries.map((series) => series.provider.tag_slug))]
+  const providerIndexes = new Map(providerIds.map((providerId, index) => [providerId, index]))
   const segments = buildAvailablePriceSegments(
     args.context.series,
     args.context.metric,
-    endpointIndexes,
-    args.allSeries.length,
+    providerIndexes,
+    providerIds.length,
   )
   const theme = CHART_THEME
   const axes = axesForZoomWindow(args.context, args.zoom)
@@ -152,7 +154,7 @@ export function createPricingHistoryChartOption(args: {
     animationEasingUpdate: 'cubicOut',
     aria: {
       enabled: true,
-      description: `${pricingMetricMetadata(args.context.metric).label} pricing history for ${args.context.series.length} endpoints.`,
+      description: `${pricingMetricMetadata(args.context.metric).label} pricing history for ${new Set(args.context.series.map((series) => series.provider.tag_slug)).size} providers.`,
     },
     dataZoom: [
       {
@@ -178,46 +180,47 @@ export function createPricingHistoryChartOption(args: {
         end: args.zoom.end,
         bottom: 8,
         height: 24,
-        // A visible groove plus a tinted filler keeps the control readable as
-        // a range slider even in its resting full-history state.
-        backgroundColor: theme.navigatorBackground,
+        // Untethered from the plot area: the navigator spans the full card
+        // width instead of leaving a stub of dead space under the Y-axis
+        // labels. Percentage mapping is unaffected - it is not an axis.
+        left: 16,
+        right: 16,
+        // Solid palette layers, matching the toggle groups above: the groove
+        // recesses into the card and the selected window sits on it as the one
+        // solid, secondary-colored element.
+        // Full-width track behind the window: the recessed groove.
+        backgroundColor: theme.background,
+        // Hairline around the whole track, same as every card/input border.
         borderColor: theme.border,
         borderRadius: 4,
         // With brush-select off, dragging the track pans the window instead of
         // discarding it for a new selection - the friendlier default for the
         // easiest area to land on.
         brushSelect: false,
-        dataBackground: {
-          areaStyle: { color: 'transparent' },
-          lineStyle: { color: theme.mutedForeground, opacity: 0.25 },
-        },
-        emphasis: {
-          handleStyle: { borderColor: theme.foreground },
-          moveHandleStyle: { color: theme.foreground, opacity: 0.6 },
-        },
-        fillerColor: theme.navigatorFiller,
+        // The selected window between the two handles.
+        fillerColor: theme.secondary,
         filterMode: 'none',
         handleLabel: { show: false },
-        handleSize: 22,
         handleStyle: {
-          borderColor: theme.mutedForeground,
-          borderWidth: 1.5,
-          color: theme.card,
+          // Handle fill: the brightest solid on the control, like any primary
+          // action. A soft drop shadow lifts it off the flat track.
+          color: theme.primary,
+          borderColor: theme.border,
+          borderWidth: 1,
+          shadowBlur: 4,
+          shadowColor: 'rgba(0, 0, 0, 0.5)',
+          shadowOffsetY: 1,
         },
         labelFormatter: (value: number) => formatSliderDetailDate(value, spansMultipleYears),
         minValueSpan: MIN_ZOOM_SPAN,
-        moveHandleSize: 10,
-        moveHandleStyle: { color: theme.mutedForeground, opacity: 0.5 },
-        selectedDataBackground: {
-          areaStyle: {
-            color: theme.navigatorSelectedBackground,
-          },
-          lineStyle: { color: theme.mutedForeground, opacity: 0.6 },
-        },
+        // The window itself is the pan surface; a separate grab bar above the
+        // track just added a second, disconnected-looking control.
+        moveHandleSize: 0,
         showDataShadow: false,
         // While a handle is dragged, its selected date renders beside it -
         // live feedback for what period the window now covers.
-        showDetail: true,
+        showDetail: false,
+        // Date labels beside the handles (only visible if showDetail is on).
         textStyle: { color: theme.mutedForeground, fontFamily: MONO_FONT_FAMILY },
         throttle: DATA_ZOOM_THROTTLE,
       },
@@ -257,8 +260,8 @@ export function createPricingHistoryChartOption(args: {
         return buildTooltipHtml({
           at,
           context: args.context,
-          endpointCount: args.allSeries.length,
-          endpointIndexes,
+          providerCount: providerIds.length,
+          providerIndexes,
           mutedColor: theme.mutedForeground,
           params: Array.isArray(params) ? (params as unknown[]) : [params],
         })
@@ -289,7 +292,7 @@ export function createPricingHistoryChartOption(args: {
         color: theme.mutedForeground,
         fontFamily: MONO_FONT_FAMILY,
         formatter: (value: number) => formatChartPrice(args.context.metric, value, false),
-        showMaxLabel: false,
+        showMaxLabel: true,
       },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -314,13 +317,13 @@ export function createZoomedAxesOption(context: ZoomContext, zoom: ZoomWindow): 
 function buildAvailablePriceSegments(
   seriesList: readonly PricingSeries[],
   metric: PricingMetric,
-  endpointIndexes: ReadonlyMap<string, number>,
-  endpointCount: number,
+  providerIndexes: ReadonlyMap<string, number>,
+  providerCount: number,
 ) {
   const segments: AvailablePriceSegment[] = []
 
   for (const series of seriesList) {
-    const colorIndex = endpointIndexes.get(series.endpointUuid)
+    const colorIndex = providerIndexes.get(series.provider.tag_slug)
     if (colorIndex === undefined) {
       continue
     }
@@ -336,7 +339,7 @@ function buildAvailablePriceSegments(
       segments.push({
         id: `${series.endpointUuid}:${segmentIndex}`,
         providerId: series.provider.tag_slug,
-        color: endpointSrgbColor(colorIndex, endpointCount),
+        color: endpointSrgbColor(colorIndex, providerCount),
         data,
       })
       segmentIndex += 1
@@ -402,41 +405,51 @@ function axisTimestampFromTooltipParams(params: unknown): number | null {
 function buildTooltipHtml(args: {
   at: number
   context: ZoomContext
-  endpointCount: number
-  endpointIndexes: ReadonlyMap<string, number>
+  providerCount: number
+  providerIndexes: ReadonlyMap<string, number>
   mutedColor: string
   params: readonly unknown[]
 }) {
-  const seenSeriesNames = new Set<string>()
-  const rows: { color: string; name: string; price: number; priceCell: string }[] = []
+  const rowsByProvider = new Map<
+    string,
+    { color: string; name: string; price: number; priceCell: string; priority: number }
+  >()
 
-  // Availability gaps split one endpoint into several chart series with the
-  // same name, so the matched params are deduplicated per endpoint.
+  // Availability gaps and replacement endpoint UUIDs create several chart
+  // series with the same provider name. Resolve the raw endpoint from the
+  // segment ID for an accurate event description, then keep one provider row.
   for (const param of args.params) {
     const seriesName = seriesNameFromTooltipParam(param)
-    if (seriesName === null || seenSeriesNames.has(seriesName)) {
+    const seriesId = seriesIdFromTooltipParam(param)
+    if (seriesName === null || seriesId === null) {
       continue
     }
-    seenSeriesNames.add(seriesName)
 
-    const series = args.context.series.find(
-      (candidate) => candidate.provider.tag_slug === seriesName,
+    const series = args.context.series.find((candidate) =>
+      seriesId.startsWith(`${candidate.endpointUuid}:`),
     )
-    const colorIndex =
-      series === undefined ? undefined : args.endpointIndexes.get(series.endpointUuid)
+    const colorIndex = args.providerIndexes.get(seriesName)
     const price = priceFromTooltipParam(param)
     if (series === undefined || colorIndex === undefined || price === undefined) {
       continue
     }
 
-    rows.push({
-      color: endpointSrgbColor(colorIndex, args.endpointCount),
+    const eventPoint = series.points.find((point) => point.at === args.at)
+    const priority = eventPoint?.available === true ? 2 : eventPoint === undefined ? 1 : 0
+    if ((rowsByProvider.get(seriesName)?.priority ?? -1) >= priority) {
+      continue
+    }
+
+    rowsByProvider.set(seriesName, {
+      color: endpointSrgbColor(colorIndex, args.providerCount),
       name: seriesName,
       price,
       priceCell: describePriceEvent(series, args.context.metric, args.at, price, args.mutedColor),
+      priority,
     })
   }
 
+  const rows = [...rowsByProvider.values()]
   rows.sort((left, right) => right.price - left.price)
 
   if (rows.length === 0) {
@@ -509,6 +522,15 @@ function seriesNameFromTooltipParam(param: unknown): string | null {
 
   const candidate = param as { seriesName?: unknown }
   return typeof candidate.seriesName === 'string' ? candidate.seriesName : null
+}
+
+function seriesIdFromTooltipParam(param: unknown): string | null {
+  if (typeof param !== 'object' || param === null) {
+    return null
+  }
+
+  const candidate = param as { seriesId?: unknown }
+  return typeof candidate.seriesId === 'string' ? candidate.seriesId : null
 }
 
 function priceFromTooltipParam(param: unknown): number | undefined {
@@ -646,13 +668,18 @@ function priceAxisForWindow(context: ZoomContext, zoom: ZoomWindow) {
 
   // A zero-price series still needs a useful domain. One display-unit means
   // $1/MTOK, $1/K images, $1/request, or 1% depending on the selected metric.
-  const max = maximum === 0 ? 1 / pricingScale(context.metric) : maximum * 1.04
-  const approximateInterval = max / 6
+  const padded = maximum === 0 ? 1 / pricingScale(context.metric) : maximum * 1.04
+  const approximateInterval = padded / 6
   const magnitude = 10 ** Math.floor(Math.log10(approximateInterval))
   const normalized = approximateInterval / magnitude
   const intervalMultiplier = normalized <= 1.5 ? 1 : normalized <= 3 ? 2 : normalized <= 7 ? 5 : 10
+  const interval = intervalMultiplier * magnitude
 
-  return { interval: intervalMultiplier * magnitude, max }
+  // Snap the ceiling up to a gridline so it can carry a label. Without this a
+  // constant-price model draws as a line grazing the chart's top border with
+  // nothing above it to anchor the eye. The epsilon absorbs float noise like
+  // 1 / 0.2 === 5.000000000000001 stealing an entire extra interval.
+  return { interval, max: Math.ceil(padded / interval - 1e-9) * interval }
 }
 
 function formatSliderDetailDate(value: number, includeYear: boolean) {

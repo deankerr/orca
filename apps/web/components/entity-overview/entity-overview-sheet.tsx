@@ -3,13 +3,13 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
-import { ActivityIcon, AlertTriangleIcon, ExternalLinkIcon, SearchIcon } from 'lucide-react'
+import { AlertTriangleIcon, ArrowRightIcon, ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import * as R from 'remeda'
 
+import { useExperimentalFeatures } from '@/app/experimental-features-provider'
 import { CopyableEntitySlug } from '@/components/shared/copyable-entity-slug'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
-import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -39,11 +39,11 @@ export function EntityOverview() {
 
 function EntityHeader({ slug, name }: { slug: string; name: string }) {
   return (
-    <div className="flex gap-4">
-      <EntityAvatar slug={slug} className="size-11 shrink-0 rounded-md" />
+    <div className="flex items-center gap-3">
+      <EntityAvatar slug={slug} className="size-8.5 shrink-0 rounded-md" />
       <div className="min-w-0">
-        <div className="truncate text-base leading-snug font-semibold">{name}</div>
-        <CopyableEntitySlug slug={slug} className="mt-1 truncate" />
+        <div className="truncate text-base leading-tight font-semibold">{name}</div>
+        <CopyableEntitySlug slug={slug} className="truncate" />
       </div>
     </div>
   )
@@ -74,9 +74,9 @@ function ModelContent({ slug }: { slug: string }) {
       name={model.name}
       externalLinks={
         <>
-          <ExternalLinkChip href={`https://openrouter.ai/${model.slug}`} label="openrouter.ai" />
+          <HeaderExternalLink href={`https://openrouter.ai/${model.slug}`} label="openrouter.ai" />
           {R.isDefined(model.hugging_face_id) && (
-            <ExternalLinkChip
+            <HeaderExternalLink
               href={`https://huggingface.co/${model.hugging_face_id}`}
               label="huggingface.co"
             />
@@ -119,7 +119,7 @@ function ProviderContent({ slug }: { slug: string }) {
       slug={provider.slug}
       name={provider.name}
       externalLinks={
-        <ExternalLinkChip
+        <HeaderExternalLink
           href={`https://openrouter.ai/provider/${provider.slug}`}
           label="openrouter.ai"
         />
@@ -182,6 +182,7 @@ function OverviewLayout({
   children: React.ReactNode
 }) {
   const { close } = useEntityOverview()
+  const { enabled: experimentalFeaturesEnabled } = useExperimentalFeatures()
 
   return (
     <>
@@ -204,28 +205,29 @@ function OverviewLayout({
 
         <div className="rounded-md border bg-card/60 p-3">
           <OverviewLabel>Endpoints</OverviewLabel>
-          <ActionLink href={`/?q=${slug}`} onClick={close}>
+          <PageLink href={`/?q=${slug}`} onClick={close}>
             Filter by this {type}
-            <SearchIcon className="size-3" />
-          </ActionLink>
+          </PageLink>
         </div>
 
         <div className="rounded-md border bg-card/60 p-3">
           <OverviewLabel>Monitor</OverviewLabel>
-          <ActionLink href={`/monitor?${type}=${slug}`} onClick={close}>
+          <PageLink href={`/monitor?${type}=${slug}`} onClick={close}>
             Filter by this {type}
-            <ActivityIcon className="size-3" />
-          </ActionLink>
+          </PageLink>
         </div>
 
         {type === 'model' && (
-          <Button
-            nativeButton={false}
-            variant="outline"
-            render={<Link href={`/model/${slug}`} onClick={close} />}
-          >
-            Open model page
-          </Button>
+          <div className="flex flex-col items-start px-1">
+            {experimentalFeaturesEnabled && (
+              <PageLink href={`/model/${slug}`} onClick={close}>
+                Model page
+              </PageLink>
+            )}
+            <PageLink href={`/beta/pricing-history/${slug}`} onClick={close}>
+              Pricing history (beta)
+            </PageLink>
+          </div>
         )}
       </div>
     </>
@@ -256,7 +258,7 @@ function OverviewRow({ label, value }: { label: string; value: React.ReactNode }
   )
 }
 
-function ActionLink({
+function PageLink({
   href,
   onClick,
   children,
@@ -269,23 +271,24 @@ function ActionLink({
     <Link
       href={href}
       onClick={onClick}
-      className="inline-flex items-center gap-1 font-mono text-xs text-primary uppercase underline decoration-primary/40 decoration-dashed underline-offset-3"
+      className="group inline-flex min-h-10 items-center gap-1.5 rounded-sm font-mono text-xs text-muted-foreground uppercase underline decoration-border decoration-dashed underline-offset-4 transition-[color,scale,text-decoration-color] outline-none hover:text-foreground hover:decoration-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]"
     >
       {children}
+      <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
     </Link>
   )
 }
 
-function ExternalLinkChip({ href, label }: { href: string; label: string }) {
+function HeaderExternalLink({ href, label }: { href: string; label: string }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 font-mono text-[0.625rem] text-muted-foreground transition-colors hover:border-border/80 hover:text-foreground"
+      className="group inline-flex min-h-10 items-center gap-1.5 rounded-sm font-mono text-xs text-muted-foreground underline decoration-border decoration-dashed underline-offset-4 transition-[color,scale,text-decoration-color] outline-none hover:text-foreground hover:decoration-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]"
     >
       {label}
-      <ExternalLinkIcon className="size-2.5" />
+      <ArrowUpRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </a>
   )
 }
@@ -302,10 +305,10 @@ function InlineExternalLink({ href }: { href: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 text-primary underline decoration-primary/40 decoration-dashed underline-offset-3"
+      className="group inline-flex items-center gap-1 rounded-sm text-muted-foreground underline decoration-border decoration-dashed underline-offset-4 transition-[color,scale,text-decoration-color] outline-none hover:text-foreground hover:decoration-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]"
     >
       {hostname}
-      <ExternalLinkIcon className="size-3" />
+      <ArrowUpRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </a>
   )
 }

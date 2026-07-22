@@ -9,6 +9,7 @@
 const MODEL_LOGO_KEYS_BY_AUTHOR: Record<string, readonly string[]> = {
   anthropic: ['claude'],
   google: ['gemini', 'gemma'],
+  meituan: ['longcat'],
   moonshotai: ['kimi'],
   'x-ai': ['grok'],
 }

@@ -1,5 +1,6 @@
 # apps/web
 
+- Model page links are behind a feature flag and are technically unreleased.
 - Styling: Dark theme, monospace fonts, dense layouts
 
 ## React Compiler

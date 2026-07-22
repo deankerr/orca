@@ -2,14 +2,14 @@
 
 import { formatPricing } from '@orca/backend/shared/formatters'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react'
-import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 
 import { EntityOverviewTrigger } from '@/components/entity-overview/entity-overview-trigger'
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { ModelPageCard, ModelPageCardLoading } from './model-page-card'
+import { ModelPageCardLoading } from './model-page-card'
 import { PRICING_METRICS } from './pricing-fields'
 import type { ModelEndpoint, PricingMetric } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
@@ -158,7 +158,7 @@ export function ProviderComparisonCard({ modelSlug }: { modelSlug: string }) {
   const endpoints = useModelEndpoints(modelSlug)
 
   if (endpoints === undefined) {
-    return <ModelPageCardLoading title="Provider Comparison" label="Loading endpoints" />
+    return <ModelPageCardLoading label="Loading endpoints" />
   }
 
   return <ProviderComparison endpoints={endpoints} />
@@ -211,7 +211,7 @@ function ProviderComparison({ endpoints }: { endpoints: readonly ModelEndpoint[]
   }
 
   return (
-    <ModelPageCard title="Provider Comparison">
+    <Card className="bg-card/50">
       <CardContent className="px-2">
         <Table className="min-w-[62rem]">
           <TableHeader className="text-muted-foreground">
@@ -333,6 +333,6 @@ function ProviderComparison({ endpoints }: { endpoints: readonly ModelEndpoint[]
           </TableBody>
         </Table>
       </CardContent>
-    </ModelPageCard>
+    </Card>
   )
 }
