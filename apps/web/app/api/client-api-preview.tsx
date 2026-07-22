@@ -4,10 +4,10 @@ import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { codeToHtml } from 'shiki'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
+import { highlightJson } from '@/lib/highlight-json'
 import { cn } from '@/lib/utils'
 
 export function ClientApiCodeBlock() {
@@ -42,16 +42,6 @@ export function ClientApiCodeBlock() {
   )
 }
 
-async function highlight(code: string) {
-  return await codeToHtml(code, {
-    lang: 'json',
-    themes: {
-      light: 'github-light',
-      dark: 'github-dark-default',
-    },
-  })
-}
-
 function HighlightedJsonCode({ code }: { code: string }) {
   const [highlighted, setHighlighted] = useState<{ code: string; html: string } | null>(null)
   const hasCode = code.length > 0
@@ -65,7 +55,7 @@ function HighlightedJsonCode({ code }: { code: string }) {
 
     const loadHighlight = async () => {
       try {
-        const nextHtml = await highlight(code)
+        const nextHtml = await highlightJson(code)
         if (isActive) {
           setHighlighted({ code, html: nextHtml })
         }
