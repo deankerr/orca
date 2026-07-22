@@ -15,7 +15,7 @@ const API_URL = 'https://orca.orb.town/api/preview/v2/models'
 
 export default function Page() {
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto px-4 lg:min-h-0 lg:flex-row lg:justify-center lg:overflow-hidden lg:overflow-y-hidden">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 lg:flex-row lg:justify-center lg:overflow-hidden lg:overflow-y-hidden">
       {/* * Left Column - Documentation */}
       <div className="typography w-full max-w-2xl p-6 lg:min-h-0 lg:overflow-y-auto">
         <h3>ORCA API</h3>

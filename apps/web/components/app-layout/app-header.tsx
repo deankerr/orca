@@ -19,7 +19,7 @@ const navigationLinks = [
 export function AppHeader() {
   const pathname = usePathname()
   return (
-    <header className="border-b px-4 md:px-6">
+    <header className="shrink-0 border-b px-4 md:px-6">
       <div className="flex h-12 items-center justify-between gap-4">
         {/* Left side */}
         <div className="flex items-center gap-4">
