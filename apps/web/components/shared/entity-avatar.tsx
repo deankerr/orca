@@ -3,8 +3,7 @@ import Image from 'next/image'
 
 import { cn } from '@/lib/utils'
 
-const LOGO_SERVICE_ORIGIN =
-  process.env.NEXT_PUBLIC_ENTITY_LOGO_SERVICE_ORIGIN ?? 'http://localhost:8787'
+const LOGO_SERVICE_ORIGIN = 'https://logos.orb.town'
 
 export function EntityAvatar({
   slug,
