@@ -4,6 +4,7 @@ import type { Doc } from './_generated/dataModel'
 import { query } from './_generated/server'
 import { createEndpointProjection } from './catalog/endpoints/projection'
 import {
+  EXCLUDED_PRICING_PATHS,
   reconstructPricingHistory,
   takeRecentCompleteCrawls,
 } from './endpointPricingHistory/reconstruct'
@@ -34,6 +35,7 @@ export const get = query({
       .withIndex('by_entity_type__model_slug__crawl_id', (q) =>
         q.eq('entity_type', 'endpoint').eq('model_slug', args.modelSlug),
       )
+      .filter((q) => q.and(...EXCLUDED_PRICING_PATHS.map((path) => q.neq(q.field('path'), path))))
       .order('desc')
 
     const [endpoints, model, changes, earliestArchive, latestArchive] = await Promise.all([

@@ -13,8 +13,6 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 
-import { pricingMetricMetadata } from '../pricing-fields'
-import type { EndpointPricingHistory, PricingMetric } from '../types'
 import {
   createPricingHistoryChartOption,
   createZoomedAxesOption,
@@ -23,7 +21,9 @@ import {
   zoomWindowsEqual,
 } from './chart-option'
 import type { ZoomContext, ZoomWindow } from './chart-option'
+import { pricingMetricMetadata } from './pricing-fields'
 import { hasMetricHistory } from './series'
+import type { EndpointPricingHistory, PricingMetric } from './types'
 
 // The core ECharts build stays out of the client bundle unless each required
 // chart, component, and renderer is registered explicitly.
@@ -44,27 +44,27 @@ export type PricingHistoryPlotHandle = {
 }
 
 /**
- * Pure canvas: the card owns all durable UI state (metric, hidden endpoints)
+ * Pure canvas: the card owns all durable UI state (metric, selected providers)
  * and the surrounding layout, while this component owns the ECharts instance
  * and the high-frequency zoom interaction. The handle ref bridges those two
  * lifecycles without rerendering React for every pixel the slider moves.
  */
 export function PricingHistoryPlot({
-  disabledEndpointUuids,
   handleRef,
   history,
   metric,
   onAxisHoverChange,
   onSeriesHoverChange,
   onZoomWindowChange,
+  selectedProviderIds,
 }: {
-  disabledEndpointUuids: ReadonlySet<string>
   handleRef: RefObject<PricingHistoryPlotHandle | null>
   history: EndpointPricingHistory
   metric: PricingMetric
   onAxisHoverChange: (timestamp: number | null) => void
   onSeriesHoverChange: (seriesName: string | null) => void
   onZoomWindowChange: (window: ZoomWindow) => void
+  selectedProviderIds: ReadonlySet<string>
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<ECharts | null>(null)
@@ -257,7 +257,7 @@ export function PricingHistoryPlot({
 
     const renderedSeries = history.series.filter(
       (series) =>
-        !disabledEndpointUuids.has(series.endpointUuid) && hasMetricHistory(series, metric),
+        selectedProviderIds.has(series.provider.tag_slug) && hasMetricHistory(series, metric),
     )
     const zoom = zoomWindowRef.current
     const context: ZoomContext = {
@@ -268,7 +268,7 @@ export function PricingHistoryPlot({
     }
     zoomContextRef.current = context
 
-    // Endpoint selection, metric, and history are low-frequency changes.
+    // Provider selection, metric, and history are low-frequency changes.
     // Replacing the option here also removes stale segment series cleanly.
     chart.setOption(
       createPricingHistoryChartOption({
@@ -279,7 +279,7 @@ export function PricingHistoryPlot({
       }),
       { lazyUpdate: false, notMerge: true },
     )
-  }, [disabledEndpointUuids, history, metric])
+  }, [history, metric, selectedProviderIds])
 
   return (
     <div

@@ -2,23 +2,23 @@ import type { CSSProperties } from 'react'
 
 import { EntityOverviewTrigger } from '@/components/entity-overview/entity-overview-trigger'
 import { EntityIdentity } from '@/components/shared/entity-identity'
-import { CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-import { ModelPageCard, ModelPageCardLoading } from './model-page-card'
-import { buildColumnHoverStyles, buildParameterMatrix } from './parameter-comparison-matrix'
+import { ModelPageCardLoading } from './model-page-card'
 import type {
   ParameterColumn,
   ParameterMatrixData,
   ParameterRow,
 } from './parameter-comparison-matrix'
+import { buildColumnHoverStyles, buildParameterMatrix } from './parameter-comparison-matrix'
 import type { ModelEndpoint } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
 
 const LABEL_ANGLE_DEGREES = 45
 const ROW_HEIGHT_REM = 2.75
 const COLUMN_WIDTH_REM = 2.625
-const MARK_SIZE_REM = 1.75
+const MARK_SIZE_REM = 1.5
 const LABEL_LIFT_REM = 0.25
 const PROVIDER_COLUMN_REM = 10
 
@@ -26,22 +26,14 @@ export function ParameterComparisonCard({ modelSlug }: { modelSlug: string }) {
   const endpoints = useModelEndpoints(modelSlug)
 
   if (endpoints === undefined) {
-    return <ModelPageCardLoading title="Parameter Comparison" label="Loading endpoints" />
+    return <ModelPageCardLoading label="Loading endpoints" />
   }
 
   const matrix = buildParameterMatrix(endpoints)
 
   return (
-    <ModelPageCard title="Parameter Comparison">
+    <Card className="bg-card/50">
       <CardContent className="grid gap-3 px-4">
-        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          <p className="min-w-64 flex-1 text-pretty">
-            Parameter support varies by provider. Rare parameters constrain which providers can
-            serve a request.
-          </p>
-          <ParameterComparisonLegend />
-        </div>
-
         {matrix.columns.length === 0 ? (
           <div className="mb-4 rounded-md border px-3 py-8 text-center text-sm text-muted-foreground">
             No provider parameters reported.
@@ -50,28 +42,7 @@ export function ParameterComparisonCard({ modelSlug }: { modelSlug: string }) {
           <ParameterSupportMatrix matrix={matrix} />
         )}
       </CardContent>
-    </ModelPageCard>
-  )
-}
-
-function ParameterComparisonLegend() {
-  return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
-      <span className="flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="size-3 rounded-[3px] border border-foreground/15 bg-foreground/30"
-        />
-        supported
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="size-3 rounded-[3px] border border-border/70 bg-transparent"
-        />
-        not supported
-      </span>
-    </div>
+    </Card>
   )
 }
 
@@ -82,7 +53,25 @@ function ParameterSupportMatrix({ matrix }: { matrix: ParameterMatrixData<ModelE
   return (
     // The negative margin lets the scrollbar reach the card edge; inner padding
     // keeps the matrix aligned with the rest of the card content.
-    <div className="-mx-4 overflow-x-auto px-4 pb-4">
+    <div className="relative -mx-4 overflow-x-auto px-4 pb-4">
+      {/* legend */}
+      <div className="absolute space-y-1 text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="size-3.5 rounded-[3px] border border-foreground/15 bg-foreground/30"
+          />
+          supported
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="size-3.5 rounded-[3px] border border-border bg-transparent"
+          />
+          not supported
+        </div>
+      </div>
+
       <style>{columnHoverStyles}</style>
       <table
         data-parameter-matrix=""

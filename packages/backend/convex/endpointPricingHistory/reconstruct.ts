@@ -3,11 +3,17 @@ import * as R from 'remeda'
 import { PRICING_FIELD_KEYS } from '../../shared/formatters'
 import type { PricingKey } from '../../shared/formatters'
 
-export const trackedPricingFields = PRICING_FIELD_KEYS
+const EXCLUDED_TRACKED_PRICING_FIELDS = new Set<PricingKey>(['reasoning_output', 'web_search'])
+
+export const trackedPricingFields = PRICING_FIELD_KEYS.filter(
+  (field) => !EXCLUDED_TRACKED_PRICING_FIELDS.has(field),
+)
 
 export type TrackedPricingField = PricingKey
 
 export type TrackedPricing = Partial<Record<TrackedPricingField, number>>
+
+export const EXCLUDED_PRICING_PATHS = ['pricing.internal_reasoning', 'pricing.web_search'] as const
 
 export type PricingHistoryEndpoint = {
   uuid: string
@@ -84,12 +90,10 @@ const PRICING_PATHS = new Map<string, TrackedPricingField>([
   ['pricing.text_output', 'text_output'],
   ['pricing.cache_read', 'text_cache_read'],
   ['pricing.cache_write', 'text_cache_write'],
-  ['pricing.internal_reasoning', 'reasoning_output'],
   ['pricing.audio_input', 'audio_input'],
   ['pricing.audio_cache_input', 'audio_cache_write'],
   ['pricing.image_input', 'image_input'],
   ['pricing.image_output', 'image_output'],
-  ['pricing.web_search', 'web_search'],
   ['pricing.discount', 'discount'],
 ])
 

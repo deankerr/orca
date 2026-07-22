@@ -5,55 +5,57 @@ import { formatPricing } from '@orca/backend/shared/formatters'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
-import { pricingMetricMetadata } from '../pricing-fields'
-import type { PricingMetric } from '../types'
-import { hasMetricHistory, priceAt } from './series'
-import type { PricingSeries } from './series'
+import { pricingMetricMetadata } from './pricing-fields'
+import { hasProviderMetricHistory, providerPriceAt } from './series'
+import type { ProviderPricingSeries } from './series'
+import type { PricingMetric } from './types'
 
 export type LegendEntry = {
-  series: PricingSeries
+  provider: ProviderPricingSeries
   color: string
 }
 
 /**
- * The standings board under the chart: one row per endpoint that has ever been
+ * The standings board under the chart: one row per provider that has ever been
  * priced, with its price at the instant the chart is scrubbed to. A grid (not
  * flex-wrap) so names and prices form real columns at every width.
  */
 export function PricingHistoryLegend({
   at,
-  disabledEndpointUuids,
+  selectedProviderIds,
   entries,
   hoveredProviderId,
   metric,
   onEmphasisChange,
-  onToggleEndpoint,
+  onToggleProvider,
 }: {
   /** The instant prices are read at: the scrubbed date, or the latest crawl. */
   at: number
-  disabledEndpointUuids: ReadonlySet<string>
+  selectedProviderIds: ReadonlySet<string>
   /** Undefined while the pricing history is loading. */
   entries: readonly LegendEntry[] | undefined
   hoveredProviderId: string | null
   metric: PricingMetric
-  onEmphasisChange: (series: PricingSeries, emphasized: boolean) => void
-  onToggleEndpoint: (endpointUuid: string) => void
+  onEmphasisChange: (providerId: string, emphasized: boolean) => void
+  onToggleProvider: (providerId: string) => void
 }) {
   // Widest price the scrubber can ever show for this metric. Reserving it up
   // front keeps rows from reflowing as prices appear and disappear.
   const priceColumnCh = Math.max(
     1,
-    ...(entries ?? []).flatMap(({ series }) =>
-      series.points.map((point) => {
-        const price = point.available ? point.pricing[metric] : undefined
-        return price === undefined ? 0 : (formatPricing(metric, price)?.value.length ?? 0)
-      }),
+    ...(entries ?? []).flatMap(({ provider }) =>
+      provider.series.flatMap((series) =>
+        series.points.map((point) => {
+          const price = point.available ? point.pricing[metric] : undefined
+          return price === undefined ? 0 : (formatPricing(metric, price)?.value.length ?? 0)
+        }),
+      ),
     ),
   )
 
   return (
     <ul
-      aria-label="Endpoints"
+      aria-label="Providers"
       className="grid min-h-7 grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-x-3"
     >
       {entries === undefined
@@ -66,12 +68,12 @@ export function PricingHistoryLegend({
             <LegendRow
               at={at}
               entry={entry}
-              hidden={disabledEndpointUuids.has(entry.series.endpointUuid)}
-              hovered={hoveredProviderId === entry.series.provider.tag_slug}
-              key={entry.series.endpointUuid}
+              hidden={!selectedProviderIds.has(entry.provider.providerId)}
+              hovered={hoveredProviderId === entry.provider.providerId}
+              key={entry.provider.providerId}
               metric={metric}
               onEmphasisChange={onEmphasisChange}
-              onToggleEndpoint={onToggleEndpoint}
+              onToggleProvider={onToggleProvider}
               priceColumnCh={priceColumnCh}
             />
           ))}
@@ -81,12 +83,12 @@ export function PricingHistoryLegend({
 
 function LegendRow({
   at,
-  entry: { color, series },
+  entry: { color, provider },
   hidden,
   hovered,
   metric,
   onEmphasisChange,
-  onToggleEndpoint,
+  onToggleProvider,
   priceColumnCh,
 }: {
   at: number
@@ -94,15 +96,15 @@ function LegendRow({
   hidden: boolean
   hovered: boolean
   metric: PricingMetric
-  onEmphasisChange: (series: PricingSeries, emphasized: boolean) => void
-  onToggleEndpoint: (endpointUuid: string) => void
+  onEmphasisChange: (providerId: string, emphasized: boolean) => void
+  onToggleProvider: (providerId: string) => void
   priceColumnCh: number
 }) {
-  const providerId = series.provider.tag_slug
-  // Endpoints priced under other metrics keep a disabled slot under every
+  const { providerId } = provider
+  // Providers priced under other metrics keep a disabled slot under every
   // metric, so switching metrics never reflows the board.
-  const chartable = hasMetricHistory(series, metric)
-  const price = chartable ? priceAt(series, metric, at) : undefined
+  const chartable = hasProviderMetricHistory(provider, metric)
+  const price = chartable ? providerPriceAt(provider, metric, at) : undefined
   const priceLabel = price === undefined ? '–' : (formatPricing(metric, price)?.value ?? '–')
 
   return (
@@ -110,7 +112,7 @@ function LegendRow({
       <button
         aria-label={
           chartable
-            ? `${hidden ? 'Show' : 'Hide'} ${providerId} endpoint`
+            ? `${hidden ? 'Show' : 'Hide'} ${providerId} provider`
             : `${providerId} has no ${pricingMetricMetadata(metric).label} pricing`
         }
         aria-pressed={chartable ? !hidden : undefined}
@@ -126,19 +128,19 @@ function LegendRow({
         )}
         disabled={!chartable}
         onClick={() => {
-          onToggleEndpoint(series.endpointUuid)
+          onToggleProvider(providerId)
         }}
         onBlur={() => {
-          onEmphasisChange(series, false)
+          onEmphasisChange(providerId, false)
         }}
         onFocus={() => {
-          onEmphasisChange(series, true)
+          onEmphasisChange(providerId, true)
         }}
         onPointerEnter={() => {
-          onEmphasisChange(series, true)
+          onEmphasisChange(providerId, true)
         }}
         onPointerLeave={() => {
-          onEmphasisChange(series, false)
+          onEmphasisChange(providerId, false)
         }}
         type="button"
       >
@@ -147,6 +149,7 @@ function LegendRow({
           className="size-2 shrink-0 rounded-full"
           style={{ backgroundColor: color }}
         />
+
         <span
           className="min-w-0 flex-1 truncate text-left"
           title={
@@ -157,13 +160,9 @@ function LegendRow({
         >
           {providerId}
         </span>
+
         <span
-          className={cn(
-            'shrink-0 text-xs tabular-nums opacity-75',
-            // Prices right-align into a column; the placeholder dash reads
-            // best centred in the slot.
-            price === undefined ? 'text-center' : 'text-right',
-          )}
+          className="shrink-0 text-right text-xs tabular-nums"
           style={{ minWidth: `${priceColumnCh}ch` }}
         >
           {priceLabel}

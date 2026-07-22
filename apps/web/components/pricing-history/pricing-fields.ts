@@ -23,17 +23,17 @@ const PRICING_LABELS = {
 } as const satisfies Record<PricingKey, string>
 
 const HISTORY_UNIT_LABELS = {
-  text_input: 'USD per million tokens',
-  text_output: 'USD per million tokens',
-  text_cache_read: 'USD per million tokens',
-  text_cache_write: 'USD per million tokens',
-  reasoning_output: 'USD per million tokens',
-  audio_input: 'USD per million tokens',
-  audio_cache_write: 'USD per million tokens',
-  image_input: 'USD per thousand images',
-  image_output: 'USD per thousand images',
+  text_input: '$ / MTOK',
+  text_output: '$ / MTOK',
+  text_cache_read: '$ / MTOK',
+  text_cache_write: '$ / MTOK',
+  reasoning_output: '$ / MTOK',
+  audio_input: '$ / MTOK',
+  audio_cache_write: '$ / MTOK',
+  image_input: '$ / KTOK',
+  image_output: '$ / KTOK',
   web_search: 'USD per request',
-  discount: 'Discount percentage',
+  discount: '%',
 } as const satisfies Record<PricingKey, string>
 
 /** Shared ordering and labels for the comparison table and history selector. */
@@ -43,3 +43,20 @@ export const PRICING_METRICS: readonly PricingMetricMetadata[] = PRICING_FIELD_K
   historyUnitLabel: HISTORY_UNIT_LABELS[key],
   alwaysCompare: key === 'text_input' || key === 'text_output',
 }))
+
+export function pricingMetricMetadata(metric: PricingKey): PricingMetricMetadata {
+  // PRICING_METRICS is exhaustive by construction; this fallback keeps the
+  // function total if data from a newer backend reaches an older client.
+  return (
+    PRICING_METRICS.find(({ key }) => key === metric) ?? {
+      key: metric,
+      label: metric,
+      historyUnitLabel: 'Price',
+      alwaysCompare: false,
+    }
+  )
+}
+
+export function isPricingMetric(value: string): value is PricingKey {
+  return PRICING_FIELD_KEYS.some((metric) => metric === value)
+}
