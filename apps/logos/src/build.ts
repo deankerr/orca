@@ -18,7 +18,7 @@ import type { AssetGroup } from './contract'
 import { emitFallbackAsset } from './fallback-image'
 
 // Keep the public key parser and output image size easy to change while the service is young.
-const FILE_EXTENSION = /\.(?:png|jpe?g|svg|webp)$/i
+const FILE_EXTENSION = /\.(?:avif|png|jpe?g|svg|webp)$/i
 const THEME_GROUPS = ['light', 'dark'] as const
 const MANUAL_SOURCE_GROUPS = ['base', ...ASSET_GROUPS] as const
 const OUTPUT_IMAGE_MAX_SIZE_PX = 128
@@ -155,6 +155,10 @@ export async function buildLogos(options: BuildLogosOptions = {}): Promise<Build
   assertAliasTargetsExist({ aliases, sources })
   assertReservedKeysAreUnused(sources.sources)
 
+  console.log('avatar', sources.sources.avatar.size)
+  console.log('light', sources.sources.light.size)
+  console.log('dark', sources.sources.dark.size)
+
   const output = await emitStaticOutput({ aliases, context, sources })
   emitBuildWarnings({ context, sources })
 
@@ -286,7 +290,7 @@ async function collectLobehubThemeAssets(args: {
   sourcePackage: SourcePackage
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
-  const glob = new Bun.Glob('*.{png,jpg,jpeg,svg,webp}')
+  const glob = new Bun.Glob('*.{avif,png,jpg,jpeg,svg,webp}')
   const sourceDir = nodePath.join(args.sourcePackage.root, args.group)
 
   for await (const file of glob.scan({ cwd: sourceDir })) {
@@ -365,7 +369,7 @@ async function collectManualGroup(args: {
   group: ManualSourceGroup
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
-  const glob = new Bun.Glob('*.{png,jpg,jpeg,svg,webp}')
+  const glob = new Bun.Glob('*.{avif,png,jpg,jpeg,svg,webp}')
   const sourceDir = nodePath.join(args.context.manualSourceDir, args.group)
 
   if (!(await pathExists(sourceDir))) {

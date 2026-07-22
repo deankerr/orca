@@ -72,7 +72,7 @@ test('builds reviewable static output through the build module interface', async
       sourcePackageRoots: fixture.sourcePackageRoots,
     })
 
-    expect(result.sourceAssetsWritten).toBe(13)
+    expect(result.sourceAssetsWritten).toBe(16)
     expect(result.aliasAssetsWritten).toBe(3)
     expect(result.shadowedManualAssets).toHaveLength(3)
     expect(result.manualSourceCoverageWarnings).toEqual([
@@ -88,7 +88,7 @@ test('builds reviewable static output through the build module interface', async
     expect(
       logs.filter((line) => line.startsWith('Warning: manual logo asset shadowed')),
     ).toHaveLength(3)
-    expect(logs.at(-1)).toBe('Built 16 logo assets into dist/v1 (3 manual assets shadowed)')
+    expect(logs.at(-1)).toBe('Built 19 logo assets into dist/v1 (3 manual assets shadowed)')
 
     const manifest = await readManifest(fixture.appRoot)
     expect(manifest.version).toBe('v1')
@@ -114,6 +114,8 @@ test('builds reviewable static output through the build module interface', async
     expect(manualDashed.dark?.source).toBe('sources/base/manual-dashed.svg')
     expect(manualDashed.avatar?.source).toBe('sources/base/manual-dashed.svg')
 
+    expectManualSource(manifest, 'manual-avif', 'sources/base/manual-avif.avif')
+
     const overridden = findLogo(manifest, 'overridden')
     expect(overridden.light?.source).toBe('sources/base/overridden.svg')
     expect(overridden.dark?.source).toBe('sources/base/overridden.svg')
@@ -131,6 +133,7 @@ test('builds reviewable static output through the build module interface', async
     await expectWebpOutput(fixture.appRoot, 'v1/light/shared-alias.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/manualonly.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/manual-dashed.webp')
+    await expectWebpOutput(fixture.appRoot, 'v1/light/manual-avif.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/avatar/overridden.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/partial.webp')
     await expectWebpOutput(fixture.appRoot, 'v1/light/fallback.webp')
@@ -198,6 +201,7 @@ async function createBuildFixture(args: {
 
   await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'manualonly.svg'), '#f59e0b')
   await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'manual-dashed.svg'), '#22c55e')
+  await writeAvif(nodePath.join(appRoot, 'sources', 'base', 'manual-avif.avif'), '#06b6d4')
   await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'overridden.svg'), '#64748b')
   await writeSvg(nodePath.join(appRoot, 'sources', 'base', 'shared.svg'), '#a855f7')
   await writeSvg(nodePath.join(appRoot, 'sources', 'avatar', 'overridden.svg'), '#f97316')
@@ -230,6 +234,13 @@ async function writeWebp(path: string, fill: string): Promise<void> {
     .toFile(path)
 }
 
+async function writeAvif(path: string, fill: string): Promise<void> {
+  await mkdir(nodePath.dirname(path), { recursive: true })
+  await sharp(Buffer.from(createSvg(fill)))
+    .avif()
+    .toFile(path)
+}
+
 function createSvg(fill: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="${fill}"/></svg>`
 }
@@ -247,6 +258,13 @@ function findLogo(manifest: TestManifest, key: string): TestManifest['logos'][nu
   }
 
   return logo
+}
+
+function expectManualSource(manifest: TestManifest, key: string, source: string): void {
+  const logo = findLogo(manifest, key)
+  expect(logo.light?.source).toBe(source)
+  expect(logo.dark?.source).toBe(source)
+  expect(logo.avatar?.source).toBe(source)
 }
 
 async function expectWebpOutput(appRoot: string, path: string): Promise<void> {

@@ -4,20 +4,20 @@
   "type": "module",
   "scripts": {
     "build": "bun run src/build.ts",
-    "deploy": "bun run build && bun run types && wrangler deploy",
-    "dev": "bun run build && bun run types && wrangler dev",
+    "deploy": "bun run build && wrangler deploy",
+    "dev": "bun run build && wrangler dev",
     "test": "bun test",
     "types": "wrangler types"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260702.1",
-    "@lobehub/icons-static-avatar": "1.12.0",
-    "@lobehub/icons-static-webp": "1.92.0",
+    "@lobehub/icons-static-avatar": "1.13.0",
+    "@lobehub/icons-static-webp": "1.93.0",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "sharp": "^0.35.3",
     "typescript": "catalog:",
-    "wrangler": "^4.110.0",
+    "wrangler": "^4.112.0",
     "zod": "catalog:"
   }
 }
