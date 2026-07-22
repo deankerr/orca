@@ -7,12 +7,11 @@ import { ActivityIcon, AlertTriangleIcon, ExternalLinkIcon, SearchIcon } from 'l
 import Link from 'next/link'
 import * as R from 'remeda'
 
-import { useExperimentalFeatures } from '@/app/experimental-features-provider'
+import { CopyableEntitySlug } from '@/components/shared/copyable-entity-slug'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
 import { useEntityOverview } from './entity-overview-context'
 
@@ -39,21 +38,12 @@ export function EntityOverview() {
 }
 
 function EntityHeader({ slug, name }: { slug: string; name: string }) {
-  const copyToClipboard = useCopyToClipboard()
-
   return (
     <div className="flex gap-4">
       <EntityAvatar slug={slug} className="size-11 shrink-0 rounded-md" />
       <div className="min-w-0">
         <div className="truncate text-base leading-snug font-semibold">{name}</div>
-        <button
-          type="button"
-          onClick={() => void copyToClipboard(slug, `Copied: ${slug}`)}
-          title="Click to copy"
-          className="mt-1 cursor-pointer truncate text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary/90"
-        >
-          {slug}
-        </button>
+        <CopyableEntitySlug slug={slug} className="mt-1 truncate" />
       </div>
     </div>
   )
@@ -192,8 +182,6 @@ function OverviewLayout({
   children: React.ReactNode
 }) {
   const { close } = useEntityOverview()
-  const { enabled: experimentalFeaturesEnabled } = useExperimentalFeatures()
-  const showModelPageLink = experimentalFeaturesEnabled && type === 'model'
 
   return (
     <>
@@ -230,7 +218,7 @@ function OverviewLayout({
           </ActionLink>
         </div>
 
-        {showModelPageLink && (
+        {type === 'model' && (
           <Button
             nativeButton={false}
             variant="outline"
