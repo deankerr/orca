@@ -30,15 +30,20 @@ is adding a reader; removing one is deleting a prefix.
 Sketch of the R2 layout:
 
 ```
-raw/<crawl_id>/models.json.gz              # verbatim catalog/models response
-raw/<crawl_id>/endpoints.ndjson.gz         # one endpoint response per line (embeds stripped)
-raw/<crawl_id>/failures.json               # per-request failures, if any
-canonical/v4/<crawl_id>/catalog.json.gz    # deduped MEPs at shared baseline
-canonical/v4/<crawl_id>/telemetry.json.gz  # per-crawl ephemeral stats
-derived/changesets/v4/<prev>_<crawl_id>.json.gz
-derived/analytics/**/*.parquet             # ad-hoc DuckDB lane, compacted whenever
-manifest.json                              # active versions, era boundaries, crawl index
+raw/<captured_at>/models.json.gz                 # verbatim catalog/models response (ISO id)
+raw/<captured_at>/observations/<part>.jsonl.gz   # one self-describing observation per line
+raw/<captured_at>/capture.json                   # pass summary: status tally + error scopes
+canonical/v4/<captured_at>/catalog.json.gz       # deduped MEPs at shared baseline
+canonical/v4/<captured_at>/telemetry.json.gz     # per-pass ephemeral stats
+derived/changesets/v4/<prev>_<captured_at>.json.gz
+derived/analytics/**/*.parquet                   # ad-hoc DuckDB lane, compacted whenever
+manifest.json                                    # active versions, era boundaries, pass index
 ```
+
+An observation line is `{slug, permaslug, variant, at, status, body}` or `{slug, permaslug, variant, at, error}` —
+the unit of truth is the request scope, not the pass. Any HTTP response is data (404 = "zero
+endpoints right now", uninterpreted until canonical); only transport errors are error records, and
+an error never advances a scope's knowledge — it just leaves it stale until the next pass.
 
 ## Per-crawl workflow
 

@@ -1,5 +1,17 @@
 # ORCA (OpenRouter Capability Analysis)
 
+## Active: data architecture rework
+
+We are replacing the Convex-centric snapshot pipeline with a layered artifact system: raw
+observations captured to R2 (Layer 0), versioned canonicalization with era adapters (Layer 1),
+and independent derived products — changesets, current views, alerts, analytics (Layer 2).
+The existing Convex pipeline keeps running and is a guide, not a migration constraint.
+
+- Design notes: `notes/data-architecture/` (background, measured statistics, direction)
+- Layer 0 lives in `apps/capture` — an Alchemy v2 (Effect) Cloudflare stack, currently dev-stage
+  only, capturing every 15 minutes in shadow. See its `README.md` (what it does) and `CLAUDE.md`
+  (working with Alchemy).
+
 ## OXC
 
 - Always run `bun run fix` after you have completed your changes, to check and auto-fix errors where possible.

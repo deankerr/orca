@@ -1,0 +1,17 @@
+{
+  "name": "@orca/processes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "unbundle": "bun run src/unbundle.ts"
+  },
+  "dependencies": {
+    "json-diff-ts": "catalog:",
+    "pretty-bytes": "catalog:",
+    "remeda": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -48,6 +48,7 @@
     "pretty-bytes": "7.1.0",
     "remeda": "2.39.0",
     "typescript": "^6",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "json-diff-ts": "4.10.4"
   }
 }

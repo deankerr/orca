@@ -15,3 +15,7 @@ little, and the projected schema is rigid in ways that fight the product's core 
 - First move: spin up Layer 0 (capture), which has its own open questions that are easier to
   answer with a running collector. In parallel: explore the existing dataset via a snapshot
   dump from the Convex backend.
+- `apps/capture` is live: an Alchemy v2 (Effect) stack — R2 bucket + Worker + Workflow — capturing
+  `raw/<captured_at>/{models.json.gz, observations/*.jsonl.gz, capture.json}` every 15 minutes,
+  in shadow alongside the existing pipeline. Passes are identified by ISO `captured_at`, not
+  timestamp crawl_ids. Verified end-to-end 2026-07-23.

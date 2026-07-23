@@ -1,0 +1,20 @@
+{
+  "name": "@orca/capture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-beta.99",
+    "@effect/platform-node": "4.0.0-beta.99",
+    "alchemy": "2.0.0-beta.63",
+    "effect": "4.0.0-beta.99"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
