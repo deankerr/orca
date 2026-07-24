@@ -1,53 +1,58 @@
-const LIGHTNESS = 0.7
-const CURATED_CHROMA_FRACTION = 0.9
-const GENERATED_CHROMA_FRACTION = 0.8
-const BASE_HUE = 25
+const MIN_LIGHTNESS = 0.66
+const LIGHTNESS_RANGE = 0.1
+const CHROMA_FRACTION = 0.85
 const MAX_CHROMA = 0.4
 const SEARCH_STEPS = 16
 
-/** Ordered for maximum separation in the small endpoint sets used by most models. */
-const CURATED_HUES = [250, 25, 145, 305, 85, 195, 350, 115, 275, 55] as const
+// olive hues read as murky at chart lightness, so the hue wheel
+// skips this band entirely. Everything else stays reachable.
+const MUD_BAND_START = 100
+const MUD_BAND_END = 120
 
-/** Return the browser-facing OKLCH color used by endpoint controls. */
-export function endpointColor(index: number, endpointCount: number) {
-  const { lightness, chroma, hue } = endpointColorCoordinates(index, endpointCount)
+/** Return the browser-facing OKLCH color for a provider's chart line and legend controls. */
+export function providerColor(providerId: string) {
+  const { lightness, chroma, hue } = providerColorCoordinates(providerId)
 
   return `oklch(${formatChannel(lightness)} ${formatChannel(chroma)} ${formatChannel(hue)})`
 }
 
-/** Return the same palette in sRGB because ECharts cannot parse OKLCH. */
-export function endpointSrgbColor(index: number, endpointCount: number) {
-  const { lightness, chroma, hue } = endpointColorCoordinates(index, endpointCount)
+/** Return the same color in sRGB because ECharts cannot parse OKLCH. */
+export function providerSrgbColor(providerId: string) {
+  const { lightness, chroma, hue } = providerColorCoordinates(providerId)
   const [red, green, blue] = linearSrgbChannels(lightness, chroma, hue).map(linearToSrgbByte)
 
   return `rgb(${red}, ${green}, ${blue})`
 }
 
-function greatestCommonDivisor(left: number, right: number): number {
-  let a = left
-  let b = right
+/* oxlint-disable no-bitwise, unicorn/prefer-math-trunc -- FNV-1a hashing is inherently 32-bit integer math. */
+/** 32-bit FNV-1a: cheap, stable, and well-mixed for short slugs. */
+function fnv1aHash(text: string) {
+  let hash = 0x81_1c_9d_c5
 
-  while (b !== 0) {
-    const remainder = a % b
-    a = b
-    b = remainder
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.codePointAt(index) ?? 0
+    hash = Math.imul(hash, 0x01_00_01_93)
   }
 
-  return a
+  return hash >>> 0
 }
 
-/** Pick a coprime step so neighboring legend entries are far apart in hue. */
-function distributedStep(count: number) {
-  if (count <= 2) {
-    return 1
-  }
+function providerColorCoordinates(providerId: string) {
+  const hash = fnv1aHash(providerId)
 
-  let step = Math.max(1, Math.round(count * 0.382))
-  while (step < count && greatestCommonDivisor(step, count) !== 1) {
-    step += 1
-  }
+  // Colors derive purely from the provider id: adding or hiding providers can
+  // never reshuffle the palette. Low bits pick the hue, high bits nudge the
+  // lightness so near-hue collisions still separate a little.
+  const hueFraction = (hash & 0xff_ff) / 0x1_00_00
+  const lightnessFraction = (hash >>> 16) / 0x1_00_00
+  /* oxlint-enable no-bitwise, unicorn/prefer-math-trunc */
 
-  return step === count ? 1 : step
+  const usableHueRange = 360 - (MUD_BAND_END - MUD_BAND_START)
+  const hue = (MUD_BAND_END + hueFraction * usableHueRange) % 360
+  const lightness = MIN_LIGHTNESS + lightnessFraction * LIGHTNESS_RANGE
+  const chroma = findMaxSrgbChroma(lightness, hue) * CHROMA_FRACTION
+
+  return { lightness, chroma, hue }
 }
 
 function linearSrgbChannels(lightness: number, chroma: number, hue: number) {
@@ -95,21 +100,6 @@ function findMaxSrgbChroma(lightness: number, hue: number) {
 
 function formatChannel(value: number) {
   return Number(value.toFixed(3)).toString()
-}
-
-function endpointColorCoordinates(index: number, endpointCount: number) {
-  const count = Math.max(1, endpointCount)
-  const usesCuratedPalette = count <= CURATED_HUES.length
-  // Large palettes walk a count-specific coprime permutation of the hue wheel;
-  // adjacent endpoint IDs therefore remain separated instead of clustering.
-  const paletteIndex = (index * distributedStep(count)) % count
-  const hue = usesCuratedPalette
-    ? (CURATED_HUES[index] ?? CURATED_HUES[0])
-    : (BASE_HUE + (paletteIndex * 360) / count) % 360
-  const chromaFraction = usesCuratedPalette ? CURATED_CHROMA_FRACTION : GENERATED_CHROMA_FRACTION
-  const chroma = findMaxSrgbChroma(LIGHTNESS, hue) * chromaFraction
-
-  return { lightness: LIGHTNESS, chroma, hue }
 }
 
 function linearToSrgbByte(channel: number) {

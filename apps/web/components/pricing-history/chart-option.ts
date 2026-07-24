@@ -15,7 +15,7 @@ import type { LineSeriesOption } from 'echarts/charts'
 import type { EChartsCoreOption } from 'echarts/core'
 import ms from 'ms'
 
-import { endpointSrgbColor } from './colors'
+import { providerSrgbColor } from './colors'
 import { pricingMetricMetadata } from './pricing-fields'
 import { priceAt } from './series'
 import type { PricingSeries } from './series'
@@ -103,22 +103,14 @@ type AvailablePriceSegment = {
 }
 
 export function createPricingHistoryChartOption(args: {
-  allSeries: readonly PricingSeries[]
   animateUpdates: boolean
   context: ZoomContext
   zoom: ZoomWindow
 }): EChartsCoreOption {
-  // Keep colors tied to the complete provider list. Replacement endpoint UUIDs
-  // sharing a provider tag get the same color, and hiding a provider must not
-  // cause every remaining line and legend control to change identity.
-  const providerIds = [...new Set(args.allSeries.map((series) => series.provider.tag_slug))]
-  const providerIndexes = new Map(providerIds.map((providerId, index) => [providerId, index]))
-  const segments = buildAvailablePriceSegments(
-    args.context.series,
-    args.context.metric,
-    providerIndexes,
-    providerIds.length,
-  )
+  // Colors hash from each provider tag, so replacement endpoint UUIDs sharing
+  // a tag get the same color, and hiding a provider cannot change the identity
+  // of any remaining line or legend control.
+  const segments = buildAvailablePriceSegments(args.context.series, args.context.metric)
   const theme = CHART_THEME
   const axes = axesForZoomWindow(args.context, args.zoom)
   // Slider detail labels only need a year once the retained history crosses one.
@@ -267,8 +259,6 @@ export function createPricingHistoryChartOption(args: {
         return buildTooltipHtml({
           at,
           context: args.context,
-          providerCount: providerIds.length,
-          providerIndexes,
           mutedColor: theme.mutedForeground,
           params: Array.isArray(params) ? (params as unknown[]) : [params],
         })
@@ -321,20 +311,10 @@ export function createZoomedAxesOption(context: ZoomContext, zoom: ZoomWindow): 
   }
 }
 
-function buildAvailablePriceSegments(
-  seriesList: readonly PricingSeries[],
-  metric: PricingMetric,
-  providerIndexes: ReadonlyMap<string, number>,
-  providerCount: number,
-) {
+function buildAvailablePriceSegments(seriesList: readonly PricingSeries[], metric: PricingMetric) {
   const segments: AvailablePriceSegment[] = []
 
   for (const series of seriesList) {
-    const colorIndex = providerIndexes.get(series.provider.tag_slug)
-    if (colorIndex === undefined) {
-      continue
-    }
-
     let segmentIndex = 0
     let data: NonNullable<LineSeriesOption['data']> = []
 
@@ -346,7 +326,7 @@ function buildAvailablePriceSegments(
       segments.push({
         id: `${series.endpointUuid}:${segmentIndex}`,
         providerId: series.provider.tag_slug,
-        color: endpointSrgbColor(colorIndex, providerCount),
+        color: providerSrgbColor(series.provider.tag_slug),
         data,
       })
       segmentIndex += 1
@@ -412,8 +392,6 @@ function axisTimestampFromTooltipParams(params: unknown): number | null {
 function buildTooltipHtml(args: {
   at: number
   context: ZoomContext
-  providerCount: number
-  providerIndexes: ReadonlyMap<string, number>
   mutedColor: string
   params: readonly unknown[]
 }) {
@@ -435,9 +413,8 @@ function buildTooltipHtml(args: {
     const series = args.context.series.find((candidate) =>
       seriesId.startsWith(`${candidate.endpointUuid}:`),
     )
-    const colorIndex = args.providerIndexes.get(seriesName)
     const price = priceFromTooltipParam(param)
-    if (series === undefined || colorIndex === undefined || price === undefined) {
+    if (series === undefined || price === undefined) {
       continue
     }
 
@@ -448,7 +425,7 @@ function buildTooltipHtml(args: {
     }
 
     rowsByProvider.set(seriesName, {
-      color: endpointSrgbColor(colorIndex, args.providerCount),
+      color: providerSrgbColor(seriesName),
       name: seriesName,
       price,
       priceCell: describePriceEvent(series, args.context.metric, args.at, price, args.mutedColor),

@@ -272,7 +272,6 @@ export function PricingHistoryPlot({
     // Replacing the option here also removes stale segment series cleanly.
     chart.setOption(
       createPricingHistoryChartOption({
-        allSeries: history.series,
         animateUpdates: !prefersReducedMotion(),
         context,
         zoom,

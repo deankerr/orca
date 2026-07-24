@@ -1,41 +1,65 @@
 import { describe, expect, test } from 'bun:test'
 
-import { endpointColor, endpointSrgbColor } from './colors'
+import { providerColor, providerSrgbColor } from './colors'
 
-describe('endpointColor', () => {
-  test('uses a vivid curated palette for the common endpoint counts', () => {
-    const colors = Array.from({ length: 10 }, (_, index) => endpointColor(index, 10))
+const KNOWN_PROVIDERS = [
+  'anthropic',
+  'openai',
+  'google-vertex',
+  'google-ai-studio',
+  'amazon-bedrock',
+  'azure',
+  'deepinfra',
+  'together',
+  'fireworks',
+  'groq',
+  'mistral',
+  'novita',
+  'nebius',
+  'hyperbolic',
+  'cerebras',
+  'sambanova',
+]
 
-    expect(colors.map((color) => color.slice(color.lastIndexOf(' ') + 1, -1))).toEqual([
-      '250',
-      '25',
-      '145',
-      '305',
-      '85',
-      '195',
-      '350',
-      '115',
-      '275',
-      '55',
-    ])
+describe('providerColor', () => {
+  test('is a pure function of the provider id', () => {
+    expect(providerColor('anthropic')).toBe(providerColor('anthropic'))
+    expect(providerColor('anthropic')).not.toBe(providerColor('openai'))
   })
 
-  test('generates a unique in-gamut palette for long-tail endpoint counts', () => {
-    const colors = Array.from({ length: 32 }, (_, index) => endpointColor(index, 32))
+  test('emits valid in-range oklch coordinates', () => {
+    for (const providerId of KNOWN_PROVIDERS) {
+      const color = providerColor(providerId)
+      expect(color).toMatch(/^oklch\(0\.\d+ 0\.\d+ \d+(?:\.\d+)?\)$/)
 
-    expect(new Set(colors).size).toBe(32)
-    expect(colors.every((color) => /^oklch\(0\.7 0\.\d+ \d+(?:\.\d+)?\)$/.test(color))).toBe(true)
+      const [lightness, chroma, hue] = color.slice('oklch('.length, -1).split(' ').map(Number)
+      expect(lightness).toBeWithin(0.66, 0.7601)
+      expect(chroma).toBeGreaterThan(0)
+      expect(hue).toBeWithin(0, 360)
+    }
   })
 
-  test('keeps the first colors stable as common endpoint counts grow', () => {
-    expect(endpointColor(0, 2)).toBe(endpointColor(0, 10))
-    expect(endpointColor(1, 2)).toBe(endpointColor(1, 10))
+  test('never lands in the murky olive hue band', () => {
+    // Sweep a large id space; every hash must map outside the excluded hues.
+    for (let index = 0; index < 2000; index += 1) {
+      const color = providerColor(`provider-${index}`)
+      const hue = Number(color.slice(color.lastIndexOf(' ') + 1, -1))
+
+      expect(hue < 100 || hue >= 120).toBe(true)
+    }
+  })
+
+  test('keeps the current provider roster free of exact collisions', () => {
+    const colors = KNOWN_PROVIDERS.map(providerColor)
+
+    expect(new Set(colors).size).toBe(KNOWN_PROVIDERS.length)
   })
 
   test('provides the same palette in the sRGB syntax required by ECharts', () => {
-    const colors = Array.from({ length: 32 }, (_, index) => endpointSrgbColor(index, 32))
+    for (const providerId of KNOWN_PROVIDERS) {
+      expect(providerSrgbColor(providerId)).toMatch(/^rgb\(\d+, \d+, \d+\)$/)
+    }
 
-    expect(new Set(colors).size).toBe(32)
-    expect(colors.every((color) => /^rgb\(\d+, \d+, \d+\)$/.test(color))).toBe(true)
+    expect(providerSrgbColor('anthropic')).toBe(providerSrgbColor('anthropic'))
   })
 })

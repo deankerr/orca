@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 
 import type { ZoomWindow } from './chart-option'
 import { FULL_HISTORY_WINDOW } from './chart-option'
-import { endpointColor } from './colors'
+import { providerColor } from './colors'
 import { PricingHistoryLegend } from './legend'
 import type { PricingHistoryPlotHandle } from './plot'
 import { isPricingMetric, pricingMetricMetadata, PRICING_METRICS } from './pricing-fields'
@@ -149,16 +149,15 @@ export function PricingHistoryCard({
     )
   }, [allProviderIds, requestedProviderIds])
 
-  // Legend entries and colors derive from the full provider list. Replacement
-  // endpoint UUIDs with a shared tag therefore retain one visual identity, and
-  // hiding a provider or loading the chart chunk can never change the identity
-  // of what is already on screen.
+  // Colors hash from the provider id alone. Replacement endpoint UUIDs with a
+  // shared tag therefore retain one visual identity, and adding or hiding a
+  // provider can never change the identity of what is already on screen.
   const legendEntries =
     history === undefined
       ? undefined
-      : providersWithPricing.map((provider, colorIndex) => ({
+      : providersWithPricing.map((provider) => ({
           provider,
-          color: endpointColor(colorIndex, providersWithPricing.length),
+          color: providerColor(provider.providerId),
         }))
 
   const renderableProviders = (legendEntries ?? []).filter(({ provider }) =>
