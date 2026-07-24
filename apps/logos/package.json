@@ -6,6 +6,7 @@
     "build": "bun run src/build.ts",
     "deploy": "bun run build && wrangler deploy",
     "dev": "bun run build && wrangler dev",
+    "review": "bun run src/review.ts",
     "test": "bun test",
     "types": "wrangler types"
   },
