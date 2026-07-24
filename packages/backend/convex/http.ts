@@ -10,6 +10,33 @@ import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
 
+http.route({
+  path: '/models',
+  method: 'GET',
+  handler: httpAction(async (ctx) => {
+    const models = await ctx.runQuery(api.models.list, {})
+    return Response.json(models)
+  }),
+})
+
+http.route({
+  path: '/endpoints',
+  method: 'GET',
+  handler: httpAction(async (ctx) => {
+    const endpoints = await ctx.runQuery(api.endpoints.list, {})
+    return Response.json(endpoints)
+  }),
+})
+
+http.route({
+  path: '/providers',
+  method: 'GET',
+  handler: httpAction(async (ctx) => {
+    const providers = await ctx.runQuery(api.providers.list, {})
+    return Response.json(providers)
+  }),
+})
+
 // Discord bot interactions endpoint
 http.route({
   path: '/discord/interactions',

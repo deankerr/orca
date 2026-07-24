@@ -14,6 +14,11 @@ const MODEL_LOGO_KEYS_BY_AUTHOR: Record<string, readonly string[]> = {
   'x-ai': ['grok'],
 }
 
+const AUTHOR_LOGO_KEY_OVERRIDES: Record<string, string> = {
+  'amazon-nova': 'nova',
+  'wandb-legacy': 'wandb',
+}
+
 export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 
 // Derive the public logo key from an OpenRouter entity slug. Keys preserve the upstream
@@ -21,7 +26,7 @@ export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 function entityLogoKey(slug: string): string {
   const [author = '', model = ''] = slug.toLowerCase().split('/')
   const modelKey = MODEL_LOGO_KEYS_BY_AUTHOR[author]?.find((key) => model.includes(key))
-  return modelKey ?? author
+  return modelKey ?? AUTHOR_LOGO_KEY_OVERRIDES[author] ?? author
 }
 
 // Build the logo-service URL for a slug. The service returns its own fallback image for

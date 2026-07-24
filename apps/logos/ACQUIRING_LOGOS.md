@@ -23,11 +23,16 @@ punctuation: `x-ai` and `black-forest-labs` are valid keys.
 
 Before acquiring anything:
 
-1. Search `sources/`, `sources/aliases.json`, and the installed LobeHub packages for the key and
-   obvious spelling variants.
-2. Confirm that the requested entity is the one represented by the slug. Do not guess from a
+1. Check [FAILED_LOGO_QUESTS.md](./FAILED_LOGO_QUESTS.md), then search `sources/`,
+   `sources/aliases.json`, and the installed LobeHub packages for the key and obvious spelling
+   variants.
+2. For provider keys, inspect the provider record through the current backend's `GET /providers`
+   route before searching the web. New providers often have little or ambiguous search coverage;
+   fields such as `privacy_policy_url`, `terms_of_service_url`, and `status_page_url` can identify
+   the owner's canonical domain and point to the correct website.
+3. Confirm that the requested entity is the one represented by the slug. Do not guess from a
    similar company name.
-3. Prefer an alias when the service already has the same entity under another key.
+4. Prefer an alias when the service already has the same entity under another key.
 
 ## 2. Choose an Authoritative Source
 
