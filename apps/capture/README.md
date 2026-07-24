@@ -50,8 +50,12 @@ these artifacts and can be re-run at any time.
 
 - `POST /capture` — start a pass manually; returns `{ captured_at, instanceId }`
 - `GET /capture/<instanceId>` — workflow status
-- `GET /raw/<captured_at>` — list a pass's artifacts
-- `GET /raw/<captured_at>/<file>` — fetch one artifact (gunzips `.gz` for inspection)
+- `GET /raw/<captured_at>` — deduped view of a whole pass: `models` (catalog reduced to
+  slug → has-endpoints boolean), `providers` (deduped globally), and `scopes` (one entry per
+  observation: the model recovered once from its embedded copies, plus its endpoints stripped
+  of the model/provider copies upstream embeds in each of them). This is the interface for
+  exploring a pass — the duplicate-riddled raw forms stay fetchable by filename below.
+- `GET /raw/<captured_at>/<file>` — fetch one raw artifact verbatim (gunzips `.gz` for inspection)
 
 ## Operating
 
