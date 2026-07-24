@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { entityLogoUrl } from './entity-logo'
+import { entityLogoUrl } from '../shared/entity-logo'
 
 const origin = 'https://logos.example'
 

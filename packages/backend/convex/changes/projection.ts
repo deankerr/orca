@@ -1,3 +1,4 @@
+import { isMaterialPricingUpdate } from '../../shared/formatters'
 import { baseProviderSlug } from '../../shared/utils'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { QueryCtx } from '../_generated/server'
@@ -260,14 +261,20 @@ async function createEntityChange(
   }
 }
 
-export function filterChangeDocs(docs: Doc<'or_views_changes'>[]) {
-  return docs.filter(
-    (doc) =>
-      (doc.path_level_1 === undefined ||
-        doc.path_level_1 === '' ||
-        !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
-      (doc.path === undefined || doc.path === '' || !EXCLUDED_PATHS.has(doc.path)),
+export function isUserFacingChangeDoc(doc: Doc<'or_views_changes'>) {
+  return (
+    (doc.path_level_1 === undefined ||
+      doc.path_level_1 === '' ||
+      !IGNORED_ENDPOINT_FIELDS.has(doc.path_level_1)) &&
+    (doc.path === undefined || doc.path === '' || !EXCLUDED_PATHS.has(doc.path)) &&
+    (doc.change_kind !== 'update' ||
+      doc.path === undefined ||
+      isMaterialPricingUpdate(PATH_REWRITES[doc.path] ?? doc.path, doc.before, doc.after))
   )
+}
+
+export function filterChangeDocs(docs: Doc<'or_views_changes'>[]) {
+  return docs.filter(isUserFacingChangeDoc)
 }
 
 export async function createEntityChanges(

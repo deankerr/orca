@@ -81,6 +81,25 @@ export function pricingScale(field: PricingKey): number {
   return PRICING_FIELDS[field].scale
 }
 
+const MINIMUM_PRICE_DELTA = 0.01
+const MINIMUM_DISCOUNT_DELTA = 1
+
+/**
+ * Whether a numeric pricing update is large enough for user-facing change feeds.
+ * Raw pricing history remains exact; this only suppresses sub-cent price churn and
+ * discount moves smaller than one percentage point.
+ */
+export function isMaterialPricingUpdate(path: string, before: unknown, after: unknown): boolean {
+  const field = parsePricingPath(path)
+  if (!field || !R.isNumber(before) || !R.isNumber(after)) {
+    return true
+  }
+
+  const scaledDelta = Math.abs(after - before) * PRICING_FIELDS[field].scale
+  const minimumDelta = field === 'discount' ? MINIMUM_DISCOUNT_DELTA : MINIMUM_PRICE_DELTA
+  return scaledDelta >= minimumDelta
+}
+
 // Compute decimal places to show the first significant digit plus one more,
 // but only for sub-cent values — anything >= $0.01 uses standard 2 decimal places.
 function scaleFractionalDigits(value: number): number {

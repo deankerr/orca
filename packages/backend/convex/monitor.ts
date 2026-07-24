@@ -11,6 +11,7 @@ import { query } from './_generated/server'
 import type { QueryCtx } from './_generated/server'
 import { changes } from './changes'
 import type { EntityChange } from './changes'
+import { isUserFacingChangeDoc } from './changes/projection'
 import schema from './schema'
 
 export type CrawlBatch = {
@@ -23,6 +24,7 @@ function buildUnfilteredCrawlIdStream(ctx: QueryCtx) {
     .query('or_views_changes')
     .withIndex('by_crawl_id')
     .order('desc')
+    .filterWith(async (doc) => isUserFacingChangeDoc(doc))
     .distinct(['crawl_id'])
 }
 
@@ -31,6 +33,7 @@ function buildModelCrawlIdStream(ctx: QueryCtx, modelSlug: string) {
     .query('or_views_changes')
     .withIndex('by_model_slug__crawl_id', (q) => q.eq('model_slug', modelSlug))
     .order('desc')
+    .filterWith(async (doc) => isUserFacingChangeDoc(doc))
     .distinct(['crawl_id'])
 }
 
@@ -39,6 +42,7 @@ function buildProviderCrawlIdStream(ctx: QueryCtx, providerSlug: string) {
     .query('or_views_changes')
     .withIndex('by_provider_slug__crawl_id', (q) => q.eq('provider_slug', providerSlug))
     .order('desc')
+    .filterWith(async (doc) => isUserFacingChangeDoc(doc))
     .distinct(['crawl_id'])
 }
 
@@ -49,6 +53,7 @@ function buildExactEndpointCrawlIdStream(ctx: QueryCtx, modelSlug: string, provi
       q.eq('model_slug', modelSlug).eq('provider_slug', providerSlug),
     )
     .order('desc')
+    .filterWith(async (doc) => isUserFacingChangeDoc(doc))
     .distinct(['crawl_id'])
 }
 
