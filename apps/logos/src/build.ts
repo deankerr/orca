@@ -21,7 +21,7 @@ import { emitFallbackAsset } from './fallback-image'
 const FILE_EXTENSION = /\.(?:avif|png|jpe?g|svg|webp)$/i
 const THEME_GROUPS = ['light', 'dark'] as const
 const MANUAL_SOURCE_GROUPS = ['base', ...ASSET_GROUPS] as const
-const OUTPUT_IMAGE_MAX_SIZE_PX = 128
+const OUTPUT_IMAGE_SIZE_PX = 128
 const OUTPUT_WEBP_QUALITY = 92
 
 // Resolve defaults from this app, not from ORCA packages.
@@ -124,6 +124,8 @@ type Manifest = {
   shadowedManualAssets: ShadowedManualAsset[]
   version: typeof PUBLIC_VERSION
 }
+
+export type OutputDimensionLogo = Pick<ManifestLogo, 'avatar' | 'dark' | 'key' | 'light'>
 
 type StaticOutputResult = {
   aliasAssetsWritten: number
@@ -538,6 +540,7 @@ async function emitStaticOutput(args: {
     sources: args.sources,
   })
 
+  assertValidOutputDimensions(manifest.logos)
   await emitFallback(args.context)
   await writeManifest({ context: args.context, manifest })
 
@@ -564,7 +567,7 @@ function createEmptyManifest(args: {
 }): Manifest {
   return {
     aliases: args.aliases,
-    imageMaxSizePx: OUTPUT_IMAGE_MAX_SIZE_PX,
+    imageMaxSizePx: OUTPUT_IMAGE_SIZE_PX,
     logos: [],
     manualSourceCoverageWarnings: args.manualSourceCoverageWarnings,
     shadowedManualAssets: args.shadowedManualAssets,
@@ -647,9 +650,10 @@ async function emitAsset(args: {
   const input = await loadSourceImage(args.asset.sourcePath)
   const output = await input
     .resize({
-      fit: 'inside',
-      height: OUTPUT_IMAGE_MAX_SIZE_PX,
-      width: OUTPUT_IMAGE_MAX_SIZE_PX,
+      background: { alpha: 0, b: 0, g: 0, r: 0 },
+      fit: 'contain',
+      height: OUTPUT_IMAGE_SIZE_PX,
+      width: OUTPUT_IMAGE_SIZE_PX,
       // Vector sources are re-rasterized at the target size, so only clamp raster upscaling.
       withoutEnlargement: !args.asset.sourcePath.endsWith('.svg'),
     })
@@ -678,7 +682,7 @@ async function loadSourceImage(sourcePath: string): Promise<Sharp> {
   const DEFAULT_SVG_DENSITY = 72
   const density = Math.max(
     DEFAULT_SVG_DENSITY,
-    (DEFAULT_SVG_DENSITY * OUTPUT_IMAGE_MAX_SIZE_PX) / Math.max(width, height),
+    (DEFAULT_SVG_DENSITY * OUTPUT_IMAGE_SIZE_PX) / Math.max(width, height),
   )
 
   return sharp(sourcePath, { density })
@@ -721,13 +725,41 @@ function getManifestLogo(manifest: Manifest, key: string): ManifestLogo {
   return logo
 }
 
+// Public files are fixed-size canvases, and theme pairs must remain interchangeable.
+export function assertValidOutputDimensions(logos: OutputDimensionLogo[]): void {
+  for (const logo of logos) {
+    if (
+      logo.light !== undefined &&
+      logo.dark !== undefined &&
+      (logo.light.width !== logo.dark.width || logo.light.height !== logo.dark.height)
+    ) {
+      throw new Error(
+        `Theme output dimensions differ for ${logo.key}: light ${logo.light.width}x${logo.light.height}, dark ${logo.dark.width}x${logo.dark.height}`,
+      )
+    }
+
+    for (const group of ASSET_GROUPS) {
+      const asset = logo[group]
+      if (asset === undefined) {
+        continue
+      }
+
+      if (asset.width !== OUTPUT_IMAGE_SIZE_PX || asset.height !== OUTPUT_IMAGE_SIZE_PX) {
+        throw new Error(
+          `Invalid output dimensions for ${group}/${logo.key}: expected ${OUTPUT_IMAGE_SIZE_PX}x${OUTPUT_IMAGE_SIZE_PX}, got ${asset.width}x${asset.height}`,
+        )
+      }
+    }
+  }
+}
+
 // The fallback image is isolated because the placeholder art is intentionally temporary.
 async function emitFallback(context: BuildContext): Promise<void> {
   for (const group of ASSET_GROUPS) {
     await emitFallbackAsset({
       group,
       outputPath: nodePath.join(context.distDir, fallbackAssetPath(group)),
-      sizePx: OUTPUT_IMAGE_MAX_SIZE_PX,
+      sizePx: OUTPUT_IMAGE_SIZE_PX,
       webpQuality: OUTPUT_WEBP_QUALITY,
     })
   }

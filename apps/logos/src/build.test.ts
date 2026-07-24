@@ -6,10 +6,11 @@ import nodePath from 'node:path'
 import sharp from 'sharp'
 import { z } from 'zod'
 
-import { buildLogos } from './build'
+import { assertValidOutputDimensions, buildLogos } from './build'
 
 const TestManifestAssetSchema = z.object({
   file: z.string(),
+  height: z.number(),
   source: z.string(),
   sourceVariant: z.string(),
   width: z.number(),
@@ -174,6 +175,30 @@ test('fails fast when an alias target is missing', async () => {
   }
 })
 
+test('rejects mismatched light and dark output dimensions', () => {
+  expect(() => {
+    assertValidOutputDimensions([
+      {
+        dark: createDimensionAsset({ height: 128, width: 128 }),
+        key: 'mismatched',
+        light: createDimensionAsset({ height: 92, width: 128 }),
+      },
+    ])
+  }).toThrow('Theme output dimensions differ for mismatched: light 128x92, dark 128x128')
+})
+
+test('rejects equal theme outputs when their canvases are not square', () => {
+  expect(() => {
+    assertValidOutputDimensions([
+      {
+        dark: createDimensionAsset({ height: 92, width: 128 }),
+        key: 'non-square',
+        light: createDimensionAsset({ height: 92, width: 128 }),
+      },
+    ])
+  }).toThrow('Invalid output dimensions for light/non-square: expected 128x128, got 128x92')
+})
+
 async function createBuildFixture(args: {
   aliases: Record<string, string>
 }): Promise<BuildFixture> {
@@ -272,5 +297,18 @@ async function expectWebpOutput(appRoot: string, path: string): Promise<void> {
   const output = await sharp(outputPath).metadata()
 
   expect(output.format).toBe('webp')
-  expect(output.width).toBeLessThanOrEqual(128)
+  expect(output.width).toBe(128)
+  expect(output.height).toBe(128)
+}
+
+function createDimensionAsset(args: { height: number; width: number }) {
+  return {
+    file: 'unused.webp',
+    format: 'webp' as const,
+    height: args.height,
+    package: 'test@0.0.0',
+    source: 'unused.svg',
+    sourceVariant: 'manual' as const,
+    width: args.width,
+  }
 }
