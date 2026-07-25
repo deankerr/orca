@@ -111,7 +111,7 @@
         "discord-api-types": "^0.38.49",
         "discord-interactions": "^4.4.0",
         "fflate": "^0.8.3",
-        "json-diff-ts": "^4.10.4",
+        "json-diff-ts": "catalog:",
         "pretty-bytes": "catalog:",
         "remeda": "catalog:",
         "up-fetch": "^2.6.0",
@@ -126,9 +126,10 @@
     "packages/processes": {
       "name": "@orca/processes",
       "dependencies": {
-        "json-diff-ts": "^4.10.4",
+        "json-diff-ts": "catalog:",
         "pretty-bytes": "catalog:",
         "remeda": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
@@ -147,6 +148,7 @@
     "@types/node": "24.10.15",
     "convex": "1.42.3",
     "convex-helpers": "0.1.120",
+    "json-diff-ts": "4.10.4",
     "pretty-bytes": "7.1.0",
     "remeda": "2.39.0",
     "typescript": "^6",

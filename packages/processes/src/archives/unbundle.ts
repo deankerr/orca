@@ -23,8 +23,8 @@ type Bundle = {
   }
 }
 
-const inputDir = new URL('../input/', import.meta.url).pathname
-const outputDir = new URL('../output/', import.meta.url).pathname
+const inputDir = new URL('../../input/', import.meta.url).pathname
+const outputDir = new URL('../../output/', import.meta.url).pathname
 
 // * bundles use the backend's archive-sync format: gzipped JSON (bundle_<crawl_id>.json.gz)
 async function readBundle(filename: string) {

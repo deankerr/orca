@@ -3,12 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "unbundle": "bun run src/unbundle.ts"
+    "canonicalize": "bun run src/canonicalize/canonicalize.ts",
+    "split-modalities": "bun run src/analysis/split-modalities.ts",
+    "unbundle": "bun run src/archives/unbundle.ts"
   },
   "dependencies": {
     "json-diff-ts": "catalog:",
     "pretty-bytes": "catalog:",
-    "remeda": "catalog:"
+    "remeda": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",

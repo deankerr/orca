@@ -22,6 +22,13 @@ eras present in the historical data. Output lives under a processor-version pref
 (`canonical/v4/...`); "apply a schema change retroactively" = bump the version, re-run over
 Layer 0, flip a manifest pointer. Nothing is migrated in place.
 
+_Status (July 2026): drafted locally in `packages/processes` (`bun run canonicalize`) — one
+module per entity (providers/models/endpoints), strict zod parse of the raw shape so upstream
+schema drift fails loudly, flat snake_case canonical rows (SQL-ready; storage target is likely
+SQL of some kind). Runs against saved worker pass views in `input/`, which is faster than
+round-tripping the worker. Findings so far live in [openrouter.md](openrouter.md) (the guide),
+[provider-identity.md](provider-identity.md), and [modality-split.md](modality-split.md)._
+
 **Layer 2 — derived products.** Pure functions of canonical artifacts, each independent and
 disposable: changesets between crawls, the "current view" push to Convex, Monitor change
 batches, webhook/Discord alerts, per-entity history documents, Parquet exports. Adding a product
@@ -70,14 +77,50 @@ is also the bootstrap: the ~12–13k existing bundles export through the archive
   stored bundles — a keyframe + delta representation is ~200× smaller with no information loss.
   But it only makes sense as a Layer 2 product _within_ one processor version; diffing across
   versions is meaningless.
-- **Canonicalize before diffing.** Drop the derived pricing mirrors (`display_pricing`,
-  `pricing_json`, `pricing_version_id`) so one real change is one changeset entry, not four.
+- **Canonicalize before diffing — but prune at the diff point, not at ingestion.** (Revised
+  July 2026: an earlier draft said to drop the pricing mirrors at Layer 1. Wrong layer.) Layer 1
+  keeps all upstream pricing views permissively — `pricing_json` is the source of truth, but
+  `display_pricing` is the only place exotic SKU semantics are labelled, and we don't yet know
+  which fields are signal. Redundancy noise (one price change → four changeset entries) is muted
+  in the diff process, where the decision is versioned and revisable — not filtered out of the
+  canonical record where it would be gone for good.
 - **History replays forward.** Per-entity history (pricing first) regenerates from keyframe +
   changesets when the diff step sees a change — no backward reconstruction, no 20k-doc cap, no
   forget-on-create hack.
 - **Collection and interpretation are independently versioned, deterministic, idempotent.**
 - **Local and experiment-friendly.** Processors run on a laptop against real artifacts —
-  `packages/processes/src/unbundle.ts` is already the seed of this workflow.
+  `bun run unbundle` is already the seed of this workflow.
+
+## Working practices
+
+How this stage of development actually runs (observed and intended):
+
+- **Capture first, ask questions later.** We don't need an answer for every property up front.
+  Push more data through before locking any decision in — there are landmines everywhere, and
+  the archival back-catalogue isn't even in the picture yet. The pipeline is expected to be
+  iterated on throughout this stage.
+- **Strict at the boundary, permissive in scope.** Every raw shape is parsed with a strict
+  schema — an unknown upstream key is a wanted signal, not an inconvenience (fail fast, loudly).
+  But _which_ fields to carry is decided permissively: when in doubt, keep it verbatim and let
+  cross-pass diff analysis classify signal vs noise later.
+- **Dropped fields are documented drops.** Anything excluded from a canonical shape stays
+  declared in the raw schema with a comment saying why (always-null, derivable, OR-internal
+  wiring, marketing copy). The decision is visible at the boundary, not silently absent.
+- **Never claim above the level of the evidence.** Endpoints override provider data policy, so
+  no provider-level behavioural claim is trustworthy — the honest aggregate is "…on all of
+  their endpoints", derived in Layer 2. Same logic anywhere an override exists.
+- **Don't code paths for exotic upstream categories.** Providers charge however they want and
+  OR models it as best they can; so do we. No special-casing "Image Output (moodboards)" —
+  carry the labelled representation instead.
+- **Verify hypotheses against a whole pass before acting.** Every "X is always Y" in these docs
+  was checked with a one-liner over all 431 scopes / 1,052 endpoints before being relied on —
+  invariants that matter get enforced in code (throw on divergent model copies, duplicate ids).
+- **Cheap disposable analysis tools over cleverness.** Slicing the pass into per-modality raw
+  files (`bun run split-modalities`) took minutes and made the pricing families obvious; prefer
+  that over speculative abstraction.
+- **Write the nuances down.** The knowledgebase ([openrouter.md](openrouter.md)) exists so the
+  next person (or Claude) doesn't need the current holder's head — facts, figures, landmines,
+  and open questions, annotated inline.
 
 ## Roles
 
@@ -110,11 +153,21 @@ is also the bootstrap: the ~12–13k existing bundles export through the archive
 
 ## Next steps
 
-1. **Spin up Layer 0.** It has open challenges of its own, and a running collector makes the
-   remaining questions concrete instead of speculative.
-2. **In parallel: explore the existing dataset** via a snapshot dump from the Convex backend
-   (~12–13k archives, Aug 2025 → present, varying cadence and schema eras). This both informs
-   era adapters and seeds any future backfill.
-3. No rush, no big-bang: the existing system keeps running; the new one runs in shadow until
+1. ~~Spin up Layer 0~~ — done; capturing every 15 minutes in shadow since 2026-07-23, with a
+   deduped whole-pass view (`GET /raw/<captured_at>`) as the exploration interface.
+2. ~~Draft Layer 1 canonicalization~~ — done for providers/models/endpoints (pricing carried
+   permissively, telemetry excluded for a separate pipeline). Iterate as more passes flow.
+3. **Draft the diffing process.** No structural blockers. Key by natural keys
+   (`slug`/`slug`/`id` — endpoint UUIDs are confirmed stable and globally unique, though
+   providers occasionally delete-and-recreate under a new id); treat unobserved or errored
+   scopes as stale, never as deletions. The first cross-pass diffs will answer the parked
+   questions: `pricing_version_id` stability, and churn classification of the "maybe" fields
+   (`default_order`, `updated_at`, `capacity_tpm`, `is_deranked`).
+4. **Then the pricing drill-down**, informed by diff output — model pricing families
+   (token/unit/duration/characters/search-units) starting from `pricing_json`.
+5. **Explore the existing dataset** via a snapshot dump from the Convex backend (~12–13k
+   archives, Aug 2025 → present, varying cadence and schema eras). This both informs era
+   adapters and seeds any future backfill.
+6. No rush, no big-bang: the existing system keeps running; the new one runs in shadow until
    its derived layer earns trust. A good first proof: regenerate a model's full pricing history
    from keyframes + changesets and compare it against what the app serves today.
