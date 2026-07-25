@@ -63,9 +63,7 @@ Annotations: ❓ = open question, ⚠️ = landmine.
 - Raw observations embed full copies of the model and provider_info in EVERY endpoint, with
   insignificant copy-to-copy differences — dedupe before any analysis (worker pass view does).
 - `variant` always equals the scope's variant. `limit_rpm_cf` always null.
-- `status`: 0 normal; negatives observed (-2, -3, -5). Theory: a penalty consumed by the
-  routing algorithm, manually controlled — don't infer semantics beyond that. Capture for
-  potential insight; not for end-user communication.
+- ⚠️ `status` looks like an endpoint field but behaves like telemetry — see below.
 - `features` (endpoint-level ≠ model-level!): 16 observed flags; only `supports_tool_choice`
   universal. ⚠️ boilerplate outside text modality (see below).
 - `is_deranked`, `is_disabled`, `is_byok_only`, `capacity_tpm`, `deprecation_date`: sparse
@@ -118,6 +116,13 @@ Five overlapping representations per endpoint; keep all, prune after diff analys
   endpoint bytes, changes every pass. `statsByTier.default` ≈ `stats` but computed at a
   slightly different instant (off-by-a-few request counts) — never diff them against each other.
 - 131 endpoints had no stats at all (no recent traffic).
+- `status`: 0 normal; negatives observed (-2, -3, -5). A penalty consumed by the routing
+  algorithm. ⚠️ It sits on the endpoint record but belongs here: it flips on 25–50 endpoints
+  _every pass_, so stored as an entity field it dominates change volume and buries every real
+  capability change beside it. Treat it as a series, not a fact about the offering. Don't infer
+  semantics beyond "OpenRouter is currently derating this endpoint", and don't surface a reading
+  we can't justify. ❓ Whether it correlates with `status_heuristics_*` is worth answering — if it
+  tracks health, it's a candidate product signal rather than only noise to route away.
 
 ## Capture / processing notes
 
@@ -134,6 +139,7 @@ Five overlapping representations per endpoint; keep all, prune after diff analys
 
 - ❓ `pricing_version_id` stability/semantics across passes (first diffs will answer)
 - ❓ churn/signal classification of `default_order`, `updated_at`, `capacity_tpm`, `is_deranked`
+- ❓ does `status` track `status_heuristics_*`? If so it's a health signal, not just churn
 - ❓ `model_version_group_id` semantics; `limit_*` zero semantics
 - ❓ endpoint delete/recreate lineage: worth detecting heuristically in Layer 2?
 - ❓ diff process must treat unobserved/errored scopes as stale, never as deletions

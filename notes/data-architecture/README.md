@@ -7,9 +7,11 @@ little, and the projected schema is rigid in ways that fight the product's core 
 - [openrouter.md](openrouter.md) — 🧭 the hitchhiker's guide to OR's data model: vocabulary,
   entities, landmines, open questions. Start here.
 - [current-system.md](current-system.md) — how the pipeline works today, measured statistics, friction points.
-- [direction.md](direction.md) — the proposed capture/artifact strategy, and open questions.
+- [direction.md](direction.md) — the layered capture/artifact architecture, the pipeline, and the
+  principles and working practices everything else follows from.
 - [normalized-store.md](normalized-store.md) — how canonical entities are stored (SCD2 versions
-  over R2 artifacts), how the Engine and consumers read them, alternatives, open questions.
+  over R2 artifacts), how to decide where a field lives and how we notice when that has gone
+  stale; alternatives and open questions.
 - [provider-identity.md](provider-identity.md) — ⚠️ how provider identity actually works (org vs
   provider record vs endpoint targeting key); read before touching any `provider_*` field.
 - [modality-split.md](modality-split.md) — how non-LLM offerings (image, video, speech, …)

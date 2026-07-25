@@ -11,6 +11,10 @@ The existing Convex pipeline keeps running and is a guide, not a migration const
 - Layer 0 lives in `apps/capture` — an Alchemy v2 (Effect) Cloudflare stack, currently dev-stage
   only, capturing every 15 minutes in shadow. See its `README.md` (what it does) and `CLAUDE.md`
   (working with Alchemy).
+- Layer 1 canonicalization is drafted locally in `packages/processes` (`bun run canonicalize`).
+- `apps/store` is a **prototype** of the normalized store (SCD2 entity versions over D1), fed by
+  a local loader rather than the eventual Engine. It exists to answer schema questions with
+  queries instead of arguments; its `README.md` records what it has already measured.
 
 ## OXC
 

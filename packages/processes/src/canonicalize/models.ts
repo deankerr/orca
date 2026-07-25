@@ -60,8 +60,9 @@ const RawModel = z.strictObject({
   name: z.string(),
   output_modalities: z.array(z.string()),
   permaslug: z.string(),
-  // * appeared upstream between 2026-07-24 and 2026-07-25; null on every model observed so far
-  preview_audio: z.null(),
+  // * appeared upstream between 2026-07-24 and 2026-07-25 — absent before, null on every model
+  // * since. Optional rather than adapted per era, because the value carries nothing either way.
+  preview_audio: z.null().optional(),
   // * null on every model observed so far — nothing to model yet
   preview_thumbnail_url: z.null(),
   // * OR marketing copy — not a model fact

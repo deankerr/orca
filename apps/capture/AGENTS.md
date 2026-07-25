@@ -21,6 +21,15 @@ Cloudflare. It is **not** wrangler: there is no wrangler.toml, and bindings/conf
 - **Commands** (run from this dir): `bun run deploy` / `bun run dev` / `bun run destroy`;
   also `bunx alchemy deploy --dry-run` (plan), `state tree|list|get`, `tail`, `logs --since 15m`.
 - `.alchemy/` is generated (bundles, logs, local state) and gitignored — never lint or edit it.
+- **`dev` is local compute, remote state.** `alchemy dev` runs the Worker in `workerd` on this
+  machine, but stateful bindings (R2, D1, …) are proxied to the _real_ stage resources — there is
+  no local emulation. So `dev` still provisions buckets/databases and applies D1 migrations, and
+  writes in dev are writes. Non-interactive `destroy` needs `bunx alchemy destroy --yes`.
+- ⚠️ **Two `dev` processes silently fight over the port.** The second fails `pre-creating` with
+  "Could not bind to port", reports "keeping dev alive so healthy resources keep serving", and
+  leaves the _first_ Worker answering on that port — possibly bound to a database the second run
+  just deleted. If a route starts returning "D1 database … has been deleted",
+  `pkill -f "alchemy dev"`, confirm the port is free, then start a single instance.
 - Versions are pinned to `alchemy@2.0.0-beta.x` + `effect@4.0.0-beta.x`; newest betas may be
   blocked by the repo's bun `minimumReleaseAge` (3 days) — pin the newest that clears the gate,
   and keep the effect packages within alchemy's peer range.

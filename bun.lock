@@ -48,6 +48,18 @@
         "zod": "catalog:",
       },
     },
+    "apps/store": {
+      "name": "@orca/store",
+      "dependencies": {
+        "@orca/processes": "workspace:*",
+        "alchemy": "2.0.0-beta.63",
+        "effect": "4.0.0-beta.99",
+      },
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "apps/web": {
       "name": "web",
       "version": "60.0.0",
@@ -622,6 +634,8 @@
     "@orca/capture": ["@orca/capture@workspace:apps/capture"],
 
     "@orca/processes": ["@orca/processes@workspace:packages/processes"],
+
+    "@orca/store": ["@orca/store@workspace:apps/store"],
 
     "@oxc-parser/binding-android-arm-eabi": ["@oxc-parser/binding-android-arm-eabi@0.137.0", "", { "os": "android", "cpu": "arm" }, "sha512-KDs+0VPdEmasOkpuJHW9V5WCF+cvYdMQv2Jd+aJXt+cxIx12NToRQRbXaRwUEDsZw+/jMk81Ve8ZFbjUkJTOwA=="],
 

@@ -2,6 +2,9 @@
   "name": "@orca/processes",
   "private": true,
   "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
   "scripts": {
     "canonicalize": "bun run src/canonicalize/canonicalize.ts",
     "fields": "bun run src/analysis/entity-fields.ts",
