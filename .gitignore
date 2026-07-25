@@ -14,3 +14,4 @@ build
 next-env.d.ts
 .fallow/
 .alchemy
+.mirror-cache.json

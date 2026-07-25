@@ -40,8 +40,12 @@ Annotations: ❓ = open question, ⚠️ = landmine.
   per base slug.
 - ⚠️ `""` is used interchangeably with null: `hf_slug`, `warning_message`, `promotion_message`,
   `routing_error_message`.
-- Always-null so far: `hf_updated_at`, `is_trainable_image`, `preview_thumbnail_url`, `router`.
+- Always-null so far: `hf_updated_at`, `is_trainable_image`, `preview_audio`,
+  `preview_thumbnail_url`, `router`.
   Always-false: `hidden`, `is_private` (public capture can't see hidden things).
+- 📌 First observed schema drift of the new pipeline: `preview_audio` appeared between the
+  2026-07-24 and 2026-07-25 passes. The strict parse caught it on the first re-run — exactly
+  what "unknown key is a wanted signal" is for.
 - `features.reasoning_config` duplicates top-level `reasoning_config` byte-for-byte;
   `features.chat_template_config` is the only content in `features`.
 - `reasoning_config` is the richest capability object (efforts, tokens, mandatory-ness,

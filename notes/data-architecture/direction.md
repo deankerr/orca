@@ -25,8 +25,7 @@ Layer 0, flip a manifest pointer. Nothing is migrated in place.
 _Status (July 2026): drafted locally in `packages/processes` (`bun run canonicalize`) — one
 module per entity (providers/models/endpoints), strict zod parse of the raw shape so upstream
 schema drift fails loudly, flat snake_case canonical rows (SQL-ready; storage target is likely
-SQL of some kind). Runs against saved worker pass views in `input/`, which is faster than
-round-tripping the worker. Findings so far live in [openrouter.md](openrouter.md) (the guide),
+SQL of some kind). Findings so far live in [openrouter.md](openrouter.md) (the guide),
 [provider-identity.md](provider-identity.md), and [modality-split.md](modality-split.md)._
 
 **Layer 2 — derived products.** Pure functions of canonical artifacts, each independent and
@@ -51,6 +50,36 @@ An observation line is `{slug, permaslug, variant, at, status, body}` or `{slug,
 the unit of truth is the request scope, not the pass. Any HTTP response is data (404 = "zero
 endpoints right now", uninterpreted until canonical); only transport errors are error records, and
 an error never advances a scope's knowledge — it just leaves it stale until the next pass.
+
+## Reaching the artifacts (decided July 2026)
+
+Layer 1 needs to discover and read passes it doesn't know the key of. Three decisions:
+
+**Dedupe belongs in `packages/processes`, not the Worker.** The Worker's `GET /raw/<captured_at>`
+view — model recovered from its embedded copies, providers deduped globally, catalog reduced to a
+slug → has-endpoints map — is _interpretation_, and interpretation in Layer 0 is unversioned and
+unrepeatable over history. It moves to the front of canonicalization, where changing our mind
+about it costs a re-run. Layer 0 goes back to serving only bytes it wrote.
+
+**Processes read R2 directly; the HTTP API is deferred.** The Worker has no discovery routes
+(no pass index, no `latest`, no prefix resolution), and adding them now would be building a
+second access path for a consumer that runs on a laptop. Reading the bucket directly from the
+scripts gives listing and ranged gets for free, plus DuckDB straight off R2 later. A read API on
+the Worker is still wanted eventually — for the product, not for us — but the labs work
+(canonicalize → diff → pricing drill-down) is the thing that earns knowledge right now, so it
+waits until we know what it should serve.
+
+**Use the platform's own mechanisms until they actually hurt.** LIST the bucket. Use whatever
+Cloudflare/Alchemy already provides. No manifest, no pass index, no home-grown coordination
+state — those are answers to problems we haven't got. (An earlier draft of this document
+asserted "consumers never LIST R2, the manifest is the coordination state." That was never a
+decision; it is struck.) Page limits, object counts, and payload sizes are all non-issues at
+current volume, and inventing structure before the constraint is real is how the last
+architecture got its shape.
+
+A consequence, accepted: a pass isn't one file (`models.json.gz` + N `observations/*.jsonl.gz` +
+`capture.json`). We could repack passes into a single object, but multi-part is fine — the
+scripts get a dedicated reader that lists a pass prefix and streams its parts, written once.
 
 ## Per-crawl workflow
 
@@ -115,6 +144,10 @@ How this stage of development actually runs (observed and intended):
 - **Verify hypotheses against a whole pass before acting.** Every "X is always Y" in these docs
   was checked with a one-liner over all 431 scopes / 1,052 endpoints before being relied on —
   invariants that matter get enforced in code (throw on divergent model copies, duplicate ids).
+- **Platform first, mechanisms last.** Reach for what Cloudflare/Alchemy already gives us (LIST,
+  bindings, the REST client, scoped tokens) before inventing indexes, manifests, or coordination
+  state of our own. We don't yet know what we want; a built-in that we outgrow is cheap to
+  replace, an invented mechanism we outgrow is a migration.
 - **Cheap disposable analysis tools over cleverness.** Slicing the pass into per-modality raw
   files (`bun run split-modalities`) took minutes and made the pricing families obvious; prefer
   that over speculative abstraction.
@@ -140,8 +173,8 @@ How this stage of development actually runs (observed and intended):
 
 - Layer 0 specifics: exact key layout, per-request vs per-crawl artifact granularity, retention
   policy for full raw responses (gzip makes keep-everything cheap, but it's a choice, not a
-  necessity), failure/diagnostic recording, manifest semantics (the one piece of coordination
-  state — written last, wins; consumers never LIST R2).
+  necessity), failure/diagnostic recording.
+- What the Worker's read API eventually serves, and to whom — deferred until the labs work says.
 - Noise policy: which pricing drift is signal? Sub-% `discount` flapping is ~60% of current
   change volume — quantize it, or route it to the telemetry track? Versioned like everything
   else, so the decision is revisable retroactively.
@@ -153,21 +186,24 @@ How this stage of development actually runs (observed and intended):
 
 ## Next steps
 
-1. ~~Spin up Layer 0~~ — done; capturing every 15 minutes in shadow since 2026-07-23, with a
-   deduped whole-pass view (`GET /raw/<captured_at>`) as the exploration interface.
+1. ~~Spin up Layer 0~~ — done; capturing every 15 minutes in shadow since 2026-07-23.
 2. ~~Draft Layer 1 canonicalization~~ — done for providers/models/endpoints (pricing carried
    permissively, telemetry excluded for a separate pipeline). Iterate as more passes flow.
-3. **Draft the diffing process.** No structural blockers. Key by natural keys
+3. ~~Give the processes a pass reader~~ — done. `bun run mirror` (apps/capture) lists `raw/`
+   with the local Alchemy profile's credentials and copies whole passes to
+   `packages/processes/input/raw/`; the dedupe moved out of the Worker into
+   `canonicalize/pass.ts`. Two commands, both idempotent, no hand-saved files.
+4. **Draft the diffing process.** No structural blockers. Key by natural keys
    (`slug`/`slug`/`id` — endpoint UUIDs are confirmed stable and globally unique, though
    providers occasionally delete-and-recreate under a new id); treat unobserved or errored
    scopes as stale, never as deletions. The first cross-pass diffs will answer the parked
    questions: `pricing_version_id` stability, and churn classification of the "maybe" fields
    (`default_order`, `updated_at`, `capacity_tpm`, `is_deranked`).
-4. **Then the pricing drill-down**, informed by diff output — model pricing families
+5. **Then the pricing drill-down**, informed by diff output — model pricing families
    (token/unit/duration/characters/search-units) starting from `pricing_json`.
-5. **Explore the existing dataset** via a snapshot dump from the Convex backend (~12–13k
+6. **Explore the existing dataset** via a snapshot dump from the Convex backend (~12–13k
    archives, Aug 2025 → present, varying cadence and schema eras). This both informs era
    adapters and seeds any future backfill.
-6. No rush, no big-bang: the existing system keeps running; the new one runs in shadow until
+7. No rush, no big-bang: the existing system keeps running; the new one runs in shadow until
    its derived layer earns trust. A good first proof: regenerate a model's full pricing history
    from keyframes + changesets and compare it against what the app serves today.

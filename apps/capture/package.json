@@ -5,13 +5,16 @@
   "scripts": {
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy",
-    "dev": "alchemy dev"
+    "dev": "alchemy dev",
+    "mirror": "bun run src/mirror.ts"
   },
   "dependencies": {
     "@effect/platform-bun": "4.0.0-beta.99",
     "@effect/platform-node": "4.0.0-beta.99",
     "alchemy": "2.0.0-beta.63",
-    "effect": "4.0.0-beta.99"
+    "effect": "4.0.0-beta.99",
+    "pretty-bytes": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",

@@ -50,12 +50,26 @@ these artifacts and can be re-run at any time.
 
 - `POST /capture` — start a pass manually; returns `{ captured_at, instanceId }`
 - `GET /capture/<instanceId>` — workflow status
-- `GET /raw/<captured_at>` — deduped view of a whole pass: `models` (catalog reduced to
-  slug → has-endpoints boolean), `providers` (deduped globally), and `scopes` (one entry per
-  observation: the model recovered once from its embedded copies, plus its endpoints stripped
-  of the model/provider copies upstream embeds in each of them). This is the interface for
-  exploring a pass — the duplicate-riddled raw forms stay fetchable by filename below.
 - `GET /raw/<captured_at>/<file>` — fetch one raw artifact verbatim (gunzips `.gz` for inspection)
+
+The Worker serves only bytes it wrote. There is deliberately no query or discovery API: anything
+that interprets a pass reads the bucket directly (below), so no interpretation is trapped in the
+unrecoverable layer. A read API for the product comes later, when we know what it should serve.
+
+## Reading artifacts locally
+
+`bun run mirror` copies whole passes from R2 into `packages/processes/input/raw/<captured_at>/`,
+where `@orca/processes` reads them (`bun run canonicalize`). It lists the bucket with the local
+Alchemy profile's credentials — no API token to mint or store — and resolves the bucket from the
+stack's own state, so there is nothing to configure.
+
+```bash
+bun run mirror              # latest 2 passes
+bun run mirror --passes 20  # latest 20
+bun run mirror --all        # everything in the bucket
+```
+
+Passes are immutable, so re-running only fetches what isn't on disk yet.
 
 ## Operating
 

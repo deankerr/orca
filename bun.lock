@@ -26,6 +26,8 @@
         "@effect/platform-node": "4.0.0-beta.99",
         "alchemy": "2.0.0-beta.63",
         "effect": "4.0.0-beta.99",
+        "pretty-bytes": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",

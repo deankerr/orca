@@ -1,9 +1,13 @@
-# apps/capture — working with Alchemy
+# apps/capture
+
+_Note: I am very new to working with Effect. Please make sure code is extra readable and documented with comments._
+
+## Working with Alchemy
 
 This app is managed by [Alchemy v2](https://alchemy.run) — infrastructure-as-Effect for
 Cloudflare. It is **not** wrangler: there is no wrangler.toml, and bindings/config live in code.
 
-## Key facts
+### Key facts
 
 - `alchemy.run.ts` is the stack entrypoint. Resources (R2 bucket, Worker, Workflow) are Effect
   values; yielding one in the stack (or binding it in a Worker) provisions it.
@@ -21,7 +25,7 @@ Cloudflare. It is **not** wrangler: there is no wrangler.toml, and bindings/conf
   blocked by the repo's bun `minimumReleaseAge` (3 days) — pin the newest that clears the gate,
   and keep the effect packages within alchemy's peer range.
 
-## Effect patterns and hard-won gotchas
+### Effect patterns and hard-won gotchas
 
 - Workers/Workflows declare bindings by yielding them in the init generator, and the binding
   layer must be provided: `.pipe(Effect.provide(Cloudflare.R2.ReadWriteBucketBinding))` (same
@@ -42,7 +46,7 @@ occurred in Effect.tryPromise`); the real cause is in the Cloudflare dashboard's
   `Effect.forEach`, `promise/prefer-await-to-callbacks` on `Effect.catchTag`) — inline-disable
   with a justification.
 
-## Docs
+### Docs
 
 - Getting started: https://alchemy.run/getting-started
 - Tutorial: https://alchemy.run/cloudflare/tutorial/part-1 … part-5 (stack, worker, testing,

@@ -5,22 +5,19 @@
 // * kept verbatim; providers are irrelevant here. Run: bun run split-modalities
 import { z } from 'zod'
 
-const Pass = z.looseObject({
-  captured_at: z.string(),
-  scopes: z.array(
-    z.looseObject({ model: z.looseObject({ output_modalities: z.array(z.string()) }) }),
-  ),
-})
+import { mirroredPasses, readPass } from '../canonicalize/pass.ts'
 
-const inputDir = new URL('../../input/', import.meta.url).pathname
+// * only the grouping key is typed; scopes are written back verbatim
+const Model = z.looseObject({ output_modalities: z.array(z.string()) })
+
 const outputDir = new URL('../../output/', import.meta.url).pathname
 
-for (const filename of [...new Bun.Glob('pass_*.json').scanSync(inputDir)].toSorted()) {
-  const pass = Pass.parse(await Bun.file(inputDir + filename).json())
+for (const captured_at of mirroredPasses()) {
+  const pass = await readPass(captured_at)
 
   const groups = new Map<string, unknown[]>()
   for (const scope of pass.scopes) {
-    const key = scope.model.output_modalities.join('_')
+    const key = Model.parse(scope.model).output_modalities.join('_')
     groups.set(key, [...(groups.get(key) ?? []), scope])
   }
 
