@@ -2,42 +2,25 @@
 
 ## Active: data architecture rework
 
-We are replacing the Convex-centric snapshot pipeline with a layered artifact system: raw
-observations captured to R2 (Layer 0), versioned canonicalization with era adapters (Layer 1),
-and independent derived products — changesets, current views, alerts, analytics (Layer 2).
+We are replacing the Convex-centric snapshot pipeline with a layered artifact system.
 The existing Convex pipeline keeps running and is a guide, not a migration constraint.
 
-- Design notes: `notes/data-architecture/` (background, measured statistics, direction)
-- Layer 0 lives in `apps/capture` — an Alchemy v2 (Effect) Cloudflare stack, currently dev-stage
-  only, capturing every 15 minutes in shadow. See its `README.md` (what it does) and `CLAUDE.md`
-  (working with Alchemy).
-- Layer 1 canonicalization is drafted locally in `packages/processes` (`bun run canonicalize`);
-  `bun run churn` there measures per-field churn across passes, which is what lane decisions in
-  `@orca/schema` are argued from.
-- `packages/schema` owns the runtime schemas and the transformations between them (effect Schema).
-  See its `README.md` for the variations — raw / canonical / store rows — and the conventions.
-- `apps/store` is a **prototype** of the normalized store (SCD2 entity versions over D1), fed by
-  a local loader rather than the eventual Engine. It exists to answer schema questions with
-  queries instead of arguments; its `README.md` records what it has already measured.
+- Design notes: `notes/data-architecture/`
+- Alchemy should be used to scaffold Cloudflare projects.
+- Effect should be used in all newly written code.
+  - I am new to Effect so make code extra neat and well documented.
 
 ### Schemas and validation
 
 - **effect Schema is the validation system for new work**, and shapes live in `packages/schema`
   (`@orca/schema`), not inside the app that happens to need them first. Import as
   `import * as Schema from 'effect/Schema'`.
-- Derive types from schemas — `Schema.Schema.Type<typeof X>` — never hand-write an interface
-  beside one.
-- The same entity has a different shape per layer, and the differences are deliberate: raw
-  upstream shapes are **strict** (an unknown key is a wanted signal), canonical and store shapes
-  are **permissive about extra keys** (they already passed a strict parse upstream).
 - Each schema is exported next to the function that produces it, so a field's whole journey is in
   one file.
 - Put `// oxlint-disable sort-keys` at the top of a schema file: properties are grouped
   semantically and, for stored rows, declaration order **is** column order.
-- zod remains in `packages/processes` and `packages/backend`. Existing zod is not a bug and does
-  not need converting on sight; don't add new zod outside those packages.
 
----
+# Legacy Instructions
 
 ## OXC
 

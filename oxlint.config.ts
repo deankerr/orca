@@ -86,5 +86,9 @@ export default defineConfig({
     'no-await-in-loop': 'off',
     'react/jsx-handler-names': 'off',
     'require-unicode-regexp': 'off',
+
+    // effect
+    'promise/prefer-await-to-callbacks': 'off',
+    'unicorn/no-array-for-each': 'off',
   },
 })

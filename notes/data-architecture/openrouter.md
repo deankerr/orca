@@ -185,7 +185,6 @@ Three findings from diffing all five across 40 consecutive passes (`bun run pric
 - ❓ churn of `default_order`, `updated_at`, `capacity_tpm`, `is_deranked`, `is_disabled`,
   `deprecation_date`: all measured completely static over 40 passes — but that window held no model
   launch, so it says "stable between launches", not "stable"
-- ❓ does `status` track `status_heuristics_*`? If so it's a health signal, not just churn
 - ❓ `model_version_group_id` semantics; `limit_*` zero semantics
 - ❓ endpoint delete/recreate lineage: worth detecting heuristically in Layer 2?
 - ❓ diff process must treat unobserved/errored scopes as stale, never as deletions

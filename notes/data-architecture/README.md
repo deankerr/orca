@@ -9,9 +9,9 @@ little, and the projected schema is rigid in ways that fight the product's core 
 - [current-system.md](current-system.md) — how the pipeline works today, measured statistics, friction points.
 - [direction.md](direction.md) — the layered capture/artifact architecture, the pipeline, and the
   principles and working practices everything else follows from.
-- [normalized-store.md](normalized-store.md) — how canonical entities are stored (SCD2 versions
-  over R2 artifacts), how to decide where a field lives and how we notice when that has gone
-  stale; alternatives and open questions.
+- [artifact-pool.md](artifact-pool.md) — 🚧 **proposal.** Cadence as a per-actor dial: why the pass
+  has to go, the generation-time interval model that replaces it, the two-layer schema stance
+  (schema-less raw, Iceberg above), the cursor protocol, and what it contradicts in `direction.md`.
 - [provider-identity.md](provider-identity.md) — ⚠️ how provider identity actually works (org vs
   provider record vs endpoint targeting key); read before touching any `provider_*` field.
 - [modality-split.md](modality-split.md) — how non-LLM offerings (image, video, speech, …)
