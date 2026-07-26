@@ -26,6 +26,21 @@ export default defineConfig({
       },
     },
     {
+      // browser render scripts, shipped as text into a generated HTML report. They have no module
+      // graph: the report's embedded data and its prelude helpers arrive as untyped globals, so
+      // every read of them is `any` to the type-aware rules and nothing else is.
+      files: ['**/*.client.js'],
+      rules: {
+        'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-member-access': 'off',
+        'typescript/no-unsafe-return': 'off',
+        'typescript/no-unsafe-type-assertion': 'off',
+        'typescript/strict-boolean-expressions': 'off',
+      },
+    },
+    {
       // legacy web/backend code
       files: ['apps/web/**/*.{ts,tsx,js,jsx}', 'packages/backend/**/*.{ts,tsx,js,jsx}'],
       rules: {

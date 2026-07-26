@@ -78,11 +78,16 @@ interpretation, and interpretation in Layer 0 is unversioned and unrepeatable ov
 belongs at the front of canonicalization, where changing our mind about it costs a re-run. Layer 0
 serves only bytes it wrote.
 
-**Consumers read R2 directly.** No discovery routes on the capture Worker — no pass index, no
-`latest`, no prefix resolution. Reading the bucket directly gives listing and ranged gets for free,
-plus DuckDB straight off R2. A read API on the Worker is wanted eventually, but for the _product_,
-not for our own processes; what it should serve is a question the derived layer answers, so it
-waits until there's an answer.
+**Consumers read the artifacts, not a shaped answer.** No pass index, no `latest`, no prefix
+resolution: reading a flat key listing gives discovery for free, and every interpretation stays in
+a layer we can re-run. Reading R2 _directly_ is still the better door — ranged gets, no Worker in
+the path, DuckDB straight off the bucket — but it needs S3 credentials the stack cannot mint:
+Alchemy authenticates with a Cloudflare OAuth profile and Cloudflare's OAuth client has no
+`api_tokens` scope, so the only route to a key pair is one made by hand in the dashboard and
+remembered afterwards. Until that changes, the capture Worker serves the listing (`GET /raw`,
+`?startAfter=`) alongside the bytes it already served — a listing is not an interpretation. A read
+API on the Worker is wanted eventually, but for the _product_, and what it should serve is a
+question the derived layer answers.
 
 **Use the platform's own mechanisms until they actually hurt.** LIST the bucket. Use whatever
 Cloudflare already provides. No manifest, no pass index, no home-grown coordination state — those

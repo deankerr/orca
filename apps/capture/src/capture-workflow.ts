@@ -127,6 +127,8 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
       // * its own timestamp, and what happened (any HTTP status + verbatim body, or a transport
       // * error). The pass is a scheduling artifact; each line stands alone.
       const statuses: Record<string, number> = {}
+      const cacheStatuses: Record<string, number> = {}
+      let observedMaxAge = 0
       const errors: { permaslug: string; variant?: string; error: string }[] = []
       for (const [index, chunk] of chunks.entries()) {
         const part = index.toString().padStart(3, '0')
@@ -166,15 +168,25 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
 
               // * step return values are checkpointed; keep them small (tallies, not bodies)
               const tally: Record<string, number> = {}
+              // * how fresh this chunk's answers were, by Cloudflare's own verdict. Counted here
+              // * because the alternative is re-downloading every body to find out, which means it
+              // * never gets checked — and "how stale is what we observed" is load-bearing for
+              // * every timing claim downstream. The headers stay on each line, so this is only a
+              // * convenience: it is recomputable, never the authority.
+              const cache: Record<string, number> = {}
+              let maxAge = 0
               const chunkErrors: typeof errors = []
               for (const o of observations) {
                 if ('error' in o) {
                   chunkErrors.push({ error: o.error, permaslug: o.permaslug, variant: o.variant })
                 } else {
                   tally[o.status] = (tally[o.status] ?? 0) + 1
+                  const verdict = o.headers['cf-cache-status'] ?? 'none'
+                  cache[verdict] = (cache[verdict] ?? 0) + 1
+                  maxAge = Math.max(maxAge, Number(o.headers.age ?? 0))
                 }
               }
-              return { errors: chunkErrors, tally }
+              return { cache, errors: chunkErrors, maxAge, tally }
             }),
           ),
           {
@@ -186,6 +198,10 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
         for (const [status, count] of Object.entries(result.tally)) {
           statuses[status] = (statuses[status] ?? 0) + count
         }
+        for (const [verdict, count] of Object.entries(result.cache)) {
+          cacheStatuses[verdict] = (cacheStatuses[verdict] ?? 0) + count
+        }
+        observedMaxAge = Math.max(observedMaxAge, result.maxAge)
       }
 
       // * one durable step: the pass summary — presence marks the pass as finished. Errors are
@@ -197,6 +213,10 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
         catalog: { headers: catalog.headers, status: catalog.status },
         chunks: chunks.length,
         errors,
+        // * how fresh this pass's answers were: Cloudflare's verdict per scope, and the largest
+        // * reported `age`. ⚠️ A HIT reports no age but is by definition within `max-age` (300s),
+        // * so the tally bounds staleness where the header cannot state it.
+        freshness: { cache: cacheStatuses, maxAge: observedMaxAge },
         models: catalog.models,
         statuses,
         targets: targets.length,
