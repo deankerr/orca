@@ -82,12 +82,13 @@ export function pricingScale(field: PricingKey): number {
 }
 
 const MINIMUM_PRICE_DELTA = 0.01
-const MINIMUM_DISCOUNT_DELTA = 1
+const MINIMUM_PRICE_RELATIVE_DELTA = 0.1
+const MINIMUM_DISCOUNT_DELTA = 5
 
 /**
  * Whether a numeric pricing update is large enough for user-facing change feeds.
- * Raw pricing history remains exact; this only suppresses sub-cent price churn and
- * discount moves smaller than one percentage point.
+ * Raw pricing history remains exact; this only suppresses sub-cent or low-percentage
+ * price churn and discount moves smaller than five percentage points.
  */
 export function isMaterialPricingUpdate(path: string, before: unknown, after: unknown): boolean {
   const field = parsePricingPath(path)
@@ -96,8 +97,13 @@ export function isMaterialPricingUpdate(path: string, before: unknown, after: un
   }
 
   const scaledDelta = Math.abs(after - before) * PRICING_FIELDS[field].scale
-  const minimumDelta = field === 'discount' ? MINIMUM_DISCOUNT_DELTA : MINIMUM_PRICE_DELTA
-  return scaledDelta >= minimumDelta
+  if (field === 'discount') {
+    return scaledDelta >= MINIMUM_DISCOUNT_DELTA
+  }
+
+  const relativeDelta =
+    before === 0 ? Number.POSITIVE_INFINITY : Math.abs(after - before) / Math.abs(before)
+  return scaledDelta >= MINIMUM_PRICE_DELTA && relativeDelta >= MINIMUM_PRICE_RELATIVE_DELTA
 }
 
 // Compute decimal places to show the first significant digit plus one more,
