@@ -24,6 +24,7 @@ Every 15 minutes a capture pass runs:
   "variant": "standard",
   "at": "2026-07-23T11:13:13.906Z",
   "status": 200,
+  "headers": {/* verbatim response headers, minus set-cookie */},
   "body": {/* verbatim response */},
 }
 ```
@@ -33,12 +34,22 @@ Only transport failures (after quick retries) become error records, and an error
 knowledge of a scope; it just leaves it stale until the next pass. There is no such thing as an
 incomplete pass — the pass is a scheduling artifact, and each observation stands alone.
 
+⚠️ **Headers are part of the observation, and cannot be backfilled.** OpenRouter's API is behind
+Cloudflare's cache, so `age`/`date` are the difference between "observed at `at`" and "observed
+something generated minutes earlier" — every downstream timing claim rests on them. They are also
+what tells us whether an unchanged response means the world stood still or that we were handed the
+same cached object, and whether `etag`/`last-modified` allow conditional requests (the only way to
+poll often without paying for it). `set-cookie` is dropped: credential material, never observation.
+The catalog is one request, so its headers travel in `capture.json` rather than wrapping
+`models.json.gz`, which stays the verbatim body its consumers expect.
+
 ## Artifact layout
 
 ```
 raw/<captured_at>/models.json.gz               # verbatim catalog response
 raw/<captured_at>/observations/<part>.jsonl.gz # one observation per line, ~40 per chunk
-raw/<captured_at>/capture.json                 # pass summary: status tally + error scopes
+raw/<captured_at>/capture.json                 # pass summary: status tally, error scopes,
+                                               #   catalog response status + headers
 ```
 
 `captured_at` is an ISO timestamp (e.g. `2026-07-23T11:13:11.435Z`) — sortable, readable, and

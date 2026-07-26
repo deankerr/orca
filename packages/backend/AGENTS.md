@@ -3,6 +3,10 @@
 - `shared/` runtime code used by both the convex backend and web app.
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 
+### crawl_id
+
+Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
+
 ### Manual bundle retrieval
 
 - Find IDs: `bunx convex data snapshot_crawl_archives --limit 1000 --format jsonLines`

@@ -74,20 +74,51 @@ Annotations: ❓ = open question, ⚠️ = landmine.
 
 Five overlapping representations per endpoint; keep all, prune after diff analysis:
 
-- `pricing` — normalized token-oriented view (prompt/completion/caching/web_search +
-  `overrides` for context-threshold tiering). ⚠️ Outside text modality its values are mostly
-  placeholder `"0"` — a lie. Embeds a byte-identical copy of `display_pricing` (drop it).
+- `pricing` — normalized per-unit view (prompt/completion/caching/web_search + `overrides` for
+  context-threshold tiering). ⚠️ Outside text modality its _token_ fields are placeholder `"0"` — a
+  lie — but its modality-specific fields are the only real numbers upstream gives you; see below.
+  Embeds a byte-identical copy of `display_pricing` (drop it).
 - `pricing_json` — SOURCE OF TRUTH. Adapter-namespaced SKU keys (`openai_responses:prompt_tokens`).
   ~75 distinct SKU names in text alone; per-modality unit families (cents_per_image_output,
   duration_seconds_*, characters, audio_minutes, search-units). ⚠️ naming is inconsistent
-  (kebab `search-units`); ⚠️ values are decimal strings except krea's raw numbers.
+  (kebab `search-units`); ⚠️ values are authored notation, not normalized numbers — see below.
 - `display_pricing` — presentation view, but the only place exotic SKU semantics are labelled
   ("Image Output (moodboards)", tier breakdowns). `kind: token|unit` ≈ upstream's declaration
   of pricing family.
 - `tiers` — flex/priority per-tier pricing variants (53 endpoints).
-- `pricing_version_id` — opaque UUID. ❓ does it change iff pricing changes?
+- `pricing_version_id` — opaque UUID. Measured a strict _superset_ of price change over 39
+  transitions: 13 moves, 10 alongside a real SKU change, 3 with none, 0 real changes missed. A
+  usable cheap detector, an unusable change record.
 - Public API (`:free` of all this): renames `provider_slug` to `tag`, collapses pricing to the
   token view. Their docs barely acknowledge any of this.
+
+Three findings from diffing all five across 40 consecutive passes (`bun run pricing-changes`,
+`pricing-examples` in `packages/processes`). Each one cost a wrong turn:
+
+- 📌 **`pricing` is COMPUTED, and `discount` is the only thing moving.** Every value equals a
+  `pricing_json` SKU × `(1 - discount)` — exact on 95/95 discounted endpoints. `tiers` = base ×
+  `<tier>_tier_multiplier`; `pricing.overrides` = the `*_long_context` SKUs + `long_context_threshold`.
+  All of it derived, all from `pricing_json`. ⚠️ So apparent price churn is one scalar: `discount`
+  moved three `pricing` keys and every `display_pricing` row on 15 endpoints across 33/39
+  transitions while list prices sat still. Cause is two providers undercutting each other on one
+  model (glm-5.2) in sub-cent steps — a per-token base unit makes that possible. It flaps rather
+  than trends (travelled 14× net) but it is real money: ~18¢/MTOK of movement, 1.3¢ net, in 10h.
+  ⚠️ Real repricings are the opposite shape — low-frequency, high-amplitude (one was $3.00 → $2.10),
+  so the two separate by _amplitude_, not by field or by provider.
+- ⚠️ **…and yet `pricing` cannot be dropped — some keys exist nowhere else.** `web_search` on 71
+  endpoints matches no SKU at any discount and takes one of four apparently hand-keyed values
+  (0.014, 0.01, 0.005, 0.0025): OR's own web-search add-on, not the provider's. `image_token` /
+  `image_output` are unit conversions at factors absent from the data ($/megapixel ÷ 4096, on the one
+  endpoint whose SKU names let it be checked). `input_cache_write` = `cache_write_storage_hours` ÷ 12
+  (33/33). ⚠️ Its repeating decimals (`0.00000008333333333333334`) are real rationals, not float
+  noise — deriving these ourselves means reproducing OR's arithmetic exactly. Don't drop a view
+  because it looks redundant; check every key.
+- ⚠️ **`pricing_json` is neither purely prices nor normalized numbers.** It also carries
+  `long_context_threshold` (a token count), `*_tier_multiplier` (ratios), `upstream_cost_cents`
+  (OR's own cost, leaked) and `informational_*` fields that are nonetheless the rate shown to users.
+  Values arrive in whatever notation was authored — `"0.25e-6"`, `".03e-6"`, raw `3e-7`, mixed
+  inside one object — so ⚠️ 48% of price rows differ from a canonical rendering. Comparing the text
+  records a re-authoring as a price change: compare parsed numbers, keep the string as provenance.
 
 ## Data policy
 
@@ -128,6 +159,19 @@ Five overlapping representations per endpoint; keep all, prune after diff analys
 
 - OR's API is Cloudflare-cached, heavy, and hammered by their own site — they don't notice or
   care about polling. No guarantee an observation exists at any given time.
+- ⚠️ **The cache windows are wider than our polling interval, and there are no `etag` or
+  `last-modified` headers on any response — conditional requests are impossible.**
+  `stats/endpoint` is `max-age=300, stale-while-revalidate=600`, so one generation can be served
+  for 900s — our entire 15-minute interval. The catalog is `s-maxage=300, swr=300` (600s). Observed
+  live: `age: 696` on a `cf-cache-status: UPDATING` response, i.e. data 11.6 minutes old, served
+  stale while Cloudflare refreshed behind it. 📌 **So every change count is a count of
+  _observations_, not of events**: two consecutive passes can return the same generation and carry
+  no information, and a real change can hide for a full pass. `date - age` is the only way to know
+  when data was actually generated, which is why capture records response headers (added
+  2026-07-26; passes before that can never be corrected). ⚠️ Cache state is per-edge and
+  popularity-dependent — probing from a laptop says nothing about what the Worker's colo sees, and
+  the 5-minute `max-age` is a floor on useful cadence for a warm scope. Cache-busting with a nonce
+  would get fresher data and is deliberately not done: hitting their CDN is why nobody minds us.
 - Layer 1 canonicalization lives in `packages/processes` (`bun run canonicalize`): strict zod
   parse of raw shapes (schema drift fails loudly), flat snake_case canonical entities
   (SQL-ready), one output file per entity per pass. `bun run split-modalities` slices raw
@@ -137,8 +181,10 @@ Five overlapping representations per endpoint; keep all, prune after diff analys
 
 ## Open questions (rollup)
 
-- ❓ `pricing_version_id` stability/semantics across passes (first diffs will answer)
-- ❓ churn/signal classification of `default_order`, `updated_at`, `capacity_tpm`, `is_deranked`
+- ❓ why does `discount` drift at all — a fixed provider price pegged to a moving reference?
+- ❓ churn of `default_order`, `updated_at`, `capacity_tpm`, `is_deranked`, `is_disabled`,
+  `deprecation_date`: all measured completely static over 40 passes — but that window held no model
+  launch, so it says "stable between launches", not "stable"
 - ❓ does `status` track `status_heuristics_*`? If so it's a health signal, not just churn
 - ❓ `model_version_group_id` semantics; `limit_*` zero semantics
 - ❓ endpoint delete/recreate lineage: worth detecting heuristically in Layer 2?

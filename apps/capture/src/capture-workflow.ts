@@ -17,13 +17,35 @@ const CONCURRENCY = 8
 // * minimal shape needed to enumerate endpoint requests — everything else passes through untouched
 type ModelRecord = { slug: string; permaslug: string; endpoint?: { variant?: string } | null }
 
+// * ⚠️ Response headers are part of the observation, not metadata about it, and they cannot be
+// * backfilled — a pass captured without them is permanently missing the answer to three
+// * questions:
+// *   - how stale was this? OpenRouter's API sits behind Cloudflare's cache, so `age` and `date`
+// *     are the difference between "observed at T" and "observed something generated at T minus
+// *     several minutes". Every timing claim downstream rests on it.
+// *   - is "unchanged" real? Without cache indicators, being handed the same cached object twice is
+// *     indistinguishable from the world not changing.
+// *   - can polling be cheap? `etag` / `last-modified` are what make conditional requests possible,
+// *     which is the only way to decouple how often we look from what it costs.
+// * `set-cookie` is dropped deliberately — it is credential material, never observation, and it is
+// * the one header we would not want in an immutable artifact. Everything else is kept verbatim.
+const headersOf = (response: Response) => {
+  const headers: Record<string, string> = {}
+  for (const [name, value] of response.headers) {
+    if (name.toLowerCase() !== 'set-cookie') {
+      headers[name] = value
+    }
+  }
+  return headers
+}
+
 const fetchJson = (url: string) =>
   Effect.tryPromise(async () => {
     const res = await fetch(url, { headers: { accept: 'application/json' } })
     if (!res.ok) {
       throw new Error(`${res.status} ${res.statusText} for ${url}`)
     }
-    return await res.json()
+    return { body: await res.json(), headers: headersOf(res), status: res.status }
   })
 
 // * every HTTP response is an observation — a 404 is data (e.g. "this model has zero endpoints"),
@@ -39,7 +61,8 @@ const observe = (url: string) =>
     } catch {
       // * non-JSON body recorded verbatim as text
     }
-    return { body, status: res.status }
+    // oxlint-disable-next-line sort-keys -- body last: it dominates the stored line, and status and headers are what you want to see first when eyeballing one
+    return { status: res.status, headers: headersOf(res), body }
   }).pipe(Effect.retry({ times: 2 }))
 
 // * gzip via the web-standard CompressionStream available in the workers runtime
@@ -68,17 +91,24 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
         'fetch-models',
         logged(
           Effect.gen(function* models() {
-            const body = yield* fetchJson(`${OPENROUTER}/api/frontend/v1/catalog/models`)
-            const bytes = yield* gzip(JSON.stringify(body))
+            const response = yield* fetchJson(`${OPENROUTER}/api/frontend/v1/catalog/models`)
+            // * the stored object stays the verbatim body — its response metadata travels in the
+            // * pass summary instead, so consumers reading `models.json.gz` are unaffected
+            const bytes = yield* gzip(JSON.stringify(response.body))
             yield* bucket.put(`${prefix}/models.json.gz`, bytes)
             // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- layer 0 deliberately doesn't validate; typed only as far as we access
-            const records = (body as { data: ModelRecord[] }).data
+            const records = (response.body as { data: ModelRecord[] }).data
             const targets = records
               .filter(
                 (m) => m.endpoint !== null && m.endpoint !== undefined && !m.slug.startsWith('~'),
               )
               .map((m) => ({ permaslug: m.permaslug, slug: m.slug, variant: m.endpoint?.variant }))
-            return { models: records.length, targets }
+            return {
+              headers: response.headers,
+              models: records.length,
+              status: response.status,
+              targets,
+            }
           }),
         ),
         {
@@ -162,6 +192,9 @@ export default class CaptureWorkflow extends Cloudflare.Workflow<CaptureWorkflow
       // * scopes whose knowledge didn't advance this pass, not holes to explain later.
       const summary = {
         captured_at,
+        // * the catalogue's own response metadata: it is one request, it is where a new model first
+        // * appears, and whether it was served from cache decides what its timestamp means
+        catalog: { headers: catalog.headers, status: catalog.status },
         chunks: chunks.length,
         errors,
         models: catalog.models,

@@ -29,6 +29,15 @@ const Observation = z.looseObject({
     .optional(),
 })
 
+// * one observation, reduced: the scope's own fields, its endpoints stripped of the embedded
+// * copies, and the model recovered once from those copies. Typed only as far as the dedupe
+// * reaches — but `endpoints` and `model` are named precisely, because every consumer reaches for
+// * them and would otherwise have to assert.
+export type Scope = Record<string, unknown> & {
+  endpoints: unknown[]
+  model: Record<string, unknown> | null
+}
+
 const rawDir = new URL('../../input/raw/', import.meta.url).pathname
 
 const readTextGz = async (path: string) =>
@@ -63,7 +72,7 @@ export const readPass = async (captured_at: string) => {
   }
 
   const providers = new Map<string, Record<string, unknown>>()
-  const scopes: Array<Record<string, unknown>> = []
+  const scopes: Scope[] = []
   for (const part of [
     ...new Bun.Glob('*.jsonl.gz').scanSync(`${passDir}observations/`),
   ].toSorted()) {

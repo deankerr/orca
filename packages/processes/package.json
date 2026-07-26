@@ -6,8 +6,12 @@
     "./*": "./src/*"
   },
   "scripts": {
+    "cadence": "bun run src/analysis/cadence.ts",
     "canonicalize": "bun run src/canonicalize/canonicalize.ts",
+    "churn": "bun run src/analysis/field-churn.ts",
     "fields": "bun run src/analysis/entity-fields.ts",
+    "pricing-changes": "bun run src/analysis/pricing-changes.ts",
+    "pricing-examples": "bun run src/analysis/pricing-examples.ts",
     "split-modalities": "bun run src/analysis/split-modalities.ts",
     "unbundle": "bun run src/archives/unbundle.ts"
   },
