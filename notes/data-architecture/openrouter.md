@@ -172,12 +172,26 @@ Three findings from diffing all five across 40 consecutive passes (`bun run pric
   popularity-dependent — probing from a laptop says nothing about what the Worker's colo sees, and
   the 5-minute `max-age` is a floor on useful cadence for a warm scope. Cache-busting with a nonce
   would get fresher data and is deliberately not done: hitting their CDN is why nobody minds us.
-- Layer 1 canonicalization lives in `packages/processes` (`bun run canonicalize`): strict zod
-  parse of raw shapes (schema drift fails loudly), flat snake_case canonical entities
-  (SQL-ready), one output file per entity per pass. `bun run split-modalities` slices raw
-  scopes per modality for analysis.
-- Philosophy: capture first, ask questions later. Carry upstream verbatim at Layer 1; mute
-  noise at the diff point, not at ingestion. Don't code paths for exotic one-off SKUs.
+- Philosophy: capture first, ask questions later. Carry upstream verbatim; mute noise at the diff
+  point, not at ingestion. Don't code paths for exotic one-off SKUs.
+
+### ⚠️ HTTP manners — build these into the producer
+
+Two gaps the "what if OpenRouter asks us to stop" question exposes. Both were true of the first
+capture worker and neither is solved by the artifact pool, which is transport-agnostic and never
+makes an upstream request:
+
+- ⚠️ **We are anonymous.** The old fetches sent only `accept: application/json`. An unidentified
+  crawler at ~41.6k requests/day gets blocked without a conversation; an identified one with a
+  contact URL gets an email first. A descriptive `User-Agent` is the cheapest high-value change here.
+- ⚠️ **We cannot hear them say no.** Retrying on transport failure only — with no check on
+  `!res.ok` — means a 429 or 503 is recorded as an observation and the sweep continues at full rate.
+  Under throttling we would bank ~433 rejections per pass and keep hammering, discovering it whenever
+  someone next read a status tally. Status-class-aware backoff plus an alarm on sustained 429s is
+  what makes "they asked us to stop" arrive as an event rather than an archaeology finding.
+
+📌 The reason volume has been fine so far: we hit their Cloudflare cache and never cache-bust, so
+origin load is near zero. **Request count is not the risk; origin load and anonymity are.**
 
 ## Open questions (rollup)
 

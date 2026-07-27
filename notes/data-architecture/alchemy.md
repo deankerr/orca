@@ -72,6 +72,78 @@ prefixes are dropped on the floor. Affects the `*Http` and `*Local` layers (they
 from the keys. Note the default page size is ~20, so pass `limit: 1000`: 2041 objects is 3 pages
 (~5 s) instead of 103 (~60 s).
 
+### Pipelines and R2 Data Catalog are resources — the docs index doesn't say so
+
+`alchemy.run/llms.txt` lists neither, but `alchemy@2.0.0-beta.64` ships
+`Cloudflare.Pipelines.{Stream,Sink,Pipeline}`, `Cloudflare.Pipelines.LegacyPipeline` and
+`Cloudflare.R2.DataCatalog`. The docs index is not an inventory of the provider — when a resource
+matters, check `node_modules/alchemy/lib/Cloudflare/` before concluding it has to be done by hand
+with `wrangler`. `apps/pool` provisions the whole lakehouse from the stack because of this.
+
+⚠️ Streams, sinks and pipelines have **no update API**: every property change is a replacement.
+Prefer engine-generated names, because a create-before-delete replacement collides on an explicit
+one. A stream's schema and format are part of that — changing them replaces the table.
+
+There is **no Workers `pipelines` binding** in Alchemy. Send over the stream's HTTP ingest endpoint
+(`stream.endpoint`) with a `Pipelines Send` token instead; it costs a subrequest and works
+identically from a Worker and from a laptop.
+
+### The R2 SQL HTTP API
+
+Documented, but easy to miss because every guide reaches for `wrangler r2 sql query`:
+
+```
+POST https://api.sql.cloudflarestorage.com/api/v1/accounts/<accountId>/r2-sql/query/<bucket>
+Authorization: Bearer <token with "Workers R2 SQL Read">
+Content-Type: application/json
+
+{ "query": "SELECT ... FROM namespace.table WHERE __ingest_ts > '...'" }
+```
+
+This is what makes Worker-side consumers possible at all. ⚠️ The **response** envelope is not
+documented — `apps/pool/src/r2-sql.ts` accepts each plausible shape and fails loudly with the raw
+body rather than guessing; narrow it once a real query has run.
+
+📌 `__ingest_ts` is a real automatic column on any Pipelines-written table, and R2 SQL has
+`json_get_str` / `json_get_int` / `json_contains`, so a `json` column stays queryable without the
+storage layer knowing its shape.
+
+### Minting the tokens a lakehouse needs
+
+The permission-group catalog covers everything a lakehouse needs: `Workers R2 Data Catalog Read` /
+`Write`, `Workers R2 SQL Read`, `Workers R2 Storage Read` / `Write`, `Pipelines Send` / `Read` /
+`Write`.
+
+### ⚠️ …but an OAuth profile cannot create tokens at all
+
+📌 Measured 2026-07-27, deploying `apps/pool`: all three `AccountApiToken` resources failed with
+`Unauthorized` on `POST /accounts/{account_id}/tokens`, taking every dependent resource with them.
+
+Creating an account-owned API token needs the **`API Tokens > Write`** account permission, and
+**Alchemy's OAuth scope catalogue contains no token-management scope** — the 60-odd scopes it can
+request cover Workers, R2, D1, Pipelines and so on, but nothing for tokens. So `alchemy login` via
+OAuth can never mint one, and re-authorising does not help.
+
+To use `AccountApiToken`, the profile must be an **API token** credential (`alchemy login` accepts
+one) carrying `API Tokens > Write` alongside the stack's other permissions. That is one hand-made
+bootstrap credential in exchange for every other token being stack-managed. If you would rather keep
+OAuth, the alternative is making each token by hand and passing the values in as secrets.
+
+`AccountApiToken` policies need the account id as a **literal** in the resource key, which no
+resource output can supply — read it from the ambient environment instead:
+
+```text
+const credentials = yield* yield* Cloudflare.CloudflareEnvironment
+const account = `com.cloudflare.api.account.${credentials.accountId}` as const
+```
+
+(Fenced as `text` deliberately — the formatter rewrites `yield*` into `yield * yield *` in a `ts`
+block, which is not valid and not what you want to copy.) The double `yield*` is not a typo: the
+service's value is itself an Effect that resolves the credentials.
+
+`Alchemy.Random('AccessKey')` is the matching trick for a secret that is ours rather than
+Cloudflare's: generated once, persisted in stack state, injectable into a Worker as a binding.
+
 ### Reading R2 from a standalone script
 
 `bun run mirror` reads the artifact bucket from a plain Bun script with the **local Alchemy

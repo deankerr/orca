@@ -1,243 +1,209 @@
 # The Artifact Pool
 
-**Status: proposal.** It revises stated positions in [direction.md](direction.md) and invalidates
-schema decisions already made in `packages/schema/src/lanes.ts` — those contradictions are listed
-explicitly at the end rather than edited away.
+**Built: `apps/pool`.** Producers append. Each consumer holds its own cursor and reads everything
+past it at whatever cadence it likes. That is the entire coordination mechanism, and it is what makes
+cadence a **dial** — adjustable at any time, per actor, without negotiating with any other actor.
 
-The premise: cadence is a **dial**, adjustable at any time for any reason, per producer and per
-consumer. Freshness becomes a matter of taste rather than a property of the architecture. Everything
-below is what has to be true for that to hold.
+The pool knows nothing about what it carries. That property is the whole point, and it is enforced by
+there being no OpenRouter code in it.
 
-Annotations: 📌 = measured, ⚠️ = landmine, ❓ = open question.
+Annotations: 📌 = measured, ⚠️ = landmine, ❓ = open.
 
-## 1. Why the pass has to go
+## Why there is no "pass"
 
-📌 The uniform sweep is almost entirely redundant. With telemetry (`stats`, `status*`) and the
-embedded `model` / `provider_info` copies stripped, across 39 transitions:
+📌 A uniform sweep is almost entirely wasted. Across 39 transitions, with telemetry and embedded
+entity copies stripped:
 
-|                                            |                                 |
-| ------------------------------------------ | ------------------------------- |
-| scope-observations carrying any change     | **841 / 16,887 = 5.0%**         |
-| scopes that moved at all in 10h            | **75 of 433** — 358 never moved |
-| top mover (`z-ai/glm-5.2`)                 | **38 of 39** transitions        |
-| raw bodies byte-identical to previous pass | 13.4%                           |
+|                                        |                                 |
+| -------------------------------------- | ------------------------------- |
+| scope-observations carrying any change | **841 / 16,887 = 5.0%**         |
+| scopes that moved at all in 10h        | **75 of 433** — 358 never moved |
+| top mover (`z-ai/glm-5.2`)             | **38 of 39** transitions        |
+| raw bodies identical to previous pass  | 13.4%                           |
 
-⚠️ That last row kills the obvious storage fix: raw bodies barely dedupe, because embedded telemetry
-churns on every fetch. Content-addressing the raw layer would recover 13%. The only way to not store
-the noise is to not fetch it.
+⚠️ That last row kills the obvious storage fix — raw bodies barely dedupe, because embedded telemetry
+churns on every fetch. The only way to not store the noise is to not fetch it.
 
-📌 The catalog is the right discovery instrument and nothing more. Telemetry-stripped, **27 of 39
-transitions were byte-identical** over the endpoint-bearing models (26 of 39 over all 807 entries),
-and when it moved, 1–5 models moved. But tested as a change detector for endpoint scopes:
-
-```
-caught 27 · missed 814 · false alarms 427   →  recall 3.2%
-```
-
-⚠️ It carries only the _top_ endpoint, so it is blind to 97% of endpoint change. ⚠️ And the 427 false
-alarms are their own warning: the catalog and `stats/endpoint` are **independently cached**, so they
-disagree about the same endpoint. A catalog-embedded endpoint is never a substitute for an
+📌 And the catalog can't tell us what to fetch: it carries only the _top_ endpoint per model, so as a
+change detector for endpoint scopes it scores **recall 3.2%** (caught 27, missed 814, 427 false
+alarms). The false alarms matter too — the catalog and `stats/endpoint` are independently cached, so
+they disagree about the same endpoint. A catalog-embedded endpoint is never a substitute for an
 observation of one.
 
-So: the catalog answers _what exists_, at ~5-minute resolution, for one request. Everything else has
-to be scheduled per scope — which means passes stop being aligned, which means the pass stops
-existing.
+So the catalog answers _what exists_ and nothing more; everything else is scheduled per scope. Once
+scopes are scheduled independently, passes are no longer aligned, and the pass stops existing as a
+concept. The pool is what replaces it.
 
-## 2. The time model — the load-bearing change
+## The time model
 
 **There is exactly one time axis, it is ours, and it is `observed_at`: the moment we made the
 request.**
 
 We never observe events. Upstream is cached, so what we are handed was generated at some earlier
-moment we cannot know, and the same bytes can be served to us more than once. No cadence changes
-this. The only defensible claim is therefore an interval, bounded by our own requests:
+moment we cannot know, and the same bytes can be served to us twice. The only defensible claim is an
+interval bounded by our own requests:
 
 > A change occurred somewhere in `(previous observed_at, this observed_at]`.
 
-⚠️ This interval is **conservative on purpose**. Upstream staleness only ever makes the true moment
-_earlier_ than our lower bound suggests, never later, so a claim stated this way is never wrong — it
-is only imprecise, by an amount we do not pretend to know. Narrowing it would mean claiming
-precision we cannot defend.
+⚠️ Conservative on purpose. Upstream staleness only ever makes the true moment _earlier_ than our
+lower bound, never later, so a claim stated this way is never wrong — only imprecise, by an amount we
+don't pretend to know.
 
-### ⛔ Rejected: deriving a generation time from response headers
+⛔ **Response headers are not a time source.** `date - age` looks like it recovers when upstream
+actually generated the data. It cannot be part of the system: it couples our time axis to
+infrastructure we don't control (cache TTLs, header semantics, which CDN sits in front of OR — all
+theirs to change silently), it is absent from the 1+ year back-catalogue, and `cf-cache-status: HIT`
+sends no `age` at all, so ~15% of observations couldn't be placed even in principle. The findings
+stay in [openrouter.md](openrouter.md) as context for _where to set the dial_. They never become a
+column, a key, or an input to any derived layer.
 
-`date - age` looks like it recovers when upstream actually produced the data, and an earlier draft of
-this note built the time axis on it. **It cannot be part of the system.**
+📌 **No consumer may assume a regular grid** — no "previous pass", no aligned observation set, no
+interval arithmetic. This is already true of the existing archives, whose cadence varies. Making it
+the only case is what makes the dial free: no code path can depend on cadence, because none can
+observe it.
 
-- ⚠️ **It couples the time axis to infrastructure we do not control.** Cache TTLs, header semantics,
-  even which CDN sits in front of OR are all theirs to change without notice. That is a second class
-  of upstream drift on top of the schema drift era adapters already exist to absorb — and unlike a
-  field appearing, it would silently corrupt the axis every other fact hangs off.
-- ⚠️ **It is absent from the archives.** Headers have been captured since 2026-07-26; the back
-  catalogue is 1+ year. A time model that only works for the newest weeks needs an era adapter _for
-  time itself_, which is the worst possible place to need one.
-- ⚠️ It was never complete anyway: `cf-cache-status: HIT` sends no `age`, so ~15% of observations
-  could not be placed even in principle.
+## The envelope
 
-📌 The header findings stay in [openrouter.md](openrouter.md) as **recorded context** — they are why
-we know sub-5-minute polling is wasted, and why "unchanged" is not evidence the world stood still.
-Context informs where we set the dial. It never becomes a column, a key, or an input to any derived
-layer. Layer 0 keeps storing whatever the response carried, because Layer 0 stores everything
-verbatim and interprets nothing; no layer above may read it.
-
-⚠️ **What this still changes in the store.** `valid_from` today is the `captured_at` of the _pass_
-that first saw a value (`lanes.ts:42`). It becomes the `observed_at` of the _observation_ that first
-saw it. Smaller than the earlier draft claimed, but not cosmetic: it moves the axis from a
-pass-aligned clock to a per-scope one, which is what makes independent scheduling expressible at all.
-
-📌 Once the dial moves freely, **no consumer may assume a regular grid** — no "previous pass", no
-aligned observation set, no interval arithmetic. This is already true of the 1+ year of existing
-archives, whose cadence varies; the current schema simply doesn't admit it. Making it the only case
-is what makes the dial free: no code path can depend on cadence, because none can observe it.
-
-## 3. What "big data" means here — and what to skip
-
-What is wanted from the lakehouse world is the _practices_ — columnar storage, schema-on-read,
-immutable append-only, compute decoupled from storage — not the scale machinery. Anything justified
-by terabytes is ceremony we pay for and get nothing from.
-
-The real cost is **accessibility, denominated in object count and scan shape, not GB.** This rules
-out the naive fix of one object per observation: at a reduced cadence that is still ~18M objects over
-five years, buying cheap point lookups at the price of never scanning the corpus again. ⚠️ Layer 0
-must stay batched and append-shaped. Per-scope access is what the normalized store and the analytics
-lane exist to provide — don't contort the unrecoverable layer to serve a query pattern a derived
-layer owns.
-
-## 4. Schema resilience: two layers, two different answers
-
-**Layer 0 is immune because it has no schema.** Not a permissive schema — none. One row per
-observation:
+Six producer-written columns plus the one Cloudflare adds. `kind`, `subject`, `attrs` and `payload`
+are opaque — the pool validates that they are well formed, never that they mean anything.
 
 ```
-{ slug, permaslug, variant, observed_at, status, headers, body: <opaque json> }
+kind        string     opaque family discriminator      e.g. 'openrouter.endpoints'
+subject     string     opaque identity of the observed  e.g. 'z-ai/glm-5.2|standard'
+observed_at timestamp  the time axis above, and the only one
+producer    string     who appended it, versioned       e.g. 'capture@1'
+attrs       json       producer-controlled escape hatch
+payload     json       opaque — { status, headers, body } lives in here
+__ingest_ts timestamp  Cloudflare's own; the cursor axis, never a claim about the world
 ```
 
-Ingestion never looks inside `body`, so an upstream field addition, rename, restructure or type
-change cannot break it. This is the standard landing-zone pattern and it is the correct reading of
-"we are humble observers of data".
+Three decisions worth knowing:
 
-⚠️ `headers` is stored for the same reason `body` is — Layer 0 keeps what it was handed — and is
-**opaque to every layer above**, per §2. `observed_at` is the only time any consumer may read, and
-the only one the archives can supply.
+- **`status` and `headers` live inside `payload`.** They are HTTP specifics, and the rule is that no
+  layer above may read them. Burying them in an opaque field makes that structural rather than a rule
+  someone has to remember not to break.
+- **A scope triple is one opaque `subject`.** `slug|permaslug|variant` is the producer's convention;
+  the pool never parses, splits or joins on it.
+- ⚠️ **`subject`, not `key`.** `KEY` is reserved in standard SQL and this column name is read by two
+  SQL engines we don't control.
 
-**Layer 1+ is where structure appears, and where evolution is a real question.** Apache Iceberg is
-the industry answer: columns tracked by **ID rather than name**, so add / drop / rename / reorder /
-widen are metadata-only operations and existing files keep reading; plus ACID commits, snapshot
-isolation, time travel, partition evolution and predicate pushdown.
+⚠️ **The stream schema, the sink and the pipeline have no update API** — any change replaces them, and
+the table with it. `attrs` exists so a producer needing another field never forces that.
 
-📌 **But we probably don't need Iceberg's schema evolution.** In-place evolution exists for people who
-_cannot re-derive_ their tables. We can — `canonical/<version>/` re-run from raw is already the
-strategy, and it is strictly more powerful, since it can restructure retroactively rather than only
-append columns. Take Iceberg for the query side; keep re-derivation as the schema-change mechanism.
-Adopting evolution ceremony for a problem already solved better is how this gets heavy.
+📌 We deliberately don't use Iceberg's schema evolution. In-place evolution exists for people who
+_cannot re-derive_ their tables. We can, and re-derivation is strictly more powerful — it restructures
+retroactively rather than only appending columns. Iceberg for the query side; re-derivation as the
+schema-change mechanism.
 
-## 5. The platform pieces
+## The shape
 
-Checked against Cloudflare's docs 2026-07-26, not recalled.
+```
+producer ──POST /append──▶ Pipelines Stream ──SQL passthrough──▶ Iceberg table in R2
+                                                                        │
+consumer ◀──GET /read / POST /commit── Worker ──R2 SQL over HTTP───────┘
+                                          │
+                                          └── D1: one cursor per consumer
+```
 
-- **Pipelines** (open beta, Workers Paid) — durable buffered **streams** via HTTP endpoint or Worker
-  binding, SQL transforms in flight, exactly-once delivery, **sinks** writing Iceberg tables to R2
-  Data Catalog or Parquet/JSON to R2, configurable roll interval. 📌 A stream field may be typed
-  `json`, so a raw stream commits to no schema at all.
-- **R2 Data Catalog** — managed Iceberg REST catalog on the bucket, including **managed compaction
-  and snapshot expiration**. This matters more than it sounds: small-file accumulation is the
-  standard way a lakehouse rots.
-- **R2 SQL** — serverless queries with aggregations, `GROUP BY`, `HAVING`. DuckDB, Spark, PyIceberg
-  and Snowflake connect through the same catalog.
+The pipeline transforms nothing. That is the one place a transform _could_ live and the whole point is
+that it doesn't: interpretation happens in consumers, which can be re-run, not in the ingest path,
+which cannot.
 
-📌 This deletes the batching problem outright. `CHUNK_SIZE = 40` in `capture-workflow.ts` exists
-because of Workflow subrequest budgets and the ~1 MiB checkpoint clone, and
-`observations/<part>.jsonl.gz` is that constant fossilised into the key layout. Under a stream the
-Worker emits one record per observation and stops caring about file layout entirely — the constant
-has no successor.
+📌 **This deletes the batching problem outright.** The old `CHUNK_SIZE = 40` existed because of
+Workflow subrequest budgets and checkpoint size, and the `<part>.jsonl.gz` key layout was that
+constant fossilised. Under a stream the producer emits one record per observation and stops caring
+about file layout entirely. The constant has no successor.
 
-⚠️ Correction to a claim in `apps/capture/README.md`: this does **not** remove the hand-made-token
-problem. Sinks take a `--catalog-token` created in the dashboard. It makes that token worth creating
-once, rather than something to avoid.
+📌 **Managed compaction and snapshot expiration are the reason to use the catalog at all.** A sink
+rolling a file a minute produces ~525k small files a year, and small-file accumulation is the standard
+way a lakehouse rots. Left to Cloudflare on purpose.
 
-## 6. The pool protocol
+All three API tokens — `Workers R2 Data Catalog Read/Write`, `Workers R2 SQL Read`,
+`Pipelines Send` — are declared as stack resources, so they are scoped and destroyed with it.
 
-Producers append. Each consumer holds its **own cursor** over the pool and reads everything past it
-at whatever cadence it likes. That is the entire coordination mechanism, and it is what gives every
-entity an independent dial without negotiating with any other entity.
+⚠️ **But that only works if the deploying credential can create tokens.** Minting an account API
+token is `POST /accounts/{id}/tokens`, which needs `API Tokens > Write` — and Alchemy's **OAuth scope
+catalogue has no token-management scope at all**, so an `alchemy login` OAuth profile cannot do it
+and no re-login will help. Deploying this stack requires an API-token credential. See
+[alchemy.md](alchemy.md) for that and for the R2 SQL HTTP endpoint.
 
-- A new consumer starts at cursor zero and backfills for free.
-- Reprocessing is a cursor reset.
-- Iceberg provides this natively via snapshot IDs — incremental reads are a feature, not something
-  to hand-roll.
+## The protocol
 
-Sketch of the actors, each with its own dial:
+- `POST /append` — validated against the envelope only, then chunked under the 5 MB ingest limit.
+- `GET /read` — returns a settled window plus the `through` token that commits it.
+- `POST /commit` — advances the cursor. Monotonic: a replayed commit is a no-op, never a rewind.
+- `POST /reset` — reprocessing is a cursor reset. A new consumer starts at zero and backfills for
+  free; there is no separate replay machinery.
+- `GET /health` — lag per consumer; **503** when any consumer is past its budget.
 
-| actor                | dial                      | floor                                                                               |
-| -------------------- | ------------------------- | ----------------------------------------------------------------------------------- |
-| catalog poll         | discovery interval        | taste; ~5 min is where returns stopped when last measured                           |
-| scope scheduler      | per-tier refresh interval | a **floor cadence**: every scope observed at least every N hours regardless of tier |
-| canonicalizer        | run interval, pass range  | —                                                                                   |
-| store ingest         | run interval              | —                                                                                   |
-| alerts / Convex push | run interval              | —                                                                                   |
+A consumer that dies between read and commit re-reads the same window. At-least-once, which is why
+every stage above the pool has to be idempotent.
 
-⚠️ The floor cadence is not optional. A volatility-driven scheduler is the one **cycle** in an
-otherwise acyclic design — a derived product deciding what Layer 0 looks at. Interpretation can be
-re-run; a fetch we didn't make cannot. With a floor, the worst case of a scheduler bug is reduced
-resolution. Without one, it is a permanent blind spot.
+⚠️ **The cursor axis is `__ingest_ts`, not Iceberg snapshots.** R2 SQL queries the table, not the
+snapshot log, and exposes no snapshot-range syntax. `__ingest_ts` is strictly the pool's arrival
+order, and never a time anyone may reason about the world with — that stays `observed_at`'s job.
 
-## 7. ⚠️ What the pool costs — build this at the same time
+### ⚠️ The settling window — load-bearing
 
-[direction.md](direction.md) currently claims:
+A cursor on `__ingest_ts` is only safe if reads are bounded on **both** sides. Rows become visible in
+batches when the sink rolls a file, so the newest part of the pool is always still arriving, and a row
+can land carrying an `__ingest_ts` older than one already seen. A naive `WHERE __ingest_ts > cursor`
+steps over it and never looks back — silent, permanent row loss, which is the exact failure class the
+pool exists to eliminate.
 
-> it is **one pipeline**: it advances or it visibly fails at a step, so the failure mode where the
-> catalog keeps updating while the change feed silently stalls cannot recur.
+So a read covers `(cursor, now − SETTLING]`, and the cursor advances to `now − SETTLING`, never to the
+visible head. `SETTLING = 300s` against a 60s roll interval.
 
-**The Artifact Pool gives that property up on purpose.** Independent dials mean a consumer can stall
-silently while everything upstream looks healthy — which is precisely the Convex failure this whole
-rework is replacing (`current-system.md`: materialize tolerates parse failures, materializedChanges
-throws on the same input).
+📌 This puts a ~5 minute floor on end-to-end freshness — below where the dial is useful against
+OpenRouter's cache anyway, so it costs nothing here. It _would_ cost something for a faster source,
+and the fix there is a shorter roll interval, not a shorter settling.
 
-The replacement guarantee is **watermark lag as a first-class, monitored, alarmed quantity**: every
-consumer's cursor distance from the pool head. This is the only part of the proposal I'd call
-non-negotiable, and it has to ship _with_ the pool rather than after it. A pool without lag
-monitoring is strictly worse than the pipeline it replaces.
+⚠️ **A row `LIMIT` cannot be committed as a window.** Rows share an `__ingest_ts` to the millisecond,
+so no row-count boundary is also a safe cursor position — only a time boundary is. The pool therefore
+**halves the window until its rows fit** rather than truncating, at the cost of a `COUNT` per read.
+The invariant it buys: _a committed window was delivered in full._
 
-## 8. HTTP manners (independently worth doing)
+## What the pool costs, and what pays for it
 
-Two gaps in `capture-workflow.ts` that the "what if OpenRouter asks us to stop" question exposes:
+Independent dials mean a consumer can stall silently while everything upstream looks healthy. That is
+the property a single pipeline gave for free, given up on purpose — and it is precisely the failure
+mode being replaced, so it has to be bought back explicitly.
 
-- ⚠️ **We are anonymous.** Both fetches send only `accept: application/json`. An unidentified crawler
-  at 41.6k requests/day gets blocked without a conversation; an identified one with a contact URL
-  gets an email first. A descriptive `User-Agent` is the cheapest high-value change on this list.
-- ⚠️ **We cannot hear them say no.** `observe()` retries on transport failure only —
-  `Effect.retry({ times: 2 })` over a `tryPromise` that does not throw on `!res.ok`. A 429 or 503 is
-  recorded as an observation and the sweep continues at full rate. If OR starts throttling we would
-  bank ~433 × 429 per pass and keep hammering, discovering it whenever someone next read a status
-  tally. Status-class-aware backoff plus an alarm on sustained 429s is what makes "they asked us to
-  stop" arrive as an event rather than an archaeology finding.
+**Watermark lag**, computed on a 5-minute cron. Two quantities, and the split matters:
 
-📌 Note the reason volume has been fine so far: we hit their Cloudflare cache and never cache-bust,
-so origin load is near zero. Request count is not the risk; origin load and anonymity are.
+- **ingest lag** — `now − MAX(__ingest_ts)`. Nothing about any consumer's cursor reveals a dead
+  producer or a stalled pipeline; without this the pool can look perfectly healthy and be empty.
+- **consumer lag** — `MAX(__ingest_ts) − cursor`, per consumer. The silent stall.
 
-## 9. What this contradicts
+📌 A consumer that is behind _and advancing_ is working through a backlog, not stalled. `updated_at`
+on the cursor row is what tells the two apart; lag alone cannot.
 
-**`direction.md`**
+## Open
 
-- The R2 layout sketch (`raw/<captured_at>/…`, `derived/changesets/<version>/<prev>_<captured_at>`)
-  — `<prev>` is undefined without aligned passes.
-- "The pipeline" §, the one-pipeline property — see §7 above.
-- "Platform first, mechanisms last" — scheduler state (per-scope last-observed + volatility tier) is
-  new coordination state, which that principle warns against. The honest framing: it is a **derived,
-  rebuildable cache** with the same status as the normalized store, never a system of record. Worth
-  keeping the tension visible rather than resolving it by assertion.
+- ❓ **Delivery.** Lag is computed, logged and probeable, but nothing pages anyone. Routing a sustained
+  stall to Discord is the obvious next step.
+- ❓ **The back-catalogue.** How does 1+ year of archives, whose cadence already varies, enter the
+  pool? It is the existence proof that the irregular model is the only correct one — and the first
+  real test of the era adapters.
+- ❓ **Scheduler tiering: scope or endpoint?** The flap lives on endpoints, and a scope with one
+  volatile endpoint drags its static siblings along at the same cadence.
+- ❓ **Floor cadence in time, or in "at least once per N observations"?** They diverge exactly when the
+  budget is cut — i.e. when it matters. ⚠️ Whichever it is, the floor is not optional: a
+  volatility-driven scheduler is the one **cycle** in an otherwise acyclic design, a derived product
+  deciding what Layer 0 looks at. Interpretation can be re-run; a fetch we didn't make cannot. With a
+  floor, the worst case of a scheduler bug is reduced resolution. Without one, it is a permanent blind
+  spot.
+- ❓ **Where else have we depended on upstream _infrastructure_ rather than upstream _data_?** The
+  header idea got as far as a written time model before it was caught.
 
-## 10. Open questions
+## Not the pool's problem
 
-- ❓ Should tiering key on **scope** or **endpoint**? The flap lives on endpoints, and a scope with
-  one volatile endpoint drags its static siblings along at the same cadence.
-- ❓ Floor cadence expressed in time, or in "at least once per N observations"? They diverge exactly
-  when the budget is cut — i.e. when it matters.
-- ❓ Does the raw layer land through Pipelines, or does the Worker keep writing R2 objects directly
-  with Pipelines used only for the canonical/analytics tables? The former is simpler; the latter
-  keeps Layer 0 free of a beta dependency.
-- ❓ How does the 1+ year archival back-catalogue, whose cadence already varies, enter the pool? It is
-  the existence proof that the irregular model is the only correct one — and the first real test of
-  the era adapters.
-- ❓ Is there any _other_ place we have quietly taken a dependency on upstream infrastructure rather
-  than upstream data? The header idea got as far as a written time model before it was caught.
+The pool is transport-agnostic and never makes an upstream request. These belong to the producer and
+consumers built on top of it: the catalog poll and per-scope scheduler, HTTP manners (`User-Agent`,
+429 backoff — see [openrouter.md](openrouter.md)), canonicalization, the normalized store, and the
+alerts push.
+
+⚠️ The scheduler's state (per-scope last-observed, volatility tier) is new coordination state, which
+"platform first, mechanisms last" in [direction.md](direction.md) warns against. The honest framing:
+it is a **derived, rebuildable cache**, never a system of record — the same status as the cursor
+registry. Worth keeping the tension visible rather than resolving it by assertion.

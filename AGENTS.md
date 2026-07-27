@@ -6,6 +6,9 @@ We are replacing the Convex-centric snapshot pipeline with a layered artifact sy
 The existing Convex pipeline keeps running and is a guide, not a migration constraint.
 
 - Design notes: `notes/data-architecture/`
+- **The artifact pool is built: `apps/pool`.** Producers append, consumers read past their own
+  cursor. It is deliberately data-agnostic — no OpenRouter code belongs in it. Read
+  `apps/pool/README.md` before adding a producer or a consumer, particularly the settling window.
 - Alchemy should be used to scaffold Cloudflare projects.
 - Effect should be used in all newly written code.
   - I am new to Effect so make code extra neat and well documented.
