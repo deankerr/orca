@@ -1,5 +1,5 @@
-// oxlint-disable sort-keys -- the raw shape mirrors the upstream payload; the canonical shape is
-// grouped by what a field is (identity, capability, policy documents).
+// The raw shape mirrors the upstream payload; the canonical shape is grouped by what a field is
+// (identity, capability, policy documents).
 
 // * Layer 1 for the provider entity: parse one raw upstream `provider_info`, emit the canonical
 // * row. ⚠️ `RawProvider` is STRICT — an unknown key upstream fails loudly here rather than

@@ -1,16 +1,15 @@
 {
-  "name": "@orca/pool",
+  "name": "@orca/engine",
   "private": true,
   "type": "module",
   "scripts": {
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy",
-    "dev": "alchemy dev",
-    "harness": "bun run scripts/harness.ts"
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@orca/schema": "workspace:*",
-    "alchemy": "2.0.0-beta.64",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

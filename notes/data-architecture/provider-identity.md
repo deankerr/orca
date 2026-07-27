@@ -4,7 +4,7 @@
 model looks denormalized but is not, and modeling it the "obvious" way (slug as FK, display
 name as a provider attribute) is wrong in ways that only show up on the long tail. Everything
 below is verified against the full deduped pass `2026-07-24T03:46:13.868Z` (1,052 endpoints,
-102 provider records) — see `packages/processes/`.
+102 provider records).
 
 ## The three concepts
 

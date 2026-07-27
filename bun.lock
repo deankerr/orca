@@ -19,6 +19,18 @@
         "ultracite": "7.9.4",
       },
     },
+    "apps/engine": {
+      "name": "@orca/engine",
+      "dependencies": {
+        "@orca/schema": "workspace:*",
+        "alchemy": "2.0.0-beta.64",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "apps/logos": {
       "name": "entity-logo-service",
       "devDependencies": {
@@ -31,18 +43,6 @@
         "typescript": "catalog:",
         "wrangler": "^4.112.0",
         "zod": "catalog:",
-      },
-    },
-    "apps/pool": {
-      "name": "@orca/pool",
-      "dependencies": {
-        "@orca/schema": "workspace:*",
-        "alchemy": "2.0.0-beta.64",
-        "effect": "catalog:",
-      },
-      "devDependencies": {
-        "@types/bun": "catalog:",
-        "typescript": "catalog:",
       },
     },
     "apps/web": {
@@ -144,6 +144,7 @@
     "@effect/platform-node": "4.0.0-beta.99",
     "@types/bun": "1.3.14",
     "@types/node": "24.10.15",
+    "alchemy": "2.0.0-beta.64",
     "convex": "1.42.3",
     "convex-helpers": "0.1.120",
     "effect": "4.0.0-beta.99",
@@ -610,7 +611,7 @@
 
     "@orca/backend": ["@orca/backend@workspace:packages/backend"],
 
-    "@orca/pool": ["@orca/pool@workspace:apps/pool"],
+    "@orca/engine": ["@orca/engine@workspace:apps/engine"],
 
     "@orca/schema": ["@orca/schema@workspace:packages/schema"],
 

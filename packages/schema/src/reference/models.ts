@@ -1,5 +1,5 @@
-// oxlint-disable sort-keys -- the raw shape mirrors the upstream payload; the canonical shape is
-// grouped by what a field is (identity, capability, defaults, limits, timestamps).
+// The raw shape mirrors the upstream payload; the canonical shape is grouped by what a field is
+// (identity, capability, defaults, limits, timestamps).
 
 // * Layer 1 for the model entity: parse one raw upstream model copy, emit the canonical row.
 // * ⚠️ `RawModel` is STRICT — decoded with `onExcessProperty: 'error'` — because an unknown key

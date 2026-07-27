@@ -65,6 +65,21 @@ export default defineConfig({
         'typescript/strict-boolean-expressions': 'off',
       },
     },
+    {
+      // effect
+      files: ['apps/engine/**/*.{ts,tsx}', 'packages/schema/**/*.{ts,tsx}'],
+      rules: {
+        'promise/prefer-await-to-callbacks': 'off',
+        'unicorn/no-array-for-each': 'off',
+      },
+    },
+    {
+      // schemas are grouped semantically, not alphabetically
+      files: ['packages/schema/**/*.{ts,tsx}'],
+      rules: {
+        'sort-keys': 'off',
+      },
+    },
   ],
   rules: {
     // standard ultracite overrides
@@ -86,9 +101,5 @@ export default defineConfig({
     'no-await-in-loop': 'off',
     'react/jsx-handler-names': 'off',
     'require-unicode-regexp': 'off',
-
-    // effect
-    'promise/prefer-await-to-callbacks': 'off',
-    'unicorn/no-array-for-each': 'off',
   },
 })

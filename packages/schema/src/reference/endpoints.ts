@@ -1,6 +1,5 @@
-// oxlint-disable sort-keys -- the raw shape mirrors the upstream payload; the canonical shape is
-// grouped by what a field is (identity, provider handle, serving shape, capability, commercial,
-// policy, pricing).
+// The raw shape mirrors the upstream payload; the canonical shape is grouped by what a field is
+// (identity, provider handle, serving shape, capability, commercial, policy, pricing).
 
 // * Layer 1 for the endpoint entity: parse one raw upstream endpoint, emit the canonical row.
 // * ⚠️ `RawEndpoint` is STRICT — decoded with `onExcessProperty: 'error'` — so any upstream drift

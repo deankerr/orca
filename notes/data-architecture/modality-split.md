@@ -3,8 +3,7 @@
 OpenRouter forces its non-LLM offerings (image generation, embeddings, video, speech,
 transcription, rerank) through the same catalog/endpoint pipeline as chat models. This is a
 major source of endpoint complexity — especially in pricing. Grouping scopes by
-`model.output_modalities` (joined with `_`) separates the species cleanly for study:
-`bun run split-modalities` in `packages/processes` writes one raw file per group.
+`model.output_modalities` (joined with `_`) separates the species cleanly for study.
 
 Numbers below are from pass `2026-07-24T03:46:13.868Z` (431 scopes, 1,052 endpoints).
 

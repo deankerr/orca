@@ -5,23 +5,16 @@
 We are replacing the Convex-centric snapshot pipeline with a layered artifact system.
 The existing Convex pipeline keeps running and is a guide, not a migration constraint.
 
+- `apps/engine`
+- `packages/schema`
 - Design notes: `notes/data-architecture/`
-- **The artifact pool is built: `apps/pool`.** Producers append, consumers read past their own
-  cursor. It is deliberately data-agnostic — no OpenRouter code belongs in it. Read
-  `apps/pool/README.md` before adding a producer or a consumer, particularly the settling window.
-- Alchemy should be used to scaffold Cloudflare projects.
+
+- Alchemy should be used for new Cloudflare projects. `notes/data-architecture/alchemy.md`
 - Effect should be used in all newly written code.
+  - We use the Effect v4 beta.
+  - Many previously separate packages have been consolidated into the core effect package, but additional packages must all follow the same version number as the core, declared in the root package.json catalog.
+  - Unstable packages `effect/unstable/*` may be used.
   - I am new to Effect so make code extra neat and well documented.
-
-### Schemas and validation
-
-- **effect Schema is the validation system for new work**, and shapes live in `packages/schema`
-  (`@orca/schema`), not inside the app that happens to need them first. Import as
-  `import * as Schema from 'effect/Schema'`.
-- Each schema is exported next to the function that produces it, so a field's whole journey is in
-  one file.
-- Put `// oxlint-disable sort-keys` at the top of a schema file: properties are grouped
-  semantically and, for stored rows, declaration order **is** column order.
 
 # Legacy Instructions
 
