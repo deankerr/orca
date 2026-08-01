@@ -5,7 +5,8 @@
   "scripts": {
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy",
-    "dev": "alchemy dev"
+    "dev": "alchemy dev",
+    "test": "bun test"
   },
   "dependencies": {
     "@orca/schema": "workspace:*",

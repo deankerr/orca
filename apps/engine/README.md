@@ -82,6 +82,48 @@ what should have, including the models deliberately skipped.
 Nothing here parses an endpoints response. The two schemas the crawl does read live in
 `@orca/schema/openrouter.ts`.
 
+## The modules
+
+| module          | knows                                                                    |
+| --------------- | ------------------------------------------------------------------------ |
+| `worker.ts`     | that this is a Cloudflare Worker: bindings, the cron, the queue consumer |
+| `artifacts.ts`  | how a key is spelled, and R2 — the only module that touches either       |
+| `api.ts`        | the HTTP surface, declared as one `HttpApi` over the archive             |
+| `openrouter.ts` | that OpenRouter exists                                                   |
+
+The archive is the seam the other three meet at: the crawl writes through it, the API reads through
+it, and neither builds a key. `Artifacts.make` takes a bucket client rather than reaching for one,
+so `test/api.test.ts` drives the whole API — real store, real keys, real schemas — against ~40 lines
+of `Map` standing in for R2.
+
+## The API
+
+Declared once in `api.ts`, so the same description validates requests, encodes responses and
+generates the OpenAPI document. `/docs` is that document, rendered.
+
+| route                                   | answers                                                   |
+| --------------------------------------- | --------------------------------------------------------- |
+| `GET /batches`                          | every crawl, oldest first, `?limit=&cursor=`              |
+| `GET /batches/latest`                   | the most recent crawl, in detail                          |
+| `GET /batches/{batch}`                  | one crawl: its catalog, and what landed at which statuses |
+| `GET /batches/{batch}/catalog`          | the stored catalog document                               |
+| `GET /batches/{batch}/endpoints`        | what landed, `?limit=&cursor=&author=`                    |
+| `GET /batches/{batch}/endpoints/{name}` | one stored response, exactly as stored                    |
+| `POST /crawl`                           | starts a crawl now                                        |
+| `GET /docs`, `GET /openapi.json`        | the API describing itself                                 |
+
+Three things about it are worth knowing before using it:
+
+- **`name` is the file's own name** (`anthropic.claude-opus-5-20260723.standard`), which is what a
+  listing hands back. Identity is `permaslug` + `variant`, and those are in each listed item —
+  reconstructing a name from them means knowing that `/` becomes `.`, which is the archive's business.
+- **`cursor` is R2's cursor**, opaque and forward-only. Absent (`null`) means the listing is done.
+- **`author` narrows the prefix**, so it is a cheaper listing rather than a filtered one. There is no
+  status filter for the same reason: it would be a scan, and scans belong downstream.
+
+A batch id must be a timestamp (`2026-07-27T04-33-43Z`) and a name must be one key segment. Both are
+parsed before anything is looked up, so a malformed one is a `400` and can never become a prefix.
+
 ## Failures
 
 **Transient** (429, 5xx): a fact about the moment. Retried 3× over ~7s before we settle for it.
@@ -113,8 +155,11 @@ what `age` and `cf-cache-status` are for — a 404 may itself be stale.
 bun run --cwd apps/engine dev
 ```
 
-- `POST /crawl` starts a crawl immediately.
-- `GET /objects?prefix=endpoints/2026-07-27T04-33-43Z/` counts what landed.
+Then `/docs` for the API, `POST /crawl` to fill it. The API's own tests need nothing running:
+
+```bash
+bun run --cwd apps/engine test
+```
 
 Alchemy and Effect gotchas hit while building this are in
 [notes/data-architecture/alchemy.md](../../notes/data-architecture/alchemy.md).
@@ -125,12 +170,17 @@ Understood, deliberately not acted on. Roughly in order of when it will matter.
 
 - **The catalog response is 4.0 MB** — ~35 GB/year hourly, against ~60 GB/year for all endpoint
   files combined. It compresses hard; gzipping just the catalog would take most of it back.
-- **`GET /objects` is a single unpaginated list.** R2 caps a page at 1,000 keys. Needs a delimiter
-  for enumeration and pagination for detail.
+- **`GET /batches/latest` walks `catalog/` to its end**, because R2 lists forward only — one request
+  per 1,000 crawls, so one per 41 days of hourly crawling. When that stops being cheap the answer is
+  a pointer object, not a cleverer listing.
+- **`GET /batches/{batch}` counts by scanning the batch**, one page of 1,000 against ~430 objects.
+  Fine now; a crawl that outgrows a page turns one request into several.
+- **The API is read-only apart from `POST /crawl`**, and there is no way to ask a question that spans
+  crawls. That is the layout's trade, not an omission — cross-crawl questions belong downstream.
 - **Stored documents are re-serialised**, so byte-for-byte fidelity with upstream is gone. Value
   fidelity remains.
 - **A failed catalog is an alert with nowhere to go.** The policy is decided; nothing is wired up.
-- **No auth on `POST /crawl`.**
+- **No auth on anything**, `POST /crawl` included — the one route with a cost attached.
 - **No dead-letter queue**, so a message that exhausts its retries is dropped. This is the only way
   an endpoint observation goes missing without a trace, since settled errors are stored.
 - **Nothing can diff batch N against N−1** — cadence is irregular and completeness is not

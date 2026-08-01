@@ -11,6 +11,8 @@ little, and the projected schema is rigid in ways that fight the product's core 
   entities, landmines, open questions. Start here.
 - [alchemy.md](alchemy.md) — Stand up infrastructure. Tear it down just as fast.
 - [current-system.md](current-system.md) — how the pipeline works today, measured statistics, friction points.
+- [module-design.md](module-design.md) — the engine's modules and seams: what the design pass
+  changed, what it deliberately left shallow.
 - [direction.md](direction.md) — the layered capture/artifact architecture, the pipeline, and the
   principles and working practices everything else follows from.
 - [provider-identity.md](provider-identity.md) — ⚠️ how provider identity actually works (org vs

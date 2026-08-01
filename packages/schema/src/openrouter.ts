@@ -1,7 +1,13 @@
+// oxlint-disable sort-keys -- fields are grouped by what they are, not alphabetised
+
 // * The shapes the engine reads out of OpenRouter's frontend API.
 // *
 // * Deliberately minimal: they name only the fields the crawl branches on. Stored documents keep
 // * every field, named or not.
+// *
+// * ⚠️ Plain `Schema.String` throughout, deliberately. These are upstream's strings as upstream sent
+// * them; the branded ids they turn into live in ./artifacts.ts, and the crawl parses one into the
+// * other. A brand here would make a shape that describes what we wish upstream sent.
 import * as Schema from 'effect/Schema'
 
 // * One model as the catalog lists it. `permaslug` and `endpoint.variant` are the parameters an
@@ -30,14 +36,3 @@ export const Envelope = Schema.Union([
   Schema.Struct({ data: Schema.Unknown }),
   Schema.Struct({ error: Schema.Unknown }),
 ])
-
-// * One unit of work, encoded across the queue's process boundary: the producer and consumer are
-// * separate Worker invocations that agree on nothing else.
-export const EndpointsQuery = Schema.Struct({
-  permaslug: Schema.String,
-  variant: Schema.String,
-
-  // * the crawl this belongs to, e.g. `2026-07-27T04-33-43Z`
-  batch: Schema.String,
-})
-export type EndpointsQuery = Schema.Schema.Type<typeof EndpointsQuery>

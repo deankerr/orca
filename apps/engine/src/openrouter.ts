@@ -33,7 +33,9 @@ const backoff = Schedule.exponential('1 second')
 // * every response, so keeping it would make header diffs between batches always differ.
 const DROPPED_HEADERS = new Set(['set-cookie'])
 
-export type Response = {
+// * One settled exchange, internal to this module. What leaves it is an observation: a status and the
+// * document to store at it.
+type Response = {
   status: number
 
   // * `date`, `age` and `cf-cache-status` are what tell a reader whether an observation is fresh or
@@ -78,13 +80,11 @@ const get = Effect.fn(function* get(path: string, params?: Record<string, string
 // *
 // * ⚠️ `Envelope` is a gate. The value spread here is the original parse, so a key OpenRouter adds
 // * tomorrow survives; storing the decoded value would drop it.
-const annotate = Effect.fn(function* annotate(response: Response) {
+const document = Effect.fn(function* document(response: Response) {
   const parsed = yield* parseJson(response.body)
   yield* decodeEnvelope(parsed)
   return JSON.stringify({ ...parsed, headers: response.headers })
 })
-
-export const document = (response: Response) => annotate(response).pipe(Effect.orDie)
 
 // * The crawl's starting point. `models` is the work list; `body` is stored as the batch root.
 // *
@@ -108,15 +108,20 @@ export const catalog = Effect.fn(function* catalog() {
   }
 })
 
-// * Every settled status is returned and stored, errors included. The endpoints API cannot say
-// * "zero endpoints" — a model losing its last one answers 404 — and since we only ask about models
-// * the catalog said were available, a 404 means the two surfaces disagreed.
+// * One observation of one model's endpoints: the status it settled on, and the document to store at
+// * that status. Both, in one call, because storing one without the other is never right.
+// *
+// * ⚠️ Every settled status comes back, errors included. The endpoints API cannot say "zero
+// * endpoints" — a model losing its last one answers 404 — and since we only ask about models the
+// * catalog said were available, a 404 means the two surfaces disagreed.
 export const endpoints = Effect.fn(function* endpoints(args: {
   permaslug: string
   variant: string
 }) {
-  return yield* get('/api/frontend/v1/stats/endpoint', {
+  const response = yield* get('/api/frontend/v1/stats/endpoint', {
     permaslug: args.permaslug,
     variant: args.variant,
   })
+
+  return { body: yield* document(response).pipe(Effect.orDie), status: response.status }
 })
