@@ -20,3 +20,4 @@ next-env.d.ts
 # large for Git; everything under the work directory can be regenerated with `bun run archive`.
 snapshot_*.zip
 .archive-work/
+.labs-work/

@@ -1,0 +1,20 @@
+{
+  "name": "@orca/labs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/bin.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "catalog:",
+    "@effect/sql-sqlite-bun": "catalog:",
+    "@orca/schema": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
