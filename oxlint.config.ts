@@ -11,6 +11,7 @@ export default defineConfig({
     '.claude/skills',
     '**/components/ui',
     '**/worker-configuration.d.ts',
+    'repos/**',
   ],
   overrides: [
     {
