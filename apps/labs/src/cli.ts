@@ -1,10 +1,14 @@
+import { SqliteClient } from '@effect/sql-sqlite-bun'
 import * as Effect from 'effect/Effect'
 import * as Argument from 'effect/unstable/cli/Argument'
 import * as Command from 'effect/unstable/cli/Command'
 import * as Flag from 'effect/unstable/cli/Flag'
+import type { SqlClient as SqlClientService } from 'effect/unstable/sql/SqlClient'
 
 import { buildCorpus, isCompressionLevel } from './corpus/build.ts'
 import { buildDatabase } from './database/build.ts'
+import { monitorPage } from './product-query/monitor.ts'
+import { pricingHistory } from './product-query/pricing.ts'
 import { extractSnapshot, readSnapshotCrawls } from './snapshot.ts'
 
 // ── shared inputs ──────────────────────────────────────────────────────────────────────────────
@@ -149,9 +153,77 @@ const buildDb = Command.make('build', {
     })
   }),
 )
+const databaseArgument = Argument.file('database', { mustExist: true }).pipe(
+  Argument.withDescription('Labs product SQLite database'),
+)
+const printJson = (value: unknown) =>
+  Effect.sync(() => {
+    console.log(JSON.stringify(value, null, 2))
+  })
+const runReadOnly =
+  (databasePath: string) =>
+  <A, E>(effect: Effect.Effect<A, E, SqlClientService>) =>
+    effect.pipe(
+      Effect.provide(
+        SqliteClient.layer({ disableWAL: true, filename: databasePath, readonly: true }),
+      ),
+    )
+
+const monitorLimitFlag = Flag.integer('limit').pipe(
+  Flag.withDescription('Maximum number of changed crawl batches'),
+  Flag.withDefault(10),
+)
+const beforeFlag = Flag.string('before').pipe(
+  Flag.withDescription('Exclusive crawl id cursor'),
+  Flag.optional,
+)
+const modelFlag = Flag.string('model').pipe(
+  Flag.withDescription('Only crawl batches containing this model slug'),
+  Flag.optional,
+)
+const providerFlag = Flag.string('provider').pipe(
+  Flag.withDescription('Only crawl batches containing this provider organization name'),
+  Flag.optional,
+)
+const monitor = Command.make('monitor', {
+  before: beforeFlag,
+  databasePath: databaseArgument,
+  limit: monitorLimitFlag,
+  model: modelFlag,
+  provider: providerFlag,
+}).pipe(
+  Command.withDescription('Print a product-shaped Monitor page'),
+  Command.withHandler((input) => {
+    if (input.limit < 1) {
+      return Effect.fail(new Error('--limit must be positive'))
+    }
+    return monitorPage({
+      ...(input.before._tag === 'Some' ? { before: input.before.value } : {}),
+      limit: input.limit,
+      ...(input.model._tag === 'Some' ? { modelSlug: input.model.value } : {}),
+      ...(input.provider._tag === 'Some' ? { providerName: input.provider.value } : {}),
+    }).pipe(runReadOnly(input.databasePath), Effect.flatMap(printJson))
+  }),
+)
+
+const modelSlugArgument = Argument.string('model-slug').pipe(
+  Argument.withDescription('Model slug whose endpoint pricing history should be read'),
+)
+const pricing = Command.make('pricing-history', {
+  databasePath: databaseArgument,
+  modelSlug: modelSlugArgument,
+}).pipe(
+  Command.withDescription('Print forward endpoint pricing periods for a model'),
+  Command.withHandler((input) =>
+    pricingHistory(input.modelSlug).pipe(
+      runReadOnly(input.databasePath),
+      Effect.flatMap(printJson),
+    ),
+  ),
+)
 const database = Command.make('db').pipe(
-  Command.withDescription('Build disposable local product databases'),
-  Command.withSubcommands([buildDb]),
+  Command.withDescription('Build and inspect disposable local product databases'),
+  Command.withSubcommands([buildDb, monitor, pricing]),
 )
 
 // ── root ────────────────────────────────────────────────────────────────────────────────────────

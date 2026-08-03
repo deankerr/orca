@@ -191,16 +191,22 @@ type PricingHistory = {
   since: number
   asOf: number
   series: Array<{
+    availableFrom: number
     endpointId: string
     provider: { name: string; displayName: string; slug: string }
+    unavailableAt?: number
     points: Array<{
       at: number
       available: boolean
-      pricing: Partial<Record<TrackedPrice, string>>
+      // Missing means unchanged at this sparse point; null means removed.
+      pricing: Partial<Record<TrackedPrice, string | null>>
     }>
   }>
 }
 ```
+
+The array contains one series per endpoint availability period, not necessarily one series per
+endpoint id. A reappearance starts a new item with a fresh complete pricing point.
 
 Start by deriving this response in TypeScript from generic events. If measured reads become
 expensive, add a disposable `endpoint_pricing_points` projection without changing event history.

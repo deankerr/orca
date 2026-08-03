@@ -79,3 +79,28 @@ bun run labs db build .labs-work/corpora/core-v2 \
 The database is built with Effect SQL into a temporary file and moved into place only after a
 successful replay. Each crawl commits atomically. Re-running the command is a clean rebuild; corpus
 shards remain the reproducible input.
+
+## Inspect product queries
+
+Read a page of changed crawl batches, optionally selecting batches by model or provider:
+
+```bash
+bun run labs db monitor .labs-work/databases/products.sqlite --limit 10
+bun run labs db monitor .labs-work/databases/products.sqlite \
+  --model deepseek/deepseek-chat-v3-0324 --limit 10
+```
+
+The cursor returned as `nextBefore` can be passed back with `--before`. A filter selects matching
+crawl ids first; each selected crawl still returns its complete immutable event batch.
+
+Read directly chartable endpoint pricing periods for a model:
+
+```bash
+bun run labs db pricing-history .labs-work/databases/products.sqlite \
+  deepseek/deepseek-chat-v3-0324
+```
+
+Each endpoint appearance starts a new availability period. Sparse pricing points contain only
+changed fields, with `null` representing a removed price, so values never leak across a period when
+an endpoint disappears and later returns. Both commands use the same Effect SQL read boundary that
+product adapters can call directly; JSON output is only the local inspection surface.
