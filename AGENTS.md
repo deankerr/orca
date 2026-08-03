@@ -59,13 +59,23 @@ The existing Convex pipeline keeps running and is a guide, not a migration const
 - `apps/engine`
 - `packages/schema`
 - Design notes: `notes/data-architecture/`
-
 - Alchemy should be used for new Cloudflare projects. `notes/data-architecture/alchemy.md`
-- Effect should be used in all newly written code.
-  - We use the Effect v4 beta.
   - Many previously separate packages have been consolidated into the core effect package, but additional packages must all follow the same version number as the core, declared in the root package.json catalog.
-  - Unstable packages `effect/unstable/*` may be used.
-  - I am new to Effect so make code extra neat and well documented.
+
+## Vendored Repositories
+
+This project vendors external repositories under @repos/
+
+- Use vendored repositories as read-only reference material when working with related libraries
+- Prefer examples and patterns from the vendored source code over generated guesses or web search results
+- Do not edit files under @repos/ unless explicitly asked
+- Do not import from @repos/ - application code should continue importing from normal package dependencies
+
+## Effect V4 Beta
+
+- Effect should be used in all newly written code.
+- When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
+- Unstable packages `effect/unstable/*` may be used.
 
 # Legacy Instructions
 

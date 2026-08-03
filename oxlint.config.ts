@@ -89,6 +89,7 @@ export default defineConfig({
     'no-inline-comments': 'off',
     'no-use-before-define': 'off',
     'no-warning-comments': 'off',
+    'react/function-component-definition': 'off',
     'sort-keys': ['error', 'asc', { allowLineSeparatedGroups: true, natural: true }],
     'typescript/consistent-type-definitions': 'off',
     'typescript/prefer-readonly-parameter-types': 'off',
