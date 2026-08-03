@@ -15,6 +15,12 @@ little, and the projected schema is rigid in ways that fight the product's core 
   changed, what it deliberately left shallow.
 - [direction.md](direction.md) — the layered capture/artifact architecture, the pipeline, and the
   principles and working practices everything else follows from.
+- [product-events.md](product-events.md) — product-derived immutable event requirements and local
+  history proof gates.
+- [full-history-findings.md](full-history-findings.md) — complete replay measurements, anomalies,
+  and processing corrections established from the archive.
+- [product-queries.md](product-queries.md) — intended Grid/API, Monitor, Pricing History, and Alerts
+  read contracts over current state and immutable events.
 - [provider-identity.md](provider-identity.md) — ⚠️ how provider identity actually works (org vs
   provider record vs endpoint targeting key); read before touching any `provider_*` field.
 - [modality-split.md](modality-split.md) — how non-LLM offerings (image, video, speech, …)

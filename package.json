@@ -7,6 +7,7 @@
   ],
   "type": "module",
   "scripts": {
+    "archive": "bun run apps/archive/src/cli.ts",
     "build": "turbo run build --filter=web",
     "check": "ultracite check --type-aware --type-check",
     "dev": "turbo run dev --filter=!entity-logo-service",

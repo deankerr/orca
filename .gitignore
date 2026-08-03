@@ -15,3 +15,8 @@ next-env.d.ts
 .fallow/
 .alchemy
 .mirror-cache.json
+
+# Local archive-archeology inputs and derived work. The snapshot is reproducible input but far too
+# large for Git; everything under the work directory can be regenerated with `bun run archive`.
+snapshot_*.zip
+.archive-work/

@@ -1,5 +1,56 @@
 # ORCA (OpenRouter Capability Analysis)
 
+## Active: unified data objectives
+
+`notes/objectives.md` is the primary statement of tangible objectives and product requirements.
+
+Past, present, and future must be designed together:
+
+- Capture trustworthy raw inputs, then project selected product data into an explicit cache or query
+  store. Outside Convex, serving storage is a deliberate, disposable layer rather than an implied
+  part of the backend.
+- The production snapshot gives this environment direct access to historical evidence.
+- Active capture must feed the same modular processing contracts used for historical replay.
+- Product projections should serve current requirements without constraining future artifacts,
+  processors, storage engines, or modality-specific expansion.
+- The immediate slice uses `bun:sqlite` to prove the complete current view and immutable event
+  history needed by Monitor and Pricing History before choosing a remote projection store; see
+  `notes/data-architecture/product-events.md`.
+- The terminal objective is to retire the `@orca/backend` snapshot process after the replacement has
+  earned trust against existing products.
+
+## Historical data access
+
+Full production backend snapshot: `./snapshot_dependable-husky-550_1785591526028192052.zip` (13.76 GB)
+
+Archive work area and tools:
+
+- `apps/archive`: local Effect-based package for inspecting the Convex export, extracting table
+  metadata, listing crawls, and selectively materializing nested gzip-compressed crawl files.
+- Run it from the repository root with `bun run archive`; see `apps/archive/README.md` for commands.
+- Active core scope and local SQL experiment: `notes/archive-archeology/core-workflow.md`.
+- Full historical field observations are diagnostic only: `notes/archive-archeology/schema-story.md`.
+- Generated artifacts belong in `.archive-work/`. They are disposable, reproducible, and ignored by
+  Git; keep the source snapshot ZIP immutable.
+
+- The snapshot is a direct historical input to the unified data pipeline, not a separate
+  past-focused product or architecture.
+- Develop a consistent core data model and processing contract spanning historical replay and active
+  capture.
+  - We need only support "traditional" LLMs for now: `output_modalities = ["text"]`.
+- Historical work also enables:
+  - Statistical analysis.
+  - Storage methods research and experimentation.
+  - Expanded modality-specific field support.
+
+### Background
+
+- The vast majority of changes between snapshots are endpoint pricing updates (excepting embedded telemetry `stats` fields).
+- `pricing_json` and `display_pricing` are relaively new fields, so the focus is on the basic `pricing` field.
+- Many other current fields have been added (or made required) over time.
+- Early snapshots did not always properly handle transient fetch failures, which causes an endpoint to appear temporarily missing under a naive interprtaion of the endpoint record diffs.
+- Early snapshots also stored additional data to just models and endpoints, which we are not considering at this time.
+
 ## Active: data architecture rework
 
 We are replacing the Convex-centric snapshot pipeline with a layered artifact system.
