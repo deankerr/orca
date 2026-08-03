@@ -60,7 +60,7 @@ entity_event
   crawl_id / previous_crawl_id
   entity_type           model | endpoint
   entity_id             model slug or endpoint id
-  event_type            available | updated | unavailable
+  event_type            baseline | available | updated | unavailable
   model_slug            query dimension (also present for endpoints)
   provider_name         endpoint organization filter dimension
   provider_slug         endpoint targeting key, never parsed as identity
@@ -80,6 +80,11 @@ Lifecycle events carry no synthetic field patches. `available` context is the ne
 `unavailable` context is the last known state. An `updated` event groups every selected field change
 for that entity and carries its post-change context.
 
+`baseline` means the entity was present in the first selected crawl of this projection. It is not an
+observed absent-to-present transition. Consumers can suppress or summarize the initial population
+without coupling themselves to a known crawl id; Pricing History treats it as the left-bounded start
+of an availability period.
+
 Provider fields remain endpoint properties. We will not initially create provider lifecycle events:
 the upstream organization name, provider record slug, and endpoint targeting key do not form one
 stable provider entity. A provider-oriented product view can be derived later with explicit rules.
@@ -93,6 +98,11 @@ The repeatable `bun:sqlite` build owns:
 - latest `endpoint_metrics` observations;
 - immutable `entity_events` and `event_fields`;
 - indexes matching Monitor and Pricing History reads.
+
+Historical replay selects the final accepted crawl of each UTC day by default. This is a disposable
+projection policy over the full-precision corpus: ordinary forward diffing emits net daily changes.
+An explicit full-precision build retains every accepted crawl. The database records the selected
+policy as metadata.
 
 Replay is oldest to newest. A failed endpoint scope preserves its prior endpoints and cannot emit
 false unavailability. Every crawl commits atomically. Rebuilding from an empty database must produce

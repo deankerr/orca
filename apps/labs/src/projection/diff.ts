@@ -31,7 +31,7 @@ const compareFields = (before: unknown, after: unknown, prefix = ''): FieldChang
 
 const eventId = (crawlId: string, entityType: EntityType, entityId: string) => {
   const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(['core-v1', crawlId, entityType, entityId].join('\0'))
+  hasher.update(['core-v2', crawlId, entityType, entityId].join('\0'))
   return hasher.digest('hex')
 }
 
@@ -61,7 +61,9 @@ export const diffEntity = (
 ): EntityEvent | undefined => {
   let eventType: EventType = 'updated'
   if (input.before === undefined) {
-    eventType = 'available'
+    // A baseline entity is present at the lower bound of this projection; it did not necessarily
+    // become available at that moment. Later absent -> present transitions remain `available`.
+    eventType = input.previousCrawlId === undefined ? 'baseline' : 'available'
   } else if (input.after === undefined) {
     eventType = 'unavailable'
   }

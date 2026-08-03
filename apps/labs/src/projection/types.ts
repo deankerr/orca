@@ -23,7 +23,7 @@ export interface ProjectionState {
 }
 
 export type EntityType = 'endpoint' | 'model'
-export type EventType = 'available' | 'unavailable' | 'updated'
+export type EventType = 'available' | 'baseline' | 'unavailable' | 'updated'
 
 export interface FieldChange {
   readonly after: unknown

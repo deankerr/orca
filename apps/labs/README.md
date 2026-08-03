@@ -62,14 +62,27 @@ shard and the manifest succeed.
 
 ## Build the local product database
 
-Replay every accepted corpus crawl into the current catalog and immutable product event history:
+Replay the corpus into the current catalog and immutable product event history:
 
 ```bash
 bun run labs db build .labs-work/corpora/core-v2 \
   --output .labs-work/databases/products.sqlite
 ```
 
-For a fast demonstration, process only the first few crawls:
+Historical databases default to the final accepted crawl of each UTC day. This produces a
+product-scale net daily history while leaving the corpus at full precision. Build an exact replay
+when analysis needs every accepted crawl:
+
+```bash
+bun run labs db build .labs-work/corpora/core-v2 \
+  --output .labs-work/databases/products-full.sqlite --precision full
+```
+
+The selected `historical_precision` and processor version are recorded in `database_metadata`.
+Entities present in the first selected crawl receive a `baseline` event, which means “present at the
+lower bound” rather than claiming an observed availability transition.
+
+For a fast demonstration, process only the first few source crawls:
 
 ```bash
 bun run labs db build .labs-work/corpora/core-v2 \

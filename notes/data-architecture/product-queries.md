@@ -162,7 +162,7 @@ LEFT JOIN event_fields AS f ON f.event_id = e.event_id
 WHERE e.entity_type = 'endpoint'
   AND e.model_slug = ?
   AND (
-    e.event_type IN ('available', 'unavailable')
+    e.event_type IN ('baseline', 'available', 'unavailable')
     OR f.path IN (
       'pricing.prompt',
       'pricing.completion',
@@ -177,6 +177,7 @@ ORDER BY e.crawl_id, e.entity_id, f.ordinal;
 Fold events forward per endpoint:
 
 ```text
+baseline       -> start the left-bounded initial period from complete event context
 available      -> start an availability period from complete event context
 pricing update -> replace selected prices and emit a sparse point
 unavailable    -> emit an unavailable point and end the period

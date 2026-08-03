@@ -136,10 +136,15 @@ const limitFlag = Flag.integer('limit').pipe(
   Flag.withDescription('Process only the first N accepted crawls'),
   Flag.optional,
 )
+const precisionFlag = Flag.choice('precision', ['daily', 'full']).pipe(
+  Flag.withDescription('Historical projection precision'),
+  Flag.withDefault('daily'),
+)
 const buildDb = Command.make('build', {
   corpusDirectory: corpusDirectoryArgument,
   limit: limitFlag,
   output: databaseOutputFlag,
+  precision: precisionFlag,
 }).pipe(
   Command.withDescription('Replay a corpus into a local product database'),
   Command.withHandler((input) => {
@@ -150,6 +155,7 @@ const buildDb = Command.make('build', {
       corpusDirectory: input.corpusDirectory,
       limit: input.limit._tag === 'Some' ? input.limit.value : undefined,
       outputPath: input.output,
+      precision: input.precision,
     })
   }),
 )

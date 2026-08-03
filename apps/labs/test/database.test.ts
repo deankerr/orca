@@ -136,7 +136,9 @@ describe('corpus database build', () => {
     const corpusDirectory = await writeCorpus(directory)
     const outputPath = path.join(directory, 'products.sqlite')
 
-    const result = await Effect.runPromise(buildDatabase({ corpusDirectory, outputPath }))
+    const result = await Effect.runPromise(
+      buildDatabase({ corpusDirectory, outputPath, precision: 'full' }),
+    )
     expect(result).toMatchObject({ crawls: 2, endpoints: 1, events: 3, models: 1 })
 
     const rows = await Effect.runPromise(
@@ -151,7 +153,11 @@ describe('corpus database build', () => {
         }>`SELECT crawl_id, entity_type, event_type, context_json FROM entity_events ORDER BY crawl_id, entity_type`
         const fields = yield* sql<{ path: string }>`SELECT path FROM event_fields`
         const metrics = yield* sql<{ crawl_id: string }>`SELECT crawl_id FROM endpoint_metrics`
-        return { current, events, fields, metrics }
+        const metadata = yield* sql<{
+          key: string
+          value: string
+        }>`SELECT key, value FROM database_metadata ORDER BY key`
+        return { current, events, fields, metadata, metrics }
       }).pipe(
         Effect.provide(
           SqliteClient.layer({ disableWAL: true, filename: outputPath, readonly: true }),
@@ -170,8 +176,8 @@ describe('corpus database build', () => {
         event_type,
       })),
     ).toEqual([
-      { crawl_id: '1', entity_type: 'endpoint', event_type: 'available' },
-      { crawl_id: '1', entity_type: 'model', event_type: 'available' },
+      { crawl_id: '1', entity_type: 'endpoint', event_type: 'baseline' },
+      { crawl_id: '1', entity_type: 'model', event_type: 'baseline' },
       { crawl_id: '2', entity_type: 'endpoint', event_type: 'updated' },
     ])
     const endpointContext = Schema.decodeUnknownSync(
@@ -185,6 +191,10 @@ describe('corpus database build', () => {
     expect(endpointContext.model).toEqual({ name: 'Model', slug: 'author/model' })
     expect(rows.fields).toEqual([{ path: 'pricing.prompt' }])
     expect(rows.metrics).toEqual([{ crawl_id: '2' }])
+    expect(rows.metadata).toEqual([
+      { key: 'historical_precision', value: 'full' },
+      { key: 'processor_version', value: 'core-v2' },
+    ])
   })
 
   test('supports a bounded demo build', async () => {

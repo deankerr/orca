@@ -2,6 +2,7 @@ import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
 const statements = [
+  `CREATE TABLE database_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT`,
   `CREATE TABLE crawls (crawl_id TEXT PRIMARY KEY, previous_crawl_id TEXT, processed_at TEXT NOT NULL) STRICT`,
   `CREATE TABLE models (slug TEXT PRIMARY KEY, state_json TEXT NOT NULL, updated_crawl_id TEXT NOT NULL) STRICT`,
   `CREATE TABLE endpoints (id TEXT PRIMARY KEY, model_slug TEXT NOT NULL, provider_name TEXT NOT NULL, provider_slug TEXT NOT NULL, state_json TEXT NOT NULL, updated_crawl_id TEXT NOT NULL) STRICT`,

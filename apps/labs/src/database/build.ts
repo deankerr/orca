@@ -10,6 +10,8 @@ import { corpusCrawls, readCorpusManifest } from '../corpus/storage.ts'
 import { materialize } from '../projection/materialize.ts'
 import { planCrawl } from '../projection/plan.ts'
 import type { ProjectionState } from '../projection/types.ts'
+import { selectHistoricalCrawls } from './precision.ts'
+import type { HistoricalPrecision } from './precision.ts'
 import { initializeDatabase } from './schema.ts'
 import { commitCrawl } from './write.ts'
 
@@ -17,22 +19,30 @@ interface DatabaseOptions {
   readonly corpusDirectory: string
   readonly limit?: number
   readonly outputPath: string
+  readonly precision?: HistoricalPrecision
 }
 
 const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   corpusDirectory: string,
   total: number,
+  precision: HistoricalPrecision,
 ) {
   const sql = yield* SqlClient.SqlClient
   yield* initializeDatabase()
+  yield* sql`INSERT INTO database_metadata ${sql.insert([
+    { key: 'historical_precision', value: precision },
+    { key: 'processor_version', value: 'core-v2' },
+  ])}`
   let state: ProjectionState = { endpoints: new Map(), models: new Map() }
   let previousCrawlId: string | undefined
   let eventCount = 0
   const startedAt = Date.now()
 
   let completed = 0
-  yield* corpusCrawls(corpusDirectory).pipe(
-    Stream.take(total),
+  yield* selectHistoricalCrawls(
+    corpusCrawls(corpusDirectory).pipe(Stream.take(total)),
+    precision,
+  ).pipe(
     Stream.runForEach((crawl) =>
       Effect.gen(function* processCrawl() {
         const batch = materialize(crawl)
@@ -42,13 +52,14 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
         previousCrawlId = crawl.crawlId
         eventCount += plan.events.length
         completed += 1
-        if (completed % 250 === 0 || completed === total) {
+        if (completed % (precision === 'daily' ? 30 : 250) === 0) {
           yield* Effect.logInfo('database progress').pipe(
             Effect.annotateLogs({
               completed,
               elapsedSeconds: Math.round((Date.now() - startedAt) / 1000),
               events: eventCount,
-              total,
+              precision,
+              sourceCrawls: total,
             }),
           )
         }
@@ -68,6 +79,7 @@ export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildData
   options: DatabaseOptions,
 ) {
   const manifest = yield* readCorpusManifest(options.corpusDirectory)
+  const precision = options.precision ?? 'daily'
   const total =
     options.limit === undefined
       ? manifest.counts.accepted
@@ -82,12 +94,13 @@ export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildData
   yield* Effect.logInfo('building product database').pipe(
     Effect.annotateLogs({
       corpus: options.corpusDirectory,
-      crawls: total,
       output: outputPath,
+      precision,
+      sourceCrawls: total,
     }),
   )
 
-  const result = yield* populate(options.corpusDirectory, total).pipe(
+  const result = yield* populate(options.corpusDirectory, total, precision).pipe(
     Effect.provide(SqliteClient.layer({ disableWAL: true, filename: temporaryPath })),
     Effect.flatMap((summary) =>
       Effect.tryPromise(async () => {

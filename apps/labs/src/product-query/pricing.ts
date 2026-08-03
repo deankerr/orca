@@ -57,7 +57,7 @@ export const pricingHistory = Effect.fn('labs.pricingHistory')(function* pricing
     WHERE e.entity_type = 'endpoint'
       AND e.model_slug = ${modelSlug}
       AND (
-        e.event_type IN ('available', 'unavailable')
+        e.event_type IN ('baseline', 'available', 'unavailable')
         OR f.path IN ${sql.in([...pricingPaths])}
       )
     ORDER BY e.crawl_id, e.entity_id, f.ordinal`
@@ -67,7 +67,7 @@ export const pricingHistory = Effect.fn('labs.pricingHistory')(function* pricing
 
   for (const event of events) {
     const at = Number(event.crawlId)
-    if (event.eventType === 'available') {
+    if (event.eventType === 'baseline' || event.eventType === 'available') {
       const context = endpointContext(event)
       const pricing = selectedPricing(event)
       const next: MutablePricingSeries = {

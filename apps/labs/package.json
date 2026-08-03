@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "presentation": "bun run presentation/build.ts",
     "start": "bun run src/bin.ts",
     "test": "bun test"
   },
