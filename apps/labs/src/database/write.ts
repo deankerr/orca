@@ -14,18 +14,21 @@ const chunk = <A>(items: readonly A[], size: number): readonly (readonly A[])[] 
 
 const jsonValue = (present: boolean, value: unknown) => (present ? canonicalJson(value) : null)
 
+/** Atomically advances current state, latest metrics, and immutable history for one crawl. */
 export const commitCrawl = Effect.fn('labs.commitCrawl')(function* commitCrawl(plan: CrawlPlan) {
   const sql = yield* SqlClient.SqlClient
   const { batch, events } = plan
 
   yield* sql.withTransaction(
     Effect.gen(function* transaction() {
+      // Record crawl lineage
       yield* sql`INSERT INTO crawls ${sql.insert({
         crawl_id: batch.crawlId,
         previous_crawl_id: plan.previousCrawlId ?? null,
         processed_at: new Date(Number(batch.crawlId)).toISOString(),
       })}`
 
+      // Advance current entity state
       const deletedModels = events.flatMap((event) =>
         event.entityType === 'model' && event.eventType === 'unavailable' ? [event.entityId] : [],
       )
@@ -74,6 +77,7 @@ export const commitCrawl = Effect.fn('labs.commitCrawl')(function* commitCrawl(p
         yield* sql`INSERT INTO endpoints ${sql.insert(rows)} ON CONFLICT(id) DO UPDATE SET model_slug=excluded.model_slug, provider_name=excluded.provider_name, provider_slug=excluded.provider_slug, state_json=excluded.state_json, updated_crawl_id=excluded.updated_crawl_id`
       }
 
+      // Replace latest observations
       yield* sql`DELETE FROM endpoint_metrics`
       const metrics = batch.endpoints.flatMap((item) =>
         item.metrics === undefined
@@ -91,6 +95,7 @@ export const commitCrawl = Effect.fn('labs.commitCrawl')(function* commitCrawl(p
         yield* sql`INSERT INTO endpoint_metrics ${sql.insert(rows)}`
       }
 
+      // Append immutable product evidence
       const eventRows = events.map((event) => ({
         context_json: canonicalJson(event.context),
         crawl_id: event.crawlId,

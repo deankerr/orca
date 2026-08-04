@@ -13,7 +13,7 @@ import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import { deduplicateModels } from '../src/corpus/dedupe.ts'
 import { encodeShard } from '../src/corpus/storage.ts'
 import type { CleanBundle } from '../src/corpus/types.ts'
-import { buildDatabase } from '../src/database/build.ts'
+import { replayProductDatabase } from '../src/database/build.ts'
 
 const directories: string[] = []
 
@@ -137,7 +137,7 @@ describe('corpus database build', () => {
     const outputPath = path.join(directory, 'products.sqlite')
 
     const result = await Effect.runPromise(
-      buildDatabase({ corpusDirectory, outputPath, precision: 'full' }),
+      replayProductDatabase({ corpusDirectory, outputPath, precision: 'full' }),
     )
     expect(result).toMatchObject({ crawls: 2, endpoints: 1, events: 3, models: 1 })
 
@@ -203,7 +203,9 @@ describe('corpus database build', () => {
     const corpusDirectory = await writeCorpus(directory)
     const outputPath = path.join(directory, 'demo.sqlite')
 
-    const result = await Effect.runPromise(buildDatabase({ corpusDirectory, limit: 1, outputPath }))
+    const result = await Effect.runPromise(
+      replayProductDatabase({ corpusDirectory, limit: 1, outputPath }),
+    )
     expect(result).toMatchObject({ crawls: 1, events: 2 })
   })
 })

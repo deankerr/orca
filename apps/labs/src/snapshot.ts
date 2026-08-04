@@ -62,8 +62,9 @@ export const readSnapshotCrawls = Effect.fn('labs.readSnapshotCrawls')(function*
     .toSorted((left, right) => Number(left.crawlId) - Number(right.crawlId))
 })
 
-export const extractSnapshot = Effect.fn('labs.extractSnapshot')(
-  function* extractSnapshot(options: {
+/** Extracts only the metadata and stored crawl blobs needed by Labs from an immutable export ZIP. */
+export const extractSnapshotFiles = Effect.fn('labs.extractSnapshotFiles')(
+  function* extractSnapshotFiles(options: {
     readonly outputDirectory: string
     readonly snapshotPath: string
   }) {

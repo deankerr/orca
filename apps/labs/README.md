@@ -1,119 +1,117 @@
 # ORCA Labs
 
 Reproducible local data experiments and product research. Labs turns replaceable upstream snapshots
-into small, reusable corpora; downstream experiments consume those corpora instead of knowing the
-Convex export layout.
+into reusable corpora and product projections. Runnable workflows are explicit programs; pure
+transforms and storage helpers do not own CLI policy.
 
-## Build the initial clean corpus
+## Workspace and artifact selection
 
-Extract only crawl metadata and stored crawl blobs. The operation is resumable because existing ZIP
-entries are not overwritten:
+Labs uses `.labs-work` at the repository root by default. Override it globally with
+`--work-dir <directory>` or set `ORCA_LABS_WORK_DIR`; the flag takes precedence over the environment.
 
-```bash
-bun run labs snapshot extract snapshot_dependable-husky-550_1785591526028192052.zip \
-  --output .labs-work/snapshot
-```
-
-Inspect metadata without decompressing any crawl:
-
-```bash
-bun run labs snapshot inspect .labs-work/snapshot
-```
-
-Clean and repack the corpus:
-
-```bash
-bun run labs corpus build .labs-work/snapshot --output .labs-work/corpora/core-v2 \
-  --compression-level 1
-```
-
-The initial policy retains only traditional text endpoints and the model copies embedded in those
-endpoints. Outer scope models are deliberately ignored to match the production materializer. It
-drops unrelated sources such as providers, analytics, apps, and uptimes. A whole bundle is dropped
-when the catalog is empty, a text-model endpoint fetch failed, or no text endpoints remain.
+Artifact-producing programs create a UTC timestamped run directory:
 
 ```text
-.labs-work/corpora/core-v2/
-├── shards/
-│   ├── 00000.ndjson.zst
-│   ├── 00001.ndjson.zst
-│   └── ...
-└── manifest.json
+.labs-work/
+├── snapshots/2026-08-04T08-14-23Z-import/
+│   ├── snapshot/
+│   ├── report.json
+│   └── run.log.jsonl
+├── corpora/2026-08-04T08-42-10Z-core/
+│   ├── corpus/
+│   ├── report.json
+│   └── run.log.jsonl
+└── databases/2026-08-04T09-03-51Z-daily/
+    ├── products.sqlite
+    ├── report.json
+    └── run.log.jsonl
 ```
 
-Each shard contains up to 256 chronological source crawls. A crawl stores models once by slug and
-removes their repeated copies from endpoints. The manifest records shard ranges, sizes, digests,
-dropped crawls, and the transformation configuration. The source snapshot remains immutable; the
-corpus is disposable and reproducible.
+The report is the artifact index and durable summary. A later program selects the newest successful
+compatible artifact by default; failed and incomplete runs are never implicit inputs. Use `--input`
+with a run id, run directory, or direct artifact path to override selection. Legacy databases under
+`.labs-work/databases` may be named without the `.sqlite` extension.
 
-Compression levels from `0` (no compression work) through `9` (smallest output) are supported. The
-default is `1` for fast iteration. Use `--shard-size` to change the default of 256 and `--overwrite`
-to replace an existing corpus after changing its format or configuration.
+`--label` adds a readable suffix to an automatically generated run id. `--output` selects an exact
+run directory. These overrides are useful for bounded smoke runs; normal developer use should not
+need paths.
 
-`--jobs` controls how many asynchronous snapshot blob reads may overlap; it defaults to 4. It does
-not create worker threads. Gunzip, JSON parsing, cleaning, deduplication, and Zstandard compression
-remain synchronous on the main JavaScript thread, so higher values primarily help storage I/O and
-may increase memory without accelerating CPU work. Shards are processed sequentially and preserve
-source crawl order.
+## Build the clean corpus pipeline
 
-For a small format or pipeline experiment, `--limit N` processes only the first N snapshot crawls.
-The corpus builder writes to a temporary sibling directory and only moves it into place after every
-shard and the manifest succeed.
-
-## Build the local product database
-
-Replay the corpus into the current catalog and immutable product event history:
+Extract the newest repository-root `snapshot_*.zip`:
 
 ```bash
-bun run labs db build .labs-work/corpora/core-v2 \
-  --output .labs-work/databases/products.sqlite
+bun run labs snapshot extract --label production
 ```
 
-Historical databases default to the final accepted crawl of each UTC day. This produces a
-product-scale net daily history while leaving the corpus at full precision. Build an exact replay
-when analysis needs every accepted crawl:
+The extractor retains only crawl metadata and stored crawl blobs. Specify another ZIP with
+`--input <zip>`.
+
+Build a clean, repacked corpus from the latest extracted snapshot:
 
 ```bash
-bun run labs db build .labs-work/corpora/core-v2 \
-  --output .labs-work/databases/products-full.sqlite --precision full
+bun run labs corpus build --label core --compression-level 1
 ```
 
-The selected `historical_precision` and processor version are recorded in `database_metadata`.
-Entities present in the first selected crawl receive a `baseline` event, which means “present at the
-lower bound” rather than claiming an observed availability transition.
+The initial policy retains traditional text endpoints and the model copies embedded in those
+endpoints. Outer scope models are deliberately ignored to match the production materializer. It
+drops unrelated sources and whole bundles whose catalog is empty, whose text endpoint scope failed,
+or which contain no text endpoints.
 
-For a fast demonstration, process only the first few source crawls:
+Each shard contains up to 256 chronological source crawls. Models are stored once by slug and their
+repeated endpoint copies are removed. Compression levels `0` through `9` are supported; the default
+is `1` for fast iteration. `--shard-size`, `--jobs`, and `--limit` retain their existing tuning roles.
+
+`--jobs` overlaps asynchronous snapshot blob reads. Gunzip, JSON parsing, cleaning, deduplication,
+and Zstandard compression remain synchronous on Bun's main thread. Per-shard timings in
+`run.log.jsonl` make the resulting throughput visible rather than implying worker parallelism.
+
+## Build the product database
+
+Replay the latest compatible corpus at daily historical precision:
 
 ```bash
-bun run labs db build .labs-work/corpora/core-v2 \
-  --output .labs-work/databases/demo.sqlite --limit 10
+bun run labs db build --label daily
 ```
 
-The database is built with Effect SQL into a temporary file and moved into place only after a
-successful replay. Each crawl commits atomically. Re-running the command is a clean rebuild; corpus
-shards remain the reproducible input.
-
-## Inspect product queries
-
-Read a page of changed crawl batches, optionally selecting batches by model or provider:
+Build every accepted historical crawl when analysis requires full precision:
 
 ```bash
-bun run labs db monitor .labs-work/databases/products.sqlite --limit 10
-bun run labs db monitor .labs-work/databases/products.sqlite \
-  --model deepseek/deepseek-chat-v3-0324 --limit 10
+bun run labs db build --label full --precision full
 ```
 
-The cursor returned as `nextBefore` can be passed back with `--before`. A filter selects matching
-crawl ids first; each selected crawl still returns its complete immutable event batch.
+The corpus remains full precision in both cases. The database records its precision and processor
+version. Entities in the first selected crawl receive a `baseline` event, meaning “present at the
+lower bound” rather than an observed availability transition.
 
-Read directly chartable endpoint pricing periods for a model:
+The database is still a clean rebuild in this phase. Each selected crawl commits atomically, and the
+finished SQLite file is published only before the run report becomes successful. Replay progress
+records cumulative materialization, diff-planning, and SQL-commit timing.
+
+## Reports and product queries
+
+Every build prints a curated summary and stores the same structured metrics in `report.json`.
+Inspect them later without writing SQL:
 
 ```bash
-bun run labs db pricing-history .labs-work/databases/products.sqlite \
-  deepseek/deepseek-chat-v3-0324
+bun run labs snapshot report
+bun run labs corpus report
+bun run labs db report
+bun run labs db report --json
 ```
 
-Each endpoint appearance starts a new availability period. Sparse pricing points contain only
-changed fields, with `null` representing a removed price, so values never leak across a period when
-an endpoint disappears and later returns. Both commands use the same Effect SQL read boundary that
-product adapters can call directly; JSON output is only the local inspection surface.
+Reports include input identity and format, time ranges, sizes, drop reasons, compression, current
+entity counts, event distribution, top field paths, and job timing where applicable. JSONL run logs
+retain input summaries, progress, phase timing, completion, and failure context.
+
+Product queries also select the latest database automatically:
+
+```bash
+bun run labs db monitor --limit 10
+bun run labs db monitor --model deepseek/deepseek-chat-v3-0324 --limit 10
+bun run labs db pricing-history deepseek/deepseek-chat-v3-0324
+```
+
+Monitor filters select matching crawl ids first and still return each selected crawl's complete
+event batch. Pricing History returns endpoint availability periods and sparse pricing points; `null`
+represents a removed price and values never leak across disappearance/reappearance periods.

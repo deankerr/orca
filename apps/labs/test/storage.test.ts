@@ -6,7 +6,7 @@ import path from 'node:path'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
-import { buildCorpus } from '../src/corpus/build.ts'
+import { writeCorpus } from '../src/corpus/build.ts'
 import { corpusCrawls, readCorpusManifest } from '../src/corpus/storage.ts'
 
 const directories: string[] = []
@@ -61,7 +61,7 @@ describe('sharded corpus storage', () => {
     )
 
     const result = await Effect.runPromise(
-      buildCorpus({
+      writeCorpus({
         compressionLevel: 1,
         jobs: 2,
         limit: undefined,

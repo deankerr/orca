@@ -1,6 +1,7 @@
 import { mkdir, rename, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 
+import * as Clock from 'effect/Clock'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 
@@ -11,6 +12,7 @@ import { deduplicateModels } from './dedupe.ts'
 import { encodeShard } from './storage.ts'
 import type { CompressionLevel, CorpusCrawl, DropReason } from './types.ts'
 
+/** Narrows the CLI's integer input to the Zstandard levels supported by Bun. */
 export const isCompressionLevel = (value: number): value is CompressionLevel =>
   Number.isInteger(value) && value >= 0 && value <= 9
 
@@ -82,10 +84,13 @@ const directoryExists = async (directory: string) => {
   }
 }
 
-export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
+/** Writes a clean, deduplicated, sharded corpus to an exact output directory. */
+export const writeCorpus = Effect.fn('labs.writeCorpus')(function* writeCorpus(
   options: CorpusOptions,
 ) {
-  const startedAt = Date.now()
+  // Resolve build inputs and destination
+  const clock = yield* Clock.Clock
+  const startedAt = clock.currentTimeMillisUnsafe()
   const available = yield* readSnapshotCrawls(options.snapshotDirectory)
   const crawls = options.limit === undefined ? available : available.slice(0, options.limit)
   const outputDirectory = path.resolve(options.outputDirectory)
@@ -108,6 +113,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
   )
 
   const build = Effect.gen(function* buildShards() {
+    // Process chronological shards
     yield* Effect.tryPromise(
       async () => await mkdir(path.join(temporaryDirectory, 'shards'), { recursive: true }),
     )
@@ -129,6 +135,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
     let completed = 0
 
     for (const sourceChunk of chunk(crawls, options.shardSize)) {
+      const shardStartedAt = clock.currentTimeNanosUnsafe()
       // Effect concurrency overlaps the asynchronous blob reads. `gunzipSync`, JSON decoding and
       // the pure transforms still run on Bun's main thread; `jobs` is not a worker-pool size.
       const processed = yield* Effect.all(
@@ -171,13 +178,24 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
         accepted += acceptedCrawls.length
       }
       completed += sourceChunk.length
+      const shardDurationMs = Number(clock.currentTimeNanosUnsafe() - shardStartedAt) / 1_000_000
+      yield* Effect.logInfo('corpus shard completed').pipe(
+        Effect.annotateLogs({
+          accepted: acceptedCrawls.length,
+          crawls: sourceChunk.length,
+          durationMs: Math.round(shardDurationMs),
+          firstCrawlId: sourceChunk[0]?.crawlId ?? 'none',
+          lastCrawlId: sourceChunk.at(-1)?.crawlId ?? 'none',
+          shards: shards.length,
+        }),
+      )
       if (completed % 2560 === 0 || completed === crawls.length) {
         yield* Effect.logInfo('corpus progress').pipe(
           Effect.annotateLogs({
             accepted,
             completed,
             dropped: dropped.length,
-            elapsedSeconds: Math.round((Date.now() - startedAt) / 1000),
+            elapsedSeconds: Math.round((clock.currentTimeMillisUnsafe() - startedAt) / 1000),
             shards: shards.length,
             total: crawls.length,
           }),
@@ -185,6 +203,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
       }
     }
 
+    // Write manifest and publish atomically
     const dropReasons = Object.fromEntries(
       [...new Set(dropped.map((item) => item.reason))]
         .toSorted()
@@ -236,7 +255,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(
   yield* Effect.logInfo('sharded corpus ready').pipe(
     Effect.annotateLogs({
       ...result,
-      elapsedSeconds: Math.round((Date.now() - startedAt) / 1000),
+      elapsedSeconds: Math.round((clock.currentTimeMillisUnsafe() - startedAt) / 1000),
     }),
   )
   return result
