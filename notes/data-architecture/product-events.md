@@ -99,8 +99,9 @@ The repeatable `bun:sqlite` build owns:
 - immutable `entity_events` and `event_fields`;
 - indexes matching Monitor and Pricing History reads.
 
-Historical replay selects the final accepted crawl of each UTC day by default. This is a disposable
-projection policy over the full-precision corpus: ordinary forward diffing emits net daily changes.
+Historical replay selects the final materializable crawl of each UTC day by default. This is a
+disposable read policy over the full-precision raw archive: ordinary forward diffing emits net
+daily changes.
 An explicit full-precision build retains every accepted crawl. The database records the selected
 policy as metadata.
 

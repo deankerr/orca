@@ -11,13 +11,11 @@ import { isRunReport } from './types.ts'
 const repositoryRoot = path.resolve(import.meta.dir, '../../../..')
 const artifactDirectories = {
   archive: 'archives',
-  corpus: 'corpora',
   database: 'databases',
   snapshot: 'snapshots',
 } satisfies Record<ArtifactKind, string>
 const artifactNames = {
   archive: 'bundles.sqlite',
-  corpus: 'corpus',
   database: 'products.sqlite',
   snapshot: 'snapshot',
 } satisfies Record<ArtifactKind, string>

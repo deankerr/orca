@@ -6,7 +6,7 @@ Labs is a collection of local data programs and the reusable transformations the
 
 - Every user-runnable workflow lives in `src/programs/` and uses the `*.program.ts` suffix.
 - Name programs with an action followed by the artifact or product concept, for example
-  `build-corpus.program.ts`.
+  `build-database.program.ts`.
 - Co-locate a program's typed options, Effect orchestration, CLI flags, validation, and command
   handler. `src/cli.ts` only groups commands and defines the root command.
 - Keep pure transformations, SQL operations, artifact readers, and renderers in their domain

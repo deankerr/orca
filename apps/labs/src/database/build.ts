@@ -7,25 +7,26 @@ import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
-import { corpusCrawls, readCorpusManifest } from '../corpus/storage.ts'
+import { bundleArchive, bundleArchiveSummary } from '../bundle-archive/storage.ts'
 import { materialize } from '../projection/materialize.ts'
 import { planCrawl } from '../projection/plan.ts'
-import type { ProjectionState } from '../projection/types.ts'
+import type { ProjectionBatch, ProjectionState } from '../projection/types.ts'
 import { selectHistoricalCrawls } from './precision.ts'
 import type { HistoricalPrecision } from './precision.ts'
 import { initializeDatabase } from './schema.ts'
 import { commitCrawl } from './write.ts'
 
 interface DatabaseOptions {
-  readonly corpusDirectory: string
+  readonly archivePath: string
   readonly limit?: number
   readonly outputPath: string
   readonly precision?: HistoricalPrecision
 }
 
 const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
-  corpusDirectory: string,
-  total: number,
+  archivePath: string,
+  sourceBundles: number,
+  limit: number | undefined,
   precision: HistoricalPrecision,
 ) {
   // Initialize projection
@@ -43,24 +44,53 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   let commitDurationMs = 0
   let materializeDurationMs = 0
   let planDurationMs = 0
+  let acceptedCrawls = 0
+  let sourceBundlesRead = 0
+
+  // Read and materialize raw bundles
+  const materialized = bundleArchive.pipe(
+    Stream.provide(SqliteClient.layer({ disableWAL: true, filename: archivePath, readonly: true })),
+    Stream.mapEffect((bundle) =>
+      Effect.gen(function* materializeRawBundle() {
+        sourceBundlesRead += 1
+        const started = clock.currentTimeNanosUnsafe()
+        const result = yield* Effect.try({
+          catch: (cause) =>
+            new Error(`could not materialize archive crawl ${bundle.crawlId}`, { cause }),
+          try: () => materialize(bundle),
+        })
+        materializeDurationMs += Number(clock.currentTimeNanosUnsafe() - started) / 1_000_000
+        if (result._tag === 'Accepted') {
+          return result.batch
+        }
+        yield* Effect.logWarning('raw bundle excluded from product projection').pipe(
+          Effect.annotateLogs({ crawlId: result.crawlId, reason: result.reason }),
+        )
+        return null
+      }),
+    ),
+    Stream.filter((batch): batch is ProjectionBatch => batch !== null),
+  )
+  const bounded = limit === undefined ? materialized : materialized.pipe(Stream.take(limit))
+  const accepted = bounded.pipe(
+    Stream.tap(() =>
+      Effect.sync(() => {
+        acceptedCrawls += 1
+      }),
+    ),
+  )
 
   // Replay selected crawls
   let completed = 0
-  yield* selectHistoricalCrawls(
-    corpusCrawls(corpusDirectory).pipe(Stream.take(total)),
-    precision,
-  ).pipe(
+  yield* selectHistoricalCrawls(accepted, precision).pipe(
     Stream.runForEach((crawl) =>
       Effect.gen(function* processCrawl() {
-        const materializeStarted = clock.currentTimeNanosUnsafe()
-        const batch = materialize(crawl)
         const planStarted = clock.currentTimeNanosUnsafe()
-        const plan = planCrawl(state, batch, previousCrawlId)
+        const plan = planCrawl(state, crawl, previousCrawlId)
         const commitStarted = clock.currentTimeNanosUnsafe()
         yield* commitCrawl(plan)
         const committedAt = clock.currentTimeNanosUnsafe()
 
-        materializeDurationMs += Number(planStarted - materializeStarted) / 1_000_000
         planDurationMs += Number(commitStarted - planStarted) / 1_000_000
         commitDurationMs += Number(committedAt - commitStarted) / 1_000_000
 
@@ -78,7 +108,7 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
               materializeDurationMs: Math.round(materializeDurationMs),
               planDurationMs: Math.round(planDurationMs),
               precision,
-              sourceCrawls: total,
+              sourceBundles,
             }),
           )
         }
@@ -89,10 +119,13 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   // Finalize database
   yield* sql`PRAGMA optimize`
   return {
+    acceptedCrawls,
     crawls: completed,
     endpoints: state.endpoints.size,
     events: eventCount,
     models: state.models.size,
+    sourceBundles,
+    sourceBundlesRead,
     timings: {
       commitDurationMs: Math.round(commitDurationMs),
       materializeDurationMs: Math.round(materializeDurationMs),
@@ -101,17 +134,19 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   }
 })
 
-/** Replays a corpus into a new SQLite product database at an exact output path. */
+/** Replays a raw bundle archive into a new SQLite product database at an exact output path. */
 export const replayProductDatabase = Effect.fn('labs.replayProductDatabase')(
   function* replayProductDatabase(options: DatabaseOptions) {
-    const manifest = yield* readCorpusManifest(options.corpusDirectory)
+    const archivePath = path.resolve(options.archivePath)
+    const archive = yield* bundleArchiveSummary().pipe(
+      Effect.provide(
+        SqliteClient.layer({ disableWAL: true, filename: archivePath, readonly: true }),
+      ),
+      Effect.scoped,
+    )
     const precision = options.precision ?? 'daily'
-    const total =
-      options.limit === undefined
-        ? manifest.counts.accepted
-        : Math.min(options.limit, manifest.counts.accepted)
-    if (total === 0) {
-      return yield* Effect.fail(new Error('corpus contains no accepted crawls'))
+    if (archive.crawls === 0) {
+      return yield* Effect.fail(new Error('bundle archive contains no crawls'))
     }
 
     const outputPath = path.resolve(options.outputPath)
@@ -119,21 +154,24 @@ export const replayProductDatabase = Effect.fn('labs.replayProductDatabase')(
     yield* Effect.tryPromise(async () => await mkdir(path.dirname(outputPath), { recursive: true }))
     yield* Effect.logInfo('building product database').pipe(
       Effect.annotateLogs({
-        corpus: options.corpusDirectory,
+        archive: archivePath,
         output: outputPath,
         precision,
-        sourceCrawls: total,
+        sourceBundles: archive.crawls,
       }),
     )
 
-    const result = yield* populate(options.corpusDirectory, total, precision).pipe(
+    const result = yield* populate(archivePath, archive.crawls, options.limit, precision).pipe(
       Effect.provide(SqliteClient.layer({ disableWAL: true, filename: temporaryPath })),
-      Effect.flatMap((summary) =>
-        Effect.tryPromise(async () => {
+      Effect.flatMap((summary) => {
+        if (summary.acceptedCrawls === 0) {
+          return Effect.fail(new Error('bundle archive contains no materializable crawls'))
+        }
+        return Effect.tryPromise(async () => {
           await rename(temporaryPath, outputPath)
           return summary
-        }),
-      ),
+        })
+      }),
       Effect.ensuring(
         Effect.promise(async () => {
           await rm(temporaryPath, { force: true })
@@ -143,6 +181,6 @@ export const replayProductDatabase = Effect.fn('labs.replayProductDatabase')(
     yield* Effect.logInfo('product database ready').pipe(
       Effect.annotateLogs({ ...result, output: outputPath }),
     )
-    return { ...result, outputPath, sourceCrawls: total }
+    return { ...result, outputPath }
   },
 )

@@ -10,8 +10,7 @@ files, the runtime or developer workflow that reads it.
 snapshot export
   -> snapshot extraction/index
   -> raw bundle archive
-  -> corpus clean -> deduplicate -> shard storage
-  -> projection materialize -> plan/diff
+  -> projection materialize/filter/deduplicate -> plan/diff
   -> database schema/commit
   -> product queries
 
@@ -20,12 +19,10 @@ cli -> programs
 bin -> cli
 ```
 
-The stage directories are useful seams: corpus code does not know CLI policy, projection code is
-pure, and product queries do not expose SQL rows. The current layout is not considered final. The
+The stage directories are useful seams: archive code does not know product policy, projection code
+is pure, and product queries do not expose SQL rows. The current layout is not considered final. The
 inventory exposes these candidates for a later focused refactor:
 
-- `src/snapshot.ts` owns a real input stage but is the only domain module at the source root. A
-  `src/snapshot/` directory would make the stage layout consistent once it gains another file.
 - `src/programs/shared.ts` combines three concerns: shared CLI values, JSON output, and the SQLite
   read adapter. These are convenient today but are not one cohesive module.
 - `src/artifacts/workspace.ts` is the largest helper interface. It owns allocation, discovery,
@@ -76,7 +73,7 @@ script and root `bun run labs` command consume it.
 
 ### `src/cli.ts`
 
-Groups snapshot, archive, corpus, and database commands and installs the global work-directory
+Groups snapshot, archive, and database commands and installs the global work-directory
 flag.
 
 - `cli` — root Effect CLI command. Consumed by `src/bin.ts`.
@@ -120,32 +117,25 @@ Owns run-directory allocation and artifact input resolution.
 - `latestSnapshotZip` — finds the newest repository snapshot ZIP. Consumed by
   `programs/extract-snapshot.program.ts`.
 
-## Snapshot stage
-
-### `src/snapshot.ts`
-
-Owns the useful subset of a Convex snapshot export and its crawl metadata decoding.
-
-- `SnapshotCrawl` — decoded source-crawl metadata. Consumed by corpus building and snapshot metrics.
-- `readSnapshotCrawls` — reads, validates, sorts, and returns snapshot crawl metadata. Consumed by
-  `corpus/build.ts` and `reports/metrics.ts`.
-- `extractSnapshotFiles` — extracts only crawl metadata and referenced storage blobs. Consumed by
-  `programs/extract-snapshot.program.ts`.
-
 ## Raw bundle archive stage
 
 ### `src/bundle-archive/schema.ts`
 
 Owns the version-one append-only SQLite schema and immutable bundle-row guards.
 
-- `initializeBundleArchive` — initializes an empty raw archive. Consumed by snapshot import.
+- `ensureBundleArchiveIndexes` — upgrades compatible derived indexes on resumed archives. Consumed
+  by snapshot import.
+- `initializeBundleArchive` — initializes an empty raw archive. Consumed by snapshot import and
+  database fixtures.
 
 ### `src/bundle-archive/encoding.ts`
 
 Owns the source-envelope conversion shared by historical import and future live synchronization.
 
+- `CompressionLevel`, `isCompressionLevel` — native zstd policy and CLI narrowing. Consumed by
+  archive import.
 - `encodeGzipBundle` — verifies optional source sizes and returns exact raw evidence independently
-  compressed with zstd.
+  compressed with zstd. Consumed by snapshot import and archive/database tests.
 
 ### `src/bundle-archive/storage.ts`
 
@@ -161,57 +151,12 @@ Owns the storage-neutral bundle values and SQLite archive operations.
 
 Owns lossless, sequential conversion from extracted snapshot gzip blobs into the archive.
 
-- `importSnapshotBundles` — creates a new archive at an exact path. Consumed by the archive import
-  program and archive tests.
-
-## Corpus stage
-
-### `src/corpus/types.ts`
-
-Defines records on either side of corpus cleaning and deduplication.
-
-- `CompressionLevel`, `DropReason` — corpus build policy types. Consumed by `corpus/build.ts` and
-  `corpus/storage.ts`.
-- `CleanBundle`, `CleanScope`, `CleanResult` — validated cleaning result contracts. Consumed by
-  `corpus/clean.ts`, `corpus/dedupe.ts`, and corpus/database tests.
-- `CorpusCrawl`, `CorpusEndpoint` — stable deduplicated corpus records. Consumed by corpus storage,
-  historical precision, projection materialization, and tests.
-
-### `src/corpus/clean.ts`
-
-Applies the trustworthy-input policy to an unknown raw bundle.
-
-- `cleanBundle` — rejects malformed or invalid whole bundles and retains only useful text endpoint
-  scopes. Consumed by `corpus/build.ts` and `test/corpus.test.ts`.
-
-### `src/corpus/dedupe.ts`
-
-Normalizes repeated model copies without changing selected endpoint content.
-
-- `deduplicateModels` — derives models exclusively from endpoint-embedded copies and replaces each
-  endpoint copy with a model-slug reference. Consumed by `corpus/build.ts`, corpus tests, and the
-  database fixture builder.
-
-### `src/corpus/storage.ts`
-
-Owns corpus v2 encoding, manifest validation, shard integrity, and chronological streaming.
-
-- `CorpusManifest` — decoded corpus manifest type. Used internally as the storage index contract.
-- `encodeShard` — newline-encodes corpus crawls and compresses a shard. Consumed by
-  `corpus/build.ts` and database tests.
-- `readCorpusManifest` — validates and returns the manifest. Consumed by database replay, corpus
-  metrics, `corpusCrawls`, and storage tests.
-- `corpusCrawls` — lazily verifies, decompresses, decodes, and streams all indexed crawls. Consumed
-  by `database/build.ts` and storage tests.
-
-### `src/corpus/build.ts`
-
-Orchestrates concurrent source reads, pure cleaning/deduplication, shard encoding, and atomic corpus
-publication.
-
-- `isCompressionLevel` — validates Bun-supported Zstandard levels. Consumed by the corpus program.
-- `writeCorpus` — builds a complete corpus at an exact path and returns its summary. Consumed by
-  `programs/build-corpus.program.ts` and `test/storage.test.ts`.
+- `SnapshotCrawl`, `readSnapshotCrawls` — decode and order snapshot metadata. Consumed by import,
+  snapshot metrics, and extraction validation.
+- `validateExtractedSnapshot` — confirms every referenced blob exists. Consumed by extraction and
+  snapshot tests.
+- `importSnapshotBundles` — creates or resumes an archive at an exact path. Consumed by the archive
+  import program and archive tests.
 
 ## Projection stage
 
@@ -228,10 +173,12 @@ Defines the store-neutral values passed from materialization through diff planni
 
 ### `src/projection/materialize.ts`
 
-Validates a corpus crawl against the core schema and separates endpoint metrics from entity state.
+Reads a raw bundle, applies core observation policy, validates selected schemas, deduplicates
+endpoint-embedded model copies, and separates endpoint metrics from entity state.
 
-- `materialize` — converts one `CorpusCrawl` into a sorted `ProjectionBatch`. Consumed by
-  `database/build.ts`.
+- `MaterializationResult` — explicit accepted/excluded read outcome.
+- `materialize` — converts exact raw bytes into a sorted `ProjectionBatch` or exclusion reason.
+  Consumed by `database/build.ts` and materialization tests.
 
 ### `src/projection/diff.ts`
 
@@ -251,7 +198,7 @@ Plans a whole crawl transition without performing storage effects.
 
 ### `src/database/precision.ts`
 
-Owns the historical sampling policy without altering the full-precision corpus.
+Owns the historical sampling policy without altering the full-precision raw archive.
 
 - `HistoricalPrecision` — supported replay policies, `daily` and `full`. Consumed by database build
   and its program.
@@ -277,7 +224,7 @@ Implements the SQLite adapter for one planned state transition.
 
 Orchestrates a fresh historical replay and publishes the completed SQLite database atomically.
 
-- `replayProductDatabase` — initializes a temporary database, replays selected corpus crawls, and
+- `replayProductDatabase` — initializes a temporary database, streams/materializes archive bundles, and
   moves the completed database to its requested path. Consumed by
   `programs/build-database.program.ts` and database tests.
 
@@ -344,10 +291,10 @@ reports.
 
 Calculates bounded, reusable summaries for each artifact kind.
 
-- `snapshotMetrics` — summarizes metadata without reading crawl blobs. Consumed by snapshot/corpus
+- `archiveMetrics` — summarizes archive metadata and file size without reading payloads. Consumed by
+  archive/database programs and artifact reporting.
+- `snapshotMetrics` — summarizes metadata without reading crawl blobs. Consumed by snapshot/archive
   programs and artifact reporting.
-- `corpusMetrics` — summarizes the integrity-bearing manifest without reading every shard. Consumed
-  by corpus/database programs and artifact reporting.
 - `databaseMetrics` — queries entity/event counts, distributions, field hotspots, metadata, range,
   and file size. Consumed by database building and artifact reporting.
 
@@ -380,12 +327,6 @@ Holds values reused across more than one CLI program.
   artifact. Consumed by its co-located command handler.
 - `extractSnapshotCommand` — `snapshot extract` CLI command. Consumed by `src/cli.ts`.
 
-### `src/programs/build-corpus.program.ts`
-
-- `buildCorpus` — validates build options, resolves a snapshot, builds the corpus, and records
-  metrics. Consumed by its co-located command handler.
-- `buildCorpusCommand` — `corpus build` CLI command. Consumed by `src/cli.ts`.
-
 ### `src/programs/import-bundle-archive.program.ts`
 
 - `importBundleArchive` — resolves a snapshot, imports exact raw bytes, verifies the result, and
@@ -394,13 +335,13 @@ Holds values reused across more than one CLI program.
 
 ### `src/programs/build-database.program.ts`
 
-- `buildDatabase` — validates options, resolves a corpus, replays it, and records database metrics.
+- `buildDatabase` — validates options, resolves an archive, replays it, and records database metrics.
   Consumed by its co-located command handler.
 - `buildDatabaseCommand` — `db build` CLI command. Consumed by `src/cli.ts`.
 
 ### `src/programs/report-artifacts.program.ts`
 
-- `reportSnapshotCommand`, `reportCorpusCommand`, `reportDatabaseCommand` — artifact-specific
+- `reportSnapshotCommand`, `reportArchiveCommand`, `reportDatabaseCommand` — artifact-specific
   `report` commands built over one private inspection workflow. Consumed by `src/cli.ts`.
 
 ### `src/programs/query-monitor.program.ts`
@@ -421,9 +362,9 @@ Holds values reused across more than one CLI program.
 
 Owns JSON object narrowing and deterministic JSON representation.
 
-- `JsonRecord` — unknown JSON object type. Consumed by corpus and projection modules.
-- `isRecord` — excludes null and arrays when narrowing unknown objects. Consumed by corpus and
-  projection modules.
+- `JsonRecord` — unknown JSON object type. Consumed by projection modules.
+- `isRecord` — excludes null and arrays when narrowing unknown objects. Consumed by projection
+  modules.
 - `canonicalJson` — recursively sorts object keys and omits undefined values before encoding.
   Consumed by event diffing and database writes.
 
@@ -435,9 +376,10 @@ Test files export nothing; Bun's test runner consumes them.
   database references.
 - `test/bundle-archive.test.ts` — exact-byte round trips, chronological reads, full verification,
   and immutable-row enforcement.
-- `test/corpus.test.ts` — scope filtering, embedded-model authority, deduplication, and bundle drops.
 - `test/database.test.ts` — end-to-end replay into current state and immutable events, including a
   bounded build.
+- `test/materialize.test.ts` — read-time filtering, embedded-model authority, deduplication, and
+  bundle exclusions.
 - `test/precision.test.ts` — daily final-crawl selection and full-precision passthrough.
 - `test/product-query.test.ts` — complete Monitor batches and Pricing History availability periods.
-- `test/storage.test.ts` — snapshot-to-corpus build, manifest, shard reading, and drop accounting.
+- `test/snapshot.test.ts` — extracted snapshot metadata and referenced-blob validation.

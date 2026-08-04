@@ -2,6 +2,12 @@ import * as Effect from 'effect/Effect'
 
 import type { EncodedBundle } from './storage.ts'
 
+export type CompressionLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+/** Narrows user input to the Zstandard levels supported by Bun's native codec. */
+export const isCompressionLevel = (value: number): value is CompressionLevel =>
+  Number.isInteger(value) && value >= 0 && value <= 9
+
 const sha256 = (bytes: Uint8Array) => {
   const hasher = new Bun.CryptoHasher('sha256')
   hasher.update(bytes)

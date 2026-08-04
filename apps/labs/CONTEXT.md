@@ -21,9 +21,9 @@ orders crawls and identifies the observation; it is not a promise of product-lev
 _Avoid_: Date, revision
 
 **Bundle**:
-The raw JSON payload stored for one crawl. Cleaning accepts or drops the bundle as a whole before
-later transformations trust it.
-_Avoid_: Crawl, corpus record
+The exact raw JSON payload stored for one crawl. Materialization may accept or exclude its
+observation, but the archive retains the bytes unchanged.
+_Avoid_: Crawl, projection batch
 
 **Scope**:
 One upstream grouping inside a bundle containing a model record and its endpoints. Only scopes with
@@ -40,46 +40,31 @@ The selected crawl metadata and stored bundle blobs extracted from a snapshot ex
 source-shaped intermediate and does not imply that its bundles are trustworthy.
 _Avoid_: Corpus
 
-## Corpus
+**Raw bundle archive**:
+The append-only, full-precision sequence of exact bundle bytes and source evidence. Historical and
+active captures share this contract; product projections read it directly.
+_Avoid_: Corpus, product database
 
-**Cleaning**:
-The policy that decides whether a bundle is trustworthy and retains only the scopes in current
-product scope. Cleaning does not project entities or infer historical changes.
-_Avoid_: Validation, when rejection also expresses product-scope policy
+## Materialization policy
 
 **Dropped bundle**:
-A bundle excluded in full because its observation is unusable for the core pipeline. A later crawl
-remains independent evidence, so dropping does not itself mean entities became unavailable.
+A bundle excluded from one product projection because its observation is unusable for that
+processor. It remains raw evidence, and exclusion does not itself mean entities became unavailable.
 _Avoid_: Failed crawl
 
 **Accepted crawl**:
-A crawl whose bundle passed cleaning and is represented in the corpus. Acceptance means usable
-evidence, not that every upstream field is part of the core schema.
+A crawl whose raw bundle produced a projection batch. Acceptance means usable evidence for that
+processor, not that every upstream field is part of the core schema.
 _Avoid_: Successful fetch
-
-**Corpus**:
-A reusable, full-precision sequence of accepted crawls after cleaning and structural deduplication.
-It is reproducible from captures and sits between source-shaped data and product projections.
-_Avoid_: Archive, database, cache
-
-**Corpus crawl**:
-The structurally stable record for one accepted crawl, with model copies deduplicated and endpoint
-content otherwise preserved for later core selection.
-_Avoid_: Bundle
-
-**Shard**:
-An ordered storage group of corpus crawls. Sharding and compression change access characteristics,
-not corpus meaning or historical precision.
-_Avoid_: Bundle, partition
 
 **Embedded model copy**:
 The model record carried by an endpoint in an upstream scope. These copies are the sole authority
-for corpus models because they match the production materialization behavior.
+for projected models because they match the production materialization behavior.
 _Avoid_: Outer model, scope model
 
 **Outer model**:
-A scope-level model record not reached through an endpoint copy. It is deliberately outside the
-corpus model set and must not create an entity or lifecycle event.
+A scope-level model record not reached through an endpoint copy. It is fetch/traversal metadata and
+must not create a projected entity or lifecycle event.
 _Avoid_: Canonical model
 
 ## Projection and history
@@ -95,7 +80,8 @@ not endpoint state and does not generate endpoint change history.
 _Avoid_: Endpoint field
 
 **Materialization**:
-The pure selection of core entities and endpoint metrics from one corpus crawl. It produces one
+The pure read of one raw bundle that applies product-scope filtering, validates core fields,
+deduplicates endpoint-embedded model copies, and selects entities and metrics. It produces one
 projection batch but does not compare history or write a store.
 _Avoid_: Projection, replay
 
@@ -105,8 +91,8 @@ to a state transition.
 _Avoid_: Bundle, crawl plan
 
 **Projection**:
-A disposable, rebuildable product-oriented view derived from authoritative captures through the
-corpus. A projection may contain current state, history, or both.
+A disposable, rebuildable product-oriented view derived directly from authoritative captures. A
+projection may contain current state, history, or both.
 _Avoid_: Archive, source of truth
 
 **Projection state**:
@@ -116,7 +102,7 @@ _Avoid_: Database, current crawl
 
 **Current view**:
 The latest projection state stored for product reads, plus separately maintained latest endpoint
-metrics where needed. It is replaceable and can be rebuilt from the corpus.
+metrics where needed. It is replaceable and can be rebuilt from the raw archive.
 _Avoid_: Snapshot, catalog
 
 **Crawl plan**:
@@ -125,14 +111,14 @@ the next state and immutable entity events.
 _Avoid_: Diff, transaction
 
 **Historical replay**:
-Chronological application of accepted corpus crawls through the same materialization and planning
+Chronological materialization and application of raw archive bundles through the same processing
 contracts intended for active captures. Replay produces evidence but never live alert delivery.
 _Avoid_: Import, migration
 
 **Historical precision**:
 The crawl-selection policy applied while building a projection. `full` retains every accepted crawl;
 `daily` retains the final accepted crawl of each UTC day and therefore represents net daily change.
-_Avoid_: Corpus precision, sampling rate
+_Avoid_: Archive precision, sampling rate
 
 **Entity event**:
 An immutable, deterministic record that one core model or endpoint was at the baseline, became
@@ -162,7 +148,7 @@ _Avoid_: Endpoint lifetime, pricing series
 **Product database**:
 A disposable query store containing a selected current view, latest endpoint metrics, crawl lineage,
 and immutable entity events for product reads.
-_Avoid_: Corpus, source database
+_Avoid_: Raw archive, source database
 
 ## Artifact lifecycle
 
@@ -180,11 +166,6 @@ _Avoid_: Build, artifact
 The durable lifecycle record for a run: program, options, inputs, metrics, status, timing, failure,
 and published artifact when successful. It is also the local artifact index.
 _Avoid_: Manifest, log
-
-**Corpus manifest**:
-The integrity and layout index inside a corpus, including shard identities, ranges, sizes, and drop
-counts. It describes corpus storage rather than program execution.
-_Avoid_: Run report
 
 **Run log**:
 The structured chronological record of operational progress and timings for one run. It supplements

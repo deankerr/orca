@@ -109,8 +109,8 @@ describe('Labs artifact workspace', () => {
     const exit = await Effect.runPromiseExit(
       runArtifactProgram({
         execute: () => Effect.fail(new Error('expected failure')),
-        kind: 'corpus',
-        program: 'corpus.test',
+        kind: 'archive',
+        program: 'archive.test',
         reportOptions: {},
         workDirectory,
       }).pipe(Effect.provide(BunServices.layer)),
@@ -118,7 +118,7 @@ describe('Labs artifact workspace', () => {
     expect(exit._tag).toBe('Failure')
 
     const [runDirectory] = await Array.fromAsync(
-      new Bun.Glob('corpora/*').scan({ cwd: workDirectory, onlyFiles: false }),
+      new Bun.Glob('archives/*').scan({ cwd: workDirectory, onlyFiles: false }),
     )
     const report: unknown = await Bun.file(
       path.join(workDirectory, runDirectory ?? '', 'report.json'),
@@ -133,7 +133,7 @@ describe('Labs artifact workspace', () => {
       await Bun.file(path.join(workDirectory, runDirectory ?? '', 'run.log.jsonl')).text(),
     ).toContain('artifact program failed')
     expect(
-      await Bun.file(path.join(workDirectory, runDirectory ?? '', 'corpus')).exists(),
+      await Bun.file(path.join(workDirectory, runDirectory ?? '', 'bundles.sqlite')).exists(),
     ).toBeFalse()
   })
 

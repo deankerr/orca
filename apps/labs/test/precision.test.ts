@@ -3,10 +3,10 @@ import { describe, expect, test } from 'bun:test'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
-import type { CorpusCrawl } from '../src/corpus/types.ts'
 import { selectHistoricalCrawls } from '../src/database/precision.ts'
+import type { ProjectionBatch } from '../src/projection/types.ts'
 
-const crawl = (crawlId: string): CorpusCrawl => ({ crawlId, endpoints: [], models: [] })
+const crawl = (crawlId: string): ProjectionBatch => ({ crawlId, endpoints: [], models: [] })
 
 describe('historical precision', () => {
   test('selects the final accepted crawl of every UTC day', async () => {
@@ -27,7 +27,7 @@ describe('historical precision', () => {
     ])
   })
 
-  test('passes every accepted crawl through at full precision', async () => {
+  test('passes every materialized crawl through at full precision', async () => {
     const crawls = [crawl('1'), crawl('2'), crawl('3')]
     const selected = await Effect.runPromise(
       selectHistoricalCrawls(Stream.fromIterable(crawls), 'full').pipe(Stream.runCollect),

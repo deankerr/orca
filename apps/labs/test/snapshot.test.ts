@@ -5,7 +5,7 @@ import path from 'node:path'
 
 import * as Effect from 'effect/Effect'
 
-import { validateExtractedSnapshot } from '../src/snapshot.ts'
+import { validateExtractedSnapshot } from '../src/bundle-archive/import-snapshot.ts'
 
 const directories: string[] = []
 

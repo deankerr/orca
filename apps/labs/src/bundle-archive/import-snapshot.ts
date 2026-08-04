@@ -1,15 +1,98 @@
-import { stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 import { SqliteClient } from '@effect/sql-sqlite-bun'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
-import { readSnapshotCrawls } from '../snapshot.ts'
-import type { SnapshotCrawl } from '../snapshot.ts'
 import { encodeGzipBundle } from './encoding.ts'
 import { ensureBundleArchiveIndexes, initializeBundleArchive } from './schema.ts'
 import { appendBundle } from './storage.ts'
+
+export interface SnapshotCrawl {
+  readonly crawlId: string
+  readonly rawBytes: number
+  readonly compressedBytes: number
+  readonly storageId: string
+  readonly totals: Readonly<Record<string, number>>
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const decodeSnapshotCrawl = (value: unknown): SnapshotCrawl => {
+  if (!isRecord(value) || !isRecord(value.data) || !isRecord(value.data.size)) {
+    throw new Error('expected a snapshot crawl row')
+  }
+  const { totals } = value.data
+  if (
+    typeof value.crawl_id !== 'string' ||
+    typeof value.storage_id !== 'string' ||
+    typeof value.data.size.blob !== 'number' ||
+    typeof value.data.size.raw !== 'number' ||
+    !isRecord(totals)
+  ) {
+    throw new Error('snapshot crawl row has unexpected fields')
+  }
+  const numericTotals: Record<string, number> = {}
+  for (const [name, total] of Object.entries(totals)) {
+    if (typeof total !== 'number') {
+      throw new TypeError(`snapshot crawl total ${name} is not numeric`)
+    }
+    numericTotals[name] = total
+  }
+  return {
+    compressedBytes: value.data.size.blob,
+    crawlId: value.crawl_id,
+    rawBytes: value.data.size.raw,
+    storageId: value.storage_id,
+    totals: numericTotals,
+  }
+}
+
+/** Reads and chronologically orders the crawl metadata used by snapshot archive imports. */
+export const readSnapshotCrawls = Effect.fn('labs.readSnapshotCrawls')(function* readSnapshotCrawls(
+  directory: string,
+) {
+  const metadataPath = path.join(directory, 'snapshot_crawl_archives', 'documents.jsonl')
+  const text = yield* Effect.tryPromise(async () => await Bun.file(metadataPath).text())
+  return text
+    .split('\n')
+    .filter((line) => line.length > 0)
+    .map((line, index) => {
+      try {
+        return decodeSnapshotCrawl(JSON.parse(line))
+      } catch {
+        throw new Error(`invalid snapshot metadata at ${metadataPath}:${index + 1}`)
+      }
+    })
+    .toSorted((left, right) => Number(left.crawlId) - Number(right.crawlId))
+})
+
+/** Confirms that an extracted snapshot contains every blob referenced by its crawl metadata. */
+export const validateExtractedSnapshot = Effect.fn('labs.validateExtractedSnapshot')(
+  function* validateExtractedSnapshot(directory: string) {
+    const crawls = yield* readSnapshotCrawls(directory)
+    const storageEntries = yield* Effect.tryPromise(
+      async () => await readdir(path.join(directory, '_storage')),
+    )
+    const availableStorageIds = new Set(storageEntries)
+    const missingStorageIds = crawls
+      .map((crawl) => crawl.storageId)
+      .filter((storageId) => !availableStorageIds.has(storageId))
+
+    if (missingStorageIds.length > 0) {
+      const preview = missingStorageIds.slice(0, 3).join(', ')
+      return yield* Effect.fail(
+        new Error(
+          `extracted snapshot is missing ${missingStorageIds.length} referenced storage blobs: ${preview}`,
+        ),
+      )
+    }
+
+    return { crawls: crawls.length, storageEntries: storageEntries.length }
+  },
+)
 
 const snapshotMetadataJson = (crawl: SnapshotCrawl) =>
   JSON.stringify({

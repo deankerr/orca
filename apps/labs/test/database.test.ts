@@ -10,9 +10,9 @@ import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
-import { deduplicateModels } from '../src/corpus/dedupe.ts'
-import { encodeShard } from '../src/corpus/storage.ts'
-import type { CleanBundle } from '../src/corpus/types.ts'
+import { encodeGzipBundle } from '../src/bundle-archive/encoding.ts'
+import { initializeBundleArchive } from '../src/bundle-archive/schema.ts'
+import { appendBundle } from '../src/bundle-archive/storage.ts'
 import { replayProductDatabase } from '../src/database/build.ts'
 
 const directories: string[] = []
@@ -71,7 +71,7 @@ const endpoint = {
   variant: 'standard',
 } satisfies CoreEndpoint
 
-const bundle = (crawlId: string, price: string): CleanBundle => ({
+const bundle = (crawlId: string, price: string) => ({
   crawl_id: crawlId,
   data: {
     models: [
@@ -90,54 +90,40 @@ const bundle = (crawlId: string, price: string): CleanBundle => ({
   },
 })
 
-const writeCorpus = async (directory: string) => {
-  const corpusDirectory = path.join(directory, 'corpus')
-  const crawls = [
-    deduplicateModels(bundle('1', '0.000001')),
-    deduplicateModels(bundle('2', '0.000003')),
-  ]
-  const encoded = encodeShard(crawls, 1)
-  const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(encoded.bytes)
-  await Bun.write(
-    path.join(corpusDirectory, 'manifest.json'),
-    JSON.stringify({
-      codec: 'zstd',
-      compressionLevel: 1,
-      counts: { accepted: 2, dropped: 0 },
-      createdAt: '2025-01-01T00:00:00.000Z',
-      dropReasons: {},
-      dropped: [],
-      format: 'orca-corpus',
-      formatVersion: 2,
-      shardSize: 256,
-      shards: [
-        {
-          compressedBytes: encoded.bytes.byteLength,
-          crawls: 2,
-          digest: hasher.digest('hex'),
-          file: '00000.ndjson.zst',
-          firstCrawlId: '1',
-          lastCrawlId: '2',
-          rawBytes: encoded.rawBytes,
-        },
-      ],
-      source: 'test',
-    }),
+const writeArchive = async (
+  directory: string,
+  values = [bundle('1', '0.000001'), bundle('2', '0.000003')],
+) => {
+  const archivePath = path.join(directory, 'bundles.sqlite')
+  await Effect.runPromise(
+    Effect.gen(function* writeTestArchive() {
+      yield* initializeBundleArchive()
+      for (const value of values) {
+        const crawlId = value.crawl_id
+        const encoded = yield* encodeGzipBundle({
+          compressionLevel: 1,
+          crawlId,
+          source: Bun.gzipSync(JSON.stringify(value)),
+          sourceKind: 'convex',
+          sourceMetadataJson: '{}',
+          sourceRef: `test/${crawlId}`,
+        })
+        yield* appendBundle(encoded)
+      }
+    }).pipe(Effect.provide(SqliteClient.layer({ filename: archivePath })), Effect.scoped),
   )
-  await Bun.write(path.join(corpusDirectory, 'shards', '00000.ndjson.zst'), encoded.bytes)
-  return corpusDirectory
+  return archivePath
 }
 
-describe('corpus database build', () => {
+describe('raw archive database build', () => {
   test('replays current state and historically valid product events through Effect SQL', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'orca-labs-db-'))
     directories.push(directory)
-    const corpusDirectory = await writeCorpus(directory)
+    const archivePath = await writeArchive(directory)
     const outputPath = path.join(directory, 'products.sqlite')
 
     const result = await Effect.runPromise(
-      replayProductDatabase({ corpusDirectory, outputPath, precision: 'full' }),
+      replayProductDatabase({ archivePath, outputPath, precision: 'full' }),
     )
     expect(result).toMatchObject({ crawls: 2, endpoints: 1, events: 3, models: 1 })
 
@@ -200,12 +186,39 @@ describe('corpus database build', () => {
   test('supports a bounded demo build', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'orca-labs-db-'))
     directories.push(directory)
-    const corpusDirectory = await writeCorpus(directory)
+    const archivePath = await writeArchive(directory)
     const outputPath = path.join(directory, 'demo.sqlite')
 
     const result = await Effect.runPromise(
-      replayProductDatabase({ corpusDirectory, limit: 1, outputPath }),
+      replayProductDatabase({ archivePath, limit: 1, outputPath }),
     )
     expect(result).toMatchObject({ crawls: 1, events: 2 })
+  })
+
+  test('applies the limit after read-time bundle exclusions', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'orca-labs-db-'))
+    directories.push(directory)
+    const archivePath = await writeArchive(directory, [
+      { crawl_id: '1', data: { models: [] } },
+      bundle('2', '0.000001'),
+    ])
+    const outputPath = path.join(directory, 'after-empty.sqlite')
+
+    const result = await Effect.runPromise(
+      replayProductDatabase({ archivePath, limit: 1, outputPath, precision: 'full' }),
+    )
+    expect(result).toMatchObject({ acceptedCrawls: 1, crawls: 1, sourceBundlesRead: 2 })
+
+    const crawls = await Effect.runPromise(
+      Effect.gen(function* readCrawls() {
+        const sql = yield* SqlClient.SqlClient
+        return yield* sql<{ crawl_id: string }>`SELECT crawl_id FROM crawls`
+      }).pipe(
+        Effect.provide(
+          SqliteClient.layer({ disableWAL: true, filename: outputPath, readonly: true }),
+        ),
+      ),
+    )
+    expect(crawls).toEqual([{ crawl_id: '2' }])
   })
 })

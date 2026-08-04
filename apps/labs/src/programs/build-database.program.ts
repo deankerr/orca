@@ -7,7 +7,7 @@ import { resolveArtifactReference } from '../artifacts/workspace.ts'
 import { replayProductDatabase } from '../database/build.ts'
 import type { HistoricalPrecision } from '../database/precision.ts'
 import { runArtifactProgram, timedPhase } from '../observability/run.ts'
-import { corpusMetrics, databaseMetrics } from '../reports/metrics.ts'
+import { archiveMetrics, databaseMetrics } from '../reports/metrics.ts'
 import { logInputSummary, renderRunReport } from '../reports/render.ts'
 import {
   configuredWorkDirectory,
@@ -26,7 +26,7 @@ const precisionFlag = Flag.choice('precision', ['daily', 'full']).pipe(
   Flag.withDefault('daily'),
 )
 
-/** Replays an explicit corpus, or the latest compatible corpus, into a fresh product database. */
+/** Replays an explicit raw archive, or the latest compatible archive, into a product database. */
 export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildDatabase(options: {
   readonly input?: string
   readonly label?: string
@@ -41,12 +41,15 @@ export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildData
 
   // Resolve input
   const input = yield* resolveArtifactReference({
-    kind: 'corpus',
+    kind: 'archive',
     reference: options.input,
-    supportedVersions: [2],
+    supportedVersions: [1],
     workDirectory: options.workDirectory,
   })
-  const inputMetrics = yield* corpusMetrics(input.path)
+  const inputMetrics = yield* archiveMetrics(input.path).pipe(
+    Effect.provide(SqliteClient.layer({ disableWAL: true, filename: input.path, readonly: true })),
+    Effect.scoped,
+  )
 
   // Replay and report
   return yield* runArtifactProgram({
@@ -56,7 +59,7 @@ export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildData
         const replay = yield* timedPhase(
           'replay product database',
           replayProductDatabase({
-            corpusDirectory: input.path,
+            archivePath: input.path,
             limit: options.limit,
             outputPath: run.artifactPath,
             precision: options.precision,
@@ -78,9 +81,10 @@ export const buildDatabase = Effect.fn('labs.buildDatabase')(function* buildData
           metrics: {
             ...metrics,
             crawlsPerSecond:
-              replay.durationMs === 0 ? null : (summary.sourceCrawls * 1000) / replay.durationMs,
+              replay.durationMs === 0 ? null : (summary.crawls * 1000) / replay.durationMs,
             replayDurationMs: Math.round(replay.durationMs),
-            sourceCrawls: summary.sourceCrawls,
+            sourceBundles: summary.sourceBundles,
+            sourceBundlesRead: summary.sourceBundlesRead,
             timings: summary.timings,
           },
           value: { ...summary, metrics },
@@ -102,7 +106,7 @@ export const buildDatabaseCommand = Command.make('build', {
   output: outputFlag,
   precision: precisionFlag,
 }).pipe(
-  Command.withDescription('Replay the latest corpus into a local product database'),
+  Command.withDescription('Replay the latest raw archive into a local product database'),
   Command.withHandler((input) =>
     Effect.gen(function* runBuildDatabaseCommand() {
       const workDirectory = yield* configuredWorkDirectory

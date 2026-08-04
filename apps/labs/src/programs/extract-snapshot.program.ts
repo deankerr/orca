@@ -1,14 +1,14 @@
-import { stat } from 'node:fs/promises'
+import { mkdir, stat } from 'node:fs/promises'
 
 import * as Effect from 'effect/Effect'
 import * as Command from 'effect/unstable/cli/Command'
 
 import type { ArtifactReference } from '../artifacts/types.ts'
 import { latestSnapshotZip } from '../artifacts/workspace.ts'
+import { validateExtractedSnapshot } from '../bundle-archive/import-snapshot.ts'
 import { runArtifactProgram, timedPhase } from '../observability/run.ts'
 import { snapshotMetrics } from '../reports/metrics.ts'
 import { logInputSummary, renderRunReport } from '../reports/render.ts'
-import { extractSnapshotFiles } from '../snapshot.ts'
 import {
   configuredWorkDirectory,
   inputFlag,
@@ -16,6 +16,45 @@ import {
   optionalValue,
   outputFlag,
 } from './shared.ts'
+
+const extractSnapshotFiles = Effect.fn('labs.extractSnapshotFiles')(
+  function* extractSnapshotFiles(options: {
+    readonly outputDirectory: string
+    readonly snapshotPath: string
+  }) {
+    yield* Effect.tryPromise(async () => await mkdir(options.outputDirectory, { recursive: true }))
+    yield* Effect.logInfo('extracting snapshot').pipe(
+      Effect.annotateLogs({ output: options.outputDirectory, snapshot: options.snapshotPath }),
+    )
+    const process = Bun.spawn(
+      [
+        'unzip',
+        '-q',
+        '-n',
+        options.snapshotPath,
+        'snapshot_crawl_archives/documents.jsonl',
+        '_storage/*',
+        '-d',
+        options.outputDirectory,
+      ],
+      { stderr: 'inherit', stdout: 'inherit' },
+    )
+    const exitCode = yield* Effect.promise(async () => await process.exited)
+    if (exitCode !== 0 && exitCode !== 2) {
+      return yield* Effect.fail(new Error(`unzip exited with status ${exitCode}`))
+    }
+    const validation = yield* validateExtractedSnapshot(options.outputDirectory)
+    if (exitCode === 2) {
+      yield* Effect.logWarning('unzip reported a format error, but extraction is complete').pipe(
+        Effect.annotateLogs({ exitCode }),
+      )
+    }
+    yield* Effect.logInfo('snapshot ready').pipe(
+      Effect.annotateLogs({ blobs: validation.storageEntries, output: options.outputDirectory }),
+    )
+    return validation
+  },
+)
 
 /** Extracts the reusable crawl subset from the newest production snapshot ZIP by default. */
 export const extractSnapshot = Effect.fn('labs.extractSnapshot')(

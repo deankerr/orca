@@ -3,9 +3,8 @@ import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
+import { readSnapshotCrawls } from '../bundle-archive/import-snapshot.ts'
 import { bundleArchiveSummary } from '../bundle-archive/storage.ts'
-import { readCorpusManifest } from '../corpus/storage.ts'
-import { readSnapshotCrawls } from '../snapshot.ts'
 
 const range = (ids: readonly string[]) => ({ first: ids[0] ?? null, last: ids.at(-1) ?? null })
 
@@ -44,33 +43,6 @@ export const snapshotMetrics = Effect.fn('labs.snapshotMetrics')(function* snaps
     range: range(crawls.map((crawl) => crawl.crawlId)),
     rawBytes: crawls.reduce((total, crawl) => total + crawl.rawBytes, 0),
     totals,
-  }
-})
-
-/** Summarizes the corpus through its integrity-bearing manifest without reading every shard. */
-export const corpusMetrics = Effect.fn('labs.corpusMetrics')(function* corpusMetrics(
-  corpusDirectory: string,
-) {
-  const manifest = yield* readCorpusManifest(corpusDirectory)
-  const compressedBytes = manifest.shards.reduce((total, shard) => total + shard.compressedBytes, 0)
-  const rawBytes = manifest.shards.reduce((total, shard) => total + shard.rawBytes, 0)
-
-  return {
-    accepted: manifest.counts.accepted,
-    codec: manifest.codec,
-    compressedBytes,
-    compressionLevel: manifest.compressionLevel,
-    compressionRatio: compressedBytes === 0 ? null : rawBytes / compressedBytes,
-    dropReasons: manifest.dropReasons,
-    dropped: manifest.counts.dropped,
-    formatVersion: manifest.formatVersion,
-    range: {
-      first: manifest.shards[0]?.firstCrawlId ?? null,
-      last: manifest.shards.at(-1)?.lastCrawlId ?? null,
-    },
-    rawBytes,
-    shardSize: manifest.shardSize,
-    shards: manifest.shards.length,
   }
 })
 
