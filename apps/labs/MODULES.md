@@ -9,6 +9,7 @@ files, the runtime or developer workflow that reads it.
 ```text
 snapshot export
   -> snapshot extraction/index
+  -> raw bundle archive
   -> corpus clean -> deduplicate -> shard storage
   -> projection materialize -> plan/diff
   -> database schema/commit
@@ -75,7 +76,8 @@ script and root `bun run labs` command consume it.
 
 ### `src/cli.ts`
 
-Groups snapshot, corpus, and database commands and installs the global work-directory flag.
+Groups snapshot, archive, corpus, and database commands and installs the global work-directory
+flag.
 
 - `cli` — root Effect CLI command. Consumed by `src/bin.ts`.
 
@@ -109,6 +111,8 @@ Owns run-directory allocation and artifact input resolution.
   `programs/shared.ts`.
 - `createArtifactRun` — allocates a timestamped run and its artifact/report/log paths. Consumed by
   `observability/run.ts` and artifact tests.
+- `findResumableArtifactRun` — selects an explicit or newest incomplete artifact run without
+  treating it as published. Consumed by raw archive import.
 - `latestCompatibleArtifact` — selects the newest published, successful artifact with a supported
   format. Consumed by `resolveArtifactReference` and artifact tests.
 - `resolveArtifactReference` — accepts implicit latest, run ids, run directories, direct paths, and
@@ -127,6 +131,38 @@ Owns the useful subset of a Convex snapshot export and its crawl metadata decodi
   `corpus/build.ts` and `reports/metrics.ts`.
 - `extractSnapshotFiles` — extracts only crawl metadata and referenced storage blobs. Consumed by
   `programs/extract-snapshot.program.ts`.
+
+## Raw bundle archive stage
+
+### `src/bundle-archive/schema.ts`
+
+Owns the version-one append-only SQLite schema and immutable bundle-row guards.
+
+- `initializeBundleArchive` — initializes an empty raw archive. Consumed by snapshot import.
+
+### `src/bundle-archive/encoding.ts`
+
+Owns the source-envelope conversion shared by historical import and future live synchronization.
+
+- `encodeGzipBundle` — verifies optional source sizes and returns exact raw evidence independently
+  compressed with zstd.
+
+### `src/bundle-archive/storage.ts`
+
+Owns the storage-neutral bundle values and SQLite archive operations.
+
+- `EncodedBundle`, `RawBundle` — values on either side of archive storage.
+- `appendBundle` — inserts new evidence idempotently and rejects divergent duplicates.
+- `bundleArchive` — chronologically streams and verifies one raw bundle at a time.
+- `bundleArchiveSummary` — returns bounded metadata without loading payload BLOBs.
+- `verifyBundleArchive` — checks SQLite integrity and every stored raw digest.
+
+### `src/bundle-archive/import-snapshot.ts`
+
+Owns lossless, sequential conversion from extracted snapshot gzip blobs into the archive.
+
+- `importSnapshotBundles` — creates a new archive at an exact path. Consumed by the archive import
+  program and archive tests.
 
 ## Corpus stage
 
@@ -350,6 +386,12 @@ Holds values reused across more than one CLI program.
   metrics. Consumed by its co-located command handler.
 - `buildCorpusCommand` — `corpus build` CLI command. Consumed by `src/cli.ts`.
 
+### `src/programs/import-bundle-archive.program.ts`
+
+- `importBundleArchive` — resolves a snapshot, imports exact raw bytes, verifies the result, and
+  records archive metrics.
+- `importBundleArchiveCommand` — `archive import` CLI command. Consumed by `src/cli.ts`.
+
 ### `src/programs/build-database.program.ts`
 
 - `buildDatabase` — validates options, resolves a corpus, replays it, and records database metrics.
@@ -391,6 +433,8 @@ Test files export nothing; Bun's test runner consumes them.
 
 - `test/artifacts.test.ts` — run-id collisions, publish eligibility, failed-run evidence, and legacy
   database references.
+- `test/bundle-archive.test.ts` — exact-byte round trips, chronological reads, full verification,
+  and immutable-row enforcement.
 - `test/corpus.test.ts` — scope filtering, embedded-model authority, deduplication, and bundle drops.
 - `test/database.test.ts` — end-to-end replay into current state and immutable events, including a
   bounded build.

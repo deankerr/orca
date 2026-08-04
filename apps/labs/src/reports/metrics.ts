@@ -3,10 +3,27 @@ import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
+import { bundleArchiveSummary } from '../bundle-archive/storage.ts'
 import { readCorpusManifest } from '../corpus/storage.ts'
 import { readSnapshotCrawls } from '../snapshot.ts'
 
 const range = (ids: readonly string[]) => ({ first: ids[0] ?? null, last: ids.at(-1) ?? null })
+
+/** Summarizes a raw archive without loading any compressed bundle payload. */
+export const archiveMetrics = Effect.fn('labs.archiveMetrics')(function* archiveMetrics(
+  archivePath: string,
+) {
+  const summary = yield* bundleArchiveSummary()
+  const archiveStat = yield* Effect.tryPromise(async () => await stat(archivePath))
+  return {
+    ...summary,
+    bytes: archiveStat.size,
+    compressionRatio:
+      summary.compressedBytes === 0 ? null : summary.rawBytes / summary.compressedBytes,
+    sourceCompressionRatio:
+      summary.sourceCompressedBytes === 0 ? null : summary.rawBytes / summary.sourceCompressedBytes,
+  }
+})
 
 /** Summarizes extracted snapshot metadata without decompressing any stored crawl blob. */
 export const snapshotMetrics = Effect.fn('labs.snapshotMetrics')(function* snapshotMetrics(

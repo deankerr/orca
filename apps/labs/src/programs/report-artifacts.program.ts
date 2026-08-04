@@ -4,7 +4,12 @@ import * as Command from 'effect/unstable/cli/Command'
 import { inspectionReport, readArtifactReport } from '../artifacts/report.ts'
 import type { ArtifactKind, RunReport } from '../artifacts/types.ts'
 import { resolveArtifactReference } from '../artifacts/workspace.ts'
-import { corpusMetrics, databaseMetrics, snapshotMetrics } from '../reports/metrics.ts'
+import {
+  archiveMetrics,
+  corpusMetrics,
+  databaseMetrics,
+  snapshotMetrics,
+} from '../reports/metrics.ts'
 import { renderRunReport } from '../reports/render.ts'
 import {
   configuredWorkDirectory,
@@ -33,7 +38,9 @@ const inspectArtifact = Effect.fn('labs.inspectArtifact')(function* inspectArtif
   }
 
   let metrics: Readonly<Record<string, unknown>>
-  if (options.kind === 'snapshot') {
+  if (options.kind === 'archive') {
+    metrics = yield* archiveMetrics(artifact.path).pipe(provideReadOnlyDatabase(artifact.path))
+  } else if (options.kind === 'snapshot') {
     metrics = yield* snapshotMetrics(artifact.path)
   } else if (options.kind === 'corpus') {
     metrics = yield* corpusMetrics(artifact.path)
@@ -61,5 +68,6 @@ const reportCommand = (kind: ArtifactKind) =>
   )
 
 export const reportSnapshotCommand = reportCommand('snapshot')
+export const reportArchiveCommand = reportCommand('archive')
 export const reportCorpusCommand = reportCommand('corpus')
 export const reportDatabaseCommand = reportCommand('database')

@@ -62,6 +62,34 @@ export const readSnapshotCrawls = Effect.fn('labs.readSnapshotCrawls')(function*
     .toSorted((left, right) => Number(left.crawlId) - Number(right.crawlId))
 })
 
+/**
+ * Confirms that an extracted snapshot contains its crawl metadata and every storage blob it
+ * references. Extra storage entries are allowed because Convex exports include their own metadata.
+ */
+export const validateExtractedSnapshot = Effect.fn('labs.validateExtractedSnapshot')(
+  function* validateExtractedSnapshot(directory: string) {
+    const crawls = yield* readSnapshotCrawls(directory)
+    const storageEntries = yield* Effect.tryPromise(
+      async () => await readdir(path.join(directory, '_storage')),
+    )
+    const availableStorageIds = new Set(storageEntries)
+    const missingStorageIds = crawls
+      .map((crawl) => crawl.storageId)
+      .filter((storageId) => !availableStorageIds.has(storageId))
+
+    if (missingStorageIds.length > 0) {
+      const preview = missingStorageIds.slice(0, 3).join(', ')
+      yield* Effect.fail(
+        new Error(
+          `extracted snapshot is missing ${missingStorageIds.length} referenced storage blobs: ${preview}`,
+        ),
+      )
+    }
+
+    return { crawls: crawls.length, storageEntries: storageEntries.length }
+  },
+)
+
 /** Extracts only the metadata and stored crawl blobs needed by Labs from an immutable export ZIP. */
 export const extractSnapshotFiles = Effect.fn('labs.extractSnapshotFiles')(
   function* extractSnapshotFiles(options: {
@@ -86,14 +114,17 @@ export const extractSnapshotFiles = Effect.fn('labs.extractSnapshotFiles')(
       { stderr: 'inherit', stdout: 'inherit' },
     )
     const exitCode = yield* Effect.promise(async () => await process.exited)
-    if (exitCode !== 0) {
+    if (exitCode !== 0 && exitCode !== 2) {
       yield* Effect.fail(new Error(`unzip exited with status ${exitCode}`))
     }
-    const storageEntries = yield* Effect.tryPromise(
-      async () => await readdir(path.join(options.outputDirectory, '_storage')),
-    )
+    const validation = yield* validateExtractedSnapshot(options.outputDirectory)
+    if (exitCode === 2) {
+      yield* Effect.logWarning('unzip reported a format error, but extraction is complete').pipe(
+        Effect.annotateLogs({ exitCode }),
+      )
+    }
     yield* Effect.logInfo('snapshot ready').pipe(
-      Effect.annotateLogs({ blobs: storageEntries.length, output: options.outputDirectory }),
+      Effect.annotateLogs({ blobs: validation.storageEntries, output: options.outputDirectory }),
     )
   },
 )

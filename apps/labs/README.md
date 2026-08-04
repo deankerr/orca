@@ -20,6 +20,10 @@ Artifact-producing programs create a UTC timestamped run directory:
 │   ├── snapshot/
 │   ├── report.json
 │   └── run.log.jsonl
+├── archives/2026-08-04T08-30-00Z-raw/
+│   ├── bundles.sqlite
+│   ├── report.json
+│   └── run.log.jsonl
 ├── corpora/2026-08-04T08-42-10Z-core/
 │   ├── corpus/
 │   ├── report.json
@@ -49,6 +53,40 @@ bun run labs snapshot extract --label production
 
 The extractor retains only crawl metadata and stored crawl blobs. Specify another ZIP with
 `--input <zip>`.
+
+Import exact decompressed bundle bytes from the latest extracted snapshot into a lossless raw
+archive, replacing each source gzip envelope with one independently compressed zstd BLOB:
+
+```bash
+bun run labs archive import --label raw --compression-level 1
+```
+
+The SQLite archive is append-only and ordered by crawl id. Bundle rows retain source metadata and
+digests, and update/delete triggers protect raw evidence. Import verifies source sizes; the program
+then decompresses and hashes every stored bundle before publishing the artifact. Use `--limit` for
+a bounded experiment and `bun run labs archive report` to inspect a completed archive without
+reading its payloads.
+
+Imports are resumable at bundle transaction boundaries. After interruption, resume the newest
+incomplete import with:
+
+```bash
+bun run labs archive import --resume
+```
+
+Use `--resume --output <run-directory>` to select a particular incomplete run. Resume retains the
+original input, compression level, and limit, skips matching stored bundles without reading their
+payloads, and fully verifies the finished archive before publishing it. Logs append to the existing
+run log and the report records the new attempt number. A second resume refuses to start while the
+recorded importer process is still active.
+
+Before publication, import reconciles the stored crawl ids, source references, sizes, metadata, and
+compression policy with the selected snapshot. Verification then runs SQLite `integrity_check` and
+streams every payload through zstd decompression and SHA-256 validation. Numeric crawl traversal is
+backed by an expression index, remains bounded to one payload, and reports progress every 500 rows.
+
+Product processors will replay this archive directly. The cleaned corpus commands remain available
+temporarily for comparison while the product database input is moved to raw bundles.
 
 Build a clean, repacked corpus from the latest extracted snapshot:
 

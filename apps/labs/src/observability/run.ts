@@ -6,6 +6,7 @@ import * as Logger from 'effect/Logger'
 import type {
   ArtifactKind,
   ArtifactProgramResult,
+  ArtifactReference,
   ArtifactRun,
   RunReport,
 } from '../artifacts/types.ts'
@@ -18,12 +19,13 @@ const writeReport = (run: ArtifactRun, report: RunReport) =>
 
 const initialReport = (
   run: ArtifactRun,
+  inputs: readonly ArtifactReference[],
   program: string,
   options: Readonly<Record<string, unknown>>,
 ): RunReport => ({
   format: 'orca-labs-run-report',
   formatVersion: 1,
-  inputs: [],
+  inputs,
   metrics: {},
   options,
   program,
@@ -53,17 +55,24 @@ export const timedPhase = <A, E, R>(name: string, effect: Effect.Effect<A, E, R>
  */
 export const runArtifactProgram = <A, E, R>(options: {
   readonly execute: (run: ArtifactRun) => Effect.Effect<ArtifactProgramResult<A>, E, R>
+  readonly initialInputs?: readonly ArtifactReference[]
   readonly kind: ArtifactKind
   readonly label?: string
   readonly outputDirectory?: string
   readonly program: string
   readonly reportOptions: Readonly<Record<string, unknown>>
+  readonly resume?: { readonly report: RunReport; readonly run: ArtifactRun }
   readonly workDirectory: string
 }) =>
   Effect.scoped(
     Effect.gen(function* runObservedArtifactProgram() {
-      const run = yield* createArtifactRun(options)
-      const report = initialReport(run, options.program, options.reportOptions)
+      const run = options.resume?.run ?? (yield* createArtifactRun(options))
+      const report = initialReport(
+        run,
+        options.initialInputs ?? options.resume?.report.inputs ?? [],
+        options.program,
+        options.reportOptions,
+      )
       yield* writeReport(run, report)
 
       const fileLogger = yield* Logger.toFile(Logger.formatJson, run.logPath, { batchWindow: 100 })

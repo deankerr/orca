@@ -10,15 +10,20 @@ import { isRunReport } from './types.ts'
 
 const repositoryRoot = path.resolve(import.meta.dir, '../../../..')
 const artifactDirectories = {
+  archive: 'archives',
   corpus: 'corpora',
   database: 'databases',
   snapshot: 'snapshots',
 } satisfies Record<ArtifactKind, string>
 const artifactNames = {
+  archive: 'bundles.sqlite',
   corpus: 'corpus',
   database: 'products.sqlite',
   snapshot: 'snapshot',
 } satisfies Record<ArtifactKind, string>
+
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const pathExists = async (candidate: string) => {
   try {
@@ -26,6 +31,20 @@ const pathExists = async (candidate: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+const processIsActive = (processId: number) => {
+  try {
+    process.kill(processId, 0)
+    return true
+  } catch (error) {
+    return !(
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ESRCH'
+    )
   }
 }
 
@@ -57,6 +76,31 @@ const readReport = async (reportPath: string): Promise<RunReport | undefined> =>
     // An incomplete or foreign report is not a valid artifact index entry.
   }
 
+  return undefined
+}
+
+const readLoggedInput = async (logPath: string): Promise<string | undefined> => {
+  try {
+    const text = await Bun.file(logPath).text()
+    const lines = text.split('\n')
+    for (const line of lines) {
+      try {
+        const entry: unknown = JSON.parse(line)
+        if (
+          isRecord(entry) &&
+          entry.message === 'input ready' &&
+          isRecord(entry.annotations) &&
+          typeof entry.annotations.input === 'string'
+        ) {
+          return entry.annotations.input
+        }
+      } catch {
+        // A partial final log line is expected after an abrupt interruption.
+      }
+    }
+  } catch {
+    // Older interrupted runs may not have reached input logging.
+  }
   return undefined
 }
 
@@ -117,6 +161,88 @@ export const createArtifactRun = Effect.fn('labs.createArtifactRun')(
       startedAt: new Date(startedAtMillis).toISOString(),
       startedAtMillis,
     } satisfies ArtifactRun
+  },
+)
+
+/**
+ * Finds an incomplete artifact run for an explicit directory or, when omitted, the newest
+ * incomplete run of that kind. The caller remains responsible for validating artifact contents.
+ */
+export const findResumableArtifactRun = Effect.fn('labs.findResumableArtifactRun')(
+  function* findResumableArtifactRun(options: {
+    readonly kind: ArtifactKind
+    readonly outputDirectory?: string
+    readonly program: string
+    readonly workDirectory: string
+  }) {
+    const typeDirectory = path.join(options.workDirectory, artifactDirectories[options.kind])
+    const candidates =
+      options.outputDirectory === undefined
+        ? yield* Effect.tryPromise(async () => {
+            try {
+              const entries = await readdir(typeDirectory, { withFileTypes: true })
+              return entries
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => path.join(typeDirectory, entry.name))
+                .toSorted((left, right) => right.localeCompare(left))
+            } catch {
+              return []
+            }
+          })
+        : [path.resolve(options.outputDirectory)]
+
+    for (const runDirectory of candidates) {
+      const report = yield* Effect.promise(
+        async () => await readReport(path.join(runDirectory, 'report.json')),
+      )
+      const artifactPath = path.join(runDirectory, artifactNames[options.kind])
+      if (
+        report?.program !== options.program ||
+        report.status === 'succeeded' ||
+        !(yield* Effect.promise(async () => await pathExists(artifactPath)))
+      ) {
+        continue
+      }
+      const { processId } = report.options
+      if (
+        report.status === 'running' &&
+        typeof processId === 'number' &&
+        Number.isSafeInteger(processId) &&
+        processIsActive(processId)
+      ) {
+        return yield* Effect.fail(
+          new Error(
+            `${options.program} run ${report.runId} is still active as process ${processId}`,
+          ),
+        )
+      }
+      const logPath = path.join(runDirectory, 'run.log.jsonl')
+      const loggedInput =
+        typeof report.options.input === 'string'
+          ? undefined
+          : yield* Effect.promise(async () => await readLoggedInput(logPath))
+      const resumableReport =
+        loggedInput === undefined
+          ? report
+          : { ...report, options: { ...report.options, input: loggedInput } }
+      const startedAtMillis = yield* Clock.currentTimeMillis
+      return {
+        report: resumableReport,
+        run: {
+          artifactPath,
+          kind: options.kind,
+          logPath,
+          reportPath: path.join(runDirectory, 'report.json'),
+          runDirectory,
+          runId: resumableReport.runId,
+          startedAt: new Date(startedAtMillis).toISOString(),
+          startedAtMillis,
+        } satisfies ArtifactRun,
+      }
+    }
+
+    const target = options.outputDirectory ?? typeDirectory
+    return yield* Effect.fail(new Error(`no incomplete ${options.program} run found at ${target}`))
   },
 )
 
