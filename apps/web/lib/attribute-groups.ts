@@ -8,14 +8,10 @@ export const endpointModalityInputAttributes = [
 ] as const
 
 export const endpointModalityOutputAttributes = [
-  'text_output',
   'image_output',
   'audio_output',
   'speech_output',
   'video_output',
-  'embeddings_output',
-  'rerank_output',
-  'transcription_output',
 ] as const
 
 export const endpointModalityAttributes = [

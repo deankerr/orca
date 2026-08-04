@@ -67,7 +67,7 @@ export function ModalityFilterMenu() {
         />
 
         <FilterMenuBody>
-          <FilterMenuSection title="Input" description="Capabilities accepted by the endpoint.">
+          <FilterMenuSection title="Input" description="Modalities accepted by the model.">
             {endpointModalityInputAttributes.map(renderModalityToggle)}
           </FilterMenuSection>
 
