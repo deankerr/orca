@@ -4,6 +4,7 @@ import * as Flag from 'effect/unstable/cli/Flag'
 
 import { resolveArtifactReference } from '../artifacts/workspace.ts'
 import { isCompressionLevel, writeCorpus } from '../corpus/build.ts'
+import type { CorpusWindow } from '../corpus/build.ts'
 import { runArtifactProgram, timedPhase } from '../observability/run.ts'
 import { corpusMetrics, snapshotMetrics } from '../reports/metrics.ts'
 import { logInputSummary, renderRunReport } from '../reports/render.ts'
@@ -34,6 +35,35 @@ const limitFlag = Flag.integer('limit').pipe(
   Flag.withDescription('Process only the first N snapshot crawls'),
   Flag.optional,
 )
+const windowsFlag = Flag.string('windows').pipe(
+  Flag.withDescription('Comma-separated diagnostic crawl windows as offset:count pairs'),
+  Flag.optional,
+)
+
+const parseWindows = (value: string | undefined): readonly CorpusWindow[] | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+  const windows = value.split(',').map((window) => {
+    const match = /^(?<offset>\d+):(?<count>\d+)$/.exec(window.trim())
+    if (match?.groups === undefined) {
+      throw new Error('--windows must contain comma-separated offset:count pairs')
+    }
+    const offset = Number(match.groups.offset)
+    const count = Number(match.groups.count)
+    if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(count) || count < 1) {
+      throw new Error('--windows offsets must be non-negative and counts must be positive')
+    }
+    return { count, offset }
+  })
+  for (const [index, window] of windows.entries()) {
+    const previous = windows[index - 1]
+    if (previous !== undefined && window.offset < previous.offset + previous.count) {
+      throw new Error('--windows must be ordered and non-overlapping')
+    }
+  }
+  return windows
+}
 
 /** Builds a clean corpus from an explicit snapshot or the latest successful compatible one. */
 export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(options: {
@@ -45,8 +75,13 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
   readonly outputDirectory?: string
   readonly shardSize: number
   readonly workDirectory: string
+  readonly windows?: string
 }) {
   const { compressionLevel } = options
+  const windows = yield* Effect.try({
+    catch: (cause) => (cause instanceof Error ? cause : new Error('could not parse --windows')),
+    try: () => parseWindows(options.windows),
+  })
 
   if (options.jobs < 1) {
     return yield* Effect.fail(new Error('--jobs must be positive'))
@@ -60,6 +95,9 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
   if (options.limit !== undefined && options.limit < 1) {
     return yield* Effect.fail(new Error('--limit must be positive'))
   }
+  if (options.limit !== undefined && windows !== undefined) {
+    return yield* Effect.fail(new Error('--limit and --windows cannot be used together'))
+  }
 
   // Resolve input
   const input = yield* resolveArtifactReference({
@@ -69,6 +107,16 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
     workDirectory: options.workDirectory,
   })
   const inputMetrics = yield* snapshotMetrics(input.path)
+  const unavailableWindow = windows?.find(
+    (window) => window.offset + window.count > inputMetrics.crawls,
+  )
+  if (unavailableWindow !== undefined) {
+    return yield* Effect.fail(
+      new Error(
+        `--windows range ${unavailableWindow.offset}:${unavailableWindow.count} exceeds ${inputMetrics.crawls} available crawls`,
+      ),
+    )
+  }
 
   // Build and report
   return yield* runArtifactProgram({
@@ -85,6 +133,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
             overwrite: false,
             shardSize: options.shardSize,
             snapshotDirectory: input.path,
+            windows,
           }),
         )
         const summary = build.value
@@ -99,6 +148,8 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
               build.durationMs === 0
                 ? null
                 : ((metrics.accepted + metrics.dropped) * 1000) / build.durationMs,
+            peakRssBytes: summary.peakRssBytes,
+            stageTotalsMs: summary.stageTotalsMs,
           },
           value: { ...summary, metrics },
         }
@@ -112,6 +163,7 @@ export const buildCorpus = Effect.fn('labs.buildCorpus')(function* buildCorpus(o
       jobs: options.jobs,
       limit: options.limit ?? null,
       shardSize: options.shardSize,
+      windows: windows ?? null,
     },
     workDirectory: options.workDirectory,
   })
@@ -125,6 +177,7 @@ export const buildCorpusCommand = Command.make('build', {
   limit: limitFlag,
   output: outputFlag,
   shardSize: shardSizeFlag,
+  windows: windowsFlag,
 }).pipe(
   Command.withDescription('Clean and repack the latest snapshot into a reusable corpus'),
   Command.withHandler((input) =>
@@ -138,6 +191,7 @@ export const buildCorpusCommand = Command.make('build', {
         limit: optionalValue(input.limit),
         outputDirectory: optionalValue(input.output),
         shardSize: input.shardSize,
+        windows: optionalValue(input.windows),
         workDirectory,
       })
       yield* renderRunReport(result.report)

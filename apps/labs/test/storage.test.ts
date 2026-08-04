@@ -69,6 +69,7 @@ describe('sharded corpus storage', () => {
         overwrite: false,
         shardSize: 2,
         snapshotDirectory,
+        windows: undefined,
       }),
     )
     expect(result).toMatchObject({ accepted: 1, dropped: 1, shards: 1 })

@@ -69,6 +69,18 @@ is `1` for fast iteration. `--shard-size`, `--jobs`, and `--limit` retain their 
 and Zstandard compression remain synchronous on Bun's main thread. Per-shard timings in
 `run.log.jsonl` make the resulting throughput visible rather than implying worker parallelism.
 
+Diagnostic builds can select several ordered, non-overlapping regions while retaining consecutive
+crawls and real multi-shard writes within each region:
+
+```bash
+bun run labs corpus build --windows 0:768,6227:640,16975:640 --shard-size 256
+```
+
+Each `offset:count` pair addresses the chronologically sorted extracted crawls. `--windows` and
+`--limit` are mutually exclusive. Per-shard log records include stage work timings, process CPU,
+memory, page faults, filesystem counters, and context switches; the final report rolls up stage
+totals and peak RSS for quick comparison.
+
 ## Build the product database
 
 Replay the latest compatible corpus at daily historical precision:
