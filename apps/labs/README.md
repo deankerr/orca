@@ -4,6 +4,9 @@ Reproducible local data experiments and product research. Labs turns replaceable
 into reusable corpora and product projections. Runnable workflows are explicit programs; pure
 transforms and storage helpers do not own CLI policy.
 
+See [MODULES.md](MODULES.md) for file ownership and consumers, and [CONTEXT.md](CONTEXT.md) for the
+canonical pipeline glossary.
+
 ## Workspace and artifact selection
 
 Labs uses `.labs-work` at the repository root by default. Override it globally with
