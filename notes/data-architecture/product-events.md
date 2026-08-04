@@ -101,7 +101,9 @@ The repeatable `bun:sqlite` build owns:
 
 Historical replay selects the final materializable crawl of each UTC day by default. This is a
 disposable read policy over the full-precision raw archive: ordinary forward diffing emits net
-daily changes.
+daily changes. Structural inspection precedes selection so an unusable final observation falls back
+to the preceding usable candidate; full core schema decoding and model deduplication happen only for
+the selected candidate.
 An explicit full-precision build retains every accepted crawl. The database records the selected
 policy as metadata.
 

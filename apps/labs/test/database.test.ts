@@ -92,7 +92,10 @@ const bundle = (crawlId: string, price: string) => ({
 
 const writeArchive = async (
   directory: string,
-  values = [bundle('1', '0.000001'), bundle('2', '0.000003')],
+  values: readonly {
+    readonly crawl_id: string
+    readonly data: { readonly models: readonly unknown[] }
+  }[] = [bundle('1', '0.000001'), bundle('2', '0.000003')],
 ) => {
   const archivePath = path.join(directory, 'bundles.sqlite')
   await Effect.runPromise(
@@ -220,5 +223,53 @@ describe('raw archive database build', () => {
       ),
     )
     expect(crawls).toEqual([{ crawl_id: '2' }])
+  })
+
+  test('selects the daily candidate before decoding the core schema', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'orca-labs-db-'))
+    directories.push(directory)
+    const archivePath = await writeArchive(directory, [
+      {
+        crawl_id: '1',
+        data: {
+          models: [
+            {
+              endpoints: [{ id: 'incomplete', model: { output_modalities: ['text'] } }],
+              model: { output_modalities: ['text'] },
+            },
+          ],
+        },
+      },
+      bundle('2', '0.000001'),
+    ])
+    const outputPath = path.join(directory, 'daily-candidate.sqlite')
+
+    const result = await Effect.runPromise(replayProductDatabase({ archivePath, outputPath }))
+    expect(result).toMatchObject({ acceptedCrawls: 2, crawls: 1, sourceBundlesRead: 2 })
+  })
+
+  test('falls back to the last usable daily candidate', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'orca-labs-db-'))
+    directories.push(directory)
+    const archivePath = await writeArchive(directory, [
+      bundle('1', '0.000001'),
+      { crawl_id: '2', data: { models: [] } },
+    ])
+    const outputPath = path.join(directory, 'daily-fallback.sqlite')
+
+    const result = await Effect.runPromise(replayProductDatabase({ archivePath, outputPath }))
+    expect(result).toMatchObject({ acceptedCrawls: 1, crawls: 1, sourceBundlesRead: 2 })
+
+    const crawls = await Effect.runPromise(
+      Effect.gen(function* readCrawls() {
+        const sql = yield* SqlClient.SqlClient
+        return yield* sql<{ crawl_id: string }>`SELECT crawl_id FROM crawls`
+      }).pipe(
+        Effect.provide(
+          SqliteClient.layer({ disableWAL: true, filename: outputPath, readonly: true }),
+        ),
+      ),
+    )
+    expect(crawls).toEqual([{ crawl_id: '1' }])
   })
 })

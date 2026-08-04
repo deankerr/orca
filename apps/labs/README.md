@@ -95,11 +95,12 @@ Build every accepted historical crawl when analysis requires full precision:
 bun run labs db build --label full --precision full
 ```
 
-The raw archive remains full precision in both cases. Each bundle is decompressed and verified,
-then JSON parsing, text-scope filtering, endpoint-model deduplication, core schema selection, and
-diff planning happen in one bounded read. Outer scope models are never materialized; the last
-endpoint-embedded copy for each model slug wins, matching the production materializer. Empty or
-unusable observations are excluded without changing the archive.
+The raw archive remains full precision in both cases. Each bundle is decompressed, verified, parsed,
+and structurally inspected in one bounded read. Daily replay retains only the last usable candidate
+for each UTC day before core schema decoding and model deduplication; if the day's final bundle is
+unusable, the preceding usable candidate remains selected. Full precision materializes every usable
+candidate. Outer scope models are never materialized; the last endpoint-embedded copy for each model
+slug wins, matching the production materializer.
 
 The database records its precision and processor version. Entities in the first selected crawl
 receive a `baseline` event, meaning “present at the lower bound” rather than an observed availability

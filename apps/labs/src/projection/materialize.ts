@@ -24,6 +24,19 @@ export type MaterializationResult =
       readonly reason: MaterializationDropReason
     }
 
+export interface MaterializationCandidate {
+  readonly crawlId: string
+  readonly endpoints: readonly JsonRecord[]
+}
+
+export type InspectionResult =
+  | { readonly _tag: 'Accepted'; readonly candidate: MaterializationCandidate }
+  | {
+      readonly _tag: 'Dropped'
+      readonly crawlId: string
+      readonly reason: MaterializationDropReason
+    }
+
 const textDecoder = new TextDecoder()
 
 const isTextOutput = (model: JsonRecord) => {
@@ -44,13 +57,8 @@ const readMetrics = (endpoint: JsonRecord): EndpointMetrics | undefined => {
   return Object.keys(metrics).length === 0 ? undefined : metrics
 }
 
-/**
- * Reads one exact raw archive bundle into the core product projection. Filtering and endpoint-model
- * deduplication happen here so raw evidence remains untouched and no intermediate corpus is needed.
- */
-export const materialize = (
-  bundle: Pick<RawBundle, 'bytes' | 'crawlId'>,
-): MaterializationResult => {
+/** Parses one raw bundle and applies only the structural policy needed to select usable crawls. */
+export const inspectBundle = (bundle: Pick<RawBundle, 'bytes' | 'crawlId'>): InspectionResult => {
   let value: unknown
   try {
     value = JSON.parse(textDecoder.decode(bundle.bytes))
@@ -69,8 +77,7 @@ export const materialize = (
     return { _tag: 'Dropped', crawlId: bundle.crawlId, reason: 'empty-catalog' }
   }
 
-  const models = new Map<string, CoreModel>()
-  const endpoints = new Map<string, MaterializedEndpoint>()
+  const endpoints: JsonRecord[] = []
 
   for (const scope of value.data.models) {
     if (!isRecord(scope) || !isRecord(scope.model)) {
@@ -95,32 +102,52 @@ export const materialize = (
         continue
       }
 
-      // Match the production materializer: only endpoint-embedded copies are authoritative, and
-      // the last copy for a model slug wins. The outer scope model is fetch metadata only.
-      const model = decodeModel(rawEndpoint.model)
-      const { model: _, ...rawEndpointData } = rawEndpoint
-      const endpoint: CoreEndpoint = decodeEndpoint(rawEndpointData)
-      models.set(model.slug, model)
-      endpoints.set(endpoint.id, {
-        endpoint,
-        metrics: readMetrics(rawEndpoint),
-        modelSlug: model.slug,
-      })
+      endpoints.push(rawEndpoint)
     }
   }
 
-  if (endpoints.size === 0) {
+  if (endpoints.length === 0) {
     return { _tag: 'Dropped', crawlId: bundle.crawlId, reason: 'no-text-endpoints' }
   }
 
-  return {
-    _tag: 'Accepted',
-    batch: {
-      crawlId: bundle.crawlId,
-      endpoints: [...endpoints.values()].toSorted((left, right) =>
-        left.endpoint.id.localeCompare(right.endpoint.id),
-      ),
-      models: [...models.values()].toSorted((left, right) => left.slug.localeCompare(right.slug)),
-    },
+  return { _tag: 'Accepted', candidate: { crawlId: bundle.crawlId, endpoints } }
+}
+
+/**
+ * Projects one structurally accepted candidate. Endpoint-embedded models are authoritative and the
+ * last copy for each slug wins, matching the production materializer.
+ */
+export const materializeCandidate = (candidate: MaterializationCandidate): ProjectionBatch => {
+  const models = new Map<string, CoreModel>()
+  const endpoints = new Map<string, MaterializedEndpoint>()
+
+  for (const rawEndpoint of candidate.endpoints) {
+    const model = decodeModel(rawEndpoint.model)
+    const { model: _, ...rawEndpointData } = rawEndpoint
+    const endpoint: CoreEndpoint = decodeEndpoint(rawEndpointData)
+    models.set(model.slug, model)
+    endpoints.set(endpoint.id, {
+      endpoint,
+      metrics: readMetrics(rawEndpoint),
+      modelSlug: model.slug,
+    })
   }
+
+  return {
+    crawlId: candidate.crawlId,
+    endpoints: [...endpoints.values()].toSorted((left, right) =>
+      left.endpoint.id.localeCompare(right.endpoint.id),
+    ),
+    models: [...models.values()].toSorted((left, right) => left.slug.localeCompare(right.slug)),
+  }
+}
+
+/** Fully inspects and materializes one raw bundle when no replay selection policy is involved. */
+export const materialize = (
+  bundle: Pick<RawBundle, 'bytes' | 'crawlId'>,
+): MaterializationResult => {
+  const result = inspectBundle(bundle)
+  return result._tag === 'Dropped'
+    ? result
+    : { _tag: 'Accepted', batch: materializeCandidate(result.candidate) }
 }

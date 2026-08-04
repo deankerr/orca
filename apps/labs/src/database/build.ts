@@ -8,9 +8,10 @@ import * as Stream from 'effect/Stream'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
 import { bundleArchive, bundleArchiveSummary } from '../bundle-archive/storage.ts'
-import { materialize } from '../projection/materialize.ts'
+import { inspectBundle, materializeCandidate } from '../projection/materialize.ts'
+import type { MaterializationCandidate } from '../projection/materialize.ts'
 import { planCrawl } from '../projection/plan.ts'
-import type { ProjectionBatch, ProjectionState } from '../projection/types.ts'
+import type { ProjectionState } from '../projection/types.ts'
 import { selectHistoricalCrawls } from './precision.ts'
 import type { HistoricalPrecision } from './precision.ts'
 import { initializeDatabase } from './schema.ts'
@@ -42,26 +43,27 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   let eventCount = 0
   const startedAt = clock.currentTimeMillisUnsafe()
   let commitDurationMs = 0
+  let inspectDurationMs = 0
   let materializeDurationMs = 0
   let planDurationMs = 0
   let acceptedCrawls = 0
   let sourceBundlesRead = 0
 
-  // Read and materialize raw bundles
-  const materialized = bundleArchive.pipe(
+  // Inspect raw bundles
+  const inspected = bundleArchive.pipe(
     Stream.provide(SqliteClient.layer({ disableWAL: true, filename: archivePath, readonly: true })),
     Stream.mapEffect((bundle) =>
-      Effect.gen(function* materializeRawBundle() {
+      Effect.gen(function* inspectRawBundle() {
         sourceBundlesRead += 1
         const started = clock.currentTimeNanosUnsafe()
         const result = yield* Effect.try({
           catch: (cause) =>
-            new Error(`could not materialize archive crawl ${bundle.crawlId}`, { cause }),
-          try: () => materialize(bundle),
+            new Error(`could not inspect archive crawl ${bundle.crawlId}`, { cause }),
+          try: () => inspectBundle(bundle),
         })
-        materializeDurationMs += Number(clock.currentTimeNanosUnsafe() - started) / 1_000_000
+        inspectDurationMs += Number(clock.currentTimeNanosUnsafe() - started) / 1_000_000
         if (result._tag === 'Accepted') {
-          return result.batch
+          return result.candidate
         }
         yield* Effect.logWarning('raw bundle excluded from product projection').pipe(
           Effect.annotateLogs({ crawlId: result.crawlId, reason: result.reason }),
@@ -69,9 +71,9 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
         return null
       }),
     ),
-    Stream.filter((batch): batch is ProjectionBatch => batch !== null),
+    Stream.filter((candidate): candidate is MaterializationCandidate => candidate !== null),
   )
-  const bounded = limit === undefined ? materialized : materialized.pipe(Stream.take(limit))
+  const bounded = limit === undefined ? inspected : inspected.pipe(Stream.take(limit))
   const accepted = bounded.pipe(
     Stream.tap(() =>
       Effect.sync(() => {
@@ -83,19 +85,26 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
   // Replay selected crawls
   let completed = 0
   yield* selectHistoricalCrawls(accepted, precision).pipe(
-    Stream.runForEach((crawl) =>
+    Stream.runForEach((candidate) =>
       Effect.gen(function* processCrawl() {
+        const materializeStarted = clock.currentTimeNanosUnsafe()
+        const batch = yield* Effect.try({
+          catch: (cause) =>
+            new Error(`could not materialize archive crawl ${candidate.crawlId}`, { cause }),
+          try: () => materializeCandidate(candidate),
+        })
         const planStarted = clock.currentTimeNanosUnsafe()
-        const plan = planCrawl(state, crawl, previousCrawlId)
+        const plan = planCrawl(state, batch, previousCrawlId)
         const commitStarted = clock.currentTimeNanosUnsafe()
         yield* commitCrawl(plan)
         const committedAt = clock.currentTimeNanosUnsafe()
 
+        materializeDurationMs += Number(planStarted - materializeStarted) / 1_000_000
         planDurationMs += Number(commitStarted - planStarted) / 1_000_000
         commitDurationMs += Number(committedAt - commitStarted) / 1_000_000
 
         state = plan.after
-        previousCrawlId = crawl.crawlId
+        previousCrawlId = candidate.crawlId
         eventCount += plan.events.length
         completed += 1
         if (completed % (precision === 'daily' ? 30 : 250) === 0) {
@@ -105,6 +114,7 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
               completed,
               elapsedSeconds: Math.round((clock.currentTimeMillisUnsafe() - startedAt) / 1000),
               events: eventCount,
+              inspectDurationMs: Math.round(inspectDurationMs),
               materializeDurationMs: Math.round(materializeDurationMs),
               planDurationMs: Math.round(planDurationMs),
               precision,
@@ -128,6 +138,7 @@ const populate = Effect.fn('labs.populateProductDatabase')(function* populate(
     sourceBundlesRead,
     timings: {
       commitDurationMs: Math.round(commitDurationMs),
+      inspectDurationMs: Math.round(inspectDurationMs),
       materializeDurationMs: Math.round(materializeDurationMs),
       planDurationMs: Math.round(planDurationMs),
     },

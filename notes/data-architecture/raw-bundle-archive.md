@@ -93,6 +93,14 @@ A replay reads one row at a time in ascending crawl order, decompresses and veri
 parses one bundle, commits one product transition, then releases that bundle. Historical precision
 is a read policy selected from archive metadata; the raw archive always retains full precision.
 
+Daily replay structurally inspects every bundle but defers core schema decoding and endpoint-model
+deduplication until after selecting the final usable candidate for each UTC day. This preserves
+fallback when a day's final observation is unusable while retaining at most one candidate. On the
+19,245-bundle archive, moving full materialization after selection reduced replay from 1,220.3 to
+798.8 seconds. Selected-candidate materialization took 8.1 seconds; raw JSON inspection remained the
+largest measured stage at 599.1 seconds. The resulting database is row-for-row identical to the
+pre-refactor macOS database across every table.
+
 ## Incremental catch-up
 
 The production snapshot establishes an imported watermark. A Convex synchronizer should then:

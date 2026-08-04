@@ -173,12 +173,17 @@ Defines the store-neutral values passed from materialization through diff planni
 
 ### `src/projection/materialize.ts`
 
-Reads a raw bundle, applies core observation policy, validates selected schemas, deduplicates
-endpoint-embedded model copies, and separates endpoint metrics from entity state.
+Separates structural bundle inspection from selected core projection so replay policies can choose
+candidates before expensive schema decoding and endpoint-model deduplication.
 
-- `MaterializationResult` — explicit accepted/excluded read outcome.
-- `materialize` — converts exact raw bytes into a sorted `ProjectionBatch` or exclusion reason.
-  Consumed by `database/build.ts` and materialization tests.
+- `MaterializationCandidate`, `InspectionResult`, `MaterializationResult` — values at the structural
+  inspection and completed projection boundaries.
+- `inspectBundle` — parses raw bytes and returns a usable candidate or exclusion reason. Consumed by
+  database replay.
+- `materializeCandidate` — validates and projects a selected candidate, deduplicating embedded model
+  copies. Consumed by database replay.
+- `materialize` — performs both stages when no replay selection policy is involved. Consumed by
+  materialization tests.
 
 ### `src/projection/diff.ts`
 
@@ -202,8 +207,8 @@ Owns the historical sampling policy without altering the full-precision raw arch
 
 - `HistoricalPrecision` — supported replay policies, `daily` and `full`. Consumed by database build
   and its program.
-- `selectHistoricalCrawls` — passes every crawl through or selects the final accepted crawl per UTC
-  day. Consumed by `database/build.ts` and precision tests.
+- `selectHistoricalCrawls` — generically passes every crawl-shaped value through or selects the
+  final accepted candidate per UTC day. Consumed by `database/build.ts` and precision tests.
 
 ### `src/database/schema.ts`
 
