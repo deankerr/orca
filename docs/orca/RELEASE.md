@@ -1,0 +1,98 @@
+# Releases
+
+Simple incrementing version: `v35`, `v36`, `v37`, etc. Source of truth is `package.json` version field (`35.0.0` = `v35`).
+
+## Architecture
+
+- **Version lives in package.json.** Always available at build time, no git tag tricks needed.
+- **Production deploys are gated.** Vercel auto-deploy on main push is disabled (`vercel.json`). Production only deploys when a GitHub release is created.
+- **Preview deploys are automatic.** PR branches still get Vercel preview deployments, except Graphite's temporary `graphite-base/*` branches.
+- **CI checks on PRs and main.** GitHub Actions validates lint/formatting on every pull request and push to `main`.
+- **Release runs a local safety check.** `bun run release` bumps `package.json`, runs `bun run check`, then commits only if the repo is still cleanly formatted.
+- **GitHub Actions triggers the deploy.** Release created → Action curls the Vercel Deploy Hook.
+
+## How It Works
+
+1. `bun run release` reads the current major version from `package.json`
+2. Verifies you are already on a clean local `main` that exactly matches `origin/main`
+3. Bumps it in-place in `package.json` (e.g. `35.0.0` → `36.0.0`) without reserializing the file
+4. Runs `bun run check` locally so lint/format regressions fail before commit/push
+5. Commits and pushes to `main`
+6. `gh release create` creates the git tag + GitHub release with auto-generated changelog
+7. GitHub Action (`deploy-production.yml`) triggers on `release: created`
+8. Action curls the Vercel Deploy Hook, triggering a production build from `main`
+9. `next.config.ts` reads `package.json` version → `NEXT_PUBLIC_APP_VERSION` = `v36`
+10. `instrumentation-client.ts` registers it as a PostHog super property (`app_version`)
+
+## Commands
+
+```bash
+bun run release                    # auto-increment, commit, push, deploy
+bun run release "short summary"    # with a title
+bun run release --dry-run          # preview without creating or deploying
+```
+
+## Workflow: Landing a Graphite Stack
+
+```
+1. Work on feature across stacked PRs
+2. Submit stack: gt ss
+3. PRs are reviewed and merged to main sequentially
+   - CI validates lint/formatting on each PR
+   - Preview builds work
+   - No production deploy happens
+4. Wait for the entire stack to land on main
+5. Check out `main` yourself and sync it with `origin/main`
+6. Run: bun run release "table perf"
+   - Verifies branch / cleanliness / sync state
+   - Bumps package.json to v36, runs `bun run check`, commits, pushes
+   - Creates GitHub release with changelog
+   - GitHub Action fires, curls deploy hook
+   - Vercel builds main → version is v36
+```
+
+**Important:** Only run `bun run release` after the full stack has landed, from a clean local `main` that already matches `origin/main`.
+
+## Manual Redeploy
+
+```bash
+curl -X POST "$VERCEL_DEPLOY_HOOK"                       # with build cache
+curl -X POST "$VERCEL_DEPLOY_HOOK?buildCache=false"       # without build cache
+```
+
+The deploy hook URL is in Vercel Dashboard > orca > Settings > Git > Deploy Hooks.
+
+## Hotfix
+
+```
+1. Push fix directly to main (or fast-track a single PR)
+2. Run: bun run release "fix: whatever broke"
+```
+
+## PostHog Version Tracking
+
+Every event is tagged with `app_version`. Filter any insight by this property to compare metrics across releases.
+
+## Setup
+
+### Vercel Dashboard
+
+`vercel.json` disables auto-production-deploys on main. Deploy Hook (`production`, targeting `main` branch) triggers builds.
+
+### GitHub Secrets
+
+| Secret               | Value                                 |
+| -------------------- | ------------------------------------- |
+| `VERCEL_DEPLOY_HOOK` | Deploy Hook URL from Vercel Dashboard |
+
+### Files
+
+| File                                      | Purpose                                       |
+| ----------------------------------------- | --------------------------------------------- |
+| `package.json`                            | Source of truth for version number            |
+| `scripts/release.ts`                      | Release script: bump, commit, tag, release    |
+| `.github/workflows/ci.yml`                | PR/main checks: typecheck + lint              |
+| `.github/workflows/deploy-production.yml` | Triggers deploy hook on release               |
+| `next.config.ts`                          | Reads version from package.json at build time |
+| `instrumentation-client.ts`               | Sends version to PostHog as super property    |
+| `vercel.json`                             | Disables auto-production-deploy on main       |

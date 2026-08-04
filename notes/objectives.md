@@ -7,23 +7,6 @@
 - Enable modular processing pipelines/utilities
 - Satisfy existing product data requirements
 
-## Immediate production slice
-
-Build confidence one product outcome at a time instead of designing every future product, modality,
-and schema variation together.
-
-1. Instantiate live core projection and diff processing from a recorded cutover crawl.
-2. Prove the selected current view and immutable change events by repeatedly rebuilding the full
-   archive with `bun:sqlite`.
-3. Backfill the same event contract forward from the historical archive to the cutover boundary.
-4. Supply Monitor and constrained Pricing History from those events.
-5. Supply the ORCA API from the D1 current view; evaluate the Grid cutover from the same view.
-
-SQLite is the local executable specification, not the production architecture. Raw artifacts remain
-authoritative, and the processor must expose a store contract that a later production adapter can
-implement. Choose D1 or another remote projection only after the full history and product queries
-are proven locally.
-
 ## Products
 
 - Harmonize schema/field label definitions
