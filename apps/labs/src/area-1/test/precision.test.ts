@@ -3,8 +3,8 @@ import { describe, expect, test } from 'bun:test'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
-import { selectHistoricalCrawls } from '../src/database/precision.ts'
-import type { ProjectionBatch } from '../src/projection/types.ts'
+import { selectHistoricalCrawls } from '../database/precision.ts'
+import type { ProjectionBatch } from '../projection/types.ts'
 
 const crawl = (crawlId: string): ProjectionBatch => ({ crawlId, endpoints: [], models: [] })
 

@@ -1,33 +1,30 @@
 # ORCA (OpenRouter Capability Analysis)
 
-## Active: New Architecture
+## New Architecture rewrite
 
-- @notes/objectives.md is the primary statement of tangible objectives and product requirements.
-- @notes/now.md current work
-- @docs/openrouter reference when working directly with the data
+- See @notes/objectives.md for primary objectives and requirements.
+- Current status tracked in @notes/now.md
+- Refer to @docs/openrouter when working directly with model/endpoint data
 
 ## Vendored Repositories
 
 This project vendors external repositories under @repos/
 
-- Use vendored repositories as read-only reference material when working with related libraries
-- Prefer examples and patterns from the vendored source code over generated guesses or web search results
+- Reference material for preferred examples and patterns, over generated guesses or web search results
 - Do not import from @repos/ - application code should continue importing from normal package dependencies
 
 ## Effect V4 Beta
 
-- Effect should be used in all newly written code.
 - When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
 
 # Legacy Instructions
 
-## OXC
+## Development
 
-- Always run `bun run fix` after you have completed your changes, to check and auto-fix errors where possible.
-- Inline disables may be used with a short explanation to justify it.
-- The script may change files that you didn't touch - this is acceptable and changes should be retained.
+- Use `bun run fix` for all code validation.
+- Inline linter disables may be used if the reasoning is justified.
 
 ## Overview
 
@@ -68,13 +65,6 @@ Users can subscribe to model id patterns, providing a personalized version of Mo
 Public HTTP API providing programmatic access to ORCA's curated data.
 
 - `packages/backend/convex/public_api/preview_v2.ts`
-
-### Remeda
-
-- Use remeda to write functional code that is compact as easy to read.
-- Import with this conventinon: `import * as R from 'remeda` - full treeshaken, safe to use in the frontend and backend
-- It is maintained by TKDodo, is battle-tested and has excellent type-safety
-- Useful examples: `R.isDefined`, `R.isNullish`, `R.isNonNullish`, `R.chunk`, `R.pickBy`, `R.omitBy`, `R.countBy`
 
 ## Entity Logos
 

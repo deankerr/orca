@@ -9,10 +9,10 @@ import { SqliteClient } from '@effect/sql-sqlite-bun'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
-import { encodeGzipBundle } from '../src/bundle-archive/encoding.ts'
-import { importSnapshotBundles } from '../src/bundle-archive/import-snapshot.ts'
-import { appendBundle, bundleArchive, verifyBundleArchive } from '../src/bundle-archive/storage.ts'
-import { importBundleArchive } from '../src/programs/import-bundle-archive.program.ts'
+import { encodeGzipBundle } from '../bundle-archive/encoding.ts'
+import { importSnapshotBundles } from '../bundle-archive/import-snapshot.ts'
+import { appendBundle, bundleArchive, verifyBundleArchive } from '../bundle-archive/storage.ts'
+import { importBundleArchive } from '../programs/import-bundle-archive.program.ts'
 
 const directories: string[] = []
 

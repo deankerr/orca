@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import type { CoreEndpoint, CoreModel } from '@orca/schema/archive-core.ts'
 
-import { materialize } from '../src/projection/materialize.ts'
+import { materialize } from '../projection/materialize.ts'
 
 const model = {
   author: 'author',

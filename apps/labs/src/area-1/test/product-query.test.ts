@@ -8,12 +8,12 @@ import type { CoreEndpoint, CoreModel } from '@orca/schema/archive-core.ts'
 import * as Effect from 'effect/Effect'
 import type { SqlClient } from 'effect/unstable/sql/SqlClient'
 
-import { initializeDatabase } from '../src/database/schema.ts'
-import { commitCrawl } from '../src/database/write.ts'
-import { monitorPage } from '../src/product-query/monitor.ts'
-import { pricingHistory } from '../src/product-query/pricing.ts'
-import { planCrawl } from '../src/projection/plan.ts'
-import type { ProjectionBatch, ProjectionState } from '../src/projection/types.ts'
+import { initializeDatabase } from '../database/schema.ts'
+import { commitCrawl } from '../database/write.ts'
+import { monitorPage } from '../product-query/monitor.ts'
+import { pricingHistory } from '../product-query/pricing.ts'
+import { planCrawl } from '../projection/plan.ts'
+import type { ProjectionBatch, ProjectionState } from '../projection/types.ts'
 
 const directories: string[] = []
 

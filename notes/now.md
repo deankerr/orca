@@ -6,7 +6,9 @@
 - develop bulk data and product storage strategies
 - evidence based decisions
 
-### bundle archive
+### area-1
+
+#### bundle archive
 
 - bundles from convex re-compressed and stored in a db
 - todo: incremental update support
@@ -16,7 +18,7 @@
   - has fetch error
 - schema coverage similar to existing production scope - text output/llms only `output_modalities = ["text"]`
 
-### product db
+#### product db
 
 - processed historical data
 - todo: incremental update support

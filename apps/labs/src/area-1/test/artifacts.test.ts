@@ -7,13 +7,13 @@ import * as BunServices from '@effect/platform-bun/BunServices'
 import * as Effect from 'effect/Effect'
 import * as TestClock from 'effect/testing/TestClock'
 
-import { isRunReport } from '../src/artifacts/types.ts'
+import { isRunReport } from '../artifacts/types.ts'
 import {
   createArtifactRun,
   latestCompatibleArtifact,
   resolveArtifactReference,
-} from '../src/artifacts/workspace.ts'
-import { runArtifactProgram } from '../src/observability/run.ts'
+} from '../artifacts/workspace.ts'
+import { runArtifactProgram } from '../observability/run.ts'
 
 const directories: string[] = []
 

@@ -10,10 +10,10 @@ import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
-import { encodeGzipBundle } from '../src/bundle-archive/encoding.ts'
-import { initializeBundleArchive } from '../src/bundle-archive/schema.ts'
-import { appendBundle } from '../src/bundle-archive/storage.ts'
-import { replayProductDatabase } from '../src/database/build.ts'
+import { encodeGzipBundle } from '../bundle-archive/encoding.ts'
+import { initializeBundleArchive } from '../bundle-archive/schema.ts'
+import { appendBundle } from '../bundle-archive/storage.ts'
+import { replayProductDatabase } from '../database/build.ts'
 
 const directories: string[] = []
 
