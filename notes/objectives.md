@@ -41,6 +41,7 @@ Note: These are separate products but should share event data, i.e. a Discord al
 #### Monitor
 
 - Improve query dimensions
+- Query page size should not need to be coupled to crawl batch size
 
 #### Alerts
 

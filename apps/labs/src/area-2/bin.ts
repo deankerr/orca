@@ -12,7 +12,7 @@ const archivePath = path.resolve(
 )
 const outputPath = path.resolve(
   import.meta.dir,
-  '../../../../.labs-work/databases/area-2-products.sqlite',
+  '../../../../.labs-work/databases/area-2-products-v2-display-context.sqlite',
 )
 
 const isTextOutput = (model: JsonRecord) => {

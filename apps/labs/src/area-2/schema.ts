@@ -1,7 +1,7 @@
 import type { Database } from 'bun:sqlite'
 
 // Bump this when the persisted schema, materialization selection, or diff policy changes.
-export const PRODUCT_DATABASE_VERSION = 'area-2-v2'
+export const PRODUCT_DATABASE_VERSION = 'area-2-v2-display-context'
 
 const statements = [
   'PRAGMA foreign_keys = ON',
@@ -38,6 +38,7 @@ const statements = [
     crawl_id TEXT NOT NULL,
     previous_crawl_id TEXT,
     model_slug TEXT NOT NULL,
+    model_name TEXT NOT NULL,
     change_kind TEXT NOT NULL CHECK (change_kind IN ('baseline', 'available', 'unavailable', 'updated')),
     changeset_json TEXT NOT NULL,
     context_kind TEXT NOT NULL CHECK (context_kind IN ('entity', 'none')),
@@ -56,7 +57,9 @@ const statements = [
     previous_crawl_id TEXT,
     endpoint_id TEXT NOT NULL,
     model_slug TEXT NOT NULL,
+    model_name TEXT NOT NULL,
     provider_name TEXT,
+    provider_display_name TEXT,
     provider_slug TEXT,
     change_kind TEXT NOT NULL CHECK (change_kind IN ('baseline', 'available', 'unavailable', 'updated')),
     changeset_json TEXT NOT NULL,

@@ -18,6 +18,7 @@ interface ModelChange {
   readonly context: CoreModel | null
   readonly contextKind: Extract<ContextKind, 'entity' | 'none'>
   readonly kind: ChangeKind
+  readonly modelName: string
   readonly modelSlug: string
 }
 
@@ -27,6 +28,7 @@ interface EndpointChange {
   readonly contextKind: ContextKind
   readonly endpoint: EndpointState
   readonly kind: ChangeKind
+  readonly modelName: string
 }
 
 interface StoredModelRow {
@@ -277,6 +279,7 @@ export class ProductDatabase {
         context: kind === 'updated' ? null : context,
         contextKind: kind === 'updated' ? 'none' : 'entity',
         kind,
+        modelName: context.name,
         modelSlug: slug,
       })
     }
@@ -330,6 +333,7 @@ export class ProductDatabase {
         contextKind,
         endpoint,
         kind,
+        modelName: model.name,
       })
     }
 
@@ -371,14 +375,15 @@ export class ProductDatabase {
   #writeModelChanges(changes: readonly ModelChange[], crawlId: string, previousCrawlId?: string) {
     const insert = this.#database.query(
       `INSERT INTO model_changes
-        (crawl_id, previous_crawl_id, model_slug, change_kind, changeset_json, context_kind, context_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (crawl_id, previous_crawl_id, model_slug, model_name, change_kind, changeset_json, context_kind, context_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     for (const change of changes) {
       insert.run(
         crawlId,
         previousCrawlId ?? null,
         change.modelSlug,
+        change.modelName,
         change.kind,
         json(change.changeset),
         change.contextKind,
@@ -394,9 +399,9 @@ export class ProductDatabase {
   ) {
     const insert = this.#database.query(
       `INSERT INTO endpoint_changes
-        (crawl_id, previous_crawl_id, endpoint_id, model_slug, provider_name, provider_slug,
-         change_kind, changeset_json, context_kind, context_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (crawl_id, previous_crawl_id, endpoint_id, model_slug, model_name, provider_name,
+         provider_display_name, provider_slug, change_kind, changeset_json, context_kind, context_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     for (const change of changes) {
       insert.run(
@@ -404,7 +409,9 @@ export class ProductDatabase {
         previousCrawlId ?? null,
         change.endpoint.endpoint.id,
         change.endpoint.modelSlug,
+        change.modelName,
         change.endpoint.endpoint.provider_name,
+        change.endpoint.endpoint.provider_display_name,
         change.endpoint.endpoint.provider_slug,
         change.kind,
         json(change.changeset),

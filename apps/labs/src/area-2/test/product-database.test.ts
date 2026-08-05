@@ -150,10 +150,12 @@ describe('Area 2 product database', () => {
           readonly changeset_json: string
           readonly context_json: string | null
           readonly context_kind: string
+          readonly model_name: string
+          readonly provider_display_name: string
         },
         []
       >(
-        `SELECT change_kind, changeset_json, context_kind, context_json
+        `SELECT change_kind, changeset_json, context_kind, context_json, model_name, provider_display_name
          FROM endpoint_changes
          ORDER BY CAST(crawl_id AS INTEGER)`,
       )
@@ -166,10 +168,11 @@ describe('Area 2 product database', () => {
         {
           readonly changeset_json: string
           readonly context_kind: string
+          readonly model_name: string
         },
         []
       >(
-        `SELECT changeset_json, context_kind
+        `SELECT changeset_json, context_kind, model_name
          FROM model_changes
          ORDER BY CAST(crawl_id AS INTEGER)`,
       )
@@ -206,6 +209,19 @@ describe('Area 2 product database', () => {
       model: { name: 'New name', slug: 'author/model' },
     })
     expect(modelChanges.map((change) => change.context_kind)).toEqual(['entity', 'none'])
+    expect(endpointChanges.map((change) => change.model_name)).toEqual([
+      'Model',
+      'Model',
+      'New name',
+      'New name',
+    ])
+    expect(endpointChanges.map((change) => change.provider_display_name)).toEqual([
+      'Provider',
+      'Provider',
+      'Provider',
+      'Provider',
+    ])
+    expect(modelChanges.map((change) => change.model_name)).toEqual(['Model', 'New name'])
     expect(JSON.parse(modelChanges[1]?.changeset_json ?? '')).toEqual([
       { key: 'name', oldValue: 'Model', type: 'UPDATE', value: 'New name' },
     ])
