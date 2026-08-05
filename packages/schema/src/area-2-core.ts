@@ -8,6 +8,10 @@ const Price = Schema.optional(Schema.String)
 export const CorePricing = Schema.Struct({
   prompt: Price,
   completion: Price,
+  audio: Price,
+  input_audio_cache: Price,
+  image: Price,
+  image_output: Price,
   input_cache_read: Price,
   input_cache_write: Price,
   input_cache_write_1h: Price,

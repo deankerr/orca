@@ -10,6 +10,7 @@ import { initializeProductDatabase } from './schema.ts'
 
 type ChangeKind = 'available' | 'baseline' | 'unavailable' | 'updated'
 type ContextKind = 'entity' | 'none' | 'pricing'
+type PricingRevisionKind = 'available' | 'baseline' | 'pricing' | 'unavailable'
 
 type EndpointState = MaterializedEndpoint
 
@@ -29,6 +30,7 @@ interface EndpointChange {
   readonly endpoint: EndpointState
   readonly kind: ChangeKind
   readonly modelName: string
+  readonly pricingRevisionKind: PricingRevisionKind | undefined
 }
 
 interface StoredModelRow {
@@ -244,6 +246,7 @@ export class ProductDatabase {
       this.#replaceCurrentState(nextModels, nextEndpoints, crawl.crawlId)
       this.#writeModelChanges(modelChanges, crawl.crawlId, previousCrawlId)
       this.#writeEndpointChanges(endpointChanges, crawl.crawlId, previousCrawlId)
+      this.#writeEndpointPricingRevisions(endpointChanges, crawl.crawlId)
     })()
 
     this.#models = nextModels
@@ -318,6 +321,12 @@ export class ProductDatabase {
       }
 
       const pricingChanged = kind === 'updated' && changesetIncludesKey(changeset, 'pricing')
+      let pricingRevisionKind: PricingRevisionKind | undefined
+      if (kind === 'updated') {
+        pricingRevisionKind = pricingChanged ? 'pricing' : undefined
+      } else {
+        pricingRevisionKind = kind
+      }
       let context: EndpointEntityContext | PricingContext | null
       let contextKind: ContextKind
       if (kind === 'updated') {
@@ -334,6 +343,7 @@ export class ProductDatabase {
         endpoint,
         kind,
         modelName: model.name,
+        pricingRevisionKind,
       })
     }
 
@@ -417,6 +427,32 @@ export class ProductDatabase {
         json(change.changeset),
         change.contextKind,
         change.context === null ? null : json(change.context),
+      )
+    }
+  }
+
+  #writeEndpointPricingRevisions(changes: readonly EndpointChange[], crawlId: string) {
+    const insert = this.#database.query(
+      `INSERT INTO endpoint_pricing_revisions
+        (crawl_id, endpoint_id, model_slug, provider_name, provider_display_name, provider_slug,
+         provider_model_id, revision_kind, pricing_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    for (const change of changes) {
+      if (change.pricingRevisionKind === undefined) {
+        continue
+      }
+      const { endpoint } = change.endpoint
+      insert.run(
+        crawlId,
+        endpoint.id,
+        change.endpoint.modelSlug,
+        endpoint.provider_name,
+        endpoint.provider_display_name,
+        endpoint.provider_slug,
+        endpoint.provider_model_id,
+        change.pricingRevisionKind,
+        change.pricingRevisionKind === 'unavailable' ? null : json(endpoint.pricing),
       )
     }
   }

@@ -7,7 +7,7 @@ import type { MonitorEvent, MonitorSummary } from './render.ts'
 
 const defaultDatabasePath = path.resolve(
   import.meta.dir,
-  '../../../../../.labs-work/databases/area-2-products-v2-display-context.sqlite',
+  '../../../../../.labs-work/databases/area-2-products-v2-pricing-revisions.sqlite',
 )
 const defaultOutputPath = path.resolve(
   import.meta.dir,

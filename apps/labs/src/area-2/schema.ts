@@ -1,7 +1,7 @@
 import type { Database } from 'bun:sqlite'
 
 // Bump this when the persisted schema, materialization selection, or diff policy changes.
-export const PRODUCT_DATABASE_VERSION = 'area-2-v2-display-context'
+export const PRODUCT_DATABASE_VERSION = 'area-2-v2-pricing-revisions'
 
 const statements = [
   'PRAGMA foreign_keys = ON',
@@ -76,6 +76,27 @@ const statements = [
   'CREATE INDEX IF NOT EXISTS endpoint_changes_by_crawl ON endpoint_changes(crawl_id DESC)',
   'CREATE INDEX IF NOT EXISTS endpoint_changes_by_model_crawl ON endpoint_changes(model_slug, crawl_id DESC)',
   'CREATE INDEX IF NOT EXISTS endpoint_changes_by_provider_crawl ON endpoint_changes(provider_slug, crawl_id DESC)',
+  `CREATE TABLE IF NOT EXISTS endpoint_pricing_revisions (
+    crawl_id TEXT NOT NULL,
+    endpoint_id TEXT NOT NULL,
+    model_slug TEXT NOT NULL,
+    provider_name TEXT NOT NULL,
+    provider_display_name TEXT NOT NULL,
+    provider_slug TEXT NOT NULL,
+    provider_model_id TEXT NOT NULL,
+    revision_kind TEXT NOT NULL CHECK (
+      revision_kind IN ('baseline', 'available', 'unavailable', 'pricing')
+    ),
+    pricing_json TEXT,
+    PRIMARY KEY (crawl_id, endpoint_id),
+    FOREIGN KEY (crawl_id, endpoint_id) REFERENCES endpoint_changes(crawl_id, endpoint_id),
+    CHECK (
+      (revision_kind = 'unavailable' AND pricing_json IS NULL) OR
+      (revision_kind != 'unavailable' AND pricing_json IS NOT NULL)
+    )
+  ) STRICT`,
+  `CREATE INDEX IF NOT EXISTS endpoint_pricing_revisions_by_model_crawl
+    ON endpoint_pricing_revisions(model_slug, crawl_id DESC, endpoint_id)`,
 ] as const
 
 /** Initializes the compact current-state and changeset schema for the Area 2 experiment. */

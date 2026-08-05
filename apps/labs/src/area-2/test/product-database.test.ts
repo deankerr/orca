@@ -7,6 +7,7 @@ import path from 'node:path'
 import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 
 import type { MaterializedCrawl, MaterializedEndpoint } from '../materialize.ts'
+import { readPricingHistory } from '../pricing-history.ts'
 import { ProductDatabase } from '../product-database.ts'
 
 const directories: string[] = []
@@ -35,37 +36,44 @@ const model = (name = 'Model'): CoreModel => ({
   warning_message: null,
 })
 
-const endpoint = (prompt: string, supportedParameters = ['tools']): MaterializedEndpoint => ({
-  endpoint: {
-    context_length: 4096,
-    data_policy: {},
-    features: {},
-    has_chat_completions: true,
-    has_completions: false,
-    id: 'endpoint-id',
-    is_deranked: false,
-    is_disabled: false,
-    is_free: false,
-    max_completion_tokens: 1024,
-    max_prompt_tokens: 3072,
-    model_variant_permaslug: 'author/model-20250101',
-    model_variant_slug: 'author/model',
-    moderation_required: false,
-    pricing: { completion: '0.000002', prompt },
-    provider_display_name: 'Provider',
-    provider_model_id: 'model',
-    provider_name: 'Provider',
-    provider_region: null,
-    provider_slug: 'provider',
-    quantization: null,
-    supported_parameters: supportedParameters,
-    supports_reasoning: false,
-    supports_tool_parameters: true,
-    variant: 'standard',
-  } satisfies CoreEndpoint,
-  metrics: undefined,
-  modelSlug: 'author/model',
-})
+const endpoint = (
+  prompt: string,
+  supportedParameters = ['tools'],
+  pricing?: CoreEndpoint['pricing'],
+): MaterializedEndpoint => {
+  const endpointPricing = pricing ?? { completion: '0.000002', prompt }
+  return {
+    endpoint: {
+      context_length: 4096,
+      data_policy: {},
+      features: {},
+      has_chat_completions: true,
+      has_completions: false,
+      id: 'endpoint-id',
+      is_deranked: false,
+      is_disabled: false,
+      is_free: false,
+      max_completion_tokens: 1024,
+      max_prompt_tokens: 3072,
+      model_variant_permaslug: 'author/model-20250101',
+      model_variant_slug: 'author/model',
+      moderation_required: false,
+      pricing: endpointPricing,
+      provider_display_name: 'Provider',
+      provider_model_id: 'model',
+      provider_name: 'Provider',
+      provider_region: null,
+      provider_slug: 'provider',
+      quantization: null,
+      supported_parameters: supportedParameters,
+      supports_reasoning: false,
+      supports_tool_parameters: true,
+      variant: 'standard',
+    } satisfies CoreEndpoint,
+    metrics: undefined,
+    modelSlug: 'author/model',
+  }
+}
 
 const crawl = (
   crawlId: string,
@@ -226,5 +234,92 @@ describe('Area 2 product database', () => {
       { key: 'name', oldValue: 'Model', type: 'UPDATE', value: 'New name' },
     ])
     expect(currentEndpoints?.count).toBe(0)
+  })
+
+  test('persists complete pricing revisions and reads chart-ready price states', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'orca-area-2-'))
+    directories.push(directory)
+    const filename = path.join(directory, 'products.sqlite')
+    const initialPricing = {
+      audio: '0.000003',
+      completion: '0.000002',
+      image: '0.004',
+      image_output: '0.005',
+      input_audio_cache: '0.000001',
+      input_cache_read: '0.0000005',
+      prompt: '0.000001',
+    } satisfies CoreEndpoint['pricing']
+    const changedPricing = { ...initialPricing, prompt: '0.000004' }
+    const restoredPricing = { ...changedPricing, prompt: '0.000006' }
+
+    const productDatabase = ProductDatabase.open(filename)
+    productDatabase.applyCrawl(
+      crawl('1000', [endpoint(initialPricing.prompt, ['tools'], initialPricing)]),
+    )
+    productDatabase.applyCrawl(
+      crawl('2000', [endpoint(changedPricing.prompt, ['tools'], changedPricing)]),
+    )
+    const routeOnlyUpdate = endpoint(changedPricing.prompt, ['reasoning', 'tools'], changedPricing)
+    productDatabase.applyCrawl(
+      crawl('3000', [
+        {
+          ...routeOnlyUpdate,
+          endpoint: { ...routeOnlyUpdate.endpoint, provider_slug: 'provider-route' },
+        },
+      ]),
+    )
+    productDatabase.applyCrawl(crawl('4000', []))
+    productDatabase.applyCrawl(
+      crawl('5000', [endpoint(restoredPricing.prompt, ['tools'], restoredPricing)]),
+    )
+    productDatabase.applyCrawl(
+      crawl('6000', [endpoint(restoredPricing.prompt, ['reasoning', 'tools'], restoredPricing)]),
+    )
+    productDatabase.close()
+
+    const sql = new Database(filename, { readonly: true })
+    const revisions = sql
+      .query<{ readonly pricing_json: string | null; readonly revision_kind: string }, []>(
+        `SELECT revision_kind, pricing_json
+         FROM endpoint_pricing_revisions
+         ORDER BY CAST(crawl_id AS INTEGER)`,
+      )
+      .all()
+    sql.close()
+
+    expect(
+      revisions.map(({ pricing_json, revision_kind }) => ({
+        pricing: pricing_json === null ? null : (JSON.parse(pricing_json) as unknown),
+        revision_kind,
+      })),
+    ).toEqual([
+      { pricing: initialPricing, revision_kind: 'baseline' },
+      { pricing: changedPricing, revision_kind: 'pricing' },
+      { pricing: null, revision_kind: 'unavailable' },
+      { pricing: restoredPricing, revision_kind: 'available' },
+    ])
+    expect(readPricingHistory(filename, model().slug)).toEqual({
+      asOf: 6000,
+      modelSlug: model().slug,
+      series: [
+        {
+          endpointId: 'endpoint-id',
+          points: [
+            { at: 1000, available: true, pricing: initialPricing },
+            { at: 2000, available: true, pricing: changedPricing },
+            { at: 4000, available: false, pricing: {} },
+            { at: 5000, available: true, pricing: restoredPricing },
+            { at: 6000, available: true, pricing: restoredPricing },
+          ],
+          provider: {
+            displayName: 'Provider',
+            modelId: 'model',
+            name: 'Provider',
+            slug: 'provider',
+          },
+        },
+      ],
+      since: 1000,
+    })
   })
 })
