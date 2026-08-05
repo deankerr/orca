@@ -6,6 +6,7 @@ import * as Schema from 'effect/Schema'
 import { diff } from 'json-diff-ts'
 
 import type { MaterializedCrawl, MaterializedEndpoint } from './materialize.ts'
+import type { HistoricalPrecision } from './precision.ts'
 import { initializeProductDatabase } from './schema.ts'
 
 type ChangeKind = 'available' | 'baseline' | 'unavailable' | 'updated'
@@ -160,9 +161,9 @@ export class ProductDatabase {
   }
 
   /** Opens or creates a product database and restores its latest current state for later updates. */
-  static open(filename: string) {
+  static open(filename: string, precision: HistoricalPrecision = 'daily') {
     const database = new Database(filename)
-    initializeProductDatabase(database)
+    initializeProductDatabase(database, precision)
 
     const models = new Map(
       database

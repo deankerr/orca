@@ -7,6 +7,7 @@ import path from 'node:path'
 import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 
 import type { MaterializedCrawl, MaterializedEndpoint } from '../materialize.ts'
+import { readMonitor } from '../monitor/read.ts'
 import { readPricingHistory } from '../pricing-history.ts'
 import { ProductDatabase } from '../product-database.ts'
 
@@ -321,5 +322,47 @@ describe('Area 2 product database', () => {
       ],
       since: 1000,
     })
+    const monitor = readMonitor(filename, 20)
+    expect(monitor.summary.pricingRevisionCount).toBe(4)
+    expect(
+      monitor.events
+        .filter((event) => event.entityType === 'endpoint')
+        .map(({ crawlId, pricingRevision }) => ({ crawlId, pricingRevision })),
+    ).toEqual([
+      { crawlId: '6000', pricingRevision: undefined },
+      {
+        crawlId: '5000',
+        pricingRevision: {
+          kind: 'available',
+          pricing: restoredPricing,
+          providerModelId: 'model',
+        },
+      },
+      {
+        crawlId: '4000',
+        pricingRevision: {
+          kind: 'unavailable',
+          pricing: undefined,
+          providerModelId: 'model',
+        },
+      },
+      { crawlId: '3000', pricingRevision: undefined },
+      {
+        crawlId: '2000',
+        pricingRevision: {
+          kind: 'pricing',
+          pricing: changedPricing,
+          providerModelId: 'model',
+        },
+      },
+      {
+        crawlId: '1000',
+        pricingRevision: {
+          kind: 'baseline',
+          pricing: initialPricing,
+          providerModelId: 'model',
+        },
+      },
+    ])
   })
 })

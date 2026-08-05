@@ -1,3 +1,9 @@
+export interface PricingRevision {
+  readonly kind: 'available' | 'baseline' | 'pricing' | 'unavailable'
+  readonly pricing: unknown
+  readonly providerModelId: string
+}
+
 export interface MonitorEvent {
   readonly changeKind: 'available' | 'baseline' | 'unavailable' | 'updated'
   readonly changeset: unknown
@@ -8,6 +14,7 @@ export interface MonitorEvent {
   readonly entityType: 'endpoint' | 'model'
   readonly modelName: string
   readonly modelSlug: string
+  readonly pricingRevision: PricingRevision | undefined
   readonly providerDisplayName: string | undefined
   readonly providerName: string | undefined
   readonly providerSlug: string | undefined
@@ -19,6 +26,7 @@ export interface MonitorSummary {
   readonly firstCrawlId: string
   readonly generatedAt: string
   readonly lastCrawlId: string
+  readonly pricingRevisionCount: number
 }
 
 interface PricingChange {
@@ -44,6 +52,10 @@ type GenericChange =
 const pricingComponents = [
   'prompt',
   'completion',
+  'audio',
+  'input_audio_cache',
+  'image',
+  'image_output',
   'input_cache_read',
   'input_cache_write',
   'input_cache_write_1h',
@@ -56,12 +68,16 @@ const pricingComponentSet = new Set<string>(pricingComponents)
 const tokenPriceComponents = new Set<string>([
   'prompt',
   'completion',
+  'audio',
+  'input_audio_cache',
   'input_cache_read',
   'input_cache_write',
   'input_cache_write_1h',
   'internal_reasoning',
 ])
 const alwaysVisibleRateComponents = new Set(['prompt', 'completion'])
+const imagePriceComponents = new Set(['image', 'image_output'])
+const requestPriceComponents = new Set(['request', 'web_search'])
 
 const escapeHtml = (value: string) =>
   value
@@ -101,7 +117,7 @@ const formatCompactValue = (value: unknown) => {
 const isZero = (value: unknown) =>
   value === 0 || (typeof value === 'string' && /^-?0(?:\.0+)?$/.test(value))
 
-const multiplyByOneMillion = (value: unknown) => {
+const multiplyDecimal = (value: unknown, multiplierPower: number) => {
   const source = typeof value === 'number' ? String(value) : value
   if (typeof source !== 'string') {
     return formatCompactValue(value)
@@ -115,7 +131,7 @@ const multiplyByOneMillion = (value: unknown) => {
   if (digits === '0') {
     return `${sign}0`
   }
-  const decimalPlaces = fractional.length - 6
+  const decimalPlaces = fractional.length - multiplierPower
   if (decimalPlaces <= 0) {
     return `${sign}${digits}${'0'.repeat(-decimalPlaces)}`
   }
@@ -130,10 +146,18 @@ const formatPrice = (component: string, value: unknown) => {
     return 'not listed'
   }
   if (component === 'discount') {
-    return formatCompactValue(value)
+    return typeof value === 'number'
+      ? `${formatCompactValue(value * 100)}%`
+      : formatCompactValue(value)
   }
   if (tokenPriceComponents.has(component)) {
-    return `$${multiplyByOneMillion(value)} / M tokens`
+    return `$${multiplyDecimal(value, 6)} / M tokens`
+  }
+  if (imagePriceComponents.has(component)) {
+    return `$${multiplyDecimal(value, 3)} / K images`
+  }
+  if (requestPriceComponents.has(component)) {
+    return `$${formatCompactValue(value)} / request`
   }
   return `$${formatCompactValue(value)}`
 }
@@ -266,6 +290,9 @@ const pricingCard = (context: unknown): Readonly<Record<string, unknown>> | unde
   return undefined
 }
 
+const directPricingCard = (pricing: unknown): Readonly<Record<string, unknown>> | undefined =>
+  isRecord(pricing) ? pricing : undefined
+
 const renderPriceCard = (title: string, pricing: Readonly<Record<string, unknown>>) => {
   const keys = [
     ...pricingComponents.filter(
@@ -354,6 +381,11 @@ const renderJson = (title: string, value: unknown) => `<details>
 </details>`
 
 const rateCardTitle = (event: MonitorEvent, priceChanges: readonly PricingChange[]) => {
+  if (event.pricingRevision !== undefined) {
+    return event.pricingRevision.kind === 'unavailable'
+      ? 'Rate card before removal'
+      : 'Rate-card revision'
+  }
   if (priceChanges.length > 0) {
     return 'Rate card after pricing change'
   }
@@ -364,6 +396,15 @@ const rateCardTitle = (event: MonitorEvent, priceChanges: readonly PricingChange
     return 'Rate card before removal'
   }
   return 'Rate card at baseline'
+}
+
+const renderPricingRevision = (revision: PricingRevision | undefined) => {
+  if (revision === undefined) {
+    return ''
+  }
+  return `<p class="pricing-revision">Rate-card revision <strong>${escapeHtml(
+    revision.kind,
+  )}</strong> <code>${escapeHtml(revision.providerModelId)}</code></p>`
 }
 
 const renderProvider = (event: MonitorEvent) => {
@@ -382,7 +423,8 @@ const renderProvider = (event: MonitorEvent) => {
 const renderEvent = (event: MonitorEvent) => {
   const lifecycle = event.changeKind !== 'updated'
   const priceChanges = pricingChanges(event.changeset)
-  const priceCard = pricingCard(event.context)
+  const revisionPriceCard = directPricingCard(event.pricingRevision?.pricing)
+  const priceCard = revisionPriceCard ?? pricingCard(event.context)
 
   return `<article class="event kind-${event.changeKind}">
     <header>
@@ -398,9 +440,15 @@ const renderEvent = (event: MonitorEvent) => {
       )} UTC</time>
     </header>
     <p class="entity-id">${escapeHtml(event.entityId)}</p>
+    ${renderPricingRevision(event.pricingRevision)}
     ${lifecycle ? '' : renderChangeSummary(event.changeset)}
     ${renderPricingChanges(priceChanges)}
     ${priceCard === undefined ? '' : renderPriceCard(rateCardTitle(event, priceChanges), priceCard)}
+    ${
+      event.pricingRevision?.pricing === undefined
+        ? ''
+        : renderJson('Rate-card revision JSON', event.pricingRevision.pricing)
+    }
     ${lifecycle ? renderJson('Selected entity state', event.context) : renderJson('Changeset JSON', event.changeset)}
   </article>`
 }
@@ -446,6 +494,9 @@ const styles = `
   .entity-id { margin: 11px 0 0; font-size: 0.72rem; overflow-wrap: anywhere; }
   .change-summary { margin: 13px 0 0; color: #d5d9cf; font-size: 0.78rem; line-height: 1.6; }
   .change-summary span { color: #a6af9b; }
+  .pricing-revision { margin: 13px 0 0; color: #b9c7b2; font-size: 0.76rem; }
+  .pricing-revision strong { color: #e8cb8c; font-size: inherit; text-transform: uppercase; }
+  .pricing-revision code { margin-left: 5px; }
   section, details { margin-top: 13px; }
   h3 { margin: 0 0 7px; font-size: 0.76rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
   .pricing-change { border: 1px solid #675430; background: #201d14; padding: 10px 12px; }
@@ -500,8 +551,9 @@ export const renderMonitor = (
         <dl class="stats">
           <dt>Events shown</dt><dd>${events.length} / ${limit}</dd>
           <dt>Event window</dt><dd>${escapeHtml(eventWindow)}</dd>
-          <dt>Total events</dt><dd>${summary.eventCount}</dd>
-          <dt>Crawls</dt><dd>${summary.crawls}</dd>
+           <dt>Total events</dt><dd>${summary.eventCount}</dd>
+           <dt>Pricing revisions</dt><dd>${summary.pricingRevisionCount}</dd>
+           <dt>Crawls</dt><dd>${summary.crawls}</dd>
           <dt>Database coverage</dt><dd>${escapeHtml(formatDate(summary.firstCrawlId))} to ${escapeHtml(
             formatDate(summary.lastCrawlId),
           )} UTC</dd>

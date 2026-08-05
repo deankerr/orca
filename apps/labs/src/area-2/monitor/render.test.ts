@@ -11,6 +11,7 @@ describe('Area 2 static monitor', () => {
         firstCrawlId: '1000',
         generatedAt: '2026-08-06T00:00:00.000Z',
         lastCrawlId: '2000',
+        pricingRevisionCount: 1,
       },
       [
         {
@@ -35,6 +36,11 @@ describe('Area 2 static monitor', () => {
           entityType: 'endpoint',
           modelName: 'Model',
           modelSlug: 'author/model',
+          pricingRevision: {
+            kind: 'pricing',
+            pricing: { audio: '0.000003', completion: '0.3', image: '0.004', prompt: '0.2' },
+            providerModelId: 'provider/model',
+          },
           providerDisplayName: 'Provider display',
           providerName: 'Provider',
           providerSlug: 'provider',
@@ -46,7 +52,12 @@ describe('Area 2 static monitor', () => {
     expect(html).toContain('Pricing change')
     expect(html).toContain('<td>$100000 / M tokens</td>')
     expect(html).toContain('<td>$200000 / M tokens</td>')
-    expect(html).toContain('Rate card after pricing change')
+    expect(html).toContain('Rate-card revision')
+    expect(html).toContain('Rate-card revision <strong>pricing</strong>')
+    expect(html).toContain('provider/model')
+    expect(html).toContain('Pricing revisions</dt><dd>1</dd>')
+    expect(html).toContain('$3 / M tokens')
+    expect(html).toContain('$4 / K images')
     expect(html).toContain('&lt;endpoint&gt;')
   })
 
@@ -58,6 +69,7 @@ describe('Area 2 static monitor', () => {
         firstCrawlId: '1000',
         generatedAt: '2026-08-06T00:00:00.000Z',
         lastCrawlId: '2000',
+        pricingRevisionCount: 0,
       },
       [
         {
@@ -86,6 +98,7 @@ describe('Area 2 static monitor', () => {
           entityType: 'endpoint',
           modelName: 'Model',
           modelSlug: 'author/model',
+          pricingRevision: undefined,
           providerDisplayName: 'Provider display',
           providerName: 'Provider',
           providerSlug: 'provider',
@@ -100,6 +113,7 @@ describe('Area 2 static monitor', () => {
           entityType: 'endpoint',
           modelName: 'Model',
           modelSlug: 'author/model',
+          pricingRevision: undefined,
           providerDisplayName: 'Provider display',
           providerName: 'Provider',
           providerSlug: 'provider',
@@ -123,6 +137,7 @@ describe('Area 2 static monitor', () => {
         firstCrawlId: '1000',
         generatedAt: '2026-08-06T00:00:00.000Z',
         lastCrawlId: '2000',
+        pricingRevisionCount: 1,
       },
       [
         {
@@ -156,6 +171,11 @@ describe('Area 2 static monitor', () => {
           entityType: 'endpoint',
           modelName: 'Model',
           modelSlug: 'author/model',
+          pricingRevision: {
+            kind: 'pricing',
+            pricing: { completion: '0', discount: 0, input_cache_read: '0', prompt: '0' },
+            providerModelId: 'provider/model',
+          },
           providerDisplayName: 'Provider display',
           providerName: 'Provider',
           providerSlug: 'provider',
@@ -168,5 +188,45 @@ describe('Area 2 static monitor', () => {
     expect(html).toContain('<td>$0 / M tokens</td>')
     expect(html).not.toContain('<dt>input cache read</dt>')
     expect(html).not.toContain('<dt>discount</dt>')
+    expect(html).toContain('&quot;discount&quot;: 0')
+  })
+
+  test('uses the prior lifecycle context as the rate card before an unavailable revision', () => {
+    const html = renderMonitor(
+      {
+        crawls: 2,
+        eventCount: 2,
+        firstCrawlId: '1000',
+        generatedAt: '2026-08-06T00:00:00.000Z',
+        lastCrawlId: '2000',
+        pricingRevisionCount: 1,
+      },
+      [
+        {
+          changeKind: 'unavailable',
+          changeset: [{ key: '$root', type: 'REMOVE', value: {} }],
+          context: { endpoint: { pricing: { completion: '0.3', prompt: '0.2' } } },
+          contextKind: 'entity',
+          crawlId: '2000',
+          entityId: 'endpoint',
+          entityType: 'endpoint',
+          modelName: 'Model',
+          modelSlug: 'author/model',
+          pricingRevision: {
+            kind: 'unavailable',
+            pricing: undefined,
+            providerModelId: 'provider/model',
+          },
+          providerDisplayName: 'Provider display',
+          providerName: 'Provider',
+          providerSlug: 'provider',
+        },
+      ],
+      20,
+    )
+
+    expect(html).toContain('Rate-card revision <strong>unavailable</strong>')
+    expect(html).toContain('Rate card before removal')
+    expect(html).not.toContain('Rate-card revision JSON')
   })
 })
