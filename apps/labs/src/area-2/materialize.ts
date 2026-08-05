@@ -1,14 +1,20 @@
-import * as Core2 from '@orca/schema/area-2-core.ts'
+import * as Core from '@orca/schema/area-2-core.ts'
 import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 import * as SchemaTransformation from 'effect/SchemaTransformation'
 
-import type { JsonRecord } from './bundle-reader.ts'
+import type { RawModelScope } from './bundle-reader.ts'
 
 export interface MaterializedEndpoint {
   readonly endpoint: Omit<CoreEndpoint, 'stats' | 'model'>
   readonly metrics: EndpointMetrics | undefined
   readonly modelSlug: string
+}
+
+export interface MaterializedCrawl {
+  readonly crawlId: string
+  readonly endpoints: readonly MaterializedEndpoint[]
+  readonly models: readonly CoreModel[]
 }
 
 const EndpointMetrics = Schema.Struct({
@@ -18,10 +24,10 @@ const EndpointMetrics = Schema.Struct({
 export type EndpointMetrics = Schema.Schema.Type<typeof EndpointMetrics>
 
 const RawEndpointWithModel = Schema.Struct({
-  ...Core2.CoreEndpoint.fields,
-  model: Core2.CoreModel,
+  ...Core.CoreEndpoint.fields,
+  model: Core.CoreModel,
   stats: Schema.optional(
-    Core2.CoreEndpointStats.pipe(
+    Core.CoreEndpointStats.pipe(
       Schema.decodeTo(
         EndpointMetrics,
         SchemaTransformation.transform({
@@ -42,14 +48,11 @@ const RawEndpointWithModel = Schema.Struct({
 const decodeEndpoint = Schema.decodeUnknownSync(RawEndpointWithModel)
 
 /**
- * Converts selected raw model scopes into the stable core projection. Scope models select endpoints,
- * while embedded endpoint models are authoritative; the last copy for a model slug or endpoint id wins.
+ * Converts text-output raw model scopes into the selected core projection. Endpoint-embedded models
+ * are authoritative; the last copy for each model slug or endpoint id wins.
  */
 export const materialize = (
-  scopes: readonly {
-    readonly endpoints: readonly JsonRecord[]
-    readonly model: JsonRecord
-  }[],
+  scopes: readonly RawModelScope[],
 ): {
   readonly endpoints: readonly MaterializedEndpoint[]
   readonly models: readonly CoreModel[]

@@ -1,9 +1,6 @@
-import { SQL } from 'bun'
-import * as Effect from 'effect/Effect'
-import * as Option from 'effect/Option'
+import { Database } from 'bun:sqlite'
+
 import * as Schema from 'effect/Schema'
-import * as SchemaIssue from 'effect/SchemaIssue'
-import * as SchemaTransformation from 'effect/SchemaTransformation'
 
 export interface RawBundle {
   readonly bytes: Uint8Array
@@ -11,10 +8,8 @@ export interface RawBundle {
 }
 
 const StoredBundleRow = Schema.Struct({
-  compressed_bytes: Schema.Number,
   crawl_id: Schema.String,
   payload_zstd: Schema.Uint8Array,
-  raw_bytes: Schema.Number,
   raw_sha256: Schema.String,
 })
 type StoredBundleRow = Schema.Schema.Type<typeof StoredBundleRow>
@@ -32,29 +27,10 @@ const BundlePayload = Schema.Struct({
     ),
   }),
 })
+export type RawModelScope = Schema.Schema.Type<typeof BundlePayload>['data']['models'][number]
 
-const decodeRows = Schema.decodeUnknownSync(Schema.Array(StoredBundleRow))
-const textDecoder = new TextDecoder('utf-8', { fatal: true })
-const textEncoder = new TextEncoder()
-
-const decodePayload = Schema.decodeUnknownSync(
-  Schema.Uint8Array.pipe(
-    Schema.decodeTo(
-      Schema.fromJsonString(BundlePayload),
-      SchemaTransformation.transformOrFail({
-        decode: (bytes) =>
-          Effect.try({
-            catch: () =>
-              new SchemaIssue.InvalidValue(Option.some(bytes), {
-                message: 'expected valid UTF-8 bytes',
-              }),
-            try: () => textDecoder.decode(bytes),
-          }),
-        encode: (json) => Effect.succeed(textEncoder.encode(json)),
-      }),
-    ),
-  ),
-)
+const decodeRow = Schema.decodeUnknownSync(StoredBundleRow)
+const decodePayload = Schema.decodeUnknownSync(Schema.fromJsonString(BundlePayload))
 
 const sha256 = (bytes: Uint8Array) => {
   const hasher = new Bun.CryptoHasher('sha256')
@@ -72,43 +48,46 @@ const decodeBundle = (row: StoredBundleRow): RawBundle => {
   return { bytes, crawlId: row.crawl_id }
 }
 
-/** Decodes the model scopes needed by the area-2 projection from one raw bundle payload. */
-export const validateBundle = (bytes: Uint8Array) => decodePayload(bytes).data.models
+const textDecoder = new TextDecoder('utf-8', { fatal: true })
+
+/** Parses the raw bundle envelope needed to hand model scopes to the core materializer. */
+export const validateBundle = (bytes: Uint8Array): readonly RawModelScope[] =>
+  decodePayload(textDecoder.decode(bytes)).data.models
 
 /**
- * Reads and verifies a bounded chronological slice of an area-1 bundle archive.
+ * Reads verified raw bundles in chronological order. This knows the archive format, but not how a
+ * caller materializes or persists the bundles it receives.
  *
- * @yields {RawBundle} One verified raw bundle in chronological order.
+ * @yields {RawBundle} One verified raw bundle at a time.
  */
-export async function* readBundles(
+export function* readBundles(
   archivePath: string,
-  limit: number,
-  fromCrawlId?: string,
-): AsyncGenerator<RawBundle> {
-  const sql = new SQL({ adapter: 'sqlite', filename: archivePath, readonly: true })
+  afterCrawlId?: string,
+): Generator<RawBundle, void, undefined> {
+  const database = new Database(archivePath, { readonly: true })
 
   try {
-    const rows = decodeRows(
-      await (fromCrawlId === undefined
-        ? sql`
-      SELECT crawl_id, compressed_bytes, payload_zstd, raw_bytes, raw_sha256
-      FROM bundles
-      ORDER BY CAST(crawl_id AS INTEGER)
-      LIMIT ${limit}
-    `
-        : sql`
-      SELECT crawl_id, compressed_bytes, payload_zstd, raw_bytes, raw_sha256
-      FROM bundles
-      WHERE CAST(crawl_id AS INTEGER) >= CAST(${fromCrawlId} AS INTEGER)
-      ORDER BY CAST(crawl_id AS INTEGER)
-      LIMIT ${limit}
-    `),
-    )
-
-    for (const row of rows) {
-      yield decodeBundle(row)
+    if (afterCrawlId === undefined) {
+      const statement = database.query<StoredBundleRow, []>(`
+        SELECT crawl_id, payload_zstd, raw_sha256
+        FROM bundles
+        ORDER BY CAST(crawl_id AS INTEGER)
+      `)
+      for (const row of statement.iterate()) {
+        yield decodeBundle(decodeRow(row))
+      }
+    } else {
+      const statement = database.query<StoredBundleRow, [string]>(`
+        SELECT crawl_id, payload_zstd, raw_sha256
+        FROM bundles
+        WHERE CAST(crawl_id AS INTEGER) > CAST(? AS INTEGER)
+        ORDER BY CAST(crawl_id AS INTEGER)
+      `)
+      for (const row of statement.iterate(afterCrawlId)) {
+        yield decodeBundle(decodeRow(row))
+      }
     }
   } finally {
-    await sql.close()
+    database.close()
   }
 }
