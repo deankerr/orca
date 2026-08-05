@@ -1,3 +1,6 @@
+[console]
+depth = 6
+
 [install]
 minimumReleaseAge = 286400 # 1 day
 minimumReleaseAgeExcludes = [

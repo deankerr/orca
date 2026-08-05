@@ -38,6 +38,7 @@
         "@effect/sql-sqlite-bun": "catalog:",
         "@orca/schema": "workspace:*",
         "effect": "catalog:",
+        "json-diff-ts": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",

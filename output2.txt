@@ -1,0 +1,161 @@
+{
+  crawlId: "1771114200345",
+  n: 1102,
+  status: "baseline",
+}
+{
+  changes: [],
+  crawlId: "1771115400404",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771116600339",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771117800287",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771119000306",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771120200366",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771121400294",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771122600340",
+  n: 0,
+}
+{
+  changes: [
+    {
+      type: "UPDATE",
+      key: "provider_display_name",
+      value: "Arcee (Prime Intellect)",
+      oldValue: "Arcee AI",
+      path: "$.endpoints.239c00d5-c404-4d17-b243-6a645212dc95.provider_display_name",
+      valueType: "String",
+    }, {
+      type: "UPDATE",
+      key: "completion",
+      value: "0.00000044",
+      oldValue: "0.0000025",
+      path: "$.endpoints.b2debbe6-9b98-4db0-9cc7-6f172152d210.pricing.completion",
+      valueType: "String",
+    }, {
+      type: "ADD",
+      key: "b9d81865-ce9a-432a-9cd5-0d9be55e7cb5",
+      value: {
+        id: "b9d81865-ce9a-432a-9cd5-0d9be55e7cb5",
+        model_variant_slug: "arcee-ai/trinity-large-preview:free",
+        model_variant_permaslug: "arcee-ai/trinity-large-preview:free",
+        variant: "free",
+        provider_name: "Arcee AI",
+        provider_display_name: "Arcee (Modal)",
+        provider_slug: "arcee-ai",
+        provider_model_id: "trinity-large-preview",
+        provider_region: null,
+        context_length: 131000,
+        max_prompt_tokens: null,
+        max_completion_tokens: null,
+        quantization: "unknown",
+        supported_parameters: [ "max_tokens", "temperature", "top_k", "top_p",
+          "tools", "structured_outputs", "response_format"
+        ],
+        pricing: {
+          prompt: "0",
+          completion: "0",
+          internal_reasoning: "0",
+          request: "0",
+          web_search: "0",
+          discount: 0,
+        },
+        data_policy: {
+          training: false,
+          retainsPrompts: false,
+          canPublish: false,
+        },
+        features: {},
+        supports_reasoning: false,
+        supports_tool_parameters: true,
+        has_chat_completions: true,
+        has_completions: false,
+        moderation_required: false,
+        is_free: true,
+        is_deranked: false,
+        is_disabled: false,
+      },
+      path: "$.endpoints.b9d81865-ce9a-432a-9cd5-0d9be55e7cb5",
+      valueType: "Object",
+    }
+  ],
+  crawlId: "1771123800285",
+  n: 3,
+}
+{
+  changes: [],
+  crawlId: "1771125000152",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771126200559",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771127400291",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771128600594",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771129800971",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771131000743",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771132200846",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771133400503",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771134600340",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771135800594",
+  n: 0,
+}
+{
+  changes: [],
+  crawlId: "1771137000405",
+  n: 0,
+}
