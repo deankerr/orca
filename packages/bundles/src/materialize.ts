@@ -1,84 +1,51 @@
+import type { CoreModel } from '@orca/schema/area-2-core.ts'
 import * as Core from '@orca/schema/area-2-core.ts'
-import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
-import * as SchemaTransformation from 'effect/SchemaTransformation'
 
-interface ModelScope {
-  endpoints: unknown[]
-}
-
-export interface MaterializedEndpoint {
-  endpoint: Omit<CoreEndpoint, 'stats' | 'model'>
-  metrics: EndpointMetrics | undefined
-  modelSlug: string
-}
-
-export interface MaterializedCrawl {
-  crawlId: string
-  endpoints: MaterializedEndpoint[]
-  models: CoreModel[]
-}
-
-const EndpointMetrics = Schema.Struct({
-  p50Latency: Schema.Number,
-  p50Throughput: Schema.Number,
-})
-export type EndpointMetrics = Schema.Schema.Type<typeof EndpointMetrics>
-
-const RawEndpointWithModel = Schema.Struct({
+const RawEndpoint = Schema.Struct({
   ...Core.CoreEndpoint.fields,
-  model: Core.CoreModel,
-  stats: Schema.optional(
-    Core.CoreEndpointStats.pipe(
-      Schema.decodeTo(
-        EndpointMetrics,
-        SchemaTransformation.transform({
-          decode: (stats) => ({
-            p50Latency: stats.p50_latency,
-            p50Throughput: stats.p50_throughput,
-          }),
-          encode: (metrics) => ({
-            p50_latency: metrics.p50Latency,
-            p50_throughput: metrics.p50Throughput,
-          }),
-        }),
-      ),
+  model: Core.CoreModel, // enriched embedded Model
+  stats: Schema.optional(Core.CoreEndpointStats),
+})
+type MaterializedEndpoint = Omit<Schema.Schema.Type<typeof RawEndpoint>, 'model'>
+
+const BundlePayload = Schema.Struct({
+  crawl_id: Schema.String,
+  data: Schema.Struct({
+    models: Schema.Array(
+      Schema.Struct({
+        endpoints: Schema.Array(RawEndpoint),
+        model: Core.CoreModel,
+      }),
     ),
-  ),
+  }),
 })
 
-const decodeEndpoint = Schema.decodeUnknownSync(RawEndpointWithModel)
+const decode = Schema.decodeUnknownSync(Schema.fromJsonString(BundlePayload))
 
-/**
- * Converts text-output raw model scopes into the selected core projection. Endpoint-embedded models
- * are authoritative; the last copy for each model slug or endpoint id wins.
- */
-export const materialize = (
-  scopes: ModelScope[],
-): {
+interface Scope {
+  model: CoreModel
   endpoints: MaterializedEndpoint[]
-  models: CoreModel[]
-} => {
-  const models = new Map<string, CoreModel>()
-  const endpoints = new Map<string, MaterializedEndpoint>()
+}
 
-  for (const { endpoints: rawEndpoints } of scopes) {
-    for (const rawEndpoint of rawEndpoints) {
-      const { stats, model, ...endpoint } = decodeEndpoint(rawEndpoint)
+export const materializeBundle = (raw: string) => {
+  const result = decode(raw)
 
-      models.set(model.slug, model)
-      endpoints.set(endpoint.id, {
-        endpoint,
-        metrics: stats,
-        modelSlug: model.slug,
-      })
+  const scopes: Scope[] = []
+
+  for (const rawScope of result.data.models) {
+    let { model } = rawScope
+    const endpoints: MaterializedEndpoint[] = []
+
+    for (const { model: embeddedModel, ...endpoint } of rawScope.endpoints) {
+      // use enriched model for scope
+      // last write wins (they are equivalent within a scope)
+      model = embeddedModel
+      endpoints.push(endpoint)
     }
+
+    scopes.push({ endpoints, model })
   }
 
-  return {
-    endpoints: [...endpoints.values()].toSorted((left, right) =>
-      left.endpoint.id.localeCompare(right.endpoint.id),
-    ),
-    models: [...models.values()].toSorted((left, right) => left.slug.localeCompare(right.slug)),
-  }
+  return scopes
 }

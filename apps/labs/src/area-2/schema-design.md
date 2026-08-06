@@ -10,8 +10,21 @@ pricing revision stream. It stores one complete selected `CorePricing` card at e
 availability transition. This avoids reconstructing chart state from nested generic changesets at
 read time without turning every historical event or current catalog field into relational rows.
 
-The persisted product-database version covers this DDL, `area-2-core.ts`, and the diff policy. Any
-change to those contracts requires a new database and replay.
+The persisted product-database version covers this DDL, `area-2-core.ts`, the declared projection
+policies, and the diff policy. Any change to those contracts requires a new database and replay.
+
+## Projection policies
+
+`database_metadata` records the projection's declared policies as JSON. The current experiment is
+`{ "outputModalities": "text-only", "sampleRate": "daily" }`.
+
+The product database records and validates this identity when opening an existing file. It does not
+inspect applied crawls to enforce these policies; Area 2 bundle filtering owns that work.
+
+`text-only` retains endpoints whose materialized, endpoint-embedded model has exactly `['text']`
+output modalities. `daily` retains the first usable bundle of each UTC day. The bundle-file
+processor uses the persisted cursor to avoid reading files at or before it, and skips later files in
+the cursor's UTC day because they cannot affect a first-daily projection.
 
 ## Current state and journal
 
@@ -60,7 +73,9 @@ The selected `CorePricing` fields include text, cache, reasoning, audio, image, 
 ## Ingestion
 
 Each accepted crawl writes the journal, revision stream, current state, and cursor in one SQLite
-transaction. Write exactly one pricing revision for an endpoint when it is:
+transaction. Area 2 bundle-file processing rejects malformed bundles and bundles that produce zero
+retained endpoints before they reach this transaction, recording each rejection with `console.warn`.
+Filesystem failures are fatal. Write exactly one pricing revision for an endpoint when it is:
 
 - first observed: `baseline` with a full price card;
 - re-observed after unavailability: `available` with a full price card;

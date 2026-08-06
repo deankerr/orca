@@ -1,21 +1,42 @@
 import { Database } from 'bun:sqlite'
 
-import type { MaterializedCrawl, MaterializedEndpoint } from '@orca/bundles/materialize.ts'
 import * as Core from '@orca/schema/area-2-core.ts'
 import type { CoreEndpoint, CoreModel, CorePricing } from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 import { diff } from 'json-diff-ts'
 
-import type { HistoricalPrecision } from '../precision.ts'
-import { initializeProductDatabase } from './schema.ts'
+import {
+  initializeProductDatabase,
+  PRODUCT_DATABASE_VERSION,
+  PRODUCT_POLICIES,
+} from './initialize.ts'
+import type { ProductPolicies } from './initialize.ts'
 
-export { PRODUCT_DATABASE_VERSION } from './schema.ts'
+export { PRODUCT_DATABASE_VERSION } from './initialize.ts'
+export type { ProductPolicies } from './initialize.ts'
+
+export interface ProductEndpoint {
+  endpoint: CoreEndpoint
+  modelSlug: string
+}
+
+export interface ProductCrawl {
+  crawlId: string
+  endpoints: ProductEndpoint[]
+  models: CoreModel[]
+}
+
+export interface ProductDatabaseStatus {
+  latestCrawlId: string | undefined
+  policies: ProductPolicies
+  version: string
+}
 
 type ChangeKind = 'available' | 'baseline' | 'unavailable' | 'updated'
 type ContextKind = 'entity' | 'none' | 'pricing'
 type PricingRevisionKind = 'available' | 'baseline' | 'pricing' | 'unavailable'
 
-type EndpointState = MaterializedEndpoint
+type EndpointState = ProductEndpoint
 
 interface ModelChange {
   changeset: unknown[]
@@ -163,9 +184,11 @@ export class ProductDatabase {
   }
 
   /** Opens or creates a product database and restores its latest current state for later updates. */
-  static open(filename: string, precision: HistoricalPrecision = 'daily') {
+  static open(filename: string, ...legacyOptions: unknown[]) {
+    // The untouched legacy archive CLI still passes its removed precision argument.
+    void legacyOptions
     const database = new Database(filename)
-    initializeProductDatabase(database, precision)
+    initializeProductDatabase(database)
 
     const models = new Map(
       database
@@ -186,7 +209,6 @@ export class ProductDatabase {
           row.id,
           {
             endpoint: decodeEndpoint(parseStoredJson(row.state_json, `endpoint ${row.id}`)),
-            metrics: undefined,
             modelSlug: row.model_slug,
             providerName: row.provider_name,
             providerSlug: row.provider_slug,
@@ -207,6 +229,15 @@ export class ProductDatabase {
     return this.#lastCrawlId
   }
 
+  /** The declared projection metadata and chronological cursor available before later appends. */
+  get status(): ProductDatabaseStatus {
+    return {
+      latestCrawlId: this.#lastCrawlId,
+      policies: { ...PRODUCT_POLICIES },
+      version: PRODUCT_DATABASE_VERSION,
+    }
+  }
+
   close() {
     this.#database.close()
   }
@@ -215,7 +246,7 @@ export class ProductDatabase {
    * Commits one chronologically newer complete crawl. Reapplying the current cursor is a no-op;
    * attempting to insert a missing older crawl is rejected so current state and history cannot diverge.
    */
-  applyCrawl(crawl: MaterializedCrawl): {
+  applyCrawl(crawl: ProductCrawl): {
     endpointChanges: number
     modelChanges: number
     status: 'applied' | 'already-applied'

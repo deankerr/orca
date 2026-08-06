@@ -3,8 +3,9 @@ import { Database } from 'bun:sqlite'
 import * as Core from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 
-import { PRODUCT_DATABASE_VERSION } from '../product-db/index.ts'
 import type { MonitorEvent, MonitorSummary, PricingRevision } from './render.ts'
+
+const PRODUCT_DATABASE_VERSION = 'area-2-products-v3-daily-pricing-revisions'
 
 interface EventRow {
   change_kind: MonitorEvent['changeKind']

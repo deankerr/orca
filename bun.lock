@@ -34,10 +34,12 @@
     "apps/labs": {
       "name": "@orca/labs",
       "dependencies": {
+        "@clack/prompts": "^1.7.0",
         "@effect/platform-bun": "catalog:",
         "@effect/sql-sqlite-bun": "catalog:",
         "@orca/bundles": "workspace:*",
         "@orca/schema": "workspace:*",
+        "commander": "^15.0.0",
         "drizzle-orm": "1.0.0-rc.4",
         "effect": "catalog:",
         "json-diff-ts": "catalog:",

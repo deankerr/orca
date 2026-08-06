@@ -1,7 +1,26 @@
-// The deliberately small historical boundary used by archive experiments. These schemas select
-// product-facing fields from raw OpenRouter objects; excess upstream properties are ignored on
-// purpose. Adding a field here is an opt-in product decision, not a reaction to API drift.
+// Product-facing fields only
 import * as Schema from 'effect/Schema'
+
+export const CoreModel = Schema.Struct({
+  slug: Schema.String,
+  permaslug: Schema.String,
+  name: Schema.String,
+  short_name: Schema.String,
+  description: Schema.String,
+  author: Schema.String,
+  created_at: Schema.String,
+  context_length: Schema.Number,
+  input_modalities: Schema.Array(Schema.String),
+  output_modalities: Schema.Array(Schema.String),
+  group: Schema.String,
+  hf_slug: Schema.NullOr(Schema.String),
+  instruct_type: Schema.NullOr(Schema.String),
+  reasoning_config: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
+  supports_reasoning: Schema.optional(Schema.Boolean),
+  promotion_message: Schema.optional(Schema.NullOr(Schema.String)),
+  warning_message: Schema.NullOr(Schema.String),
+})
+export type CoreModel = Schema.Schema.Type<typeof CoreModel>
 
 const Price = Schema.optional(Schema.String)
 
@@ -43,27 +62,6 @@ export const CoreFeatures = Schema.Struct({
   supported_parameters: Schema.optional(Schema.Record(Schema.String, Schema.Boolean)),
 })
 export type CoreFeatures = Schema.Schema.Type<typeof CoreFeatures>
-
-export const CoreModel = Schema.Struct({
-  slug: Schema.String,
-  permaslug: Schema.String,
-  name: Schema.String,
-  short_name: Schema.String,
-  description: Schema.String,
-  author: Schema.String,
-  created_at: Schema.String,
-  context_length: Schema.Number,
-  input_modalities: Schema.Array(Schema.String),
-  output_modalities: Schema.Array(Schema.String),
-  group: Schema.String,
-  hf_slug: Schema.NullOr(Schema.String),
-  instruct_type: Schema.NullOr(Schema.String),
-  reasoning_config: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
-  supports_reasoning: Schema.optional(Schema.Boolean),
-  promotion_message: Schema.optional(Schema.NullOr(Schema.String)),
-  warning_message: Schema.NullOr(Schema.String),
-})
-export type CoreModel = Schema.Schema.Type<typeof CoreModel>
 
 export const CoreEndpoint = Schema.Struct({
   id: Schema.String,

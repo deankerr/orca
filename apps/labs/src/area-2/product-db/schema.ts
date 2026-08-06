@@ -1,11 +1,4 @@
-import type { Database } from 'bun:sqlite'
-
-import type { HistoricalPrecision } from '../precision.ts'
-
-// Bump this when the persisted schema, materialization selection, or diff policy changes.
-export const PRODUCT_DATABASE_VERSION = 'area-2-v3-daily-pricing-revisions'
-
-const statements = [
+export const PRODUCT_DATABASE_SCHEMA_STATEMENTS = [
   'PRAGMA foreign_keys = ON',
   'PRAGMA journal_mode = WAL',
   'PRAGMA synchronous = NORMAL',
@@ -100,36 +93,3 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS endpoint_pricing_revisions_by_model_crawl
     ON endpoint_pricing_revisions(model_slug, crawl_id DESC, endpoint_id)`,
 ] as const
-
-/** Initializes the compact current-state and changeset schema for the Area 2 experiment. */
-export const initializeProductDatabase = (database: Database, precision: HistoricalPrecision) => {
-  for (const statement of statements) {
-    database.run(statement)
-  }
-
-  const metadata = database
-    .query<{ value: string }, [string]>('SELECT value FROM database_metadata WHERE key = ?')
-    .get('schema_version')
-  if (metadata === null) {
-    const insertMetadata = database.query(
-      'INSERT INTO database_metadata (key, value) VALUES (?, ?)',
-    )
-    insertMetadata.run('schema_version', PRODUCT_DATABASE_VERSION)
-    insertMetadata.run('historical_precision', precision)
-    return
-  }
-  if (metadata.value !== PRODUCT_DATABASE_VERSION) {
-    throw new Error(
-      `unsupported product database version ${metadata.value}; expected ${PRODUCT_DATABASE_VERSION}`,
-    )
-  }
-
-  const storedPrecision = database
-    .query<{ value: string }, [string]>('SELECT value FROM database_metadata WHERE key = ?')
-    .get('historical_precision')
-  if (storedPrecision === null || storedPrecision.value !== precision) {
-    throw new Error(
-      `unsupported product database historical precision ${storedPrecision?.value ?? 'missing'}; expected ${precision}`,
-    )
-  }
-}
