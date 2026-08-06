@@ -4,7 +4,7 @@ import * as Command from 'effect/unstable/cli/Command'
 import { inspectionReport, readArtifactReport } from '../artifacts/report.ts'
 import type { ArtifactKind, RunReport } from '../artifacts/types.ts'
 import { resolveArtifactReference } from '../artifacts/workspace.ts'
-import { archiveMetrics, databaseMetrics, snapshotMetrics } from '../reports/metrics.ts'
+import { archiveMetrics, snapshotMetrics } from '../reports/metrics.ts'
 import { renderRunReport } from '../reports/render.ts'
 import {
   configuredWorkDirectory,
@@ -20,11 +20,10 @@ const inspectArtifact = Effect.fn('labs.inspectArtifact')(function* inspectArtif
   readonly kind: ArtifactKind
   readonly workDirectory: string
 }) {
-  const supportedVersions = options.kind === 'database' ? [2] : [1]
   const artifact = yield* resolveArtifactReference({
     kind: options.kind,
     reference: options.input,
-    supportedVersions,
+    supportedVersions: [1],
     workDirectory: options.workDirectory,
   })
   const stored = yield* readArtifactReport(artifact)
@@ -32,14 +31,10 @@ const inspectArtifact = Effect.fn('labs.inspectArtifact')(function* inspectArtif
     return stored
   }
 
-  let metrics: Readonly<Record<string, unknown>>
-  if (options.kind === 'archive') {
-    metrics = yield* archiveMetrics(artifact.path).pipe(provideReadOnlyDatabase(artifact.path))
-  } else if (options.kind === 'snapshot') {
-    metrics = yield* snapshotMetrics(artifact.path)
-  } else {
-    metrics = yield* databaseMetrics(artifact.path).pipe(provideReadOnlyDatabase(artifact.path))
-  }
+  const metrics =
+    options.kind === 'archive'
+      ? yield* archiveMetrics(artifact.path).pipe(provideReadOnlyDatabase(artifact.path))
+      : yield* snapshotMetrics(artifact.path)
 
   return inspectionReport({ artifact, metrics, program: `${options.kind}.report` })
 })
@@ -62,4 +57,3 @@ const reportCommand = (kind: ArtifactKind) =>
 
 export const reportSnapshotCommand = reportCommand('snapshot')
 export const reportArchiveCommand = reportCommand('archive')
-export const reportDatabaseCommand = reportCommand('database')

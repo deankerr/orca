@@ -3,18 +3,20 @@ import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 import * as SchemaTransformation from 'effect/SchemaTransformation'
 
-import type { RawModelScope } from './bundle-reader.ts'
+interface ModelScope {
+  endpoints: unknown[]
+}
 
 export interface MaterializedEndpoint {
-  readonly endpoint: Omit<CoreEndpoint, 'stats' | 'model'>
-  readonly metrics: EndpointMetrics | undefined
-  readonly modelSlug: string
+  endpoint: Omit<CoreEndpoint, 'stats' | 'model'>
+  metrics: EndpointMetrics | undefined
+  modelSlug: string
 }
 
 export interface MaterializedCrawl {
-  readonly crawlId: string
-  readonly endpoints: readonly MaterializedEndpoint[]
-  readonly models: readonly CoreModel[]
+  crawlId: string
+  endpoints: MaterializedEndpoint[]
+  models: CoreModel[]
 }
 
 const EndpointMetrics = Schema.Struct({
@@ -52,10 +54,10 @@ const decodeEndpoint = Schema.decodeUnknownSync(RawEndpointWithModel)
  * are authoritative; the last copy for each model slug or endpoint id wins.
  */
 export const materialize = (
-  scopes: readonly RawModelScope[],
+  scopes: ModelScope[],
 ): {
-  readonly endpoints: readonly MaterializedEndpoint[]
-  readonly models: readonly CoreModel[]
+  endpoints: MaterializedEndpoint[]
+  models: CoreModel[]
 } => {
   const models = new Map<string, CoreModel>()
   const endpoints = new Map<string, MaterializedEndpoint>()

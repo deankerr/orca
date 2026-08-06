@@ -8,11 +8,7 @@ import * as Effect from 'effect/Effect'
 import * as TestClock from 'effect/testing/TestClock'
 
 import { isRunReport } from '../artifacts/types.ts'
-import {
-  createArtifactRun,
-  latestCompatibleArtifact,
-  resolveArtifactReference,
-} from '../artifacts/workspace.ts'
+import { createArtifactRun, latestCompatibleArtifact } from '../artifacts/workspace.ts'
 import { runArtifactProgram } from '../observability/run.ts'
 
 const directories: string[] = []
@@ -37,15 +33,15 @@ describe('Labs artifact workspace', () => {
     const [first, second] = await Effect.runPromise(
       Effect.gen(function* allocateRuns() {
         yield* TestClock.setTime(Date.parse('2026-08-04T08:14:23.000Z'))
-        const firstRun = yield* createArtifactRun({ kind: 'database', workDirectory })
-        const secondRun = yield* createArtifactRun({ kind: 'database', workDirectory })
+        const firstRun = yield* createArtifactRun({ kind: 'archive', workDirectory })
+        const secondRun = yield* createArtifactRun({ kind: 'archive', workDirectory })
         return [firstRun, secondRun] as const
       }).pipe(Effect.provide(TestClock.layer())),
     )
 
     expect(first.runId).toBe('2026-08-04T08-14-23Z')
     expect(second.runId).toBe('2026-08-04T08-14-23Z-01')
-    expect(first.artifactPath).toEndWith('/products.sqlite')
+    expect(first.artifactPath).toEndWith('/bundles.sqlite')
   })
 
   test('resolves only successful compatible published artifacts as latest', async () => {
@@ -53,17 +49,17 @@ describe('Labs artifact workspace', () => {
     const result = await Effect.runPromise(
       runArtifactProgram({
         execute: (run) =>
-          Effect.gen(function* publishDatabase() {
-            yield* Effect.promise(async () => await Bun.write(run.artifactPath, 'database'))
+          Effect.gen(function* publishArchive() {
+            yield* Effect.promise(async () => await Bun.write(run.artifactPath, 'archive'))
             return {
-              artifact: { format: 'orca-product-database', formatVersion: 2 },
+              artifact: { format: 'orca-raw-bundle-archive', formatVersion: 1 },
               inputs: [],
               metrics: { rows: 1 },
               value: { rows: 1 },
             }
           }),
-        kind: 'database',
-        program: 'database.test',
+        kind: 'archive',
+        program: 'archive.test',
         reportOptions: {},
         workDirectory,
       }).pipe(Effect.provide(BunServices.layer)),
@@ -71,17 +67,17 @@ describe('Labs artifact workspace', () => {
     await Effect.runPromise(
       runArtifactProgram({
         execute: (run) =>
-          Effect.gen(function* publishIncompatibleDatabase() {
-            yield* Effect.promise(async () => await Bun.write(run.artifactPath, 'database'))
+          Effect.gen(function* publishIncompatibleArchive() {
+            yield* Effect.promise(async () => await Bun.write(run.artifactPath, 'archive'))
             return {
-              artifact: { format: 'future-product-database', formatVersion: 3 },
+              artifact: { format: 'future-raw-bundle-archive', formatVersion: 2 },
               inputs: [],
               metrics: {},
               value: {},
             }
           }),
-        kind: 'database',
-        program: 'database.future-test',
+        kind: 'archive',
+        program: 'archive.future-test',
         reportOptions: {},
         workDirectory,
       }).pipe(Effect.provide(BunServices.layer)),
@@ -89,14 +85,14 @@ describe('Labs artifact workspace', () => {
     await Effect.runPromiseExit(
       runArtifactProgram({
         execute: () => Effect.fail(new Error('newer failed run')),
-        kind: 'database',
-        program: 'database.failed-test',
+        kind: 'archive',
+        program: 'archive.failed-test',
         reportOptions: {},
         workDirectory,
       }).pipe(Effect.provide(BunServices.layer)),
     )
     const latest = await Effect.runPromise(
-      latestCompatibleArtifact({ kind: 'database', supportedVersions: [2], workDirectory }),
+      latestCompatibleArtifact({ kind: 'archive', supportedVersions: [1], workDirectory }),
     )
 
     expect(latest.path).toBe(result.run.artifactPath)
@@ -135,22 +131,5 @@ describe('Labs artifact workspace', () => {
     expect(
       await Bun.file(path.join(workDirectory, runDirectory ?? '', 'bundles.sqlite')).exists(),
     ).toBeFalse()
-  })
-
-  test('accepts extensionless legacy database references', async () => {
-    const workDirectory = await workspace()
-    const databasePath = path.join(workDirectory, 'databases', 'legacy.sqlite')
-    await Bun.write(databasePath, 'database')
-
-    const reference = await Effect.runPromise(
-      resolveArtifactReference({
-        kind: 'database',
-        reference: 'legacy',
-        supportedVersions: [2],
-        workDirectory,
-      }),
-    )
-    expect(reference.path).toBe(databasePath)
-    expect(reference.format).toBe('unindexed')
   })
 })

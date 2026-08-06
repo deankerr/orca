@@ -11,12 +11,10 @@ import { isRunReport } from './types.ts'
 const repositoryRoot = path.resolve(import.meta.dir, '../../../..')
 const artifactDirectories = {
   archive: 'archives',
-  database: 'databases',
   snapshot: 'snapshots',
 } satisfies Record<ArtifactKind, string>
 const artifactNames = {
   archive: 'bundles.sqlite',
-  database: 'products.sqlite',
   snapshot: 'snapshot',
 } satisfies Record<ArtifactKind, string>
 
@@ -308,7 +306,7 @@ export const latestCompatibleArtifact = Effect.fn('labs.latestCompatibleArtifact
   },
 )
 
-/** Resolves a run id, run directory, direct path, or extensionless legacy SQLite name. */
+/** Resolves a run id, run directory, or direct artifact path. */
 export const resolveArtifactReference = Effect.fn('labs.resolveArtifactReference')(
   function* resolveArtifactReference(options: {
     readonly kind: ArtifactKind
@@ -322,17 +320,7 @@ export const resolveArtifactReference = Effect.fn('labs.resolveArtifactReference
 
     const typeDirectory = path.join(options.workDirectory, artifactDirectories[options.kind])
     const direct = path.resolve(options.reference)
-    const candidates = [
-      direct,
-      path.join(typeDirectory, options.reference),
-      ...(options.kind === 'database'
-        ? [
-            path.join(options.workDirectory, 'databases', options.reference),
-            path.join(options.workDirectory, 'databases', `${options.reference}.sqlite`),
-            `${direct}.sqlite`,
-          ]
-        : []),
-    ]
+    const candidates = [direct, path.join(typeDirectory, options.reference)]
 
     for (const candidate of new Set(candidates)) {
       if (!(yield* Effect.promise(async () => await pathExists(candidate)))) {

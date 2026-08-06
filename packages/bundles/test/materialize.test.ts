@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 
-import { materialize } from '../materialize.ts'
+import { materialize } from '../src/materialize.ts'
 
 const model = {
   author: 'author',
@@ -50,7 +50,7 @@ const endpoint = {
   variant: 'standard',
 } satisfies CoreEndpoint
 
-describe('Area 2 materialization', () => {
+describe('bundle materialization', () => {
   test('uses the core schema to discard telemetry and unknown endpoint fields', () => {
     const result = materialize([
       {
@@ -66,7 +66,6 @@ describe('Area 2 materialization', () => {
             status_heuristics: { uptime: 0.9 },
           },
         ],
-        model,
       },
     ])
 

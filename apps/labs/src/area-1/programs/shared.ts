@@ -2,7 +2,6 @@ import { SqliteClient } from '@effect/sql-sqlite-bun'
 import * as Console from 'effect/Console'
 import * as Effect from 'effect/Effect'
 import * as Option from 'effect/Option'
-import * as Argument from 'effect/unstable/cli/Argument'
 import * as Flag from 'effect/unstable/cli/Flag'
 import * as GlobalFlag from 'effect/unstable/cli/GlobalFlag'
 import type { SqlClient as SqlClientService } from 'effect/unstable/sql/SqlClient'
@@ -39,17 +38,13 @@ export const jsonFlag = Flag.boolean('json').pipe(
   Flag.withDescription('Print the stored report as JSON'),
 )
 
-export const modelSlugArgument = Argument.string('model-slug').pipe(
-  Argument.withDescription('Model slug whose endpoint pricing history should be read'),
-)
-
 /** Converts Effect CLI optional values once at the program boundary. */
 export const optionalValue = <A>(option: Option.Option<A>) => Option.getOrUndefined(option)
 
-/** Writes product-query or report data as stable, indented JSON. */
+/** Writes report data as stable, indented JSON. */
 export const printJson = (value: unknown) => Console.log(JSON.stringify(value, null, 2))
 
-/** Supplies the local read boundary shared by report and product-query programs. */
+/** Supplies the local read boundary used to inspect SQLite archive artifacts. */
 export const provideReadOnlyDatabase =
   (databasePath: string) =>
   <A, E>(effect: Effect.Effect<A, E, SqlClientService>) =>

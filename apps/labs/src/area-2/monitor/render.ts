@@ -1,52 +1,52 @@
 export interface PricingRevision {
-  readonly kind: 'available' | 'baseline' | 'pricing' | 'unavailable'
-  readonly pricing: unknown
-  readonly providerModelId: string
+  kind: 'available' | 'baseline' | 'pricing' | 'unavailable'
+  pricing: unknown
+  providerModelId: string
 }
 
 export interface MonitorEvent {
-  readonly changeKind: 'available' | 'baseline' | 'unavailable' | 'updated'
-  readonly changeset: unknown
-  readonly context: unknown
-  readonly contextKind: 'entity' | 'none' | 'pricing'
-  readonly crawlId: string
-  readonly entityId: string
-  readonly entityType: 'endpoint' | 'model'
-  readonly modelName: string
-  readonly modelSlug: string
-  readonly pricingRevision: PricingRevision | undefined
-  readonly providerDisplayName: string | undefined
-  readonly providerName: string | undefined
-  readonly providerSlug: string | undefined
+  changeKind: 'available' | 'baseline' | 'unavailable' | 'updated'
+  changeset: unknown
+  context: unknown
+  contextKind: 'entity' | 'none' | 'pricing'
+  crawlId: string
+  entityId: string
+  entityType: 'endpoint' | 'model'
+  modelName: string
+  modelSlug: string
+  pricingRevision: PricingRevision | undefined
+  providerDisplayName: string | undefined
+  providerName: string | undefined
+  providerSlug: string | undefined
 }
 
 export interface MonitorSummary {
-  readonly crawls: number
-  readonly eventCount: number
-  readonly firstCrawlId: string
-  readonly generatedAt: string
-  readonly lastCrawlId: string
-  readonly pricingRevisionCount: number
+  crawls: number
+  eventCount: number
+  firstCrawlId: string
+  generatedAt: string
+  lastCrawlId: string
+  pricingRevisionCount: number
 }
 
 interface PricingChange {
-  readonly after: unknown
-  readonly before: unknown
-  readonly component: string
+  after: unknown
+  before: unknown
+  component: string
 }
 
 type GenericChange =
   | {
-      readonly after: unknown
-      readonly before: unknown
-      readonly kind: 'value'
-      readonly path: readonly string[]
+      after: unknown
+      before: unknown
+      kind: 'value'
+      path: string[]
     }
   | {
-      readonly added: readonly unknown[]
-      readonly kind: 'members'
-      readonly path: readonly string[]
-      readonly removed: readonly unknown[]
+      added: unknown[]
+      kind: 'members'
+      path: string[]
+      removed: unknown[]
     }
 
 const pricingComponents = [
@@ -162,14 +162,14 @@ const formatPrice = (component: string, value: unknown) => {
   return `$${formatCompactValue(value)}`
 }
 
-const normalizePath = (path: readonly string[]) => (path[0] === 'endpoint' ? path.slice(1) : path)
+const normalizePath = (path: string[]) => (path[0] === 'endpoint' ? path.slice(1) : path)
 
-const isPricingPath = (path: readonly string[]) => path[0] === 'pricing'
+const isPricingPath = (path: string[]) => path[0] === 'pricing'
 
-const memberValue = (change: Readonly<Record<string, unknown>>) =>
+const memberValue = (change: Record<string, unknown>) =>
   change.value ?? change.oldValue ?? change.key
 
-const beforeAndAfter = (change: Readonly<Record<string, unknown>>) => {
+const beforeAndAfter = (change: Record<string, unknown>) => {
   if (change.type === 'ADD') {
     return { after: change.value, before: undefined }
   }
@@ -179,8 +179,8 @@ const beforeAndAfter = (change: Readonly<Record<string, unknown>>) => {
   return { after: change.value, before: change.oldValue }
 }
 
-const genericChanges = (changeset: unknown): readonly GenericChange[] => {
-  const visit = (changes: unknown, path: readonly string[]): GenericChange[] => {
+const genericChanges = (changeset: unknown): GenericChange[] => {
+  const visit = (changes: unknown, path: string[]): GenericChange[] => {
     if (!Array.isArray(changes)) {
       return []
     }
@@ -247,8 +247,8 @@ const genericChanges = (changeset: unknown): readonly GenericChange[] => {
   return coalesced
 }
 
-const pricingChanges = (changeset: unknown): readonly PricingChange[] => {
-  const visit = (changes: unknown, path: readonly string[]): PricingChange[] => {
+const pricingChanges = (changeset: unknown): PricingChange[] => {
+  const visit = (changes: unknown, path: string[]): PricingChange[] => {
     if (!Array.isArray(changes)) {
       return []
     }
@@ -277,7 +277,7 @@ const pricingChanges = (changeset: unknown): readonly PricingChange[] => {
   return visit(changeset, [])
 }
 
-const pricingCard = (context: unknown): Readonly<Record<string, unknown>> | undefined => {
+const pricingCard = (context: unknown): Record<string, unknown> | undefined => {
   if (!isRecord(context)) {
     return undefined
   }
@@ -290,10 +290,10 @@ const pricingCard = (context: unknown): Readonly<Record<string, unknown>> | unde
   return undefined
 }
 
-const directPricingCard = (pricing: unknown): Readonly<Record<string, unknown>> | undefined =>
+const directPricingCard = (pricing: unknown): Record<string, unknown> | undefined =>
   isRecord(pricing) ? pricing : undefined
 
-const renderPriceCard = (title: string, pricing: Readonly<Record<string, unknown>>) => {
+const renderPriceCard = (title: string, pricing: Record<string, unknown>) => {
   const keys = [
     ...pricingComponents.filter(
       (component) =>
@@ -324,7 +324,7 @@ const renderPriceCard = (title: string, pricing: Readonly<Record<string, unknown
   </section>`
 }
 
-const renderPricingChanges = (changes: readonly PricingChange[]) => {
+const renderPricingChanges = (changes: PricingChange[]) => {
   if (changes.length === 0) {
     return ''
   }
@@ -380,7 +380,7 @@ const renderJson = (title: string, value: unknown) => `<details>
   <pre>${escapeHtml(json(value))}</pre>
 </details>`
 
-const rateCardTitle = (event: MonitorEvent, priceChanges: readonly PricingChange[]) => {
+const rateCardTitle = (event: MonitorEvent, priceChanges: PricingChange[]) => {
   if (event.pricingRevision !== undefined) {
     return event.pricingRevision.kind === 'unavailable'
       ? 'Rate card before removal'
@@ -521,11 +521,7 @@ const styles = `
   }
 `
 
-export const renderMonitor = (
-  summary: MonitorSummary,
-  events: readonly MonitorEvent[],
-  limit: number,
-) => {
+export const renderMonitor = (summary: MonitorSummary, events: MonitorEvent[], limit: number) => {
   const newestCrawlId = events[0]?.crawlId
   const oldestCrawlId = events.at(-1)?.crawlId
   const eventWindow =

@@ -4,12 +4,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+import type { MaterializedCrawl, MaterializedEndpoint } from '@orca/bundles/materialize.ts'
 import type { CoreEndpoint, CoreModel } from '@orca/schema/area-2-core.ts'
 
-import type { MaterializedCrawl, MaterializedEndpoint } from '../materialize.ts'
 import { readMonitor } from '../monitor/read.ts'
 import { readPricingHistory } from '../pricing-history.ts'
-import { ProductDatabase } from '../product-database.ts'
+import { ProductDatabase } from '../product-db/index.ts'
 
 const directories: string[] = []
 
@@ -78,7 +78,7 @@ const endpoint = (
 
 const crawl = (
   crawlId: string,
-  endpoints: readonly MaterializedEndpoint[],
+  endpoints: MaterializedEndpoint[],
   models: MaterializedCrawl['models'] = [model()],
 ): MaterializedCrawl => ({ crawlId, endpoints, models })
 
@@ -155,12 +155,12 @@ describe('Area 2 product database', () => {
     const endpointChanges = sql
       .query<
         {
-          readonly change_kind: string
-          readonly changeset_json: string
-          readonly context_json: string | null
-          readonly context_kind: string
-          readonly model_name: string
-          readonly provider_display_name: string
+          change_kind: string
+          changeset_json: string
+          context_json: string | null
+          context_kind: string
+          model_name: string
+          provider_display_name: string
         },
         []
       >(
@@ -170,14 +170,14 @@ describe('Area 2 product database', () => {
       )
       .all()
     const currentEndpoints = sql
-      .query<{ readonly count: number }, []>('SELECT count(*) AS count FROM endpoints')
+      .query<{ count: number }, []>('SELECT count(*) AS count FROM endpoints')
       .get()
     const modelChanges = sql
       .query<
         {
-          readonly changeset_json: string
-          readonly context_kind: string
-          readonly model_name: string
+          changeset_json: string
+          context_kind: string
+          model_name: string
         },
         []
       >(
@@ -280,7 +280,7 @@ describe('Area 2 product database', () => {
 
     const sql = new Database(filename, { readonly: true })
     const revisions = sql
-      .query<{ readonly pricing_json: string | null; readonly revision_kind: string }, []>(
+      .query<{ pricing_json: string | null; revision_kind: string }, []>(
         `SELECT revision_kind, pricing_json
          FROM endpoint_pricing_revisions
          ORDER BY CAST(crawl_id AS INTEGER)`,

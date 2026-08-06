@@ -7,48 +7,48 @@ import * as Schema from 'effect/Schema'
 export type PricingRevisionKind = 'available' | 'baseline' | 'pricing' | 'unavailable'
 
 export interface PricingHistoryPoint {
-  readonly at: number
-  readonly available: boolean
-  readonly pricing: CorePricing
+  at: number
+  available: boolean
+  pricing: CorePricing
 }
 
 export interface PricingHistorySeries {
-  readonly endpointId: string
-  readonly points: readonly PricingHistoryPoint[]
-  readonly provider: {
-    readonly displayName: string
-    readonly modelId: string
-    readonly name: string
-    readonly slug: string
+  endpointId: string
+  points: PricingHistoryPoint[]
+  provider: {
+    displayName: string
+    modelId: string
+    name: string
+    slug: string
   }
 }
 
 export interface PricingHistory {
-  readonly asOf: number
-  readonly modelSlug: string
-  readonly series: readonly PricingHistorySeries[]
-  readonly since: number
+  asOf: number
+  modelSlug: string
+  series: PricingHistorySeries[]
+  since: number
 }
 
 interface BoundsRow {
-  readonly first_crawl_id: string | null
-  readonly last_crawl_id: string | null
+  first_crawl_id: string | null
+  last_crawl_id: string | null
 }
 
 interface CurrentEndpointRow {
-  readonly id: string
-  readonly state_json: string
+  id: string
+  state_json: string
 }
 
 interface PricingRevisionRow {
-  readonly crawl_id: string
-  readonly endpoint_id: string
-  readonly pricing_json: string | null
-  readonly provider_display_name: string
-  readonly provider_model_id: string
-  readonly provider_name: string
-  readonly provider_slug: string
-  readonly revision_kind: PricingRevisionKind
+  crawl_id: string
+  endpoint_id: string
+  pricing_json: string | null
+  provider_display_name: string
+  provider_model_id: string
+  provider_name: string
+  provider_slug: string
+  revision_kind: PricingRevisionKind
 }
 
 type MutablePricingSeries = {

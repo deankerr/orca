@@ -81,6 +81,13 @@ export default defineConfig({
         'sort-keys': 'off',
       },
     },
+    {
+      // Area 2 contracts deliberately permit callers to mutate their inputs and outputs.
+      files: ['apps/labs/src/area-2/**/*.ts'],
+      rules: {
+        'typescript/prefer-readonly': 'off',
+      },
+    },
   ],
   rules: {
     // standard ultracite overrides

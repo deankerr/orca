@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
 
-import type { HistoricalPrecision } from './precision.ts'
+import type { HistoricalPrecision } from '../precision.ts'
 
 // Bump this when the persisted schema, materialization selection, or diff policy changes.
 export const PRODUCT_DATABASE_VERSION = 'area-2-v3-daily-pricing-revisions'
@@ -108,9 +108,7 @@ export const initializeProductDatabase = (database: Database, precision: Histori
   }
 
   const metadata = database
-    .query<{ readonly value: string }, [string]>(
-      'SELECT value FROM database_metadata WHERE key = ?',
-    )
+    .query<{ value: string }, [string]>('SELECT value FROM database_metadata WHERE key = ?')
     .get('schema_version')
   if (metadata === null) {
     const insertMetadata = database.query(
@@ -127,9 +125,7 @@ export const initializeProductDatabase = (database: Database, precision: Histori
   }
 
   const storedPrecision = database
-    .query<{ readonly value: string }, [string]>(
-      'SELECT value FROM database_metadata WHERE key = ?',
-    )
+    .query<{ value: string }, [string]>('SELECT value FROM database_metadata WHERE key = ?')
     .get('historical_precision')
   if (storedPrecision === null || storedPrecision.value !== precision) {
     throw new Error(

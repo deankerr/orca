@@ -3,37 +3,37 @@ import { Database } from 'bun:sqlite'
 import * as Core from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 
-import { PRODUCT_DATABASE_VERSION } from '../schema.ts'
+import { PRODUCT_DATABASE_VERSION } from '../product-db/index.ts'
 import type { MonitorEvent, MonitorSummary, PricingRevision } from './render.ts'
 
 interface EventRow {
-  readonly change_kind: MonitorEvent['changeKind']
-  readonly changeset_json: string
-  readonly context_json: string | null
-  readonly context_kind: MonitorEvent['contextKind']
-  readonly crawl_id: string
-  readonly entity_id: string
-  readonly entity_type: MonitorEvent['entityType']
-  readonly model_name: string
-  readonly model_slug: string
-  readonly pricing_json: string | null
-  readonly pricing_provider_model_id: string | null
-  readonly pricing_revision_kind: string | null
-  readonly provider_display_name: string | null
-  readonly provider_name: string | null
-  readonly provider_slug: string | null
+  change_kind: MonitorEvent['changeKind']
+  changeset_json: string
+  context_json: string | null
+  context_kind: MonitorEvent['contextKind']
+  crawl_id: string
+  entity_id: string
+  entity_type: MonitorEvent['entityType']
+  model_name: string
+  model_slug: string
+  pricing_json: string | null
+  pricing_provider_model_id: string | null
+  pricing_revision_kind: string | null
+  provider_display_name: string | null
+  provider_name: string | null
+  provider_slug: string | null
 }
 
 interface SummaryRow {
-  readonly crawls: number
-  readonly event_count: number
-  readonly first_crawl_id: string
-  readonly last_crawl_id: string
-  readonly pricing_revision_count: number
+  crawls: number
+  event_count: number
+  first_crawl_id: string
+  last_crawl_id: string
+  pricing_revision_count: number
 }
 
 interface VersionRow {
-  readonly value: string
+  value: string
 }
 
 const pricingRevisionKinds = ['available', 'baseline', 'pricing', 'unavailable'] as const

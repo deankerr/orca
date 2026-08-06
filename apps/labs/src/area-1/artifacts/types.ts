@@ -1,4 +1,4 @@
-export type ArtifactKind = 'archive' | 'database' | 'snapshot'
+export type ArtifactKind = 'archive' | 'snapshot'
 export type RunStatus = 'failed' | 'running' | 'succeeded'
 
 export interface ArtifactDescriptor {
@@ -50,7 +50,7 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const isArtifactKind = (value: unknown): value is ArtifactKind =>
-  value === 'archive' || value === 'database' || value === 'snapshot'
+  value === 'archive' || value === 'snapshot'
 
 const isArtifactDescriptor = (value: unknown): value is ArtifactDescriptor =>
   isRecord(value) &&

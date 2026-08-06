@@ -1,12 +1,13 @@
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 
+import { materialize } from '@orca/bundles/materialize.ts'
+
 import { readBundles, validateBundle } from './bundle-reader.ts'
 import type { JsonRecord, RawModelScope } from './bundle-reader.ts'
-import { materialize } from './materialize.ts'
 import { selectHistoricalCrawls } from './precision.ts'
 import type { HistoricalPrecision } from './precision.ts'
-import { ProductDatabase } from './product-database.ts'
+import { ProductDatabase } from './product-db/index.ts'
 
 const archivePath = path.resolve(
   import.meta.dir,
@@ -17,7 +18,7 @@ const isTextOutput = (model: JsonRecord) => {
   return Array.isArray(output) && output.length === 1 && output[0] === 'text'
 }
 
-const parseHistoricalPrecision = (arguments_: readonly string[]): HistoricalPrecision => {
+const parseHistoricalPrecision = (arguments_: string[]): HistoricalPrecision => {
   if (arguments_.length === 0) {
     return 'daily'
   }
@@ -32,8 +33,8 @@ const parseHistoricalPrecision = (arguments_: readonly string[]): HistoricalPrec
 }
 
 interface AcceptedBundle {
-  readonly crawlId: string
-  readonly scopes: readonly RawModelScope[]
+  crawlId: string
+  scopes: RawModelScope[]
 }
 
 interface ReplayCounters {
@@ -71,7 +72,7 @@ function* readAcceptedBundles(
 ): Generator<AcceptedBundle, void, undefined> {
   for (const bundle of readBundles(sourceArchivePath)) {
     counters.sourceBundles += 1
-    let scopes: readonly RawModelScope[]
+    let scopes: RawModelScope[]
     try {
       scopes = validateBundle(bundle.bytes).filter(({ model }) => isTextOutput(model))
     } catch (error) {

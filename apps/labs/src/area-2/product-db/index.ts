@@ -1,13 +1,15 @@
 import { Database } from 'bun:sqlite'
 
+import type { MaterializedCrawl, MaterializedEndpoint } from '@orca/bundles/materialize.ts'
 import * as Core from '@orca/schema/area-2-core.ts'
 import type { CoreEndpoint, CoreModel, CorePricing } from '@orca/schema/area-2-core.ts'
 import * as Schema from 'effect/Schema'
 import { diff } from 'json-diff-ts'
 
-import type { MaterializedCrawl, MaterializedEndpoint } from './materialize.ts'
-import type { HistoricalPrecision } from './precision.ts'
+import type { HistoricalPrecision } from '../precision.ts'
 import { initializeProductDatabase } from './schema.ts'
+
+export { PRODUCT_DATABASE_VERSION } from './schema.ts'
 
 type ChangeKind = 'available' | 'baseline' | 'unavailable' | 'updated'
 type ContextKind = 'entity' | 'none' | 'pricing'
@@ -16,48 +18,48 @@ type PricingRevisionKind = 'available' | 'baseline' | 'pricing' | 'unavailable'
 type EndpointState = MaterializedEndpoint
 
 interface ModelChange {
-  readonly changeset: readonly unknown[]
-  readonly context: CoreModel | null
-  readonly contextKind: Extract<ContextKind, 'entity' | 'none'>
-  readonly kind: ChangeKind
-  readonly modelName: string
-  readonly modelSlug: string
+  changeset: unknown[]
+  context: CoreModel | null
+  contextKind: Extract<ContextKind, 'entity' | 'none'>
+  kind: ChangeKind
+  modelName: string
+  modelSlug: string
 }
 
 interface EndpointChange {
-  readonly changeset: readonly unknown[]
-  readonly context: EndpointEntityContext | PricingContext | null
-  readonly contextKind: ContextKind
-  readonly endpoint: EndpointState
-  readonly kind: ChangeKind
-  readonly modelName: string
-  readonly pricingRevisionKind: PricingRevisionKind | undefined
+  changeset: unknown[]
+  context: EndpointEntityContext | PricingContext | null
+  contextKind: ContextKind
+  endpoint: EndpointState
+  kind: ChangeKind
+  modelName: string
+  pricingRevisionKind: PricingRevisionKind | undefined
 }
 
 interface StoredModelRow {
-  readonly slug: string
-  readonly state_json: string
+  slug: string
+  state_json: string
 }
 
 interface StoredEndpointRow {
-  readonly id: string
-  readonly model_slug: string
-  readonly provider_name: string | null
-  readonly provider_slug: string | null
-  readonly state_json: string
+  id: string
+  model_slug: string
+  provider_name: string | null
+  provider_slug: string | null
+  state_json: string
 }
 
 interface StoredCrawlRow {
-  readonly crawl_id: string
+  crawl_id: string
 }
 
 interface EndpointEntityContext {
-  readonly endpoint: CoreEndpoint
-  readonly model: Pick<CoreModel, 'name' | 'slug'>
+  endpoint: CoreEndpoint
+  model: Pick<CoreModel, 'name' | 'slug'>
 }
 
 interface PricingContext {
-  readonly pricing: CorePricing
+  pricing: CorePricing
 }
 
 const DIFF_OPTIONS = {
@@ -104,12 +106,12 @@ const eventKind = (
   return 'updated'
 }
 
-const changesetIncludesKey = (changeset: readonly unknown[], key: string): boolean =>
+const changesetIncludesKey = (changeset: unknown[], key: string): boolean =>
   changeset.some((change) => {
     if (typeof change !== 'object' || change === null || Array.isArray(change)) {
       return false
     }
-    const candidate = change as { readonly changes?: unknown; readonly key?: unknown }
+    const candidate = change as { changes?: unknown; key?: unknown }
     if (candidate.key === key) {
       return true
     }
@@ -143,7 +145,7 @@ const pricingContext = (endpoint: EndpointState): PricingContext => ({
  * it has no knowledge of bundle archives, playback, or capture orchestration.
  */
 export class ProductDatabase {
-  readonly #database: Database
+  #database: Database
   #endpoints: Map<string, EndpointState>
   #lastCrawlId: string | undefined
   #models: Map<string, CoreModel>
@@ -214,9 +216,9 @@ export class ProductDatabase {
    * attempting to insert a missing older crawl is rejected so current state and history cannot diverge.
    */
   applyCrawl(crawl: MaterializedCrawl): {
-    readonly endpointChanges: number
-    readonly modelChanges: number
-    readonly status: 'applied' | 'already-applied'
+    endpointChanges: number
+    modelChanges: number
+    status: 'applied' | 'already-applied'
   } {
     if (this.#lastCrawlId !== undefined && compareCrawlIds(crawl.crawlId, this.#lastCrawlId) <= 0) {
       const existing = this.#database
@@ -261,7 +263,7 @@ export class ProductDatabase {
     }
   }
 
-  #modelChanges(nextModels: ReadonlyMap<string, CoreModel>): ModelChange[] {
+  #modelChanges(nextModels: Map<string, CoreModel>): ModelChange[] {
     const changes: ModelChange[] = []
     const slugs = new Set([...this.#models.keys(), ...nextModels.keys()])
 
@@ -292,8 +294,8 @@ export class ProductDatabase {
   }
 
   #endpointChanges(
-    nextEndpoints: ReadonlyMap<string, EndpointState>,
-    nextModels: ReadonlyMap<string, CoreModel>,
+    nextEndpoints: Map<string, EndpointState>,
+    nextModels: Map<string, CoreModel>,
   ): EndpointChange[] {
     const changes: EndpointChange[] = []
     const ids = new Set([...this.#endpoints.keys(), ...nextEndpoints.keys()])
@@ -352,8 +354,8 @@ export class ProductDatabase {
   }
 
   #replaceCurrentState(
-    models: ReadonlyMap<string, CoreModel>,
-    endpoints: ReadonlyMap<string, EndpointState>,
+    models: Map<string, CoreModel>,
+    endpoints: Map<string, EndpointState>,
     crawlId: string,
   ) {
     this.#database.run('DELETE FROM models')
@@ -383,7 +385,7 @@ export class ProductDatabase {
     }
   }
 
-  #writeModelChanges(changes: readonly ModelChange[], crawlId: string, previousCrawlId?: string) {
+  #writeModelChanges(changes: ModelChange[], crawlId: string, previousCrawlId?: string) {
     const insert = this.#database.query(
       `INSERT INTO model_changes
         (crawl_id, previous_crawl_id, model_slug, model_name, change_kind, changeset_json, context_kind, context_json)
@@ -403,11 +405,7 @@ export class ProductDatabase {
     }
   }
 
-  #writeEndpointChanges(
-    changes: readonly EndpointChange[],
-    crawlId: string,
-    previousCrawlId?: string,
-  ) {
+  #writeEndpointChanges(changes: EndpointChange[], crawlId: string, previousCrawlId?: string) {
     const insert = this.#database.query(
       `INSERT INTO endpoint_changes
         (crawl_id, previous_crawl_id, endpoint_id, model_slug, model_name, provider_name,
@@ -432,7 +430,7 @@ export class ProductDatabase {
     }
   }
 
-  #writeEndpointPricingRevisions(changes: readonly EndpointChange[], crawlId: string) {
+  #writeEndpointPricingRevisions(changes: EndpointChange[], crawlId: string) {
     const insert = this.#database.query(
       `INSERT INTO endpoint_pricing_revisions
         (crawl_id, endpoint_id, model_slug, provider_name, provider_display_name, provider_slug,

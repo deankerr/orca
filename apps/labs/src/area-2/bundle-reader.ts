@@ -3,8 +3,8 @@ import { Database } from 'bun:sqlite'
 import * as Schema from 'effect/Schema'
 
 export interface RawBundle {
-  readonly bytes: Uint8Array
-  readonly crawlId: string
+  bytes: Uint8Array
+  crawlId: string
 }
 
 const StoredBundleRow = Schema.Struct({
@@ -15,7 +15,7 @@ const StoredBundleRow = Schema.Struct({
 type StoredBundleRow = Schema.Schema.Type<typeof StoredBundleRow>
 
 const JsonRecord = Schema.Record(Schema.String, Schema.Unknown)
-export type JsonRecord = Schema.Schema.Type<typeof JsonRecord>
+export type JsonRecord = Record<string, unknown>
 
 const BundlePayload = Schema.Struct({
   data: Schema.Struct({
@@ -27,7 +27,10 @@ const BundlePayload = Schema.Struct({
     ),
   }),
 })
-export type RawModelScope = Schema.Schema.Type<typeof BundlePayload>['data']['models'][number]
+export interface RawModelScope {
+  endpoints: JsonRecord[]
+  model: JsonRecord
+}
 
 const decodeRow = Schema.decodeUnknownSync(StoredBundleRow)
 const decodePayload = Schema.decodeUnknownSync(Schema.fromJsonString(BundlePayload))
@@ -51,8 +54,11 @@ const decodeBundle = (row: StoredBundleRow): RawBundle => {
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
 /** Parses the raw bundle envelope needed to hand model scopes to the core materializer. */
-export const validateBundle = (bytes: Uint8Array): readonly RawModelScope[] =>
-  decodePayload(textDecoder.decode(bytes)).data.models
+export const validateBundle = (bytes: Uint8Array): RawModelScope[] =>
+  decodePayload(textDecoder.decode(bytes)).data.models.map((scope) => ({
+    endpoints: scope.endpoints.map((endpoint) => ({ ...endpoint })),
+    model: { ...scope.model },
+  }))
 
 /**
  * Reads verified raw bundles in chronological order. This knows the archive format, but not how a

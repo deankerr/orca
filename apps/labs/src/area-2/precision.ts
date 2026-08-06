@@ -1,7 +1,7 @@
 export type HistoricalPrecision = 'daily' | 'full'
 
 interface CrawlIdentity {
-  readonly crawlId: string
+  crawlId: string
 }
 
 const utcDay = (crawl: CrawlIdentity) => new Date(Number(crawl.crawlId)).toISOString().slice(0, 10)
