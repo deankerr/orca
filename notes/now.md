@@ -6,15 +6,13 @@
 
 ## @orca/bundles
 
-- `materialize.ts` converts orca bundle to usable form
+- `materialize.ts` converts orca bundles to usable form
 
 ## @orca/labs
 
 - analyse historical data
 - develop bulk data and product storage strategies
 - evidence based decisions
-
-### area-1
 
 #### bundle archive
 
@@ -46,3 +44,5 @@
 - Many other current fields have been added (or made required) over time.
 - Early snapshots did not always properly handle transient fetch failures, which causes an endpoint to appear temporarily missing under a naive interprtaion of the endpoint record diffs.
 - Early snapshots also store additional data beyond models and endpoints - to be ignored for now.
+- Alchemy/Effect should be used from new Cloudflare stack code.
+  - This excludes legacy Cloudflare use in `apps/logos` and `packages/backend`

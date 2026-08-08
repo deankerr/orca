@@ -10,12 +10,13 @@
 
 This project vendors external repositories under @repos/
 
-- Reference material for preferred examples and patterns, over generated guesses or web search results
+- Current repos: @repos/effect/ @repos/alchemy/
+- Reference material for preferred, idiomatic usage examples and patterns.
+- Treat these as the source of truth, over training data or web search results.
 - Do not import from @repos/ - application code should continue importing from normal package dependencies
 
 ## Effect V4 Beta
 
-- When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
 
