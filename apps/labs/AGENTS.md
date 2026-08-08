@@ -2,11 +2,8 @@
 
 Labs is a collection of local data programs and the reusable transformations they orchestrate.
 
+@notes/now.md
 @CONTEXT.md
-
-## area-1
-
-- Effect ✅
 
 ### Programs and helpers
 
