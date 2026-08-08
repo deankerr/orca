@@ -1,5 +1,10 @@
 # ORCA (OpenRouter Capability Analysis)
 
+## Development
+
+- Use `bun run fix` for all work validation.
+- Inline linter disables may be used if the reasoning is justified.
+
 ## New Architecture rewrite
 
 - See @notes/objectives.md for primary objectives and requirements.
@@ -19,13 +24,6 @@ This project vendors external repositories under @repos/
 
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
-
-# Legacy Instructions
-
-## Development
-
-- Use `bun run fix` for all code validation.
-- Inline linter disables may be used if the reasoning is justified.
 
 ## Overview
 

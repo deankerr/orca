@@ -12,7 +12,17 @@ cron (hourly)                  queue                       R2
      └─ sendBatch ──────────────►│                          │
                                  ├─ GET /stats/endpoint      │
                                  └─ put ────────────────────►│  endpoints/{batch}/{author}.{model}.{variant}.json
+                                                             │
+                                 └─ parse ScopeObservation (ids + raw payloads)
+                                    └─ always put ─────────────────────► D1 current cache
 ```
+
+D1 holds the disposable **current cache**: latest `ScopeObservation` per model-variant scope
+(identity-validated endpoint ids + raw OpenRouter payloads — not product / orca-legacy cards).
+After each successful endpoints observation is stored in R2, the queue consumer parses ids and
+**always puts** the observation. D1 failures are logged and swallowed so they never block archive
+capture. Product delivery (`planTransition` → Convex) is a later cut. Migrations live in
+`./migrations` and apply on deploy via Alchemy + Effect SQL (`alchemy/SQL/D1` → `@effect/sql-d1`).
 
 A crawl is 430 of 817 catalog models, ~100 seconds, ~6.9 MB of responses.
 
@@ -84,33 +94,37 @@ Nothing here parses an endpoints response. The two schemas the crawl does read l
 
 ## The modules
 
-| module          | knows                                                                    |
-| --------------- | ------------------------------------------------------------------------ |
-| `worker.ts`     | that this is a Cloudflare Worker: bindings, the cron, the queue consumer |
-| `artifacts.ts`  | how a key is spelled, and R2 — the only module that touches either       |
-| `api.ts`        | the HTTP surface, declared as one `HttpApi` over the archive             |
-| `openrouter.ts` | that OpenRouter exists                                                   |
+| module           | knows                                                                    |
+| ---------------- | ------------------------------------------------------------------------ |
+| `worker.ts`      | that this is a Cloudflare Worker: bindings, the cron, the queue consumer |
+| `artifacts.ts`   | how a key is spelled, and R2 — the only module that touches either       |
+| `database.ts`    | the D1 resource and its migration directory                              |
+| `observation.ts` | pure ScopeObservation parse (ids + raw payloads)                         |
+| `current.ts`     | CurrentCache over Effect SQL — no OpenRouter, no R2                      |
+| `api.ts`         | the HTTP surface, declared as one `HttpApi` over archive + current       |
+| `openrouter.ts`  | that OpenRouter exists                                                   |
 
-The archive is the seam the other three meet at: the crawl writes through it, the API reads through
-it, and neither builds a key. `Artifacts.make` takes a bucket client rather than reaching for one,
-so `test/api.test.ts` drives the whole API — real store, real keys, real schemas — against ~40 lines
-of `Map` standing in for R2.
+The archive is the seam the crawl and API meet at: the crawl writes through it, the API reads
+through it, and neither builds a key. `Artifacts.make` takes a bucket client rather than reaching
+for one, so `test/api.test.ts` drives the whole API — real store, real keys, real schemas — against
+~40 lines of `Map` standing in for R2. D1 current-view is a second seam (`Current.make(sql)`).
 
 ## The API
 
 Declared once in `api.ts`, so the same description validates requests, encodes responses and
 generates the OpenAPI document. `/docs` is that document, rendered.
 
-| route                                   | answers                                                   |
-| --------------------------------------- | --------------------------------------------------------- |
-| `GET /batches`                          | every crawl, oldest first, `?limit=&cursor=`              |
-| `GET /batches/latest`                   | the most recent crawl, in detail                          |
-| `GET /batches/{batch}`                  | one crawl: its catalog, and what landed at which statuses |
-| `GET /batches/{batch}/catalog`          | the stored catalog document                               |
-| `GET /batches/{batch}/endpoints`        | what landed, `?limit=&cursor=&author=`                    |
-| `GET /batches/{batch}/endpoints/{name}` | one stored response, exactly as stored                    |
-| `POST /crawl`                           | starts a crawl now                                        |
-| `GET /docs`, `GET /openapi.json`        | the API describing itself                                 |
+| route                                   | answers                                                      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `GET /batches`                          | every crawl, oldest first, `?limit=&cursor=`                 |
+| `GET /batches/latest`                   | the most recent crawl, in detail                             |
+| `GET /batches/{batch}`                  | one crawl: its catalog, and what landed at which statuses    |
+| `GET /batches/{batch}/catalog`          | the stored catalog document                                  |
+| `GET /batches/{batch}/endpoints`        | what landed, `?limit=&cursor=&author=`                       |
+| `GET /batches/{batch}/endpoints/{name}` | one stored response, exactly as stored                       |
+| `GET /current`                          | D1 current-cache row counts (scopes / endpoints / available) |
+| `POST /crawl`                           | starts a crawl now                                           |
+| `GET /docs`, `GET /openapi.json`        | the API describing itself                                    |
 
 Three things about it are worth knowing before using it:
 
@@ -138,17 +152,6 @@ endpoints API disagreed.
 **A failed catalog is stored nowhere.** It is an observation of us, not of OpenRouter, and belongs
 in an alert. Anything still non-200 after retries kills the crawl, and no batch exists.
 
-### The disagreement window is wider than the crawl
-
-```
-catalog    cache-control: public, max-age=60, s-maxage=300, stale-while-revalidate=300
-endpoints  cache-control: public, max-age=300, stale-while-revalidate=600, stale-if-error=3600
-```
-
-Two caches, unaware of each other, each up to 300s stale; `stale-if-error` can hand us an hour-old
-body with a 200 on it. Crawling the entire catalog in one second would still produce 404s. This is
-what `age` and `cf-cache-status` are for — a 404 may itself be stale.
-
 ## Running it
 
 ```bash
@@ -175,10 +178,6 @@ Understood, deliberately not acted on. Roughly in order of when it will matter.
   a pointer object, not a cleverer listing.
 - **`GET /batches/{batch}` counts by scanning the batch**, one page of 1,000 against ~430 objects.
   Fine now; a crawl that outgrows a page turns one request into several.
-- **The API is read-only apart from `POST /crawl`**, and there is no way to ask a question that spans
-  crawls. That is the layout's trade, not an omission — cross-crawl questions belong downstream.
-- **Stored documents are re-serialised**, so byte-for-byte fidelity with upstream is gone. Value
-  fidelity remains.
 - **A failed catalog is an alert with nowhere to go.** The policy is decided; nothing is wired up.
 - **No auth on anything**, `POST /crawl` included — the one route with a cost attached.
 - **No dead-letter queue**, so a message that exhausts its retries is dropped. This is the only way
@@ -186,4 +185,8 @@ Understood, deliberately not acted on. Roughly in order of when it will matter.
 - **Nothing can diff batch N against N−1** — cadence is irregular and completeness is not
   guaranteed, so N−1 may be partial for a given model. Comparison has to be against the most recent
   batch in which that model was observed, which belongs to the derivation layer.
+- **D1 current cache is always-put only** — no planTransition, product delivery, or unavailability
+  pass yet. Those land after the pure modules exist with tests.
+- **No product field selection on the cache path** — raw observation payloads; eligibility and
+  compare-view ignore policy are later pure steps, not SQL.
 - **Concurrency and cadence are guesses** (4 in flight, hourly).

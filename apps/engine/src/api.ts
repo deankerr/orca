@@ -34,6 +34,7 @@ import * as HttpApiSchema from 'effect/unstable/httpapi/HttpApiSchema'
 import * as OpenApi from 'effect/unstable/httpapi/OpenApi'
 
 import type { Artifacts } from './artifacts.ts'
+import type { Current } from './current.ts'
 
 // * ── request shapes ────────────────────────────────────────────────────────────────────────────
 
@@ -125,12 +126,33 @@ const archive = HttpApiGroup.make('archive')
   .add(getEndpoints)
   .add(postCrawl)
 
+// * ── current cache ─────────────────────────────────────────────────────────────────────────────
+// * Disposable worker-side observation cache in D1 (ScopeObservation per scope). Counts only on
+// * the HTTP surface for now — enough to prove migrations and Effect SQL are live. Product
+// * delivery is a later adapter; this is not the grid document store.
+
+const CurrentStatus = Schema.Struct({
+  available: Schema.Number,
+  endpoints: Schema.Number,
+  models: Schema.Number,
+})
+
+const getCurrentStatus = HttpApiEndpoint.get('getCurrentStatus', '/current', {
+  success: CurrentStatus,
+}).annotate(
+  OpenApi.Description,
+  'Row counts for the D1 current observation cache (scopes, endpoints, available endpoints).',
+)
+
+const current = HttpApiGroup.make('current').add(getCurrentStatus)
+
 export class EngineApi extends HttpApi.make('orca-engine')
   .add(archive)
+  .add(current)
   .annotate(OpenApi.Title, 'ORCA engine')
   .annotate(
     OpenApi.Description,
-    'The archive of OpenRouter responses: crawls, what landed in each, and the stored documents themselves.',
+    'The archive of OpenRouter responses, plus the disposable D1 current observation cache.',
   ) {}
 
 // * ── handlers ──────────────────────────────────────────────────────────────────────────────────
@@ -142,7 +164,13 @@ const DEFAULT_LIMIT = 100
 const orNotFound = <A>(value: A | null) =>
   value === null ? Effect.fail(new HttpApiError.NotFound()) : Effect.succeed(value)
 
-const handlers = (engine: { artifacts: Artifacts; crawl: Effect.Effect<CrawlStarted> }) =>
+type Engine = {
+  artifacts: Artifacts
+  crawl: Effect.Effect<CrawlStarted>
+  current: Current
+}
+
+const archiveHandlers = (engine: Engine) =>
   HttpApiBuilder.group(EngineApi, 'archive', (group) =>
     group
       .handle('listBatches', ({ query }) =>
@@ -175,6 +203,11 @@ const handlers = (engine: { artifacts: Artifacts; crawl: Effect.Effect<CrawlStar
           .pipe(Effect.flatMap(orNotFound)),
       )
       .handle('postCrawl', () => engine.crawl),
+  )
+
+const currentHandlers = (engine: Engine) =>
+  HttpApiBuilder.group(EngineApi, 'current', (group) =>
+    group.handle('getCurrentStatus', () => engine.current.status),
   )
 
 // * ── serving ───────────────────────────────────────────────────────────────────────────────────
@@ -214,10 +247,11 @@ const respond = Effect.catchCause((cause: Cause.Cause<unknown>) =>
 // *
 // * ⚠️ Flattened, so the router is built per request rather than once at init. That is what a Worker
 // * gives us: building it needs a `Scope`, and the only scope on offer is the request's.
-export const handler = (engine: { artifacts: Artifacts; crawl: Effect.Effect<CrawlStarted> }) =>
+export const handler = (engine: Engine) =>
   Layer.mergeAll(
     HttpApiBuilder.layer(EngineApi, { openapiPath: '/openapi.json' }).pipe(
-      Layer.provide(handlers(engine)),
+      Layer.provide(archiveHandlers(engine)),
+      Layer.provide(currentHandlers(engine)),
     ),
     HttpApiScalar.layerCdn(EngineApi, { path: '/docs' }),
     // * The root is where someone with no context arrives. Send them to the reference rather than

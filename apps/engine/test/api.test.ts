@@ -96,7 +96,18 @@ const seeded = Effect.gen(function* seeded() {
     })
   }
 
-  const app = Api.handler({ artifacts, crawl: Effect.die('no crawl in tests') })
+  // * D1 is not under test here; the archive suite only needs a status stand-in so the API layer
+  // * builds. Current-cache persistence is covered by live engine deploys until a local D1 harness
+  // * exists.
+  const app = Api.handler({
+    artifacts,
+    crawl: Effect.die('no crawl in tests'),
+    current: {
+      get: () => Effect.succeed(null),
+      put: () => Effect.void,
+      status: Effect.succeed({ available: 0, endpoints: 0, models: 0 }),
+    },
+  })
 
   // * One request in, one web `Response` out — the same effect the Worker hands to Alchemy.
   const call = async (path: string) =>
@@ -257,6 +268,7 @@ describe('describing itself', () => {
       '/batches/{batch}/endpoints',
       '/batches/{batch}/endpoints/{name}',
       '/crawl',
+      '/current',
     ])
   })
 })

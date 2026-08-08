@@ -1,18 +1,17 @@
 {
-  "name": "@orca/engine",
+  "name": "@orca/entities",
   "private": true,
   "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
   "scripts": {
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy",
-    "dev": "alchemy dev",
     "test": "bun test"
   },
   "dependencies": {
-    "@effect/sql-d1": "catalog:",
     "@orca/schema": "workspace:*",
-    "alchemy": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "json-diff-ts": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",

@@ -2,7 +2,7 @@
 depth = 6
 
 [install]
-minimumReleaseAge = 286400 # 1 day
+minimumReleaseAge = 86400 # 1 day
 minimumReleaseAgeExcludes = [
   "@next/bundle-analyzer",
   "@next/env",
@@ -27,4 +27,5 @@ minimumReleaseAgeExcludes = [
   "react-dom",
   "react",
   "ultracite",
+  "alchemy",
 ]

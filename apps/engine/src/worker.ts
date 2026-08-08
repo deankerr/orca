@@ -7,10 +7,14 @@
 // * They are one Worker because they are one pipeline. The bucket and queue are declared inside the
 // * init effect rather than in `alchemy.run.ts` because `main: import.meta.url` requires the Worker
 // * to be this file's default export — see notes/data-architecture/alchemy.md.
+// *
+// * D1 current cache is bound here too; the database resource itself lives in ./database.ts so
+// * migrations can be applied on deploy without coupling them to the Worker entry.
 import { batchIdAt, EndpointsQuery } from '@orca/schema/artifacts.ts'
 import type { CrawlStarted } from '@orca/schema/artifacts.ts'
 import { RuntimeContext } from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
+import * as SQL from 'alchemy/SQL/D1'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
@@ -18,6 +22,9 @@ import * as Stream from 'effect/Stream'
 
 import * as Api from './api.ts'
 import * as Artifacts from './artifacts.ts'
+import * as Current from './current.ts'
+import { CurrentDatabase } from './database.ts'
+import * as Observation from './observation.ts'
 import * as OpenRouter from './openrouter.ts'
 
 // * Cloudflare's per-call ceiling for `sendBatch`. The catalog is well over a thousand models, so
@@ -38,6 +45,11 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     // * the pacing layer between "what to fetch" and "fetch it". Also the retry mechanism: a
     // * failed message comes back on its own rather than needing a bookkeeping table.
     const endpoints = yield* Cloudflare.Queues.Queue('Endpoints')
+
+    // * disposable observation cache; planTransition + product delivery land later
+    const d1 = yield* Cloudflare.D1.QueryDatabase(CurrentDatabase)
+    const sql = yield* SQL.D1(d1)
+    const current = Current.make(sql)
 
     const queue = yield* Cloudflare.Queues.WriteQueue(endpoints)
     const artifacts = Artifacts.make(yield* Cloudflare.R2.ReadWriteBucket(responses))
@@ -79,9 +91,40 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
       return { batch, models: models.length, queued: queries.length } satisfies CrawlStarted
     })
 
+    // * Archive first, always. Current-cache is best-effort and must not redelivery-loop a good
+    // * observation when D1 is unhappy — log and move on; the next crawl corrects partial state.
     const storeEndpoints = Effect.fn(function* storeEndpoints(query: EndpointsQuery) {
       const observed = yield* OpenRouter.endpoints(query)
       yield* artifacts.putEndpoints({ ...observed, query })
+
+      if (observed.status !== 200) {
+        return
+      }
+
+      const next = Observation.parseEndpointsBody(observed.body)
+      if (next === null) {
+        return
+      }
+
+      const key = Observation.encodeScopeKey(query.permaslug, query.variant)
+      yield* current
+        .put({
+          key,
+          observation: next,
+          observedBatch: query.batch,
+          updatedAt: new Date().toISOString(),
+        })
+        .pipe(
+          Effect.tapCause((cause) =>
+            Effect.logWarning('current-cache put failed', {
+              cause,
+              endpoints: next.endpoints.length,
+              permaslug: query.permaslug,
+              variant: query.variant,
+            }),
+          ),
+          Effect.catchCause(() => Effect.void),
+        )
     })
 
     yield* Cloudflare.Workers.cron('0 * * * *', () =>
@@ -96,9 +139,7 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
       { batchSize: 1, maxConcurrency: 4, maxRetries: 3 },
       (stream) =>
         Stream.runForEach(stream, (message) =>
-          // * Nothing is caught: a settled non-200 already came back as a stored observation, so
-          // * anything failing here is a transport failure, a failed put, or an undecodable
-          // * message — all cases for redelivery.
+          // * R2 failures still redeliver. D1 failures are swallowed inside storeEndpoints.
           decodeQuery(message.body).pipe(
             Effect.flatMap(storeEndpoints),
             Effect.tapCause(Effect.logError),
@@ -108,11 +149,18 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
 
     // * ⚠️ `orDie` at the API boundary: `POST /crawl` declares no failure mode, so a catalog that will
     // * not come back is a logged defect and a 500 — which is what the cron path already does with it.
-    return { fetch: Api.handler({ artifacts, crawl: startCrawl.pipe(Effect.orDie) }) }
+    return {
+      fetch: Api.handler({
+        artifacts,
+        crawl: startCrawl.pipe(Effect.orDie),
+        current,
+      }),
+    }
   }).pipe(
     Effect.provide(Cloudflare.Workers.CronEventSourceLive),
     Effect.provide(Cloudflare.Queues.EventSourceLive),
     Effect.provide(Cloudflare.Queues.WriteQueueBinding),
     Effect.provide(Cloudflare.R2.ReadWriteBucketBinding),
+    Effect.provide(Cloudflare.D1.QueryDatabaseBinding),
   ),
 ) {}
