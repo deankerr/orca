@@ -1,6 +1,14 @@
 # now
 
-## @orca/labs (focus)
+## @orca/schemas
+
+- transitional, web app compatible `orca-legacy.ts`, `product.ts`, `product-to-legacy.ts`
+
+## @orca/bundles
+
+- `materialize.ts` converts orca bundle to usable form
+
+## @orca/labs
 
 - analyse historical data
 - develop bulk data and product storage strategies
