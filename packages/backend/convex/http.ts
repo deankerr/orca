@@ -4,6 +4,7 @@ import { isNonEmptyString } from '../shared/utils'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'
+import { upsertCurrentEndpoints } from './current/endpoints/http'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
 import { getArchiveBundle } from './snapshots/shared/bundle'
@@ -121,6 +122,13 @@ http.route({
     const result = await ctx.runQuery(api.public_api.preview_v2.getModels, {})
     return Response.json(result)
   }),
+})
+
+// * Engine current-view delivery — no auth yet (see current/endpoints/http.ts)
+http.route({
+  path: '/current/endpoints',
+  method: 'POST',
+  handler: upsertCurrentEndpoints,
 })
 
 export default http

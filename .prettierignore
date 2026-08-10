@@ -1,0 +1,3 @@
+# Global oxfmt ignore (scoped ignorePatterns do not apply under nested configs).
+# Ultracite currently passes --disable-nested-config only to oxlint, not oxfmt.
+repos

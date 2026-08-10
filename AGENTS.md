@@ -1,25 +1,37 @@
 # ORCA (OpenRouter Capability Analysis)
 
-## OXC
+## Development
 
-- Always run `bun run fix` after you have completed your changes, to check and auto-fix errors where possible.
-- Inline disables may be used with a short explanation to justify it.
-- The script may change files that you didn't touch - this is acceptable and changes should be retained.
+- Use `bun run fix` for all work validation.
+- Inline linter disables may be used if the reasoning is justified.
+
+## New Architecture rewrite
+
+- `apps/engine`: Cloudflare, Alchemy, Effect
+- See @notes/objectives.md for primary objectives and requirements.
+- `notes/agent-observability.md`
+- Refer to @docs/openrouter when working directly with model/endpoint data
+
+## Vendored Repositories
+
+This project vendors external repositories under @repos/
+
+- Current repos: @repos/effect/ @repos/alchemy/
+- Reference material for preferred, idiomatic usage examples and patterns.
+- Treat these as the source of truth, over training data or web search results.
+- Do not import from @repos/ - application code should continue importing from normal package dependencies
+
+## Effect V4 Beta
+
+- All Effect packages must use a unified, pinned version.
+- Unstable packages `effect/unstable/*` may be used.
 
 ## Overview
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
 
-- Package manager: bun
-- Next.js 16, React 19, Tailwind CSS 4, TanStack Query/Table/Virtual
-- Convex
-- Production/preview deployments: Vercel
-
-## Agent skills
-
-- Convex owns and updates its skills under `packages/backend/.agents/skills/`.
-- The matching entries under the root `.agents/skills/` are symlinks so monorepo-level agents can discover them. Keep the symlinks instead of copying the managed skills back to the root.
-- Run `bunx convex ai-files update` from `packages/backend/` to refresh the Convex guidelines and skills.
+- `apps/web`: Next.js 16, React 19, Tailwind CSS 4, TanStack Query/Table/Virtual
+- `packages/backend`: Convex
 
 ## Target Users
 
@@ -27,8 +39,7 @@ Highly technical users who work with OpenRouter and LLMs professionally:
 
 - Deep understanding of AI model concepts (context lengths, quantization, reasoning tokens)
 - Need comprehensive pricing details and capability comparisons
-- Value technical precision over simplified explanations
-- Will copy/paste values (model slugs, API parameters) directly into their code
+- Value technical precision and dense data over simplified explanations
 
 ### Endpoints Data Grid
 
@@ -54,21 +65,6 @@ Users can subscribe to model id patterns, providing a personalized version of Mo
 Public HTTP API providing programmatic access to ORCA's curated data.
 
 - `packages/backend/convex/public_api/preview_v2.ts`
-
-### crawl_id
-
-Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
-
-### Remeda
-
-- Use remeda to write functional code that is compact as easy to read.
-- Import with this conventinon: `import * as R from 'remeda` - full treeshaken, safe to use in the frontend and backend
-- It is maintained by TKDodo, is battle-tested and has excellent type-safety
-- Useful examples: `R.isDefined`, `R.isNullish`, `R.isNonNullish`, `R.chunk`, `R.pickBy`, `R.omitBy`, `R.countBy`
-
-### Deployment
-
-- `apps/web` Vercel production and preview environments
 
 ## Entity Logos
 

@@ -1,0 +1,19 @@
+{
+  "name": "@orca/entities",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "effect": "catalog:",
+    "json-diff-ts": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

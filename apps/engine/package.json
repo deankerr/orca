@@ -1,0 +1,21 @@
+{
+  "name": "@orca/engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/sql-d1": "catalog:",
+    "@orca/entities": "workspace:*",
+    "alchemy": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

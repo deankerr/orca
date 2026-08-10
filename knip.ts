@@ -1,6 +1,7 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
+  ignore: ['repos/**'],
   ignoreIssues: {
     'apps/web/components/data-grid/**': ['exports', 'types'],
     'apps/web/components/ui/**': ['exports', 'types', 'files'],
@@ -9,6 +10,10 @@ const config: KnipConfig = {
     'apps/web': {
       entry: ['scripts/*.ts', '**/*.test.ts'],
       ignoreDependencies: ['@radix-ui/colors'],
+    },
+
+    'apps/engine': {
+      entry: ['alchemy.run.ts'],
     },
   },
 }
