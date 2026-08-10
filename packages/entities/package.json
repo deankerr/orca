@@ -9,7 +9,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@orca/schema": "workspace:*",
     "effect": "catalog:",
     "json-diff-ts": "catalog:"
   },

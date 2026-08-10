@@ -7,8 +7,9 @@
 
 ## New Architecture rewrite
 
+- `apps/engine`: Cloudflare, Alchemy, Effect
 - See @notes/objectives.md for primary objectives and requirements.
-- Current status tracked in @notes/now.md
+- `notes/agent-observability.md`
 - Refer to @docs/openrouter when working directly with model/endpoint data
 
 ## Vendored Repositories

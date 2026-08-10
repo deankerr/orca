@@ -32,25 +32,6 @@
         "typescript": "catalog:",
       },
     },
-    "apps/labs": {
-      "name": "@orca/labs",
-      "dependencies": {
-        "@clack/prompts": "^1.7.0",
-        "@effect/platform-bun": "catalog:",
-        "@effect/sql-sqlite-bun": "catalog:",
-        "@orca/bundles": "workspace:*",
-        "@orca/schema": "workspace:*",
-        "commander": "^15.0.0",
-        "drizzle-orm": "1.0.0-rc.4",
-        "effect": "catalog:",
-        "json-diff-ts": "catalog:",
-      },
-      "devDependencies": {
-        "@types/bun": "catalog:",
-        "@types/node": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
     "apps/logos": {
       "name": "entity-logo-service",
       "devDependencies": {
@@ -142,35 +123,11 @@
         "typescript": "catalog:",
       },
     },
-    "packages/bundles": {
-      "name": "@orca/bundles",
-      "dependencies": {
-        "@orca/schema": "workspace:*",
-        "commander": "catalog:",
-        "effect": "catalog:",
-        "pretty-bytes": "catalog:",
-      },
-      "devDependencies": {
-        "@types/bun": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
     "packages/entities": {
       "name": "@orca/entities",
       "dependencies": {
-        "@orca/schema": "workspace:*",
         "effect": "catalog:",
         "json-diff-ts": "catalog:",
-      },
-      "devDependencies": {
-        "@types/bun": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/schema": {
-      "name": "@orca/schema",
-      "dependencies": {
-        "effect": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
@@ -682,15 +639,9 @@
 
     "@orca/backend": ["@orca/backend@workspace:packages/backend"],
 
-    "@orca/bundles": ["@orca/bundles@workspace:packages/bundles"],
-
     "@orca/engine": ["@orca/engine@workspace:apps/engine"],
 
     "@orca/entities": ["@orca/entities@workspace:packages/entities"],
-
-    "@orca/labs": ["@orca/labs@workspace:apps/labs"],
-
-    "@orca/schema": ["@orca/schema@workspace:packages/schema"],
 
     "@oxc-parser/binding-android-arm-eabi": ["@oxc-parser/binding-android-arm-eabi@0.137.0", "", { "os": "android", "cpu": "arm" }, "sha512-KDs+0VPdEmasOkpuJHW9V5WCF+cvYdMQv2Jd+aJXt+cxIx12NToRQRbXaRwUEDsZw+/jMk81Ve8ZFbjUkJTOwA=="],
 
