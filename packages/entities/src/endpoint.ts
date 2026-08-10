@@ -82,8 +82,8 @@ const EndpointObservation = Schema.Struct({
 
   // * nested objects are required; individual price / policy keys are sparse upstream
   pricing: Schema.Struct({
-    prompt: Schema.FiniteFromString,
-    completion: Schema.FiniteFromString,
+    prompt: Schema.optional(Schema.FiniteFromString),
+    completion: Schema.optional(Schema.FiniteFromString),
     input_cache_read: Schema.optional(Schema.FiniteFromString),
     input_cache_write: Schema.optional(Schema.FiniteFromString),
     audio: Schema.optional(Schema.FiniteFromString),
@@ -91,7 +91,7 @@ const EndpointObservation = Schema.Struct({
     image: Schema.optional(Schema.FiniteFromString),
     image_output: Schema.optional(Schema.FiniteFromString),
     web_search: Schema.optional(Schema.FiniteFromString),
-    discount: Schema.Number,
+    discount: Schema.optional(Schema.Number),
   }),
 
   data_policy: Schema.Struct({
@@ -136,6 +136,14 @@ function displayModelName(shortName: string, variant: string): string {
 
 /** OpenRouter observation → product endpoint card. */
 export function toEndpoint(source: Schema.Schema.Type<typeof EndpointObservation>) {
+  const provider = {
+    slug: source.provider_slug.split('/')[0] ?? source.provider_slug,
+    tag_slug: source.provider_slug,
+    name: source.provider_display_name,
+    model_id: source.provider_model_id,
+    ...(source.provider_region === null ? {} : { region: source.provider_region }),
+  }
+
   return {
     uuid: source.id,
 
@@ -152,13 +160,7 @@ export function toEndpoint(source: Schema.Schema.Type<typeof EndpointObservation
       reasoning: source.supports_reasoning,
     },
 
-    provider: {
-      slug: source.provider_slug.split('/')[0] ?? source.provider_slug,
-      tag_slug: source.provider_slug,
-      name: source.provider_display_name,
-      model_id: source.provider_model_id,
-      region: source.provider_region,
-    },
+    provider,
 
     data_policy: {
       may_train_on_data: source.data_policy.training,
