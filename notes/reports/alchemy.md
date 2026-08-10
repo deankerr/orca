@@ -121,9 +121,9 @@ Schema.Unknown)`, which preserves every key.
   called, and the range takes an object.
 - `Effect.Effect.Success<…>` is `Effect.Success<…>`, and schemas have no `make`/`makeUnsafe`: a branded
   value comes from a decode, which is the point of branding it.
-- oxlint false positives worth an inline disable: `Effect.map(effect, fn)` trips
-  `unicorn/no-array-method-this-argument` (use `.pipe(Effect.map(fn))`), and `Effect.catch` trips
-  `promise/prefer-await-to-then`.
+- Effect/Alchemy lint: repo `oxlint.config.ts` turns off `unicorn/no-array-method-this-argument`
+  (`Effect.map(fa, f)`), `promise/prefer-await-to-then` (`Effect.catch` / combinators), `no-shadow`
+  (matching `Effect.fn(function* name())` labels), and CapCase filename rules for Alchemy modules.
 
 ## Testing
 

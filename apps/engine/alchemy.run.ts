@@ -2,9 +2,9 @@ import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 
-import { CurrentDatabase } from './src/resources/current-database.ts'
-import { Endpoints } from './src/resources/endpoints.ts'
-import { Responses } from './src/resources/responses.ts'
+import { CurrentDatabase } from './src/resources/CurrentDatabase.ts'
+import { Endpoints } from './src/resources/Endpoints.ts'
+import { Responses } from './src/resources/Responses.ts'
 import Engine from './src/worker.ts'
 
 // * Stack inventory: Worker (cron + queue consumer + API), R2 archive, endpoints queue, D1 current

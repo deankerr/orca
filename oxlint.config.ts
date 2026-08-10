@@ -18,27 +18,8 @@ export default defineConfig({
       // convex
       files: ['**/convex/**/*.{ts,tsx}'],
       rules: {
-        // incompatible
-        'unicorn/filename-case': 'off',
+        // required in index queries
         'unicorn/no-useless-undefined': 'off',
-
-        // useful
-        'promise/prefer-await-to-then': 'off',
-      },
-    },
-    {
-      // browser render scripts, shipped as text into a generated HTML report. They have no module
-      // graph: the report's embedded data and its prelude helpers arrive as untyped globals, so
-      // every read of them is `any` to the type-aware rules and nothing else is.
-      files: ['**/*.client.js'],
-      rules: {
-        'typescript/no-unsafe-argument': 'off',
-        'typescript/no-unsafe-assignment': 'off',
-        'typescript/no-unsafe-call': 'off',
-        'typescript/no-unsafe-member-access': 'off',
-        'typescript/no-unsafe-return': 'off',
-        'typescript/no-unsafe-type-assertion': 'off',
-        'typescript/strict-boolean-expressions': 'off',
       },
     },
     {
@@ -67,15 +48,7 @@ export default defineConfig({
       },
     },
     {
-      // effect
-      files: ['apps/engine/**/*.{ts,tsx}', 'packages/schema/**/*.{ts,tsx}'],
-      rules: {
-        'promise/prefer-await-to-callbacks': 'off',
-        'unicorn/no-array-for-each': 'off',
-      },
-    },
-    {
-      // schemas are grouped semantically, not alphabetically
+      // keys are grouped semantically
       files: ['packages/schema/**/*.{ts,tsx}'],
       rules: {
         'sort-keys': 'off',
@@ -99,16 +72,23 @@ export default defineConfig({
     'react/function-component-definition': 'off',
     'sort-keys': ['error', 'asc', { allowLineSeparatedGroups: true, natural: true }],
     'typescript/consistent-type-definitions': 'off',
-    'typescript/prefer-readonly-parameter-types': 'off',
     'unicorn/consistent-function-scoping': 'off',
 
     // conflicts
     'require-await': 'off',
-    'unicorn/number-literal-case': 'off',
 
     // legacy code
     'no-await-in-loop': 'off',
     'react/jsx-handler-names': 'off',
     'require-unicode-regexp': 'off',
+
+    // effect/alchemy
+    'no-shadow': 'off',
+    'oxc/no-barrel-file': 'off',
+    'promise/prefer-await-to-callbacks': 'off',
+    'promise/prefer-await-to-then': 'off', // Effect.catch / combinators
+    'unicorn/filename-case': 'off',
+    'unicorn/no-array-for-each': 'off',
+    'unicorn/no-array-method-this-argument': 'off', // Effect.map(fa, f)
   },
 })

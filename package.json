@@ -7,7 +7,6 @@
   ],
   "type": "module",
   "scripts": {
-    "archive": "bun run apps/labs/src/area-1/bin.ts archive",
     "build": "turbo run build --filter=web",
     "check": "ultracite check --type-aware --type-check --disable-nested-config",
     "dev": "turbo run dev --filter=!entity-logo-service",
@@ -16,11 +15,11 @@
     "fix": "ultracite fix --type-aware --type-check --disable-nested-config",
     "knip": "knip",
     "knip:production": "knip --production",
-    "labs": "bun run apps/labs/src/area-1/bin.ts",
     "logos": "bun run --cwd apps/logos build",
     "prepare": "husky",
     "release": "turbo run release --filter=web",
-    "start": "turbo run start --filter=web"
+    "start": "turbo run start --filter=web",
+    "test": "bun test --path-ignore-patterns=repos"
   },
   "devDependencies": {
     "@types/bun": "catalog:",

@@ -21,9 +21,10 @@ import * as Archive from './archive/store.ts'
 import * as Plan from './crawl/plan.ts'
 import * as ProcessMessage from './crawl/process-message.ts'
 import * as Current from './current/cache.ts'
-import { CurrentDatabase } from './resources/current-database.ts'
-import { Endpoints } from './resources/endpoints.ts'
-import { Responses } from './resources/responses.ts'
+import { CurrentDatabase } from './resources/CurrentDatabase.ts'
+import { Endpoints } from './resources/Endpoints.ts'
+import { Responses } from './resources/Responses.ts'
+import { fromBinding } from './runtime/binding.ts'
 
 const decodeQuery = Schema.decodeUnknownEffect(EndpointsQuery)
 
@@ -47,7 +48,10 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     const queue = yield* Cloudflare.Queues.WriteQueue(endpoints)
     const archive = Archive.make(yield* Cloudflare.R2.ReadWriteBucket(responses))
 
-    const startCrawl = Plan.start({ archive, queue })
+    const startCrawl = Plan.startCrawl({
+      archive,
+      sendBatch: (messages) => fromBinding(queue.sendBatch(messages)),
+    })
     const onMessage = ProcessMessage.processMessage({ archive, current })
 
     yield* Cloudflare.Workers.cron('0 * * * *', () =>

@@ -1,17 +1,16 @@
-// * One queue message: observe endpoints for a model-variant, archive the response, refresh the
-// * current cache on success. Shallow orchestration — pure parse/plan and delivery adapters plug in
-// * here later. Archive write is primary; current-cache is best-effort.
+// * One queue message: fetch → archive (required) → current cache (best-effort).
+// * Later: prior → planTransition → deliver plugs in after archive, before or after put.
 import type { EndpointsQuery } from '@orca/schema/artifacts.ts'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 
 import type { Archive } from '../archive/store.ts'
 import type { Current } from '../current/cache.ts'
-import * as Observation from '../current/observation.ts'
+import * as Scope from '../current/observation.ts'
 import * as OpenRouter from '../openrouter/client.ts'
 
 export const processMessage = (deps: { archive: Archive; current: Current }) =>
-  Effect.fn(function* process(query: EndpointsQuery) {
+  Effect.fn(function* processMessage(query: EndpointsQuery) {
     const observed = yield* OpenRouter.endpoints(query)
     yield* deps.archive.putEndpoints({ ...observed, query })
 
@@ -19,16 +18,15 @@ export const processMessage = (deps: { archive: Archive; current: Current }) =>
       return
     }
 
-    const next = Observation.parseEndpointsBody(observed.body)
+    const next = Scope.parseEndpointsBody(observed.body)
     if (next === null) {
       return
     }
 
-    const key = Observation.encodeScopeKey(query.permaslug, query.variant)
+    const key = Scope.encodeScopeKey(query.permaslug, query.variant)
     const updatedAt = DateTime.formatIso(yield* DateTime.now)
 
-    // * Archive already landed. Cache failures must not redelivery-loop a good observation —
-    // * log and move on; the next crawl corrects partial state.
+    // * Must not redelivery-loop a good observation when D1 is unhappy.
     yield* deps.current
       .put({
         key,

@@ -1,52 +1,41 @@
-// * Crawl planning: fetch the catalog, store it as the batch denominator, queue one work unit per
-// * model-variant. Never fetches endpoints itself — that keeps planning inside a Worker time budget.
-import type { CrawlStarted } from '@orca/schema/artifacts.ts'
-import { batchIdAt, EndpointsQuery } from '@orca/schema/artifacts.ts'
-import type * as Cloudflare from 'alchemy/Cloudflare'
+// * Fetch catalog → store batch denominator → queue one work unit per crawlable model-variant.
+// * Never fetches endpoints itself.
+import type { CrawlStarted, EndpointsQuery } from '@orca/schema/artifacts.ts'
+import { batchIdAt } from '@orca/schema/artifacts.ts'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
-import * as Schema from 'effect/Schema'
 
 import type { Archive } from '../archive/store.ts'
 import * as OpenRouter from '../openrouter/client.ts'
-import { fromBinding } from '../runtime/binding.ts'
+import { workList } from './work-list.ts'
 
-// * Cloudflare's per-call ceiling for `sendBatch`. The catalog is well over a thousand models, so
-// * the work list is always chunked.
+/** Cloudflare `sendBatch` ceiling. Catalog is well over a thousand models. */
 const QUEUE_BATCH_SIZE = 100
 
-// * Turns three strings from the catalog into the ids the archive will accept. Failing here is
-// * failing to plan the crawl, which is louder — and cheaper to notice — than a bad key.
-const decodeQuery = Schema.decodeUnknownEffect(EndpointsQuery)
+const chunks = <A>(items: ReadonlyArray<A>, size: number): A[][] => {
+  const out: A[][] = []
+  for (let index = 0; index < items.length; index += size) {
+    out.push(items.slice(index, index + size))
+  }
+  return out
+}
 
-export const start = (deps: { archive: Archive; queue: Cloudflare.Queues.WriteQueueClient }) =>
+export const startCrawl = (deps: {
+  archive: Archive
+  /** Already binding-colored (Worker applies `fromBinding`). */
+  sendBatch: (messages: ReadonlyArray<{ body: EndpointsQuery }>) => Effect.Effect<void>
+}) =>
   Effect.gen(function* startCrawl() {
     const batch = batchIdAt(yield* DateTime.now)
     const { body, models } = yield* OpenRouter.catalog()
 
-    // * Stored before anything is queued, so a crawl that dies halfway still records what it
-    // * intended to fetch.
+    // * Before queueing, so a half-finished crawl still records what it intended to fetch.
     yield* deps.archive.putCatalog({ batch, body })
 
-    // * Skipped: a model with no `endpoint` has nothing serving it, and a `~`-prefixed slug is an
-    // * alias for a model already in the list.
-    const queries = yield* Effect.forEach(
-      models.filter((model) => model.endpoint !== null && !model.slug.startsWith('~')),
-      (model) =>
-        decodeQuery({
-          batch,
-          permaslug: model.permaslug,
-          // * non-null by the filter above; the fallback avoids a type assertion
-          variant: model.endpoint?.variant ?? 'standard',
-        }),
-    ).pipe(Effect.orDie)
+    const queries = workList(batch, models)
 
-    for (let index = 0; index < queries.length; index += QUEUE_BATCH_SIZE) {
-      yield* fromBinding(
-        deps.queue.sendBatch(
-          queries.slice(index, index + QUEUE_BATCH_SIZE).map((query) => ({ body: query })),
-        ),
-      )
+    for (const chunk of chunks(queries, QUEUE_BATCH_SIZE)) {
+      yield* deps.sendBatch(chunk.map((query) => ({ body: query })))
     }
 
     yield* Effect.log(`batch ${batch} queued ${queries.length} of ${models.length} models`)

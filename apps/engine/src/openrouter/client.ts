@@ -1,4 +1,5 @@
-// * The only place that knows OpenRouter exists.
+// * Sole OpenRouter client. Transient statuses retry; settled statuses (including errors) return.
+import type { CatalogModel } from '@orca/schema/openrouter.ts'
 import { CatalogResponse, Envelope } from '@orca/schema/openrouter.ts'
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
@@ -6,47 +7,49 @@ import * as Schedule from 'effect/Schedule'
 import * as Schema from 'effect/Schema'
 
 const BASE_URL = 'https://openrouter.ai'
+const CATALOG_PATH = '/api/frontend/v1/catalog/models'
+const ENDPOINTS_PATH = '/api/frontend/v1/stats/endpoint'
 
 const decodeCatalog = Schema.decodeUnknownEffect(CatalogResponse)
 const decodeEnvelope = Schema.decodeUnknownEffect(Envelope)
 
-// * `Schema.Record` preserves every key, which is what lets a parsed document be spread without
-// * losing anything. A named struct would strip whatever it does not mention.
+// * Record preserves every key so we can spread without stripping unknown fields.
 const decodeObject = Schema.decodeUnknownEffect(Schema.Record(Schema.String, Schema.Unknown))
 
 const parseJson = (body: string) =>
   Effect.try((): unknown => JSON.parse(body)).pipe(Effect.flatMap(decodeObject))
 
-// * A 429 or 5xx is a fact about the moment — load, a rate limit, a bad minute upstream — so asking
-// * again is likely to produce a different answer. Every other status is settled: it describes what
-// * we asked for.
 const isTransient = (status: number) => status === 429 || status >= 500
 
-// * Exists so `Effect.retry` has a typed failure to match on; never escapes this module.
-class Transient extends Data.TaggedError('Transient')<{ response: Response }> {}
+/** Internal retry signal; never escapes this module. */
+class Transient extends Data.TaggedError('Transient')<{ settled: SettledHttp }> {}
 
-// * Three retries over ~7s: long enough to ride out a rate limit, short enough for a Worker's
-// * budget with four in flight.
+/** ~7s of exponential backoff — rate limits, short enough for four concurrent Workers. */
 const backoff = Schedule.exponential('1 second')
 
-// * Dropped from every capture. `set-cookie` is a Cloudflare bot-management cookie that changes on
-// * every response, so keeping it would make header diffs between batches always differ.
+// * Bot-management cookie changes every response; keeping it makes header diffs always dirty.
 const DROPPED_HEADERS = new Set(['set-cookie'])
 
-// * One settled exchange, internal to this module. What leaves it is an observation: a status and the
-// * document to store at it.
-type Response = {
+/** One finished HTTP exchange (after transient retries). */
+type SettledHttp = {
   status: number
-
-  // * `date`, `age` and `cf-cache-status` are what tell a reader whether an observation is fresh or
-  // * cached, which is otherwise unknowable from behind a cache. Filtered by `DROPPED_HEADERS`.
+  /** Includes date / age / cf-cache-status when present; see DROPPED_HEADERS. */
   headers: Record<string, string>
-
   body: string
 }
 
-// * Returns the settled response. A transport failure fails the effect instead, leaving redelivery
-// * to the queue.
+/** Status + document body stored in the archive for one endpoints observation. */
+export type Observation = {
+  readonly status: number
+  readonly body: string
+}
+
+/** Catalog fetch: work list plus the batch-root document to store. */
+export type CatalogCapture = {
+  readonly body: string
+  readonly models: ReadonlyArray<CatalogModel>
+}
+
 const get = Effect.fn(function* get(path: string, params?: Record<string, string>) {
   const url = new URL(path, BASE_URL)
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -54,7 +57,7 @@ const get = Effect.fn(function* get(path: string, params?: Record<string, string
   }
 
   const once = Effect.gen(function* once() {
-    const response = yield* Effect.tryPromise(async (): Promise<Response> => {
+    const settled = yield* Effect.tryPromise(async (): Promise<SettledHttp> => {
       const sent = await fetch(url, { headers: { accept: 'application/json' } })
       return {
         body: await sent.text(),
@@ -65,63 +68,60 @@ const get = Effect.fn(function* get(path: string, params?: Record<string, string
       }
     })
 
-    return isTransient(response.status) ? yield* new Transient({ response }) : response
+    return isTransient(settled.status) ? yield* new Transient({ settled }) : settled
   })
 
-  // * `while` keeps the retry to transient statuses; a transport failure shares this channel and
-  // * passes straight through. When the retries run out we settle for the last response.
+  // * Retry only Transient; transport failures pass through. Exhausted retries → last settled body.
   return yield* once.pipe(
     Effect.retry({ schedule: backoff, times: 3, while: (error) => error instanceof Transient }),
-    Effect.catchTag('Transient', (error) => Effect.succeed(error.response)),
+    Effect.catchTag('Transient', (error) => Effect.succeed(error.settled)),
   )
 })
 
-// * What gets stored: OpenRouter's document with `headers` added.
-// *
-// * ⚠️ `Envelope` is a gate. The value spread here is the original parse, so a key OpenRouter adds
-// * tomorrow survives; storing the decoded value would drop it.
-const document = Effect.fn(function* document(response: Response) {
-  const parsed = yield* parseJson(response.body)
-  yield* decodeEnvelope(parsed)
-  return JSON.stringify({ ...parsed, headers: response.headers })
-})
+/** Gate with Envelope (or a stronger schema), keep original keys, attach response headers. */
+const documentBody = <E>(
+  settled: SettledHttp,
+  gate: (parsed: Record<string, unknown>) => Effect.Effect<unknown, E>,
+) =>
+  Effect.gen(function* documentBody() {
+    const parsed = yield* parseJson(settled.body)
+    yield* gate(parsed)
+    return JSON.stringify({ ...parsed, headers: settled.headers })
+  })
 
-// * The crawl's starting point. `models` is the work list; `body` is stored as the batch root.
-// *
-// * ⚠️ A catalog that does not come back is not an artifact — it is an observation of us, not of
-// * OpenRouter, and belongs in an alert. Transient statuses have already been retried; anything
-// * still non-200 kills the crawl and stores nothing.
+/**
+ * Crawl starting point. Non-200 after retries is a defect (observation of us, not of OpenRouter) —
+ * nothing is stored.
+ */
 export const catalog = Effect.fn(function* catalog() {
-  const response = yield* get('/api/frontend/v1/catalog/models')
-  if (response.status !== 200) {
-    return yield* Effect.die(new Error(`catalog returned ${response.status}: ${response.body}`))
+  const settled = yield* get(CATALOG_PATH)
+  if (settled.status !== 200) {
+    return yield* Effect.die(new Error(`catalog returned ${settled.status}: ${settled.body}`))
   }
 
-  // * `decodeCatalog` is a stronger gate than `Envelope`, so this parses once here rather than
-  // * handing four megabytes to `document` to parse again.
-  const parsed = yield* parseJson(response.body).pipe(Effect.orDie)
+  // * Stronger gate than Envelope; parse once for models + store body.
+  const parsed = yield* parseJson(settled.body).pipe(Effect.orDie)
   const { data } = yield* decodeCatalog(parsed)
 
   return {
-    body: JSON.stringify({ ...parsed, headers: response.headers }),
+    body: JSON.stringify({ ...parsed, headers: settled.headers }),
     models: data,
-  }
+  } satisfies CatalogCapture
 })
 
-// * One observation of one model's endpoints: the status it settled on, and the document to store at
-// * that status. Both, in one call, because storing one without the other is never right.
-// *
-// * ⚠️ Every settled status comes back, errors included. The endpoints API cannot say "zero
-// * endpoints" — a model losing its last one answers 404 — and since we only ask about models the
-// * catalog said were available, a 404 means the two surfaces disagreed.
+/**
+ * One endpoints observation at whatever status it settled on (404 included). Body parse failure
+ * after a settled response is a defect (upstream contract break).
+ */
 export const endpoints = Effect.fn(function* endpoints(args: {
   permaslug: string
   variant: string
 }) {
-  const response = yield* get('/api/frontend/v1/stats/endpoint', {
+  const settled = yield* get(ENDPOINTS_PATH, {
     permaslug: args.permaslug,
     variant: args.variant,
   })
 
-  return { body: yield* document(response).pipe(Effect.orDie), status: response.status }
+  const body = yield* documentBody(settled, (parsed) => decodeEnvelope(parsed)).pipe(Effect.orDie)
+  return { body, status: settled.status } satisfies Observation
 })

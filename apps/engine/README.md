@@ -94,18 +94,20 @@ Nothing here parses an endpoints response. The two schemas the crawl does read l
 
 ## The modules
 
-| path                       | knows                                                              |
-| -------------------------- | ------------------------------------------------------------------ |
-| `worker.ts`                | Cloudflare bindings, cron, queue consumer — wiring only            |
-| `resources/*`              | Alchemy resource descriptors (`Responses`, `Endpoints`, `Current`) |
-| `runtime/binding.ts`       | `RuntimeContext.phantom` + `orDie` at binding edges                |
-| `crawl/plan.ts`            | catalog → batch denominator → queue work list                      |
-| `crawl/process-message.ts` | one message: fetch → archive → current cache                       |
-| `archive/store.ts`         | key grammar and R2 — the only module that touches either           |
-| `current/observation.ts`   | pure ScopeObservation parse (ids + raw payloads)                   |
-| `current/cache.ts`         | CurrentCache over Effect SQL — no OpenRouter, no R2                |
-| `api/http.ts`              | HTTP surface as one `HttpApi` over archive + current               |
-| `openrouter/client.ts`     | that OpenRouter exists                                             |
+| path                       | knows                                                                   |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `worker.ts`                | Cloudflare bindings, cron, queue consumer — wiring only                 |
+| `resources/*.ts`           | CapCase Alchemy resources (`Responses`, `Endpoints`, `CurrentDatabase`) |
+| `runtime/binding.ts`       | `RuntimeContext.phantom` + `orDie` at binding edges                     |
+| `crawl/plan.ts`            | catalog → batch denominator → queue work list                           |
+| `crawl/work-list.ts`       | pure: which catalog models become queue queries                         |
+| `crawl/process-message.ts` | one message: fetch → archive → current cache                            |
+| `archive/keys.ts`          | pure R2 key grammar                                                     |
+| `archive/store.ts`         | R2 archive ops over keys — only module that touches the bucket          |
+| `current/observation.ts`   | pure ScopeObservation parse (ids + raw payloads)                        |
+| `current/cache.ts`         | CurrentCache over Effect SQL — no OpenRouter, no R2                     |
+| `api/http.ts`              | HTTP surface as one `HttpApi` over archive + current                    |
+| `openrouter/client.ts`     | that OpenRouter exists                                                  |
 
 Resource **ids** (`Responses`, `Endpoints`, `Current`, Worker id `Worker`) are stack state — rename
 only with a deliberate migrate. Stack outputs include `url`, `bucketName`, `queueName`,
