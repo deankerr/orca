@@ -5,7 +5,7 @@
 // *
 // * Every id here is parsed, not validated — `BatchId`, `Author` and `ArtifactName` are the strings
 // * an R2 key is spelled from, and two of the three now arrive from an HTTP caller. A parsed id
-// * cannot forge a prefix, so the key builders in `apps/engine/src/artifacts.ts` take these types
+// * cannot forge a prefix, so the key builders in `apps/engine/src/archive/store.ts` take these types
 // * and never re-check anything.
 import * as DateTime from 'effect/DateTime'
 import * as Schema from 'effect/Schema'

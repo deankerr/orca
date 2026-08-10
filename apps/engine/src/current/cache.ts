@@ -7,8 +7,10 @@
 // * See notes/data-architecture/current-view-slice.md (CurrentCache).
 // *
 // * ⚠️ Published `@effect/sql-d1` does not yet expose D1 `batch`. Commits are sequential statements.
+import type * as D1Client from '@effect/sql-d1/D1Client'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
+import type { SqlError } from 'effect/unstable/sql/SqlError'
 
 import type { ScopeKey, ScopeObservation } from './observation.ts'
 
@@ -41,10 +43,12 @@ export interface PutScope {
 
 export type Current = ReturnType<typeof make>
 
+// * Structural match for the Alchemy `SQL.D1` client (template-tag queries). Keeps tests free of
+// * the full D1Client surface while production uses the real client.
 export type Sql = <A extends object = Record<string, unknown>>(
   strings: TemplateStringsArray,
   ...values: ReadonlyArray<unknown>
-) => Effect.Effect<ReadonlyArray<A>, unknown, unknown>
+) => Effect.Effect<ReadonlyArray<A>, SqlError>
 
 // * ── codecs ────────────────────────────────────────────────────────────────────────────────────
 
@@ -90,14 +94,12 @@ const observationFromRow = (row: ScopeRow): StoredScope => ({
 const observationJson = (observation: ScopeObservation) =>
   JSON.stringify(encodeObservation(observation))
 
-// * Binding/proxy residual requirements are not actionable at this boundary (same as the R2 archive).
-const die = <A>(effect: Effect.Effect<A, unknown, unknown>): Effect.Effect<A> =>
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- orDie drops E; R is ambient Worker runtime
-  effect.pipe(Effect.orDie) as Effect.Effect<A>
+// * SQL errors are defects at this boundary — same policy as the R2 archive.
+const die = <A>(effect: Effect.Effect<A, SqlError>): Effect.Effect<A> => effect.pipe(Effect.orDie)
 
 // * ── store ─────────────────────────────────────────────────────────────────────────────────────
 
-export const make = (sql: Sql) => {
+export const make = (sql: Sql | D1Client.D1Client) => {
   const status = die(
     Effect.gen(function* status() {
       const [scopes] = yield* sql<CountRow>`SELECT COUNT(*) AS n FROM scopes`

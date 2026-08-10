@@ -33,8 +33,8 @@ import * as HttpApiScalar from 'effect/unstable/httpapi/HttpApiScalar'
 import * as HttpApiSchema from 'effect/unstable/httpapi/HttpApiSchema'
 import * as OpenApi from 'effect/unstable/httpapi/OpenApi'
 
-import type { Artifacts } from './artifacts.ts'
-import type { Current } from './current.ts'
+import type { Archive } from '../archive/store.ts'
+import type { Current } from '../current/cache.ts'
 
 // * ── request shapes ────────────────────────────────────────────────────────────────────────────
 
@@ -117,7 +117,7 @@ const postCrawl = HttpApiEndpoint.post('postCrawl', '/crawl', {
   success: CrawlStarted,
 }).annotate(OpenApi.Description, 'Start a crawl now, in addition to the hourly one.')
 
-const archive = HttpApiGroup.make('archive')
+const archiveGroup = HttpApiGroup.make('archive')
   .add(listBatches)
   .add(getLatest)
   .add(getBatch)
@@ -144,11 +144,11 @@ const getCurrentStatus = HttpApiEndpoint.get('getCurrentStatus', '/current', {
   'Row counts for the D1 current observation cache (scopes, endpoints, available endpoints).',
 )
 
-const current = HttpApiGroup.make('current').add(getCurrentStatus)
+const currentGroup = HttpApiGroup.make('current').add(getCurrentStatus)
 
 export class EngineApi extends HttpApi.make('orca-engine')
-  .add(archive)
-  .add(current)
+  .add(archiveGroup)
+  .add(currentGroup)
   .annotate(OpenApi.Title, 'ORCA engine')
   .annotate(
     OpenApi.Description,
@@ -164,33 +164,33 @@ const DEFAULT_LIMIT = 100
 const orNotFound = <A>(value: A | null) =>
   value === null ? Effect.fail(new HttpApiError.NotFound()) : Effect.succeed(value)
 
-type Engine = {
-  artifacts: Artifacts
+type Services = {
+  archive: Archive
   crawl: Effect.Effect<CrawlStarted>
   current: Current
 }
 
-const archiveHandlers = (engine: Engine) =>
+const archiveHandlers = (services: Services) =>
   HttpApiBuilder.group(EngineApi, 'archive', (group) =>
     group
       .handle('listBatches', ({ query }) =>
-        engine.artifacts.batches({ cursor: query.cursor, limit: query.limit ?? DEFAULT_LIMIT }),
+        services.archive.batches({ cursor: query.cursor, limit: query.limit ?? DEFAULT_LIMIT }),
       )
       .handle('getLatest', () =>
-        engine.artifacts.latest().pipe(
+        services.archive.latest().pipe(
           Effect.flatMap(orNotFound),
-          Effect.flatMap((batch) => engine.artifacts.detail(batch)),
+          Effect.flatMap((batch) => services.archive.detail(batch)),
           Effect.flatMap(orNotFound),
         ),
       )
       .handle('getBatch', ({ params }) =>
-        engine.artifacts.detail(params.batch).pipe(Effect.flatMap(orNotFound)),
+        services.archive.detail(params.batch).pipe(Effect.flatMap(orNotFound)),
       )
       .handle('getCatalog', ({ params }) =>
-        engine.artifacts.readCatalog(params.batch).pipe(Effect.flatMap(orNotFound)),
+        services.archive.readCatalog(params.batch).pipe(Effect.flatMap(orNotFound)),
       )
       .handle('listEndpoints', ({ params, query }) =>
-        engine.artifacts.endpoints({
+        services.archive.endpoints({
           author: query.author,
           batch: params.batch,
           cursor: query.cursor,
@@ -198,16 +198,16 @@ const archiveHandlers = (engine: Engine) =>
         }),
       )
       .handle('getEndpoints', ({ params }) =>
-        engine.artifacts
+        services.archive
           .readEndpoints({ batch: params.batch, name: params.name })
           .pipe(Effect.flatMap(orNotFound)),
       )
-      .handle('postCrawl', () => engine.crawl),
+      .handle('postCrawl', () => services.crawl),
   )
 
-const currentHandlers = (engine: Engine) =>
+const currentHandlers = (services: Services) =>
   HttpApiBuilder.group(EngineApi, 'current', (group) =>
-    group.handle('getCurrentStatus', () => engine.current.status),
+    group.handle('getCurrentStatus', () => services.current.status),
   )
 
 // * ── serving ───────────────────────────────────────────────────────────────────────────────────
@@ -247,11 +247,11 @@ const respond = Effect.catchCause((cause: Cause.Cause<unknown>) =>
 // *
 // * ⚠️ Flattened, so the router is built per request rather than once at init. That is what a Worker
 // * gives us: building it needs a `Scope`, and the only scope on offer is the request's.
-export const handler = (engine: Engine) =>
+export const handler = (services: Services) =>
   Layer.mergeAll(
     HttpApiBuilder.layer(EngineApi, { openapiPath: '/openapi.json' }).pipe(
-      Layer.provide(archiveHandlers(engine)),
-      Layer.provide(currentHandlers(engine)),
+      Layer.provide(archiveHandlers(services)),
+      Layer.provide(currentHandlers(services)),
     ),
     HttpApiScalar.layerCdn(EngineApi, { path: '/docs' }),
     // * The root is where someone with no context arrives. Send them to the reference rather than

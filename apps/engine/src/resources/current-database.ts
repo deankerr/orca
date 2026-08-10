@@ -1,5 +1,7 @@
-// * The worker-side current-view cache database. Provisioned by Alchemy; migrations apply on deploy
+// * Worker-side current-view cache database. Provisioned by Alchemy; migrations apply on deploy
 // * (and on `alchemy dev` against the local D1 simulator).
+// *
+// * Resource id `Current` is stack state — do not rename.
 // *
 // * Hand-written SQL rather than a Drizzle schema layer: observation shape is Effect Schema + JSON
 // * columns. The database stores scope keys, clocks, and opaque ScopeObservation documents — it

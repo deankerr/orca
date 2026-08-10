@@ -2,13 +2,14 @@ import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 
-import { CurrentDatabase } from './src/database.ts'
+import { CurrentDatabase } from './src/resources/current-database.ts'
+import { Endpoints } from './src/resources/endpoints.ts'
+import { Responses } from './src/resources/responses.ts'
 import Engine from './src/worker.ts'
 
-// * The engine: a cron that plans a crawl, a queue that paces it, a bucket of responses, and a D1
-// * current observation cache. The bucket and queue are declared inside the Worker — see
-// * ./src/worker.ts. The database is a sibling resource so migrations apply on deploy (and on
-// * local `alchemy dev`).
+// * Stack inventory: Worker (cron + queue consumer + API), R2 archive, endpoints queue, D1 current
+// * cache. Bucket/queue are also yielded inside the Worker for bindings; yielding them here exposes
+// * names in stack outputs without a second provision (same resource FQN).
 export default Alchemy.Stack(
   'OrcaEngine',
   {
@@ -16,11 +17,15 @@ export default Alchemy.Stack(
     state: Cloudflare.state(),
   },
   Effect.gen(function* stack() {
+    const responses = yield* Responses
+    const endpoints = yield* Endpoints
     const current = yield* CurrentDatabase
     const engine = yield* Engine
 
     return {
+      bucketName: responses.bucketName,
       databaseName: current.databaseName,
+      queueName: endpoints.queueName,
       url: engine.url,
     }
   }),

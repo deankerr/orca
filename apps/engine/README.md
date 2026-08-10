@@ -94,24 +94,31 @@ Nothing here parses an endpoints response. The two schemas the crawl does read l
 
 ## The modules
 
-| module           | knows                                                                    |
-| ---------------- | ------------------------------------------------------------------------ |
-| `worker.ts`      | that this is a Cloudflare Worker: bindings, the cron, the queue consumer |
-| `artifacts.ts`   | how a key is spelled, and R2 — the only module that touches either       |
-| `database.ts`    | the D1 resource and its migration directory                              |
-| `observation.ts` | pure ScopeObservation parse (ids + raw payloads)                         |
-| `current.ts`     | CurrentCache over Effect SQL — no OpenRouter, no R2                      |
-| `api.ts`         | the HTTP surface, declared as one `HttpApi` over archive + current       |
-| `openrouter.ts`  | that OpenRouter exists                                                   |
+| path                       | knows                                                              |
+| -------------------------- | ------------------------------------------------------------------ |
+| `worker.ts`                | Cloudflare bindings, cron, queue consumer — wiring only            |
+| `resources/*`              | Alchemy resource descriptors (`Responses`, `Endpoints`, `Current`) |
+| `runtime/binding.ts`       | `RuntimeContext.phantom` + `orDie` at binding edges                |
+| `crawl/plan.ts`            | catalog → batch denominator → queue work list                      |
+| `crawl/process-message.ts` | one message: fetch → archive → current cache                       |
+| `archive/store.ts`         | key grammar and R2 — the only module that touches either           |
+| `current/observation.ts`   | pure ScopeObservation parse (ids + raw payloads)                   |
+| `current/cache.ts`         | CurrentCache over Effect SQL — no OpenRouter, no R2                |
+| `api/http.ts`              | HTTP surface as one `HttpApi` over archive + current               |
+| `openrouter/client.ts`     | that OpenRouter exists                                             |
+
+Resource **ids** (`Responses`, `Endpoints`, `Current`, Worker id `Worker`) are stack state — rename
+only with a deliberate migrate. Stack outputs include `url`, `bucketName`, `queueName`,
+`databaseName`.
 
 The archive is the seam the crawl and API meet at: the crawl writes through it, the API reads
-through it, and neither builds a key. `Artifacts.make` takes a bucket client rather than reaching
+through it, and neither builds a key. `Archive.make` takes a bucket client rather than reaching
 for one, so `test/api.test.ts` drives the whole API — real store, real keys, real schemas — against
 ~40 lines of `Map` standing in for R2. D1 current-view is a second seam (`Current.make(sql)`).
 
 ## The API
 
-Declared once in `api.ts`, so the same description validates requests, encodes responses and
+Declared once in `api/http.ts`, so the same description validates requests, encodes responses and
 generates the OpenAPI document. `/docs` is that document, rendered.
 
 | route                                   | answers                                                      |

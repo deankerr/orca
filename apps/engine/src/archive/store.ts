@@ -14,13 +14,14 @@ import type {
 } from '@orca/schema/artifacts.ts'
 // * The same module again, as values: the ids are schemas as well as types, and this module parses
 // * with them as much as it types with them.
-import * as Archive from '@orca/schema/artifacts.ts'
-import { RuntimeContext } from 'alchemy'
+import * as ArtifactSchema from '@orca/schema/artifacts.ts'
 import type * as Cloudflare from 'alchemy/Cloudflare'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import * as Stream from 'effect/Stream'
+
+import { fromBinding } from '../runtime/binding.ts'
 
 // * R2's own ceiling for one listing page. Used by the internal scans; what the API asks for is its
 // * caller's business.
@@ -29,12 +30,12 @@ const PAGE_LIMIT = 1000
 // * ⚠️ Sync on purpose, throughout this module. Every one of these reads or writes data that is ours,
 // * so a failure is a bug in the engine rather than something a caller could handle — and inside an
 // * `Effect.fn` body a thrown error is already a defect.
-const readCatalogObservation = Schema.decodeUnknownSync(Archive.CatalogObservation)
-const readEndpointsObservation = Schema.decodeUnknownSync(Archive.EndpointsObservation)
-const writeCatalogObservation = Schema.encodeSync(Archive.CatalogObservation)
-const writeEndpointsObservation = Schema.encodeSync(Archive.EndpointsObservation)
-const readBatchId = Schema.decodeUnknownSync(Archive.BatchId)
-const readArtifactName = Schema.decodeUnknownSync(Archive.ArtifactName)
+const readCatalogObservation = Schema.decodeUnknownSync(ArtifactSchema.CatalogObservation)
+const readEndpointsObservation = Schema.decodeUnknownSync(ArtifactSchema.EndpointsObservation)
+const writeCatalogObservation = Schema.encodeSync(ArtifactSchema.CatalogObservation)
+const writeEndpointsObservation = Schema.encodeSync(ArtifactSchema.EndpointsObservation)
+const readBatchId = Schema.decodeUnknownSync(ArtifactSchema.BatchId)
+const readArtifactName = Schema.decodeUnknownSync(ArtifactSchema.ArtifactName)
 
 // * ── keys ──────────────────────────────────────────────────────────────────────────────────────
 // * The whole key grammar, in one place, taking parsed ids only.
@@ -61,16 +62,10 @@ const nameIn = (key: string, prefix: string) =>
 
 const batchIn = (key: string) => readBatchId(key.slice(CATALOG_PREFIX.length, -SUFFIX.length))
 
-export type Artifacts = ReturnType<typeof make>
+export type Archive = ReturnType<typeof make>
 
 export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
-  // * ⚠️ Every call on the bucket asks for `RuntimeContext`, the Worker's ambient runtime. It is
-  // * always there inside a Worker but cannot be named while a Layer is being built, so `phantom` —
-  // * Alchemy's own escape hatch, an empty Layer that claims the service — erases the requirement
-  // * here instead of letting it into every caller's signature. Paired with `orDie` because an R2
-  // * failure is a defect, not something a caller of the archive can do anything about.
-  const r2 = <A, E>(effect: Effect.Effect<A, E, RuntimeContext>) =>
-    effect.pipe(Effect.orDie, Effect.provide(RuntimeContext.phantom))
+  // * Binding edge: see ../runtime/binding.ts. R2 failures are defects for archive callers.
 
   // * ── listing ─────────────────────────────────────────────────────────────────────────────────
 
@@ -92,7 +87,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
       prefix: options.prefix,
     }
 
-    const listing = yield* r2(bucket.list(query))
+    const listing = yield* fromBinding(bucket.list(query))
 
     return {
       cursor: listing.truncated ? listing.cursor : null,
@@ -120,14 +115,14 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
   // * The stored document, streamed. A read that fails part-way through a body is a defect, not a
   // * response: nothing useful can be said to a caller already receiving bytes.
   const read = Effect.fn(function* read(key: string) {
-    const object = yield* r2(bucket.get(key))
+    const object = yield* fromBinding(bucket.get(key))
     return object === null ? null : object.body.pipe(Stream.orDie)
   })
 
   // * A crawl, as its stored catalog describes it. `null` when no such crawl exists — the catalog is
   // * written before anything is queued, so its absence is the absence of the batch.
   const describe = Effect.fn(function* describe(batch: BatchId) {
-    const object = yield* r2(bucket.head(catalogKey(batch)))
+    const object = yield* fromBinding(bucket.head(catalogKey(batch)))
     if (object === null) {
       return null
     }
@@ -144,7 +139,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
     putCatalog: Effect.fn(function* putCatalog(args: { batch: BatchId; body: string }) {
       const observation = { observed_at: yield* DateTime.now, status: 200 }
 
-      yield* r2(
+      yield* fromBinding(
         bucket.put(catalogKey(args.batch), args.body, {
           customMetadata: writeCatalogObservation(observation),
           httpMetadata: { contentType: 'application/json' },
@@ -170,7 +165,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
         variant: args.query.variant,
       }
 
-      yield* r2(
+      yield* fromBinding(
         bucket.put(artifactKey(args.query.batch, name), args.body, {
           customMetadata: writeEndpointsObservation(observation),
           httpMetadata: { contentType: 'application/json' },

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { encodeScopeKey, parseEndpointsBody } from '../src/observation.ts'
+import { encodeScopeKey, parseEndpointsBody } from '../src/current/observation.ts'
 
 describe('parseEndpointsBody', () => {
   test('keeps raw payloads and only requires string ids', () => {
