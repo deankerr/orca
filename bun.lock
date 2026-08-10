@@ -23,7 +23,7 @@
       "name": "@orca/engine",
       "dependencies": {
         "@effect/sql-d1": "catalog:",
-        "@orca/schema": "workspace:*",
+        "@orca/entities": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
       },

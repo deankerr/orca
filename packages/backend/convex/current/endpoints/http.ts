@@ -2,9 +2,7 @@
 // *
 // * POST /current/endpoints
 // * Body: { endpoints: Endpoint[] }  — product cards matching packages/entities `toEndpoint`.
-// *
-// * Auth: none for now. Restrict when worker → Convex wiring is ready (shared secret, CF Access,
-// * mTLS, or Convex deploy-key style header). Do not expose as a public product API.
+// * Auth: shared secret ENGINE_HTTP_API_KEY via `Authorization: Bearer <key>`.
 // *
 // * Unavailability marks are still open (see table.ts).
 //
@@ -12,6 +10,7 @@ import { parse } from 'convex-helpers/validators'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
+import { isNonEmptyString } from '../../../shared/utils'
 import { internal } from '../../_generated/api'
 import { httpAction } from '../../_generated/server'
 import { vCurrentEndpointProduct } from './table'
@@ -21,9 +20,31 @@ const zBody = z.object({
   endpoints: z.array(z.unknown()).min(1),
 })
 
+const unauthorized = () => new Response('Unauthorized', { status: 401 })
+
+const bearerToken = (req: Request): string | null => {
+  const header = req.headers.get('Authorization')
+  if (!isNonEmptyString(header)) {
+    return null
+  }
+  const match = /^Bearer\s+(?<token>.+)$/i.exec(header.trim())
+  return match?.groups?.token ?? null
+}
+
 export const upsertCurrentEndpoints = httpAction(async (ctx, req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
+  }
+
+  const expected = process.env.ENGINE_HTTP_API_KEY
+  if (!isNonEmptyString(expected)) {
+    console.error('[current/endpoints] ENGINE_HTTP_API_KEY is not configured')
+    return new Response('Server configuration error', { status: 500 })
+  }
+
+  const token = bearerToken(req)
+  if (token === null || token !== expected) {
+    return unauthorized()
   }
 
   let json: unknown

@@ -183,11 +183,14 @@ export function toEndpoint(source: Schema.Schema.Type<typeof EndpointObservation
       discount: source.pricing.discount,
     },
 
+    // * Omit nulls — product optionals mean key absent (same idea as provider.region).
     limits: {
-      text_input_tokens: source.max_prompt_tokens,
-      image_input_tokens: source.max_tokens_per_image,
-      requests_per_minute: source.limit_rpm,
-      requests_per_day: source.limit_rpd,
+      ...(source.max_prompt_tokens === null ? {} : { text_input_tokens: source.max_prompt_tokens }),
+      ...(source.max_tokens_per_image === null
+        ? {}
+        : { image_input_tokens: source.max_tokens_per_image }),
+      ...(source.limit_rpm === null ? {} : { requests_per_minute: source.limit_rpm }),
+      ...(source.limit_rpd === null ? {} : { requests_per_day: source.limit_rpd }),
     },
 
     max_output: source.max_completion_tokens ?? source.context_length,
