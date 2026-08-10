@@ -47,20 +47,6 @@ export default defineConfig({
         'typescript/strict-boolean-expressions': 'off',
       },
     },
-    {
-      // keys are grouped semantically
-      files: ['packages/schema/**/*.{ts,tsx}'],
-      rules: {
-        'sort-keys': 'off',
-      },
-    },
-    {
-      // Area 2 contracts deliberately permit callers to mutate their inputs and outputs.
-      files: ['apps/labs/src/area-2/**/*.ts'],
-      rules: {
-        'typescript/prefer-readonly': 'off',
-      },
-    },
   ],
   rules: {
     // standard ultracite overrides
