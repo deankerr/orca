@@ -7,10 +7,11 @@ export const observedAtKey = (now: DateTime.Utc): string =>
 
 /**
  * One path segment naming a model-variant scope.
- * permaslug `/` → `.` so the key stays one segment under observedAt.
+ * permaslug `/` → `_` so the key stays one segment under observedAt
+ * (underscores do not appear in model slugs; dots do).
  */
 export const scopeKey = (permaslug: string, variant: string): string =>
-  `${permaslug.replaceAll('/', '.')}.${variant}`
+  `${permaslug.replaceAll('/', '_')}.${variant}`
 
 /** Endpoints body: endpoints/{observedAt}/{scope}.json.gz */
 export const observationKey = (observedAt: string, scope: string): string =>

@@ -1,4 +1,5 @@
-// * Read/write raw capture bytes on Observations.
+// * Read/write raw capture evidence on the Observations bucket.
+// * Shared archive service: capture writes; sinks (and others) read by ref.
 import type * as Cloudflare from 'alchemy/Cloudflare'
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
@@ -6,10 +7,11 @@ import * as Effect from 'effect/Effect'
 import { fromBinding } from '../binding.ts'
 import { gunzip, gzip } from './compress.ts'
 import * as Key from './key.ts'
+import type { ObservationRef } from './ref.ts'
 
 export type Store = ReturnType<typeof make>
 
-export class ObservationNotFound extends Data.TaggedError('ObservationNotFound')<{
+class ObservationNotFound extends Data.TaggedError('ObservationNotFound')<{
   readonly key: string
 }> {}
 
@@ -26,7 +28,14 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
           },
         }),
       )
-      yield* Effect.log(`stored ${key} (${body.length} → ${bytes.byteLength} B)`)
+      yield* Effect.log('observations: stored').pipe(
+        Effect.annotateLogs({
+          bytes: String(bytes.byteLength),
+          key,
+          phase: 'observations',
+          rawBytes: String(body.length),
+        }),
+      )
     })
 
   return {
@@ -37,7 +46,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
       permaslug: string
       variant: string
       status: number
-      /** Upstream response body text, unmodified. */
+      /** Validated success envelope JSON (`{ data: [...] }`). */
       body: string
     }) {
       yield* putGzip(Key.observationKey(args.observedAt, args.scopeKey), args.body, {
@@ -48,15 +57,9 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
       })
     }),
 
-    /**
-     * Read one endpoints observation body (gunzipped JSON text).
-     * Used by the Sinks consumer — messages carry R2 refs, not bodies.
-     */
-    getObservation: Effect.fn(function* getObservation(args: {
-      observedAt: string
-      scopeKey: string
-    }) {
-      const key = Key.observationKey(args.observedAt, args.scopeKey)
+    /** Read one endpoints observation body (gunzipped JSON text) by ref. */
+    getObservation: Effect.fn(function* getObservation(ref: ObservationRef) {
+      const key = Key.observationKey(ref.observedAt, ref.scopeKey)
       const object = yield* fromBinding(bucket.get(key))
       if (object === null) {
         return yield* new ObservationNotFound({ key })

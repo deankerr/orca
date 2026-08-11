@@ -25,6 +25,7 @@ This project vendors external repositories under @repos/
 
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
+- Effect Schema V4 @docs/effect-schema
 
 ## Overview
 

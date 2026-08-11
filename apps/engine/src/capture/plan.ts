@@ -1,12 +1,13 @@
-// * Full sample: catalog → store catalog → enqueue every crawlable scope with shared observedAt.
+// * Capture composition: full sample plan (catalog → archive → Work queue).
+// * Policy: catalog must be HTTP 200 with validated model data or the sample aborts.
+// * Crawl set: serving endpoint present, skip `~` aliases.
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 
-import * as Key from './key.ts'
+import * as Key from '../observations/key.ts'
+import type { Store } from '../observations/store.ts'
+import type { WorkMessage } from './message.ts'
 import * as OpenRouter from './openrouter.ts'
-import type { Store } from './store.ts'
-import { workList } from './work-message.ts'
-import type { WorkMessage } from './work-message.ts'
 
 const QUEUE_BATCH_SIZE = 100
 
@@ -18,33 +19,52 @@ const chunks = <A>(items: ReadonlyArray<A>, size: number): A[][] => {
   return out
 }
 
-export type PlanStarted = {
-  readonly observedAt: string
-  readonly models: number
-  readonly queued: number
-}
-
 export const startFullSample = (deps: {
   store: Store
   sendBatch: (messages: ReadonlyArray<{ body: WorkMessage }>) => Effect.Effect<void>
 }) =>
   Effect.gen(function* startFullSample() {
     const observedAt = Key.observedAtKey(yield* DateTime.now)
-    const { body, models } = yield* OpenRouter.catalog()
+    const catalog = yield* OpenRouter.fetchCatalog()
 
-    yield* deps.store.putCatalog({ body, observedAt })
+    if (catalog._tag === 'HttpError') {
+      return yield* Effect.die(new Error(`catalog returned ${catalog.status}: ${catalog.body}`))
+    }
 
-    const messages = workList(models, observedAt)
+    // Persist only the validated success envelope.
+    yield* deps.store.putCatalog({
+      body: JSON.stringify({ data: catalog.data }),
+      observedAt,
+    })
+
+    const messages: WorkMessage[] = []
+    for (const model of catalog.data) {
+      if (model.endpoint === null || model.slug.startsWith('~')) {
+        continue
+      }
+      messages.push({
+        observedAt,
+        permaslug: model.permaslug,
+        variant: model.endpoint.variant,
+      })
+    }
+
     for (const chunk of chunks(messages, QUEUE_BATCH_SIZE)) {
       yield* deps.sendBatch(chunk.map((body) => ({ body })))
     }
 
-    yield* Effect.log(
-      `full sample ${observedAt}: queued ${messages.length} of ${models.length} catalog models`,
+    yield* Effect.log('plan: full sample queued').pipe(
+      Effect.annotateLogs({
+        models: String(catalog.data.length),
+        observedAt,
+        phase: 'plan',
+        queued: String(messages.length),
+        status: String(catalog.status),
+      }),
     )
     return {
-      models: models.length,
+      models: catalog.data.length,
       observedAt,
       queued: messages.length,
-    } satisfies PlanStarted
+    }
   })

@@ -8,7 +8,7 @@ import { Sinks } from './src/resources/Sinks.ts'
 import { Work } from './src/resources/Work.ts'
 import Engine from './src/worker.ts'
 
-// * Capture stack: Worker (cron + Work + Sinks + ops HTTP), Observations R2, queues, Entities D1.
+// * Engine stack: Worker (cron + Work + Sinks + ops HTTP), Observations R2, queues, Entities D1.
 export default Alchemy.Stack(
   'OrcaEngine',
   {

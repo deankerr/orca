@@ -36,7 +36,7 @@ export function hasProviderMetricHistory(provider: ProviderPricingSeries, metric
 
 /** History stores state transitions, so an endpoint's state at any instant is
  * its most recent observation at or before it. */
-export function stateAt(series: PricingSeries, at: number) {
+function stateAt(series: PricingSeries, at: number) {
   let state: PricingSeries['points'][number] | undefined
   for (const point of series.points) {
     if (point.at > at) {

@@ -1,41 +1,31 @@
-// * One Work message: fetch → store observation → touch entity clocks on success.
+// * Capture composition: one Work message → archive + entity clocks.
+// * Policy: archive only validated 200 data; observed when ≥1 non-empty endpoint id.
 import * as Cause from 'effect/Cause'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 
+import * as Key from '../observations/key.ts'
+import type { Store } from '../observations/store.ts'
 import type { Detected } from './detected.ts'
-import { endpointIds } from './identity.ts'
-import * as Key from './key.ts'
+import type { WorkMessage } from './message.ts'
 import * as OpenRouter from './openrouter.ts'
-import type { Store } from './store.ts'
-import type { WorkMessage } from './work-message.ts'
 
-/** Result of one capture attempt after archive write. */
+/** Result of one capture attempt after (optional) archive write. */
 export type ProcessResult = {
-  readonly status: number
-  readonly scopeKey: string
   readonly observedAt: string
-  /** True when status is 200 and at least one endpoint id was parsed. */
+  readonly scopeKey: string
+  /** True when status is 200 and at least one endpoint id was present. */
   readonly observed: boolean
 }
 
 export const processWork = (deps: { store: Store; detected: Detected }) =>
   Effect.fn(function* processWork(work: WorkMessage) {
-    const captured = yield* OpenRouter.endpoints(work)
+    const captured = yield* OpenRouter.fetchEndpoints(work)
     const now = yield* DateTime.now
     const observedAt = work.observedAt ?? Key.observedAtKey(now)
     const scopeKey = Key.scopeKey(work.permaslug, work.variant)
 
-    yield* deps.store.putObservation({
-      body: captured.body,
-      observedAt,
-      permaslug: work.permaslug,
-      scopeKey,
-      status: captured.status,
-      variant: work.variant,
-    })
-
-    if (captured.status !== 200) {
+    if (captured._tag === 'HttpError') {
       yield* Effect.logWarning('capture: non-200 observation').pipe(
         Effect.annotateLogs({
           body: captured.body,
@@ -48,15 +38,25 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
         observed: false,
         observedAt,
         scopeKey,
-        status: captured.status,
       }
     }
 
-    const ids = endpointIds(captured.body)
-    if (ids === null) {
+    // Persist only the validated success envelope.
+    const body = JSON.stringify({ data: captured.data })
+    yield* deps.store.putObservation({
+      body,
+      observedAt,
+      permaslug: work.permaslug,
+      scopeKey,
+      status: captured.status,
+      variant: work.variant,
+    })
+
+    const ids = captured.data.map((row) => row.id).filter((id) => id.length > 0)
+    if (ids.length === 0) {
       yield* Effect.logWarning('capture: no endpoint ids in 200 body').pipe(
         Effect.annotateLogs({
-          body: captured.body,
+          body,
           phase: 'capture',
           scope: scopeKey,
           status: String(captured.status),
@@ -66,7 +66,6 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
         observed: false,
         observedAt,
         scopeKey,
-        status: captured.status,
       }
     }
 
@@ -89,6 +88,5 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
       observed: true,
       observedAt,
       scopeKey,
-      status: captured.status,
     }
   })

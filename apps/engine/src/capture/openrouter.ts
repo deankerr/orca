@@ -1,5 +1,13 @@
-// * OpenRouter client for capture. Settled statuses return; only transients retry.
-// * Response bodies are stored as received.
+// * OpenRouter client for capture.
+// *
+// * Settle HTTP (retry transients → final status + body). On 200, decode the
+// * success envelope `{ data }` with passthrough schemas so required identity
+// * fields are checked and all other fields are kept. Non-200 responses are
+// * associated with an error status and are not parsed as data.
+// *
+// * Does not decide capture policy (abort sample, archive, mark observed).
+// * Callers in plan/process own that; they only ever receive valid data shapes
+// * to persist.
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
@@ -9,25 +17,39 @@ const BASE_URL = 'https://openrouter.ai'
 const CATALOG_PATH = '/api/frontend/v1/catalog/models'
 const ENDPOINTS_PATH = '/api/frontend/v1/stats/endpoint'
 
-// * Fields needed for work planning; the full JSON body is stored separately.
+/** Keep undeclared keys — Struct otherwise strips them. */
+const preserve = { onExcessProperty: 'preserve' as const }
+
+// * ── Success shapes (route-specific rows, full payload via passthrough) ──────
+
+/**
+ * Model rows from catalog `data`.
+ * OpenRouter encodes model identity oddly (slug / permaslug / serving endpoint).
+ */
 const CatalogModel = Schema.Struct({
   endpoint: Schema.NullOr(Schema.Struct({ variant: Schema.String })),
   permaslug: Schema.String,
   slug: Schema.String,
 })
-
-const CatalogResponse = Schema.Struct({
+const CatalogBody = Schema.Struct({
   data: Schema.Array(CatalogModel),
 })
+const decodeCatalogBody = Schema.decodeUnknownEffect(Schema.fromJsonString(CatalogBody), preserve)
 
-const decodeCatalog = Schema.decodeUnknownEffect(Schema.fromJsonString(CatalogResponse))
+/** Endpoint rows from endpoints `data`. */
+const EndpointRow = Schema.Struct({
+  id: Schema.String,
+})
 
-// * Envelope gate: data|error present. Raw body is stored separately.
-const Envelope = Schema.Union([
-  Schema.Struct({ data: Schema.Unknown }),
-  Schema.Struct({ error: Schema.Unknown }),
-])
-const decodeEnvelope = Schema.decodeUnknownEffect(Schema.fromJsonString(Envelope))
+const EndpointsBody = Schema.Struct({
+  data: Schema.Array(EndpointRow),
+})
+const decodeEndpointsBody = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(EndpointsBody),
+  preserve,
+)
+
+// * ── Transport ──────────────────────────────────────────────────────────────
 
 const isTransient = (status: number) => status === 429 || status >= 500
 
@@ -38,14 +60,13 @@ class Transient extends Data.TaggedError('Transient')<{
 
 const backoff = Schedule.exponential('1 second')
 
-type Settled = { status: number; body: string }
+type Settled = {
+  readonly status: number
+  readonly body: string
+}
 
-const get = Effect.fn(function* get(path: string, params?: Record<string, string>) {
-  const url = new URL(path, BASE_URL)
-  for (const [key, value] of Object.entries(params ?? {})) {
-    url.searchParams.set(key, value)
-  }
-
+/** GET a fully formed URL. Retries 429/5xx briefly, then settles. */
+const get = Effect.fn(function* get(url: URL) {
   const once = Effect.gen(function* once() {
     const settled = yield* Effect.tryPromise(async (): Promise<Settled> => {
       const response = await fetch(url, { headers: { accept: 'application/json' } })
@@ -64,39 +85,45 @@ const get = Effect.fn(function* get(path: string, params?: Record<string, string
   )
 })
 
-export type CatalogModel = Schema.Schema.Type<typeof CatalogModel>
+// * ── Routes ─────────────────────────────────────────────────────────────────
 
-export type CatalogCapture = {
-  readonly body: string
-  readonly models: ReadonlyArray<CatalogModel>
-}
-
-export type EndpointsCapture = {
-  readonly status: number
-  readonly body: string
-}
-
-/** Catalog: non-200 after retries is a defect. */
-export const catalog = Effect.fn(function* catalog() {
-  const settled = yield* get(CATALOG_PATH)
+/**
+ * Catalog models inventory.
+ * Non-200 → status + raw body (no data parse). 200 → validated `data` (or die).
+ */
+export const fetchCatalog = Effect.fn(function* fetchCatalog() {
+  const settled = yield* get(new URL(CATALOG_PATH, BASE_URL))
   if (settled.status !== 200) {
-    return yield* Effect.die(new Error(`catalog returned ${settled.status}: ${settled.body}`))
+    return {
+      _tag: 'HttpError' as const,
+      body: settled.body,
+      status: settled.status,
+    }
   }
-
-  const { data } = yield* decodeCatalog(settled.body).pipe(Effect.orDie)
-  return { body: settled.body, models: data } satisfies CatalogCapture
+  const { data } = yield* decodeCatalogBody(settled.body).pipe(Effect.orDie)
+  return { _tag: 'HttpData' as const, data, status: settled.status }
 })
 
-/** One endpoints observation at the settled status, body as received after envelope gate. */
-export const endpoints = Effect.fn(function* endpoints(args: {
+/**
+ * Endpoints for one model scope.
+ * Non-200 → status + raw body (no data parse). 200 → validated `data` (or die).
+ */
+export const fetchEndpoints = Effect.fn(function* fetchEndpoints(args: {
   permaslug: string
   variant: string
 }) {
-  const settled = yield* get(ENDPOINTS_PATH, {
-    permaslug: args.permaslug,
-    variant: args.variant,
-  })
+  const url = new URL(ENDPOINTS_PATH, BASE_URL)
+  url.searchParams.set('permaslug', args.permaslug)
+  url.searchParams.set('variant', args.variant)
 
-  yield* decodeEnvelope(settled.body).pipe(Effect.orDie)
-  return { body: settled.body, status: settled.status } satisfies EndpointsCapture
+  const settled = yield* get(url)
+  if (settled.status !== 200) {
+    return {
+      _tag: 'HttpError' as const,
+      body: settled.body,
+      status: settled.status,
+    }
+  }
+  const { data } = yield* decodeEndpointsBody(settled.body).pipe(Effect.orDie)
+  return { _tag: 'HttpData' as const, data, status: settled.status }
 })
