@@ -1,12 +1,17 @@
-// * Write raw capture bytes to Observations.
+// * Read/write raw capture bytes on Observations.
 import type * as Cloudflare from 'alchemy/Cloudflare'
+import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 
 import { fromBinding } from '../binding.ts'
-import { gzip } from './compress.ts'
+import { gunzip, gzip } from './compress.ts'
 import * as Key from './key.ts'
 
 export type Store = ReturnType<typeof make>
+
+export class ObservationNotFound extends Data.TaggedError('ObservationNotFound')<{
+  readonly key: string
+}> {}
 
 export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
   const putGzip = (key: string, body: string, metadata: Record<string, string>) =>
@@ -41,6 +46,23 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
         status: String(args.status),
         variant: args.variant,
       })
+    }),
+
+    /**
+     * Read one endpoints observation body (gunzipped JSON text).
+     * Used by the Sinks consumer — messages carry R2 refs, not bodies.
+     */
+    getObservation: Effect.fn(function* getObservation(args: {
+      observedAt: string
+      scopeKey: string
+    }) {
+      const key = Key.observationKey(args.observedAt, args.scopeKey)
+      const object = yield* fromBinding(bucket.get(key))
+      if (object === null) {
+        return yield* new ObservationNotFound({ key })
+      }
+      const bytes = yield* fromBinding(object.arrayBuffer())
+      return yield* gunzip(bytes)
     }),
 
     /** Catalog inventory. Key = catalogs/{observedAt}.json.gz */

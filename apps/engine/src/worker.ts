@@ -1,16 +1,20 @@
-// * Capture worker: cron + queue + HTTP ops surface.
+// * Capture worker: cron + Work + Sinks + HTTP ops surface.
 // *
 // *   cron  → full sample (catalog → Work queue)
-// *   queue → capture (Observations + Entities) → deliver current view (Convex)
+// *   Work  → capture (Observations + Entities) → enqueue Sinks (R2 ref)
+// *   Sinks → windowed batch → load R2 → deliver current view (Convex)
 // *   fetch → status / trigger full sample
 // *
-// * Failure policy: retry decode/capture/R2 via the queue; best-effort entities + delivery.
+// * Failure policy:
+// *   Work  — retry decode/capture/R2; entities best-effort; sink enqueue fails the message
+// *   Sinks — hard error boundary: log and ack (never redrive capture via this queue)
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as SQL from 'alchemy/SQL/D1'
 import * as Cause from 'effect/Cause'
 import * as Config from 'effect/Config'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Option from 'effect/Option'
 import * as Stream from 'effect/Stream'
 import * as HttpServerRequest from 'effect/unstable/http/HttpServerRequest'
 import * as HttpServerResponse from 'effect/unstable/http/HttpServerResponse'
@@ -22,8 +26,11 @@ import * as Process from './capture/process.ts'
 import * as Store from './capture/store.ts'
 import { decodeWorkMessage } from './capture/work-message.ts'
 import * as Current from './delivery/current.ts'
+import { decodeSinkMessage } from './delivery/sink-message.ts'
+import type { SinkMessage } from './delivery/sink-message.ts'
 import { Entities } from './resources/Entities.ts'
 import { Observations } from './resources/Observations.ts'
+import { Sinks } from './resources/Sinks.ts'
 import { Work } from './resources/Work.ts'
 
 const logCause = (label: string) => (cause: Cause.Cause<unknown>) =>
@@ -39,27 +46,31 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     // * Discovered at deploy; bound onto the Worker for runtime. Must be yielded in init.
     const convexSiteUrl = yield* Config.string('CONVEX_SITE_URL')
     const engineHttpApiKey = yield* Config.redacted('ENGINE_HTTP_API_KEY')
-    const deliver = Current.deliver({
+    const deliverMany = Current.deliverMany({
       apiKey: engineHttpApiKey,
       siteUrl: convexSiteUrl,
     })
 
     const observations = yield* Observations
     const work = yield* Work
+    const sinks = yield* Sinks
 
     const d1 = yield* Cloudflare.D1.QueryDatabase(Entities)
     const sql = yield* SQL.D1(d1)
     const detected = Detected.make(sql)
     const store = Store.make(yield* Cloudflare.R2.ReadWriteBucket(observations))
-    const queue = yield* Cloudflare.Queues.WriteQueue(work)
+    const workQueue = yield* Cloudflare.Queues.WriteQueue(work)
+    const sinksQueue = yield* Cloudflare.Queues.WriteQueue(sinks)
 
     const startFullSample = Plan.startFullSample({
-      sendBatch: (messages) => fromBinding(queue.sendBatch(messages)),
+      sendBatch: (messages) => fromBinding(workQueue.sendBatch(messages)),
       store,
     })
     const capture = Process.processWork({ detected, store })
 
-    const onMessage = Effect.fn(function* onMessage(message: unknown) {
+    // * ── Work: capture only; enqueue Sinks ref on success ──────────────────────────────────
+
+    const onWorkMessage = Effect.fn(function* onWorkMessage(message: unknown) {
       const workMessage = yield* decodeWorkMessage(message)
       const result = yield* capture(workMessage)
 
@@ -67,19 +78,76 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
         return
       }
 
-      // * Best-effort: archive already written.
-      yield* deliver(result.body).pipe(
-        Effect.annotateLogs({ phase: 'delivery', scope: result.scopeKey }),
+      const sinkMessage: SinkMessage = {
+        observedAt: result.observedAt,
+        scopeKey: result.scopeKey,
+      }
+      yield* fromBinding(sinksQueue.send(sinkMessage))
+    })
+
+    // * ── Sinks: windowed batch → R2 load → Convex delivery (never fail the batch) ──────────
+
+    const onSinksBatch = Effect.fn(function* onSinksBatch(
+      messages: ReadonlyArray<{ body: unknown }>,
+    ) {
+      const items: Current.DeliverBody[] = []
+      for (const message of messages) {
+        const decoded = yield* decodeSinkMessage(message.body).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning('sinks: bad message').pipe(
+              Effect.annotateLogs({
+                detail: String(error),
+                phase: 'sinks',
+              }),
+            ),
+          ),
+          Effect.option,
+        )
+        if (Option.isNone(decoded)) {
+          continue
+        }
+
+        const ref = decoded.value
+        const body = yield* store.getObservation(ref).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning('sinks: observation load failed').pipe(
+              Effect.annotateLogs({
+                detail: String(error),
+                observedAt: ref.observedAt,
+                phase: 'sinks',
+                scope: ref.scopeKey,
+              }),
+            ),
+          ),
+          Effect.option,
+        )
+        if (Option.isSome(body)) {
+          items.push({ body: body.value, scopeKey: ref.scopeKey })
+        }
+      }
+
+      if (items.length === 0) {
+        return
+      }
+
+      yield* deliverMany(items).pipe(
+        Effect.annotateLogs({
+          observations: String(items.length),
+          phase: 'delivery',
+        }),
         Effect.tapError((error) =>
           Effect.logWarning('delivery failed').pipe(
             Effect.annotateLogs({
               detail: error.detail,
+              observations: String(items.length),
+              phase: 'delivery',
               reason: error.reason,
               ...(error.status === undefined ? {} : { status: String(error.status) }),
               ...(error.body === undefined ? {} : { responseBody: error.body }),
             }),
           ),
         ),
+        // * Hard boundary: product sink failures must not retry this queue (or re-capture).
         Effect.catch(() => Effect.void),
       )
     })
@@ -94,7 +162,28 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
       { batchSize: 1, maxConcurrency: 4, maxRetries: 3 },
       (stream) =>
         Stream.runForEach(stream, (message) =>
-          onMessage(message.body).pipe(Effect.tapCause(logCause('queue: message failed'))),
+          onWorkMessage(message.body).pipe(Effect.tapCause(logCause('work: message failed'))),
+        ),
+    )
+
+    // * Size-or-time bank before delivery. Independent of Work capture tuning.
+    yield* Cloudflare.Queues.consumeQueueMessages(
+      sinks,
+      {
+        batchSize: 25,
+        maxConcurrency: 2,
+        maxRetries: 0,
+        maxWaitTime: '15 seconds',
+      },
+      (stream) =>
+        Stream.runCollect(stream).pipe(
+          Effect.flatMap((chunk) => onSinksBatch(chunk)),
+          // * Belt-and-suspenders: decode defects etc. still ack the batch.
+          Effect.catchCause((cause) =>
+            Effect.logError('sinks: batch failed (acking)').pipe(
+              Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'sinks' }),
+            ),
+          ),
         ),
     )
 

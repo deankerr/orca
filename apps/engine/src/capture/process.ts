@@ -14,10 +14,9 @@ import type { WorkMessage } from './work-message.ts'
 export type ProcessResult = {
   readonly status: number
   readonly scopeKey: string
+  readonly observedAt: string
   /** True when status is 200 and at least one endpoint id was parsed. */
   readonly observed: boolean
-  /** Upstream body; usable for delivery when `observed`. */
-  readonly body: string
 }
 
 export const processWork = (deps: { store: Store; detected: Detected }) =>
@@ -46,8 +45,8 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
         }),
       )
       return {
-        body: captured.body,
         observed: false,
+        observedAt,
         scopeKey,
         status: captured.status,
       }
@@ -64,8 +63,8 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
         }),
       )
       return {
-        body: captured.body,
         observed: false,
+        observedAt,
         scopeKey,
         status: captured.status,
       }
@@ -87,8 +86,8 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
     )
 
     return {
-      body: captured.body,
       observed: true,
+      observedAt,
       scopeKey,
       status: captured.status,
     }

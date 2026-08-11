@@ -4,10 +4,11 @@ import * as Effect from 'effect/Effect'
 
 import { Entities } from './src/resources/Entities.ts'
 import { Observations } from './src/resources/Observations.ts'
+import { Sinks } from './src/resources/Sinks.ts'
 import { Work } from './src/resources/Work.ts'
 import Engine from './src/worker.ts'
 
-// * Capture stack: Worker (cron + Work consumer + ops HTTP), Observations R2, Work queue, Entities D1.
+// * Capture stack: Worker (cron + Work + Sinks + ops HTTP), Observations R2, queues, Entities D1.
 export default Alchemy.Stack(
   'OrcaEngine',
   {
@@ -17,14 +18,16 @@ export default Alchemy.Stack(
   Effect.gen(function* stack() {
     const observations = yield* Observations
     const work = yield* Work
+    const sinks = yield* Sinks
     const entities = yield* Entities
     const engine = yield* Engine
 
     return {
       bucketName: observations.bucketName,
       databaseName: entities.databaseName,
-      queueName: work.queueName,
+      sinksQueueName: sinks.queueName,
       url: engine.url,
+      workQueueName: work.queueName,
     }
   }),
 )

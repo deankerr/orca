@@ -79,5 +79,7 @@ export const upsertCurrentEndpoints = httpAction(async (ctx, req) => {
     endpoints,
   })
 
+  console.log({ result })
+
   return Response.json(result)
 })

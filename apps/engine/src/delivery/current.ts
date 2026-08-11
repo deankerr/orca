@@ -133,48 +133,103 @@ export const pushEndpoints = (
     )
   })
 
-/** Project then push. Returns null when nothing projects. */
+/** Project one body to product cards; log and return [] when unusable. */
+const projectOrEmpty = (body: string, scopeKey?: string): Effect.Effect<Endpoint[]> =>
+  Effect.gen(function* projectOrEmpty() {
+    const projected = projectEndpoints(body)
+    const scope = scopeKey === undefined ? {} : { scope: scopeKey }
+
+    if (!projected.envelopeOk) {
+      yield* Effect.logWarning('delivery: body is not a data envelope').pipe(
+        Effect.annotateLogs({ body, phase: 'delivery', ...scope }),
+      )
+      return []
+    }
+
+    if (projected.rowErrors.length > 0) {
+      yield* Effect.logWarning('delivery: row product decode failures').pipe(
+        Effect.annotateLogs({
+          dataLength: String(projected.dataLength),
+          ok: String(projected.endpoints.length),
+          phase: 'delivery',
+          rowErrors: JSON.stringify(projected.rowErrors),
+          ...scope,
+        }),
+      )
+    }
+
+    if (projected.endpoints.length === 0) {
+      yield* Effect.logWarning('delivery: no projectable endpoints').pipe(
+        Effect.annotateLogs({
+          dataLength: String(projected.dataLength),
+          phase: 'delivery',
+          rowErrors: JSON.stringify(projected.rowErrors),
+          ...scope,
+        }),
+      )
+    }
+
+    return projected.endpoints
+  })
+
+/** Project then push one observation body. Returns null when nothing projects. */
 export const deliver =
   (target: DeliveryTarget) =>
   (body: string): Effect.Effect<PushResult | null, DeliveryError> =>
     Effect.gen(function* deliver() {
-      const projected = projectEndpoints(body)
-
-      if (!projected.envelopeOk) {
-        yield* Effect.logWarning('delivery: body is not a data envelope').pipe(
-          Effect.annotateLogs({ body, phase: 'delivery' }),
-        )
+      const endpoints = yield* projectOrEmpty(body)
+      if (endpoints.length === 0) {
         return null
       }
 
-      if (projected.rowErrors.length > 0) {
-        yield* Effect.logWarning('delivery: row product decode failures').pipe(
-          Effect.annotateLogs({
-            dataLength: String(projected.dataLength),
-            ok: String(projected.endpoints.length),
-            phase: 'delivery',
-            rowErrors: JSON.stringify(projected.rowErrors),
-          }),
-        )
-      }
-
-      if (projected.endpoints.length === 0) {
-        yield* Effect.logWarning('delivery: no projectable endpoints').pipe(
-          Effect.annotateLogs({
-            dataLength: String(projected.dataLength),
-            phase: 'delivery',
-            rowErrors: JSON.stringify(projected.rowErrors),
-          }),
-        )
-        return null
-      }
-
-      const result = yield* pushEndpoints(target, projected.endpoints)
+      const result = yield* pushEndpoints(target, endpoints)
       yield* Effect.log('delivery: upserted').pipe(
         Effect.annotateLogs({
           insert: String(result.insert),
           phase: 'delivery',
-          projected: String(projected.endpoints.length),
+          projected: String(endpoints.length),
+          update: String(result.update),
+        }),
+      )
+      return result
+    })
+
+export type DeliverBody = {
+  readonly body: string
+  readonly scopeKey?: string
+}
+
+/**
+ * Project many observation bodies and push one combined Convex upsert.
+ * Used by the Sinks queue consumer after a windowed batch.
+ */
+export const deliverMany =
+  (target: DeliveryTarget) =>
+  (items: ReadonlyArray<DeliverBody>): Effect.Effect<PushResult | null, DeliveryError> =>
+    Effect.gen(function* deliverMany() {
+      const endpoints: Endpoint[] = []
+      for (const item of items) {
+        const projected = yield* projectOrEmpty(item.body, item.scopeKey)
+        endpoints.push(...projected)
+      }
+
+      if (endpoints.length === 0) {
+        yield* Effect.logWarning('delivery: batch projected nothing').pipe(
+          Effect.annotateLogs({
+            observations: String(items.length),
+            phase: 'delivery',
+          }),
+        )
+        return null
+      }
+
+      const result = yield* pushEndpoints(target, endpoints)
+      yield* Effect.log('delivery: upserted batch').pipe(
+        Effect.annotateLogs({
+          insert: String(result.insert),
+          observations: String(items.length),
+          phase: 'delivery',
+          projected: String(endpoints.length),
           update: String(result.update),
         }),
       )

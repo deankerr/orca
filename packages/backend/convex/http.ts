@@ -124,7 +124,6 @@ http.route({
   }),
 })
 
-// * Engine current-view delivery — no auth yet (see current/endpoints/http.ts)
 http.route({
   path: '/current/endpoints',
   method: 'POST',
