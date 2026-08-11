@@ -4,10 +4,6 @@
 // * success envelope `{ data }` with passthrough schemas so required identity
 // * fields are checked and all other fields are kept. Non-200 responses are
 // * associated with an error status and are not parsed as data.
-// *
-// * Does not decide capture policy (abort sample, archive, mark observed).
-// * Callers in plan/process own that; they only ever receive valid data shapes
-// * to persist.
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
@@ -16,9 +12,6 @@ import * as Schema from 'effect/Schema'
 const BASE_URL = 'https://openrouter.ai'
 const CATALOG_PATH = '/api/frontend/v1/catalog/models'
 const ENDPOINTS_PATH = '/api/frontend/v1/stats/endpoint'
-
-/** Keep undeclared keys — Struct otherwise strips them. */
-const preserve = { onExcessProperty: 'preserve' as const }
 
 // * ── Success shapes (route-specific rows, full payload via passthrough) ──────
 
@@ -34,7 +27,9 @@ const CatalogModel = Schema.Struct({
 const CatalogBody = Schema.Struct({
   data: Schema.Array(CatalogModel),
 })
-const decodeCatalogBody = Schema.decodeUnknownEffect(Schema.fromJsonString(CatalogBody), preserve)
+const decodeCatalogBody = Schema.decodeUnknownEffect(Schema.fromJsonString(CatalogBody), {
+  onExcessProperty: 'preserve',
+})
 
 /** Endpoint rows from endpoints `data`. */
 const EndpointRow = Schema.Struct({
@@ -44,10 +39,9 @@ const EndpointRow = Schema.Struct({
 const EndpointsBody = Schema.Struct({
   data: Schema.Array(EndpointRow),
 })
-const decodeEndpointsBody = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(EndpointsBody),
-  preserve,
-)
+const decodeEndpointsBody = Schema.decodeUnknownEffect(Schema.fromJsonString(EndpointsBody), {
+  onExcessProperty: 'preserve',
+})
 
 // * ── Transport ──────────────────────────────────────────────────────────────
 

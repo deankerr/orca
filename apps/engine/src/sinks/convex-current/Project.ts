@@ -1,5 +1,5 @@
 // * Raw archive body → product endpoint cards (Convex current-view shape).
-// * Private to delivery — other sinks must not depend on this projection.
+// * Private to convex-current — other sinks must not depend on this projection.
 // *
 // * Archive bodies are validated `{ data: [...] }` envelopes from capture. Product
 // * decode is stricter than capture identity, so individual rows may still fail;
@@ -10,7 +10,7 @@ import * as Effect from 'effect/Effect'
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
-import type { ObservationItem } from '../types.ts'
+import type { ObservationItem } from '../Sink.ts'
 
 const Envelope = Schema.Struct({
   data: Schema.Array(Schema.Unknown),
@@ -23,10 +23,10 @@ const projectItem = (item: ObservationItem): Effect.Effect<Endpoint[]> =>
     const envelope = decodeEnvelope(item.body)
     if (Option.isNone(envelope)) {
       // Unexpected: capture only archives validated envelopes.
-      yield* Effect.logWarning('delivery: body is not a data envelope').pipe(
+      yield* Effect.logWarning('convex-current: body is not a data envelope').pipe(
         Effect.annotateLogs({
           body: item.body,
-          phase: 'delivery',
+          phase: 'convex-current',
           scope: item.scopeKey,
         }),
       )
@@ -48,12 +48,12 @@ const projectItem = (item: ObservationItem): Effect.Effect<Endpoint[]> =>
     }
 
     if (rowErrors.length > 0) {
-      yield* Effect.logWarning('delivery: row product decode failures').pipe(
+      yield* Effect.logWarning('convex-current: row product decode failures').pipe(
         Effect.annotateLogs({
           dataLength: String(envelope.value.data.length),
           failedIndexes: JSON.stringify(rowErrors),
           ok: String(endpoints.length),
-          phase: 'delivery',
+          phase: 'convex-current',
           scope: item.scopeKey,
         }),
       )

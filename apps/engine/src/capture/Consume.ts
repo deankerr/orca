@@ -1,36 +1,36 @@
-// * Work queue consumer: capture only; enqueue ObservationRef on success.
+// * CaptureQueue consumer: sample one scope; enqueue ObservationRef on success.
 // *
 // * Failure policy:
 // *   decode / capture / R2 / sink enqueue — fail the message (queue retries)
-// *   entities (detected) — best-effort inside processWork
+// *   entity clocks — best-effort inside Sample
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
 import { fromBinding } from '../binding.ts'
-import { decodeWorkMessage } from './message.ts'
-import type { WorkMessage } from './message.ts'
-import type { ProcessResult } from './process.ts'
+import { decodeCaptureJob } from './Message.ts'
+import type { CaptureJob } from './Message.ts'
+import type { SampleResult } from './Sample.ts'
 
-/** Register Work consumer. Settings are capture-tuned (independent of Sinks). */
-export const consume = (
+/** Register CaptureQueue consumer. */
+export const register = (
   queue: Cloudflare.Queues.Queue,
   deps: {
-    capture: (work: WorkMessage) => Effect.Effect<ProcessResult, unknown>
-    sinksQueue: Cloudflare.Queues.WriteQueueClient
+    sampleScope: (job: CaptureJob) => Effect.Effect<SampleResult, unknown>
+    sinksQueueWriter: Cloudflare.Queues.WriteQueueClient
   },
 ) => {
-  const handle = Effect.fn(function* onWorkMessage(message: unknown) {
-    const workMessage = yield* decodeWorkMessage(message)
-    const result = yield* deps.capture(workMessage)
+  const handle = Effect.fn(function* onCaptureJob(message: unknown) {
+    const job = yield* decodeCaptureJob(message)
+    const result = yield* deps.sampleScope(job)
 
     if (!result.observed) {
       return
     }
 
     yield* fromBinding(
-      deps.sinksQueue.send({
+      deps.sinksQueueWriter.send({
         observedAt: result.observedAt,
         scopeKey: result.scopeKey,
       }),
@@ -43,12 +43,12 @@ export const consume = (
     (stream) =>
       Stream.runForEach(stream, (message) =>
         handle(message.body).pipe(
-          Effect.annotateLogs({ phase: 'work' }),
+          Effect.annotateLogs({ phase: 'capture' }),
           Effect.tapCause((cause) =>
-            Effect.logError('work: message failed').pipe(
+            Effect.logError('capture: message failed').pipe(
               Effect.annotateLogs({
                 cause: Cause.pretty(cause),
-                phase: 'work',
+                phase: 'capture',
               }),
             ),
           ),

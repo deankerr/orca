@@ -1,9 +1,9 @@
-// * Touch first/last detected clocks for scopes and endpoint ids after a successful observation.
+// * First/last seen clocks for scopes and endpoint ids after a successful observation.
 import type * as D1Client from '@effect/sql-d1/D1Client'
 import * as Effect from 'effect/Effect'
 import type { SqlError } from 'effect/unstable/sql/SqlError'
 
-export type Detected = ReturnType<typeof make>
+export type EntityClocks = ReturnType<typeof make>
 
 export type Sql = <A extends object = Record<string, unknown>>(
   strings: TemplateStringsArray,

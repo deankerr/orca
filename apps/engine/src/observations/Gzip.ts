@@ -1,4 +1,4 @@
-// * gzip / gunzip via the platform CompressionStream (Workers + Bun).
+// * gzip codec via platform CompressionStream / DecompressionStream (Workers + Bun).
 import * as Effect from 'effect/Effect'
 
 export const gzip = (text: string): Effect.Effect<Uint8Array> =>

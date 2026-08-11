@@ -1,91 +1,84 @@
 # Engine sinks
 
-**Status:** initial implementation in `apps/engine` — design still evolving. Wired and typechecked; not yet proven under real sample volume, multi-sink product load, or public-api cut-over.
+**Status:** design in force in `apps/engine`; still evolving under real sample volume and multi-sink product load. Related: `notes/public-api.md`, `apps/engine/README.md`.
 
-Post-capture product delivery is an explicit **Sink** (plugin) concept, not part of capture Work. Convex current-view is the first real sink; public API is the next (scaffold only). Related: `notes/public-api.md`, `apps/engine/README.md`.
+Post-capture product delivery is an explicit **Sink** concept, not part of capture. Capture writes immutable evidence; sinks are disposable product projections. Convex current-view is the first real sink; public API is the next (scaffold only).
 
 ---
 
-## Problem (unchanged)
+## Problem
 
-- Capture Work is correctly **one queue message per endpoint request**.
+- Capture is correctly **one queue job per scope sample** (fine grain, OpenRouter-bound).
 - That grain should **not** flow straight through to every product sink.
-- Per-message fan-out is wasteful (many small HTTP posts, thrashing materializers).
-- Tuning **one** queue for both capture and sinks couples unrelated failure domains and timing policies.
+- Per-message product fan-out is wasteful (many small HTTP posts, thrashing materializers).
+- Tuning **one** queue for both capture and product delivery couples unrelated failure domains and timing policies.
 
 ---
 
 ## Intent
 
 ```
-Work queue  (fine grain, capture-tuned)
-  → capture (Observations + Entities)     # per-scope; retry = re-query / re-archive
-  → enqueue ObservationRef                # after successful archive only
+CaptureQueue  (fine grain, capture-tuned)
+  → sample (ObservationStore + EntityClocks)
+  → enqueue ObservationRef after successful archive only
         │
-Sinks queue  (windowed batch: size | wait)
+SinksQueue  (windowed batch: size | wait)
   → bank of refs
-  → decode + load bodies once             # strict internal bus
-  → fan-out to sink plugins               # best-effort each; isolated
+  → decode + load bodies once
+  → fan-out to sink plugins (best-effort each; isolated)
 ```
 
-Capture remains the source of immutable evidence. Sinks are disposable product projections. **No plan “finished” signal** — the Sinks consumer uses a size-or-time batch window; the tail of a sample flushes on `maxWaitTime`.
+No plan “finished” signal. The sinks consumer uses a size-or-time batch window; the tail of a sample flushes when the wait elapses.
 
 ---
 
-## Why two queues (decided)
+## Why two queues
 
 A single queue cannot cleanly serve both roles:
 
-| Concern                                   | Single queue                                                                                                 | Two queues                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| Capture timing / concurrency / batch size | Shared with sink batching — retune one, disturb the other                                                    | Work knobs independent of sink window                                       |
-| Sink outage or handler bug                | Risk of **retrying capture Work** (re-hit OpenRouter, re-write R2) if delivery sits in the same ack boundary | Sink retries only **Sinks** messages; archive already durable               |
-| Alchemy/CF ack model                      | Batch success/failure is coarse; mixing phases invites whole-batch redrive of capture                        | Capture acks when archived (+ sink enqueue); sink batch has its own ack     |
-| Windowed batch for sinks                  | Forces capture into the same window (delay or fat batches of OpenRouter work)                                | Sinks queue: high `batchSize` + `maxWaitTime`; Work can stay `batchSize: 1` |
+| Concern                               | Shared queue                                                                                            | Two queues                                                             |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Timing / concurrency / batching       | Capture and sink batching share dials — retune one, disturb the other                                   | Independent policies                                                   |
+| Sink outage or handler bug            | Risk of **retrying capture** (re-hit OpenRouter, re-write R2) if delivery sits in the same ack boundary | Sinks retries only projection work; archive already durable            |
+| Ack model (CF queues are batch-level) | Mixing phases invites whole-batch redrive of capture                                                    | Capture acks when archived (+ sink enqueue); sink bank has its own ack |
+| Windowed product batching             | Forces capture into the same window (delay or fat batches of OpenRouter work)                           | Capture stays fine-grained; sinks bank on their own                    |
 
-**Yes — sink failures on a shared queue can cause endpoint queries to be repeated**, unless every sink path is carefully caught and never fails the Work handler. That is brittle. A second queue makes the invariant structural: **Work retry ⇒ capture; Sinks path ⇒ projection only.**
+**Yes — sink failures on a shared queue can cause endpoint queries to be repeated**, unless every sink path is carefully caught and never fails the capture handler. That is brittle. A second queue makes the invariant structural:
+
+> **CaptureQueue retry ⇒ re-sample. SinksQueue path ⇒ projection only.**
 
 ### Banking term
 
-**Windowed batch** (size **or** time), not debounce/throttle. Platform primitive: Cloudflare Queues `max_batch_size` + `max_batch_timeout` (Alchemy: `batchSize` + `maxWaitTime` on `consumeQueueMessages`).
+**Windowed batch** (size **or** time), not debounce/throttle. Platform primitive: Cloudflare Queues batch size + batch timeout on the consumer. Exact knobs live in code and will move under load — do not treat them as design constants here.
 
 ---
 
-## Current shape (implementation)
+## Why this bus shape
 
-Code lives under `apps/engine/src/sinks/`. Composition root: `worker.ts`.
+### 1. Capture never waits on product I/O
 
-### Modules
+After archive, capture only enqueues a small **ObservationRef**. Product HTTP, blob rebuilds, and decode failures must not sit in the capture ack path.
 
-| Path          | Role                                                      |
-| ------------- | --------------------------------------------------------- |
-| `types.ts`    | `ObservationItem`, `Sink<E>` plugin contract              |
-| `adapt.ts`    | Safe plugin runner — log `Cause`, never fail the bank     |
-| `process.ts`  | One bank: decode refs → load R2 once → concurrent plugins |
-| `consume.ts`  | Queue window + outer ack (`maxRetries: 0`)                |
-| `delivery/`   | Convex current-view plugin (project + push)               |
-| `public-api/` | Scaffold plugin (log only until package lands)            |
+### 2. Bodies stay in the archive
 
-Capture handoff: `capture/consume.ts` enqueues `{ observedAt, scopeKey }` (`ObservationRef`) after a successful observation.
+Queue payload is ref-only (queue size limits; no dual write of large JSON). The bus loads R2 once per bank; plugins receive bodies, not a store handle.
 
-### Flow (as built)
+### 3. Load once, fan out many
 
-```
-Work message { permaslug, variant, observedAt? }
-  → fetch OpenRouter → validate → put Observation (validated `{ data }` only)
-  → touch Entities (best-effort)
-  → on observed: Sinks.send(ObservationRef)
-  → ack Work
+N plugins on the same bank must not each re-fetch the same objects. The bus owns decode + load; plugins own transform + external I/O.
 
-Sinks bank (batchSize 25 | maxWaitTime 15s)
-  → decode ObservationRef[] once          # fail loud — we post these ourselves
-  → load every body from Observations     # fail loud — enqueue only after put
-  → ObservationItem[] = ref + body
-  → for each Sink (concurrent): adapt(sink).receive(items)
-  → always ack bank (maxRetries: 0)
-```
+### 4. Strict internal bus, soft plugins
 
-### Plugin contract
+| Failure                          | Behavior                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| Bad ref / batch decode           | Fail loud — **we** enqueued these; treat as defect; ack bank (do not redrive capture) |
+| Missing R2 body                  | Same — we only enqueue after put                                                      |
+| Plugin / network / product error | Isolated: log, continue; **other plugins still run**                                  |
+| Entity clocks (D1)               | Best-effort in capture; never fails the job after archive                             |
+
+No soft-skip of “good messages in a bad bank” for decode/load. Soft only at the **product** edge (e.g. one row fails product schema).
+
+### 5. Plugins implement a port, not a framework
 
 ```ts
 type ObservationItem = {
@@ -101,102 +94,51 @@ type Sink<E = unknown> = {
 ```
 
 - **Input is raw archive evidence only** — not product cards, not V2 JSON.
-- Each plugin owns its transform and external I/O (`delivery` projects to Convex cards privately).
-- Typed product errors (`Sink<DeliveryError>`) are allowed; **`adapt` erases them** so one plugin cannot fail the bank or redrive Work.
-- Wire: `make(deps): Sink` → list in `worker.ts` (`sinks: [delivery, publicApi]`).
+- Each plugin owns its transform and external I/O privately.
+- Typed product errors are allowed; the bank **erases** them so one plugin cannot fail the bank or redrive capture.
+- Composition root holds a fixed list of `make(deps): Sink` adapters. No `Context.Service` / Layer registry unless composition complexity forces it.
 
-### Bus vs plugin failure policy
-
-| Failure                             | Layer              | Behavior                                                   |
-| ----------------------------------- | ------------------ | ---------------------------------------------------------- |
-| Bad `ObservationRef` / batch decode | process (internal) | Fail bank → consume logs error → **ack** (`maxRetries: 0`) |
-| Missing R2 body                     | process (internal) | Same — treat as defect; we only enqueue after put          |
-| Plugin / network / product error    | `adapt`            | Log warning + `Cause.pretty`; **other plugins still run**  |
-| Entities (D1 clocks)                | capture process    | Best-effort; never fails Work after archive                |
-
-**Strict internal bus, soft plugins.** No soft-skip of “good messages in a bad batch” for decode/load — producer is us.
-
-### Queue knobs (starting values — unproven under load)
-
-| Queue | Settings                                                                  | Notes                  |
-| ----- | ------------------------------------------------------------------------- | ---------------------- |
-| Work  | `batchSize: 1`, `maxConcurrency: 4`, `maxRetries: 3`                      | Capture-tuned          |
-| Sinks | `batchSize: 25`, `maxWaitTime: 15s`, `maxConcurrency: 2`, `maxRetries: 0` | Bank-tuned; always ack |
-
-Load + plugin fan-out use unbounded concurrency within a bank (small N). Retune when multi-sink I/O is real.
-
-### Who banks?
+### 6. Who banks?
 
 | Layer               | Policy                                                              |
 | ------------------- | ------------------------------------------------------------------- |
-| **Sinks queue**     | Engine-level bank before fan-out                                    |
+| **Sinks queue**     | Engine-level bank before fan-out (shared across products)           |
 | **Individual sink** | May debounce further (e.g. public API blob rebuild) — product-local |
 
-No end-of-sample signal from the capture plan.
+No end-of-sample signal from the full-sample plan.
+
+### 7. Boundaries that stay firm
+
+- Packages do not import `apps/engine` — engine injects deps when a sink is extracted.
+- No shared projection store across sinks; no unified Convex/public-API schema.
+- Adding a sink does not change capture job shape or the capture path.
 
 ---
 
-## Plugins today
+## Plugins (roles, not paths)
 
-### `delivery` (Convex current-view) — real
+### Convex current-view — real
 
-- `project`: archive body → `@orca/entities` product cards (private; soft-skip rows product schema rejects).
-- `push`: HTTP POST to Convex `/current/endpoints`; `DeliveryError` tagged.
-- Empty projection = success (no push), not a sink failure.
+Projects archive bodies to product endpoint cards and upserts Convex current-view. Empty projection is success (no push), not a sink failure. Unprojectable rows may soft-skip at the product edge.
 
-### `public-api` — scaffold only
+### Public API — scaffold
 
-- Logs batch size; no transform/materialize yet.
-- Intent: move to a package that exports `make(deps): Sink` (same contract); engine only feeds raw batches. See `notes/public-api.md`.
+Receives the same raw batches; no materialize yet. Intent: eventually a package exporting `make(deps): Sink` with the same contract; engine only feeds archive batches. See `notes/public-api.md`.
 
 ---
 
-## Design intent still in force
+## Open / unproven
 
-These were decisions before the code; they still hold unless we revise them deliberately:
-
-1. **Capture never waits on product HTTP** — only enqueue a small ref after archive.
-2. **Bodies stay in Observations** — queue payload is ref-only (128 KB queue limit).
-3. **Load once per bank** — bus resolves R2; plugins receive bodies (not Store).
-4. **Plugins are not Context.Service layers** — fixed list of handler records at the composition root is enough for now.
-5. **Packages do not import `apps/engine`** — engine injects deps when public-api is extracted.
-6. **No shared projection store** across sinks; no unified Convex/V2 schema.
-
----
-
-## Unproven / open
-
-Track here as the design evolves; do not treat the current code as settled until exercised.
-
-| Area                  | Open question                                                                |
-| --------------------- | ---------------------------------------------------------------------------- |
-| End-to-end sample     | Full plan → Work → Sinks → Convex under real catalog size                    |
-| Bank knobs            | Is 25 / 15s right for delivery HTTP + (later) public-api ingest?             |
-| Concurrent plugins    | Fine at N=2 scaffold; contention when public-api does real writes?           |
-| Enqueue after archive | Sink-enqueue failure still retries Work (re-hit OR) — outbox later if needed |
-| Per-sink queues       | Only if products need independent retry/window dials                         |
-| Missing R2            | Should stay “fail loud”; confirm no race under CF load                       |
-| Product row soft-skip | Delivery skips unprojectable rows; is that the right long-term policy?       |
-| Public-api extract    | Scaffold in engine vs package boundary timing                                |
-
----
-
-## Implementation checklist
-
-| Area                                               | Status                         |
-| -------------------------------------------------- | ------------------------------ |
-| `resources/Sinks.ts` + Work enqueue after capture  | **In place**                   |
-| Shared `observations/` archive (not capture-owned) | **In place**                   |
-| `ObservationRef` queue messages (not bodies)       | **In place**                   |
-| Sinks bus: types / adapt / process / consume       | **In place**                   |
-| Strict decode + load; soft plugin adapter          | **In place**                   |
-| Concurrent plugin fan-out                          | **In place**                   |
-| Convex sink: `delivery/` (project + push + `make`) | **In place** (not load-proven) |
-| Hard error boundary (`maxRetries: 0`, always ack)  | **In place**                   |
-| Public-api sink                                    | **Scaffold only**              |
-| Public-api package + resources + real ingest       | **Next**                       |
-| Multi-sink under production traffic                | **Unproven**                   |
-| Per-sink queues                                    | **Later if needed**            |
+| Area                  | Question                                                                        |
+| --------------------- | ------------------------------------------------------------------------------- |
+| End-to-end sample     | Full sample → CaptureQueue → SinksQueue → products under real catalog size      |
+| Bank knobs            | Right window for product HTTP + (later) public-api ingest?                      |
+| Concurrent plugins    | Fine at small N; contention when public-api does real writes?                   |
+| Enqueue after archive | Sink-enqueue failure still retries capture (re-hit OR) — outbox later if needed |
+| Per-sink queues       | Only if products need independent retry/window dials                            |
+| Missing R2            | Should stay “fail loud”; confirm no race under load                             |
+| Product row soft-skip | Right long-term policy for unprojectable rows?                                  |
+| Public-api extract    | Scaffold in engine vs package boundary timing                                   |
 
 ---
 
@@ -206,17 +148,15 @@ Track here as the design evolves; do not treat the current code as settled until
 - Shared projection store across sinks
 - Unifying Convex + public API schemas
 - End-of-sample / plan-complete coupling
-- Tuning one queue for both capture and sinks
-- Effect `Context.Service` / Layer registry for plugins (unless composition complexity forces it)
+- One queue for both capture and sinks
+- Effect Service/Layer plugin registry (unless forced)
 
 ---
 
 ## Success criteria
 
-Still the bar; partial credit only until public-api and real samples pass through:
-
 - Capture concurrency and sink batch windows are independent dials.
-- Sink failures do not re-query OpenRouter or re-drive capture Work.
-- Adding a sink does not change Work message shape or capture path.
+- Sink failures do not re-query OpenRouter or redrive capture.
+- Adding a sink does not change capture job shape or path.
 - Sinks receive windowed batches of **raw** archive evidence.
 - Public API attaches as another plugin without reshaping the bus.

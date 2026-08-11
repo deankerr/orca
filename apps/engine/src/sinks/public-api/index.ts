@@ -1,9 +1,8 @@
-// * Public API projection sink (scaffold).
+// * Public API projection sink adapter (scaffold).
 // * Receives raw observation batches; no-op until transform + blob materialize land.
-// * Near-term: move to a package that exports make(deps): Sink — same contract.
 import * as Effect from 'effect/Effect'
 
-import type { Sink } from '../types.ts'
+import type { Sink } from '../Sink.ts'
 
 /** Scaffold: log batch size. Replace with ingest + debounced V2 materialize. */
 export const make = (): Sink => ({

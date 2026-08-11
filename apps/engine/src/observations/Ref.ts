@@ -1,5 +1,5 @@
 // * Reference to one archived observation (R2 object identity, not the body).
-// * Shared by capture enqueue and the Sinks bus — bodies stay in Observations.
+// * Shared by capture enqueue and the sinks bus — bodies stay in Observations.
 import * as Schema from 'effect/Schema'
 
 export const ObservationRef = Schema.Struct({

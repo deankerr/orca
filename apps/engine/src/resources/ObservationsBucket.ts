@@ -3,4 +3,4 @@
 // * Catalogs:  catalogs/{observedAt}.json.gz
 import * as Cloudflare from 'alchemy/Cloudflare'
 
-export const Observations = Cloudflare.R2.Bucket('Observations')
+export const ObservationsBucket = Cloudflare.R2.Bucket('ObservationsBucket')

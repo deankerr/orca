@@ -1,15 +1,15 @@
 // * Read/write raw capture evidence on the Observations bucket.
-// * Shared archive service: capture writes; sinks (and others) read by ref.
+// * Shared archive: capture writes; sinks (and others) read by ref.
 import type * as Cloudflare from 'alchemy/Cloudflare'
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 
 import { fromBinding } from '../binding.ts'
-import { gunzip, gzip } from './compress.ts'
-import * as Key from './key.ts'
-import type { ObservationRef } from './ref.ts'
+import { gunzip, gzip } from './Gzip.ts'
+import * as Key from './Key.ts'
+import type { ObservationRef } from './Ref.ts'
 
-export type Store = ReturnType<typeof make>
+export type ObservationStore = ReturnType<typeof make>
 
 class ObservationNotFound extends Data.TaggedError('ObservationNotFound')<{
   readonly key: string

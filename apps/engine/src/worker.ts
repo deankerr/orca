@@ -1,7 +1,7 @@
 // * Composition root: bind resources, wire capture + sinks, ops HTTP.
 // *
-// *   cron / POST /capture → plan → Work queue
-// *   Work  → capture (Observations + Entities) → enqueue ObservationRef
+// *   cron / POST /capture → full sample → CaptureQueue
+// *   Capture → Observations + EntityClocks → enqueue ObservationRef
 // *   Sinks → windowed batch → load R2 → fan-out product sinks
 // *   fetch → status / trigger full sample
 import * as Cloudflare from 'alchemy/Cloudflare'
@@ -14,18 +14,16 @@ import * as HttpServerRequest from 'effect/unstable/http/HttpServerRequest'
 import * as HttpServerResponse from 'effect/unstable/http/HttpServerResponse'
 
 import { fromBinding } from './binding.ts'
-import * as Capture from './capture/consume.ts'
-import * as Detected from './capture/detected.ts'
-import * as Plan from './capture/plan.ts'
-import * as Process from './capture/process.ts'
-import * as ObservationsStore from './observations/store.ts'
-import { Entities } from './resources/Entities.ts'
-import { Observations } from './resources/Observations.ts'
-import { Sinks } from './resources/Sinks.ts'
-import { Work } from './resources/Work.ts'
-import * as SinksQueue from './sinks/consume.ts'
-import * as Delivery from './sinks/delivery/sink.ts'
-import * as PublicApi from './sinks/public-api/sink.ts'
+import * as Capture from './capture/index.ts'
+import * as EntityClocks from './entities/index.ts'
+import * as ObservationStore from './observations/index.ts'
+import { CaptureQueue } from './resources/CaptureQueue.ts'
+import { EntitiesDB } from './resources/EntitiesDB.ts'
+import { ObservationsBucket } from './resources/ObservationsBucket.ts'
+import { SinksQueue } from './resources/SinksQueue.ts'
+import * as ConvexCurrent from './sinks/convex-current/index.ts'
+import * as Sinks from './sinks/index.ts'
+import * as PublicApi from './sinks/public-api/index.ts'
 
 export default class Engine extends Cloudflare.Worker<Engine>()(
   'Worker',
@@ -34,55 +32,71 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     observability: { enabled: true },
   },
   Effect.gen(function* init() {
-    // * Discovered at deploy; bound onto the Worker for runtime. Must be yielded in init.
+    // 1. Config — discovered at deploy; bound onto the Worker for runtime.
     const convexSiteUrl = yield* Config.string('CONVEX_SITE_URL')
     const engineHttpApiKey = yield* Config.redacted('ENGINE_HTTP_API_KEY')
 
-    const observations = yield* Observations
-    const work = yield* Work
-    const sinks = yield* Sinks
+    // 2–3. Resources + clients
+    const observationsBucket = yield* ObservationsBucket
+    const observationStore = ObservationStore.make(
+      yield* Cloudflare.R2.ReadWriteBucket(observationsBucket),
+    )
 
-    const d1 = yield* Cloudflare.D1.QueryDatabase(Entities)
-    const sql = yield* SQL.D1(d1)
-    const detected = Detected.make(sql)
-    const store = ObservationsStore.make(yield* Cloudflare.R2.ReadWriteBucket(observations))
-    const workQueue = yield* Cloudflare.Queues.WriteQueue(work)
-    const sinksQueue = yield* Cloudflare.Queues.WriteQueue(sinks)
+    const entitiesDb = yield* EntitiesDB
+    const entityClocks = EntityClocks.make(
+      yield* SQL.D1(yield* Cloudflare.D1.QueryDatabase(entitiesDb)),
+    )
 
-    const startFullSample = Plan.startFullSample({
-      sendBatch: (messages) => fromBinding(workQueue.sendBatch(messages)),
-      store,
+    const captureQueue = yield* CaptureQueue
+    const captureQueueWriter = yield* Cloudflare.Queues.WriteQueue(captureQueue)
+
+    const sinksQueue = yield* SinksQueue
+    const sinksQueueWriter = yield* Cloudflare.Queues.WriteQueue(sinksQueue)
+
+    // 4. Deep pipelines
+    const startFullSample = Capture.startFullSample({
+      observationStore,
+      sendBatch: (messages) => fromBinding(captureQueueWriter.sendBatch(messages)),
     })
-    const capture = Process.processWork({ detected, store })
 
-    const delivery = Delivery.make({
-      apiKey: engineHttpApiKey,
-      siteUrl: convexSiteUrl,
-    })
-    const publicApi = PublicApi.make()
-
-    // * Hourly full sample at :30.
     yield* Cloudflare.Workers.cron('30 * * * *', () =>
       startFullSample.pipe(
-        Effect.annotateLogs({ phase: 'plan' }),
+        Effect.annotateLogs({ phase: 'full-sample' }),
         Effect.tapCause((cause) =>
-          Effect.logError('plan: full sample failed').pipe(
-            Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'plan' }),
+          Effect.logError('full-sample: failed').pipe(
+            Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'full-sample' }),
           ),
         ),
       ),
     )
 
-    yield* Capture.consume(work, { capture, sinksQueue })
-    yield* SinksQueue.consume(sinks, { sinks: [delivery, publicApi], store })
+    yield* Capture.wire({
+      entityClocks,
+      observationStore,
+      queue: captureQueue,
+      sinksQueueWriter,
+    })
 
+    yield* Sinks.wire({
+      observationStore,
+      queue: sinksQueue,
+      sinks: [
+        ConvexCurrent.make({
+          apiKey: engineHttpApiKey,
+          siteUrl: convexSiteUrl,
+        }),
+        PublicApi.make(),
+      ],
+    })
+
+    // 5. Ops HTTP
     return {
       fetch: Effect.gen(function* fetch() {
         const request = yield* HttpServerRequest.HttpServerRequest
         const path = new URL(request.url, 'http://worker').pathname
 
         if (request.method === 'GET' && path === '/') {
-          const counts = yield* detected.status
+          const counts = yield* entityClocks.status
           return yield* HttpServerResponse.json({
             endpoints: counts.endpoints,
             scopes: counts.scopes,
