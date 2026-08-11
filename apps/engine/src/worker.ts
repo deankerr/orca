@@ -1,12 +1,10 @@
-// * Capture worker: cron + queue + tiny HTTP surface for ops.
+// * Capture worker: cron + queue + HTTP ops surface.
 // *
 // *   cron  → full sample (catalog → Work queue)
 // *   queue → capture (Observations + Entities) → deliver current view (Convex)
 // *   fetch → status / trigger full sample
 // *
-// * Capture does not know about delivery; this file wires the hand-off.
-// * Failure policy: retry decode/capture/R2 via the queue; best-effort entities + delivery
-// * (log richly, never redrive archive). CONVEX_SITE_URL + ENGINE_HTTP_API_KEY from Config.
+// * Failure policy: retry decode/capture/R2 via the queue; best-effort entities + delivery.
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as SQL from 'alchemy/SQL/D1'
 import * as Cause from 'effect/Cause'
@@ -69,7 +67,7 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
         return
       }
 
-      // * Delivery is best-effort: archive already succeeded; do not redelivery-loop R2.
+      // * Best-effort: archive already written.
       yield* deliver(result.body).pipe(
         Effect.annotateLogs({ phase: 'delivery', scope: result.scopeKey }),
         Effect.tapError((error) =>
@@ -86,8 +84,8 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
       )
     })
 
-    // * Daily full sample. One-off scopes can be enqueued any time without a plan file.
-    yield* Cloudflare.Workers.cron('0 0 * * *', () =>
+    // * Hourly full sample at :30.
+    yield* Cloudflare.Workers.cron('30 * * * *', () =>
       startFullSample.pipe(Effect.tapCause(logCause('cron: full sample failed'))),
     )
 

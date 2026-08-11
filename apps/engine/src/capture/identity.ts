@@ -1,9 +1,8 @@
-// * Minimal identity extraction from an endpoints success body.
-// * Only needs string `id` on rows in `data` — no product field parsing, no stats stripping.
+// * Extract endpoint ids from an endpoints success body.
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
-// * Envelope only — rows are validated one at a time so a single bad element does not drop the scope.
+// * Envelope only; rows validated one at a time so one bad element drops just that row.
 const Envelope = Schema.Struct({
   data: Schema.Array(Schema.Unknown),
 })

@@ -1,4 +1,4 @@
-// * Write raw capture bytes to Observations. No listings, no archive browser — put only.
+// * Write raw capture bytes to Observations.
 import type * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 
@@ -25,7 +25,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
     })
 
   return {
-    /** One endpoints observation. Key = {observedAt}/{scopeKey}.json.gz */
+    /** One endpoints observation. Key = endpoints/{observedAt}/{scopeKey}.json.gz */
     putObservation: Effect.fn(function* putObservation(args: {
       observedAt: string
       scopeKey: string
@@ -43,7 +43,7 @@ export const make = (bucket: Cloudflare.R2.ReadWriteBucketClient) => {
       })
     }),
 
-    /** Catalog snapshot under the same temporal prefix. Optional inventory. */
+    /** Catalog inventory. Key = catalogs/{observedAt}.json.gz */
     putCatalog: Effect.fn(function* putCatalog(args: { observedAt: string; body: string }) {
       yield* putGzip(Key.catalogKey(args.observedAt), args.body, {
         kind: 'catalog',

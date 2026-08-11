@@ -1,9 +1,6 @@
 // * Product current-view delivery: observation body → Convex.
-// * Outside capture — capture does not import this module.
-// *
-// * Always upserts on a usable observation (no change detection this cut).
+// * Always upserts on a usable observation.
 // * Target URL + shared secret come from Worker init (effect/Config → bindings).
-// * Product cards come from @orca/entities as-is — no schema massaging here.
 import { decodeEndpoint } from '@orca/entities/endpoint.ts'
 import type { Endpoint } from '@orca/entities/endpoint.ts'
 import * as Data from 'effect/Data'
@@ -136,10 +133,7 @@ export const pushEndpoints = (
     )
   })
 
-/**
- * Project then push. No-op when nothing projects.
- * Failures stay typed — orchestration logs and swallows so capture is not redriven.
- */
+/** Project then push. Returns null when nothing projects. */
 export const deliver =
   (target: DeliveryTarget) =>
   (body: string): Effect.Effect<PushResult | null, DeliveryError> =>

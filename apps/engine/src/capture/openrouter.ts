@@ -1,5 +1,5 @@
-// * Minimal OpenRouter client for capture. Settled statuses return; only transients retry.
-// * Bodies are stored as received — no header injection, no field stripping.
+// * OpenRouter client for capture. Settled statuses return; only transients retry.
+// * Response bodies are stored as received.
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
@@ -9,7 +9,7 @@ const BASE_URL = 'https://openrouter.ai'
 const CATALOG_PATH = '/api/frontend/v1/catalog/models'
 const ENDPOINTS_PATH = '/api/frontend/v1/stats/endpoint'
 
-// * Only what work planning needs. Full document stays in the stored body.
+// * Fields needed for work planning; the full JSON body is stored separately.
 const CatalogModel = Schema.Struct({
   endpoint: Schema.NullOr(Schema.Struct({ variant: Schema.String })),
   permaslug: Schema.String,
@@ -22,7 +22,7 @@ const CatalogResponse = Schema.Struct({
 
 const decodeCatalog = Schema.decodeUnknownEffect(Schema.fromJsonString(CatalogResponse))
 
-// * Gate only: data|error present. Do not re-encode — would strip unknown keys if used for storage.
+// * Envelope gate: data|error present. Raw body is stored separately.
 const Envelope = Schema.Union([
   Schema.Struct({ data: Schema.Unknown }),
   Schema.Struct({ error: Schema.Unknown }),
@@ -76,7 +76,7 @@ export type EndpointsCapture = {
   readonly body: string
 }
 
-/** Catalog: non-200 after retries is a defect (nothing stored). */
+/** Catalog: non-200 after retries is a defect. */
 export const catalog = Effect.fn(function* catalog() {
   const settled = yield* get(CATALOG_PATH)
   if (settled.status !== 200) {
@@ -87,10 +87,7 @@ export const catalog = Effect.fn(function* catalog() {
   return { body: settled.body, models: data } satisfies CatalogCapture
 })
 
-/**
- * One endpoints observation at whatever status it settled on (404 included).
- * Body is stored as received after a light envelope gate.
- */
+/** One endpoints observation at the settled status, body as received after envelope gate. */
 export const endpoints = Effect.fn(function* endpoints(args: {
   permaslug: string
   variant: string

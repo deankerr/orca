@@ -1,5 +1,4 @@
 // * Touch first/last detected clocks for scopes and endpoint ids after a successful observation.
-// * No availability product policy lives here.
 import type * as D1Client from '@effect/sql-d1/D1Client'
 import * as Effect from 'effect/Effect'
 import type { SqlError } from 'effect/unstable/sql/SqlError'
@@ -36,10 +35,7 @@ export const make = (sql: Sql | D1Client.D1Client) => {
     `)
   })
 
-  /**
-   * Record that this scope and these endpoint ids were successfully observed at `at`.
-   * Call only after a usable 200 observation — not for transport/404 failures.
-   */
+  /** Record that this scope and these endpoint ids were successfully observed at `at`. */
   const record = Effect.fn(function* record(args: {
     scopeKey: string
     endpointIds: ReadonlyArray<string>

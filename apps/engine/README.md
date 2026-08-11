@@ -9,7 +9,7 @@ cron / POST /capture
   → best-effort Convex upsert
 ```
 
-Capture writes immutable evidence. Delivery is disposable and never redrives the archive.
+Capture writes immutable evidence. Delivery is best-effort after the archive write.
 
 ## Layout
 
@@ -21,22 +21,22 @@ Capture writes immutable evidence. Delivery is disposable and never redrives the
 | `src/resources/`       | Alchemy bindings (R2, queue, D1)    |
 | `migrations/entities/` | D1 schema                           |
 
-Product decode lives in `@orca/entities`, not here.
+Product decode lives in `@orca/entities`.
 
 ## Storage
 
-**Observations (R2)** — temporal-major, gzip JSON:
+**Observations (R2)** — kind-prefixed, temporal-major, gzip JSON:
 
 ```
-{observedAt}/{scopeKey}.json.gz   # endpoints body as received
-{observedAt}/catalog.json.gz      # inventory for that plan moment
+endpoints/{observedAt}/{scopeKey}.json.gz   # endpoints body as received
+catalogs/{observedAt}.json.gz               # catalog for that sample
 ```
 
-`observedAt` is an instant (`2026-08-11T12-34-56Z`). `scopeKey` is `author.model.variant` (`/` → `.`).
+`observedAt` is an instant (`2026-08-11T12-34-56Z`). `scopeKey` is `author.model.variant` (`/` → `.`). Full-sample Work carries a shared `observedAt` so endpoints cluster under the same time; otherwise it is minted at process time.
 
-**Entities (D1)** — first/last detected clocks for scopes and endpoint ids. Not a product cache.
+**Entities (D1)** — first/last detected clocks for scopes and endpoint ids.
 
-**Work (queue)** — `{ permaslug, variant }` per message.
+**Work (queue)** — `{ permaslug, variant, observedAt? }` per message.
 
 ## Ops HTTP
 

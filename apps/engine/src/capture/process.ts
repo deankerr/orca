@@ -1,6 +1,4 @@
 // * One Work message: fetch → store observation → touch entity clocks on success.
-// * Returns an outcome so callers outside capture can deliver without capture knowing them.
-// * Entity DB failures never redelivery-loop a good observation.
 import * as Cause from 'effect/Cause'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
@@ -16,12 +14,9 @@ import type { WorkMessage } from './work-message.ts'
 export type ProcessResult = {
   readonly status: number
   readonly scopeKey: string
-  /**
-   * True when status is 200 and at least one endpoint id was parsed.
-   * `body` is then safe to hand to product delivery.
-   */
+  /** True when status is 200 and at least one endpoint id was parsed. */
   readonly observed: boolean
-  /** Upstream body; only meaningful for product delivery when `observed`. */
+  /** Upstream body; usable for delivery when `observed`. */
   readonly body: string
 }
 
@@ -29,7 +24,7 @@ export const processWork = (deps: { store: Store; detected: Detected }) =>
   Effect.fn(function* processWork(work: WorkMessage) {
     const captured = yield* OpenRouter.endpoints(work)
     const now = yield* DateTime.now
-    const observedAt = Key.observedAtKey(now)
+    const observedAt = work.observedAt ?? Key.observedAtKey(now)
     const scopeKey = Key.scopeKey(work.permaslug, work.variant)
 
     yield* deps.store.putObservation({

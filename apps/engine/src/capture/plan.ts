@@ -1,5 +1,4 @@
-// * Full sample: catalog → optional catalog object → enqueue every crawlable scope.
-// * Does not fetch endpoints. No plan file is required for later one-off samples.
+// * Full sample: catalog → store catalog → enqueue every crawlable scope with shared observedAt.
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 
@@ -33,10 +32,9 @@ export const startFullSample = (deps: {
     const observedAt = Key.observedAtKey(yield* DateTime.now)
     const { body, models } = yield* OpenRouter.catalog()
 
-    // * Inventory snapshot for this plan moment — not a grid, not required to process Work.
     yield* deps.store.putCatalog({ body, observedAt })
 
-    const messages = workList(models)
+    const messages = workList(models, observedAt)
     for (const chunk of chunks(messages, QUEUE_BATCH_SIZE)) {
       yield* deps.sendBatch(chunk.map((body) => ({ body })))
     }
