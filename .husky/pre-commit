@@ -1,5 +1,0 @@
-bun test --path-ignore-patterns=repos
-
-# ultracite
-#!/bin/sh
-bun x lint-staged

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./node_modules/lefthook/schema.json
+
+pre-commit:
+  jobs:
+    - name: ultracite
+      glob:
+        - '*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}'
+      exclude:
+        - 'repos/**'
+      run: bun x ultracite fix --disable-nested-config --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+
+    - name: test
+      run: bun test --path-ignore-patterns=repos

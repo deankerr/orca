@@ -13,6 +13,10 @@ export default defineConfig({
     '**/worker-configuration.d.ts',
     'repos/**',
   ],
+  options: {
+    typeAware: true,
+    typeCheck: true,
+  },
   overrides: [
     {
       // convex
@@ -45,6 +49,7 @@ export default defineConfig({
         'typescript/no-unsafe-type-assertion': 'off',
         'typescript/prefer-nullish-coalescing': 'off',
         'typescript/strict-boolean-expressions': 'off',
+        'unicorn/no-array-sort': 'off',
       },
     },
   ],
