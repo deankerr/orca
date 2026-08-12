@@ -1,4 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@orca/config/tsconfig.base.json",
   "include": ["src/**/*.ts", "alchemy.run.ts"]
 }

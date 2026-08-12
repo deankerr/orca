@@ -6,13 +6,15 @@
     "./*": "./src/*"
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "effect": "catalog:",
     "json-diff-ts": "catalog:"
   },
   "devDependencies": {
+    "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

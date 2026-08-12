@@ -8,12 +8,14 @@
     "dev": "bun run build && wrangler dev",
     "review": "bun run src/review.ts",
     "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "types": "wrangler types"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260702.1",
     "@lobehub/icons-static-avatar": "1.13.0",
     "@lobehub/icons-static-webp": "1.93.0",
+    "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "sharp": "^0.35.3",

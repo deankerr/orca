@@ -18,9 +18,11 @@
     "prepare": "lefthook install --reset-hooks-path",
     "release": "turbo run release --filter=web",
     "start": "turbo run start --filter=web",
-    "test": "bun test --path-ignore-patterns=repos"
+    "test": "bun test --path-ignore-patterns=repos",
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "knip": "6.32.1",

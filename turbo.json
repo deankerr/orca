@@ -15,6 +15,9 @@
       "cache": false,
       "persistent": true
     },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
     "archive-sync": {
       "cache": false
     },

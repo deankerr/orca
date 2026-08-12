@@ -6,7 +6,8 @@
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy",
     "dev": "alchemy dev",
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@effect/sql-d1": "catalog:",
@@ -15,6 +16,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

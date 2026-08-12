@@ -1,0 +1,8 @@
+{
+  "name": "@orca/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  }
+}

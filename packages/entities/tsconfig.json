@@ -1,4 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "extends": "@orca/config/tsconfig.base.json",
+  "include": ["src/**/*.ts"]
 }
