@@ -10,6 +10,8 @@
 // * `changes.length > 0` as the boolean.
 // *
 
+import * as DateTime from 'effect/DateTime'
+import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import * as SchemaTransformation from 'effect/SchemaTransformation'
 import { diff } from 'json-diff-ts'
@@ -22,8 +24,12 @@ const MillisFromIso = Schema.String.pipe(
   Schema.decodeTo(
     Schema.Finite,
     SchemaTransformation.transform({
-      decode: (s: string) => Date.parse(s),
-      encode: (n: number) => new Date(n).toISOString(),
+      decode: (s: string) =>
+        Option.match(DateTime.make(s), {
+          onNone: () => Number.NaN,
+          onSome: DateTime.toEpochMillis,
+        }),
+      encode: (n: number) => DateTime.formatIso(DateTime.makeUnsafe(n)),
     }),
   ),
 )

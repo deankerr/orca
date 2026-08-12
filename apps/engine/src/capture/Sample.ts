@@ -3,12 +3,18 @@
 import * as Cause from 'effect/Cause'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 
 import type { EntityClocks } from '../entities/index.ts'
 import * as Observations from '../observations/index.ts'
 import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
 import * as OpenRouter from './OpenRouter.ts'
+
+/** Archive body: validated success envelope as a JSON string. */
+const encodeDataEnvelope = Schema.encodeSync(
+  Schema.fromJsonString(Schema.Struct({ data: Schema.Array(Schema.Unknown) })),
+)
 
 /** Result of one capture attempt after (optional) archive write. */
 export type SampleResult = {
@@ -42,7 +48,7 @@ export const make = (deps: { observationStore: ObservationStore; entityClocks: E
     }
 
     // Persist only the validated success envelope.
-    const body = JSON.stringify({ data: captured.data })
+    const body = encodeDataEnvelope({ data: captured.data })
     yield* deps.observationStore.putObservation({
       body,
       observedAt,

@@ -1,10 +1,11 @@
+import { recommended } from '@effect/tsgo/oxlint-presets'
 import { defineConfig } from 'oxlint'
 import core from 'ultracite/oxlint/core'
 import next from 'ultracite/oxlint/next'
 import react from 'ultracite/oxlint/react'
 
 export default defineConfig({
-  extends: [core, react, next],
+  extends: [core, react, next, recommended],
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
     '.agents/skills',
@@ -19,16 +20,8 @@ export default defineConfig({
   },
   overrides: [
     {
-      // convex
-      files: ['**/convex/**/*.{ts,tsx}'],
-      rules: {
-        // required in index queries
-        'unicorn/no-useless-undefined': 'off',
-      },
-    },
-    {
       // legacy web/backend code
-      files: ['apps/web/**/*.{ts,tsx,js,jsx}', 'packages/backend/**/*.{ts,tsx,js,jsx}'],
+      files: ['apps/web/**/*.{ts,tsx}', 'packages/backend/**/*.{ts,tsx}'],
       rules: {
         complexity: 'off',
         'no-nested-ternary': 'off',
@@ -50,6 +43,25 @@ export default defineConfig({
         'typescript/prefer-nullish-coalescing': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'unicorn/no-array-sort': 'off',
+      },
+    },
+    {
+      // non-effectful packages
+      files: [
+        'apps/web/**/*.{ts,tsx}',
+        'apps/logos/**/*.{ts,tsx}',
+        'packages/backend/**/*.{ts,tsx}',
+      ],
+      rules: {
+        'effecttsgo/async-function': 'off',
+        'effecttsgo/global-console': 'off',
+        'effecttsgo/global-date': 'off',
+        'effecttsgo/global-fetch': 'off',
+        'effecttsgo/global-random': 'off',
+        'effecttsgo/global-timers': 'off',
+        'effecttsgo/new-promise': 'off',
+        'effecttsgo/node-builtin-import': 'off',
+        'effecttsgo/process-env': 'off',
       },
     },
   ],
@@ -78,6 +90,7 @@ export default defineConfig({
     'oxc/no-barrel-file': 'off',
     'promise/prefer-await-to-callbacks': 'off',
     'promise/prefer-await-to-then': 'off', // Effect.catch / combinators
+    'require-yield': 'off',
     'unicorn/filename-case': 'off',
     'unicorn/no-array-for-each': 'off',
     'unicorn/no-array-method-this-argument': 'off', // Effect.map(fa, f)

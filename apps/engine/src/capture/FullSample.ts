@@ -3,11 +3,17 @@
 // * Crawl set: serving endpoint present, skip `~` aliases.
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 
 import * as Observations from '../observations/index.ts'
 import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
 import * as OpenRouter from './OpenRouter.ts'
+
+/** Archive body: validated success envelope as a JSON string. */
+const encodeDataEnvelope = Schema.encodeSync(
+  Schema.fromJsonString(Schema.Struct({ data: Schema.Array(Schema.Unknown) })),
+)
 
 const QUEUE_BATCH_SIZE = 100
 
@@ -33,7 +39,7 @@ export const start = (deps: {
 
     // Persist only the validated success envelope.
     yield* deps.observationStore.putCatalog({
-      body: JSON.stringify({ data: catalog.data }),
+      body: encodeDataEnvelope({ data: catalog.data }),
       observedAt,
     })
 

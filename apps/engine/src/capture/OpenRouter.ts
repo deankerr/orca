@@ -8,6 +8,9 @@ import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
 import * as Schema from 'effect/Schema'
+import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient'
+import * as HttpClient from 'effect/unstable/http/HttpClient'
+import * as HttpClientRequest from 'effect/unstable/http/HttpClientRequest'
 
 const BASE_URL = 'https://openrouter.ai'
 const CATALOG_PATH = '/api/frontend/v1/catalog/models'
@@ -59,13 +62,19 @@ type Settled = {
   readonly body: string
 }
 
-/** GET a fully formed URL. Retries 429/5xx briefly, then settles. */
-const get = Effect.fn(function* get(url: URL) {
+/** GET a path (absolute URL or path under BASE_URL). Retries 429/5xx briefly, then settles. */
+const get = Effect.fn(function* get(
+  url: string,
+  options?: { readonly urlParams?: Record<string, string> },
+) {
+  const client = (yield* HttpClient.HttpClient).pipe(
+    HttpClient.mapRequest(HttpClientRequest.acceptJson),
+  )
+
   const once = Effect.gen(function* once() {
-    const settled = yield* Effect.tryPromise(async (): Promise<Settled> => {
-      const response = await fetch(url, { headers: { accept: 'application/json' } })
-      return { body: await response.text(), status: response.status }
-    })
+    const response = yield* client.get(url, { urlParams: options?.urlParams })
+    const body = yield* response.text
+    const settled = { body, status: response.status } satisfies Settled
     return isTransient(settled.status)
       ? yield* new Transient({ body: settled.body, status: settled.status })
       : settled
@@ -79,6 +88,9 @@ const get = Effect.fn(function* get(url: URL) {
   )
 })
 
+const withHttp = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  effect.pipe(Effect.provide(FetchHttpClient.layer))
+
 // * ── Routes ─────────────────────────────────────────────────────────────────
 
 /**
@@ -86,7 +98,7 @@ const get = Effect.fn(function* get(url: URL) {
  * Non-200 → status + raw body (no data parse). 200 → validated `data` (or die).
  */
 export const fetchCatalog = Effect.fn(function* fetchCatalog() {
-  const settled = yield* get(new URL(CATALOG_PATH, BASE_URL))
+  const settled = yield* withHttp(get(`${BASE_URL}${CATALOG_PATH}`))
   if (settled.status !== 200) {
     return {
       _tag: 'HttpError' as const,
@@ -106,11 +118,11 @@ export const fetchEndpoints = Effect.fn(function* fetchEndpoints(args: {
   permaslug: string
   variant: string
 }) {
-  const url = new URL(ENDPOINTS_PATH, BASE_URL)
-  url.searchParams.set('permaslug', args.permaslug)
-  url.searchParams.set('variant', args.variant)
-
-  const settled = yield* get(url)
+  const settled = yield* withHttp(
+    get(`${BASE_URL}${ENDPOINTS_PATH}`, {
+      urlParams: { permaslug: args.permaslug, variant: args.variant },
+    }),
+  )
   if (settled.status !== 200) {
     return {
       _tag: 'HttpError' as const,

@@ -2,8 +2,12 @@
 import type { Endpoint } from '@orca/entities/endpoint.ts'
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
-import * as Redacted from 'effect/Redacted'
+import type * as Redacted from 'effect/Redacted'
 import * as Schema from 'effect/Schema'
+import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient'
+import * as HttpClient from 'effect/unstable/http/HttpClient'
+import * as HttpClientRequest from 'effect/unstable/http/HttpClientRequest'
+import * as HttpClientResponse from 'effect/unstable/http/HttpClientResponse'
 
 export type ConvexCurrentTarget = {
   /** Convex HTTP site origin, e.g. https://….convex.site (no trailing path). */
@@ -18,14 +22,10 @@ export class ConvexCurrentError extends Data.TaggedError('ConvexCurrentError')<{
   readonly body?: string
 }> {}
 
-const decodePushResult = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(
-    Schema.Struct({
-      insert: Schema.Finite,
-      update: Schema.Finite,
-    }),
-  ),
-)
+const PushResult = Schema.Struct({
+  insert: Schema.Finite,
+  update: Schema.Finite,
+})
 
 const endpointsUrl = (siteUrl: string) => `${siteUrl.replace(/\/$/, '')}/current/endpoints`
 
@@ -35,42 +35,46 @@ export const pushEndpoints = (
   endpoints: ReadonlyArray<Endpoint>,
 ): Effect.Effect<{ insert: number; update: number }, ConvexCurrentError> =>
   Effect.gen(function* pushEndpoints() {
-    const response = yield* Effect.tryPromise({
-      catch: (cause) => new ConvexCurrentError({ detail: String(cause), reason: 'request' }),
-      try: async () =>
-        await fetch(endpointsUrl(target.siteUrl), {
-          body: JSON.stringify({ endpoints }),
-          headers: {
-            authorization: `Bearer ${Redacted.value(target.apiKey)}`,
-            'content-type': 'application/json',
-          },
-          method: 'POST',
-        }),
-    })
+    const client = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.mapRequest((request) =>
+        request.pipe(HttpClientRequest.bearerToken(target.apiKey), HttpClientRequest.acceptJson),
+      ),
+    )
 
-    const text = yield* Effect.tryPromise({
-      catch: (cause) =>
-        new ConvexCurrentError({ detail: `body read: ${String(cause)}`, reason: 'request' }),
-      try: async () => await response.text(),
-    })
+    const response = yield* HttpClientRequest.post(endpointsUrl(target.siteUrl)).pipe(
+      HttpClientRequest.bodyJson({ endpoints }),
+      Effect.flatMap(client.execute),
+      Effect.mapError(
+        (error) => new ConvexCurrentError({ detail: String(error), reason: 'request' }),
+      ),
+    )
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
+      const body = yield* response.text.pipe(
+        Effect.mapError(
+          (error) =>
+            new ConvexCurrentError({
+              detail: `body read: ${String(error)}`,
+              reason: 'request',
+              status: response.status,
+            }),
+        ),
+      )
       return yield* new ConvexCurrentError({
-        body: text,
+        body,
         detail: `convex ${response.status}`,
         reason: 'http',
         status: response.status,
       })
     }
 
-    return yield* decodePushResult(text).pipe(
+    return yield* HttpClientResponse.schemaBodyJson(PushResult)(response).pipe(
       Effect.mapError(
         (error) =>
           new ConvexCurrentError({
-            body: text,
             detail: String(error),
             reason: 'response',
           }),
       ),
     )
-  })
+  }).pipe(Effect.provide(FetchHttpClient.layer))

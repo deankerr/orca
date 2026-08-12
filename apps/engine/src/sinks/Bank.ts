@@ -10,8 +10,15 @@ import type { ObservationItem, Sink } from './Sink.ts'
 
 const decodeRefs = Schema.decodeUnknownEffect(Schema.Array(ObservationRef))
 
-/** Run one plugin; log failures; never fail the Effect (or the bank). */
+/**
+ * Run one plugin; log failures; never fail the Effect (or the bank).
+ *
+ * Sink defaults to `E = unknown`: plugins may use tagged product errors
+ * (e.g. ConvexCurrentError) or not — the bank only logs Cause and erases so
+ * one plugin cannot fail the batch or redrive CaptureQueue.
+ */
 const receiveIsolated = (sink: Sink) => (batch: ReadonlyArray<ObservationItem>) =>
+  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- Sink port; erased by ignoreCause below
   sink.receive(batch).pipe(
     Effect.annotateLogs({
       observations: String(batch.length),

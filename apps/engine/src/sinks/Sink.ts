@@ -14,8 +14,9 @@ export type ObservationItem = {
  *
  * - `name` — stable id for logs / fan-out isolation
  * - `receive` — product work; may fail with any typed error (`E`).
- *   The bank isolates failures so one plugin never fails the batch
- *   or redrives CaptureQueue.
+ *   Default `E = unknown` is intentional port erasure: the bank logs Cause and
+ *   `ignoreCause`s so one plugin never fails the batch or redrives CaptureQueue.
+ *   Adapters should still use tagged errors when they can (e.g. ConvexCurrentError).
  *
  * Implement with `make(deps): Sink` in a product module; pass into Sinks.wire.
  */

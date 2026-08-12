@@ -21,6 +21,7 @@ const Envelope = Schema.Struct({
   data: Schema.Array(Schema.Unknown),
 })
 const decodeEnvelope = Schema.decodeUnknownOption(Schema.fromJsonString(Envelope))
+const encodeIndexesJson = Schema.encodeSync(Schema.fromJsonString(Schema.Array(Schema.Finite)))
 
 /** Project one observation body to product cards. Empty when unusable. */
 const projectItem = (item: ObservationItem): Effect.Effect<Endpoint[]> =>
@@ -56,7 +57,7 @@ const projectItem = (item: ObservationItem): Effect.Effect<Endpoint[]> =>
       yield* Effect.logWarning('convex-current: row product decode failures').pipe(
         Effect.annotateLogs({
           dataLength: String(envelope.value.data.length),
-          failedIndexes: JSON.stringify(rowErrors),
+          failedIndexes: encodeIndexesJson(rowErrors),
           ok: String(endpoints.length),
           phase: 'convex-current',
           scope: item.scopeKey,
