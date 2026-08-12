@@ -1,11 +1,11 @@
-import { isMaterialPricingUpdate } from '../../shared/formatters'
-import { baseProviderSlug } from '../../shared/utils'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { QueryCtx } from '../_generated/server'
 import type { EndpointProjection } from '../catalog/endpoints'
 import { endpoints } from '../catalog/endpoints'
 import { models } from '../catalog/models'
 import { providers } from '../catalog/providers'
+import { isMaterialPricingUpdate } from '../shared/formatters'
+import { baseProviderSlug } from '../shared/utils'
 
 export type ProviderRef = {
   slug: string

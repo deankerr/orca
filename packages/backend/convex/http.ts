@@ -1,12 +1,12 @@
 import { httpRouter } from 'convex/server'
 
-import { isNonEmptyString } from '../shared/utils'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'
 import { upsertCurrentEndpoints } from './current/endpoints/http'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
+import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()

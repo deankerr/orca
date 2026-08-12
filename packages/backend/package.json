@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "convex dev",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p convex/tsconfig.json"
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
@@ -21,7 +21,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:"

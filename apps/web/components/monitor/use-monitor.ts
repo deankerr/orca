@@ -1,7 +1,7 @@
 import { convexQuery, useConvex } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import type { CrawlBatch } from '@orca/backend/convex/monitor'
-import { baseProviderSlug } from '@orca/backend/shared/utils'
+import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 

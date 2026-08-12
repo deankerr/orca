@@ -71,4 +71,4 @@ Public HTTP API providing programmatic access to ORCA's curated data.
 
 - `apps/logos`
 - Builds and serves logo assets through a standalone Cloudflare Worker
-- Shared slug-to-service-URL resolution lives in `packages/backend/shared/entity-logo.ts`
+- Shared slug-to-service-URL resolution lives in `packages/backend/convex/shared/entityLogo.ts`

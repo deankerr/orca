@@ -1,7 +1,0 @@
-{
-  "extends": "@orca/config/tsconfig.base.json",
-  "include": ["convex/**/*.ts", "shared/**/*.ts", "tests/**/*.ts"],
-  "compilerOptions": {
-    "noUncheckedIndexedAccess": false
-  }
-}

@@ -2,7 +2,7 @@
 
 import type { EntityChange } from '@orca/backend/convex/changes'
 import type { CrawlBatch } from '@orca/backend/convex/monitor'
-import { groupChanges } from '@orca/backend/shared/groups'
+import { groupChanges } from '@orca/backend/convex/shared/groups'
 import { formatDistanceToNow } from 'date-fns'
 
 import { cn } from '@/lib/utils'

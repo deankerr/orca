@@ -1,7 +1,7 @@
 import * as R from 'remeda'
 
-import { PRICING_FIELD_KEYS } from '../../shared/formatters'
-import type { PricingKey } from '../../shared/formatters'
+import { PRICING_FIELD_KEYS } from '../shared/formatters'
+import type { PricingKey } from '../shared/formatters'
 
 const EXCLUDED_TRACKED_PRICING_FIELDS = new Set<PricingKey>(['reasoning_output', 'web_search'])
 

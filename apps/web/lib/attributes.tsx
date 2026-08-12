@@ -1,5 +1,5 @@
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { formatPricing } from '@orca/backend/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/formatters'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,

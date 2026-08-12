@@ -1,7 +1,7 @@
 'use client'
 
 import { api } from '@orca/backend/convex/_generated/api'
-import { PRICING_FIELD_KEYS } from '@orca/backend/shared/formatters'
+import { PRICING_FIELD_KEYS } from '@orca/backend/convex/shared/formatters'
 import ms from 'ms'
 import dynamic from 'next/dynamic'
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'

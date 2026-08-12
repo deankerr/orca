@@ -1,7 +1,6 @@
 import { v } from 'convex/values'
 import * as R from 'remeda'
 
-import { isNonEmptyString } from '../../shared/utils'
 import { api, internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
@@ -9,6 +8,7 @@ import type { EntityChange } from '../changes'
 import { sendToChannel, sendToDM } from '../discord/client'
 import { buildMessages } from '../discord/messages'
 import type { DiscordPayload } from '../discord/utils'
+import { isNonEmptyString } from '../shared/utils'
 
 type DiscordSubscription = Doc<'alerts_discord_subscriptions'>
 

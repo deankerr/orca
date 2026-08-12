@@ -1,5 +1,5 @@
-import { PRICING_FIELD_KEYS } from '@orca/backend/shared/formatters'
-import type { PricingKey } from '@orca/backend/shared/formatters'
+import { PRICING_FIELD_KEYS } from '@orca/backend/convex/shared/formatters'
+import type { PricingKey } from '@orca/backend/convex/shared/formatters'
 
 type PricingMetricMetadata = {
   key: PricingKey

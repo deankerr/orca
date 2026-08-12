@@ -1,6 +1,9 @@
 [console]
 depth = 6
 
+[test]
+pathIgnorePatterns = ["repos/**"]
+
 [install]
 minimumReleaseAge = 86400 # 1 day
 minimumReleaseAgeExcludes = [

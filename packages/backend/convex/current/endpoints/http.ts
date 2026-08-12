@@ -10,9 +10,9 @@ import { parse } from 'convex-helpers/validators'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { isNonEmptyString } from '../../../shared/utils'
 import { internal } from '../../_generated/api'
 import { httpAction } from '../../_generated/server'
+import { isNonEmptyString } from '../../shared/utils'
 import { vCurrentEndpointProduct } from './table'
 
 /** Outer envelope only — each endpoint is validated with the Convex product validator. */

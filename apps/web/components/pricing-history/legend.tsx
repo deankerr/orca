@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPricing } from '@orca/backend/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/formatters'
 
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'

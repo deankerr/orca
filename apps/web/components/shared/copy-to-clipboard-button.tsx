@@ -1,6 +1,6 @@
 'use client'
 
-import { getErrorMessage } from '@orca/backend/shared/utils'
+import { getErrorMessage } from '@orca/backend/convex/shared/utils'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'

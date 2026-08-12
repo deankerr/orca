@@ -1,4 +1,4 @@
-import { baseProviderSlug } from '@orca/backend/shared/utils'
+import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
 import { parseAsString, useQueryStates } from 'nuqs'
 
 export function useMonitorFilters() {

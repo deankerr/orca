@@ -1,5 +1,5 @@
 import type { api } from '@orca/backend/convex/_generated/api'
-import type { PricingKey } from '@orca/backend/shared/formatters'
+import type { PricingKey } from '@orca/backend/convex/shared/formatters'
 import type { FunctionReturnType } from 'convex/server'
 
 export type Model = NonNullable<FunctionReturnType<typeof api.models.getBySlug>>

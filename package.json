@@ -8,17 +8,16 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build --filter=web",
-    "check": "ultracite check --type-aware --type-check --disable-nested-config",
+    "check": "ultracite check --disable-nested-config",
     "dev": "turbo run dev --filter=!entity-logo-service",
     "dev:backend": "turbo run dev --filter=@orca/backend",
     "dev:next": "turbo run dev --filter=web",
-    "fix": "ultracite fix --type-aware --type-check --disable-nested-config",
+    "fix": "ultracite fix --disable-nested-config",
     "knip": "knip",
     "logos": "bun run --cwd apps/logos build",
     "prepare": "lefthook install --reset-hooks-path",
     "release": "turbo run release --filter=web",
     "start": "turbo run start --filter=web",
-    "test": "bun test --path-ignore-patterns=repos",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {

@@ -6,8 +6,8 @@ import type {
   ModelChange,
   ProviderChange,
 } from '@orca/backend/convex/changes'
-import { formatPricingFields } from '@orca/backend/shared/formatters'
-import { baseProviderSlug } from '@orca/backend/shared/utils'
+import { formatPricingFields } from '@orca/backend/convex/shared/formatters'
+import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'

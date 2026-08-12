@@ -1,4 +1,4 @@
-import { entityLogoUrl } from '@orca/backend/shared/entity-logo'
+import { entityLogoUrl } from '@orca/backend/convex/shared/entityLogo'
 import Image from 'next/image'
 
 import { cn } from '@/lib/utils'
