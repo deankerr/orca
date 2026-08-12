@@ -28,7 +28,7 @@ const receiveIsolated = (sink: Sink) => (batch: ReadonlyArray<ObservationItem>) 
         }),
       ),
     ),
-    Effect.catchCause(() => Effect.void),
+    Effect.ignoreCause,
   )
 
 /** Process one windowed batch of SinksQueue messages. */

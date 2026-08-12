@@ -6,11 +6,16 @@
 // * those are skipped (log), not sink failures.
 import { decodeEndpoint } from '@orca/entities/endpoint.ts'
 import type { Endpoint } from '@orca/entities/endpoint.ts'
+import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
 import type { ObservationItem } from '../Sink.ts'
+
+class ProductDecodeError extends Data.TaggedError('ProductDecodeError')<{
+  readonly cause: unknown
+}> {}
 
 const Envelope = Schema.Struct({
   data: Schema.Array(Schema.Unknown),
@@ -37,7 +42,7 @@ const projectItem = (item: ObservationItem): Effect.Effect<Endpoint[]> =>
     const rowErrors: number[] = []
     for (const [index, row] of envelope.value.data.entries()) {
       const card = yield* Effect.try({
-        catch: () => new Error('product decode'),
+        catch: (cause) => new ProductDecodeError({ cause }),
         try: () => decodeEndpoint(row),
       }).pipe(Effect.option)
       if (Option.isSome(card)) {

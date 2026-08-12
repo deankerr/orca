@@ -21,8 +21,8 @@ export class ConvexCurrentError extends Data.TaggedError('ConvexCurrentError')<{
 const decodePushResult = Schema.decodeUnknownEffect(
   Schema.fromJsonString(
     Schema.Struct({
-      insert: Schema.Number,
-      update: Schema.Number,
+      insert: Schema.Finite,
+      update: Schema.Finite,
     }),
   ),
 )

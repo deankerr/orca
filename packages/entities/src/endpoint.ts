@@ -20,7 +20,7 @@ export type { IChange } from 'json-diff-ts'
 /** ISO-8601 timestamp string → epoch millis. */
 const MillisFromIso = Schema.String.pipe(
   Schema.decodeTo(
-    Schema.Number,
+    Schema.Finite,
     SchemaTransformation.transform({
       decode: (s: string) => Date.parse(s),
       encode: (n: number) => new Date(n).toISOString(),
@@ -70,12 +70,12 @@ const EndpointObservation = Schema.Struct({
   provider_model_id: Schema.String,
   provider_region: Schema.NullOr(Schema.String),
 
-  context_length: Schema.Number,
-  max_prompt_tokens: Schema.NullOr(Schema.Number),
-  max_completion_tokens: Schema.NullOr(Schema.Number),
-  max_tokens_per_image: Schema.NullOr(Schema.Number),
-  limit_rpm: Schema.NullOr(Schema.Number),
-  limit_rpd: Schema.NullOr(Schema.Number),
+  context_length: Schema.Finite,
+  max_prompt_tokens: Schema.NullOr(Schema.Finite),
+  max_completion_tokens: Schema.NullOr(Schema.Finite),
+  max_tokens_per_image: Schema.NullOr(Schema.Finite),
+  limit_rpm: Schema.NullOr(Schema.Finite),
+  limit_rpd: Schema.NullOr(Schema.Finite),
 
   quantization: Schema.String,
   supported_parameters: Schema.Array(Schema.String),
@@ -91,7 +91,7 @@ const EndpointObservation = Schema.Struct({
     image: Schema.optional(Schema.FiniteFromString),
     image_output: Schema.optional(Schema.FiniteFromString),
     web_search: Schema.optional(Schema.FiniteFromString),
-    discount: Schema.optional(Schema.Number),
+    discount: Schema.optional(Schema.Finite),
   }),
 
   data_policy: Schema.Struct({
@@ -99,7 +99,7 @@ const EndpointObservation = Schema.Struct({
     canPublish: Schema.optional(Schema.Boolean),
     requiresUserIDs: Schema.optional(Schema.Boolean),
     retainsPrompts: Schema.optional(Schema.Boolean),
-    retentionDays: Schema.optional(Schema.Number),
+    retentionDays: Schema.optional(Schema.Finite),
   }),
 
   features: Schema.Struct({
@@ -117,8 +117,8 @@ const EndpointObservation = Schema.Struct({
 
   stats: Schema.optionalKey(
     Schema.Struct({
-      p50_throughput: Schema.Number,
-      p50_latency: Schema.Number,
+      p50_throughput: Schema.Finite,
+      p50_latency: Schema.Finite,
     }),
   ),
 })

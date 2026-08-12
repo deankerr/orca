@@ -81,7 +81,7 @@ export const make = (deps: { observationStore: ObservationStore; entityClocks: E
           }),
         ),
       ),
-      Effect.catchCause(() => Effect.void),
+      Effect.ignoreCause,
     )
 
     return {
