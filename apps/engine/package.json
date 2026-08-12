@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/sql-d1": "catalog:",
     "@orca/entities": "workspace:*",
     "alchemy": "catalog:",
