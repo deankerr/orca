@@ -16,6 +16,7 @@ import * as HttpServerResponse from 'effect/unstable/http/HttpServerResponse'
 import { fromBinding } from './binding.ts'
 import * as Capture from './capture/index.ts'
 import * as EntityClocks from './entities/index.ts'
+import { withAppLogger } from './logging.ts'
 import * as ObservationStore from './observations/index.ts'
 import { CaptureQueue } from './resources/CaptureQueue.ts'
 import { EntitiesDB } from './resources/EntitiesDB.ts'
@@ -60,11 +61,13 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     })
 
     yield* Cloudflare.Workers.cron('30 * * * *', () =>
-      startFullSample.pipe(
-        Effect.annotateLogs({ phase: 'full-sample' }),
-        Effect.tapCause((cause) =>
-          Effect.logError('full-sample: failed').pipe(
-            Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'full-sample' }),
+      withAppLogger(
+        startFullSample.pipe(
+          Effect.annotateLogs({ phase: 'full-sample' }),
+          Effect.tapCause((cause) =>
+            Effect.logError('full-sample: failed').pipe(
+              Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'full-sample' }),
+            ),
           ),
         ),
       ),
@@ -91,28 +94,30 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
 
     // 5. Ops HTTP
     return {
-      fetch: Effect.gen(function* fetch() {
-        const request = yield* HttpServerRequest.HttpServerRequest
-        const path = new URL(request.url, 'http://worker').pathname
+      fetch: withAppLogger(
+        Effect.gen(function* fetch() {
+          const request = yield* HttpServerRequest.HttpServerRequest
+          const path = new URL(request.url, 'http://worker').pathname
 
-        if (request.method === 'GET' && path === '/') {
-          const counts = yield* entityClocks.status
-          return yield* HttpServerResponse.json({
-            endpoints: counts.endpoints,
-            scopes: counts.scopes,
-          })
-        }
+          if (request.method === 'GET' && path === '/') {
+            const counts = yield* entityClocks.status
+            return yield* HttpServerResponse.json({
+              endpoints: counts.endpoints,
+              scopes: counts.scopes,
+            })
+          }
 
-        if (request.method === 'POST' && path === '/capture') {
-          const result = yield* startFullSample
-          return yield* HttpServerResponse.json(result)
-        }
+          if (request.method === 'POST' && path === '/capture') {
+            const result = yield* startFullSample
+            return yield* HttpServerResponse.json(result)
+          }
 
-        return yield* HttpServerResponse.json({ error: 'not found' }, { status: 404 })
-      }).pipe(
-        Effect.annotateLogs({ phase: 'ops' }),
-        Effect.catchCause((cause) =>
-          HttpServerResponse.json({ error: Cause.pretty(cause) }, { status: 500 }),
+          return yield* HttpServerResponse.json({ error: 'not found' }, { status: 404 })
+        }).pipe(
+          Effect.annotateLogs({ phase: 'ops' }),
+          Effect.catchCause((cause) =>
+            HttpServerResponse.json({ error: Cause.pretty(cause) }, { status: 500 }),
+          ),
         ),
       ),
     }

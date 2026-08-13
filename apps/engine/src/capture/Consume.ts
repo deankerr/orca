@@ -9,6 +9,7 @@ import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
 import { fromBinding } from '../binding.ts'
+import { withAppLogger } from '../logging.ts'
 import { decodeCaptureJob } from './Message.ts'
 import type { CaptureJob } from './Message.ts'
 import type { SampleResult } from './Sample.ts'
@@ -47,15 +48,17 @@ export const register = (
     { batchSize: 1, maxConcurrency: 4, maxRetries: 3 },
     (stream) =>
       Stream.runForEach(stream, (message) =>
-        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- handle inherits sampleScope port
-        handle(message.body).pipe(
-          Effect.annotateLogs({ phase: 'capture' }),
-          Effect.tapCause((cause) =>
-            Effect.logError('capture: message failed').pipe(
-              Effect.annotateLogs({
-                cause: Cause.pretty(cause),
-                phase: 'capture',
-              }),
+        withAppLogger(
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- handle inherits sampleScope port
+          handle(message.body).pipe(
+            Effect.annotateLogs({ phase: 'capture' }),
+            Effect.tapCause((cause) =>
+              Effect.logError('capture: message failed').pipe(
+                Effect.annotateLogs({
+                  cause: Cause.pretty(cause),
+                  phase: 'capture',
+                }),
+              ),
             ),
           ),
         ),
