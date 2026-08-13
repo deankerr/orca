@@ -6,8 +6,7 @@
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy",
     "dev": "alchemy dev",
-    "test": "bun test",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "test": "bun test"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

@@ -23,11 +23,11 @@ payload. Fields that have no established semantics are intentionally left withou
 - `input_modalities`
 - `output_modalities`
 - `has_text_output`
-- `context_length` — advertised context-window length.
+- `context_length` — 🔄 matches that of the current top endpoint.
 - `instruct_type`
 - `knowledge_cutoff`
 - `supports_reasoning`
-- `reasoning_config` — 📌 richest observed source of reasoning capability data; key presence varies.
+- `reasoning_config`
 - `supported_tts_voices` — ⚠️ meaningful for speech models.
 - `is_trainable_text` — 📌 observed only as `true` or `null` in the 2026-07 corpus.
 - `is_trainable_image` — 📌 observed only as `null` in the 2026-07 corpus.

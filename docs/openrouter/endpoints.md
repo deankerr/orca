@@ -92,8 +92,7 @@ Feature-key presence varies by endpoint.
 - `is_hidden` — ⚠️ observed as `false` in public captures.
 - `is_private` — ⚠️ observed as `false` in public captures.
 - `deprecation_date`
-- `status` — 🔄 volatile routing penalty despite its placement on the endpoint record. ❓ Exact
-  negative-value semantics are unknown.
+- `status` — 🔄 volatile routing penalty despite its placement on the endpoint record. ⚠️ This should now probably be considered telemetry.
 
 ## Data policy
 

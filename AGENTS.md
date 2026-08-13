@@ -2,7 +2,7 @@
 
 ## Development
 
-- Use `bun run fix` for all work validation.
+- Use `bun run fix` for all work validation, including type checking. Do not use `tsc`.
 - Inline linter disables may be used if the reasoning is justified.
 
 ## New Architecture rewrite
@@ -10,7 +10,9 @@
 - `apps/engine`: Cloudflare, Alchemy, Effect
 - See @notes/objectives.md for primary objectives and requirements.
 - `notes/agent-observability.md`
-- Refer to @docs/openrouter when working directly with model/endpoint data
+- Critical for working with Effect V4: @repos/effect/MIGRATION.md @repos/effect/LLMS.md
+- Conveniently chunked version of the Effect Schema V4 docs: @docs/effect-schema/
+- Refer to @docs/openrouter/ when working directly with model/endpoint data
 
 ## Vendored Repositories
 
@@ -25,7 +27,6 @@ This project vendors external repositories under @repos/
 
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
-- Effect Schema V4 @docs/effect-schema
 
 ## Overview
 

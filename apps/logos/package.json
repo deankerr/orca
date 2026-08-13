@@ -8,7 +8,6 @@
     "dev": "bun run build && wrangler dev",
     "review": "bun run src/review.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
     "types": "wrangler types"
   },
   "devDependencies": {

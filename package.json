@@ -17,8 +17,7 @@
     "logos": "bun run --cwd apps/logos build",
     "prepare": "lefthook install --reset-hooks-path && effect-tsgo patch --typescript --oxlint",
     "release": "turbo run release --filter=web",
-    "start": "turbo run start --filter=web",
-    "typecheck": "turbo run typecheck"
+    "start": "turbo run start --filter=web"
   },
   "devDependencies": {
     "@effect/tsgo": "0.36.4",
