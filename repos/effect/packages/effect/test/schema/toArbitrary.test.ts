@@ -1,4 +1,4 @@
-import { BigDecimal, Chunk, DateTime, Effect, HashMap, HashSet, Option, Order, Schema, SchemaIssue } from "effect"
+import { BigDecimal, Chunk, DateTime, Effect, HashMap, HashSet, Order, Schema, SchemaIssue } from "effect"
 import { FastCheck, TestSchema } from "effect/testing"
 import { describe, it } from "vitest"
 import { assertInclude, assertInstanceOf, deepStrictEqual, strictEqual, throws } from "../utils/assert.ts"
@@ -55,7 +55,7 @@ function CustomArray<A extends Schema.Constraint>(
     () => (input, ast) =>
       globalThis.Array.isArray(input)
         ? Effect.succeed(input as ReadonlyArray<A["Type"]>)
-        : Effect.fail(new SchemaIssue.InvalidType(ast, Option.some(input))),
+        : Effect.fail(new SchemaIssue.InvalidType(ast)),
     { toArbitrary }
   )
 }
@@ -590,6 +590,18 @@ describe("Arbitrary generation", () => {
       verifyGeneration(
         Schema.Tuple([Schema.String, Schema.optional(Schema.Number)])
       )
+    })
+
+    it("generates values valid for optional tuple positions", () => {
+      const schema = Schema.Tuple([
+        Schema.optionalKey(Schema.String),
+        Schema.optionalKey(Schema.Number)
+      ])
+
+      FastCheck.assert(FastCheck.property(Schema.toArbitrary(schema), Schema.is(schema)), {
+        numRuns: 100,
+        seed: 17
+      })
     })
   })
 

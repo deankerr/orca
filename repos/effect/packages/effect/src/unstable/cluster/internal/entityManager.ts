@@ -110,7 +110,7 @@ export const make = Effect.fnUntraced(function*<
   const clock = yield* Clock
   const context = yield* Effect.context<Rpc.Services<Rpcs> | Rpc.Middleware<Rpcs> | RX>()
   const defectRetryPolicy = options.defectRetryPolicy
-    ? Schedule.andThen(options.defectRetryPolicy, defaultRetryPolicy)
+    ? Schedule.concat(options.defectRetryPolicy, defaultRetryPolicy)
     : defaultRetryPolicy
   const retryDriver = yield* Schedule.toStepWithSleep(defectRetryPolicy)
   const entityRpcs = new Map(entity.protocol.requests)
@@ -545,7 +545,7 @@ export const make = Effect.fnUntraced(function*<
     )
   }
 
-  const decodeMessage = makeMessageDecode(entity, entityRpcs)
+  const decodeMessage = makeMessageDecode(entityRpcs)
 
   const runFork = Effect.runForkWith(context)
 
@@ -649,10 +649,7 @@ const defaultRetryPolicy = Schedule.min([
   Schedule.spaced("10 seconds")
 ])
 
-const makeMessageDecode = <Type extends string, Rpcs extends Rpc.Any>(
-  entity: Entity<Type, Rpcs>,
-  entityRpcs: Map<string, Rpcs>
-) => {
+const makeMessageDecode = <Rpcs extends Rpc.Any>(entityRpcs: Map<string, Rpcs>) => {
   const decodeRequest = Effect.fnUntracedEager(function*(
     message: Message.IncomingRequest<Rpcs>,
     rpc: Rpc.AnyWithProps
@@ -690,8 +687,8 @@ const makeMessageDecode = <Type extends string, Rpcs extends Rpc.Any>(
     if (!rpc) {
       return Effect.fail(
         new Schema.SchemaError(
-          new SchemaIssue.InvalidValue(Option.some(message), {
-            message: `Unknown tag ${message.envelope.tag} for entity type ${entity.type}`
+          new SchemaIssue.InvalidValue({
+            message: "Expected a known entity RPC tag"
           })
         )
       )

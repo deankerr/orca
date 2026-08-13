@@ -3,7 +3,7 @@
  */
 import * as Data from "./Data.ts"
 import * as Predicate from "./Predicate.ts"
-import type { Issue } from "./SchemaIssue.ts"
+import * as SchemaIssue from "./SchemaIssue.ts"
 
 const TypeId = "~effect/SchemaError/SchemaError"
 
@@ -13,10 +13,12 @@ const TypeId = "~effect/SchemaError/SchemaError"
  *
  * **Details**
  *
- * The `issue` field contains a structured {@link Issue} tree describing
- * every validation failure, including the path to the problematic value,
- * expected types, and actual values received. `message` renders the issue tree
- * as a human-readable string.
+ * The `issue` field contains a structured {@link SchemaIssue.Issue} tree describing
+ * every validation failure, including the path to the problematic value and
+ * the expected type or constraint. The `message` field renders the issue tree
+ * with the default formatter. When input reporting is enabled, the message may
+ * include reported input. Other Issue fields and custom annotations or messages
+ * are not sanitized.
  *
  * Use {@link isSchemaError} to narrow an unknown value to `SchemaError`.
  *
@@ -29,7 +31,7 @@ const TypeId = "~effect/SchemaError/SchemaError"
  *   Schema.decodeUnknownSync(Schema.Number)("not a number")
  * } catch (err) {
  *   if (Schema.isSchemaError(err)) {
- *     err.message // => "Expected number, got \"not a number\""
+ *     err.message // => "Expected number"
  *   }
  * }
  * ```
@@ -38,14 +40,14 @@ const TypeId = "~effect/SchemaError/SchemaError"
  * @since 4.0.0
  */
 export class SchemaError extends Data.TaggedError("SchemaError")<{
-  readonly issue: Issue
+  readonly issue: SchemaIssue.Issue
 }> {
   readonly [TypeId]: typeof TypeId = TypeId
-  constructor(issue: Issue) {
+  constructor(issue: SchemaIssue.Issue) {
     super({ issue })
   }
   override get message() {
-    return this.issue.toString()
+    return SchemaIssue.defaultFormatter(this.issue)
   }
   override toString() {
     return `SchemaError(${this.message})`
