@@ -1,20 +1,16 @@
 {
-  "name": "@orca/engine",
+  "name": "@orca/public-api-v2",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy",
-    "dev": "alchemy dev",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
-    "@effect/sql-d1": "catalog:",
     "@orca/entities": "workspace:*",
-    "@orca/public-api-v2": "workspace:*",
-    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

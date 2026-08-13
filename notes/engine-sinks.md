@@ -121,9 +121,9 @@ No end-of-sample signal from the full-sample plan.
 
 Projects archive bodies to product endpoint cards and upserts Convex current-view. Empty projection is success (no push), not a sink failure. Unprojectable rows may soft-skip at the product edge.
 
-### Public API — scaffold
+### Public API V2 — real
 
-Receives the same raw batches; no materialize yet. Intent: eventually a package exporting `make(deps): Sink` with the same contract; engine only feeds archive batches. See `notes/public-api.md`.
+`@orca/public-api-v2`: transform raw batches → upsert model documents in isolated D1; GET assembles V2 JSON with relative stale filter. See `notes/public-api.md`.
 
 ---
 

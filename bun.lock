@@ -25,6 +25,7 @@
         "@effect/platform-node": "catalog:",
         "@effect/sql-d1": "catalog:",
         "@orca/entities": "workspace:*",
+        "@orca/public-api-v2": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
       },
@@ -135,6 +136,18 @@
       "dependencies": {
         "effect": "catalog:",
         "json-diff-ts": "catalog:",
+      },
+      "devDependencies": {
+        "@orca/config": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/public-api-v2": {
+      "name": "@orca/public-api-v2",
+      "dependencies": {
+        "@orca/entities": "workspace:*",
+        "effect": "catalog:",
       },
       "devDependencies": {
         "@orca/config": "workspace:*",
@@ -628,6 +641,8 @@
     "@orca/engine": ["@orca/engine@workspace:apps/engine"],
 
     "@orca/entities": ["@orca/entities@workspace:packages/entities"],
+
+    "@orca/public-api-v2": ["@orca/public-api-v2@workspace:packages/public-api-v2"],
 
     "@oxc-parser/binding-android-arm-eabi": ["@oxc-parser/binding-android-arm-eabi@0.142.0", "", { "os": "android", "cpu": "arm" }, "sha512-ZiRGDutGsv1G6bL/ozy/koC0Sv39T1DqyoC4KD1DOy9ZoACm1O5UWhEK2c02Qdk+4lfLVkvFa/mQ0fm/4h1BtQ=="],
 

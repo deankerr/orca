@@ -1,9 +1,10 @@
-// * Composition root: bind resources, wire capture + sinks, ops HTTP.
+// * Composition root: bind resources, wire capture + sinks, ops + public API HTTP.
 // *
 // *   cron / POST /capture → full sample → CaptureQueue
 // *   Capture → Observations + EntityClocks → enqueue ObservationRef
 // *   Sinks → windowed batch → load R2 → fan-out product sinks
-// *   fetch → status / trigger full sample
+// *   fetch → status / trigger full sample / public-api v2 models
+import * as PublicApiV2 from '@orca/public-api-v2'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as SQL from 'alchemy/SQL/D1'
 import * as Cause from 'effect/Cause'
@@ -21,10 +22,10 @@ import * as ObservationStore from './observations/index.ts'
 import { CaptureQueue } from './resources/CaptureQueue.ts'
 import { EntitiesDB } from './resources/EntitiesDB.ts'
 import { ObservationsBucket } from './resources/ObservationsBucket.ts'
+import { PublicApiV2DB } from './resources/PublicApiV2DB.ts'
 import { SinksQueue } from './resources/SinksQueue.ts'
 import * as ConvexCurrent from './sinks/convex-current/index.ts'
 import * as Sinks from './sinks/index.ts'
-import * as PublicApi from './sinks/public-api/index.ts'
 
 export default class Engine extends Cloudflare.Worker<Engine>()(
   'Worker',
@@ -47,6 +48,11 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     const entityClocks = EntityClocks.make(
       yield* SQL.D1(yield* Cloudflare.D1.QueryDatabase(entitiesDb)),
     )
+
+    const publicApiV2Db = yield* PublicApiV2DB
+    const publicApiV2 = PublicApiV2.make({
+      sql: yield* SQL.D1(yield* Cloudflare.D1.QueryDatabase(publicApiV2Db)),
+    })
 
     const captureQueue = yield* CaptureQueue
     const captureQueueWriter = yield* Cloudflare.Queues.WriteQueue(captureQueue)
@@ -88,22 +94,38 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
           apiKey: engineHttpApiKey,
           siteUrl: convexSiteUrl,
         }),
-        PublicApi.make(),
+        publicApiV2,
       ],
     })
 
-    // 5. Ops HTTP
+    // 5. Ops + public API HTTP
     return {
       fetch: withAppLogger(
         Effect.gen(function* fetch() {
           const request = yield* HttpServerRequest.HttpServerRequest
-          const path = new URL(request.url, 'http://worker').pathname
+          const url = new URL(request.url, 'http://worker')
+          const path = url.pathname
 
           if (request.method === 'GET' && path === '/') {
             const counts = yield* entityClocks.status
             return yield* HttpServerResponse.json({
               endpoints: counts.endpoints,
               scopes: counts.scopes,
+            })
+          }
+
+          if (request.method === 'GET' && path === '/public-api/v2/models') {
+            const limitParam = url.searchParams.get('limit')
+            const limit =
+              limitParam === null || limitParam === '' ? undefined : Math.trunc(Number(limitParam))
+            const body = yield* publicApiV2.getModels({
+              limit: limit !== undefined && Number.isFinite(limit) && limit > 0 ? limit : undefined,
+            })
+            return yield* HttpServerResponse.json(body, {
+              headers: {
+                // * Hostile clients may ignore; CDN / intermediate caches can still use this.
+                'Cache-Control': 'public, max-age=60, s-maxage=60',
+              },
             })
           }
 
