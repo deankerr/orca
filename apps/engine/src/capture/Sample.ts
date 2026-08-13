@@ -9,7 +9,7 @@ import type { EntityClocks } from '../entities/index.ts'
 import * as Observations from '../observations/index.ts'
 import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
-import * as OpenRouter from './OpenRouter.ts'
+import { OpenRouterClient } from './OpenRouter.ts'
 
 /** Archive body: validated success envelope as a JSON string. */
 const encodeDataEnvelope = Schema.encodeSync(
@@ -25,74 +25,78 @@ export type SampleResult = {
 }
 
 export const make = (deps: { observationStore: ObservationStore; entityClocks: EntityClocks }) =>
-  Effect.fn(function* sampleScope(job: CaptureJob) {
-    const captured = yield* OpenRouter.fetchEndpoints(job)
-    const now = yield* DateTime.now
-    const observedAt = job.observedAt ?? Observations.observedAtKey(now)
-    const scopeKey = Observations.scopeKey(job.permaslug, job.variant)
+  OpenRouterClient.pipe(
+    Effect.map((openRouter) =>
+      Effect.fn(function* sampleScope(job: CaptureJob) {
+        const captured = yield* openRouter.fetchEndpoints(job)
+        const now = yield* DateTime.now
+        const observedAt = job.observedAt ?? Observations.observedAtKey(now)
+        const scopeKey = Observations.scopeKey(job.permaslug, job.variant)
 
-    if (captured._tag === 'HttpError') {
-      yield* Effect.logWarning('capture: non-200 observation').pipe(
-        Effect.annotateLogs({
-          body: captured.body,
-          phase: 'capture',
-          scope: scopeKey,
-          status: String(captured.status),
-        }),
-      )
-      return {
-        observed: false,
-        observedAt,
-        scopeKey,
-      }
-    }
+        if (captured._tag === 'HttpError') {
+          yield* Effect.logWarning('capture: non-200 observation').pipe(
+            Effect.annotateLogs({
+              body: captured.body,
+              phase: 'capture',
+              scope: scopeKey,
+              status: String(captured.status),
+            }),
+          )
+          return {
+            observed: false,
+            observedAt,
+            scopeKey,
+          }
+        }
 
-    // Persist only the validated success envelope.
-    const body = encodeDataEnvelope({ data: captured.data })
-    yield* deps.observationStore.putObservation({
-      body,
-      observedAt,
-      permaslug: job.permaslug,
-      scopeKey,
-      status: captured.status,
-      variant: job.variant,
-    })
-
-    const ids = captured.data.map((row) => row.id).filter((id) => id.length > 0)
-    if (ids.length === 0) {
-      yield* Effect.logWarning('capture: no endpoint ids in 200 body').pipe(
-        Effect.annotateLogs({
+        // Persist only the validated success envelope.
+        const body = encodeDataEnvelope({ data: captured.data })
+        yield* deps.observationStore.putObservation({
           body,
-          phase: 'capture',
-          scope: scopeKey,
-          status: String(captured.status),
-        }),
-      )
-      return {
-        observed: false,
-        observedAt,
-        scopeKey,
-      }
-    }
+          observedAt,
+          permaslug: job.permaslug,
+          scopeKey,
+          status: captured.status,
+          variant: job.variant,
+        })
 
-    const at = DateTime.formatIso(now)
-    yield* deps.entityClocks.record({ at, endpointIds: ids, scopeKey }).pipe(
-      Effect.tapCause((cause) =>
-        Effect.logWarning('capture: entity clocks failed').pipe(
-          Effect.annotateLogs({
-            cause: Cause.pretty(cause),
-            endpoints: String(ids.length),
-            phase: 'capture',
-            scope: scopeKey,
-          }),
-        ),
-      ),
-      Effect.ignoreCause,
-    )
+        const ids = captured.data.map((row) => row.id).filter((id) => id.length > 0)
+        if (ids.length === 0) {
+          yield* Effect.logWarning('capture: no endpoint ids in 200 body').pipe(
+            Effect.annotateLogs({
+              body,
+              phase: 'capture',
+              scope: scopeKey,
+              status: String(captured.status),
+            }),
+          )
+          return {
+            observed: false,
+            observedAt,
+            scopeKey,
+          }
+        }
 
-    return {
-      observed: true,
-      observedAt,
-      scopeKey,
-    }
-  })
+        const at = DateTime.formatIso(now)
+        yield* deps.entityClocks.record({ at, endpointIds: ids, scopeKey }).pipe(
+          Effect.tapCause((cause) =>
+            Effect.logWarning('capture: entity clocks failed').pipe(
+              Effect.annotateLogs({
+                cause: Cause.pretty(cause),
+                endpoints: String(ids.length),
+                phase: 'capture',
+                scope: scopeKey,
+              }),
+            ),
+          ),
+          Effect.ignoreCause,
+        )
+
+        return {
+          observed: true,
+          observedAt,
+          scopeKey,
+        }
+      }),
+    ),
+  )

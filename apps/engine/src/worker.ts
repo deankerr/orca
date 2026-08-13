@@ -11,6 +11,7 @@ import * as Cause from 'effect/Cause'
 import * as Config from 'effect/Config'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient'
 import * as HttpServerRequest from 'effect/unstable/http/HttpServerRequest'
 import * as HttpServerResponse from 'effect/unstable/http/HttpServerResponse'
 
@@ -61,7 +62,7 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     const sinksQueueWriter = yield* Cloudflare.Queues.WriteQueue(sinksQueue)
 
     // 4. Deep pipelines
-    const startFullSample = Capture.startFullSample({
+    const startFullSample = yield* Capture.makeFullSample({
       observationStore,
       sendBatch: (messages) => fromBinding(captureQueueWriter.sendBatch(messages)),
     })
@@ -151,6 +152,7 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
         Cloudflare.Queues.WriteQueueBinding,
         Cloudflare.R2.ReadWriteBucketBinding,
         Cloudflare.D1.QueryDatabaseBinding,
+        Capture.OpenRouterClient.layer.pipe(Layer.provide(FetchHttpClient.layer)),
       ),
     ),
   ),

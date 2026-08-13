@@ -8,7 +8,7 @@ import * as Schema from 'effect/Schema'
 import * as Observations from '../observations/index.ts'
 import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
-import * as OpenRouter from './OpenRouter.ts'
+import { OpenRouterClient } from './OpenRouter.ts'
 
 /** Archive body: validated success envelope as a JSON string. */
 const encodeDataEnvelope = Schema.encodeSync(
@@ -25,52 +25,56 @@ const chunks = <A>(items: ReadonlyArray<A>, size: number): A[][] => {
   return out
 }
 
-export const start = (deps: {
+export const make = (deps: {
   observationStore: ObservationStore
   sendBatch: (messages: ReadonlyArray<{ body: CaptureJob }>) => Effect.Effect<void>
 }) =>
-  Effect.gen(function* startFullSample() {
-    const observedAt = Observations.observedAtKey(yield* DateTime.now)
-    const catalog = yield* OpenRouter.fetchCatalog()
+  OpenRouterClient.pipe(
+    Effect.map((openRouter) =>
+      Effect.gen(function* startFullSample() {
+        const observedAt = Observations.observedAtKey(yield* DateTime.now)
+        const catalog = yield* openRouter.fetchCatalog
 
-    if (catalog._tag === 'HttpError') {
-      return yield* Effect.die(new Error(`catalog returned ${catalog.status}: ${catalog.body}`))
-    }
+        if (catalog._tag === 'HttpError') {
+          return yield* Effect.die(new Error(`catalog returned ${catalog.status}: ${catalog.body}`))
+        }
 
-    // Persist only the validated success envelope.
-    yield* deps.observationStore.putCatalog({
-      body: encodeDataEnvelope({ data: catalog.data }),
-      observedAt,
-    })
+        // Persist only the validated success envelope.
+        yield* deps.observationStore.putCatalog({
+          body: encodeDataEnvelope({ data: catalog.data }),
+          observedAt,
+        })
 
-    const jobs: CaptureJob[] = []
-    for (const model of catalog.data) {
-      if (model.endpoint === null || model.slug.startsWith('~')) {
-        continue
-      }
-      jobs.push({
-        observedAt,
-        permaslug: model.permaslug,
-        variant: model.endpoint.variant,
-      })
-    }
+        const jobs: CaptureJob[] = []
+        for (const model of catalog.data) {
+          if (model.endpoint === null || model.slug.startsWith('~')) {
+            continue
+          }
+          jobs.push({
+            observedAt,
+            permaslug: model.permaslug,
+            variant: model.endpoint.variant,
+          })
+        }
 
-    for (const chunk of chunks(jobs, QUEUE_BATCH_SIZE)) {
-      yield* deps.sendBatch(chunk.map((body) => ({ body })))
-    }
+        for (const chunk of chunks(jobs, QUEUE_BATCH_SIZE)) {
+          yield* deps.sendBatch(chunk.map((body) => ({ body })))
+        }
 
-    yield* Effect.log('full-sample: queued').pipe(
-      Effect.annotateLogs({
-        models: String(catalog.data.length),
-        observedAt,
-        phase: 'full-sample',
-        queued: String(jobs.length),
-        status: String(catalog.status),
+        yield* Effect.log('full-sample: queued').pipe(
+          Effect.annotateLogs({
+            models: String(catalog.data.length),
+            observedAt,
+            phase: 'full-sample',
+            queued: String(jobs.length),
+            status: String(catalog.status),
+          }),
+        )
+        return {
+          models: catalog.data.length,
+          observedAt,
+          queued: jobs.length,
+        }
       }),
-    )
-    return {
-      models: catalog.data.length,
-      observedAt,
-      queued: jobs.length,
-    }
-  })
+    ),
+  )
