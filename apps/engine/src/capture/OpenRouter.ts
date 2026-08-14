@@ -9,6 +9,7 @@ import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Schedule from 'effect/Schedule'
 import * as Schema from 'effect/Schema'
+import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient'
 import * as HttpClient from 'effect/unstable/http/HttpClient'
 import * as HttpClientRequest from 'effect/unstable/http/HttpClientRequest'
 
@@ -151,5 +152,9 @@ export class OpenRouterClient extends Context.Service<OpenRouterClient>()(
   'engine/capture/OpenRouterClient',
   { make },
 ) {
-  static readonly layer = Layer.effect(this, this.make)
+  /** Implementation before the platform HttpClient is supplied. */
+  static readonly layerNoDeps = Layer.effect(this, this.make)
+
+  /** Live fetch implementation with its transport dependency kept private. */
+  static readonly layer = this.layerNoDeps.pipe(Layer.provide(FetchHttpClient.layer))
 }

@@ -1,12 +1,13 @@
 // * Full sample: catalog → archive → CaptureQueue.
 // * Policy: catalog must be HTTP 200 with validated model data or the sample aborts.
 // * Crawl set: serving endpoint present, skip `~` aliases.
+import type { RuntimeContext } from 'alchemy'
+import type * as Cloudflare from 'alchemy/Cloudflare'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 
 import * as Observations from '../observations/index.ts'
-import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
 import { OpenRouterClient } from './OpenRouter.ts'
 
@@ -26,11 +27,15 @@ const chunks = <A>(items: ReadonlyArray<A>, size: number): A[][] => {
 }
 
 export const make = (deps: {
-  observationStore: ObservationStore
-  sendBatch: (messages: ReadonlyArray<{ body: CaptureJob }>) => Effect.Effect<void>
+  sendBatch: (
+    messages: ReadonlyArray<{ body: CaptureJob }>,
+  ) => Effect.Effect<void, Cloudflare.Queues.SendError, RuntimeContext>
 }) =>
-  OpenRouterClient.pipe(
-    Effect.map((openRouter) =>
+  Effect.all({
+    archive: Observations.ObservationArchive,
+    openRouter: OpenRouterClient,
+  }).pipe(
+    Effect.map(({ archive, openRouter }) =>
       Effect.gen(function* startFullSample() {
         const observedAt = Observations.observedAtKey(yield* DateTime.now)
         const catalog = yield* openRouter.fetchCatalog
@@ -40,7 +45,7 @@ export const make = (deps: {
         }
 
         // Persist only the validated success envelope.
-        yield* deps.observationStore.putCatalog({
+        yield* archive.putCatalog({
           body: encodeDataEnvelope({ data: catalog.data }),
           observedAt,
         })

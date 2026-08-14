@@ -3,12 +3,12 @@
 // * Failure policy:
 // *   decode / capture / R2 / sink enqueue — fail the message (queue retries)
 // *   entity clocks — best-effort inside Sample
+import type { RuntimeContext } from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
-import { fromBinding } from '../binding.ts'
 import { withAppLogger } from '../logging.ts'
 import { decodeCaptureJob } from './Message.ts'
 import type { CaptureJob } from './Message.ts'
@@ -22,7 +22,7 @@ export const register = (
     // here — any failure fails the message and CF retries. Opaque `unknown` keeps
     // the consumer free of Sample's full error graph; Cause.pretty logs the rest.
     // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context
-    sampleScope: (job: CaptureJob) => Effect.Effect<SampleResult, unknown>
+    sampleScope: (job: CaptureJob) => Effect.Effect<SampleResult, unknown, RuntimeContext>
     sinksQueueWriter: Cloudflare.Queues.WriteQueueClient
   },
 ) => {
@@ -35,12 +35,10 @@ export const register = (
       return
     }
 
-    yield* fromBinding(
-      deps.sinksQueueWriter.send({
-        observedAt: result.observedAt,
-        scopeKey: result.scopeKey,
-      }),
-    )
+    yield* deps.sinksQueueWriter.send({
+      observedAt: result.observedAt,
+      scopeKey: result.scopeKey,
+    })
   })
 
   return Cloudflare.Queues.consumeQueueMessages(

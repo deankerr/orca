@@ -19,7 +19,7 @@ Capture writes immutable evidence. Sinks are disposable product projections on a
 | Path                        | Role                                                           |
 | --------------------------- | -------------------------------------------------------------- |
 | `src/worker.ts`             | Composition root: resources, clients, wire pipelines, ops HTTP |
-| `src/observations/`         | Deep module: archive store, `ObservationRef`, key helpers      |
+| `src/observations/`         | Deep module: `ObservationArchive`, refs, R2 implementation     |
 | `src/entities/`             | Deep module: first/last seen clocks (D1)                       |
 | `src/capture/`              | Deep module: `wire`, `startFullSample` (impl private)          |
 | `src/sinks/`                | Deep module: `wire` + `Sink` port; bank/consume are impl       |

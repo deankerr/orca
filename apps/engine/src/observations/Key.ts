@@ -10,7 +10,7 @@ export const observedAtKey = (now: DateTime.Utc): string =>
  * permaslug `/` → `_` so the key stays one segment under observedAt
  */
 export const scopeKey = (permaslug: string, variant: string): string =>
-  `${permaslug.replaceAll('/', '_')}.${variant}`
+  `${permaslug.replaceAll('/', '_')}_${variant}`
 
 /** Endpoints body: endpoints/{observedAt}/{scope}.json.gz */
 export const observationKey = (observedAt: string, scope: string): string =>

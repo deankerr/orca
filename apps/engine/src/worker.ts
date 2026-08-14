@@ -11,18 +11,15 @@ import * as Cause from 'effect/Cause'
 import * as Config from 'effect/Config'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient'
 import * as HttpServerRequest from 'effect/unstable/http/HttpServerRequest'
 import * as HttpServerResponse from 'effect/unstable/http/HttpServerResponse'
 
-import { fromBinding } from './binding.ts'
 import * as Capture from './capture/index.ts'
 import * as EntityClocks from './entities/index.ts'
 import { withAppLogger } from './logging.ts'
-import * as ObservationStore from './observations/index.ts'
+import * as Observations from './observations/index.ts'
 import { CaptureQueue } from './resources/CaptureQueue.ts'
 import { EntitiesDB } from './resources/EntitiesDB.ts'
-import { ObservationsBucket } from './resources/ObservationsBucket.ts'
 import { PublicApiV2DB } from './resources/PublicApiV2DB.ts'
 import { SinksQueue } from './resources/SinksQueue.ts'
 import * as ConvexCurrent from './sinks/convex-current/index.ts'
@@ -40,11 +37,6 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
     const engineHttpApiKey = yield* Config.redacted('ENGINE_HTTP_API_KEY')
 
     // 2–3. Resources + clients
-    const observationsBucket = yield* ObservationsBucket
-    const observationStore = ObservationStore.make(
-      yield* Cloudflare.R2.ReadWriteBucket(observationsBucket),
-    )
-
     const entitiesDb = yield* EntitiesDB
     const entityClocks = EntityClocks.make(
       yield* SQL.D1(yield* Cloudflare.D1.QueryDatabase(entitiesDb)),
@@ -63,8 +55,7 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
 
     // 4. Deep pipelines
     const startFullSample = yield* Capture.makeFullSample({
-      observationStore,
-      sendBatch: (messages) => fromBinding(captureQueueWriter.sendBatch(messages)),
+      sendBatch: (messages) => captureQueueWriter.sendBatch(messages),
     })
 
     yield* Cloudflare.Workers.cron('30 * * * *', () =>
@@ -82,13 +73,11 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
 
     yield* Capture.wire({
       entityClocks,
-      observationStore,
       queue: captureQueue,
       sinksQueueWriter,
     })
 
     yield* Sinks.wire({
-      observationStore,
       queue: sinksQueue,
       sinks: [
         ConvexCurrent.make({
@@ -150,9 +139,9 @@ export default class Engine extends Cloudflare.Worker<Engine>()(
         Cloudflare.Workers.CronEventSourceLive,
         Cloudflare.Queues.EventSourceLive,
         Cloudflare.Queues.WriteQueueBinding,
-        Cloudflare.R2.ReadWriteBucketBinding,
         Cloudflare.D1.QueryDatabaseBinding,
-        Capture.OpenRouterClient.layer.pipe(Layer.provide(FetchHttpClient.layer)),
+        Capture.OpenRouterClient.layer,
+        Observations.layerR2,
       ),
     ),
   ),

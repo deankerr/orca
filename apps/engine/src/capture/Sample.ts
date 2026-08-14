@@ -7,7 +7,6 @@ import * as Schema from 'effect/Schema'
 
 import type { EntityClocks } from '../entities/index.ts'
 import * as Observations from '../observations/index.ts'
-import type { ObservationStore } from '../observations/index.ts'
 import type { CaptureJob } from './Message.ts'
 import { OpenRouterClient } from './OpenRouter.ts'
 
@@ -24,9 +23,12 @@ export type SampleResult = {
   readonly observed: boolean
 }
 
-export const make = (deps: { observationStore: ObservationStore; entityClocks: EntityClocks }) =>
-  OpenRouterClient.pipe(
-    Effect.map((openRouter) =>
+export const make = (deps: { entityClocks: EntityClocks }) =>
+  Effect.all({
+    archive: Observations.ObservationArchive,
+    openRouter: OpenRouterClient,
+  }).pipe(
+    Effect.map(({ archive, openRouter }) =>
       Effect.fn(function* sampleScope(job: CaptureJob) {
         const captured = yield* openRouter.fetchEndpoints(job)
         const now = yield* DateTime.now
@@ -51,7 +53,7 @@ export const make = (deps: { observationStore: ObservationStore; entityClocks: E
 
         // Persist only the validated success envelope.
         const body = encodeDataEnvelope({ data: captured.data })
-        yield* deps.observationStore.putObservation({
+        yield* archive.putObservation({
           body,
           observedAt,
           permaslug: job.permaslug,
