@@ -6,10 +6,18 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev",
     "test": "bun test"
   },
   "dependencies": {
-    "@orca/entities": "workspace:*",
+    "@distilled.cloud/cloudflare": "1.0.0-rc.4",
+    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effect/sql-d1": "catalog:",
+    "@orca/inventory": "workspace:*",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

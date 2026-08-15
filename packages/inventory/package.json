@@ -1,0 +1,20 @@
+{
+  "name": "@orca/inventory",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy"
+  },
+  "dependencies": {
+    "alchemy": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

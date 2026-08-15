@@ -69,6 +69,7 @@ export default defineConfig({
     // standard ultracite overrides
     'array-type': 'off',
     'func-style': 'off',
+    'jsdoc/check-tag-names': 'off',
     'no-inline-comments': 'off',
     'no-use-before-define': 'off',
     'no-warning-comments': 'off',

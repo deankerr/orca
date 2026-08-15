@@ -1,0 +1,16 @@
+{
+  "name": "@orca/openrouter",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@orca/inventory": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
