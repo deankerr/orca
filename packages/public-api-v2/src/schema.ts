@@ -86,9 +86,9 @@ export type Model = typeof Model.Type
 
 // * ── response ───────────────────────────────────────────────────────────────
 
-/** Full GET payload: watermark + models. */
+/** Full GET payload: watermark + models. Empty is not a valid projection. */
 export const ModelsResponse = Schema.Struct({
-  models: Schema.Array(Model),
+  models: Schema.NonEmptyArray(Model),
   updated_at: Schema.String,
 })
 

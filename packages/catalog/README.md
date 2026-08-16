@@ -7,6 +7,7 @@ The package currently provides:
 - the `@orca/openrouter` reader as an independent upstream source;
 - a Cloudflare Workflow that reads and publishes one inventory using a durable task;
 - the shared `@orca/inventory` module for replace-in-place current data and its coarse daily archive;
+- a best-effort write of the legacy V2 projection through `@orca/public-api-v2` after each publish;
 - an hourly Worker trigger, an authenticated manual trigger, and a `/runs/:runId` Workflow status
   route.
 
@@ -24,7 +25,8 @@ bun run --cwd packages/catalog trigger
 ```
 
 Deploy `@orca/inventory` for the same Alchemy stage first. Catalog uses its shared
-`InventoryStore.layer`; it does not define R2 buckets, object keys, or inventory codecs itself.
+`InventoryStore.layer` and `PublicApiV2.layer`. It does not define R2 buckets or inventory codecs
+itself. A V2 materialize failure is logged and does not fail the inventory publish.
 
 Set `CATALOG_API_KEY` in `packages/catalog/.env` before deploying. Alchemy binds it to the
 Worker as a config secret, while Bun loads the same value for `trigger`. The command takes no

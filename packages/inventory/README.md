@@ -20,3 +20,4 @@ bun run --cwd packages/inventory deploy
 
 The `models/` namespace is the OpenRouter model inventory area of the shared bucket. Other OpenRouter
 datasets can use their own top-level namespaces if legacy or future storage is consolidated into it.
+Product packages may write their own derived objects in this bucket and own those keys.

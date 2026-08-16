@@ -4,6 +4,7 @@
 
 - Use `bun run fix` for all work validation, including type checking. Do not use `tsc`.
 - Inline linter disables may be used if the reasoning is justified.
+- Effect code should be documented with comments for someone who is new to and learning Effect.
 
 ## New Architecture rewrite
 
@@ -39,7 +40,7 @@ This project vendors external repositories under @repos/
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
 
-## Overview
+## Overview (legacy stack)
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
 

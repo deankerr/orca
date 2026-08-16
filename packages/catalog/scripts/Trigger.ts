@@ -57,7 +57,7 @@ async function readAlchemyStateCredentials() {
 async function startCatalogRun(workerUrl: string, apiKey: string) {
   // The same env value is bound to the Worker as a config secret during deployment and loaded by
   // Bun here, leaving only one development credential to configure.
-  const response = await fetch(new URL('/updates', workerUrl), {
+  const response = await fetch(new URL('/run', workerUrl), {
     headers: { authorization: `Bearer ${apiKey}` },
     method: 'POST',
   })

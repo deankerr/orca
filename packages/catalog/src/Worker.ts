@@ -34,24 +34,11 @@ export default class Worker extends Cloudflare.Worker<Worker>()(
 
         if (request.method === 'GET' && url.pathname === '/') {
           return yield* HttpServerResponse.json({
-            archive: 'r2',
-            current: 'r2',
             package: '@orca/catalog',
-            source: 'openrouter',
-            trigger: '30 * * * *',
           })
         }
 
-        if (request.method === 'GET' && url.pathname.startsWith('/runs/')) {
-          const runId = url.pathname.slice('/runs/'.length)
-          if (runId.length === 0) {
-            return yield* HttpServerResponse.json({ error: 'run id is required' }, { status: 400 })
-          }
-          const instance = yield* workflow.get(runId)
-          return yield* HttpServerResponse.json(yield* instance.status())
-        }
-
-        if (request.method === 'POST' && url.pathname === '/updates') {
+        if (request.method === 'POST' && url.pathname === '/run') {
           if (request.headers.authorization !== `Bearer ${Redacted.value(catalogApiKey)}`) {
             return yield* HttpServerResponse.json({ error: 'unauthorized' }, { status: 401 })
           }
