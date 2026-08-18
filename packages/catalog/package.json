@@ -1,0 +1,26 @@
+{
+  "name": "@orca/catalog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev",
+    "trigger": "bun scripts/Trigger.ts"
+  },
+  "dependencies": {
+    "@distilled.cloud/cloudflare": "1.0.0-rc.4",
+    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@orca/inventory": "workspace:*",
+    "@orca/openrouter": "workspace:*",
+    "@orca/public-api-v2": "workspace:*",
+    "alchemy": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

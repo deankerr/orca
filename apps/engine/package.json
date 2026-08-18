@@ -9,10 +9,10 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@effect/platform-bun": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-d1": "catalog:",
     "@orca/entities": "workspace:*",
-    "@orca/public-api-v2": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

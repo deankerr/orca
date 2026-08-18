@@ -1,5 +1,5 @@
 // * Port: product plugin over banked raw observations.
-// * Real seam — multiple adapters (convex-current, @orca/public-api-v2, …).
+// * The remaining adapter is convex-current while this experiment is retired.
 import type * as Effect from 'effect/Effect'
 
 /** One archived observation, body already loaded from the archive. */

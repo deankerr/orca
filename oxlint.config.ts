@@ -69,6 +69,7 @@ export default defineConfig({
     // standard ultracite overrides
     'array-type': 'off',
     'func-style': 'off',
+    'jsdoc/check-tag-names': 'off',
     'no-inline-comments': 'off',
     'no-use-before-define': 'off',
     'no-warning-comments': 'off',
@@ -91,6 +92,10 @@ export default defineConfig({
     'promise/prefer-await-to-callbacks': 'off',
     'promise/prefer-await-to-then': 'off', // Effect.catch / combinators
     'require-yield': 'off',
+    // Data.taggedEnum unit variants are `Empty: {}`. Oxlint's ban-types has no allowlist,
+    // and Effect's oxlintrc turns no-empty-object-type off for the same reason.
+    'typescript/ban-types': 'off',
+    'typescript/no-empty-object-type': 'off',
     'unicorn/filename-case': 'off',
     'unicorn/no-array-for-each': 'off',
     'unicorn/no-array-method-this-argument': 'off', // Effect.map(fa, f)

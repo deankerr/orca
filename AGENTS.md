@@ -4,10 +4,22 @@
 
 - Use `bun run fix` for all work validation, including type checking. Do not use `tsc`.
 - Inline linter disables may be used if the reasoning is justified.
+- Effect code should be documented with comments for someone who is new to and learning Effect.
 
 ## New Architecture rewrite
 
-- `apps/engine`: Cloudflare, Alchemy, Effect
+**There is no new architecture production stage deployment. Now is the time to break things.**
+
+**Now exploring notes/reports/product-platform-strategy.md**
+
+- Persisting historical, byte-for-byte capture data is of low value, and shouldn't include errors or metrics, which belong in telemetry.
+- Always use a platform solution before rolling our own.
+- Always start with the simplest solution possible that meets our needs. No "nice to haves".
+- Alchemy Layers allow us to easily integrate shared services and Cloudflare resources. notes/alchemy-layers.md
+- There is practically no limit to the amount of resources we can instantly provision/destroy with the Cloudflare $5 plan.
+- Our product services to be modular pieces that can be moved when and where needed, with packages creating a real public/private boundary.
+
+- `apps/engine`: Cloudflare, Alchemy, Effect. _To be removed. Shouldn't be used as source of patterns._
 - See @notes/objectives.md for primary objectives and requirements.
 - `notes/agent-observability.md`
 - Critical for working with Effect V4: @repos/effect/MIGRATION.md @repos/effect/LLMS.md
@@ -28,7 +40,7 @@ This project vendors external repositories under @repos/
 - All Effect packages must use a unified, pinned version.
 - Unstable packages `effect/unstable/*` may be used.
 
-## Overview
+## Overview (legacy stack)
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
 

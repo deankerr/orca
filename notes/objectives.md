@@ -1,7 +1,6 @@
 # Objectives
 
-- Capture everything trustworthy as immutable raw artifacts, then project only what a product needs
-  into a cache or query store. A projection is disposable and rebuildable; raw capture is not.
+- Capture what we use as raw artifacts, then build disposable and rebuildable projections
 - Develop and deploy reliable and accessible bulk data capture solution
 - Unify historical and active capture data sources
 - Enable modular processing pipelines/utilities

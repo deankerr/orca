@@ -4,8 +4,7 @@ import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 
-import { ObservationRef } from '../observations/index.ts'
-import type { ObservationStore } from '../observations/index.ts'
+import { ObservationArchive, ObservationRef } from '../observations/index.ts'
 import type { ObservationItem, Sink } from './Sink.ts'
 
 const decodeRefs = Schema.decodeUnknownEffect(Schema.Array(ObservationRef))
@@ -39,30 +38,31 @@ const receiveIsolated = (sink: Sink) => (batch: ReadonlyArray<ObservationItem>) 
   )
 
 /** Process one windowed batch of SinksQueue messages. */
-export const processBatch = (deps: {
-  observationStore: ObservationStore
-  sinks: ReadonlyArray<Sink>
-}) =>
-  Effect.fn(function* processBatch(messages: ReadonlyArray<{ body: unknown }>) {
-    const refs = yield* decodeRefs(messages.map((message) => message.body))
+export const processBatch = (deps: { sinks: ReadonlyArray<Sink> }) =>
+  ObservationArchive.pipe(
+    Effect.map((archive) =>
+      Effect.fn(function* processBatch(messages: ReadonlyArray<{ body: unknown }>) {
+        const refs = yield* decodeRefs(messages.map((message) => message.body))
 
-    // Parallel R2 gets — bank size is small (≤ queue batchSize).
-    const items: ObservationItem[] = yield* Effect.forEach(
-      refs,
-      (ref) =>
-        deps.observationStore.getObservation(ref).pipe(
-          Effect.map((body) => ({
-            body,
-            observedAt: ref.observedAt,
-            scopeKey: ref.scopeKey,
-          })),
-        ),
-      { concurrency: 'unbounded' },
-    )
+        // Parallel R2 gets — bank size is small (≤ queue batchSize).
+        const items: ObservationItem[] = yield* Effect.forEach(
+          refs,
+          (ref) =>
+            archive.getObservation(ref).pipe(
+              Effect.map((body) => ({
+                body,
+                observedAt: ref.observedAt,
+                scopeKey: ref.scopeKey,
+              })),
+            ),
+          { concurrency: 'unbounded' },
+        )
 
-    // Independent product I/O — concurrent; each plugin isolated.
-    yield* Effect.forEach(deps.sinks, (sink) => receiveIsolated(sink)(items), {
-      concurrency: 'unbounded',
-      discard: true,
-    })
-  })
+        // Independent product I/O — concurrent; each plugin isolated.
+        yield* Effect.forEach(deps.sinks, (sink) => receiveIsolated(sink)(items), {
+          concurrency: 'unbounded',
+          discard: true,
+        })
+      }),
+    ),
+  )

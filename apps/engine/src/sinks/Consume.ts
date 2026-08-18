@@ -10,37 +10,34 @@ import * as Effect from 'effect/Effect'
 import * as Stream from 'effect/Stream'
 
 import { withAppLogger } from '../logging.ts'
-import type { ObservationStore } from '../observations/index.ts'
 import { processBatch } from './Bank.ts'
 import type { Sink } from './Sink.ts'
 
 /** Register SinksQueue consumer. */
-export const register = (
-  queue: Cloudflare.Queues.Queue,
-  deps: { observationStore: ObservationStore; sinks: ReadonlyArray<Sink> },
-) => {
-  const process = processBatch(deps)
+export const register = (queue: Cloudflare.Queues.Queue, deps: { sinks: ReadonlyArray<Sink> }) =>
+  Effect.gen(function* registerSinksConsumer() {
+    const process = yield* processBatch(deps)
 
-  return Cloudflare.Queues.consumeQueueMessages(
-    queue,
-    {
-      batchSize: 25,
-      maxConcurrency: 2,
-      maxRetries: 0,
-      maxWaitTime: '15 seconds',
-    },
-    (stream) =>
-      withAppLogger(
-        Stream.runCollect(stream).pipe(
-          Effect.flatMap((chunk) => process(chunk)),
-          Effect.annotateLogs({ phase: 'sinks' }),
-          // * Decode/load defects still ack — do not redrive capture.
-          Effect.catchCause((cause) =>
-            Effect.logError('sinks: batch failed (acking)').pipe(
-              Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'sinks' }),
+    return yield* Cloudflare.Queues.consumeQueueMessages(
+      queue,
+      {
+        batchSize: 25,
+        maxConcurrency: 2,
+        maxRetries: 0,
+        maxWaitTime: '15 seconds',
+      },
+      (stream) =>
+        withAppLogger(
+          Stream.runCollect(stream).pipe(
+            Effect.flatMap((chunk) => process(chunk)),
+            Effect.annotateLogs({ phase: 'sinks' }),
+            // * Decode/load defects still ack — do not redrive capture.
+            Effect.catchCause((cause) =>
+              Effect.logError('sinks: batch failed (acking)').pipe(
+                Effect.annotateLogs({ cause: Cause.pretty(cause), phase: 'sinks' }),
+              ),
             ),
           ),
         ),
-      ),
-  )
-}
+    )
+  })
