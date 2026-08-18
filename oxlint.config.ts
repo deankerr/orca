@@ -1,11 +1,10 @@
-import { recommended } from '@effect/tsgo/oxlint-presets'
 import { defineConfig } from 'oxlint'
 import core from 'ultracite/oxlint/core'
 import next from 'ultracite/oxlint/next'
 import react from 'ultracite/oxlint/react'
 
 export default defineConfig({
-  extends: [core, react, next, recommended],
+  extends: [core, react, next],
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
     '.agents/skills',
@@ -43,25 +42,6 @@ export default defineConfig({
         'typescript/prefer-nullish-coalescing': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'unicorn/no-array-sort': 'off',
-      },
-    },
-    {
-      // non-effectful packages
-      files: [
-        'apps/web/**/*.{ts,tsx}',
-        'apps/logos/**/*.{ts,tsx}',
-        'packages/backend/**/*.{ts,tsx}',
-      ],
-      rules: {
-        'effecttsgo/async-function': 'off',
-        'effecttsgo/global-console': 'off',
-        'effecttsgo/global-date': 'off',
-        'effecttsgo/global-fetch': 'off',
-        'effecttsgo/global-random': 'off',
-        'effecttsgo/global-timers': 'off',
-        'effecttsgo/new-promise': 'off',
-        'effecttsgo/node-builtin-import': 'off',
-        'effecttsgo/process-env': 'off',
       },
     },
   ],

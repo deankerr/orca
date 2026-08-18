@@ -18,7 +18,7 @@ import { computeDelta, fmtValue, formatPricingFields, splitPath } from '../share
 import { groupChanges } from '../shared/groups'
 import { isNonEmptyString, truncate } from '../shared/utils'
 import { COLORS } from './constants'
-import { getAuthorUrl, getLogoIconUrl } from './utils'
+import { getEndpointsGridUrl, getLogoIconUrl } from './utils'
 
 // -- Characters and symbols
 
@@ -84,7 +84,7 @@ function modelAuthor(model: ModelChange) {
   return {
     name: model.model.slug,
     iconURL: getLogoIconUrl(model.model.slug),
-    url: getAuthorUrl(model.model.slug),
+    url: getEndpointsGridUrl(model.model.slug),
   }
 }
 
@@ -133,7 +133,7 @@ function endpointAuthor(ep: EndpointChange) {
   return {
     name: ep.model.slug,
     iconURL: getLogoIconUrl(ep.model.slug),
-    url: getAuthorUrl(ep.model.slug, ep.endpoint.uuid),
+    url: getEndpointsGridUrl(ep.model.slug, ep.endpoint.uuid),
   }
 }
 

@@ -8,10 +8,13 @@ export type DiscordPayload = RESTPostAPIWebhookWithTokenJSONBody & {
   embeds?: APIEmbed[]
 }
 
-export function getAuthorUrl(slug: string, uuid?: string): string {
-  const baseUrl = getEnv('ORCA_PUBLIC_URL')
-  const uuidParam = isNonEmptyString(uuid) ? `&uuid=${uuid.slice(0, 6)}` : ''
-  return `${baseUrl}/?q=${slug}${uuidParam}`
+export function getEndpointsGridUrl(slug: string, uuid?: string): string {
+  const url = new URL(getEnv('ORCA_PUBLIC_URL'))
+  url.searchParams.set('q', slug)
+  if (isNonEmptyString(uuid)) {
+    url.searchParams.set('uuid', uuid.slice(0, 6))
+  }
+  return url.toString()
 }
 
 // Discord renders embed icons from absolute URLs, so always use the deployed logo service
