@@ -145,7 +145,7 @@ export function EndpointsDataGrid({
     data: rows,
     state: {
       sorting: sort.sorting,
-      columnPinning: isMobile === false ? { left: ['uuid', 'model', 'provider'] } : {},
+      columnPinning: isMobile === false ? { left: ['model', 'provider'] } : {},
     },
     columnResizeMode: 'onChange',
     onSortingChange: sort.onSortingChange,

@@ -29,24 +29,6 @@ function EmptyCell() {
 
 export const columns: ColumnDef<EndpointRow>[] = [
   {
-    id: 'uuid',
-    accessorFn: (row) => row.uuid,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
-    cell: ({ row }) => (
-      <EndpointUuid
-        uuid={row.original.uuid}
-        modelSlug={row.original.model.slug}
-        handle={dataGridPopoverHandle}
-      />
-    ),
-    size: 70,
-    enableSorting: false,
-    meta: {
-      cellClassName: 'text-center px-1',
-    },
-  },
-
-  {
     id: 'model',
     accessorFn: (row) => `${row.model.name} ${row.model.slug}`,
     header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
@@ -124,6 +106,46 @@ export const columns: ColumnDef<EndpointRow>[] = [
       return <EmptyCell />
     },
     size: 110,
+    sortUndefined: 'last',
+    meta: {
+      cellClassName: 'text-right',
+    },
+  },
+
+  {
+    id: 'cacheReadPrice',
+    accessorFn: (row) => row.pricing.text_cache_read,
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="CACHE READ" subtitle="$/MTOK" />
+    ),
+    cell: ({ getValue }) => {
+      const cacheReadPrice = getValue<number | undefined>()
+      if (cacheReadPrice !== undefined) {
+        return formatPricing('text_cache_read', cacheReadPrice)?.value
+      }
+      return <EmptyCell />
+    },
+    size: 120,
+    sortUndefined: 'last',
+    meta: {
+      cellClassName: 'text-right',
+    },
+  },
+
+  {
+    id: 'cacheWritePrice',
+    accessorFn: (row) => row.pricing.text_cache_write,
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="CACHE WRITE" subtitle="$/MTOK" />
+    ),
+    cell: ({ getValue }) => {
+      const cacheWritePrice = getValue<number | undefined>()
+      if (cacheWritePrice !== undefined) {
+        return formatPricing('text_cache_write', cacheWritePrice)?.value
+      }
+      return <EmptyCell />
+    },
+    size: 120,
     sortUndefined: 'last',
     meta: {
       cellClassName: 'text-right',
@@ -353,6 +375,24 @@ export const columns: ColumnDef<EndpointRow>[] = [
     enableSorting: false,
     meta: {
       cellClassName: 'justify-center',
+    },
+  },
+
+  {
+    id: 'uuid',
+    accessorFn: (row) => row.uuid,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
+    cell: ({ row }) => (
+      <EndpointUuid
+        uuid={row.original.uuid}
+        modelSlug={row.original.model.slug}
+        handle={dataGridPopoverHandle}
+      />
+    ),
+    size: 70,
+    enableSorting: false,
+    meta: {
+      cellClassName: 'text-center px-1',
     },
   },
 ]
