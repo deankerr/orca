@@ -20,6 +20,7 @@ export const get = internalQuery({
     const endpoints = await ctx.db
       .query('or_views_endpoints')
       .withIndex('by_unavailable_at', (q) => q.eq('unavailable_at', undefined))
+      .filter((q) => q.eq(q.field('disabled'), false))
       .collect()
 
     const models = transformEndpointsToV2Models({ endpoints })
