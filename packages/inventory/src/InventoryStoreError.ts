@@ -1,12 +1,15 @@
-import * as Data from 'effect/Data'
+import * as Predicate from 'effect/Predicate'
+import * as Schema from 'effect/Schema'
 
-export class InventoryStoreError extends Data.TaggedError('InventoryStoreError')<{
-  readonly cause: unknown
-  readonly operation:
-    | 'compress-archive'
-    | 'decode-current'
-    | 'encode'
-    | 'read-current'
-    | 'write-archive'
-    | 'write-current'
-}> {}
+// oxlint-disable-next-line unicorn/throw-new-error -- Schema.TaggedError factory, not `throw Error()`
+export class InventoryStoreError extends Schema.TaggedError<InventoryStoreError>()(
+  'InventoryStoreError',
+  {
+    cause: Schema.Defect(),
+  },
+) {
+  // Cause.pretty / String(error) should show the underlying miss, not an empty tag.
+  override get message() {
+    return Predicate.isError(this.cause) ? this.cause.message : String(this.cause)
+  }
+}
