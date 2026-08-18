@@ -7,12 +7,7 @@ export const endpointModalityInputAttributes = [
   'video_input',
 ] as const
 
-export const endpointModalityOutputAttributes = [
-  'image_output',
-  'audio_output',
-  'speech_output',
-  'video_output',
-] as const
+export const endpointModalityOutputAttributes = ['image_output', 'audio_output'] as const
 
 export const endpointModalityAttributes = [
   'text_output',
