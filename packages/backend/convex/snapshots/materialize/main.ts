@@ -44,6 +44,9 @@ export const run = internalAction({
 
     // * schedule materializeChanges
     await ctx.scheduler.runAfter(0, internal.snapshots.materializedChanges.main.run, {})
+
+    // * refresh public API v2 cache
+    await ctx.scheduler.runAfter(0, internal.public_api.v2.cache.refresh, {})
   },
 })
 

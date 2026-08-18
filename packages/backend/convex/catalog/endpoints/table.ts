@@ -122,3 +122,4 @@ export const endpointsTable = defineTable({
   .index('by_model_slug', ['model.slug'])
   .index('by_provider_slug', ['provider.slug'])
   .index('by_uuid', ['uuid'])
+  .index('by_unavailable_at', ['unavailable_at'])

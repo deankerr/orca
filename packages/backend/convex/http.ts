@@ -5,6 +5,10 @@ import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
+import {
+  serve as servePublicApiV2,
+  serveCached as servePublicApiV2Cached,
+} from './public_api/v2/http'
 import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
@@ -114,13 +118,18 @@ http.route({
   }),
 })
 
+// Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.
 http.route({
   path: '/public-api-preview/v2',
   method: 'GET',
-  handler: httpAction(async (ctx) => {
-    const result = await ctx.runQuery(api.public_api.preview_v2.getModels, {})
-    return Response.json(result)
-  }),
+  handler: servePublicApiV2,
+})
+
+// Serves the gzipped snapshot from v2/cache.refresh. See public_api/v2/http.ts.
+http.route({
+  path: '/public-api-preview/v2-cached',
+  method: 'GET',
+  handler: servePublicApiV2Cached,
 })
 
 export default http
