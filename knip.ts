@@ -11,10 +11,6 @@ const config: KnipConfig = {
       entry: ['scripts/*.ts', '**/*.test.ts'],
       ignoreDependencies: ['@radix-ui/colors'],
     },
-
-    'apps/engine': {
-      entry: ['alchemy.run.ts'],
-    },
   },
 }
 

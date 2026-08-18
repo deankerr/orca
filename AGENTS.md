@@ -5,29 +5,6 @@
 - Use `bun run fix` for all work validation, including type checking. Do not use `tsc`.
 - Inline linter disables may be used if the reasoning is justified.
 
-## New Architecture rewrite
-
-- `apps/engine`: Cloudflare, Alchemy, Effect
-- See @notes/objectives.md for primary objectives and requirements.
-- `notes/agent-observability.md`
-- Critical for working with Effect V4: @repos/effect/MIGRATION.md @repos/effect/LLMS.md
-- Conveniently chunked version of the Effect Schema V4 docs: @docs/effect-schema/
-- Refer to @docs/openrouter/ when working directly with model/endpoint data
-
-## Vendored Repositories
-
-This project vendors external repositories under @repos/
-
-- Current repos: @repos/effect/ @repos/alchemy/
-- Reference material for preferred, idiomatic usage examples and patterns.
-- Treat these as the source of truth, over training data or web search results.
-- Do not import from @repos/ - application code should continue importing from normal package dependencies
-
-## Effect V4 Beta
-
-- All Effect packages must use a unified, pinned version.
-- Unstable packages `effect/unstable/*` may be used.
-
 ## Overview
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.

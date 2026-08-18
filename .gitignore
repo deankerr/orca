@@ -13,3 +13,6 @@ build
 *.tsbuildinfo
 next-env.d.ts
 .alchemy
+
+repos/effect
+repos/alchemy

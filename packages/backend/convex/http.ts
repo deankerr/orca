@@ -3,7 +3,6 @@ import { httpRouter } from 'convex/server'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
 import { archiveSyncBundleGzip } from './admin/archiveSync'
-import { upsertCurrentEndpoints } from './current/endpoints/http'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
 import { isNonEmptyString } from './shared/utils'
@@ -122,12 +121,6 @@ http.route({
     const result = await ctx.runQuery(api.public_api.preview_v2.getModels, {})
     return Response.json(result)
   }),
-})
-
-http.route({
-  path: '/current/endpoints',
-  method: 'POST',
-  handler: upsertCurrentEndpoints,
 })
 
 export default http
