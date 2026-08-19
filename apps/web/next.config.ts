@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
     // * public api preview
     {
       source: '/api/preview/v2/models',
-      destination: getConvexHttpUrl('/public-api-preview/v2'),
+      destination: getConvexHttpUrl('/public-api-preview/v2-cached'),
     },
   ],
   // This is required to support PostHog trailing slash API requests
