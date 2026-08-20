@@ -48,7 +48,7 @@ A preview HTTP API exposing curated model and endpoint data as JSON:
 GET https://orca.orb.town/api/preview/v2/models
 ```
 
-The web route rewrites to a Convex HTTP action (`packages/backend/convex/public_api/preview_v2.ts`). It's an explicit preview — the response shape may change. The `/api` page on the site documents the current response.
+The web route rewrites to the cached Convex HTTP action (`packages/backend/convex/public_api/v2/`). It's an explicit preview — the response shape may change. The `/api` page on the site documents the current response.
 
 ## Development
 

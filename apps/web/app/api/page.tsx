@@ -1,9 +1,32 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 
 import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 
 import { ClientApiCodeBlock } from './client-api-preview'
+import { API_PATH } from './public-api'
+
+async function getPublicApiUrl() {
+  const requestHeaders = await headers()
+  const host = (requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host'))
+    ?.split(',')[0]
+    ?.trim()
+
+  if (host === undefined || host === '') {
+    return API_PATH
+  }
+
+  const forwardedProto = requestHeaders.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  const protocol =
+    forwardedProto === 'http' || forwardedProto === 'https'
+      ? forwardedProto
+      : host.startsWith('localhost') || host.startsWith('127.0.0.1')
+        ? 'http'
+        : 'https'
+
+  return `${protocol}://${host}${API_PATH}`
+}
 
 export const metadata: Metadata = {
   title: 'ORCA API',
@@ -11,9 +34,9 @@ export const metadata: Metadata = {
     'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
 }
 
-const API_URL = 'https://orca.orb.town/api/preview/v2/models'
+export default async function Page() {
+  const apiUrl = await getPublicApiUrl()
 
-export default function Page() {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 lg:flex-row lg:justify-center lg:overflow-hidden lg:overflow-y-hidden">
       {/* * Left Column - Documentation */}
@@ -45,11 +68,11 @@ export default function Page() {
         <Item variant="outline">
           <ItemContent>
             <ItemTitle>Preview V2</ItemTitle>
-            <code className="font-mono text-xs break-all">{API_URL}</code>
+            <code className="font-mono text-xs break-all">{apiUrl}</code>
           </ItemContent>
           <ItemActions>
             <CopyToClipboardButton
-              value={API_URL}
+              value={apiUrl}
               size="icon"
               variant="secondary"
               aria-label="Copy API URL"

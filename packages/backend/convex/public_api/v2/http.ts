@@ -12,7 +12,11 @@ import { httpAction } from '../../_generated/server'
  */
 export const serve = httpAction(async (ctx) => {
   const result = await ctx.runQuery(internal.public_api.v2.queries.get)
-  return Response.json(result)
+  return Response.json(result, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  })
 })
 
 /**
@@ -106,6 +110,7 @@ function representationHeaders(args: {
     'Cache-Control': cacheControl,
     ETag: args.etag,
     'Last-Modified': new Date(args.updatedAt).toUTCString(),
+    'Access-Control-Allow-Origin': '*',
     Vary: 'Accept-Encoding',
   })
 
