@@ -4,7 +4,7 @@ import type { EndpointProjection } from '../catalog/endpoints'
 import { endpoints } from '../catalog/endpoints'
 import { models } from '../catalog/models'
 import { providers } from '../catalog/providers'
-import { isMaterialPricingUpdate } from '../shared/formatters'
+import { pricingKeyFromPath, pricingScale } from '../shared/pricing'
 import { baseProviderSlug } from '../shared/utils'
 
 export type ProviderRef = {
@@ -104,6 +104,26 @@ const PATH_REWRITES: Record<string, string> = {
   'data_policy.retains_prompts_days': 'data_policy.data_retention_days',
   'data_policy.training': 'data_policy.may_train_on_data',
   'data_policy.requires_user_ids': 'data_policy.shares_user_id',
+}
+
+const MINIMUM_PRICE_DELTA = 0.01
+const MINIMUM_PRICE_RELATIVE_DELTA = 0.1
+const MINIMUM_DISCOUNT_DELTA = 5
+
+function isMaterialPricingUpdate(path: string, before: unknown, after: unknown): boolean {
+  const key = pricingKeyFromPath(path)
+  if (key === null || typeof before !== 'number' || typeof after !== 'number') {
+    return true
+  }
+
+  const scaledDelta = Math.abs(after - before) * pricingScale(key)
+  if (key === 'discount') {
+    return scaledDelta >= MINIMUM_DISCOUNT_DELTA
+  }
+
+  const relativeDelta =
+    before === 0 ? Number.POSITIVE_INFINITY : Math.abs(after - before) / Math.abs(before)
+  return scaledDelta >= MINIMUM_PRICE_DELTA && relativeDelta >= MINIMUM_PRICE_RELATIVE_DELTA
 }
 
 function computeArrayDiff(before: unknown[], after: unknown[]): ArrayDiffItem[] {

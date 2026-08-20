@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'

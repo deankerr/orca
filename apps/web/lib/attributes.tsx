@@ -1,5 +1,5 @@
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
@@ -258,7 +258,10 @@ export const attributes = defineAttributes({
       if (hasValue(webSearchPrice)) {
         items.push({
           label: 'Per Request',
-          value: formatAttributePrice('web_search', webSearchPrice),
+          value: `$${webSearchPrice.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4,
+          })}`,
         })
       }
 

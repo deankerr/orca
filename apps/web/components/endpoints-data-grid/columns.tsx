@@ -1,5 +1,5 @@
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'

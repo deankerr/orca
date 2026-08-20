@@ -1,4 +1,4 @@
-import { formatPricing, pricingScale } from '@orca/backend/convex/shared/formatters'
+import { formatPricing, pricingScale } from '@orca/backend/convex/shared/pricing'
 import {
   addDays,
   addHours,

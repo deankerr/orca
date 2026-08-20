@@ -1,10 +1,9 @@
 import * as R from 'remeda'
 
-import { PRICING_FIELD_KEYS } from '../shared/formatters'
+import { PRICE_KEYS } from '../shared/pricing'
+import type { PriceKey } from '../shared/pricing'
 
-export const trackedPricingFields = PRICING_FIELD_KEYS
-
-export type TrackedPricingField = (typeof PRICING_FIELD_KEYS)[number]
+export type TrackedPricingField = PriceKey
 
 export type TrackedPricing = Partial<Record<TrackedPricingField, number>>
 
@@ -84,7 +83,7 @@ type ChangeGroup = [PricingHistoryChange, ...PricingHistoryChange[]]
 
 // Change documents retain storage paths; the catalog projection uses product
 // names. Keep that translation at the reconstruction seam.
-const PRICING_PATHS = new Map<string, TrackedPricingField>([
+const PRICING_PATHS = new Map<string, PriceKey>([
   ['pricing.text_input', 'text_input'],
   ['pricing.text_output', 'text_output'],
   ['pricing.cache_read', 'cache_read'],
@@ -95,6 +94,8 @@ const PRICING_PATHS = new Map<string, TrackedPricingField>([
   ['pricing.image_output', 'image_output'],
   ['pricing.discount', 'discount'],
 ])
+
+const trackedPricingFields = PRICE_KEYS
 
 function priceValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined

@@ -6,8 +6,16 @@ type EndpointDoc = Doc<'or_views_endpoints'>
 
 function createPricingProjection(pricing: EndpointDoc['pricing']) {
   return {
-    ...omit(pricing, ['internal_reasoning', 'audio_cache_input', 'request']),
+    text_input: pricing.text_input,
+    text_output: pricing.text_output,
+    cache_read: pricing.cache_read,
+    cache_write: pricing.cache_write,
+    audio_input: pricing.audio_input,
     audio_cache_read: pricing.audio_cache_input,
+    image_input: pricing.image_input,
+    image_output: pricing.image_output,
+    web_search: pricing.web_search,
+    discount: pricing.discount,
   }
 }
 

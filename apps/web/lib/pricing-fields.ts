@@ -1,9 +1,8 @@
-import { PRICING_FIELD_KEYS } from '@orca/backend/convex/shared/formatters'
-
-type ShownPricingKey = (typeof PRICING_FIELD_KEYS)[number]
+import { PRICE_KEYS, pricingUnit } from '@orca/backend/convex/shared/pricing'
+import type { PriceKey } from '@orca/backend/convex/shared/pricing'
 
 type PricingMetricMetadata = {
-  key: ShownPricingKey
+  key: PriceKey
   label: string
   historyUnitLabel: string
   alwaysCompare: boolean
@@ -19,31 +18,17 @@ const PRICING_LABELS = {
   image_input: 'Image Input',
   image_output: 'Image Output',
   discount: 'Discount',
-} as const satisfies Record<ShownPricingKey, string>
-
-const HISTORY_UNIT_LABELS = {
-  text_input: '$ / MTOK',
-  text_output: '$ / MTOK',
-  cache_read: '$ / MTOK',
-  cache_write: '$ / MTOK',
-  audio_input: '$ / MTOK',
-  audio_cache_read: '$ / MTOK',
-  image_input: '$ / KTOK',
-  image_output: '$ / KTOK',
-  discount: '%',
-} as const satisfies Record<ShownPricingKey, string>
+} as const satisfies Record<PriceKey, string>
 
 /** Shared ordering and labels for the comparison table and history selector. */
-export const PRICING_METRICS: readonly PricingMetricMetadata[] = PRICING_FIELD_KEYS.map((key) => ({
+export const PRICING_METRICS: readonly PricingMetricMetadata[] = PRICE_KEYS.map((key) => ({
   key,
   label: PRICING_LABELS[key],
-  historyUnitLabel: HISTORY_UNIT_LABELS[key],
+  historyUnitLabel: key === 'discount' ? '%' : `$ / ${pricingUnit(key)}`,
   alwaysCompare: key === 'text_input' || key === 'text_output',
 }))
 
-export function pricingMetricMetadata(metric: ShownPricingKey): PricingMetricMetadata {
-  // PRICING_METRICS is exhaustive by construction; this fallback keeps the
-  // function total if data from a newer backend reaches an older client.
+export function pricingMetricMetadata(metric: PriceKey): PricingMetricMetadata {
   return (
     PRICING_METRICS.find(({ key }) => key === metric) ?? {
       key: metric,
@@ -54,8 +39,6 @@ export function pricingMetricMetadata(metric: ShownPricingKey): PricingMetricMet
   )
 }
 
-export function isPricingMetric(value: string): value is ShownPricingKey {
-  return PRICING_FIELD_KEYS.some((metric) => metric === value)
+export function isPricingMetric(value: string): value is PriceKey {
+  return Object.hasOwn(PRICING_LABELS, value)
 }
-
-export type { ShownPricingKey }

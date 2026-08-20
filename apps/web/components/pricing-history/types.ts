@@ -1,7 +1,6 @@
 import type { api } from '@orca/backend/convex/_generated/api'
+import type { PriceKey } from '@orca/backend/convex/shared/pricing'
 import type { FunctionReturnType } from 'convex/server'
 
-import type { ShownPricingKey } from '@/lib/pricing-fields'
-
 export type EndpointPricingHistory = FunctionReturnType<typeof api.endpointPricingHistory.get>
-export type PricingMetric = ShownPricingKey
+export type PricingMetric = PriceKey
