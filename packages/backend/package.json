@@ -10,7 +10,7 @@
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
-    "discord-api-types": "^0.38.49",
+    "discord-api-types": "^0.38.53",
     "discord-interactions": "^4.4.0",
     "fflate": "^0.8.3",
     "json-diff-ts": "catalog:",
