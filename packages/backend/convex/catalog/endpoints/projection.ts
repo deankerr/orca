@@ -6,17 +6,8 @@ type EndpointDoc = Doc<'or_views_endpoints'>
 
 function createPricingProjection(pricing: EndpointDoc['pricing']) {
   return {
-    ...omit(pricing, [
-      'internal_reasoning',
-      'audio_cache_input',
-      'cache_read',
-      'cache_write',
-      'request',
-    ]),
-    reasoning_output: pricing.internal_reasoning,
-    audio_cache_write: pricing.audio_cache_input,
-    text_cache_read: pricing.cache_read,
-    text_cache_write: pricing.cache_write,
+    ...omit(pricing, ['internal_reasoning', 'audio_cache_input', 'request']),
+    audio_cache_read: pricing.audio_cache_input,
   }
 }
 
@@ -47,6 +38,7 @@ export function createEndpointProjection(doc: EndpointDoc) {
       'multipart',
       'status',
       'mandatory_reasoning',
+      'variable_pricings',
     ]),
     model: omit(doc.model, ['icon_url']),
     provider: omit(doc.provider, ['icon_url']),

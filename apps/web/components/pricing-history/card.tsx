@@ -21,6 +21,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useCachedQuery } from '@/hooks/use-cached-query'
+import { isPricingMetric, pricingMetricMetadata, PRICING_METRICS } from '@/lib/pricing-fields'
 import { cn } from '@/lib/utils'
 
 import type { ZoomWindow } from './chart-option'
@@ -28,7 +29,6 @@ import { FULL_HISTORY_WINDOW } from './chart-option'
 import { providerColor } from './colors'
 import { PricingHistoryLegend } from './legend'
 import type { PricingHistoryPlotHandle } from './plot'
-import { isPricingMetric, pricingMetricMetadata, PRICING_METRICS } from './pricing-fields'
 import { groupSeriesByProvider, hasMetricHistory, hasProviderMetricHistory } from './series'
 
 // ECharts is browser-only and relatively heavy. The card renders the complete

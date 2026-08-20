@@ -225,8 +225,7 @@ function FieldSetUpdatedItem({
 // -- Change item router
 
 function ChangeItem({ field }: { field: FieldChange }) {
-  const { key: rawKey } = splitPath(field.path)
-  const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
+  const { key } = splitPath(field.path)
 
   if (field.kind === 'set_updated') {
     return <FieldSetUpdatedItem fieldKey={key} field={field} />

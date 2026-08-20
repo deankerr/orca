@@ -65,8 +65,8 @@ export const get = query({
       since,
       truncated: changeHistory.truncated,
       series: reconstructPricingHistory({
-        // History uses the public pricing vocabulary just like the model page.
-        // The stored endpoint document still has raw names such as cache_read.
+        // History uses the product pricing vocabulary. Storage still uses
+        // names such as audio_cache_input; reconstruct maps those paths.
         endpoints: endpoints.map(createEndpointProjection),
         changes: changeHistory.changes,
         since,

@@ -264,8 +264,7 @@ function getNewEndpointFields(ep: EndpointChange): EmbedField[] {
 
   if (ref.pricing) {
     for (const result of formatPricingFields(ref.pricing)) {
-      const name = result.field.startsWith('text_cache_') ? result.field.slice(5) : result.field
-      fields.push({ name, value: result.value, inline: true })
+      fields.push({ name: result.field, value: result.value, inline: true })
     }
   }
 
@@ -318,8 +317,7 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
 function formatChangeItem(
   field: FieldChange,
 ): { category: string | null; key: string; content: string } | null {
-  const { category, key: rawKey } = splitPath(field.path)
-  const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
+  const { category, key } = splitPath(field.path)
   const fmt = (v: unknown) => truncate(fmtValue(v, field.path), TRUNCATE_LENGTH)
 
   if (field.kind === 'set_updated') {

@@ -90,15 +90,15 @@ const IGNORED_ENDPOINT_FIELDS = new Set([
   'supported_parameters',
 ])
 
-const EXCLUDED_PATHS = new Set(['variable_pricings'])
+const EXCLUDED_PATHS = new Set([
+  'variable_pricings',
+  'pricing.internal_reasoning',
+  'pricing.request',
+])
 
 const PATH_REWRITES: Record<string, string> = {
   'limits.text_output_tokens': 'max_output',
-  'pricing.cache_read': 'pricing.text_cache_read',
-  'pricing.cache_write': 'pricing.text_cache_write',
-  'pricing.audio_cache_input': 'pricing.audio_cache_write',
-  'pricing.internal_reasoning': 'pricing.reasoning_output',
-  'pricing.request': 'pricing.per_request',
+  'pricing.audio_cache_input': 'pricing.audio_cache_read',
   'data_policy.can_publish': 'data_policy.may_publish_data',
   'data_policy.retains_prompts': 'data_policy.may_retain_data',
   'data_policy.retains_prompts_days': 'data_policy.data_retention_days',

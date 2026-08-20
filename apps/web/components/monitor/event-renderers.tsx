@@ -275,19 +275,16 @@ function NewEndpointFields({ endpoint }: { endpoint: EndpointChange['endpoint'] 
     <FieldItemSet>
       {hasContextLength && <FieldItem label="context">{contextLength.toLocaleString()}</FieldItem>}
       {hasMaxOutput && <FieldItem label="max_output">{maxOutput.toLocaleString()}</FieldItem>}
-      {pricing.map((p) => {
-        const name = p.field.startsWith('text_cache_') ? p.field.slice(5) : p.field
-        return (
-          <FieldItem key={p.field} label={name}>
-            {p.value}
-            {p.unit && (
-              <span className="ml-1">
-                <FieldUnit>{p.unit}</FieldUnit>
-              </span>
-            )}
-          </FieldItem>
-        )
-      })}
+      {pricing.map((p) => (
+        <FieldItem key={p.field} label={p.field}>
+          {p.value}
+          {p.unit && (
+            <span className="ml-1">
+              <FieldUnit>{p.unit}</FieldUnit>
+            </span>
+          )}
+        </FieldItem>
+      ))}
     </FieldItemSet>
   )
 }

@@ -18,9 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PRICING_METRICS } from '@/lib/pricing-fields'
 
 import { ModelPageCardLoading } from './model-page-card'
-import { PRICING_METRICS } from './pricing-fields'
 import type { ModelEndpoint, PricingMetric } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
 import { formatNumber } from './utils'

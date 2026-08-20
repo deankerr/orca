@@ -9,8 +9,9 @@ import type { EndpointProjection } from '../catalog/endpoints'
 
 // -- Pricing fields
 //
-// Single source of truth for pricing field metadata and display formatting.
-// Object key order determines display order in shared helpers.
+// PRICING_FIELDS covers every projected pricing key that can be formatted.
+// PRICING_FIELD_KEYS is the display list for token/discount prices — not
+// capability-only rates like web_search.
 
 type EndpointProjectionPricing = EndpointProjection['pricing']
 export type PricingKey = keyof EndpointProjectionPricing
@@ -23,28 +24,25 @@ type PricingConfig = {
 const PRICING_FIELDS = {
   text_input: { scale: 1_000_000, unit: 'MTOK' },
   text_output: { scale: 1_000_000, unit: 'MTOK' },
-  text_cache_read: { scale: 1_000_000, unit: 'MTOK' },
-  text_cache_write: { scale: 1_000_000, unit: 'MTOK' },
-  reasoning_output: { scale: 1_000_000, unit: 'MTOK' },
+  cache_read: { scale: 1_000_000, unit: 'MTOK' },
+  cache_write: { scale: 1_000_000, unit: 'MTOK' },
   audio_input: { scale: 1_000_000, unit: 'MTOK' },
-  audio_cache_write: { scale: 1_000_000, unit: 'MTOK' },
-  image_input: { scale: 1000, unit: 'K' },
-  image_output: { scale: 1000, unit: 'K' },
-  web_search: { scale: 1, unit: 'REQ' },
+  audio_cache_read: { scale: 1_000_000, unit: 'MTOK' },
+  image_input: { scale: 1000, unit: 'KTOK' },
+  image_output: { scale: 1000, unit: 'KTOK' },
+  web_search: { scale: 1, unit: '' },
   discount: { scale: 100, unit: '' },
 } as const satisfies Record<PricingKey, PricingConfig>
 
 export const PRICING_FIELD_KEYS = [
   'text_input',
   'text_output',
-  'text_cache_read',
-  'text_cache_write',
-  'reasoning_output',
+  'cache_read',
+  'cache_write',
   'audio_input',
-  'audio_cache_write',
+  'audio_cache_read',
   'image_input',
   'image_output',
-  'web_search',
   'discount',
 ] as const satisfies readonly PricingKey[]
 
@@ -55,7 +53,7 @@ type PricingFormatResult = {
 }
 
 function isPricingKey(key: string): key is PricingKey {
-  return PRICING_FIELD_KEYS.some((pricingKey) => pricingKey === key)
+  return Object.hasOwn(PRICING_FIELDS, key)
 }
 
 export function formatPricing(
