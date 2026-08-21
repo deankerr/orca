@@ -1,5 +1,5 @@
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
@@ -103,23 +103,9 @@ export const attributes = defineAttributes({
     ),
     color: 'indigo',
     referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/reasoning-tokens',
-    resolve: (endpoint) => {
-      const active = endpoint.model?.reasoning ?? false
-      const items = []
-      const reasoningOutputPrice = endpoint.pricing?.reasoning_output
-
-      if (hasValue(reasoningOutputPrice)) {
-        items.push({
-          label: 'Output',
-          value: formatAttributePrice('reasoning_output', reasoningOutputPrice),
-        })
-      }
-
-      return {
-        active,
-        details: items.length > 0 ? items : undefined,
-      }
-    },
+    resolve: (endpoint) => ({
+      active: endpoint.model?.reasoning ?? false,
+    }),
   },
 
   tools: {
@@ -180,22 +166,22 @@ export const attributes = defineAttributes({
     color: 'cyan',
     referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
     resolve: (endpoint) => {
-      const textCacheRead = endpoint.pricing?.text_cache_read
-      const textCacheWrite = endpoint.pricing?.text_cache_write
-      const active = hasValue(textCacheRead)
+      const cacheRead = endpoint.pricing?.cache_read
+      const cacheWrite = endpoint.pricing?.cache_write
+      const active = hasValue(cacheRead)
       const items = []
 
-      if (hasValue(textCacheRead)) {
+      if (hasValue(cacheRead)) {
         items.push({
           label: 'Read',
-          value: formatAttributePrice('text_cache_read', textCacheRead),
+          value: formatAttributePrice('cache_read', cacheRead),
         })
       }
 
-      if (hasValue(textCacheWrite)) {
+      if (hasValue(cacheWrite)) {
         items.push({
           label: 'Write',
-          value: formatAttributePrice('text_cache_write', textCacheWrite),
+          value: formatAttributePrice('cache_write', cacheWrite),
         })
       }
 
@@ -221,20 +207,20 @@ export const attributes = defineAttributes({
     resolve: (endpoint) => {
       const active = endpoint.implicit_caching ?? false
       const items = []
-      const textCacheRead = endpoint.pricing?.text_cache_read
-      const textCacheWrite = endpoint.pricing?.text_cache_write
+      const cacheRead = endpoint.pricing?.cache_read
+      const cacheWrite = endpoint.pricing?.cache_write
 
-      if (hasValue(textCacheRead)) {
+      if (hasValue(cacheRead)) {
         items.push({
           label: 'Read',
-          value: formatAttributePrice('text_cache_read', textCacheRead),
+          value: formatAttributePrice('cache_read', cacheRead),
         })
       }
 
-      if (hasValue(textCacheWrite)) {
+      if (hasValue(cacheWrite)) {
         items.push({
           label: 'Write',
-          value: formatAttributePrice('text_cache_write', textCacheWrite),
+          value: formatAttributePrice('cache_write', cacheWrite),
         })
       }
 
@@ -272,7 +258,10 @@ export const attributes = defineAttributes({
       if (hasValue(webSearchPrice)) {
         items.push({
           label: 'Per Request',
-          value: formatAttributePrice('web_search', webSearchPrice),
+          value: `$${webSearchPrice.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4,
+          })}`,
         })
       }
 
@@ -587,7 +576,7 @@ export const attributes = defineAttributes({
       const active = endpoint.model?.input_modalities?.includes('audio') ?? false
       const items = []
       const audioInputPrice = endpoint.pricing?.audio_input
-      const audioCacheWritePrice = endpoint.pricing?.audio_cache_write
+      const audioCacheReadPrice = endpoint.pricing?.audio_cache_read
 
       if (hasValue(audioInputPrice)) {
         items.push({
@@ -596,10 +585,10 @@ export const attributes = defineAttributes({
         })
       }
 
-      if (hasValue(audioCacheWritePrice)) {
+      if (hasValue(audioCacheReadPrice)) {
         items.push({
           label: 'Cache',
-          value: formatAttributePrice('audio_cache_write', audioCacheWritePrice),
+          value: formatAttributePrice('audio_cache_read', audioCacheReadPrice),
         })
       }
 

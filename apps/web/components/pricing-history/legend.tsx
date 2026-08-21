@@ -1,11 +1,11 @@
 'use client'
 
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { pricingMetricMetadata } from '@/lib/pricing-fields'
 import { cn } from '@/lib/utils'
 
-import { pricingMetricMetadata } from './pricing-fields'
 import { hasProviderMetricHistory, providerPriceAt } from './series'
 import type { ProviderPricingSeries } from './series'
 import type { PricingMetric } from './types'

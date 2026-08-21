@@ -1,19 +1,17 @@
 import * as R from 'remeda'
 
-import { PRICING_FIELD_KEYS } from '../shared/formatters'
-import type { PricingKey } from '../shared/formatters'
+import { PRICE_KEYS } from '../shared/pricing'
+import type { PriceKey } from '../shared/pricing'
 
-const EXCLUDED_TRACKED_PRICING_FIELDS = new Set<PricingKey>(['reasoning_output', 'web_search'])
-
-export const trackedPricingFields = PRICING_FIELD_KEYS.filter(
-  (field) => !EXCLUDED_TRACKED_PRICING_FIELDS.has(field),
-)
-
-export type TrackedPricingField = PricingKey
+export type TrackedPricingField = PriceKey
 
 export type TrackedPricing = Partial<Record<TrackedPricingField, number>>
 
-export const EXCLUDED_PRICING_PATHS = ['pricing.internal_reasoning', 'pricing.web_search'] as const
+export const EXCLUDED_PRICING_PATHS = [
+  'pricing.internal_reasoning',
+  'pricing.web_search',
+  'pricing.request',
+] as const
 
 export type PricingHistoryEndpoint = {
   uuid: string
@@ -83,19 +81,21 @@ type EndpointState = {
 
 type ChangeGroup = [PricingHistoryChange, ...PricingHistoryChange[]]
 
-// Change documents retain materialized-storage paths, while the API exposes the
-// catalog projection's names. Keep that translation at the reconstruction seam.
-const PRICING_PATHS = new Map<string, TrackedPricingField>([
+// Change documents retain storage paths; the catalog projection uses product
+// names. Keep that translation at the reconstruction seam.
+const PRICING_PATHS = new Map<string, PriceKey>([
   ['pricing.text_input', 'text_input'],
   ['pricing.text_output', 'text_output'],
-  ['pricing.cache_read', 'text_cache_read'],
-  ['pricing.cache_write', 'text_cache_write'],
+  ['pricing.cache_read', 'cache_read'],
+  ['pricing.cache_write', 'cache_write'],
   ['pricing.audio_input', 'audio_input'],
-  ['pricing.audio_cache_input', 'audio_cache_write'],
+  ['pricing.audio_cache_input', 'audio_cache_read'],
   ['pricing.image_input', 'image_input'],
   ['pricing.image_output', 'image_output'],
   ['pricing.discount', 'discount'],
 ])
+
+const trackedPricingFields = PRICE_KEYS
 
 function priceValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined

@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
@@ -18,9 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PRICING_METRICS } from '@/lib/pricing-fields'
 
 import { ModelPageCardLoading } from './model-page-card'
-import { PRICING_METRICS } from './pricing-fields'
 import type { ModelEndpoint, PricingMetric } from './types'
 import { useModelEndpoints } from './use-model-endpoints'
 import { formatNumber } from './utils'

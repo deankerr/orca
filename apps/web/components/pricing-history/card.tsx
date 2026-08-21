@@ -1,7 +1,7 @@
 'use client'
 
 import { api } from '@orca/backend/convex/_generated/api'
-import { PRICING_FIELD_KEYS } from '@orca/backend/convex/shared/formatters'
+import { PRICE_KEYS } from '@orca/backend/convex/shared/pricing'
 import ms from 'ms'
 import dynamic from 'next/dynamic'
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -21,6 +21,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useCachedQuery } from '@/hooks/use-cached-query'
+import { isPricingMetric, pricingMetricMetadata, PRICING_METRICS } from '@/lib/pricing-fields'
 import { cn } from '@/lib/utils'
 
 import type { ZoomWindow } from './chart-option'
@@ -28,7 +29,6 @@ import { FULL_HISTORY_WINDOW } from './chart-option'
 import { providerColor } from './colors'
 import { PricingHistoryLegend } from './legend'
 import type { PricingHistoryPlotHandle } from './plot'
-import { isPricingMetric, pricingMetricMetadata, PRICING_METRICS } from './pricing-fields'
 import { groupSeriesByProvider, hasMetricHistory, hasProviderMetricHistory } from './series'
 
 // ECharts is browser-only and relatively heavy. The card renders the complete
@@ -52,7 +52,7 @@ const PricingHistoryPlot = dynamic(
 
 // The metric lives in the URL so a specific chart view is directly linkable,
 // matching the page's ?tab= parameter.
-const metricParser = parseAsStringLiteral(PRICING_FIELD_KEYS).withDefault('text_input')
+const metricParser = parseAsStringLiteral(PRICE_KEYS).withDefault('text_input')
 const queryStateOptions = { history: 'push' as const, shallow: true }
 const providersParser = parseAsArrayOf(parseAsString).withOptions(queryStateOptions)
 

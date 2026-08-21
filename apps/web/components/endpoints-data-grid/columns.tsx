@@ -1,5 +1,5 @@
 import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-import { formatPricing } from '@orca/backend/convex/shared/formatters'
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
@@ -114,14 +114,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'cacheReadPrice',
-    accessorFn: (row) => row.pricing.text_cache_read,
+    accessorFn: (row) => row.pricing.cache_read,
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="CACHE READ" subtitle="$/MTOK" />
     ),
     cell: ({ getValue }) => {
       const cacheReadPrice = getValue<number | undefined>()
       if (cacheReadPrice !== undefined) {
-        return formatPricing('text_cache_read', cacheReadPrice)?.value
+        return formatPricing('cache_read', cacheReadPrice)?.value
       }
       return <EmptyCell />
     },
@@ -134,14 +134,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'cacheWritePrice',
-    accessorFn: (row) => row.pricing.text_cache_write,
+    accessorFn: (row) => row.pricing.cache_write,
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="CACHE WRITE" subtitle="$/MTOK" />
     ),
     cell: ({ getValue }) => {
       const cacheWritePrice = getValue<number | undefined>()
       if (cacheWritePrice !== undefined) {
-        return formatPricing('text_cache_write', cacheWritePrice)?.value
+        return formatPricing('cache_write', cacheWritePrice)?.value
       }
       return <EmptyCell />
     },

@@ -1,4 +1,4 @@
-import { formatPricing, pricingScale } from '@orca/backend/convex/shared/formatters'
+import { formatPricing, pricingScale } from '@orca/backend/convex/shared/pricing'
 import {
   addDays,
   addHours,
@@ -15,8 +15,9 @@ import type { LineSeriesOption } from 'echarts/charts'
 import type { EChartsCoreOption } from 'echarts/core'
 import ms from 'ms'
 
+import { pricingMetricMetadata } from '@/lib/pricing-fields'
+
 import { providerSrgbColor } from './colors'
-import { pricingMetricMetadata } from './pricing-fields'
 import { priceAt } from './series'
 import type { PricingSeries } from './series'
 import type { PricingMetric } from './types'

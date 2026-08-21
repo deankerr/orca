@@ -63,6 +63,7 @@ import type * as public_api_v2_transform from "../public_api/v2/transform.js";
 import type * as shared_entityLogo from "../shared/entityLogo.js";
 import type * as shared_formatters from "../shared/formatters.js";
 import type * as shared_groups from "../shared/groups.js";
+import type * as shared_pricing from "../shared/pricing.js";
 import type * as shared_utils from "../shared/utils.js";
 import type * as snapshots_archives_table from "../snapshots/archives/table.js";
 import type * as snapshots_crawl_cron from "../snapshots/crawl/cron.js";
@@ -147,6 +148,7 @@ declare const fullApi: ApiFromModules<{
   "shared/entityLogo": typeof shared_entityLogo;
   "shared/formatters": typeof shared_formatters;
   "shared/groups": typeof shared_groups;
+  "shared/pricing": typeof shared_pricing;
   "shared/utils": typeof shared_utils;
   "snapshots/archives/table": typeof snapshots_archives_table;
   "snapshots/crawl/cron": typeof snapshots_crawl_cron;

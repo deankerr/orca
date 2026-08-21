@@ -14,8 +14,14 @@ import type {
   ModelRef,
   ProviderChange,
 } from '../changes'
-import { computeDelta, fmtValue, formatPricingFields, splitPath } from '../shared/formatters'
+import { computeDelta, fmtValue, splitPath } from '../shared/formatters'
 import { groupChanges } from '../shared/groups'
+import {
+  computePricingDelta,
+  formatPricing,
+  formatPricingFields,
+  pricingKeyFromPath,
+} from '../shared/pricing'
 import { isNonEmptyString, truncate } from '../shared/utils'
 import { COLORS } from './constants'
 import { getEndpointsGridUrl, getLogoIconUrl } from './utils'
@@ -264,8 +270,7 @@ function getNewEndpointFields(ep: EndpointChange): EmbedField[] {
 
   if (ref.pricing) {
     for (const result of formatPricingFields(ref.pricing)) {
-      const name = result.field.startsWith('text_cache_') ? result.field.slice(5) : result.field
-      fields.push({ name, value: result.value, inline: true })
+      fields.push({ name: result.field, value: result.value, inline: true })
     }
   }
 
@@ -318,9 +323,8 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
 function formatChangeItem(
   field: FieldChange,
 ): { category: string | null; key: string; content: string } | null {
-  const { category, key: rawKey } = splitPath(field.path)
-  const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
-  const fmt = (v: unknown) => truncate(fmtValue(v, field.path), TRUNCATE_LENGTH)
+  const { category, key } = splitPath(field.path)
+  const fmt = (v: unknown) => truncate(formatChangeValue(v, field.path), TRUNCATE_LENGTH)
 
   if (field.kind === 'set_updated') {
     const lines: string[] = []
@@ -369,8 +373,17 @@ function formatChangeItem(
 
 // -- Discord-specific delta formatting
 
+function formatChangeValue(value: unknown, path: string): string {
+  const key = pricingKeyFromPath(path)
+  if (key !== null && typeof value === 'number') {
+    return formatPricing(key, value)?.value ?? fmtValue(value)
+  }
+  return fmtValue(value)
+}
+
 function fmtDelta(before: unknown, after: unknown, path: string): string {
-  const delta = computeDelta(before, after, path)
+  const key = pricingKeyFromPath(path)
+  const delta = key === null ? computeDelta(before, after) : computePricingDelta(key, before, after)
   if (!delta) {
     return ''
   }

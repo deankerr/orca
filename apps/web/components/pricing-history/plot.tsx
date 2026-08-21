@@ -13,6 +13,8 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 
+import { pricingMetricMetadata } from '@/lib/pricing-fields'
+
 import {
   createPricingHistoryChartOption,
   createZoomedAxesOption,
@@ -21,7 +23,6 @@ import {
   zoomWindowsEqual,
 } from './chart-option'
 import type { ZoomContext, ZoomWindow } from './chart-option'
-import { pricingMetricMetadata } from './pricing-fields'
 import { hasMetricHistory } from './series'
 import type { EndpointPricingHistory, PricingMetric } from './types'
 

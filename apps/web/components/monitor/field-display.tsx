@@ -1,7 +1,13 @@
 'use client'
 
 import type { FieldChange } from '@orca/backend/convex/changes'
-import { computeDelta, fmtUnit, fmtValue, splitPath } from '@orca/backend/convex/shared/formatters'
+import { computeDelta, fmtValue, splitPath } from '@orca/backend/convex/shared/formatters'
+import {
+  computePricingDelta,
+  formatPricing,
+  pricingKeyFromPath,
+  pricingUnit,
+} from '@orca/backend/convex/shared/pricing'
 import { truncate } from '@orca/backend/convex/shared/utils'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
@@ -9,6 +15,24 @@ import { cn } from '@/lib/utils'
 
 const TRUNCATE_LENGTH = 800
 const LONG_STRING_LENGTH = 30
+
+function formatChangeValue(value: unknown, path: string): string {
+  const key = pricingKeyFromPath(path)
+  if (key !== null && typeof value === 'number') {
+    return formatPricing(key, value)?.value ?? fmtValue(value)
+  }
+  return fmtValue(value)
+}
+
+function formatChangeUnit(path: string): string {
+  const key = pricingKeyFromPath(path)
+  return key === null ? '' : pricingUnit(key)
+}
+
+function formatChangeDelta(before: unknown, after: unknown, path: string) {
+  const key = pricingKeyFromPath(path)
+  return key === null ? computeDelta(before, after) : computePricingDelta(key, before, after)
+}
 
 // -- Label colors
 
@@ -102,11 +126,11 @@ function FieldUpdatedItem({
     )
   }
 
-  const before = fmtValue(field.before, field.path)
-  const after = fmtValue(field.after, field.path)
-  const delta = computeDelta(field.before, field.after, field.path)
-  const unit = fmtUnit(field.path)
-  const hasUnit = unit !== null && unit !== ''
+  const before = formatChangeValue(field.before, field.path)
+  const after = formatChangeValue(field.after, field.path)
+  const delta = formatChangeDelta(field.before, field.after, field.path)
+  const unit = formatChangeUnit(field.path)
+  const hasUnit = unit !== ''
 
   return (
     <div className="flex flex-wrap items-center gap-x-1.5" data-change-id={field.change_id}>
@@ -141,9 +165,9 @@ function FieldAddedItem({
     )
   }
 
-  const value = fmtValue(field.value, field.path)
-  const unit = fmtUnit(field.path)
-  const hasUnit = unit !== null && unit !== ''
+  const value = formatChangeValue(field.value, field.path)
+  const unit = formatChangeUnit(field.path)
+  const hasUnit = unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
@@ -176,9 +200,9 @@ function FieldRemovedItem({
     )
   }
 
-  const value = fmtValue(field.value, field.path)
-  const unit = fmtUnit(field.path)
-  const hasUnit = unit !== null && unit !== ''
+  const value = formatChangeValue(field.value, field.path)
+  const unit = formatChangeUnit(field.path)
+  const hasUnit = unit !== ''
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
@@ -225,8 +249,7 @@ function FieldSetUpdatedItem({
 // -- Change item router
 
 function ChangeItem({ field }: { field: FieldChange }) {
-  const { key: rawKey } = splitPath(field.path)
-  const key = rawKey.startsWith('text_cache_') ? rawKey.slice(5) : rawKey
+  const { key } = splitPath(field.path)
 
   if (field.kind === 'set_updated') {
     return <FieldSetUpdatedItem fieldKey={key} field={field} />
