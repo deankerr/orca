@@ -1,7 +1,5 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
@@ -10,8 +8,44 @@ import { Spinner } from '@/components/ui/spinner'
 import { highlightJson } from '@/lib/highlight-json'
 import { cn } from '@/lib/utils'
 
+import { API_PATH } from './public-api'
+
+const SAMPLE_MODEL_LIMIT = 5
+
+function readPublicApiPreviewSample(payload: unknown) {
+  if (typeof payload !== 'object' || payload === null) {
+    throw new Error('Unexpected API response shape')
+  }
+
+  if (!('updated_at' in payload) || typeof payload.updated_at !== 'string') {
+    throw new Error('Unexpected API response shape')
+  }
+
+  if (!('models' in payload) || !Array.isArray(payload.models)) {
+    throw new Error('Unexpected API response shape')
+  }
+
+  return {
+    updated_at: payload.updated_at,
+    models: payload.models.slice(0, SAMPLE_MODEL_LIMIT),
+  }
+}
+
+async function fetchPublicApiPreviewSample() {
+  const response = await fetch(API_PATH)
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch API: ${response.status}`)
+  }
+
+  return readPublicApiPreviewSample(await response.json())
+}
+
 export function ClientApiCodeBlock() {
-  const query = useQuery(convexQuery(api.public_api.preview_v2.getModels, { limit: 5 }))
+  const query = useQuery({
+    queryKey: ['public-api-preview', API_PATH],
+    queryFn: fetchPublicApiPreviewSample,
+  })
   const code = JSON.stringify(query.data ?? null, null, 2)
 
   return (

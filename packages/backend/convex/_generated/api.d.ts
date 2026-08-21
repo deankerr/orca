@@ -55,7 +55,6 @@ import type * as lib_r2 from "../lib/r2.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as providers from "../providers.js";
-import type * as public_api_preview_v2 from "../public_api/preview_v2.js";
 import type * as public_api_v2_cache from "../public_api/v2/cache.js";
 import type * as public_api_v2_http from "../public_api/v2/http.js";
 import type * as public_api_v2_queries from "../public_api/v2/queries.js";
@@ -140,7 +139,6 @@ declare const fullApi: ApiFromModules<{
   models: typeof models;
   monitor: typeof monitor;
   providers: typeof providers;
-  "public_api/preview_v2": typeof public_api_preview_v2;
   "public_api/v2/cache": typeof public_api_v2_cache;
   "public_api/v2/http": typeof public_api_v2_http;
   "public_api/v2/queries": typeof public_api_v2_queries;

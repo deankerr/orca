@@ -43,7 +43,7 @@ Users can subscribe to model id patterns, providing a personalized version of Mo
 
 Public HTTP API providing programmatic access to ORCA's curated data.
 
-- `packages/backend/convex/public_api/preview_v2.ts`
+- `packages/backend/convex/public_api/v2/`
 
 ## Entity Logos
 

@@ -1,3 +1,4 @@
+import { corsRouter } from 'convex-helpers/server/cors'
 import { httpRouter } from 'convex/server'
 
 import { api } from './_generated/api'
@@ -13,6 +14,7 @@ import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
+const cors = corsRouter(http, { allowedOrigins: ['*'] })
 
 http.route({
   path: '/models',
@@ -119,14 +121,14 @@ http.route({
 })
 
 // Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.
-http.route({
+cors.route({
   path: '/public-api-preview/v2',
   method: 'GET',
   handler: servePublicApiV2,
 })
 
 // Serves the gzipped snapshot from v2/cache.refresh. See public_api/v2/http.ts.
-http.route({
+cors.route({
   path: '/public-api-preview/v2-cached',
   method: 'GET',
   handler: servePublicApiV2Cached,
