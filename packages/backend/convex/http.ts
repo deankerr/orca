@@ -1,9 +1,6 @@
-import { corsRouter } from 'convex-helpers/server/cors'
 import { httpRouter } from 'convex/server'
 
-import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
-import { archiveSyncBundleGzip } from './admin/archiveSync'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
 import {
@@ -14,34 +11,6 @@ import { isNonEmptyString } from './shared/utils'
 import { getArchiveBundle } from './snapshots/shared/bundle'
 
 const http = httpRouter()
-const cors = corsRouter(http, { allowedOrigins: ['*'] })
-
-http.route({
-  path: '/models',
-  method: 'GET',
-  handler: httpAction(async (ctx) => {
-    const models = await ctx.runQuery(api.models.list, {})
-    return Response.json(models)
-  }),
-})
-
-http.route({
-  path: '/endpoints',
-  method: 'GET',
-  handler: httpAction(async (ctx) => {
-    const endpoints = await ctx.runQuery(api.endpoints.list, {})
-    return Response.json(endpoints)
-  }),
-})
-
-http.route({
-  path: '/providers',
-  method: 'GET',
-  handler: httpAction(async (ctx) => {
-    const providers = await ctx.runQuery(api.providers.list, {})
-    return Response.json(providers)
-  }),
-})
 
 // Discord bot interactions endpoint
 http.route({
@@ -94,12 +63,6 @@ http.route({
 })
 
 http.route({
-  path: '/archive-sync/bundle.gz',
-  method: 'GET',
-  handler: archiveSyncBundleGzip,
-})
-
-http.route({
   path: '/r2/artifact',
   method: 'GET',
   handler: httpAction(async (_ctx, req) => {
@@ -121,14 +84,14 @@ http.route({
 })
 
 // Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.
-cors.route({
+http.route({
   path: '/public-api-preview/v2',
   method: 'GET',
   handler: servePublicApiV2,
 })
 
 // Serves the gzipped snapshot from v2/cache.refresh. See public_api/v2/http.ts.
-cors.route({
+http.route({
   path: '/public-api-preview/v2-cached',
   method: 'GET',
   handler: servePublicApiV2Cached,
