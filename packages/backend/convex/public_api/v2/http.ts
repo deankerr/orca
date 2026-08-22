@@ -3,6 +3,8 @@ import { gunzipSync } from 'fflate'
 import { internal } from '../../_generated/api'
 import { httpAction } from '../../_generated/server'
 
+const allowOrigin = { 'Access-Control-Allow-Origin': '*' } as const
+
 /**
  * GET /public-api-preview/v2
  *
@@ -13,9 +15,7 @@ import { httpAction } from '../../_generated/server'
 export const serve = httpAction(async (ctx) => {
   const result = await ctx.runQuery(internal.public_api.v2.queries.get)
   return Response.json(result, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers: allowOrigin,
   })
 })
 
@@ -45,13 +45,19 @@ export const serveCached = httpAction(async (ctx, req) => {
 
   if (snapshot === null) {
     console.error('[public_api:v2] missing cache pointer')
-    return new Response('Internal server error', { status: 500 })
+    return new Response('Internal server error', {
+      status: 500,
+      headers: allowOrigin,
+    })
   }
 
   const blob = await ctx.storage.get(snapshot.storage_id)
   if (blob === null) {
     console.error('[public_api:v2] missing cache blob', { storage_id: snapshot.storage_id })
-    return new Response('Internal server error', { status: 500 })
+    return new Response('Internal server error', {
+      status: 500,
+      headers: allowOrigin,
+    })
   }
 
   const serveGzip = acceptsGzip(req.headers.get('Accept-Encoding'))
@@ -110,7 +116,7 @@ function representationHeaders(args: {
     'Cache-Control': cacheControl,
     ETag: args.etag,
     'Last-Modified': new Date(args.updatedAt).toUTCString(),
-    'Access-Control-Allow-Origin': '*',
+    ...allowOrigin,
     Vary: 'Accept-Encoding',
   })
 
