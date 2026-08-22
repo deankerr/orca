@@ -3,7 +3,6 @@ import { httpRouter } from 'convex/server'
 
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
-import { archiveSyncBundleGzip } from './admin/archiveSync'
 import { handleInteraction } from './discord/interactions'
 import { getR2Artifact } from './lib/r2'
 import {
@@ -91,12 +90,6 @@ http.route({
 
     return Response.json(bundle)
   }),
-})
-
-http.route({
-  path: '/archive-sync/bundle.gz',
-  method: 'GET',
-  handler: archiveSyncBundleGzip,
 })
 
 http.route({
