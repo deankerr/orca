@@ -64,6 +64,8 @@ import type * as shared_groups from "../shared/groups.js";
 import type * as shared_pricing from "../shared/pricing.js";
 import type * as shared_utils from "../shared/utils.js";
 import type * as snapshots_archives_table from "../snapshots/archives/table.js";
+import type * as snapshots_bundles_format from "../snapshots/bundles/format.js";
+import type * as snapshots_bundles_http from "../snapshots/bundles/http.js";
 import type * as snapshots_crawl_cron from "../snapshots/crawl/cron.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
 import type * as snapshots_crawl_outputs from "../snapshots/crawl/outputs.js";
@@ -147,6 +149,8 @@ declare const fullApi: ApiFromModules<{
   "shared/pricing": typeof shared_pricing;
   "shared/utils": typeof shared_utils;
   "snapshots/archives/table": typeof snapshots_archives_table;
+  "snapshots/bundles/format": typeof snapshots_bundles_format;
+  "snapshots/bundles/http": typeof snapshots_bundles_http;
   "snapshots/crawl/cron": typeof snapshots_crawl_cron;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
   "snapshots/crawl/outputs": typeof snapshots_crawl_outputs;

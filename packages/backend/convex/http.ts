@@ -8,7 +8,7 @@ import {
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
 import { isNonEmptyString } from './shared/utils'
-import { getArchiveBundle } from './snapshots/shared/bundle'
+import { serveBundles } from './snapshots/bundles/http'
 
 const http = httpRouter()
 
@@ -41,25 +41,11 @@ http.route({
   }),
 })
 
+// Analysis download of a crawl archive. See snapshots/bundles/http.ts.
 http.route({
   path: '/bundle',
   method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const url = new URL(req.url)
-    const crawlId = url.searchParams.get('crawl_id')
-
-    if (!isNonEmptyString(crawlId)) {
-      return new Response('Missing crawl_id parameter', { status: 400 })
-    }
-
-    const bundle = await getArchiveBundle(ctx, crawlId)
-
-    if (!bundle) {
-      return new Response('Bundle not found', { status: 404 })
-    }
-
-    return Response.json(bundle)
-  }),
+  handler: serveBundles,
 })
 
 http.route({

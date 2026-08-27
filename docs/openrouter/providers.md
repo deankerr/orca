@@ -48,6 +48,4 @@ another grouping, and there is no complete central registry or universal decompo
 ## Endpoint-local provider metadata
 
 `provider_display_name`, `provider_model_id`, `provider_region`, and `provider_slug` are endpoint
-properties. Evidence includes the same `provider_slug` appearing with different display names, and
-many targeting keys having no provider record at all. `provider_model_id` is specifically the
-upstream provider's identifier for that endpoint's model.
+properties. `provider_model_id` is specifically the upstream provider's identifier for that endpoint's model.

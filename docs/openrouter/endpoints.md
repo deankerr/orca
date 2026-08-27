@@ -7,10 +7,8 @@ payload. Fields that have no established semantics are intentionally left withou
 
 ## Identity
 
-- `id` — 📌 opaque UUID, observed to be globally unique and stable for an endpoint's lifetime.
-  ⚠️ A recreated offering can receive a new UUID.
-- `name` — ⚠️ derivable as `${provider_name} | ${model_variant_permaslug}` in the 2026-07-24 corpus.
-  It is human-readable but not a safe primary key; a historical collision is known.
+- `id` — opaque UUID, observed to be globally unique and stable for an endpoint's lifetime.
+- `name` — `${provider_name} | ${model_variant_permaslug}` Human-readable but not a safe primary key; a historical collision is known.
 - `model_variant_slug`
 - `model_variant_permaslug`
 - `variant`
@@ -21,13 +19,12 @@ payload. Fields that have no established semantics are intentionally left withou
 ⚠️ These are endpoint properties. They are not reliable denormalized attributes of the embedded
 provider record.
 
-- `provider_name` — 📌 the only observed orphan-free endpoint-to-provider grouping.
-- `provider_slug` — ⚠️ endpoint targeting key, exposed as `tag` in the end-user API; not a reliable
-  provider-record foreign key.
+- `provider_name` — Seemingly OpenRouter's primary key for provider entities, values include `Anthropic`, `Google`.
+- `provider_slug` — ⚠️ endpoint targeting key, exposed as `tag` in the end-user API; values include `anthropic`, `google/global`.
 - `provider_display_name`
-- `provider_model_id` — provider's own model identifier for this endpoint.
+- `provider_model_id` — 💤 provider's own model identifier for this endpoint.
 - `provider_region`
-- `adapter_name` — OpenRouter-internal adapter wiring rather than an endpoint capability.
+- `adapter_name` — 💤 OpenRouter-internal adapter wiring rather than an endpoint capability.
 
 ## Serving shape and limits
 
@@ -38,7 +35,7 @@ provider record.
 - `capacity_tpm`
 - `limit_rpm`
 - `limit_rpd`
-- `limit_rpm_cf` — 📌 observed only as `null` in the 2026-07 corpus.
+- `limit_rpm_cf` — 💤
 - `quantization`
 
 ## Protocol and capabilities
@@ -67,8 +64,7 @@ Feature-key presence varies by endpoint.
 - `is_mandatory_reasoning`
 - `reasoning_return_mechanism`
 - `should_send_reasoning_text_in_text_content`
-- `supported_parameters` — ⚠️ map of names to booleans; distinct from the
-  top-level array of the same name.
+- `supported_parameters` — 💤
 - `supports_base64_file_input`
 - `supports_base64_video_input`
 - `supports_file_urls`
@@ -92,7 +88,6 @@ Feature-key presence varies by endpoint.
 - `is_hidden` — ⚠️ observed as `false` in public captures.
 - `is_private` — ⚠️ observed as `false` in public captures.
 - `deprecation_date`
-- `status` — 🔄 volatile routing penalty despite its placement on the endpoint record. ⚠️ This should now probably be considered telemetry.
 
 ## Data policy
 
@@ -110,16 +105,13 @@ Feature-key presence varies by endpoint.
 
 ## Pricing
 
-- `pricing_json`
-- `pricing`
-- `display_pricing`
-- `pricing_version_id`
-- `tiers`
+See [[pricing.md]]
 
 ## Telemetry
 
 🔄 These values change independently of durable endpoint configuration.
 
+- `status`
 - `stats`
 - `statsByTier`
 - `routing_heuristics_by_tier`

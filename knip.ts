@@ -11,6 +11,9 @@ const config: KnipConfig = {
       entry: ['scripts/*.ts', '**/*.test.ts'],
       ignoreDependencies: ['@radix-ui/colors'],
     },
+    'packages/scripts': {
+      entry: ['**/*.test.ts'],
+    },
   },
 }
 

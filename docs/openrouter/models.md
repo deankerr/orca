@@ -11,10 +11,10 @@ payload. Fields that have no established semantics are intentionally left withou
 - `permaslug` — versioned model identifier; it can equal `slug`.
 - `name`
 - `short_name`
-- `author` — author slug. It normally matches the first segment of `slug`.
+- `author` — author slug. It almost always matches the first segment of `slug` (known exceptions: `deepseek` -> `deepseek-ai`, `cognitivecomputations` -> `venice`).
 - `author_display_name`
 - `description`
-- `group` — ❓ exact grouping semantics are unconfirmed.
+- `group` — 💤
 - `hf_slug` — ⚠️ both `""` and `null` have represented absence.
 - `model_version_group_id` — ❓ sparse opaque identifier; exact semantics are unknown.
 
@@ -24,13 +24,13 @@ payload. Fields that have no established semantics are intentionally left withou
 - `output_modalities`
 - `has_text_output`
 - `context_length` — 🔄 matches that of the current top endpoint.
-- `instruct_type`
+- `instruct_type` — 💤
 - `knowledge_cutoff`
 - `supports_reasoning`
 - `reasoning_config`
-- `supported_tts_voices` — ⚠️ meaningful for speech models.
-- `is_trainable_text` — 📌 observed only as `true` or `null` in the 2026-07 corpus.
-- `is_trainable_image` — 📌 observed only as `null` in the 2026-07 corpus.
+- `supported_tts_voices`
+- `is_trainable_text` — 💤
+- `is_trainable_image` — 💤
 - `features`
 - `features.chat_template_config` — 📌 the observed substantive key is
   `should_hoist_and_merge_system_messages`.
@@ -61,8 +61,8 @@ Key presence varies by model. Values can also be `null`.
 
 ## Limits
 
-- `limit_rpm` — ❓ zero has been observed; its meaning is unknown.
-- `limit_rpd` — ❓ zero has been observed; its meaning is unknown.
+- `limit_rpm` — 💤
+- `limit_rpd` — 💤
 
 ## Messages and OpenRouter presentation
 
@@ -72,10 +72,10 @@ Key presence varies by model. Values can also be `null`.
 - `warning_message`
 - `promotion_message` — OpenRouter promotional copy rather than a model property.
 - `routing_error_message`
-- `quick_start_example_type` — OpenRouter documentation-UI hint.
-- `preview_audio` — 📌 observed only as `null` in the initial July 2026 observations.
-- `preview_thumbnail_url` — 📌 observed only as `null` in the 2026-07 corpus.
-- `required_attestation_types` — 📌 observed only as an empty array in the 2026-07 corpus.
+- `quick_start_example_type` — 💤
+- `preview_audio` — 💤
+- `preview_thumbnail_url` — 💤
+- `required_attestation_types` — 💤
 
 ## Visibility
 
@@ -88,4 +88,4 @@ Key presence varies by model. Values can also be `null`.
 
 - `created_at`
 - `updated_at`
-- `hf_updated_at` — 📌 observed only as `null` in the 2026-07 corpus.
+- `hf_updated_at` — 💤

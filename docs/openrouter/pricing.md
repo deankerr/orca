@@ -1,142 +1,200 @@
 # Pricing
 
-An OpenRouter endpoint can expose several overlapping pricing representations. They are views with
-different purposes, not interchangeable copies.
+An OpenRouter endpoint exposes several overlapping pricing representations. They are independent
+signals with different purposes, not interchangeable copies or a consistency hierarchy.
 
-## `pricing_json`
+| Field                   | Useful interpretation                                      |
+| ----------------------- | ---------------------------------------------------------- |
+| `pricing.*` rate fields | Normalized rates currently presented                       |
+| `pricing.discount`      | Fractional adjustment already reflected in presented rates |
+| `pricing.overrides`     | Opaque conditional-pricing definition                      |
+| `display_pricing`       | Presentation-oriented pricing data                         |
+| `pricing_json`          | Opaque adapter-specific source pricing object              |
+| `pricing_version_id`    | Opaque upstream pricing revision identity                  |
+| `tiers`                 | Named service-tier pricing views                           |
 
-`pricing_json` is the most detailed upstream rate card. Its keys are adapter-namespaced SKUs such
-as `openai_responses:prompt_tokens` and cover token and non-token units.
+- Prices can be extremely small decimal values.
+- 🧭 Preserve the upstream decimal representation when comparing prices.
+- ⚠️ A small price movement is not evidence of floating-point jitter or meaningless noise.
 
-It is neither a uniform schema nor purely a map of prices:
+## API surfaces
 
-- SKU names vary by adapter and are not consistently styled; `search-units` is a known kebab-case
-  example among snake-case keys.
-- Values can use authored forms such as `"0.25e-6"`, `".03e-6"`, or a JSON number.
-- Non-price values include `long_context_threshold`, tier multipliers, upstream-cost fields, and
-  informational rates.
+OpenRouter's public endpoint API exposes a reduced endpoint representation. The frontend bundle
+contains the additional pricing representations used for comprehensive change detection.
 
-Parse numeric values before comparing them. A textual rewrite is not necessarily a price change;
-the original representation remains useful as provenance.
-
-Observed unit families include tokens, images, resolution-specific image output, video duration,
-characters, audio time, and search units.
-
-⚠️ The flat `pricing.prompt` and `pricing.completion` fields are often placeholder zeroes outside
-text-like modalities. Actual non-text rates generally live in `pricing_json` as unit-, duration-,
-character-, image-, audio-, or search-based SKUs. `display_pricing[].kind` (`token` or `unit`) is
-the closest observed upstream declaration of the pricing family, but ❓ its exact contract is not
-established.
+- The public response includes normalized `pricing` fields such as `prompt`, `completion`,
+  `input_cache_read`, and `discount`.
+- [`api-v1-endpoints.md`](appendix/api-v1-endpoints.md) contains a concise public response sample.
+- The frontend bundle supplies fields including `display_pricing`, `pricing_json`,
+  `pricing_version_id`, and `tiers`.
+- ⚠️ A field observed on one API surface is not necessarily exposed on the other.
 
 ## `pricing`
 
-`pricing` is OpenRouter's normalized, simplified view. It includes familiar fields such as
-`prompt`, `completion`, cache rates, `web_search`, and `internal_reasoning`, plus `overrides` for
-long-context pricing.
+`pricing` is OpenRouter's normalized view of the rates it currently presents. Adapter-specific
+mapping and conversion mean this object is not reliably derivable from `pricing_json`.
 
-Much of it is computed from `pricing_json`:
+- In the frontend bundle, `prompt`, `completion`, `discount`, and `display_pricing` are present on
+  every endpoint.
+- A zero `prompt` or `completion` rate means the meter is not applicable or has no charge in that
+  endpoint's context; it does not identify which case applies.
+- `display_pricing` is copied under `pricing` as well as exposed at the endpoint root.
+- 🔄 Normalized rates can incorporate a discount or the active band of conditional pricing.
 
-- ordinary values reflect a source SKU adjusted by `discount`;
-- tier prices apply the corresponding tier multiplier;
-- long-context overrides use long-context SKUs and a threshold.
+### Text token meters
 
-It is not fully derivable from `pricing_json`, however. Observed exceptions include:
+`prompt` prices text input and `completion` prices text output. The API expresses token rates per
+token, while OpenRouter interfaces present text-token rates per million tokens.
 
-- `web_search` values with no matching source SKU;
-- `image_token` and `image_output` conversions whose factors are not exposed;
-- `input_cache_write`, observed as a conversion from storage-hour pricing;
-- repeating decimal strings that preserve OpenRouter's own unit arithmetic.
+- 📊 In the 2026-08-24 bundle, `prompt` and `completion` were present on all 1,231 endpoints,
+  including all 1,080 text-input-and-output endpoints.
+- Multi-turn agentic workloads repeatedly include earlier messages as input. A response is output
+  once, then can become prompt input on every later turn in the same context.
+- 📊 One coding workload shown in OpenRouter's dashboard for 2026-08-05 contained 62.2 million
+  prompt tokens, 298 thousand reasoning tokens, and 260 thousand completion tokens; more than 99%
+  of its raw token volume was prompt input. The caching view showed most prompt tokens as cached.
+- ⚠️ Raw token share is not cost share. Cache status, discounts, and different input and output
+  rates materially change the bill.
+- ⚠️ Some audio-transcription endpoints use `prompt` for a per-audio-hour price. Rendering that
+  value as a per-million-token rate produces nonsensical headline prices.
+
+### Prompt-cache meters
+
+Prompt caching changes the price of repeated input. Read and write rates are separate meters rather
+than properties of the base `prompt` rate.
+
+- `input_cache_read` prices input served from a prompt cache.
+- `input_cache_write` and `input_cache_write_1h` price cache creation where the provider charges for
+  it.
+- 📊 Among 1,080 text-input-and-output endpoints in the 2026-08-24 bundle,
+  `input_cache_read` appeared on 740 (68.5%), `input_cache_write` on 182 (16.9%), and
+  `input_cache_write_1h` on 101 (9.4%).
+- ⚠️ The economic value of caching depends on the workload, cache hit rate, retention policy, and
+  endpoint-specific rates; property presence does not supply a universal savings factor.
+
+### Other meters
+
+Less common meters represent additional modalities or provider services. Their low endpoint count
+does not imply low cost or low importance for workloads that use them.
+
+- `web_search` is a flat service charge rather than a token rate; `0.01` is the predominant observed
+  value.
+- `web_search` is a passthrough charge and is not adjusted by `pricing.discount`.
+- `image` prices image input; `image_output` prices provider-side image generation.
+- OpenRouter presents `image` and `image_output` per thousand tokens rather than per million tokens.
+- `audio` prices audio input; `input_audio_cache` prices cached audio input.
+- `internal_reasoning` prices native reasoning tokens when an endpoint exposes a distinct reasoning
+  rate.
+- 📊 Among 1,080 text-input-and-output endpoints in the 2026-08-24 bundle, `web_search` appeared on
+  300 (27.8%); every image, audio, and reasoning meter appeared on fewer than 5%.
+- 📊 Full counts for both endpoint populations are recorded in
+  [`endpoint-pricing-property-frequency.md`](appendix/endpoint-pricing-property-frequency.md).
+
+## `pricing.discount`
+
+`pricing.discount` is a fractional adjustment that providers can set, applied as `(1 - discount)`.
+The normalized rates and headline values in `display_pricing` already include the adjustment.
+
+- `0.2` means 20% off.
+- A negative value is a markup and is reflected in presented rates like any other adjustment.
+- `discount` is a JSON number; the other normalized rates are represented as decimal strings.
+- Provider discount battles produce frequent, fine-grained changes to this field.
+- OpenRouter also uses the field for rare, large, fixed-duration site promotions.
+- ⚠️ Tiny discount movements in provider discount battles are real pricing events, not float noise.
+
+## `pricing.overrides`
+
+`pricing.overrides` is an array of conditional rate rows. The key is absent when no conditional
+pricing is exposed.
+
+- Time-conditioned rows contain `utc_start` and `utc_end`.
+- Prompt-length rows contain `min_prompt_tokens` and rates above that threshold.
+- The normalized `pricing.*` fields present the active schedule band or the default prompt-length
+  band.
+- 📊 `overrides` appeared on 109 of 1,080 text-input-and-output endpoints (10.1%) in the 2026-08-24
+  bundle.
+- 🧭 Beyond detecting the type of override in use, the content values should not be interpreted.
 
 ## `display_pricing`
 
-`display_pricing` is the presentation-oriented view. It supplies labels for otherwise opaque SKUs,
-including tier and specialized image semantics. Its `kind` value (`token` or `unit`) is a useful
-hint about the declared pricing family.
+`display_pricing` supplies presentation labels and tiers for otherwise opaque pricing fields. It is
+a view for presentation, not an authored-pricing source.
 
-A copy of `display_pricing` has also been observed embedded inside `pricing`.
-
-## `tiers`
-
-`tiers` describes named service tiers such as flex or priority. Its prices have been observed as
-base rates multiplied by tier-specific multipliers.
+- Rows use `kind: "token"`, `"unit"`, or `"schedule"` in current observations.
+- `display_pricing[].tiers` is distinct from the endpoint's `tiers` object.
+- The object is exposed at the endpoint root and copied under `pricing`.
+- 🔄 Presentation data can change with normalized rates or independently of them.
 
 ## `pricing_version_id`
 
-`pricing_version_id` is an opaque UUID and a broad change detector, not a price-change record. In
-39 observed transitions it changed 13 times: 10 alongside a real SKU change and 3 without one; it
-missed no real changes in that sample.
+`pricing_version_id` is an opaque UUID representing an upstream pricing revision. It is not a
+content hash and does not describe what changed.
 
-## Discounts and apparent churn
+- A new value is not proof that a visible price changed.
+- An unchanged value is not proof that presented pricing remained unchanged.
+- 🧭 Use equality only as an independent revision signal.
 
-`discount` can cause many computed fields and display rows to move while list prices remain fixed.
-Small, frequent discount changes and large list-price changes are economically different even when
-they touch the same fields. Compare underlying numeric rates and discount separately.
+## `pricing_json`
+
+`pricing_json` is an adapter-specific source pricing object. It contains prices alongside
+configuration such as thresholds, window bounds, and multipliers.
+
+- Keys are often namespaced SKUs such as `openai_responses:prompt_tokens`.
+- Key names and value shapes are not uniform across adapters.
+- Values include numeric strings in different decimal forms and JSON numbers.
+- `pricing.discount` is separate from this object.
+- 🧭 Do not parse `pricing_json`. Treat the complete value as an opaque change signal.
+
+## `tiers`
+
+`tiers` describes named service tiers such as flex or priority. It is distinct from both
+`display_pricing[].tiers` and `pricing.overrides`.
+
+- 🧭 Treat the complete value as an independent change signal.
+
+## Change-signal relationships
+
+Pricing fields overlap without forming a hierarchy. Durable change detection records which signals
+moved and does not infer that one changed field explains another.
+
+- 🧭 Compare the normalized rate fields inside `pricing` independently of `pricing.discount`,
+  `pricing.overrides`, `pricing.display_pricing`, root `display_pricing`, `pricing_json`,
+  `pricing_version_id`, and `tiers`.
+- 🧭 Record simultaneous changes without assigning precedence or causation.
+- 🧭 Compare exact values regardless of the movement's magnitude.
+- `pricing.discount` can change while `pricing_json` and `pricing_version_id` remain stable.
+- The active normalized rates of an existing schedule can change while `pricing.overrides`,
+  `pricing_json`, and `pricing_version_id` remain stable.
+- `pricing_version_id` can change while `pricing_json`, normalized `pricing`, `display_pricing`, and
+  `tiers` remain stable.
+- `display_pricing` can change independently of normalized rates and authored-pricing signals.
+- 📊 Across 270 observations of `deepseek/deepseek-v4-flash-0731` from 2026-05-08 through
+  2026-08-24, 54 `pricing_version_id` transitions included 49 `pricing_json` transitions and five
+  version-only transitions. Four of the five had no other stable non-telemetry content change; the
+  fifth accompanied an adapter migration.
+
+## Historical data
+
+Pricing representations and individual keys have been introduced and removed over time. Compare
+the state actually present in each observation.
+
+- 🧭 Treat field presence and absence as state.
+- ⚠️ A missing historical field is not a zero rate.
 
 ## Reasoning meters
 
-OpenRouter exposes a normalized `pricing.internal_reasoning` rate on some endpoints. Reasoning
-tokens are not always an additional charge on top of the same completion tokens; the accounting
-depends on the provider's meter.
+`pricing.internal_reasoning` is a distinct rate on some endpoints. Native reasoning tokens can be a
+subset of native completion tokens rather than an additional token count.
 
-For ordinary reasoning models, native reasoning tokens can be a subset of native completion
-tokens. When completion and reasoning rates differ, the non-double-counting model is:
+- When completion and reasoning rates differ, calculate a non-double-counted cost as:
 
-```text
-(native completion tokens - native reasoning tokens) * completion rate
-+ native reasoning tokens * internal_reasoning rate
-```
+  ```text
+  (native completion tokens - native reasoning tokens) * completion rate
+  + native reasoning tokens * internal_reasoning rate
+  ```
 
-If an endpoint has no distinct reasoning rate, all native completion tokens—including the
-reasoning subset—are charged at the completion rate. This interpretation was numerically confirmed
-against observed Gemini 3.5 Flash, MiniMax M3, and GPT-5 Nano generation charges.
-
-### Billing reconciliation evidence
-
-📌 **Observed 2026-07-21:** three generation records reconciled exactly using native prompt and
-completion counts without adding their reasoning-token subsets a second time.
-
-| Endpoint                           | Calculation                       | Reported charge |
-| ---------------------------------- | --------------------------------- | --------------: |
-| Gemini 3.5 Flash, Google AI Studio | `13,176 × $1.50/M + 198 × $9/M`   |       $0.021546 |
-| MiniMax M3, Morph                  | `181 × $0.60/M + 728 × $2.40/M`   |      $0.0018558 |
-| GPT-5 Nano, OpenAI                 | `331 × $0.05/M + 2,832 × $0.40/M` |     $0.00114935 |
-
-The Gemini record reported 180 reasoning tokens within 198 native completion tokens. The MiniMax
-record reported 64 within 728, and the GPT-5 Nano record reported 2,688 within 2,832. Charging those
-reasoning counts again would not match the reported totals.
-
-Some offerings expose a genuinely separate internal-research meter. Perplexity Sonar Deep Research
-has been observed with separate prompt, completion, internal reasoning, citation, and search-query
-components. Its internal-reasoning charge is additional to visible output, but that does not imply
-that one token was charged twice; it is a different provider meter.
-
-A generic OpenRouter generation export may omit the provider-specific counters needed to reproduce
-such a bill. `native_tokens_reasoning: 0` is not proof that no private research-reasoning charge
-occurred, and normalized token counts should not be substituted for missing native usage details.
-
-📌 In one observed Sonar Deep Research record, native prompt and completion usage explained only
-$0.104338 of a $0.626460 charge. The remaining $0.522122 depended on citation-token,
-internal-reasoning, and search-query counters absent from the export. The missing counters were
-therefore not uniquely recoverable.
-
-Primary references:
-
-- [OpenRouter reasoning tokens](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)
-- [OpenRouter Responses reasoning schema](https://openrouter.ai/docs/api/reference/responses/reasoning)
-- [OpenRouter API overview](https://openrouter.ai/docs/api/reference/overview)
-- [Google Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking)
-- [Perplexity pricing](https://docs.perplexity.ai/docs/getting-started/pricing)
-
-## Historical representations
-
-The basic `pricing` object was present throughout the corpus from 2025-08-13 through 2026-08-01.
-Individual keys appeared and disappeared, so a missing historical key is not automatically
-equivalent to a zero rate.
-
-Four descriptive eras explain the other representations:
-
-1. Before 2025-12-22: `pricing` and `variable_pricings`.
-2. From 2025-12-22: gradual adoption of `pricing_json`; `pricing_version_id` followed on
-   2026-01-10, with temporary `line_items` from 2026-02-10 through 2026-04-01.
-3. From 2026-04-01: `display_pricing`; `variable_pricings` disappeared on 2026-04-17.
-4. From 2026-07-09: sparse `tiers`, followed by `pricing.overrides` on 2026-07-13.
+- If no distinct reasoning rate exists, all native completion tokens, including the reasoning
+  subset, use the completion rate.
+- Some offerings expose a separate internal-research meter whose provider counters are absent from
+  generic generation exports.
+- ⚠️ Missing provider-specific counters cannot be inferred from normalized token totals.

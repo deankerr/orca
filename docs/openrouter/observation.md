@@ -8,10 +8,6 @@ catalog observations.
 Endpoint payloads repeat complete `model` and `provider_info` objects. The embedded model can itself
 contain an endpoint scope. These are denormalized copies of the same conceptual entities.
 
-Copy-to-copy differences within one observation have been seen and can reflect serialization or
-API assembly rather than real entity changes. Compare stable entity records by their natural
-identifiers before drawing conclusions from duplicated payloads.
-
 ## Broad rewrites
 
 Large same-field changes can indicate an upstream reporting transition rather than independent
