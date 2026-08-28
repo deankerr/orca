@@ -4,7 +4,8 @@ import { v } from 'convex/values'
 export const statsTable = defineTable({
   endpoint_id: v.string(),
   timestamp: v.number(),
-  p50_latency: v.number(),
-  p50_throughput: v.number(),
-  request_count: v.number(),
+  tier: v.string(),
+  sample: v.record(v.string(), v.number()),
 })
+  .index('by_endpoint_timestamp', ['endpoint_id', 'timestamp'])
+  .index('by_timestamp', ['timestamp'])

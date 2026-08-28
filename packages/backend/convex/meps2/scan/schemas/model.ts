@@ -2,8 +2,8 @@ import { z } from 'zod'
 
 import { flattenMetadata } from './shared'
 
-// [model_id] and [variant] are not derivable from the record: scanCatalog lifts them
-// to the bundle item level, and `endpoint` on the record is the top endpoint's UUID
+// [model_id] and [variant] are lifted to the catalog item; after scan, `endpoint` is
+// overwritten to the top endpoint UUID (or null) so the nested record is not stored.
 export const Model = z
   .looseObject({
     slug: z.string(),
@@ -15,10 +15,21 @@ export const Model = z
 
     name: z.string(), // [display_name]
     author_display_name: z.string(),
+
+    endpoint: z
+      .looseObject({
+        id: z.string(),
+        model_variant_slug: z.string(),
+        variant: z.string(),
+      })
+      .nullable(),
   })
   .transform((raw) => {
     // core fields become table columns, everything else is flattened into metadata
     const {
+      slug,
+      endpoint,
+
       permaslug,
       input_modalities,
       output_modalities,
@@ -29,6 +40,9 @@ export const Model = z
     } = raw
 
     return {
+      slug,
+      endpoint,
+
       permaslug,
       input_modalities,
       output_modalities,
@@ -40,3 +54,5 @@ export const Model = z
       metadata: flattenMetadata(rest),
     }
   })
+
+export type ModelRow = z.output<typeof Model>

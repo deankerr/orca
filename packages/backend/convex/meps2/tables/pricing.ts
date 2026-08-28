@@ -20,4 +20,9 @@ export const pricingTable = defineTable({
   input_audio_cache: v.optional(v.string()),
 
   web_search: v.optional(v.string()),
+
+  display_pricing: v.optional(v.array(v.any())),
+  overrides: v.optional(v.array(v.any())),
 })
+  .index('by_endpoint_timestamp', ['endpoint_id', 'timestamp'])
+  .index('by_timestamp', ['timestamp'])
