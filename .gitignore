@@ -18,3 +18,4 @@ repos/effect
 repos/alchemy
 
 data/**/*.json*
+data/**/*.md
