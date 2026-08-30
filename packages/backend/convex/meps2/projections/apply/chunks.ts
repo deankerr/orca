@@ -53,6 +53,30 @@ export async function applyChunks<Row>(
   return { upserted, deleted }
 }
 
+export async function applyUpserts<Row>(
+  upserts: Row[],
+  apply: (upserts: Row[]) => Promise<{ upserted: number }>,
+) {
+  let upserted = 0
+  for (const chunk of R.chunk(upserts, MUTATION_CHUNK)) {
+    const result = await apply(chunk)
+    upserted += result.upserted
+  }
+  return { upserted }
+}
+
+export async function applyUnlists(
+  ids: string[],
+  apply: (ids: string[]) => Promise<{ unlisted: number }>,
+) {
+  let unlisted = 0
+  for (const chunk of R.chunk(ids, MUTATION_CHUNK)) {
+    const result = await apply(chunk)
+    unlisted += result.unlisted
+  }
+  return { unlisted }
+}
+
 export async function appendRows<Row>(
   rows: Row[],
   append: (rows: Row[]) => Promise<{ inserted: number }>,

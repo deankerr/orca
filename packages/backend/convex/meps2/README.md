@@ -6,6 +6,7 @@ Design-in-code rewrite of the core backends components.
 - Should not interact with code or data outside of the `meps2` directory.
 - Slices may need to be partially built, and sit in an unintegrate state until other slices are ready.
 - Nothing is locked in - we will continue to shift the interfaces, boundaries, and data structures until we find the right balance.
+- Dev data does not need to be preserved. Now is the time to make breaking schema changes.
 
 The current work deals closely with concepts documented in @docs/openrouter
 
@@ -13,12 +14,7 @@ The current work deals closely with concepts documented in @docs/openrouter
 
 Observation does not decide which upstream fields matter. Named identity is fixed; everything else from OpenRouter is kept as metadata so a new key is stored and compared without a schema change. App rendering, Monitor notifications, and an admin-only change stream are later filters on that record — not the observation contract. A field that appears on every model is a successful capture; whether it is worth a user-facing event is a downstream choice.
 
-## Notes
-
-- Deferred:
-  - Change Events
-  - Availability
-  - Workflow exception handling
+Workflow orchestration, exception handling etc, should remain simple and fail fast at this stage.
 
 ## Known Gaps
 
@@ -38,7 +34,9 @@ Observation does not decide which upstream fields matter. Named identity is fixe
 - `status`, `capacity_tpm`, and similar telemetry still live in endpoint metadata and dirty the view on purpose until skip lists are tuned (`projections/endpoints.ts`).
 - Latest stats are not copied onto the endpoint view. The data grid and public API still need a later path (join history, or a "current sample" projection).
 - Pricing-only endpoint diffs still upsert the endpoint view row. Turning that off is `VIEW_SKIP_KEYS` in `projections/endpoints.ts`.
-- An empty view table rewrites every row from `after` without treating those rows as pricing creates. Pricing still follows the artifact baseline.
+- An empty view table rewrites every row from `after` without treating those rows as pricing creates. Pricing still follows the artifact baseline. Vanished endpoints are not in the latest file, so rewrite cannot stamp or restore them; replay-in-order can.
+- Endpoints: catalog-absent stamps `unlisted_at` (scan timestamp) if unset; relist upserts omit it and clear it. Models and providers are retained unstamped. See `docs/orca/availability.md`.
+- File-to-file compare only sees the transition scan. Endpoints that vanished while absences were skipped stay listed until replay. Incomplete `after` must not unlist — currently a failed scan stores no artifact.
 
 ### Stats
 

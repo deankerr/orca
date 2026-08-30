@@ -6,18 +6,18 @@ import type { ActionCtx } from '../../_generated/server'
 import type { CatalogEndpoint } from '../catalog/v1'
 import type { pricingTable } from '../tables/pricing'
 import type { statsTable } from '../tables/stats'
-import { appendRows, applyChunks, rewriteIfEmpty, valuesById } from './apply/chunks'
+import { appendRows, applyUnlists, applyUpserts, rewriteIfEmpty, valuesById } from './apply/chunks'
 import { compareMaps } from './compare'
 import type { MapChange } from './compare'
 
 type PricingRow = Infer<typeof pricingTable.validator>
 type StatsRow = Infer<typeof statsTable.validator>
-type ViewEffect = 'upsert' | 'delete' | 'skip'
+type ViewEffect = 'upsert' | 'unlist' | 'skip'
 type PricingEffect = 'append' | 'skip'
 
 type EndpointPlan = {
   viewUpserts: CatalogEndpoint[]
-  viewDeletes: string[]
+  viewUnlists: string[]
   pricingAppends: CatalogEndpoint[]
   log: {
     id: string
@@ -55,20 +55,31 @@ export async function projectEndpoints(
   const planned = planEndpoints(args.before, args.after)
   const view = rewriteIfEmpty(hasRows, args.after, {
     upserts: planned.viewUpserts,
-    deletes: planned.viewDeletes,
+    deletes: [],
   })
+  const unlists = view.rewrite ? [] : planned.viewUnlists
 
   logEndpointPlan(planned, {
     rewrite: view.rewrite,
     upserts: view.upserts.length,
-    deletes: view.deletes.length,
+    unlists: unlists.length,
   })
 
-  const applied = await applyChunks(
+  const applied = await applyUpserts(
     view.upserts.map((endpoint) => toEndpointRow(endpoint, args.timestamp)),
-    view.deletes,
-    async (batch) => await ctx.runMutation(internal.meps2.projections.apply.endpoints.apply, batch),
+    async (upserts) =>
+      await ctx.runMutation(internal.meps2.projections.apply.endpoints.apply, { upserts }),
   )
+
+  const unlisted = await applyUnlists(
+    unlists,
+    async (endpoint_ids) =>
+      await ctx.runMutation(internal.meps2.projections.apply.endpoints.unlist, {
+        endpoint_ids,
+        unlisted_at: args.timestamp,
+      }),
+  )
+  console.log('[meps2:endpoints] unlisted', unlisted)
 
   const pricing = await appendRows(
     planned.pricingAppends.flatMap((endpoint) => {
@@ -89,7 +100,7 @@ export async function projectEndpoints(
 
   return {
     upserted: applied.upserted,
-    deleted: applied.deleted,
+    unlisted: unlisted.unlisted,
     pricing_samples: pricing.inserted,
     stats_samples: stats.inserted,
   }
@@ -100,14 +111,14 @@ export function planEndpoints(
   after: Map<string, CatalogEndpoint>,
 ): EndpointPlan {
   const viewUpserts: CatalogEndpoint[] = []
-  const viewDeletes: string[] = []
+  const viewUnlists: string[] = []
   const pricingAppends: CatalogEndpoint[] = []
   const log: EndpointPlan['log'] = []
 
   for (const change of compareMaps(before, after, DIFF_OPTIONS)) {
-    if (change.kind === 'delete') {
-      viewDeletes.push(change.id)
-      log.push({ id: change.id, kind: 'delete', view: 'delete', pricing: 'skip' })
+    if (change.kind === 'absent') {
+      viewUnlists.push(change.id)
+      log.push({ id: change.id, kind: 'absent', view: 'unlist', pricing: 'skip' })
       continue
     }
 
@@ -138,7 +149,7 @@ export function planEndpoints(
     })
   }
 
-  return { viewUpserts, viewDeletes, pricingAppends, log }
+  return { viewUpserts, viewUnlists, pricingAppends, log }
 }
 
 function viewEffect(changeset: IChange[]): ViewEffect {
@@ -240,12 +251,12 @@ function collectStatsRows(endpoints: Map<string, CatalogEndpoint>, timestamp: nu
 
 function logEndpointPlan(
   planned: EndpointPlan,
-  counts: { rewrite: boolean; upserts: number; deletes: number },
+  counts: { rewrite: boolean; upserts: number; unlists: number },
 ) {
   console.log('[meps2:endpoints] view', {
     ...counts,
     creates: planned.log.filter((entry) => entry.kind === 'create').map((entry) => entry.id),
-    deleted: planned.log.filter((entry) => entry.kind === 'delete').map((entry) => entry.id),
+    absent: planned.log.filter((entry) => entry.kind === 'absent').map((entry) => entry.id),
   })
   for (const entry of planned.log) {
     if (entry.kind === 'update') {

@@ -4,7 +4,7 @@ import { internalMutation, internalQuery } from '../../../_generated/server'
 import { endpointsTable } from '../../tables/endpoints'
 import { pricingTable } from '../../tables/pricing'
 import { statsTable } from '../../tables/stats'
-import { appendResult, applyResult, insertRows, tableHasRows } from './helpers'
+import { appendResult, insertRows, tableHasRows } from './helpers'
 
 export const hasRows = internalQuery({
   args: {},
@@ -15,12 +15,10 @@ export const hasRows = internalQuery({
 export const apply = internalMutation({
   args: {
     upserts: v.array(endpointsTable.validator),
-    deletes: v.array(v.string()),
   },
-  returns: applyResult,
+  returns: v.object({ upserted: v.number() }),
   handler: async (ctx, args) => {
     let upserted = 0
-    let deleted = 0
 
     for (const endpoint of args.upserts) {
       const existing = await ctx.db
@@ -28,24 +26,43 @@ export const apply = internalMutation({
         .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', endpoint.endpoint_id))
         .first()
 
+      // replace omits unlisted_at, which clears it on relist
       await (existing
         ? ctx.db.replace(existing._id, endpoint)
         : ctx.db.insert('meps2_endpoints', endpoint))
       upserted += 1
     }
 
-    for (const endpoint_id of args.deletes) {
+    return { upserted }
+  },
+})
+
+export const unlist = internalMutation({
+  args: {
+    endpoint_ids: v.array(v.string()),
+    unlisted_at: v.number(),
+  },
+  returns: v.object({ unlisted: v.number() }),
+  handler: async (ctx, args) => {
+    let unlisted = 0
+
+    for (const endpoint_id of args.endpoint_ids) {
       const existing = await ctx.db
         .query('meps2_endpoints')
         .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', endpoint_id))
         .first()
-      if (existing) {
-        await ctx.db.delete('meps2_endpoints', existing._id)
-        deleted += 1
+      if (existing === null || existing.unlisted_at !== undefined) {
+        continue
       }
+
+      await ctx.db.patch(existing._id, {
+        unlisted_at: args.unlisted_at,
+        updated_at: args.unlisted_at,
+      })
+      unlisted += 1
     }
 
-    return { upserted, deleted }
+    return { unlisted }
   },
 })
 

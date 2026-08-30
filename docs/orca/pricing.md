@@ -127,6 +127,35 @@ Upstream deprecated this in favor of a per-provider model that is much more comp
 started on that problem. Our `variable_pricings` field will not be reused — it is schema/db
 legacy. Drop it from UI if anything still surfaces it.
 
+## Presented rates and `overrides`
+
+Named meter fields on a pricing sample (`prompt`, `completion`, cache, …) are the rates OpenRouter
+was presenting at observation time. They already include `discount`. They are not a canonical
+list price ORCA computed.
+
+When OpenRouter exposes conditional pricing, the sample stores `overrides` next to those meters.
+Two shapes appear:
+
+- Prompt-length rows carry `min_prompt_tokens`. Presented meters are the default
+  (below-threshold) band. They do not twitch on a clock.
+- Schedule rows carry `utc_start` / `utc_end` and/or `utc_days`. Presented meters are the band
+  that was active at scan time. They change when the window flips even if authored pricing did
+  not. A weekend-only row may have `utc_days` and no start/end.
+
+As of 2026-08, schedule-shaped `overrides` are a handful of endpoints (DeepSeek official, DeepSeek
+on Alibaba, Tencent). Prompt-length `overrides` are common (on the order of a hundred endpoints).
+Do not treat the two the same.
+
+There is no natural “base” band to store instead. Majority-time, longest window, peak, and
+off-peak disagree across those schedule endpoints. Ingest does not pick one, does not parse
+`pricing_json` to find one, and does not suppress schedule samples. A new pricing row is an
+observation that presented rates moved — including discount battles and schedule band flips.
+
+A new row is not a user-facing “price changed” event. Grid, history, Monitor, and Discord decide
+whether that movement is worth showing. Use `overrides` on the sample for schedule / viewer-now
+display. Do not join the current endpoint view for that: `pricing_version_id` lives only on
+current metadata, so it is not a historical signal on the pricing series.
+
 ## What this is not
 
 - A requirement that every surface call the same `formatPricing`.

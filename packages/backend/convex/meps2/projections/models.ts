@@ -63,7 +63,7 @@ function logModelChanges(
   console.log('[meps2:models]', {
     ...counts,
     creates: changes.filter((change) => change.kind === 'create').map((change) => change.id),
-    deleted: changes.filter((change) => change.kind === 'delete').map((change) => change.id),
+    absent: changes.filter((change) => change.kind === 'absent').map((change) => change.id),
   })
   for (const change of changes) {
     if (change.kind === 'update') {

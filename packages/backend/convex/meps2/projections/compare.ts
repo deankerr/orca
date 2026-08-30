@@ -3,7 +3,7 @@ import type { IChange, Options as DiffOptions } from 'json-diff-ts'
 
 export type MapChange<T> =
   | { id: string; kind: 'create'; next: T }
-  | { id: string; kind: 'delete' }
+  | { id: string; kind: 'absent' }
   | { id: string; kind: 'update'; next: T; changeset: IChange[] }
 
 export function compareMaps<T>(
@@ -19,7 +19,7 @@ export function compareMaps<T>(
     const next = after.get(id)
 
     if (prev !== undefined && next === undefined) {
-      changes.push({ id, kind: 'delete' })
+      changes.push({ id, kind: 'absent' })
       continue
     }
 
@@ -45,15 +45,14 @@ export function compareMaps<T>(
 
 export function viewWrites<T>(changes: MapChange<T>[]): { upserts: T[]; deletes: string[] } {
   const upserts: T[] = []
-  const deletes: string[] = []
 
   for (const change of changes) {
-    if (change.kind === 'delete') {
-      deletes.push(change.id)
-    } else {
+    // models/providers: catalog-absent rows are retained and unstamped.
+    // endpoints stamp unlisted_at in planEndpoints, not here.
+    if (change.kind !== 'absent') {
       upserts.push(change.next)
     }
   }
 
-  return { upserts, deletes }
+  return { upserts, deletes: [] }
 }

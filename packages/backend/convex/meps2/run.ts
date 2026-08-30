@@ -52,7 +52,7 @@ export const run = internalAction({
           model_upserts: projected.models.upserted,
           model_deletes: projected.models.deleted,
           endpoint_upserts: projected.endpoints.upserted,
-          endpoint_deletes: projected.endpoints.deleted,
+          endpoint_unlists: projected.endpoints.unlisted,
           provider_upserts: projected.providers.upserted,
           provider_deletes: projected.providers.deleted,
           pricing_samples: projected.endpoints.pricing_samples,

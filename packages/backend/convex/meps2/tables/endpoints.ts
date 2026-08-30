@@ -10,4 +10,9 @@ export const endpointsTable = defineTable({
   provider_id: v.string(),
 
   metadata: v.record(v.string(), v.union(v.boolean(), v.number(), v.string(), v.array(v.string()))),
-}).index('by_endpoint_id', ['endpoint_id'])
+
+  // start of the current catalog absence; unset means listed in the latest complete scan
+  unlisted_at: v.optional(v.number()),
+})
+  .index('by_endpoint_id', ['endpoint_id'])
+  .index('by_unlisted_at', ['unlisted_at'])
