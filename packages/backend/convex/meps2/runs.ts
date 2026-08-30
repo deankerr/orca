@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
-import { internalMutation } from '../../_generated/server'
-import { runStats } from '../tables/runs'
+import { internalMutation } from '../_generated/server'
+import { runStats } from './tables/runs'
 
 // a running row older than this is assumed dead, failed, and taken over
 const STALE_RUNNING_MS = 30 * 60 * 1000
@@ -66,5 +66,50 @@ export const dev_wipeRuns = internalMutation({
     for await (const doc of ctx.db.query('meps2_runs')) {
       await ctx.db.delete('meps2_runs', doc._id)
     }
+  },
+})
+
+const WIPE_BUDGET = 2000
+const WIPE_TABLES = [
+  'meps2_models',
+  'meps2_endpoints',
+  'meps2_providers',
+  'meps2_pricing',
+  'meps2_stats',
+  'meps2_runs',
+] as const
+
+export const dev_wipeBatch = internalMutation({
+  args: {},
+  returns: v.object({ deleted: v.number(), more: v.boolean() }),
+  handler: async (ctx) => {
+    let deleted = 0
+    let budget = WIPE_BUDGET
+
+    for (const table of WIPE_TABLES) {
+      if (budget === 0) {
+        return { deleted, more: true }
+      }
+      const docs = await ctx.db.query(table).take(budget)
+      for (const doc of docs) {
+        await ctx.db.delete(table, doc._id)
+        deleted += 1
+        budget -= 1
+      }
+    }
+
+    if (budget === 0) {
+      return { deleted, more: true }
+    }
+
+    const artifacts = await ctx.db.query('meps2_artifacts').take(budget)
+    for (const doc of artifacts) {
+      await ctx.storage.delete(doc.storage_id)
+      await ctx.db.delete('meps2_artifacts', doc._id)
+      deleted += 1
+      budget -= 1
+    }
+
+    return { deleted, more: budget === 0 }
   },
 })

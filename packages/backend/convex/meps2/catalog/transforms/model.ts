@@ -1,9 +1,8 @@
 import { z } from 'zod'
 
-import { flattenMetadata } from './shared'
+import { flattenMetadata } from '../metadata'
+import type { CatalogModel } from '../v1'
 
-// [model_id] and [variant] are lifted to the catalog item; after scan, `endpoint` is
-// overwritten to the top endpoint UUID (or null) so the nested record is not stored.
 export const Model = z
   .looseObject({
     slug: z.string(),
@@ -11,9 +10,9 @@ export const Model = z
 
     input_modalities: z.string().array(),
     output_modalities: z.string().array(),
-    created_at: z.iso.datetime({ offset: true }), // [or_created_at]
+    created_at: z.iso.datetime({ offset: true }),
 
-    name: z.string(), // [display_name]
+    name: z.string(),
     author_display_name: z.string(),
 
     endpoint: z
@@ -25,11 +24,9 @@ export const Model = z
       .nullable(),
   })
   .transform((raw) => {
-    // core fields become table columns, everything else is flattened into metadata
     const {
       slug,
       endpoint,
-
       permaslug,
       input_modalities,
       output_modalities,
@@ -39,20 +36,21 @@ export const Model = z
       ...rest
     } = raw
 
-    return {
+    const model: CatalogModel = {
+      model_id: endpoint?.model_variant_slug ?? slug,
+      variant: endpoint?.variant ?? 'standard',
       slug,
-      endpoint,
-
       permaslug,
       input_modalities,
       output_modalities,
       or_created_at: created_at,
-
       display_name: name,
       author_display_name,
-
       metadata: flattenMetadata(rest),
     }
-  })
 
-export type ModelRow = z.output<typeof Model>
+    return {
+      model,
+      has_endpoints: endpoint !== null,
+    }
+  })

@@ -1,13 +1,13 @@
-import type { Infer } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
-import type { modelsTable } from '../../tables/models'
+export const mepsMetadata = z.record(
+  z.string(),
+  z.union([z.boolean(), z.number(), z.string(), z.array(z.string())]),
+)
 
-// metadata record shape shared by all meps2 tables
-export type MepsMetadata = Infer<typeof modelsTable.validator>['metadata']
+export type MepsMetadata = z.output<typeof mepsMetadata>
 
-// values the metadata validator can hold: scalars and string arrays
 function isMetadataValue(value: unknown): value is MepsMetadata[string] {
   if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
     return true
@@ -15,13 +15,11 @@ function isMetadataValue(value: unknown): value is MepsMetadata[string] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
-// flattens raw record fields into a metadata record:
-// nested objects become dot-delimited keys, values the schema cannot hold (nulls, mixed arrays) are dropped
+// nested objects become dot-delimited keys; values the schema cannot hold are dropped
 export function flattenMetadata(source: Record<string, unknown>): MepsMetadata {
   const metadata: MepsMetadata = {}
 
   const walk = (key: string, value: unknown) => {
-    // recurse into nested objects, joining key segments with dots
     if (R.isPlainObject(value)) {
       for (const [nestedKey, nestedValue] of Object.entries(value)) {
         walk(`${key}.${nestedKey}`, nestedValue)
@@ -29,7 +27,6 @@ export function flattenMetadata(source: Record<string, unknown>): MepsMetadata {
       return
     }
 
-    // keep only conforming values
     if (isMetadataValue(value)) {
       metadata[key] = value
     }
@@ -41,8 +38,3 @@ export function flattenMetadata(source: Record<string, unknown>): MepsMetadata {
 
   return metadata
 }
-
-export const zNullableString = z
-  .string()
-  .nullable()
-  .transform((val) => (val === '' ? null : val))
