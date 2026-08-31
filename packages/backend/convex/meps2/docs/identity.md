@@ -28,17 +28,21 @@ before any upstream request.
 - ⚠️ Two attempts never share a `scan_at`. A retry is a new scan.
 - ⚠️ Mixing `toISOString()` with offset strings such as `+00:00` breaks both identity and sort.
 
-## Artifact id
+## Artifact identity
 
-The primary identifier of any artifact is a filename. It is the same string whether the blob
-lives in Convex file storage or object storage.
+`artifacts` identifies a blob by the opaque pair `(path, artifact_id)`. See
+[`artifacts.md`](artifacts.md).
 
-- Scan artifacts use `scan.{scan_at}.jsonl`.
-- Example: `scan.2026-08-30T15:00:21.215Z.jsonl`.
-- The prefix before the first `.` is the workflow name.
+Scan's convention:
+
+- `path` is `scan`.
+- `artifact_id` is `scan.{scan_at}.jsonl`.
+- Example: path `scan`, id `scan.2026-08-30T15:00:21.215Z.jsonl`.
 - `.jsonl` is the logical encoding of the bytes we hash and parse.
 - 🧭 Compression is not part of the id. A gzip blob and a future zstd blob are the same artifact.
-- 🧭 The id is not a Convex document id and is not a storage id. Those are locators, not names.
+- 🧭 `path` and `artifact_id` are not Convex document ids and are not storage locators.
+- 🧭 `artifacts` does not parse `artifact_id`. The `scan.` prefix is this workflow's naming
+  choice, not a stored field.
 
 ## Type split
 
@@ -56,6 +60,7 @@ Domain identity and process clocks are different types so they cannot be joined 
 ## What is not an identifier
 
 - Convex `_id` on an artifacts or runs row is storage-local. Do not expose it as a scan id.
+- A backend locator (Convex storage id, object key) is not an artifact id.
 - OpenRouter model `slug` is not the scan-artifact row key. The row key is `model_id`.
 - OpenRouter endpoint `id` is the endpoint UUID. It is not a model id and not an artifact id.
 - ⚠️ Do not name the scan-artifact row key `id`.

@@ -35,8 +35,9 @@ A scan run proceeds in this order. Later steps do not run if an earlier step fai
    take over a stale `running` run.
 2. Assign `scan_at`.
 3. Fetch and serialize the scan artifact (`scan`).
-4. `artifacts.storeArtifact`. Record `artifact_id` on the run.
-5. Load baseline bytes from the latest `succeeded` scan run's `artifact_id`.
+4. `artifacts.store` with path `scan`. Record `artifact_id` on the run.
+5. Load baseline bytes via `artifacts.load` with path `scan` and the latest `succeeded` scan
+   run's `artifact_id`.
 6. Project and apply (`projections`, `projections/apply`).
 7. Mark the run `succeeded`.
 

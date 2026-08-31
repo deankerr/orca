@@ -1,8 +1,10 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { vMetadataRecord } from './shared'
+
 export const modelsTable = defineTable({
-  updated_at: v.number(),
+  scan_at: v.string(),
   model_id: v.string(),
   permaslug: v.string(),
   variant: v.string(),
@@ -14,5 +16,5 @@ export const modelsTable = defineTable({
   display_name: v.string(),
   author_display_name: v.string(),
 
-  metadata: v.record(v.string(), v.union(v.boolean(), v.number(), v.string(), v.array(v.string()))),
+  metadata: vMetadataRecord,
 }).index('by_model_id', ['model_id'])

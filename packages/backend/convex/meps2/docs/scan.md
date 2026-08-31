@@ -35,6 +35,6 @@ There is no partial artifact.
 
 ## Output
 
-- Artifact id: `scan.{scan_at}.jsonl`.
+- Store as path `scan`, artifact id `scan.{scan_at}.jsonl`.
 - The run records that `artifact_id` after a successful store.
 - Apply is a later step of the same run. See [`runs.md`](runs.md).

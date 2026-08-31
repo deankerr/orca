@@ -11,4 +11,7 @@ export const runsTable = defineTable({
   completed_at: v.optional(v.number()),
   error: v.optional(v.string()),
   stats: v.optional(runStats),
-}).index('by_workflow_status', ['workflow', 'status'])
+  artifact_id: v.optional(v.string()),
+})
+  .index('by_workflow_status', ['workflow', 'status', 'started_at'])
+  .index('by_artifact_id', ['artifact_id'])

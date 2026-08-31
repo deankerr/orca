@@ -1,95 +1,119 @@
+import { ConvexError } from 'convex/values'
 import { gunzipSync, gzipSync } from 'fflate'
-import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
-import type { Id } from '../../_generated/dataModel'
 import type { ActionCtx } from '../../_generated/server'
-import { storeBlobWithRecord } from '../../lib/blobStore'
 
-// envelope framing for stored blobs - self-describing so artifacts survive a storage-backend move
-const ArtifactEnvelope = z.looseObject({
-  artifact_id: z.string(),
-  workflow: z.string(),
-  timestamp: z.string(),
-  format: z.string(),
-  data: z.unknown(),
-})
+/** Opaque identity of one stored artifact. Neither field is derived from the other. */
+export type ArtifactIdentity = {
+  /** Grouping prefix. An object-storage backend uses this as the key prefix. */
+  path: string
 
-export type ArtifactEnvelope = z.output<typeof ArtifactEnvelope>
-
-export type StoredArtifact = {
+  /** Object name within `path`. Not parsed and not a storage locator. */
   artifact_id: string
-  workflow: string
-  format: string
-  run_id: Id<'meps2_runs'>
-  storage_id: Id<'_storage'>
-  content_sha256: string
-  size: { raw: number; blob: number }
-  created_at: number
 }
 
-export async function storeArtifact(
+/** Identity plus checksum and sizes after a successful store. */
+export type StoredArtifact = ArtifactIdentity & {
+  /** SHA-256 of the uncompressed bytes. */
+  content_sha256: string
+
+  size: {
+    /** Uncompressed byte length. */
+    raw: number
+    /** Stored blob length after the backend codec. */
+    blob: number
+  }
+}
+
+/**
+ * Persist uncompressed bytes under an identity. Insert-only.
+ *
+ * Compression and the storage locator stay inside this module.
+ *
+ * @param args.bytes - Logical contents to hash and store, not the compressed form.
+ * @throws {ConvexError} If this pair was already stored, or the locator row could not be
+ *   written after the blob.
+ */
+export async function store(
   ctx: ActionCtx,
-  args: {
-    workflow: string
-    timestamp: number
-    format: string
-    data: unknown
-    run_id: Id<'meps2_runs'>
-  },
+  args: ArtifactIdentity & { bytes: Uint8Array },
 ): Promise<StoredArtifact> {
-  const timestamp = new Date(args.timestamp).toISOString()
-  const artifact_id = `${args.workflow}/${timestamp}`
-
-  const envelope: ArtifactEnvelope = {
-    artifact_id,
-    workflow: args.workflow,
-    timestamp,
-    format: args.format,
-    data: args.data,
-  }
-
-  const raw = new TextEncoder().encode(JSON.stringify(envelope))
-
-  // hash the uncompressed bytes so identity is independent of gzip nondeterminism
-  const digest = await crypto.subtle.digest('SHA-256', raw)
-  const content_sha256 = Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('')
-
-  // mtime: 0 makes gzip deterministic, so identical payloads produce identical blobs
-  const blob = gzipSync(raw, { mtime: 0 })
-
-  const artifact = {
-    artifact_id,
-    workflow: args.workflow,
-    format: args.format,
-    run_id: args.run_id,
-    content_sha256,
-    size: { raw: raw.byteLength, blob: blob.byteLength },
-    created_at: args.timestamp,
-  }
-
-  const storage_id = await storeBlobWithRecord(ctx, {
-    bytes: blob,
-    content_type: 'application/gzip',
-    record: async (storage_id) =>
-      await ctx.runMutation(internal.meps2.artifacts.mutations.insertArtifact, {
-        artifact: { ...artifact, storage_id },
-      }),
+  const existing = await ctx.runQuery(internal.meps2.artifacts.records.get, {
+    path: args.path,
+    artifact_id: args.artifact_id,
   })
 
-  return { ...artifact, storage_id }
-}
-
-export async function loadArtifact(ctx: ActionCtx, storage_id: Id<'_storage'>) {
-  const blob = await ctx.storage.get(storage_id)
-
-  if (blob === null) {
-    throw new Error(`artifact blob not found: ${storage_id}`)
+  if (existing !== null) {
+    throw new ConvexError({
+      message: 'artifact already exists',
+      path: args.path,
+      artifact_id: args.artifact_id,
+    })
   }
 
-  const json = new TextDecoder().decode(gunzipSync(new Uint8Array(await blob.arrayBuffer())))
+  const content_sha256 = await sha256Hex(args.bytes)
+  // mtime 0 makes gzip deterministic, so identical bytes produce identical blobs
+  const compressed = gzipSync(args.bytes, { mtime: 0 })
+  const storage_id = await ctx.storage.store(
+    new Blob([new Uint8Array(compressed)], { type: 'application/gzip' }),
+  )
 
-  return ArtifactEnvelope.parse(JSON.parse(json))
+  const stored: StoredArtifact = {
+    path: args.path,
+    artifact_id: args.artifact_id,
+    content_sha256,
+    size: { raw: args.bytes.byteLength, blob: compressed.byteLength },
+  }
+
+  try {
+    await ctx.runMutation(internal.meps2.artifacts.records.insert, {
+      artifact: { ...stored, storage_id },
+    })
+  } catch {
+    // blob write and row insert are not atomic; storage_id names the orphan
+    throw new ConvexError({
+      message: 'orphaned blob: record insert failed after store',
+      path: args.path,
+      artifact_id: args.artifact_id,
+      storage_id,
+    })
+  }
+
+  return stored
+}
+
+/**
+ * Return the uncompressed bytes previously stored under this identity.
+ *
+ * @throws {ConvexError} If nothing was stored under this pair, or the blob behind the locator is gone.
+ */
+export async function load(ctx: ActionCtx, args: ArtifactIdentity): Promise<Uint8Array> {
+  const record = await ctx.runQuery(internal.meps2.artifacts.records.get, args)
+
+  if (record === null) {
+    throw new ConvexError({
+      message: 'artifact not found',
+      path: args.path,
+      artifact_id: args.artifact_id,
+    })
+  }
+
+  const blob = await ctx.storage.get(record.storage_id)
+
+  if (blob === null) {
+    throw new ConvexError({
+      message: 'artifact blob missing',
+      path: args.path,
+      artifact_id: args.artifact_id,
+      storage_id: record.storage_id,
+    })
+  }
+
+  return gunzipSync(new Uint8Array(await blob.arrayBuffer()))
+}
+
+async function sha256Hex(bytes: Uint8Array) {
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }

@@ -1,18 +1,28 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+/**
+ * Convex locator table for stored artifacts.
+ *
+ * Callers of `store` / `load` do not read this table. `storage_id` is a backend
+ * locator, not an artifact id.
+ */
 export const artifactsTable = defineTable({
+  /** Grouping prefix. Opaque; an object-storage backend uses this as the key prefix. */
+  path: v.string(),
+  /** Object name within `path`. Opaque; not parsed. */
   artifact_id: v.string(),
-  workflow: v.string(),
-  format: v.string(),
 
-  run_id: v.id('meps2_runs'),
+  /** Convex file-storage id of the compressed blob. */
   storage_id: v.id('_storage'),
+  /** SHA-256 of the uncompressed bytes. */
   content_sha256: v.string(),
-  size: v.object({ raw: v.number(), blob: v.number() }),
-
-  created_at: v.number(),
+  size: v.object({
+    /** Uncompressed byte length. */
+    raw: v.number(),
+    /** Stored blob length after the backend codec. */
+    blob: v.number(),
+  }),
 })
-  .index('by_artifact_id', ['artifact_id'])
-  .index('by_workflow_created_at', ['workflow', 'created_at'])
-  .index('by_run_id', ['run_id'])
+  .index('by_path_artifact_id', ['path', 'artifact_id'])
+  .index('by_path', ['path'])

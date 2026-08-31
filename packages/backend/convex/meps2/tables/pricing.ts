@@ -1,9 +1,11 @@
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
+import { vMetadataRecord, vNestedMetadataRecord } from './shared'
+
 export const pricingTable = defineTable({
   endpoint_id: v.string(),
-  timestamp: v.number(),
+  scan_at: v.string(),
 
   prompt: v.string(),
   completion: v.string(),
@@ -21,8 +23,12 @@ export const pricingTable = defineTable({
 
   web_search: v.optional(v.string()),
 
-  display_pricing: v.optional(v.array(v.any())),
-  overrides: v.optional(v.array(v.any())),
+  internal_reasoning: v.optional(v.string()),
+  image_token: v.optional(v.string()),
+  audio_output: v.optional(v.string()),
+
+  display_pricing: v.optional(v.array(vNestedMetadataRecord)),
+  overrides: v.optional(v.array(vMetadataRecord)),
 })
-  .index('by_endpoint_timestamp', ['endpoint_id', 'timestamp'])
-  .index('by_timestamp', ['timestamp'])
+  .index('by_endpoint_scan_at', ['endpoint_id', 'scan_at'])
+  .index('by_scan_at', ['scan_at'])
