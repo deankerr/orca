@@ -1,31 +1,35 @@
 # Scan
 
-The `scan` workflow fetches OpenRouter and writes one scan artifact. Failures fail the run.
-There is no partial artifact.
+`scan` fetches OpenRouter and serializes one scan artifact. It does not persist. Failures
+throw; there is no partial artifact.
 
 ## Observation time
 
-- Assign `scan_at` at the start of the attempt, before the first request.
+- The caller assigns `scan_at` and passes it in, before the first request.
 - Every row in the file uses that value.
 - Do not record when individual endpoint pages returned.
+- 🧭 `scan` does not mint `scan_at` on retry. See [`identity.md`](identity.md).
 
 ## Fetch
 
 1. `GET /api/frontend/v1/catalog/models`.
-2. Drop models whose `slug` starts with `~`. Their endpoint pages 404 and would fail the scan.
+2. Drop models whose `slug` starts with `~`. Their endpoint pages 404.
 3. For each remaining model whose nested `endpoint` is non-null, `GET /api/frontend/v1/stats/endpoint?permaslug={permaslug}&variant={variant}`.
-4. A model whose nested `endpoint` is `null` is stored with `endpoints: null`. It is not fetched.
-5. Write the scan artifact. See [`scan-artifact.md`](scan-artifact.md).
+4. A model whose nested `endpoint` is `null` is serialized with `endpoints: null`. It is
+   not fetched.
+5. Return uncompressed JSONL bytes and the scan artifact identity. See
+   [`scan-artifact.md`](scan-artifact.md).
 
 - 🧭 Nested `endpoint` on the catalog model is a fetch signal only. It is not stored on the
   model payload.
-- 🧭 Any fetch error fails the scan. No artifact is stored.
-- 🧭 Partial scans are never stored. `after` is always a complete observation or it does not
-  exist.
-- 🧭 An endpoint page that returns an empty array is a failed scan, not `endpoints: []`.
-- A 404 on a non-`~` endpoint page is an error like any other. Concurrent fetches make that
-  outcome rare; rarity is not a reason to store a partial file.
+- 🧭 Any fetch error fails the scan. No bytes are returned. `up-fetch` errors propagate
+  unchanged.
+- 🧭 Partial scans are never returned.
+- An empty stats page is serialized as `endpoints: []`.
+- A 404 on a non-`~` endpoint page is an error like any other.
 - Modality is not a scan filter. Image-only and other non-text models are stored.
+- Missing fields needed to fetch or write a row (`slug`, `permaslug`, nested
+  `model_variant_slug` / `variant`) throw `ConvexError`.
 
 ## Membership
 
@@ -35,6 +39,14 @@ There is no partial artifact.
 
 ## Output
 
-- Store as path `scan`, artifact id `scan.{scan_at}.jsonl`.
-- The run records that `artifact_id` after a successful store.
-- Apply is a later step of the same run. See [`runs.md`](runs.md).
+```ts
+scan({ scan_at: string }): Promise<{
+  path: 'scan'
+  artifact_id: string // scan.{scan_at}.jsonl
+  scan_at: string
+  bytes: Uint8Array // uncompressed UTF-8 JSONL
+}>
+```
+
+- 🧭 `scan` does not call `artifacts.store`, `ingest.register`, or `projections`.
+- Duplicate `model_id` or endpoint `id` in the file is not rejected here.

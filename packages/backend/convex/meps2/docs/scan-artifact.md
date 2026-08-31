@@ -10,8 +10,6 @@ The filename and the row shape are the spec.
 - Uncompressed bytes are what `content_sha256` hashes.
 - Rows sorted by `model_id`.
 - `endpoints` arrays sorted by upstream endpoint `id`.
-- 🧭 Duplicate `model_id` across rows, or duplicate endpoint `id` in the file, is a failed
-  scan. The file is not stored.
 - Envelope keys are written in this order: `scan_at`, `model_id`, `variant`, `model`, `endpoints`.
 - Nested object key order is left as received from the source. We do not recursively sort keys.
 
@@ -57,10 +55,10 @@ Payloads keep the rest of the upstream fields. This example is identity only.
 ## `endpoints`
 
 - `null` — catalog nested `endpoint` was `null`. The stats page was not queried.
-- a non-empty array — the stats page returned these endpoints.
-- 🧭 `[]` is not a stored state. An empty stats page fails the scan.
+- an array — the stats page returned these endpoints, possibly empty.
 - 🧭 Do not omit the `endpoints` key.
 - ⚠️ `null` is not “this model has no providers.” It is “we did not look.”
+- ⚠️ `[]` is “we looked, and the page was empty.” It is not `null`.
 
 ## What is not in the file
 

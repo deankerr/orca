@@ -9,5 +9,3 @@ Design-in-code rewrite of the core backends components.
 - Dev data does not need to be preserved. Now is the time to make breaking schema changes.
 
 Intended design: [`docs/`](docs/). OpenRouter observation notes: `docs/openrouter`.
-
-Workflow orchestration and exception handling should remain simple and fail fast at this stage.

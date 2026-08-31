@@ -6,6 +6,7 @@
     "dev": "convex dev"
   },
   "dependencies": {
+    "@convex-dev/workflow": "^0.4.6",
     "@discordjs/builders": "^1.14.1",
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",

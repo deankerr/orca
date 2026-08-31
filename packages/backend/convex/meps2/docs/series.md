@@ -9,6 +9,8 @@ artifacts. They are not the view.
 - Re-applying the same `scan_at` does not insert a second sample for the same key.
 - No terminator row when an endpoint unlists. Chart gaps are deferred.
 - Latest samples are not copied onto the endpoint view.
+- 🧭 Insert mutations look up the unique key first. If a row exists, they return without
+  writing. They never patch an existing sample.
 - 💤 How the data grid and public API read a current sample (join this series, or a later
   current-sample projection) is out of scope here.
 - 💤 Retention / compaction is the volume knob and is not designed here.
@@ -16,6 +18,9 @@ artifacts. They are not the view.
 ## Stats
 
 - Key: (`endpoint_id`, `scan_at`, `tier`).
+- Index `by_endpoint_scan_at` on `['endpoint_id', 'scan_at', 'tier']`. Lookups use
+  `.unique()`.
+- Index `by_scan_at` on `['scan_at']` for per-scan maintenance, not for compare.
 - Built from `after` only. No compare.
 - `statsByTier` is the source of truth. Each present tier becomes a row.
 - Legacy payloads with `stats` and no `statsByTier` store that sample under tier `default`.
@@ -26,6 +31,8 @@ artifacts. They are not the view.
 ## Pricing
 
 - Key: (`endpoint_id`, `scan_at`).
+- Index `by_endpoint_scan_at` on `['endpoint_id', 'scan_at']`. Lookups use `.unique()`.
+- Index `by_scan_at` on `['scan_at']` for per-scan maintenance, not for compare.
 - Appended when the endpoint is created or the endpoint diff includes `pricing`.
 - Unchanged pricing is not re-sampled.
 - Named meters on the table match the usual rate fields (`prompt`, `completion`, `discount`,

@@ -6,18 +6,6 @@ decisions, not a description of the running code.
 Each note owns one subject. Prefer a new focused note over adding an unrelated section to an
 existing note.
 
-## Notes
-
-- [`identity.md`](identity.md) — names, `scan_at`, artifact ids, type split
-- [`artifacts.md`](artifacts.md) — generic artifact store (`artifacts`)
-- [`scan.md`](scan.md) — scan workflow: fetch, filters, one observation time
-- [`scan-artifact.md`](scan-artifact.md) — scan file contents and row shape
-- [`adapters.md`](adapters.md) — turning other sources into scan artifacts
-- [`runs.md`](runs.md) — workflow attempts, baseline, store-then-apply
-- [`projections.md`](projections.md) — Maps, compare, skip lists, apply
-- [`views.md`](views.md) — current model / endpoint / provider rows
-- [`series.md`](series.md) — pricing and stats samples
-
 OpenRouter observation notes remain in `docs/openrouter`. Listing semantics for vanished
 endpoints are in `docs/orca/availability.md`; this directory states the meps2 names those
 rules use.
@@ -30,7 +18,7 @@ rules use.
 - Put facts about a field in that field's section.
 - Put relationships between fields in a dedicated relationship section.
 - Use tables only when exact mappings are easier to scan in rows.
-- Refer to modules in backticks (`artifacts`, `projections/apply`). Do not specify file trees.
+- Refer to modules in backticks (`artifacts`, `ingest`, `projections`). Do not specify file trees.
 - Define critical interfaces in place. Do not describe the current code.
 
 ## Statement categories

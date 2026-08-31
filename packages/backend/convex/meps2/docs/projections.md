@@ -1,27 +1,42 @@
 # Projections
 
-`projections` turns two scan artifacts into view writes and series appends. Compare is Map
-against Map. Mutation for the view tables happens at write time, not in the file.
+`projections` turns two Catalog maps into view writes and series appends. Compare is Map
+against Map. This module does not load blobs, register identities, or advance the ingest
+window.
 
-## Input maps
-
-Deserialize each artifact into two maps. The same function is used for `before` and `after`.
+## Interface
 
 ```ts
 type Catalog = {
   models: Map<string, object> // key: model_id
   endpoints: Map<string, object> // key: upstream endpoint id
 }
+
+explode(bytes: Uint8Array): Catalog
+compare(before: Catalog, after: Catalog): Diff
 ```
 
-- Explode each JSONL row: the `model` payload keyed by row `model_id`; each endpoints-array
-  element keyed by its `id`.
+Apply is an action-local walk of the diff plus mutations that write **batches**. The
+mutations take `scan_at` and row payloads. They do not take workflow ids, `before` artifact
+ids, or ingest window fields.
+
+## Explode
+
+Deserialize JSONL into two maps. The same function is used for `before` and `after`.
+
+- Each line: the `model` payload keyed by row `model_id`; each endpoints-array element
+  keyed by its `id`.
 - Attach ORCA identity when exploding an endpoint: `model_id` and `variant` from the parent
   row. Do not invent those fields inside the stored file.
 - `endpoints: null` contributes the model and zero endpoints.
-- 🧭 Apply the modality filter to both maps with the same function. A filter change must not
-  look like a mass unlist.
-- Drop model rows whose `input_modalities` and `output_modalities` do not both include `text`.
+- `endpoints: []` contributes the model and zero endpoints. Same map effect as `null`;
+  the distinction stayed in the file.
+- Duplicate `model_id` or endpoint `id` in one file: last line wins. Produce does not
+  reject this.
+- 🧭 Apply the modality filter to both maps with the same function. A filter change must
+  not look like a mass unlist.
+- Drop model rows whose `input_modalities` and `output_modalities` do not both include
+  `text`.
 - Drop endpoints whose `model_id` was dropped by that filter.
 - Providers are not a third input map. They are derived from `endpoint.provider_info` at
   apply time. See [`views.md`](views.md).
@@ -37,17 +52,9 @@ type Catalog = {
 Compare runs on source-shaped objects (nested fields intact). Flattening is a view-write
 concern.
 
-## View writes
-
-The view is a catch-all projection of the source-shaped diff. It is not the change
-announcement surface.
-
-- 🧭 A new upstream field, or a change to a field the app does not render, still upserts
-  the view. That is the point: upstream schema can move without a meps2 schema change.
-- Change events (Monitor, alerts) are a later filter on the record. A view upsert is not
-  an announcement.
-- Extra view writes from unrendered or newly appeared fields are the cost of that
-  flexibility, not a correctness bug.
+Empty `before` (first ingest, or a caller that passed empty maps): every `after` entity is
+a create. That is not a pricing create storm; pricing still follows compare against empty
+maps (every `after` endpoint with pricing is a create).
 
 ## Skip lists
 
@@ -65,22 +72,70 @@ Skip lists are an efficiency knob on compare. They do not decide which fields ma
   same optional efficiency; the pricing series still appends on create or a `pricing` diff.
 - Unchanged pricing is not re-sampled.
 
-## Empty views
+## View writes
 
-If a view table has no rows, `projections/apply` rewrites every `after` entity as an upsert.
+The view is a catch-all projection of the source-shaped diff. It is not the change
+announcement surface.
+
+- 🧭 A new upstream field, or a change to a field the app does not render, still upserts
+  the view. That is the point: upstream schema can move without a meps2 schema change.
+- Change events (Monitor, alerts) are a later filter on the record. A view upsert is not
+  an announcement.
+
+### Empty views
+
+If a view table has no rows, rewrite every `after` entity as an upsert.
 
 - Rewrite is not a set of pricing creates. Pricing still follows the artifact-to-artifact
-  baseline.
-- Rewrite does not unlist. Vanished endpoints are not in `after`; replay-in-order stamps them.
-- 🧭 Incomplete `after` must not unlist. Scan never stores a partial artifact, so a stored
-  `after` is complete.
+  baseline passed in as `before`.
+- Rewrite does not unlist. Vanished endpoints are not in `after`; replay-in-order stamps
+  them.
+- 🧭 Incomplete `after` must not unlist. A stored scan artifact is a complete observation.
 
-## Apply
+### Write mutations
 
-`projections/apply` writes in chunks.
+Each mutation is one chunk. It receives `scan_at` plus arrays of planned writes. It does
+not query `ingest` and does not patch the ingest window.
 
-- Views: upsert / unlist as planned. Stamp `scan_at` on each write.
-- Pricing: append on create or pricing change. See [`series.md`](series.md).
-- Stats: append every sample present on `after` endpoints. No compare.
-- Orchestration fail-fast still applies: an apply exception fails the run. The artifact
-  remains. See [`runs.md`](runs.md).
+**Model upsert.** `by_model_id` `.unique()`. Insert, or patch every field including
+`scan_at`. Catalog-absent models are not deleted and not unlisted.
+
+**Endpoint upsert.** `by_endpoint_id` `.unique()`. Insert, or patch fields including
+`scan_at`. If `unlisted_at` is set, clear it. Do not restamp an already-listed row's
+`unlisted_at`.
+
+**Endpoint unlist.** `by_endpoint_id` `.unique()`. If no row, skip. If `unlisted_at` is
+already set, skip (do not restamp). Else patch `unlisted_at: scan_at` and `scan_at`.
+
+**Provider upsert.** `by_provider_id` `.unique()`. Insert, or patch including `scan_at`.
+Last-write-wins inside one chunk if the same slug appears twice. Catalog-absent providers
+are not deleted.
+
+Stamp `scan_at` on every view write (upsert, unlist, empty-view rewrite).
+
+Chunk so one mutation stays inside Convex transaction limits. The apply action walks the
+diff and submits chunks in sequence. An exception stops the walk. Already-committed chunks
+stay. Replay of the same `after.scan_at` upserts to the same keys.
+
+## Series writes
+
+See [`series.md`](series.md). Mutations:
+
+**Pricing insert.** `by_endpoint_scan_at` `.unique()` on `['endpoint_id', 'scan_at']`. If a
+row exists, skip. Else insert. Never patch a pricing row.
+
+**Stats insert.** `by_endpoint_scan_at` `.unique()` on `['endpoint_id', 'scan_at', 'tier']`.
+If a row exists, skip. Else insert. Never patch a stats row.
+
+- 🧭 Re-applying the same `scan_at` does not insert a second sample for the same key.
+- Stats come from `after` only. No compare.
+- Pricing inserts on create or a `pricing` diff. Unchanged pricing is not re-sampled.
+
+## What this module does not do
+
+- It does not call `artifacts.load`. The caller passes bytes into `explode`, or maps into
+  `compare` / apply.
+- It does not call `ingest.markIngested`. Window advance is a separate mutation after apply
+  returns.
+- ❓ Apply of an older-than-earliest artifact (reverse-time unlist of the current view) is
+  not specified. Do not add a `mode` argument until that rule exists.
