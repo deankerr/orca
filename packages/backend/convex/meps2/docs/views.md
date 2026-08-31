@@ -45,7 +45,7 @@ use.
 
 ## Providers
 
-- Derived from `endpoint.provider_info` while exploding `after`.
+- Derived from `endpoint.provider_info` at apply time, not a third explode map.
 - Key: `provider_id` (`provider_info.slug`). Index `by_provider_id`. Lookups use `.unique()`.
 - Also stored: `display_name` (`provider_info.displayName`), `metadata`.
 - Last-write-wins when copies of the same slug disagree inside one scan. The artifact keeps

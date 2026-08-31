@@ -15,8 +15,6 @@ export const artifactsTable = defineTable({
 
   /** Convex file-storage id of the compressed blob. */
   storage_id: v.id('_storage'),
-  /** SHA-256 of the uncompressed bytes. */
-  content_sha256: v.string(),
   size: v.object({
     /** Uncompressed byte length. */
     raw: v.number(),

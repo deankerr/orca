@@ -23,7 +23,6 @@ and opaque. The module does not parse them, join them, or derive one from the ot
 store({ path, artifact_id, bytes }): Promise<{
   path: string
   artifact_id: string
-  content_sha256: string
   size: { raw: number; blob: number }
 }>
 
@@ -31,7 +30,6 @@ load({ path, artifact_id }): Promise<Uint8Array>
 ```
 
 - `bytes` in and out are the uncompressed logical bytes.
-- `content_sha256` is SHA-256 of those bytes.
 - `size.raw` is that byte length. `size.blob` is the stored blob length after the backend
   codec.
 - `load` throws if the pair is missing.
@@ -42,7 +40,7 @@ load({ path, artifact_id }): Promise<Uint8Array>
 The Convex backend keeps one locator row per pair. Callers of `store` / `load` do not read
 this table.
 
-- Fields: `path`, `artifact_id`, `storage_id`, `content_sha256`, `size.{raw,blob}`.
+- Fields: `path`, `artifact_id`, `storage_id`, `size.{raw,blob}`.
 - No ingest fields. No `scan_at`. No status.
 - Index `by_path_artifact_id` on `['path', 'artifact_id']`. Reads use `.unique()`.
 - Index `by_path` on `['path']` exists for maintenance (sweep), not for baseline.
@@ -51,19 +49,17 @@ this table.
 
 `store` is an action (blob write) plus a locator mutation.
 
-1. Hash `bytes`. Gzip with `mtime: 0`.
-2. Read `by_path_artifact_id` `.unique()`.
-3. If a row exists and `content_sha256` equals the hash of these `bytes`, return that row's
-   identity and sizes. Do not write a second blob.
-4. If a row exists and the hash differs, throw. The pair is taken.
-5. If no row exists, write the blob, then insert the locator row with that `storage_id`.
+1. Read `by_path_artifact_id` `.unique()`.
+2. If a row exists, throw. The pair is taken. Do not overwrite.
+3. If no row exists, gzip with `mtime: 0`, write the blob, then insert the locator row with
+   that `storage_id`.
+4. If the insert fails and a row is now present, throw. The pair is taken. If no row is
+   present, throw with the `storage_id` of this attempt's blob.
 
-- 🧭 Same pair + same digest is success. A retried store step of the same attempt must not
-  fail because the first attempt already committed the locator.
-- 🧭 Same pair + different digest is a conflict. Do not overwrite.
 - 🧭 There is no upsert of locator fields other than the first insert.
-- ❓ If the locator insert fails after the blob write, the blob is orphaned. Compensation
-  vs sweep is left open. A retry may write a second blob and then insert; the orphan remains.
+- 🧭 Gzip only when this attempt will write a blob.
+- ❓ If the locator insert fails after the blob write and no row appears, the blob is
+  orphaned. Compensation vs sweep is left open.
 
 ## `load`
 
@@ -78,8 +74,7 @@ this table.
 The current backend is Convex file storage. A later backend (R2, both, something else)
 implements the same `store` / `load` contract.
 
-- Gzip is the codec. Deterministic gzip (`mtime: 0`) so identical `bytes` produce identical
-  blobs.
+- Gzip is the codec. `mtime: 0` keeps the compressor's header stable.
 - 💤 zstd is a later codec change inside the backend. It does not change identity.
 
 Callers never see a Convex storage id, an R2 key, or a content type.

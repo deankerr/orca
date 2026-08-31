@@ -28,8 +28,8 @@ export const get = internalQuery({
       return null
     }
 
-    const { path, artifact_id, storage_id, content_sha256, size } = doc
-    return { path, artifact_id, storage_id, content_sha256, size }
+    const { path, artifact_id, storage_id, size } = doc
+    return { path, artifact_id, storage_id, size }
   },
 })
 

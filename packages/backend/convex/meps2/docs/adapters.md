@@ -30,6 +30,8 @@ Grouped entries `{ model_id, variant, model, endpoints }` with embeddings alread
 - `scan_at` is the bundle's `crawl_at` ISO string.
 - Drop `bundle_format`, `crawl_id`, and the outer `data` array wrapper.
 - Row payloads are otherwise the entries as stored.
+- The conversion is specified. It is not implemented and not wired to `artifacts` or
+  `ingest`. The first adapter iteration fills it in. See Backfill.
 
 ## Raw crawl archives
 

@@ -26,9 +26,8 @@ attempt, before any upstream request, and passed into `scan`.
 - Every row in a scan artifact repeats this same value.
 - Per-request completion times are not recorded. The scan is one observation.
 - 🧭 A new observation assigns a new `scan_at`.
-- 🧭 The same attempt, including a retried fetch or store step of that attempt, reuses the
-  `scan_at` already in the attempt's arguments.
-- ⚠️ Do not mint `scan_at` inside a retried action if the attempt already has one.
+- 🧭 `scan_at` is assigned in observe `start` and passed into the action. The action
+  does not mint it.
 - ⚠️ Mixing `toISOString()` with offset strings such as `+00:00` breaks both identity and
   sort.
 
@@ -42,7 +41,7 @@ Scan's convention, assembled by `scan` (and by adapters that mint a scan artifac
 - `path` is `scan`.
 - `artifact_id` is `scan.{scan_at}.jsonl`.
 - Example: path `scan`, id `scan.2026-08-30T15:00:21.215Z.jsonl`.
-- `.jsonl` is the logical encoding of the bytes we hash and parse.
+- `.jsonl` is the logical encoding of the bytes we parse.
 - 🧭 Compression is not part of the id. A gzip blob and a future zstd blob are the same
   artifact.
 - 🧭 `path` and `artifact_id` are not Convex document ids and are not storage locators.

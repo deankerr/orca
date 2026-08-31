@@ -91,9 +91,9 @@ blob exists.
 - 🧭 Register is allowed on either open edge, including a pile of not-yet-ingested files
   newer than latest or older than earliest.
 - 🧭 Register does not create or patch the window.
-- ⚠️ Overlapping produces that ingest a newer `scan_at` before an older one registers will
-  make the older `scan_at` interior. Register immediately after store. See
-  [`orchestrate.md`](orchestrate.md).
+- ⚠️ Overlapping observes that ingest a newer `scan_at` before an older one registers will
+  make the older `scan_at` interior. Register immediately after store. Observe lock is in
+  [`orchestrate.md`](orchestrate.md). Interior `register` is the last line of defense.
 
 ## `latest` / `earliest` (queries)
 

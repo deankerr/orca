@@ -7,23 +7,41 @@ The filename and the row shape are the spec.
 
 - UTF-8 JSONL. Each line is one JSON object. The file ends with a newline.
 - No pretty-print.
-- Uncompressed bytes are what `content_sha256` hashes.
 - Rows sorted by `model_id`.
 - `endpoints` arrays sorted by upstream endpoint `id`.
-- Envelope keys are written in this order: `scan_at`, `model_id`, `variant`, `model`, `endpoints`.
-- Nested object key order is left as received from the source. We do not recursively sort keys.
+- Nested object key order is not a contract. Compare and views read properties, not
+  serialization order.
+- Encode and parse share `scanArtifactRowSchema`. `scan` encodes. `projections` explode
+  parses.
 
 ## Row
 
-Every line is a model group:
+Every line is a model group. Validated by `scanArtifactRowSchema`:
 
 ```ts
 type ScanArtifactRow = {
   scan_at: string // ISO UTC, same value on every row
   model_id: string
   variant: string
-  model: object // catalog model, nested endpoint removed
-  endpoints: object[] | null // stats-page endpoints, nested model removed
+  model: {
+    slug: string
+    permaslug: string
+    input_modalities: string[]
+    output_modalities: string[]
+    created_at: string
+    name: string
+    author_display_name: string
+    // remaining catalog fields, extra keys kept
+  }
+  endpoints:
+    | {
+        id: string
+        provider_slug: string
+        provider_info: { slug: string; displayName: string }
+        pricing?: { prompt: string; completion: string; discount: number } | null
+        // remaining stats-page fields, extra keys kept
+      }[]
+    | null
 }
 ```
 
@@ -32,7 +50,11 @@ type ScanArtifactRow = {
   existed, otherwise `slug`.
 - `variant` — nested catalog `endpoint.variant` when that object existed, otherwise `standard`.
 - `model` — the catalog model record with `endpoint` removed. Upstream field names unchanged.
+  Identity, modality, and view identity fields (`created_at`, `name`,
+  `author_display_name`) are required; everything else is kept.
 - `endpoints` — the stats-page array with each element's nested `model` removed, or `null`.
+  Each element requires `id`, `provider_slug`, and `provider_info.{slug,displayName}`.
+  `pricing` is optional.
 
 ```json
 {

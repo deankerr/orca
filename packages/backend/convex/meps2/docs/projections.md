@@ -26,8 +26,11 @@ Deserialize JSONL into two maps. The same function is used for `before` and `aft
 
 - Each line: the `model` payload keyed by row `model_id`; each endpoints-array element
   keyed by its `id`.
-- Attach ORCA identity when exploding an endpoint: `model_id` and `variant` from the parent
-  row. Do not invent those fields inside the stored file.
+- Attach envelope identity onto the map values: `model_id` and `variant` on the model
+  object, and the same pair on each endpoint object. The file does not contain those
+  copies — `variant` lived on the nested catalog `endpoint` that was stripped, and
+  endpoints keep `model_variant_slug`. Parent-row identity wins if an upstream field
+  disagrees.
 - `endpoints: null` contributes the model and zero endpoints.
 - `endpoints: []` contributes the model and zero endpoints. Same map effect as `null`;
   the distinction stayed in the file.
@@ -52,6 +55,10 @@ Deserialize JSONL into two maps. The same function is used for `before` and `aft
 Compare runs on source-shaped objects (nested fields intact). Flattening is a view-write
 concern.
 
+Unordered string arrays compare as sets, not by index: `input_modalities`,
+`output_modalities`, `supported_parameters`, `excluded_parameters`. A reorder is not an
+update.
+
 Empty `before` (first ingest, or a caller that passed empty maps): every `after` entity is
 a create. That is not a pricing create storm; pricing still follows compare against empty
 maps (every `after` endpoint with pricing is a create).
@@ -62,15 +69,13 @@ Skip lists are an efficiency knob on compare. They do not decide which fields ma
 
 - Skipping a field avoids a view write when only that field moved. It does not drop the
   field from the artifact.
-- `stats` and `statsByTier` are skipped on the endpoint view. They are sampled onto the
-  stats series from `after` every scan; a view write would fire on every endpoint every
-  hour.
-- OpenRouter model `updated_at` is skipped. 🔄 It moves without a meaningful model change.
-- Known noisy endpoint fields that can be skipped the same way: `status`, `capacity_tpm`.
-  Skipping them is optional.
-- Pricing-only diffs still upsert the endpoint view. Skipping `pricing` on the view is the
-  same optional efficiency; the pricing series still appends on create or a `pricing` diff.
-- Unchanged pricing is not re-sampled.
+- Skip only fields that would write every scan without a view-worthy change:
+  `stats`, `statsByTier` (sampled onto the stats series from `after` every scan), and
+  OpenRouter model `updated_at` (🔄 it moves without a meaningful model change).
+- 🧭 Do not skip `status`, `capacity_tpm`, or `pricing`. The view is catch-all; a skip is
+  not an optional efficiency for fields the row should still reflect.
+- Pricing-only diffs still upsert the endpoint view. The pricing series appends on create
+  or a `pricing` diff. Unchanged pricing is not re-sampled.
 
 ## View writes
 
@@ -97,19 +102,20 @@ If a view table has no rows, rewrite every `after` entity as an upsert.
 Each mutation is one chunk. It receives `scan_at` plus arrays of planned writes. It does
 not query `ingest` and does not patch the ingest window.
 
-**Model upsert.** `by_model_id` `.unique()`. Insert, or patch every field including
-`scan_at`. Catalog-absent models are not deleted and not unlisted.
+**Model upsert.** `by_model_id` `.unique()`. Insert, or replace the document (every field
+including `scan_at`). Catalog-absent models are not deleted and not unlisted.
 
-**Endpoint upsert.** `by_endpoint_id` `.unique()`. Insert, or patch fields including
-`scan_at`. If `unlisted_at` is set, clear it. Do not restamp an already-listed row's
+**Endpoint upsert.** `by_endpoint_id` `.unique()`. Insert, or replace the document. The
+written row omits `unlisted_at`, which clears it on restore. Convex `patch` cannot clear
+an optional field (`undefined` means leave). Do not restamp an already-listed row's
 `unlisted_at`.
 
 **Endpoint unlist.** `by_endpoint_id` `.unique()`. If no row, skip. If `unlisted_at` is
 already set, skip (do not restamp). Else patch `unlisted_at: scan_at` and `scan_at`.
 
-**Provider upsert.** `by_provider_id` `.unique()`. Insert, or patch including `scan_at`.
-Last-write-wins inside one chunk if the same slug appears twice. Catalog-absent providers
-are not deleted.
+**Provider upsert.** `by_provider_id` `.unique()`. Insert, or replace the document including
+`scan_at`. Last-write-wins inside one chunk if the same slug appears twice. Catalog-absent
+providers are not deleted.
 
 Stamp `scan_at` on every view write (upsert, unlist, empty-view rewrite).
 

@@ -2,6 +2,7 @@ import { ConvexError } from 'convex/values'
 import { gunzipSync, gzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
+import type { Id } from '../../_generated/dataModel'
 import type { ActionCtx } from '../../_generated/server'
 
 /** Opaque identity of one stored artifact. Neither field is derived from the other. */
@@ -13,11 +14,8 @@ export type ArtifactIdentity = {
   artifact_id: string
 }
 
-/** Identity plus checksum and sizes after a successful store. */
+/** Identity plus sizes after a successful store. */
 export type StoredArtifact = ArtifactIdentity & {
-  /** SHA-256 of the uncompressed bytes. */
-  content_sha256: string
-
   size: {
     /** Uncompressed byte length. */
     raw: number
@@ -26,43 +24,43 @@ export type StoredArtifact = ArtifactIdentity & {
   }
 }
 
+type LocatorRecord = StoredArtifact & {
+  storage_id: Id<'_storage'>
+}
+
 /**
  * Persist uncompressed bytes under an identity. Insert-only.
  *
  * Compression and the storage locator stay inside this module.
  *
- * @param args.bytes - Logical contents to hash and store, not the compressed form.
- * @throws {ConvexError} If this pair was already stored, or the locator row could not be
- *   written after the blob.
+ * @param args.bytes - Logical contents to store, not the compressed form.
+ * @throws {ConvexError} If this pair already exists, or the locator row could
+ *   not be written after the blob.
  */
 export async function store(
   ctx: ActionCtx,
   args: ArtifactIdentity & { bytes: Uint8Array },
 ): Promise<StoredArtifact> {
-  const existing = await ctx.runQuery(internal.meps2.artifacts.records.get, {
-    path: args.path,
-    artifact_id: args.artifact_id,
-  })
+  const identity = { path: args.path, artifact_id: args.artifact_id }
 
+  const existing: LocatorRecord | null = await ctx.runQuery(
+    internal.meps2.artifacts.records.get,
+    identity,
+  )
   if (existing !== null) {
     throw new ConvexError({
       message: 'artifact already exists',
-      path: args.path,
-      artifact_id: args.artifact_id,
+      ...identity,
     })
   }
 
-  const content_sha256 = await sha256Hex(args.bytes)
-  // mtime 0 makes gzip deterministic, so identical bytes produce identical blobs
   const compressed = gzipSync(args.bytes, { mtime: 0 })
   const storage_id = await ctx.storage.store(
     new Blob([new Uint8Array(compressed)], { type: 'application/gzip' }),
   )
 
   const stored: StoredArtifact = {
-    path: args.path,
-    artifact_id: args.artifact_id,
-    content_sha256,
+    ...identity,
     size: { raw: args.bytes.byteLength, blob: compressed.byteLength },
   }
 
@@ -71,7 +69,16 @@ export async function store(
       artifact: { ...stored, storage_id },
     })
   } catch {
-    // blob write and row insert are not atomic; storage_id names the orphan
+    const raced: LocatorRecord | null = await ctx.runQuery(
+      internal.meps2.artifacts.records.get,
+      identity,
+    )
+    if (raced !== null) {
+      throw new ConvexError({
+        message: 'artifact already exists',
+        ...identity,
+      })
+    }
     throw new ConvexError({
       message: 'orphaned blob: record insert failed after store',
       path: args.path,
@@ -89,13 +96,16 @@ export async function store(
  * @throws {ConvexError} If nothing was stored under this pair, or the blob behind the locator is gone.
  */
 export async function load(ctx: ActionCtx, args: ArtifactIdentity): Promise<Uint8Array> {
-  const record = await ctx.runQuery(internal.meps2.artifacts.records.get, args)
+  const identity = { path: args.path, artifact_id: args.artifact_id }
+  const record: LocatorRecord | null = await ctx.runQuery(
+    internal.meps2.artifacts.records.get,
+    identity,
+  )
 
   if (record === null) {
     throw new ConvexError({
       message: 'artifact not found',
-      path: args.path,
-      artifact_id: args.artifact_id,
+      ...identity,
     })
   }
 
@@ -104,16 +114,10 @@ export async function load(ctx: ActionCtx, args: ArtifactIdentity): Promise<Uint
   if (blob === null) {
     throw new ConvexError({
       message: 'artifact blob missing',
-      path: args.path,
-      artifact_id: args.artifact_id,
+      ...identity,
       storage_id: record.storage_id,
     })
   }
 
   return gunzipSync(new Uint8Array(await blob.arrayBuffer()))
-}
-
-async function sha256Hex(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes))
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }

@@ -8,7 +8,7 @@ throw; there is no partial artifact.
 - The caller assigns `scan_at` and passes it in, before the first request.
 - Every row in the file uses that value.
 - Do not record when individual endpoint pages returned.
-- 🧭 `scan` does not mint `scan_at` on retry. See [`identity.md`](identity.md).
+- 🧭 `scan` does not mint `scan_at`. See [`identity.md`](identity.md).
 
 ## Fetch
 
@@ -28,8 +28,8 @@ throw; there is no partial artifact.
 - An empty stats page is serialized as `endpoints: []`.
 - A 404 on a non-`~` endpoint page is an error like any other.
 - Modality is not a scan filter. Image-only and other non-text models are stored.
-- Missing fields needed to fetch or write a row (`slug`, `permaslug`, nested
-  `model_variant_slug` / `variant`) throw `ConvexError`.
+- Catalog and stats pages are parsed with the scan-artifact Zod schemas. Extra keys
+  are kept. Failures from `up-fetch` propagate unchanged.
 
 ## Membership
 

@@ -5,102 +5,142 @@
 component.
 
 Durable execution uses `@convex-dev/workflow`. The journal holds identities, never bytes
-or Catalog maps. Stats and errors go to Axiom. There is no meps2 jobs table.
+or Catalog maps. Stats and errors go to `console.log` / `console.error`. There is no
+jobs log.
+
+Two workflows: **observe** (scan + store + register) and **drain** (latest-edge apply).
+They are separate so a later hour can checkpoint while apply is still running or
+failing. Observe does not wait on drain.
+
+Cron is the intended caller of observe `start`. It is disabled until meps2 is live.
 
 ## Callers
 
 ```ts
-run(): { scan_at: string }
-drain(): void
-backfill(scans: { scan_at: string; artifact_id: string }[]): void
+observe.start(): { scan_at: string }
+drain.start({ path }?): void
+drain.backfill(scans: { scan_at: string; artifact_id: string }[]): void
 ```
 
-- `run` is a mutation that assigns `scan_at` and starts the live workflow. It returns
-  before ingest completes.
-- Cron calls `run`. It does not pass a baseline, a workflow id, or bytes.
-- `drain` applies registered-not-ingested files on the latest edge. No new observation.
-- `backfill` registers already-stored historical identities, then the caller uses `drain`
-  only while the window is empty. See Backfill below.
-- 🧭 Replay after a projections fix is `drain`, or restart of the in-flight workflow from
-  the apply step. It does not assign a new `scan_at` and does not write a second blob.
+- Observe `start` claims the observe lock, assigns `scan_at`, and starts observe. It
+  returns before ingest completes. Cron and dashboard use this. The observe action
+  does not retry.
+- Cron does not pass a baseline, a workflow id, or bytes.
+- Drain `start` applies registered-not-ingested files on the latest edge. No new
+  observation. Dashboard/CLI entry to clear a blockage after a failed apply. Observe
+  kickoffs it after register. Default `path` is `scan`.
+- `backfill` registers already-stored identities, then starts latest-edge drain when
+  `nextAfter(latest)` is non-null (including an empty window).
 
-## Live sequence
+## Lock
 
-Later steps do not run if an earlier step fails.
+`lock` is a generic claim/release. Presence of a `meps2_locks` row is the lock. The
+module does not know observe or drain.
 
-1. Assign `scan_at`. Put it in the workflow arguments so retried steps reuse it.
-2. Action: `scan({ scan_at })` then `artifacts.store`. Return `{ path, artifact_id, scan_at }`.
-   Uncompressed JSONL never becomes a step result.
-3. Mutation: `ingest.register` of that identity.
-4. Drain latest until `ingest.nextAfter({ path, scan_at: latest })` is null, or apply
-   throws.
+```ts
+claim({ key }): void
+release({ key }): void
+```
 
-Fetch failure: no store, no register, that `scan_at` unused. The next `run` assigns a new
-`scan_at`.
+- `claim` inserts `{ key }`, then `.unique()` on `by_key`. One row: held. Two rows:
+  `.unique()` throws, the mutation throws, the insert rolls back.
+- `release` deletes the row. Missing key is a no-op.
+- 🧭 `claim` is its own mutation. Catching `.unique()` in the mutation that inserted
+  would commit the extra row. Callers that no-op on a held lock catch `claim` via
+  `ctx.runMutation`.
+- Observe uses key `observe`. Drain uses key `drain:${path}`. Those strings belong to
+  the workflows, not to `lock`.
+- Each workflow's `onComplete` releases only its own key, then `cleanup`s a successful
+  journal.
+
+## Observe
+
+1. `claim` observe. Throws if held.
+2. Assign `scan_at` in observe `start`. Put it in the workflow arguments. The action
+   does not mint it.
+3. Action: `scan({ scan_at })` then `artifacts.store`. Return a `ScanRef`. Uncompressed
+   JSONL never becomes a step result. Action retries are off. A taken `(path,
+artifact_id)` throws.
+4. Mutation: `ingest.register` of that identity.
+5. Mutation: drain `start` (no-op if drain is held or `nextAfter(latest)` is null).
+
+Fetch failure: no store, no register, that `scan_at` unused. The next observe `start`
+assigns a new `scan_at`.
 
 Store failure: no register.
 
-Apply failure: registration remains, window unchanged. The file is backlog. Fix
-projections and `drain` (or `restart` from the apply step).
+Observe may start while drain is failing or in progress. Register is allowed on the open
+latest edge. That is the stored backlog.
 
-- 🧭 `run` still performs steps 1–3 while a previous apply is failing, so later hours
-  checkpoint. Drain always peeks the neighbor of latest ingested, so T102 cannot apply
-  against T100 while T101 is registered-not-ingested.
+## Drain
 
-## Drain (latest edge)
-
-Each iteration is one work item. The workflow must not apply a caller-supplied
+Each iteration is one work item. The workflow does not take a caller-supplied
 `artifact_id` as `after`.
 
-1. Query `beforeRef = ingest.latest({ path })`.
-2. Query `afterRef = ingest.nextAfter({ path, scan_at: beforeRef?.scan_at ?? null })`.
-   If null, stop.
-3. Action: `artifacts.load` of `afterRef`. If `beforeRef` is non-null, load it too.
-   `explode` both (empty Catalog maps when there is no `before`). `compare`.
-   `projections/apply` write chunks. Pass `scan_at: afterRef.scan_at`.
-4. Mutation: `ingest.markIngested({ path, scan_at: afterRef.scan_at })`.
-5. Repeat from 1.
+1. Action `applyNext({ path })`: query `beforeRef = ingest.latest`, query
+   `afterRef = ingest.nextAfter({ path, scan_at: beforeRef?.scan_at ?? null })`. If null,
+   return null. Load, `explode`, `compare`, write chunks. Pass `scan_at: afterRef.scan_at`.
+   Action retries are off.
+2. Mutation: `ingest.markIngested({ path, scan_at: afterRef.scan_at })`.
+3. Repeat until the peek is null or the batch cap is reached.
 
+- Peek lives inside `applyNext` so restart of that named step re-peeks. The journal
+  records the returned `ScanRef`, never bytes.
 - 🧭 Re-peek after every `markIngested`. A file registered during the drain cannot be
   skipped.
-- 🧭 Restart from the apply step re-runs 1–2 first. If `afterRef` is already ingested, the
-  mark is a no-op and the loop continues at the new neighbor. Do not apply the journal's
-  previous `after` blindly.
+- ⚠️ Do not pass a journaled `after` into apply. `applyNext` takes only `path`.
 - Apply writes are idempotent on `scan_at` (views upsert, series unique keys). A crash
   between writes and `markIngested` replays the same pair, then advances the window.
 
+### Batch and re-arm
+
+One drain workflow applies at most a small batch of neighbors, then completes. The batch
+size is a knob, not a contract. The journal must not grow without bound over a historical
+pile.
+
+Drain `onComplete` on **success** releases the drain lock, then kickoffs another drain if
+`nextAfter(latest)` is non-null. That closes the race where drain peeks empty while
+observe is about to register, kickoff no-ops, and drain then exits.
+
+A **failed** drain releases the lock and does not re-arm. The window did not move. Fix
+projections and call `drain()`.
+
 ## Concurrency
 
-- At most one live **produce** in flight. A second `run` while observe (step 2) is still
-  running is refused. That prevents two `scan_at` values from ingesting out of order and
-  making the slower older register interior.
-- Produce may start while drain is failing or in progress. Register is allowed on the open
-  latest edge. That is the stored backlog.
-- At most one **drain** in flight per `path`. A second drain joins or no-ops. Two apply
-  actions on different neighbors must not both write views under a stale `before`.
-- 🧭 `ingest.markIngested` still checks the neighbor in its own transaction. That is the
-  last line of defense, not the scheduler.
+- At most one **observe** in flight. Observe `start` does not catch `claim`.
+- Observe may start while drain is in flight. Separate keys.
+- At most one **drain** in flight per `path`. Drain `start` catches a held lock and
+  returns. Re-arm on successful completion is the join.
+- 🧭 `ingest.markIngested` still checks the neighbor in its own transaction.
 
 ## Workflow mechanics
 
-- Handler is deterministic. `Date`, `fetch`, gzip, SHA-256, OpenRouter live only inside
-  action steps.
-- Action retries: observe (scan+store) may retry. `artifacts.store` treats same pair +
-  same digest as success. Apply action retries are off. A code bug must not chew views
-  under backoff.
-- `onComplete`: log to Axiom. `cleanup` the journal on success. Failed journals stay —
-  they are the restart handle.
-- Step arguments and returns are `ScanRef` values only. Journal size is the reason bytes
-  stay in `artifacts`.
+- Handler is deterministic. `Date`, `fetch`, gzip, OpenRouter live only inside action
+  steps.
+- Observe and apply action retries are off. A taken artifact pair throws. A code bug
+  must not chew views under backoff.
+- Each workflow has its own `onComplete`: `console.error` on failure, `console.log`
+  otherwise. `cleanup` the journal on success. Failed journals stay for inspect.
+- Step arguments and returns are `ScanRef` values (or `scan_at` / `path` for the
+  workflow args). Journal size is the reason bytes stay in `artifacts`.
+
+## Failed observe vs failed drain
+
+- Failed **observe**: the next observe `start` assigns a new `scan_at`. Do not reuse
+  the failed attempt's timestamp.
+- Failed **drain**: call drain `start`. `applyNext` re-peeks. The window is the
+  checkpoint.
 
 ## Backfill
 
-Adapters produce a scan artifact. The caller `artifacts.store`s, then `ingest.register`s.
+Adapters produce a scan artifact. The caller `artifacts.store`s, then `ingest.register`s
+(or passes identities into `backfill`).
 
 - Register throws if `scan_at` is strictly inside the ingested window.
-- While the window is empty, drain-latest applies oldest registered first with empty
-  `before`. Historical files must all be registered before the first live ingest if they
-  should precede it.
+- After register, start latest-edge drain when `nextAfter(latest)` is non-null. An
+  empty window uses `nextAfter(null)` (oldest registered, empty `before`).
+- Historical files must all be registered before the first live ingest if they should
+  precede it.
 - ❓ Apply of an older-than-earliest artifact against the current view (reverse-time
   unlist) is not started. Earliest-edge drain is not wired until that rule exists.
   `ingest.nextBefore` is specified so the bound is queryable.

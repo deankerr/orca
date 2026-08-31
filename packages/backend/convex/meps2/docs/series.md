@@ -35,10 +35,11 @@ artifacts. They are not the view.
 - Index `by_scan_at` on `['scan_at']` for per-scan maintenance, not for compare.
 - Appended when the endpoint is created or the endpoint diff includes `pricing`.
 - Unchanged pricing is not re-sampled.
-- Named meters on the table match the usual rate fields (`prompt`, `completion`, `discount`,
-  optional cache / image / audio / `web_search`).
-- Extra meters such as `internal_reasoning` stay as catchall strings on the stored pricing
-  object.
+- Named meters are first-class columns: `prompt`, `completion`, `discount`, optional
+  cache / image / audio / `web_search`, plus `internal_reasoning`, `image_token`,
+  `audio_output` when present.
+- 🧭 Unknown extra meters are dropped at write. Same lossiness as the view metadata bag.
+  A new named column is a schema change; there is no catchall on the row.
 - `display_pricing` and `overrides` are stored on the pricing row when present.
 - 🧭 Preserve upstream decimal strings. Do not coerce rates to numbers.
 - Top-level `pricing_json`, `pricing_version_id`, and `tiers` remain on the endpoint source
