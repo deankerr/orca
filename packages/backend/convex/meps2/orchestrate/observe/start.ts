@@ -20,6 +20,7 @@ export const start = internalMutation({
     await ctx.runMutation(internal.meps2.lock.claim, { key: LOCK_KEY })
 
     const scan_at = new Date().toISOString()
+
     await workflow.start(
       ctx,
       internal.meps2.orchestrate.observe.workflow.observe,

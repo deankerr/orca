@@ -22,6 +22,7 @@ export const onComplete = internalMutation({
       path: args.context.path,
       result: args.result,
     }
+
     if (args.result.kind === 'failed') {
       console.error('[meps2:observe]', payload)
     } else {

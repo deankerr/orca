@@ -31,6 +31,7 @@ export const upsert = internalMutation({
       await (existing === null
         ? ctx.db.insert('meps2_models', model)
         : ctx.db.replace(existing._id, model))
+
       upserted += 1
     }
 

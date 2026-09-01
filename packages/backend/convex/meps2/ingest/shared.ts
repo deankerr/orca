@@ -83,12 +83,14 @@ export async function windowBound(
   which: 'earliest' | 'latest',
 ): Promise<ScanRef | null> {
   const window = await getWindow(ctx, path)
+
   if (window === null) {
     return null
   }
 
   const scan_at = which === 'earliest' ? window.earliest_scan_at : window.latest_scan_at
   const row = await getScanAt(ctx, path, scan_at)
+
   if (row === null) {
     throw new ConvexError({
       message: 'ingest window bound is missing from scans',

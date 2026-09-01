@@ -32,9 +32,11 @@ export const drain = workflow
         { path: args.path },
         { retry: false, name: 'apply' },
       )
+
       if (applied === null) {
         break
       }
+
       await step.runMutation(
         internal.meps2.ingest.mutations.markIngested,
         { path: applied.path, scan_at: applied.scan_at },

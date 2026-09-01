@@ -7,6 +7,7 @@ export function valuesById<T>(map: Map<string, T>): T[] {
   const values: T[] = []
   for (const id of [...map.keys()].toSorted()) {
     const value = map.get(id)
+
     if (value !== undefined) {
       values.push(value)
     }
@@ -22,6 +23,7 @@ export function rewriteIfEmpty<T>(
   if (hasRows) {
     return { rewrite: false, upserts: planned }
   }
+
   return { rewrite: true, upserts: valuesById(after) }
 }
 

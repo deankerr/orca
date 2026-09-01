@@ -23,6 +23,7 @@ export async function insertIfAbsent<TableName extends 'meps2_pricing' | 'meps2_
   if (existing !== null) {
     return 0
   }
+
   await ctx.db.insert(table, row)
   return 1
 }

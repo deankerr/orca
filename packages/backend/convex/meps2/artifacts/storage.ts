@@ -47,6 +47,7 @@ export async function store(
     internal.meps2.artifacts.records.get,
     identity,
   )
+
   if (existing !== null) {
     throw new ConvexError({
       message: 'artifact already exists',
@@ -55,6 +56,7 @@ export async function store(
   }
 
   const compressed = gzipSync(args.bytes, { mtime: 0 })
+
   const storage_id = await ctx.storage.store(
     new Blob([new Uint8Array(compressed)], { type: 'application/gzip' }),
   )
@@ -73,12 +75,14 @@ export async function store(
       internal.meps2.artifacts.records.get,
       identity,
     )
+
     if (raced !== null) {
       throw new ConvexError({
         message: 'artifact already exists',
         ...identity,
       })
     }
+
     throw new ConvexError({
       message: 'orphaned blob: record insert failed after store',
       path: args.path,
@@ -97,6 +101,7 @@ export async function store(
  */
 export async function load(ctx: ActionCtx, args: ArtifactIdentity): Promise<Uint8Array> {
   const identity = { path: args.path, artifact_id: args.artifact_id }
+
   const record: LocatorRecord | null = await ctx.runQuery(
     internal.meps2.artifacts.records.get,
     identity,

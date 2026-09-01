@@ -23,10 +23,12 @@ export const observe = workflow
       { scan_at: args.scan_at },
       { retry: false, name: 'observe' },
     )
+
     await step.runMutation(internal.meps2.ingest.mutations.register, ref, {
       inline: true,
       name: 'register',
     })
+
     await step.runMutation(
       internal.meps2.orchestrate.drain.start.start,
       { path: ref.path },

@@ -67,7 +67,9 @@ const metadataValueSchema = z.union([
   z.string(),
   z.array(z.string()),
 ])
+
 const metadataRecordSchema = z.record(z.string(), metadataValueSchema)
+
 const nestedMetadataRecordSchema = z.record(
   z.string(),
   z.union([metadataValueSchema, z.array(metadataRecordSchema)]),
@@ -127,6 +129,7 @@ export function toPricingRow(endpoint: SourceEndpoint, scan_at: string): Pricing
   }
 
   const { pricing } = endpoint
+
   const row: PricingRow = {
     endpoint_id: endpoint.id,
     scan_at,
@@ -137,16 +140,20 @@ export function toPricingRow(endpoint: SourceEndpoint, scan_at: string): Pricing
 
   for (const key of PRICING_OPTIONAL_STRINGS) {
     const value = pricing[key]
+
     if (typeof value === 'string') {
       row[key] = value
     }
   }
 
   const display_pricing = z.array(nestedMetadataRecordSchema).safeParse(pricing.display_pricing)
+
   if (display_pricing.success) {
     row.display_pricing = display_pricing.data
   }
+
   const overrides = z.array(metadataRecordSchema).safeParse(pricing.overrides)
+
   if (overrides.success) {
     row.overrides = overrides.data
   }
@@ -166,9 +173,11 @@ export function collectStatsRows(
 
   for (const id of [...endpoints.keys()].toSorted()) {
     const endpoint = endpoints.get(id)
+
     if (endpoint === undefined) {
       continue
     }
+
     rows.push(...statsForEndpoint(endpoint, scan_at))
   }
 
@@ -180,9 +189,11 @@ function statsForEndpoint(endpoint: SourceEndpoint, scan_at: string): StatsRow[]
   const byTier: Record<string, Record<string, number>> = {}
 
   const byTierParsed = z.record(z.string(), z.unknown()).safeParse(endpoint.statsByTier)
+
   if (byTierParsed.success) {
     for (const [tier, value] of Object.entries(byTierParsed.data)) {
       const sample = numericSample(endpoint_id, value)
+
       if (sample !== null) {
         byTier[tier] = sample
       }
@@ -191,6 +202,7 @@ function statsForEndpoint(endpoint: SourceEndpoint, scan_at: string): StatsRow[]
 
   if (Object.keys(byTier).length === 0) {
     const sample = numericSample(endpoint_id, endpoint.stats)
+
     if (sample !== null) {
       byTier.default = sample
     }
@@ -206,6 +218,7 @@ function statsForEndpoint(endpoint: SourceEndpoint, scan_at: string): StatsRow[]
 
 function numericSample(endpointId: string, value: unknown): Record<string, number> | null {
   const parsed = statsBlobSchema.safeParse(value)
+
   if (!parsed.success || parsed.data.endpoint_id !== endpointId) {
     return null
   }
@@ -215,6 +228,7 @@ function numericSample(endpointId: string, value: unknown): Record<string, numbe
     if (key === 'endpoint_id') {
       continue
     }
+
     if (typeof field === 'number' && Number.isFinite(field)) {
       sample[key] = field
     }
@@ -255,6 +269,7 @@ function isMetadataValue(value: unknown): value is Metadata[string] {
   ) {
     return true
   }
+
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 

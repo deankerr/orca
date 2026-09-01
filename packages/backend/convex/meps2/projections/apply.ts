@@ -51,12 +51,14 @@ export async function apply(
     args.after.models,
     diff.models.flatMap((change) => (change.kind === 'absent' ? [] : [change.next])),
   )
+
   const endpointView = rewriteIfEmpty(endpointsHaveRows, args.after.endpoints, planned.viewUpserts)
   const unlists = endpointView.rewrite ? [] : planned.viewUnlists
 
   const providerSources = endpointView.rewrite
     ? valuesById(args.after.endpoints)
     : endpointView.upserts
+
   const providerView = rewriteIfEmpty(
     providersHaveRows,
     providerMap(args.after.endpoints, args.scan_at),
@@ -68,16 +70,19 @@ export async function apply(
     async (upserts): Promise<{ upserted: number }> =>
       await ctx.runMutation(internal.meps2.projections.writes.models.upsert, { upserts }),
   )
+
   const endpoints = await applyUpserts(
     endpointView.upserts.map((endpoint) => toEndpointRow(endpoint, args.scan_at)),
     async (upserts): Promise<{ upserted: number }> =>
       await ctx.runMutation(internal.meps2.projections.writes.endpoints.upsert, { upserts }),
   )
+
   const providers = await applyUpserts(
     providerView.upserts,
     async (upserts): Promise<{ upserted: number }> =>
       await ctx.runMutation(internal.meps2.projections.writes.providers.upsert, { upserts }),
   )
+
   const unlisted = await applyUnlists(
     unlists,
     async (endpoint_ids): Promise<{ unlisted: number }> =>
@@ -86,6 +91,7 @@ export async function apply(
         scan_at: args.scan_at,
       }),
   )
+
   const pricing = await appendRows(
     planned.pricingAppends.flatMap((endpoint) => {
       const row = toPricingRow(endpoint, args.scan_at)
@@ -94,6 +100,7 @@ export async function apply(
     async (rows): Promise<{ inserted: number }> =>
       await ctx.runMutation(internal.meps2.projections.writes.pricing.insert, { rows }),
   )
+
   const stats = await appendRows(
     collectStatsRows(args.after.endpoints, args.scan_at),
     async (rows): Promise<{ inserted: number }> =>
@@ -127,15 +134,18 @@ function planEndpoints(changes: MapChange<SourceEndpoint>[]) {
 
     if (change.kind === 'create') {
       viewUpserts.push(change.next)
+
       if (hasPricing(change.next)) {
         pricingAppends.push(change.next)
       }
+
       continue
     }
 
     if (viewEffect(change.changeset) === 'upsert') {
       viewUpserts.push(change.next)
     }
+
     if (pricingEffect(change.changeset, change.next) === 'append') {
       pricingAppends.push(change.next)
     }
@@ -152,6 +162,7 @@ function pricingEffect(changeset: IChange[], next: SourceEndpoint): PricingEffec
   if (!hasPricing(next)) {
     return 'skip'
   }
+
   return changeset.some((change) => PRICING_TRIGGER_KEYS.has(change.key)) ? 'append' : 'skip'
 }
 

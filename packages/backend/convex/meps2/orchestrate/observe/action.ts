@@ -16,6 +16,7 @@ export const observe = internalAction({
   returns: vScanRef,
   handler: async (ctx, args): Promise<ScanRef> => {
     const artifact = await scan({ scan_at: args.scan_at })
+
     await store(ctx, {
       path: artifact.path,
       artifact_id: artifact.artifact_id,

@@ -23,6 +23,7 @@ export const onComplete = internalMutation({
       path: args.context.path,
       result: args.result,
     }
+
     if (args.result.kind === 'failed') {
       console.error('[meps2:drain]', payload)
     } else {
@@ -35,6 +36,7 @@ export const onComplete = internalMutation({
 
     if (args.result.kind === 'success') {
       await workflow.cleanup(ctx, args.workflowId)
+
       await ctx.runMutation(internal.meps2.orchestrate.drain.start.start, {
         path: args.context.path,
       })

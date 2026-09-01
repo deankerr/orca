@@ -32,6 +32,7 @@ export const upsert = internalMutation({
       await (existing === null
         ? ctx.db.insert('meps2_endpoints', endpoint)
         : ctx.db.replace(existing._id, endpoint))
+
       upserted += 1
     }
 
@@ -57,6 +58,7 @@ export const unlist = internalMutation({
         .query('meps2_endpoints')
         .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', endpoint_id))
         .unique()
+
       if (existing === null || existing.unlisted_at !== undefined) {
         continue
       }
@@ -65,6 +67,7 @@ export const unlist = internalMutation({
         unlisted_at: args.scan_at,
         scan_at: args.scan_at,
       })
+
       unlisted += 1
     }
 

@@ -29,10 +29,12 @@ export async function startDrain(ctx: MutationCtx, path: string) {
   const latest: ScanRef | null = await ctx.runQuery(internal.meps2.ingest.queries.latest, {
     path,
   })
+
   const neighbor: ScanRef | null = await ctx.runQuery(internal.meps2.ingest.queries.nextAfter, {
     path,
     scan_at: latest?.scan_at ?? null,
   })
+
   if (neighbor === null) {
     return
   }
@@ -43,6 +45,7 @@ export async function startDrain(ctx: MutationCtx, path: string) {
     if (isLockHeldError(error)) {
       return
     }
+
     throw error
   }
 

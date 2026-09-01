@@ -40,9 +40,11 @@ export const release = internalMutation({
       .query('meps2_locks')
       .withIndex('by_key', (q) => q.eq('key', args.key))
       .unique()
+
     if (row !== null) {
       await ctx.db.delete(row._id)
     }
+
     return null
   },
 })
@@ -51,9 +53,12 @@ export function isLockHeldError(error: unknown) {
   if (!(error instanceof ConvexError)) {
     return false
   }
+
   const data: unknown = error.data
+
   if (typeof data !== 'object' || data === null || !('message' in data)) {
     return false
   }
+
   return data.message === LOCK_HELD
 }

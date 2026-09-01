@@ -25,10 +25,12 @@ export const applyNext = internalAction({
     const beforeRef: ScanRef | null = await ctx.runQuery(internal.meps2.ingest.queries.latest, {
       path: args.path,
     })
+
     const afterRef: ScanRef | null = await ctx.runQuery(internal.meps2.ingest.queries.nextAfter, {
       path: args.path,
       scan_at: beforeRef?.scan_at ?? null,
     })
+
     if (afterRef === null) {
       return null
     }
@@ -37,7 +39,9 @@ export const applyNext = internalAction({
       path: afterRef.path,
       artifact_id: afterRef.artifact_id,
     })
+
     const after = explode(afterBytes)
+
     const before =
       beforeRef === null
         ? emptyCatalog()

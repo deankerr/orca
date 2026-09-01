@@ -72,6 +72,7 @@ export function compareMaps<T>(
     }
 
     const changeset = diff(prev, next, options) ?? []
+
     if (changeset.length === 0) {
       continue
     }

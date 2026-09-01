@@ -23,10 +23,12 @@ export const register = internalMutation({
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
     const byAt = await getScanAt(ctx, args.path, args.scan_at)
+
     if (byAt !== null) {
       if (byAt.artifact_id === args.artifact_id) {
         return null
       }
+
       throw new ConvexError({
         message: 'scan_at already registered',
         path: args.path,
@@ -37,10 +39,12 @@ export const register = internalMutation({
     }
 
     const byArtifact = await getScanByArtifact(ctx, args.path, args.artifact_id)
+
     if (byArtifact !== null) {
       if (byArtifact.scan_at === args.scan_at) {
         return null
       }
+
       throw new ConvexError({
         message: 'artifact already registered',
         path: args.path,
@@ -51,6 +55,7 @@ export const register = internalMutation({
     }
 
     const window = await getWindow(ctx, args.path)
+
     if (
       window !== null &&
       window.earliest_scan_at < args.scan_at &&
@@ -86,6 +91,7 @@ export const markIngested = internalMutation({
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
     const registered = await getScanAt(ctx, args.path, args.scan_at)
+
     if (registered === null) {
       throw new ConvexError({
         message: 'scan is not registered',
@@ -95,8 +101,10 @@ export const markIngested = internalMutation({
     }
 
     const window = await getWindow(ctx, args.path)
+
     if (window === null) {
       const oldest = await nextAfterRow(ctx, args.path, null)
+
       if (oldest === null || oldest.scan_at !== args.scan_at) {
         throw new ConvexError({
           message: 'first ingest must be the oldest registered scan',
@@ -119,12 +127,14 @@ export const markIngested = internalMutation({
     }
 
     const after = await nextAfterRow(ctx, args.path, window.latest_scan_at)
+
     if (after !== null && after.scan_at === args.scan_at) {
       await ctx.db.patch(window._id, { latest_scan_at: args.scan_at })
       return null
     }
 
     const before = await nextBeforeRow(ctx, args.path, window.earliest_scan_at)
+
     if (before !== null && before.scan_at === args.scan_at) {
       await ctx.db.patch(window._id, { earliest_scan_at: args.scan_at })
       return null
