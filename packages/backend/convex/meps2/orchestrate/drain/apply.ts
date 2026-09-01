@@ -13,8 +13,7 @@ const vScanRefOrNull = v.union(vScanRef, v.null())
 /**
  * Peek the latest-edge neighbor, load both artifacts, explode, compare, apply.
  *
- * Does not take a caller-supplied `artifact_id` as `after`. Restarting this
- * step re-peeks; an already-ingested neighbor is skipped on the next peek.
+ * Restarting this step re-peeks; an already-ingested neighbor is skipped.
  *
  * @returns The applied identity, or null if there is no neighbor.
  */

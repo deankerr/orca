@@ -6,21 +6,27 @@ type DbCtx = QueryCtx | MutationCtx
 
 /** Registered scan artifact identity. Callers pass this, never bytes. */
 export type ScanRef = {
+  /** Timeline. Live scan artifacts use `scan`. */
   path: string
+  /** Opaque object name for `artifacts.load`. */
   artifact_id: string
+  /** Observation identity and apply order. */
   scan_at: string
 }
 
+/** Validator for {@link ScanRef}. */
 export const vScanRef = v.object({
   path: v.string(),
   artifact_id: v.string(),
   scan_at: v.string(),
 })
 
+/** Pick the identity fields off a scans row. */
 export function toScanRef(row: { path: string; artifact_id: string; scan_at: string }): ScanRef {
   return { path: row.path, artifact_id: row.artifact_id, scan_at: row.scan_at }
 }
 
+/** Ingest window for this timeline, or null if nothing ingested. */
 export async function getWindow(ctx: DbCtx, path: string) {
   return await ctx.db
     .query('meps2_ingest_window')
@@ -28,6 +34,7 @@ export async function getWindow(ctx: DbCtx, path: string) {
     .unique()
 }
 
+/** Scans row at this `scan_at`, or null if unregistered. */
 export async function getScanAt(ctx: DbCtx, path: string, scan_at: string) {
   return await ctx.db
     .query('meps2_scans')
@@ -35,6 +42,7 @@ export async function getScanAt(ctx: DbCtx, path: string, scan_at: string) {
     .unique()
 }
 
+/** Scans row for this artifact pair, or null if unregistered. */
 export async function getScanByArtifact(ctx: DbCtx, path: string, artifact_id: string) {
   return await ctx.db
     .query('meps2_scans')
@@ -75,6 +83,7 @@ export async function nextBeforeRow(ctx: DbCtx, path: string, scan_at: string | 
 /**
  * Bound of the ingested window as a ScanRef.
  *
+ * @returns The bound identity, or null if nothing ingested.
  * @throws {ConvexError} If the window names a `scan_at` with no scans row.
  */
 export async function windowBound(

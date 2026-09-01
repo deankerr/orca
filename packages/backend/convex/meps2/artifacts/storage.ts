@@ -55,6 +55,7 @@ export async function store(
     })
   }
 
+  // gzip mtime: 0 keeps the compressor header stable
   const compressed = gzipSync(args.bytes, { mtime: 0 })
 
   const storage_id = await ctx.storage.store(

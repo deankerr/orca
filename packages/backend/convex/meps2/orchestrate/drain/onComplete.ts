@@ -30,7 +30,7 @@ export const onComplete = internalMutation({
       console.log('[meps2:drain]', payload)
     }
 
-    await ctx.runMutation(internal.meps2.lock.release, {
+    await ctx.runMutation(internal.meps2.orchestrate.lock.release, {
       key: lockKey(args.context.path),
     })
 

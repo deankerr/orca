@@ -1,47 +1,36 @@
 # meps2 design notes
 
-This directory is the intended design for meps2. It is a knowledge base for implementation
-decisions, not a description of the running code.
+Architecture: why a module exists, invariants, traps, open questions. Not a
+description of the running code.
 
-Each note owns one subject. Prefer a new focused note over adding an unrelated section to an
-existing note.
+OpenRouter notes: `docs/openrouter`. Do not repeat them. Index:
+[`glossary.md`](glossary.md). Other notes link only there.
 
-OpenRouter observation notes remain in `docs/openrouter`. Listing semantics for vanished
-endpoints are in `docs/orca/availability.md`; this directory states the meps2 names those
-rules use.
+## Notes
 
-## Note structure
+One subject each. Prefer one complete note over a hop.
 
-- Begin a section with one or two sentences that establish the concept.
-- Follow with atomic bullets containing the details a reader must retain.
-- Keep one independently useful claim in each bullet.
-- Put facts about a field in that field's section.
-- Put relationships between fields in a dedicated relationship section.
-- Use tables only when exact mappings are easier to scan in rows.
-- Refer to modules in backticks (`artifacts`, `ingest`, `projections`). Do not specify file trees.
-- Define critical interfaces in place. Do not describe the current code.
+- Cross-cutting names live in the glossary. Module-local names live in that note.
+- Implemented behavior lives in the code. No table fields, indexes, or mutation
+  walkthroughs that match the source.
+- Unimplemented, atypical, or trap-worthy work keeps enough prose to implement.
 
-## Statement categories
+## Shape
 
-Unmarked statements are accepted design. Mark only statements whose category changes how a
-reader should use them, and place at most one marker at the start of a bullet.
+Lede, then bullets. One claim per bullet. Tables only for mappings.
 
-- 🧭 — working rule: required interpretation or behavior
-- ⚠️ — trap: a plausible interpretation that is likely to produce a wrong result
-- 🔄 — volatile: upstream state that is not durable identity
-- ❓ — unresolved: a material unknown that blocks or changes an implementation decision
-- 💤 — deprioritized: understood but intentionally out of scope
+## Statement Tags
 
-Do not use a generic importance or verification marker.
+Unmarked bullets are accepted design. Tag only when the category changes how the
+reader uses the line. At most one tag, at the start of a bulleted statement.
+Never inline in a paragraph.
 
-## Writing rules
+- ⚠️ trap: a plausible reading produces a wrong result
+- ❓ unresolved: blocks or changes an implementation decision (not speculative doubt)
+- 🚧 unimplemented: the rule is known; the code is not
+- 💤 deprioritized: understood, out of scope
 
-State the intended system directly. Introduce uncertainty only when the uncertainty itself
-matters.
+## Voice
 
-- Prefer declarative wording over `may`, `generally`, `commonly`, and similar qualifiers.
-- Do not create a `❓` bullet for speculative doubt with no effect on a decision.
-- Place `❓` bullets inline with their subject, not in a trailing list.
-- State policy as a `🧭` rule when it could be mistaken for an upstream fact.
-- Preserve upstream field names in backticks.
-- Define local terms on first use; canonical names live in [`identity.md`](identity.md).
+State the system directly. A negative is a ⚠️ only when the misreading is known. Do not explain by
+listing what a thing is not.

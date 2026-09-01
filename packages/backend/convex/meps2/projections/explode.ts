@@ -15,10 +15,13 @@ export type SourceEndpoint = StatsEndpoint & {
 
 /** Source-shaped catalog maps. Compare runs on these, flattening happens at write. */
 export type Catalog = {
+  /** Keyed by `model_id`. */
   models: Map<string, SourceModel>
+  /** Keyed by upstream endpoint `id`. */
   endpoints: Map<string, SourceEndpoint>
 }
 
+/** Empty maps. First ingest uses this as `before`. */
 export function emptyCatalog(): Catalog {
   return { models: new Map(), endpoints: new Map() }
 }

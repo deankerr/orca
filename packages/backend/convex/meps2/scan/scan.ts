@@ -23,8 +23,8 @@ const orFetch = up(fetch, () => ({
 /**
  * Fetch OpenRouter and serialize one complete scan artifact.
  *
- * HTTP only: call from an action. Does not persist. The caller assigns `scan_at`
- * before the first request so the file identity is known up front.
+ * HTTP only: call from an action. Returns uncompressed JSONL and identity; the
+ * caller stores. The caller assigns `scan_at` before the first request.
  * Fetch and parse failures from `up-fetch` propagate unchanged.
  */
 export async function scan(args: { scan_at: string }): Promise<ScanArtifact> {

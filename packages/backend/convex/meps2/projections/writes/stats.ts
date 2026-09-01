@@ -6,7 +6,6 @@ import { appendResult, insertIfAbsent } from './helpers'
 
 /**
  * Insert stats samples. Existing (`endpoint_id`, `scan_at`, `tier`) rows are skipped.
- * Never patched.
  */
 export const insert = internalMutation({
   args: { rows: v.array(statsTable.validator) },

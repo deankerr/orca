@@ -3,6 +3,7 @@ import * as R from 'remeda'
 /** Stay inside Convex transaction limits for metadata-heavy view rows. */
 const MUTATION_CHUNK = 40
 
+/** Values in id-sorted order. */
 export function valuesById<T>(map: Map<string, T>): T[] {
   const values: T[] = []
   for (const id of [...map.keys()].toSorted()) {
@@ -15,6 +16,9 @@ export function valuesById<T>(map: Map<string, T>): T[] {
   return values
 }
 
+/**
+ * If the view is empty, upsert every `after` entity instead of the planned subset.
+ */
 export function rewriteIfEmpty<T>(
   hasRows: boolean,
   after: Map<string, T>,
@@ -27,6 +31,7 @@ export function rewriteIfEmpty<T>(
   return { rewrite: true, upserts: valuesById(after) }
 }
 
+/** Apply view upserts in transaction-sized chunks. */
 export async function applyUpserts<Row>(
   upserts: Row[],
   apply: (upserts: Row[]) => Promise<{ upserted: number }>,
@@ -39,6 +44,7 @@ export async function applyUpserts<Row>(
   return { upserted }
 }
 
+/** Apply endpoint unlists in transaction-sized chunks. */
 export async function applyUnlists(
   ids: string[],
   apply: (ids: string[]) => Promise<{ unlisted: number }>,
@@ -51,6 +57,7 @@ export async function applyUnlists(
   return { unlisted }
 }
 
+/** Append series rows in transaction-sized chunks. */
 export async function appendRows<Row>(
   rows: Row[],
   append: (rows: Row[]) => Promise<{ inserted: number }>,

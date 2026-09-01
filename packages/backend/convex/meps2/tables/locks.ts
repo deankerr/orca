@@ -6,5 +6,6 @@ import { v } from 'convex/values'
  * interpret it.
  */
 export const locksTable = defineTable({
+  /** Occupancy key chosen by the caller (`observe`, `drain:${path}`). */
   key: v.string(),
 }).index('by_key', ['key'])

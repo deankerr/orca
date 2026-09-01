@@ -15,7 +15,7 @@ export const hasRows = internalQuery({
 
 /**
  * Insert or replace provider view rows. Last write in the chunk wins for a slug.
- * Catalog-absent providers are not deleted.
+ * Catalog-absent providers stay.
  */
 export const upsert = internalMutation({
   args: { upserts: v.array(providersTable.validator) },

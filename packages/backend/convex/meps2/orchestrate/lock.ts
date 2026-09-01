@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 
-import { internalMutation } from '../_generated/server'
+import { internalMutation } from '../../_generated/server'
 
 const LOCK_HELD = 'lock already held'
 
@@ -49,6 +49,12 @@ export const release = internalMutation({
   },
 })
 
+/**
+ * True when `claim` failed because `key` was already held.
+ *
+ * Catch this from `ctx.runMutation` of `claim`. Catching `.unique()` inside the
+ * mutation that inserted would commit the extra row.
+ */
 export function isLockHeldError(error: unknown) {
   if (!(error instanceof ConvexError)) {
     return false

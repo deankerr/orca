@@ -14,7 +14,7 @@ export const hasRows = internalQuery({
 })
 
 /**
- * Insert or replace model view rows. Catalog-absent models are not deleted.
+ * Insert or replace model view rows. Catalog-absent models stay.
  */
 export const upsert = internalMutation({
   args: { upserts: v.array(modelsTable.validator) },

@@ -26,11 +26,10 @@ const VIEW_SKIP_KEYS = new Set<string>()
 const PRICING_TRIGGER_KEYS = new Set(['pricing'])
 
 /**
- * Walk the catalog diff and write view/series chunks. Does not load blobs or
- * advance the ingest window.
+ * Walk the catalog diff and write view/series chunks.
  *
- * Reverse-time apply of an older-than-earliest artifact is not specified;
- * this walk is latest-edge (and empty-before) only.
+ * Caller passes catalogs; window advance is a separate mutation. Latest-edge
+ * and empty-before only.
  */
 export async function apply(
   ctx: ActionCtx,

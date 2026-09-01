@@ -8,4 +8,5 @@ Design-in-code rewrite of the core backends components.
 - Nothing is locked in - we will continue to shift the interfaces, boundaries, and data structures until we find the right balance.
 - Dev data does not need to be preserved. Now is the time to make breaking schema changes.
 
-Intended design: [`docs/`](docs/). OpenRouter observation notes: `docs/openrouter`.
+Intended design: [`docs/`](docs/). Index: [`docs/glossary.md`](docs/glossary.md).
+OpenRouter observation notes: `docs/openrouter`.

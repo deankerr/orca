@@ -19,11 +19,13 @@ const modelIdentity = {
   author_display_name: z.string().min(1),
 }
 
+/** Nested `provider_info` on a stats-page endpoint. Extra keys kept. */
 export const providerInfoSchema = z.looseObject({
   slug: z.string().min(1),
   displayName: z.string().min(1),
 })
 
+/** Endpoint `pricing` object. Extra keys kept. Rates stay decimal strings. */
 export const pricingSchema = z.looseObject({
   prompt: z.string().min(1),
   completion: z.string().min(1),
@@ -60,14 +62,17 @@ export const statsEndpointSchema = z.looseObject({
   statsByTier: z.unknown().optional(),
 })
 
+/** OpenRouter catalog models page. */
 export const catalogModelsPageSchema = z.object({
   data: z.array(catalogModelSchema),
 })
 
+/** OpenRouter stats endpoint page. */
 export const statsEndpointsPageSchema = z.object({
   data: z.array(statsEndpointSchema),
 })
 
+/** One JSONL line: a model group. */
 export const scanArtifactRowSchema = z.object({
   scan_at: z.string().min(1),
   model_id: z.string().min(1),
@@ -76,10 +81,15 @@ export const scanArtifactRowSchema = z.object({
   endpoints: z.array(statsEndpointSchema).nullable(),
 })
 
+/** Fetched catalog model. Extra keys kept. */
 export type CatalogModel = z.infer<typeof catalogModelSchema>
+/** Stats-page endpoint. Extra keys kept. */
 export type StatsEndpoint = z.infer<typeof statsEndpointSchema>
+/** Nested `provider_info`. */
 export type ProviderInfo = z.infer<typeof providerInfoSchema>
+/** Endpoint pricing object. Rates are decimal strings. */
 export type Pricing = z.infer<typeof pricingSchema>
+/** One scan-artifact line. */
 export type ScanArtifactRow = z.infer<typeof scanArtifactRowSchema>
 
 /** Unstored scan artifact. Ready for `artifacts.store`. */
@@ -87,6 +97,7 @@ export type ScanArtifact = {
   path: typeof SCAN_PATH
   /** `scan.{scan_at}.jsonl`. */
   artifact_id: string
+  /** Observation identity. Same value on every row. */
   scan_at: string
   /** Uncompressed UTF-8 JSONL. */
   bytes: Uint8Array

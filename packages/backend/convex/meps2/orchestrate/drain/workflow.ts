@@ -13,12 +13,11 @@ export function lockKey(path: string) {
 }
 
 /**
- * Drain registered-not-ingested files on the latest edge. No new observation.
+ * Drain registered-not-ingested files on the latest edge.
  *
  * Each apply step re-peeks `nextAfter(latest)`. Completes after `BATCH`
  * neighbors or when the peek is null. onComplete starts another drain if work
- * remains. Earliest-edge drain is not wired until reverse-time view apply is
- * specified.
+ * remains.
  */
 export const drain = workflow
   .define({

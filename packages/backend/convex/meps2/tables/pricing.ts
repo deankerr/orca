@@ -3,11 +3,16 @@ import { v } from 'convex/values'
 
 import { vMetadataRecord, vNestedMetadataRecord } from './shared'
 
+/**
+ * Append-only pricing samples. Unique on (`endpoint_id`, `scan_at`).
+ */
 export const pricingTable = defineTable({
   endpoint_id: v.string(),
   scan_at: v.string(),
 
+  /** Upstream decimal string. */
   prompt: v.string(),
+  /** Upstream decimal string. */
   completion: v.string(),
   discount: v.number(),
 

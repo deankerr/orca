@@ -11,7 +11,7 @@ import {
 } from './shared'
 
 /**
- * Admit a stored identity onto the timeline. Does not load bytes.
+ * Admit a stored identity onto the timeline.
  *
  * Same pair is idempotent. Interior to the ingested interval is refused.
  *

@@ -9,7 +9,9 @@ import { scan } from '../../scan/scan'
 /**
  * Fetch OpenRouter, serialize one scan artifact, and store it.
  *
- * Returns the identity only. Uncompressed JSONL is not a step result.
+ * Returns the identity only. Uncompressed JSONL stays out of the journal.
+ *
+ * @throws {ConvexError} If this `(path, artifact_id)` is already stored.
  */
 export const observe = internalAction({
   args: { scan_at: v.string() },

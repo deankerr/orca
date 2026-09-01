@@ -91,7 +91,7 @@ export function toModelRow(model: SourceModel, scan_at: string): ModelRow {
   }
 }
 
-/** Flatten a source-shaped endpoint into a view row. Does not set `unlisted_at`. */
+/** Listed endpoint view row. Omits `unlisted_at` so replace clears it on restore. */
 export function toEndpointRow(endpoint: SourceEndpoint, scan_at: string): EndpointRow {
   return {
     scan_at,
@@ -116,13 +116,18 @@ export function toProviderRow(endpoint: SourceEndpoint, scan_at: string): Provid
   }
 }
 
+/** Type guard: endpoint has a pricing object. */
 export function hasPricing(
   endpoint: SourceEndpoint,
 ): endpoint is SourceEndpoint & { pricing: Pricing } {
   return endpoint.pricing !== null && endpoint.pricing !== undefined
 }
 
-/** Pricing sample, or null when the endpoint has no pricing object. */
+/**
+ * Pricing sample, or null when the endpoint has no pricing object.
+ *
+ * Unknown extra meters are dropped. Upstream decimal strings are preserved.
+ */
 export function toPricingRow(endpoint: SourceEndpoint, scan_at: string): PricingRow | null {
   if (!hasPricing(endpoint)) {
     return null

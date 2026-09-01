@@ -17,7 +17,7 @@ export const start = internalMutation({
   args: {},
   returns: v.object({ scan_at: v.string() }),
   handler: async (ctx): Promise<{ scan_at: string }> => {
-    await ctx.runMutation(internal.meps2.lock.claim, { key: LOCK_KEY })
+    await ctx.runMutation(internal.meps2.orchestrate.lock.claim, { key: LOCK_KEY })
 
     const scan_at = new Date().toISOString()
 

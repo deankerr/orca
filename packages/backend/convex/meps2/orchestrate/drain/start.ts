@@ -4,8 +4,8 @@ import { internal } from '../../../_generated/api'
 import { internalMutation } from '../../../_generated/server'
 import type { MutationCtx } from '../../../_generated/server'
 import type { ScanRef } from '../../ingest/shared'
-import { isLockHeldError } from '../../lock'
 import { SCAN_PATH } from '../../scan/scanArtifact'
+import { isLockHeldError } from '../lock'
 import { workflow } from '../manager'
 import { lockKey } from './workflow'
 
@@ -25,6 +25,11 @@ export const start = internalMutation({
   },
 })
 
+/**
+ * Claim the drain lock and start the workflow.
+ *
+ * No-op if there is no neighbor or the lock is already held.
+ */
 export async function startDrain(ctx: MutationCtx, path: string) {
   const latest: ScanRef | null = await ctx.runQuery(internal.meps2.ingest.queries.latest, {
     path,
@@ -40,7 +45,7 @@ export async function startDrain(ctx: MutationCtx, path: string) {
   }
 
   try {
-    await ctx.runMutation(internal.meps2.lock.claim, { key: lockKey(path) })
+    await ctx.runMutation(internal.meps2.orchestrate.lock.claim, { key: lockKey(path) })
   } catch (error: unknown) {
     if (isLockHeldError(error)) {
       return

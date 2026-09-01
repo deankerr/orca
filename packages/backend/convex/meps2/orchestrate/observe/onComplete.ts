@@ -29,7 +29,7 @@ export const onComplete = internalMutation({
       console.log('[meps2:observe]', payload)
     }
 
-    await ctx.runMutation(internal.meps2.lock.release, { key: LOCK_KEY })
+    await ctx.runMutation(internal.meps2.orchestrate.lock.release, { key: LOCK_KEY })
 
     if (args.result.kind === 'success') {
       await workflow.cleanup(ctx, args.workflowId)

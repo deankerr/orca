@@ -4,13 +4,13 @@ import { internal } from '../../../_generated/api'
 import type { ScanRef } from '../../ingest/shared'
 import { workflow } from '../manager'
 
-/** Lock key for this workflow. Not shared with drain. */
+/** Occupancy key for observe. */
 export const LOCK_KEY = 'observe'
 
 /**
  * Scan+store, register, then start drain if none is in flight.
  *
- * `scan_at` is assigned in `start` and passed in. The action does not mint it.
+ * `scan_at` is assigned in `start` and passed in.
  */
 export const observe = workflow
   .define({
