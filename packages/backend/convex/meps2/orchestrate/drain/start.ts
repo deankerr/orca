@@ -3,9 +3,9 @@ import { v } from 'convex/values'
 import { internal } from '../../../_generated/api'
 import { internalMutation } from '../../../_generated/server'
 import type { MutationCtx } from '../../../_generated/server'
+import { tryClaim } from '../../../locks'
 import type { ScanRef } from '../../ingest/shared'
 import { SCAN_PATH } from '../../scan/scanArtifact'
-import { isLockHeldError } from '../lock'
 import { workflow } from '../manager'
 import { lockKey } from './workflow'
 
@@ -44,14 +44,8 @@ export async function startDrain(ctx: MutationCtx, path: string) {
     return
   }
 
-  try {
-    await ctx.runMutation(internal.meps2.orchestrate.lock.claim, { key: lockKey(path) })
-  } catch (error: unknown) {
-    if (isLockHeldError(error)) {
-      return
-    }
-
-    throw error
+  if (!(await tryClaim(ctx, lockKey(path)))) {
+    return
   }
 
   await workflow.start(

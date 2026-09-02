@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../../../_generated/api'
 import { internalMutation } from '../../../_generated/server'
+import { claim } from '../../../locks'
 import { SCAN_PATH } from '../../scan/scanArtifact'
 import { workflow } from '../manager'
 import { LOCK_KEY } from './workflow'
@@ -17,7 +18,7 @@ export const start = internalMutation({
   args: {},
   returns: v.object({ scan_at: v.string() }),
   handler: async (ctx): Promise<{ scan_at: string }> => {
-    await ctx.runMutation(internal.meps2.orchestrate.lock.claim, { key: LOCK_KEY })
+    await claim(ctx, LOCK_KEY)
 
     const scan_at = new Date().toISOString()
 

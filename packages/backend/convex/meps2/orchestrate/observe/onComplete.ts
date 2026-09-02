@@ -1,8 +1,8 @@
 import { vResultValidator, vWorkflowId } from '@convex-dev/workflow'
 import { v } from 'convex/values'
 
-import { internal } from '../../../_generated/api'
 import { internalMutation } from '../../../_generated/server'
+import { release } from '../../../locks'
 import { workflow } from '../manager'
 import { LOCK_KEY } from './workflow'
 
@@ -29,7 +29,7 @@ export const onComplete = internalMutation({
       console.log('[meps2:observe]', payload)
     }
 
-    await ctx.runMutation(internal.meps2.orchestrate.lock.release, { key: LOCK_KEY })
+    await release(ctx, LOCK_KEY)
 
     if (args.result.kind === 'success') {
       await workflow.cleanup(ctx, args.workflowId)

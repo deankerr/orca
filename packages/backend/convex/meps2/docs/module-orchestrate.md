@@ -18,16 +18,14 @@ failed apply. Observe kickoffs drain after register.
 
 ## Occupancy
 
-Separate keys: `observe` and `drain:${path}`. Presence of a `meps2_locks` row is
-the lock.
+Separate keys: `observe` and `drain:${path}`. Occupancy is `locks`.
 
-- Observe `start` lets `claim` throw (at most one observe).
-- Drain `start` no-ops if held or there is no neighbor. Success `onComplete`
-  re-arms if work remains (peek-empty while observe is about to register).
+- Observe `start` calls `claim` (at most one observe).
+- Drain `start` calls `tryClaim`; no-op if held or there is no neighbor.
+- Success `onComplete` re-arms if work remains (peek-empty while observe is
+  about to register).
 - Failed drain releases the lock; the window stays. Call `drain.start` after the
   fix.
-- ⚠️ Catch `claim` via `ctx.runMutation`. Catching `.unique()` in the mutation
-  that inserted would commit the extra row.
 
 ## Invariants
 

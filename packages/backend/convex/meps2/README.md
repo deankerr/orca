@@ -3,7 +3,8 @@
 Design-in-code rewrite of the core backends components.
 
 - Tables are prefixed with `meps2_`.
-- Scan JSONL is stored through `objects`. Other meps2 code stays in this directory.
+- Scan JSONL is stored through `objects`. Occupancy uses `locks`. Other meps2
+  code stays in this directory.
 - Slices may need to be partially built, and sit in an unintegrate state until other slices are ready.
 - Nothing is locked in - we will continue to shift the interfaces, boundaries, and data structures until we find the right balance.
 - Dev data does not need to be preserved. Now is the time to make breaking schema changes.

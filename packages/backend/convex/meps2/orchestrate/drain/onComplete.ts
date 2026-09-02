@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../../../_generated/api'
 import { internalMutation } from '../../../_generated/server'
+import { release } from '../../../locks'
 import { workflow } from '../manager'
 import { lockKey } from './workflow'
 
@@ -30,9 +31,7 @@ export const onComplete = internalMutation({
       console.log('[meps2:drain]', payload)
     }
 
-    await ctx.runMutation(internal.meps2.orchestrate.lock.release, {
-      key: lockKey(args.context.path),
-    })
+    await release(ctx, lockKey(args.context.path))
 
     if (args.result.kind === 'success') {
       await workflow.cleanup(ctx, args.workflowId)
