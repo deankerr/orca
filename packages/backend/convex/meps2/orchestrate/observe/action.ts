@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 
 import { internalAction } from '../../../_generated/server'
-import { store } from '../../artifacts/storage'
+import { store } from '../../../objects'
 import type { ScanRef } from '../../ingest/shared'
 import { vScanRef } from '../../ingest/shared'
 import { scan } from '../../scan/scan'
@@ -11,7 +11,7 @@ import { scan } from '../../scan/scan'
  *
  * Returns the identity only. Uncompressed JSONL stays out of the journal.
  *
- * @throws {ConvexError} If this `(path, artifact_id)` is already stored.
+ * @throws {ConvexError} If this `(path, name)` is already stored.
  */
 export const observe = internalAction({
   args: { scan_at: v.string() },
@@ -21,8 +21,8 @@ export const observe = internalAction({
 
     await store(ctx, {
       path: artifact.path,
-      artifact_id: artifact.artifact_id,
-      bytes: artifact.bytes,
+      name: artifact.artifact_id,
+      text: artifact.text,
     })
     return {
       path: artifact.path,

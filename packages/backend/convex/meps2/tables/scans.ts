@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 /**
  * Insert-only order log of registered scan artifacts.
  *
- * Not the blob locator. `artifact_id` is an opaque pointer for `artifacts.load`.
+ * Not the blob locator. `artifact_id` is an opaque pointer for `objects.load`.
  */
 export const scansTable = defineTable({
   /** Timeline. Scan artifacts use `scan`. */

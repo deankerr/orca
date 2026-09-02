@@ -3,17 +3,14 @@ import { v } from 'convex/values'
 import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import { internalAction, internalMutation, internalQuery } from '../_generated/server'
+import { LOCATORS_TABLE } from '../objects/table'
 
 // default grace period: a blob younger than this is never swept, so an
 // in-flight store-then-record sequence cannot race the sweep
 const DEFAULT_GRACE_MS = 24 * 60 * 60 * 1000
 
 // every table that holds a storage_id pointer must be listed here
-const POINTER_TABLES = [
-  'meps2_artifacts',
-  'public_api_v2_cache',
-  'snapshot_crawl_archives',
-] as const
+const POINTER_TABLES = [LOCATORS_TABLE, 'public_api_v2_cache', 'snapshot_crawl_archives'] as const
 
 type StorageDoc = {
   _id: Id<'_storage'>
@@ -30,7 +27,9 @@ export const findOrphanedBlobs = internalQuery({
     const referenced = new Set<Id<'_storage'>>()
     for (const table of POINTER_TABLES) {
       for await (const doc of ctx.db.query(table)) {
-        referenced.add(doc.storage_id)
+        if ('storage_id' in doc) {
+          referenced.add(doc.storage_id)
+        }
       }
     }
 

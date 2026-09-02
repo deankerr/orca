@@ -1,8 +1,9 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 
 import { internal } from '../../../_generated/api'
 import { internalAction } from '../../../_generated/server'
-import { load } from '../../artifacts/storage'
+import type { ActionCtx } from '../../../_generated/server'
+import { load } from '../../../objects'
 import type { ScanRef } from '../../ingest/shared'
 import { vScanRef } from '../../ingest/shared'
 import { apply } from '../../projections/apply'
@@ -34,24 +35,26 @@ export const applyNext = internalAction({
       return null
     }
 
-    const afterBytes = await load(ctx, {
-      path: afterRef.path,
-      artifact_id: afterRef.artifact_id,
-    })
+    const after = explode(await loadScan(ctx, afterRef))
 
-    const after = explode(afterBytes)
-
-    const before =
-      beforeRef === null
-        ? emptyCatalog()
-        : explode(
-            await load(ctx, {
-              path: beforeRef.path,
-              artifact_id: beforeRef.artifact_id,
-            }),
-          )
+    const before = beforeRef === null ? emptyCatalog() : explode(await loadScan(ctx, beforeRef))
 
     await apply(ctx, { scan_at: afterRef.scan_at, before, after })
     return afterRef
   },
 })
+
+/** Registered scans must have a stored object. Missing is corruption. */
+async function loadScan(ctx: ActionCtx, ref: ScanRef): Promise<string> {
+  const text = await load(ctx, { path: ref.path, name: ref.artifact_id })
+
+  if (text === null) {
+    throw new ConvexError({
+      message: 'object not found',
+      path: ref.path,
+      name: ref.artifact_id,
+    })
+  }
+
+  return text
+}

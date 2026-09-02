@@ -2,7 +2,7 @@ import { httpRouter } from 'convex/server'
 
 import { httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
-import { getR2Artifact } from './lib/r2'
+import { load } from './objects'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,
@@ -51,21 +51,22 @@ http.route({
 http.route({
   path: '/r2/artifact',
   method: 'GET',
-  handler: httpAction(async (_ctx, req) => {
+  handler: httpAction(async (ctx, req) => {
     const url = new URL(req.url)
-    const artifact_id = url.searchParams.get('artifact_id')
+    const path = url.searchParams.get('path')
+    const name = url.searchParams.get('name')
 
-    if (!isNonEmptyString(artifact_id)) {
-      return new Response('Missing artifact_id parameter', { status: 400 })
+    if (!isNonEmptyString(path) || !isNonEmptyString(name)) {
+      return new Response('Missing path or name parameter', { status: 400 })
     }
 
-    const record = await getR2Artifact(artifact_id)
+    const text = await load(ctx, { path, name })
 
-    if (record === null) {
-      return new Response('Artifact not found', { status: 404 })
+    if (text === null) {
+      return new Response('Object not found', { status: 404 })
     }
 
-    return Response.json(record)
+    return Response.json(JSON.parse(text) as unknown)
   }),
 })
 

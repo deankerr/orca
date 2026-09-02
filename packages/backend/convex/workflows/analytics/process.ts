@@ -3,7 +3,7 @@ import { up } from 'up-fetch'
 import { z } from 'zod'
 
 import { internalAction } from '../../_generated/server'
-import { storeR2Artifact } from '../../lib/r2'
+import { store } from '../../objects'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
@@ -22,13 +22,20 @@ export const run = internalAction({
     timestamp: v.number(),
   },
   returns: v.null(),
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     const data = await orFetch('/api/frontend/v1/models/find', { schema: DataRecord })
-    await storeR2Artifact({
-      workflow: 'analytics',
-      timestamp: args.timestamp,
-      format_version: 1,
-      data,
+    const path = 'analytics'
+    const name = new Date(args.timestamp).toISOString().replace('T', '/')
+
+    await store(ctx, {
+      path,
+      name,
+      text: JSON.stringify({
+        workflow: path,
+        timestamp: args.timestamp,
+        format_version: 1,
+        data,
+      }),
     })
 
     return null

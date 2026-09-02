@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** Grouping prefix passed to `artifacts.store`. */
+/** Grouping prefix passed to `objects.store`. */
 export const SCAN_PATH = 'scan' as const
 
 /** Nested catalog `endpoint` used as a fetch signal. Stripped before the row is written. */
@@ -92,7 +92,7 @@ export type Pricing = z.infer<typeof pricingSchema>
 /** One scan-artifact line. */
 export type ScanArtifactRow = z.infer<typeof scanArtifactRowSchema>
 
-/** Unstored scan artifact. Ready for `artifacts.store`. */
+/** Unstored scan artifact. Ready for `objects.store`. */
 export type ScanArtifact = {
   path: typeof SCAN_PATH
   /** `scan.{scan_at}.jsonl`. */
@@ -100,10 +100,10 @@ export type ScanArtifact = {
   /** Observation identity. Same value on every row. */
   scan_at: string
   /** Uncompressed UTF-8 JSONL. */
-  bytes: Uint8Array
+  text: string
 }
 
-/** Opaque object name for this scan. Not parsed by `artifacts`. */
+/** Opaque object name for this scan. Not parsed by `objects`. */
 export function scanArtifactId(scan_at: string) {
   return `scan.${scan_at}.jsonl`
 }
@@ -113,8 +113,8 @@ export function scanArtifactId(scan_at: string) {
  *
  * The file ends with a newline. Nested key order is not preserved.
  */
-export function encodeScanArtifact(rows: ScanArtifactRow[]): Uint8Array {
-  const body = `${rows
+export function encodeScanArtifact(rows: ScanArtifactRow[]): string {
+  return `${rows
     .map((row) =>
       JSON.stringify({
         scan_at: row.scan_at,
@@ -125,12 +125,10 @@ export function encodeScanArtifact(rows: ScanArtifactRow[]): Uint8Array {
       }),
     )
     .join('\n')}\n`
-
-  return new TextEncoder().encode(body)
 }
 
 /**
- * Parse uncompressed scan-artifact bytes into rows.
+ * Parse uncompressed scan-artifact JSONL into rows.
  *
  * Empty lines (including the trailing newline) are skipped. Last-write-wins
  * happens in `projections.explode`, not here.
@@ -138,8 +136,7 @@ export function encodeScanArtifact(rows: ScanArtifactRow[]): Uint8Array {
  * @throws {SyntaxError} If a line is not JSON.
  * @throws {ZodError} If a line fails `scanArtifactRowSchema`.
  */
-export function parseScanArtifact(bytes: Uint8Array): ScanArtifactRow[] {
-  const text = new TextDecoder().decode(bytes)
+export function parseScanArtifact(text: string): ScanArtifactRow[] {
   const rows: ScanArtifactRow[] = []
 
   for (const line of text.split('\n')) {

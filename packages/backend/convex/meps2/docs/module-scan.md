@@ -1,7 +1,7 @@
 # Module: Scan
 
 `scan` fetches OpenRouter and serializes one scan artifact. Failures throw; a failed
-fetch returns no bytes. The caller assigns `scan_at` and stores the result.
+fetch returns no file. The caller assigns `scan_at` and stores the result.
 
 Catalog and endpoint-page shape: `docs/openrouter`. `~` aliases are dropped.
 

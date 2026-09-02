@@ -36,7 +36,7 @@ export async function scan(args: { scan_at: string }): Promise<ScanArtifact> {
     path: SCAN_PATH,
     artifact_id: scanArtifactId(scan_at),
     scan_at,
-    bytes: encodeScanArtifact(rows.toSorted((a, b) => compareUtf16(a.model_id, b.model_id))),
+    text: encodeScanArtifact(rows.toSorted((a, b) => compareUtf16(a.model_id, b.model_id))),
   }
 }
 

@@ -4,11 +4,11 @@ import type { MutationCtx, QueryCtx } from '../../_generated/server'
 
 type DbCtx = QueryCtx | MutationCtx
 
-/** Registered scan artifact identity. Callers pass this, never bytes. */
+/** Registered scan artifact identity. Callers pass this, never the JSONL. */
 export type ScanRef = {
   /** Timeline. Live scan artifacts use `scan`. */
   path: string
-  /** Opaque object name for `artifacts.load`. */
+  /** Opaque object name for `objects.load`. */
   artifact_id: string
   /** Observation identity and apply order. */
   scan_at: string

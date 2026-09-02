@@ -1,7 +1,7 @@
 # Module: Ingest
 
 Ordered timeline of scan artifacts for one `path`. Callers pass identities, never
-bytes. States: [`glossary.md`](glossary.md).
+the JSONL. States: [`glossary.md`](glossary.md).
 
 - Baseline (`before`) is `latest()` — the latest ingested scan. Empty window:
   empty maps.

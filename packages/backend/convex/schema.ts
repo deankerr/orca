@@ -6,7 +6,6 @@ import { modelDescriptionsTable, modelsTable } from './catalog/models/table'
 import { providersTable } from './catalog/providers/table'
 import { changesTable } from './changes/table'
 import { subscriptionsTable } from './discord/subscriptions/table'
-import { artifactsTable as meps2ArtifactsTable } from './meps2/tables/artifacts'
 import { endpointsTable as mep2EndpointsTable } from './meps2/tables/endpoints'
 import { ingestWindowTable as meps2IngestWindowTable } from './meps2/tables/ingestWindow'
 import { locksTable as meps2LocksTable } from './meps2/tables/locks'
@@ -15,6 +14,7 @@ import { pricingTable as meps2PricingTable } from './meps2/tables/pricing'
 import { providersTable as mep2ProvidersTable } from './meps2/tables/providers'
 import { scansTable as meps2ScansTable } from './meps2/tables/scans'
 import { statsTable as meps2StatsTable } from './meps2/tables/stats'
+import { LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
 
@@ -22,7 +22,6 @@ export default defineSchema(
   {
     alerts_discord_subscriptions: subscriptionsTable,
 
-    meps2_artifacts: meps2ArtifactsTable,
     meps2_endpoints: mep2EndpointsTable,
     meps2_ingest_window: meps2IngestWindowTable,
     meps2_models: mep2ModelsTable,
@@ -31,6 +30,8 @@ export default defineSchema(
     meps2_providers: mep2ProvidersTable,
     meps2_scans: meps2ScansTable,
     meps2_stats: meps2StatsTable,
+
+    [LOCATORS_TABLE]: locatorsTable,
 
     or_views_changes: changesTable,
     or_views_endpoints: endpointsTable,

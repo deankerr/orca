@@ -27,7 +27,7 @@ export function emptyCatalog(): Catalog {
 }
 
 /**
- * Deserialize JSONL into two maps and apply the text-modality filter.
+ * Deserialize scan-artifact JSONL into two maps and apply the text-modality filter.
  *
  * Duplicate `model_id` or endpoint `id` in one file: last line wins.
  * `model_id` and `variant` from the parent row are attached onto each endpoint.
@@ -35,11 +35,11 @@ export function emptyCatalog(): Catalog {
  * @throws {SyntaxError} If a line is not JSON.
  * @throws {ZodError} If a line fails `scanArtifactRowSchema`.
  */
-export function explode(bytes: Uint8Array): Catalog {
+export function explode(text: string): Catalog {
   const models = new Map<string, SourceModel>()
   const endpoints = new Map<string, SourceEndpoint>()
 
-  for (const row of parseScanArtifact(bytes)) {
+  for (const row of parseScanArtifact(text)) {
     models.set(row.model_id, {
       ...row.model,
       model_id: row.model_id,

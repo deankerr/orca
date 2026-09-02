@@ -25,15 +25,15 @@ Assigned in observe `start`.
 
 ## scan artifact
 
-JSONL bytes of one scan. `path` is `scan`. `artifact_id` is `scan.{scan_at}.jsonl`.
+JSONL of one scan. `path` is `scan`. `artifact_id` is `scan.{scan_at}.jsonl`, the
+object `name` passed to `objects`.
 
 - Row contract: [`module-scan.md`](module-scan.md)
-- Blob store: [`module-artifacts.md`](module-artifacts.md)
 - Legacy producers: [`backfill.md`](backfill.md)
 
 ## `(path, artifact_id)`
 
-Opaque blob name. [`module-artifacts.md`](module-artifacts.md).
+Opaque object identity. `objects` calls the second field `name`.
 
 ## `ScanRef`
 
@@ -63,7 +63,6 @@ Endpoint UUID. View and series key.
 | Note                                                 | Subject                             |
 | ---------------------------------------------------- | ----------------------------------- |
 | [`module-scan.md`](module-scan.md)                   | Live producer and file contract     |
-| [`module-artifacts.md`](module-artifacts.md)         | Blob store                          |
 | [`module-ingest.md`](module-ingest.md)               | Timeline and window                 |
 | [`module-projections.md`](module-projections.md)     | Apply, views, series                |
 | [`module-orchestrate.md`](module-orchestrate.md)     | Observe and drain                   |
