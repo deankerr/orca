@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 /** Catalog table for stored objects. Schema and the storage sweep import this. */
-export const LOCATORS_TABLE = 'objects_locators' as const
+export const OBJECTS_LOCATORS_TABLE = 'objects_locators' as const
 
 const locatorBase = {
   /** Grouping prefix. Opaque; an object-storage backend uses this as the key prefix. */

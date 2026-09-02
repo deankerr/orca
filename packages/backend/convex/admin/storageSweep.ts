@@ -3,14 +3,18 @@ import { v } from 'convex/values'
 import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import { internalAction, internalMutation, internalQuery } from '../_generated/server'
-import { LOCATORS_TABLE } from '../objects/table'
+import { OBJECTS_LOCATORS_TABLE } from '../objects/table'
 
 // default grace period: a blob younger than this is never swept, so an
 // in-flight store-then-record sequence cannot race the sweep
 const DEFAULT_GRACE_MS = 24 * 60 * 60 * 1000
 
 // every table that holds a storage_id pointer must be listed here
-const POINTER_TABLES = [LOCATORS_TABLE, 'public_api_v2_cache', 'snapshot_crawl_archives'] as const
+const POINTER_TABLES = [
+  OBJECTS_LOCATORS_TABLE,
+  'public_api_v2_cache',
+  'snapshot_crawl_archives',
+] as const
 
 type StorageDoc = {
   _id: Id<'_storage'>

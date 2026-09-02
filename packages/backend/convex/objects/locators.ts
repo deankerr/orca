@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
 import { internalMutation, internalQuery } from '../_generated/server'
-import { LOCATORS_TABLE, locatorsTable } from './table'
+import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 
 const locator = locatorsTable.validator
 
@@ -18,7 +18,7 @@ export const get = internalQuery({
   returns: v.union(v.null(), locator),
   handler: async (ctx, args) => {
     const doc = await ctx.db
-      .query(LOCATORS_TABLE)
+      .query(OBJECTS_LOCATORS_TABLE)
       .withIndex('by_path_name', (q) => q.eq('path', args.path).eq('name', args.name))
       .unique()
 
@@ -46,7 +46,7 @@ export const insert = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query(LOCATORS_TABLE)
+      .query(OBJECTS_LOCATORS_TABLE)
       .withIndex('by_path_name', (q) =>
         q.eq('path', args.locator.path).eq('name', args.locator.name),
       )
@@ -60,7 +60,7 @@ export const insert = internalMutation({
       })
     }
 
-    await ctx.db.insert(LOCATORS_TABLE, args.locator)
+    await ctx.db.insert(OBJECTS_LOCATORS_TABLE, args.locator)
     return null
   },
 })
