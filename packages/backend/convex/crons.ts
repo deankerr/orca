@@ -8,6 +8,6 @@ crons.hourly('snapshot-30', { minuteUTC: 30 }, internal.snapshots.crawl.cron.run
 
 crons.cron('workflows/analytics', '5 * * * *', internal.workflows.analytics.scheduled.start, {})
 crons.cron('workflows/topApps', '15 * * * *', internal.workflows.topApps.scheduled.start, {})
-crons.cron('meps2/observe', '*/20 * * * *', internal.meps2.orchestrate.observe.start.start, {})
+crons.cron('scan/workflow', '40 * * * *', internal.scan.action.run, {})
 
 export default crons
