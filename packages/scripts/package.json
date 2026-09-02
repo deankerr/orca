@@ -3,20 +3,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "assumptions": "bun run assumptions/index.ts",
     "bundle-analysis": "bun run bundle-analysis/index.ts",
     "json-profile": "bun run json-profile/index.ts",
-    "mongodb-schema": "bun run mongodb-schema/index.ts",
-    "pricing-changes": "bun run pricing-changes/index.ts"
+    "reversible-codec-comparison": "bun run reversible-changesets/compare-cli.ts",
+    "reversible-codec-comparison-verify": "bun run reversible-changesets/verify-comparison.ts",
+    "sync-bundles": "bun run sync-bundles/index.ts"
   },
   "dependencies": {
+    "@opentf/obj-diff": "0.18.0",
     "commander": "^15.0.0",
+    "immutable-json-patch": "6.0.3",
+    "json-diff-ts": "5.0.0-alpha.9",
+    "jsondiffpatch": "0.7.6",
+    "rfc6902": "5.3.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
+    "@oxc-project/types": "0.142.0",
     "@swaggerexpert/jsonpath": "^4.0.4",
     "@types/bun": "catalog:",
+    "oxc-parser": "0.142.0",
     "typescript": "catalog:"
   }
 }

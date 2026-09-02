@@ -3,7 +3,7 @@
 OpenRouter's provider fields flatten three distinct concepts. Their similar names obscure
 important differences.
 
-💤 Providers are a low priority for ORCA. The catalog scan captures what the API exposes; deeper
+🧭 Providers are a low priority for ORCA. The catalog scan captures what the API exposes; deeper
 provider enrichment is intentionally out of scope for now.
 
 ## Organization

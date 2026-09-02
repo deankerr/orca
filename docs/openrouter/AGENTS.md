@@ -15,7 +15,7 @@ to an existing note.
 - Put facts about a field in that field's section.
 - Put relationships between fields in a dedicated relationship section.
 - Use tables only when exact mappings or measurements are easier to scan in rows.
-- Move long investigations, timelines, and corpus tables into `docs/reports/`; link the durable
+- Move long investigations, timelines, and corpus tables into `appendix/`; link the durable
   conclusion from the subject note.
 
 ## Statement categories

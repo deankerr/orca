@@ -2,7 +2,7 @@
 
 **DRAFT: Adapt as more workflows are added**
 
-Workflows are newer backend processes that preserve raw workflow outputs as R2 artifacts or materialize app state from those artifacts.
+Workflows are newer backend processes that preserve raw workflow outputs as objects or materialize app state from those objects.
 
 ## Shape
 
@@ -25,7 +25,7 @@ Start actions may:
 Start actions should not:
 
 - Fetch external data.
-- Store R2 artifacts.
+- Store objects.
 - Materialize projections.
 - Contain resume or pagination loops.
 
@@ -36,8 +36,6 @@ Process actions should:
 - Be safe to call from manual and scheduled starts.
 - Reschedule themselves with explicit continuation args if processing must continue.
 
-## Artifacts
+## Objects
 
-Raw workflow results should be stored through `lib/r2.ts`.
-
-The R2 service owns artifact identity. Callers provide `workflow`, `timestamp`, `format_version`, and uncompressed JSON-compatible `data`; the service creates `artifact_id` and stores the gzipped JSON envelope.
+Raw workflow results are stored through `objects`. Callers choose `(path, name)` and pass uncompressed JSON text, including any envelope (`workflow`, `timestamp`, `format_version`, `data`). Compression and the backend stay inside `objects`.

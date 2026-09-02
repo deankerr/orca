@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
 import { internalAction, internalQuery } from '../../_generated/server'
-import { storeR2Artifact } from '../../lib/r2'
+import { store } from '../../objects'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
@@ -67,11 +67,18 @@ export const run = internalAction({
       }
     }
 
-    await storeR2Artifact({
-      workflow: 'top-apps',
-      timestamp: args.timestamp,
-      format_version: 1,
-      data: { models },
+    const path = 'top-apps'
+    const name = new Date(args.timestamp).toISOString().replace('T', '/')
+
+    await store(ctx, {
+      path,
+      name,
+      text: JSON.stringify({
+        workflow: path,
+        timestamp: args.timestamp,
+        format_version: 1,
+        data: { models },
+      }),
     })
 
     return null

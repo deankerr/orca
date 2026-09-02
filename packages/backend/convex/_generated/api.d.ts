@@ -9,6 +9,7 @@
  */
 
 import type * as admin_archives from "../admin/archives.js";
+import type * as admin_storageSweep from "../admin/storageSweep.js";
 import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
 import type * as analysis_changes from "../analysis/changes.js";
@@ -49,15 +50,26 @@ import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
 import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
-import type * as lib_r2 from "../lib/r2.js";
+import type * as locks_index from "../locks/index.js";
+import type * as locks_occupy from "../locks/occupy.js";
+import type * as locks_table from "../locks/table.js";
 import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
+import type * as objects_backend from "../objects/backend.js";
+import type * as objects_bytes from "../objects/bytes.js";
+import type * as objects_index from "../objects/index.js";
+import type * as objects_locators from "../objects/locators.js";
+import type * as objects_r2 from "../objects/r2.js";
+import type * as objects_table from "../objects/table.js";
 import type * as providers from "../providers.js";
 import type * as public_api_v2_cache from "../public_api/v2/cache.js";
 import type * as public_api_v2_http from "../public_api/v2/http.js";
 import type * as public_api_v2_queries from "../public_api/v2/queries.js";
 import type * as public_api_v2_table from "../public_api/v2/table.js";
 import type * as public_api_v2_transform from "../public_api/v2/transform.js";
+import type * as scan_action from "../scan/action.js";
+import type * as scan_artifact from "../scan/artifact.js";
+import type * as scan_scan from "../scan/scan.js";
 import type * as shared_entityLogo from "../shared/entityLogo.js";
 import type * as shared_formatters from "../shared/formatters.js";
 import type * as shared_groups from "../shared/groups.js";
@@ -94,6 +106,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "admin/archives": typeof admin_archives;
+  "admin/storageSweep": typeof admin_storageSweep;
   "alerts/dev": typeof alerts_dev;
   "alerts/dispatcher": typeof alerts_dispatcher;
   "analysis/changes": typeof analysis_changes;
@@ -134,15 +147,26 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/functionSpec": typeof lib_functionSpec;
   "lib/paginateAndProcess": typeof lib_paginateAndProcess;
-  "lib/r2": typeof lib_r2;
+  "locks/index": typeof locks_index;
+  "locks/occupy": typeof locks_occupy;
+  "locks/table": typeof locks_table;
   models: typeof models;
   monitor: typeof monitor;
+  "objects/backend": typeof objects_backend;
+  "objects/bytes": typeof objects_bytes;
+  "objects/index": typeof objects_index;
+  "objects/locators": typeof objects_locators;
+  "objects/r2": typeof objects_r2;
+  "objects/table": typeof objects_table;
   providers: typeof providers;
   "public_api/v2/cache": typeof public_api_v2_cache;
   "public_api/v2/http": typeof public_api_v2_http;
   "public_api/v2/queries": typeof public_api_v2_queries;
   "public_api/v2/table": typeof public_api_v2_table;
   "public_api/v2/transform": typeof public_api_v2_transform;
+  "scan/action": typeof scan_action;
+  "scan/artifact": typeof scan_artifact;
+  "scan/scan": typeof scan_scan;
   "shared/entityLogo": typeof shared_entityLogo;
   "shared/formatters": typeof shared_formatters;
   "shared/groups": typeof shared_groups;
@@ -198,4 +222,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  workflow: import("@convex-dev/workflow/_generated/component.js").ComponentApi<"workflow">;
+};

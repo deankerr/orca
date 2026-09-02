@@ -6,12 +6,17 @@ import { modelDescriptionsTable, modelsTable } from './catalog/models/table'
 import { providersTable } from './catalog/providers/table'
 import { changesTable } from './changes/table'
 import { subscriptionsTable } from './discord/subscriptions/table'
+import { LOCKS_TABLE, locksTable } from './locks/table'
+import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
 
 export default defineSchema(
   {
     alerts_discord_subscriptions: subscriptionsTable,
+
+    [LOCKS_TABLE]: locksTable,
+    [OBJECTS_LOCATORS_TABLE]: locatorsTable,
 
     or_views_changes: changesTable,
     or_views_endpoints: endpointsTable,
