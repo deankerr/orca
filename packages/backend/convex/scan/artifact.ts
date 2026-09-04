@@ -1,8 +1,15 @@
 import { ScanArtifactEntry } from './schema'
 
-export function createScanArtifact(entries: Omit<ScanArtifactEntry, 'scan_at'>[]) {
-  const scan_at = new Date().toISOString()
+export type ScanArtifact = {
+  id: string
+  scan_at: string
+  text: string
+}
 
+export function createScanArtifact(
+  entries: Omit<ScanArtifactEntry, 'scan_at'>[],
+  scan_at: string = new Date().toISOString(),
+): ScanArtifact {
   const text = `${entries
     .map((entry) =>
       JSON.stringify({

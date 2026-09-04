@@ -50,6 +50,7 @@ import type * as init from "../init.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
 import type * as lib_paginateAndProcess from "../lib/paginateAndProcess.js";
+import type * as lib_workflow from "../lib/workflow.js";
 import type * as locks_index from "../locks/index.js";
 import type * as locks_occupy from "../locks/occupy.js";
 import type * as locks_table from "../locks/table.js";
@@ -91,6 +92,9 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
+import type * as v3_diffScanArtifacts from "../v3/diffScanArtifacts.js";
+import type * as v3_projectScan from "../v3/projectScan.js";
+import type * as v3_scanArtifactFromBundle from "../v3/scanArtifactFromBundle.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
 import type * as workflows_analytics_process from "../workflows/analytics/process.js";
 import type * as workflows_analytics_scheduled from "../workflows/analytics/scheduled.js";
@@ -147,6 +151,7 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/functionSpec": typeof lib_functionSpec;
   "lib/paginateAndProcess": typeof lib_paginateAndProcess;
+  "lib/workflow": typeof lib_workflow;
   "locks/index": typeof locks_index;
   "locks/occupy": typeof locks_occupy;
   "locks/table": typeof locks_table;
@@ -188,6 +193,9 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
+  "v3/diffScanArtifacts": typeof v3_diffScanArtifacts;
+  "v3/projectScan": typeof v3_projectScan;
+  "v3/scanArtifactFromBundle": typeof v3_scanArtifactFromBundle;
   "workflows/analytics/manual": typeof workflows_analytics_manual;
   "workflows/analytics/process": typeof workflows_analytics_process;
   "workflows/analytics/scheduled": typeof workflows_analytics_scheduled;

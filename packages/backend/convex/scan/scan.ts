@@ -68,5 +68,5 @@ async function fetchEndpoints(permaslug: string, variant: string) {
     }),
   })
 
-  return data.map(R.omit(['model']))
+  return data
 }

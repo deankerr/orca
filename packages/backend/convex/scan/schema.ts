@@ -1,3 +1,4 @@
+import * as R from 'remeda'
 import { z } from 'zod'
 
 export const SCAN_ARTIFACT_OBJECT_PATH = 'scans' as const
@@ -9,11 +10,13 @@ export const IdentifiedModel = z.looseObject({
   output_modalities: z.array(z.string()),
 })
 
-export const IdentifiedEndpoint = z.looseObject({
-  id: z.string(),
-  model_variant_slug: z.string(),
-  variant: z.string(),
-})
+export const IdentifiedEndpoint = z
+  .looseObject({
+    id: z.string(),
+    model_variant_slug: z.string(),
+    variant: z.string(),
+  })
+  .transform((endpoint) => R.omit(endpoint, ['model']))
 
 export const ScanArtifactEntry = z.object({
   scan_at: z.string(),
