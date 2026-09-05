@@ -52,6 +52,7 @@ describe('scan projection', () => {
     ]
 
     expect(rows.map((row) => row.scan_at)).toEqual(Array.from({ length: 4 }, () => 'artifact-time'))
+    expect(projection.models.get('author/model')?.metadata.author_display_name).toBe('Author')
   })
 
   test('plans changed pricing, removed endpoints, and every next stats sample', () => {
@@ -88,8 +89,8 @@ describe('scan projection', () => {
       row: {
         endpoint_id: 'one',
         scan_at: '2026-01-02',
-        tier: 'priority',
-        sample: { p50_latency: 10 },
+        tier: 'default',
+        sample: { ignored: 1 },
       },
     })
   })

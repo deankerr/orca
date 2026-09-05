@@ -51,7 +51,6 @@ export const modelsTable = defineTable({
 
   /** OpenRouter `short_name`. */
   display_name: v.string(),
-  author_display_name: v.string(),
 
   /** Remaining source fields. Nested objects and non-string arrays are dropped. */
   metadata: vMetadataRecord,

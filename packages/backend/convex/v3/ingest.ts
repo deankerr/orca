@@ -4,18 +4,8 @@ import { internal } from '../_generated/api'
 import { internalAction, internalQuery } from '../_generated/server'
 import { loadScanArtifact, nextScanArtifactId } from '../scan/artifact'
 import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from './ingestions.table'
-import { createScanProjection } from './projections/create'
-import type { ScanProjection } from './projections/create'
+import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
-
-const initialProjection: ScanProjection = {
-  scan_at: '',
-  models: new Map(),
-  providers: new Map(),
-  endpoints: new Map(),
-  prices: new Map(),
-  stats: [],
-}
 
 export const currentArtifactId = internalQuery({
   args: {},
@@ -41,7 +31,7 @@ export const run = internalAction({
 
     const nextArtifact = await loadScanArtifact(ctx, toArtifactId)
     const next = createScanProjection(nextArtifact)
-    let previous = initialProjection
+    let previous = INITIAL_SCAN_PROJECTION
 
     if (fromArtifactId !== INITIAL_SCAN_ARTIFACT_ID) {
       const previousArtifact = await loadScanArtifact(ctx, fromArtifactId)

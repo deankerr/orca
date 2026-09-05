@@ -92,6 +92,7 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
+import type * as v3_backfill from "../v3/backfill.js";
 import type * as v3_diffScanArtifacts from "../v3/diffScanArtifacts.js";
 import type * as v3_ingest from "../v3/ingest.js";
 import type * as v3_projections_apply from "../v3/projections/apply.js";
@@ -196,6 +197,7 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
+  "v3/backfill": typeof v3_backfill;
   "v3/diffScanArtifacts": typeof v3_diffScanArtifacts;
   "v3/ingest": typeof v3_ingest;
   "v3/projections/apply": typeof v3_projections_apply;

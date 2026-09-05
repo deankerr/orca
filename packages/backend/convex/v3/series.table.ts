@@ -55,7 +55,7 @@ export const V3_ENDPOINTS_STATS_SERIES_TABLE = 'v3_endpoints_stats_series' as co
 export const endpointsStatsTable = defineTable({
   endpoint_id: v.string(),
   scan_at: v.string(),
-  /** `statsByTier` key, or `default` for a legacy `stats` object. */
+  /** Currently always `default` for the endpoint `stats` object. */
   tier: v.string(),
   /** Numeric fields of the upstream stats object, minus `endpoint_id`. */
   sample: v.record(v.string(), v.number()),

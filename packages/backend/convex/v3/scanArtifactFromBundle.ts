@@ -1,4 +1,3 @@
-import { ConvexError } from 'convex/values'
 import * as R from 'remeda'
 import { z } from 'zod'
 
@@ -12,7 +11,7 @@ const CatalogEndpoint = z.object({
   variant: z.string(),
 })
 
-export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact {
+export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact | null {
   const { crawl_id } = bundle
   const scan_at = new Date(Number(crawl_id)).toISOString()
 
@@ -37,18 +36,18 @@ export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact
 
     const { endpoints } = entry
     if (!Array.isArray(endpoints)) {
-      throw new ConvexError({
-        message: 'This bundle contains a FetchError and should be discarded.',
+      return invalidBundle({
         crawl_id,
         model_slug: model.slug,
+        reason: 'endpoint_fetch_error',
       })
     }
 
     if (endpoints.length < 1) {
-      throw new ConvexError({
-        message: 'This bundle is missing endpoints for a model and should be discarded.',
+      return invalidBundle({
         crawl_id,
         model_slug: model.slug,
+        reason: 'missing_model_endpoints',
       })
     }
 
@@ -63,11 +62,20 @@ export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact
   }
 
   if (entries.length < 1) {
-    throw new ConvexError({
-      message: 'This bundle contains no model records and should be discarded.',
+    return invalidBundle({
       crawl_id,
+      reason: 'no_model_records',
     })
   }
 
   return createScanArtifact(R.sortBy(entries, R.prop('model_id')), scan_at)
+}
+
+function invalidBundle(details: {
+  crawl_id: string
+  model_slug?: string
+  reason: 'endpoint_fetch_error' | 'missing_model_endpoints' | 'no_model_records'
+}) {
+  console.warn('invalid legacy bundle', details)
+  return null
 }

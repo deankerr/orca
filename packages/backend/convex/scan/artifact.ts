@@ -34,6 +34,15 @@ export async function storeScanArtifact(ctx: ActionCtx, artifact: ScanArtifact):
 
 export async function loadScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact> {
   const text = z.string().parse(await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id }))
+  return parseScanArtifact(id, text)
+}
+
+export async function findScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact | null> {
+  const text = await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id })
+  return text === null ? null : parseScanArtifact(id, text)
+}
+
+function parseScanArtifact(id: string, text: string): ScanArtifact {
   const entries = text
     .split('\n')
     .filter((line) => line.length > 0)

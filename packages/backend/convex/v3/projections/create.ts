@@ -17,14 +17,12 @@ const MODEL_METADATA_OMIT = new Set([
   'output_modalities',
   'created_at',
   'short_name',
-  'author_display_name',
   'endpoint',
 ])
 
 const ModelSource = z.looseObject({
   ...IdentifiedModel.shape,
   short_name: z.string(),
-  author_display_name: z.string(),
   created_at: z.string(),
 })
 
@@ -40,7 +38,6 @@ function projectModel(scan_at: string, entry: ScanArtifactEntry): ModelRow {
     output_modalities: model.output_modalities,
     or_created_at: model.created_at,
     display_name: model.short_name,
-    author_display_name: model.author_display_name,
     metadata: flattenMetadata(model, MODEL_METADATA_OMIT),
   }
 }
@@ -100,7 +97,6 @@ const EndpointSource = z.looseObject({
   provider_info: ProviderInfo,
   pricing: EndpointPricing,
   stats: StatsSource.optional(),
-  statsByTier: z.record(z.string(), StatsSource.optional()).optional(),
 })
 
 function projectEndpoint(
@@ -125,19 +121,12 @@ function projectStats(
   scan_at: string,
   endpoint: z.infer<typeof EndpointSource>,
 ): StatsRow[] {
-  const samples = Object.entries(endpoint.statsByTier ?? {})
-  if (endpoint.statsByTier === undefined && endpoint.stats !== undefined) {
-    samples.push(['default', endpoint.stats])
+  if (endpoint.stats === undefined) {
+    return []
   }
 
-  return samples.flatMap(([tier, stats]) => {
-    if (stats === undefined) {
-      return []
-    }
-
-    const { endpoint_id: _, ...sample } = stats
-    return [{ endpoint_id, scan_at, tier, sample }]
-  })
+  const { endpoint_id: _, ...sample } = endpoint.stats
+  return [{ endpoint_id, scan_at, tier: 'default', sample }]
 }
 
 function projectPricing(
@@ -165,6 +154,15 @@ export type ScanProjection = {
   providers: Map<string, ProviderRow>
   prices: Map<string, EndpointsPricingRow>
   stats: StatsRow[]
+}
+
+export const INITIAL_SCAN_PROJECTION: ScanProjection = {
+  scan_at: '',
+  models: new Map(),
+  providers: new Map(),
+  endpoints: new Map(),
+  prices: new Map(),
+  stats: [],
 }
 
 export function createScanProjection(artifact: ScanArtifact): ScanProjection {

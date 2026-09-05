@@ -48,3 +48,11 @@
 - Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
 - Endpoint pricing rows are inserted whenever a change is detected.
 - Endpoint stats rows are always inserted when present.
+
+## Legacy backfill
+
+- Converts the latest valid legacy archive per UTC hour before `LEGACY_BACKFILL_END_SCAN_AT`.
+- Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
+- Reaching the cutoff stops; normal ingestion is started manually.
+- Known incomplete bundles are skipped; schema failures halt processing.
+- Converted artifacts and projection writes share the normal ingestion ledger.
