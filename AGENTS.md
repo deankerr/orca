@@ -11,6 +11,7 @@ ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRo
 
 - `apps/web`: Next.js 16, React 19, Tailwind CSS 4, TanStack Query/Table/Virtual
 - `packages/backend`: Convex
+- "MEPs" = Models, Endpoints, Providers
 
 ## Target Users
 
