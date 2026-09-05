@@ -1,6 +1,6 @@
 import { httpRouter } from 'convex/server'
 
-import { httpAction } from './_generated/server'
+import { env, httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
 import { load } from './objects'
 import {
@@ -17,7 +17,7 @@ http.route({
   path: '/discord/interactions',
   method: 'POST',
   handler: httpAction(async (ctx, req) => {
-    const publicKey = process.env.DISCORD_PUBLIC_KEY
+    const publicKey = env.DISCORD_PUBLIC_KEY
     if (!isNonEmptyString(publicKey)) {
       console.error('[discord:interactions] DISCORD_PUBLIC_KEY not configured')
       return new Response('Server configuration error', { status: 500 })

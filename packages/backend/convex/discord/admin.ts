@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { internalAction } from '../_generated/server'
+import { env, internalAction } from '../_generated/server'
 import { isNonEmptyString } from '../shared/utils'
 import { createDiscordClient } from './client'
 
@@ -81,7 +81,7 @@ export const registerCommands = internalAction({
     commands?: RegisteredCommand[]
     error?: string
   }> => {
-    const applicationId = process.env.DISCORD_APPLICATION_ID
+    const applicationId = env.DISCORD_APPLICATION_ID
 
     if (!isNonEmptyString(applicationId)) {
       return { success: false, error: 'DISCORD_APPLICATION_ID not configured' }

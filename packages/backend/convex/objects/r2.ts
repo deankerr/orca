@@ -1,6 +1,6 @@
 import { AwsClient } from 'aws4fetch'
 
-import { getEnv } from '../lib/env'
+import { env } from '../_generated/server'
 
 /** Put/get gzipped bytes by key. */
 export type R2Transport = {
@@ -17,7 +17,7 @@ export function r2Key(path: string, name: string) {
 /**
  * R2 HTTP client from env.
  *
- * Missing credentials fail on first use, not at import.
+ * Credentials are declared and validated in convex.config.ts.
  */
 export function createR2Transport(): R2Transport {
   const client = r2Client()
@@ -58,16 +58,16 @@ export function createR2Transport(): R2Transport {
 
 function r2Client() {
   return new AwsClient({
-    accessKeyId: getEnv('ORCA_R2_ACCESS_KEY_ID'),
-    secretAccessKey: getEnv('ORCA_R2_SECRET_ACCESS_KEY'),
+    accessKeyId: env.ORCA_R2_ACCESS_KEY_ID,
+    secretAccessKey: env.ORCA_R2_SECRET_ACCESS_KEY,
     service: 's3',
     region: 'auto',
   })
 }
 
 function objectUrl(key: string) {
-  const accountId = getEnv('ORCA_R2_ACCOUNT_ID')
-  const bucket = getEnv('ORCA_R2_BUCKET')
+  const accountId = env.ORCA_R2_ACCOUNT_ID
+  const bucket = env.ORCA_R2_BUCKET
   const encodedKey = key.split('/').map(encodeURIComponent).join('/')
 
   return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`

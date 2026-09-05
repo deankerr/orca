@@ -5,12 +5,12 @@ import type {
 } from 'discord-api-types/v10'
 import { up } from 'up-fetch'
 
-import { getEnv } from '../lib/env'
+import { env } from '../_generated/server'
 
 const RETRY_ATTEMPTS = 3
 
 export function createDiscordClient() {
-  const token = getEnv('DISCORD_BOT_TOKEN')
+  const token = env.DISCORD_BOT_TOKEN
 
   return up(fetch, () => ({
     baseUrl: 'https://discord.com/api/v10',

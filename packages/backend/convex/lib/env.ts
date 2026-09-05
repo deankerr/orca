@@ -1,15 +1,7 @@
-export function getEnv(name: string, fallback?: string): string {
-  const value = process.env[name] ?? fallback
+import { env } from '../_generated/server'
 
-  if (value === undefined) {
-    throw new Error(`Missing required environment variable: ${name}`)
-  }
-
-  return value
-}
-
-export function getBooleanEnv(name: string, fallback?: boolean): boolean {
-  const value = process.env[name]
+export function getBooleanEnv(name: keyof typeof env, fallback?: boolean): boolean {
+  const value = env[name]
 
   if (value === undefined) {
     if (fallback === undefined) {
@@ -31,8 +23,8 @@ export function getBooleanEnv(name: string, fallback?: boolean): boolean {
   throw new Error(`Invalid boolean environment variable: ${name}=${value}`)
 }
 
-export function getNumberEnv(name: string, fallback?: number): number {
-  const value = process.env[name]
+export function getNumberEnv(name: keyof typeof env, fallback?: number): number {
+  const value = env[name]
 
   if (value === undefined) {
     if (fallback === undefined) {
