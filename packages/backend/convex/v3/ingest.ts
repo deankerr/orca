@@ -4,6 +4,7 @@ import { internal } from '../_generated/api'
 import { internalAction, internalQuery } from '../_generated/server'
 import { loadScanArtifact, nextScanArtifactId } from '../scan/artifact'
 import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from './ingestions.table'
+import { applyScanProjection } from './projections/apply'
 import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
 
@@ -41,7 +42,7 @@ export const run = internalAction({
     }
 
     console.log(`ingest: ${fromArtifactId} to ${toArtifactId}`)
-    await ctx.runMutation(internal.v3.projections.apply.apply, {
+    await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId,
       writes: diffScanProjections(previous, next),

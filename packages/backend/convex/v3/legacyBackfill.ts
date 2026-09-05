@@ -8,6 +8,7 @@ import { findScanArtifact, loadScanArtifact, storeScanArtifact } from '../scan/a
 import type { ScanArtifact } from '../scan/artifact'
 import { getArchiveBundleOrThrow } from '../snapshots/shared/bundle'
 import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
+import { applyScanProjection } from './projections/apply'
 import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
 import { scanArtifactFromLegacyBundle } from './scanArtifactFromLegacyBundle'
@@ -92,7 +93,7 @@ export const run = internalAction({
     }
 
     console.log(`backfill: ${fromArtifactId} to ${nextArtifact.id}`)
-    await ctx.runMutation(internal.v3.projections.apply.apply, {
+    await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId: nextArtifact.id,
       writes,
