@@ -7,6 +7,7 @@ import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from './ingestions
 import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
 
+/** Return the artifact ID at the current end of the ingestion ledger. */
 export const currentArtifactId = internalQuery({
   args: {},
   returns: v.string(),
@@ -16,6 +17,7 @@ export const currentArtifactId = internalQuery({
   },
 })
 
+/** Ingest the next stored scan artifact, then continue while artifacts remain. */
 export const run = internalAction({
   args: {},
   returns: v.null(),
@@ -39,7 +41,7 @@ export const run = internalAction({
     }
 
     console.log(`ingest: ${fromArtifactId} to ${toArtifactId}`)
-    await ctx.runMutation(internal.v3.projections.apply.run, {
+    await ctx.runMutation(internal.v3.projections.apply.apply, {
       fromArtifactId,
       toArtifactId,
       writes: diffScanProjections(previous, next),

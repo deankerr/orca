@@ -14,7 +14,8 @@ import {
 } from '../series.table'
 import { ScanProjectionWrite } from './diff'
 
-export const run = internalMutation({
+/** Atomically apply projection writes and advance the ingestion ledger. */
+export const apply = internalMutation({
   args: {
     fromArtifactId: v.string(),
     toArtifactId: v.string(),
@@ -22,7 +23,7 @@ export const run = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    console.log('apply counts', {
+    console.log({
       models: args.writes.filter(({ table }) => table === 'models').length,
       providers: args.writes.filter(({ table }) => table === 'providers').length,
       endpoints: args.writes.filter(({ table }) => table === 'endpoints').length,

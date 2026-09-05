@@ -3,7 +3,7 @@
 import { expect, spyOn, test } from 'bun:test'
 
 import type { CrawlArchiveBundle } from '../snapshots/crawl/main'
-import { scanArtifactFromBundle } from './scanArtifactFromBundle'
+import { scanArtifactFromLegacyBundle } from './scanArtifactFromLegacyBundle'
 
 function bundle(
   endpoints: CrawlArchiveBundle['data']['models'][number]['endpoints'],
@@ -40,10 +40,10 @@ function bundle(
 test('only known invalid legacy bundles are recoverable', () => {
   const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
-  expect(scanArtifactFromBundle(bundle({ error: 'failed' }))).toBeNull()
-  expect(scanArtifactFromBundle(bundle([]))).toBeNull()
+  expect(scanArtifactFromLegacyBundle(bundle({ error: 'failed' }))).toBeNull()
+  expect(scanArtifactFromLegacyBundle(bundle([]))).toBeNull()
   expect(
-    scanArtifactFromBundle({ ...bundle([]), data: { ...bundle([]).data, models: [] } }),
+    scanArtifactFromLegacyBundle({ ...bundle([]), data: { ...bundle([]).data, models: [] } }),
   ).toBeNull()
 
   expect(warn.mock.calls.map((call) => call[1] as unknown)).toEqual([
@@ -61,8 +61,8 @@ test('only known invalid legacy bundles are recoverable', () => {
   ])
 
   const endpoint = { id: 'endpoint', model_variant_slug: 'author/model', variant: 'standard' }
-  expect(() => scanArtifactFromBundle(bundle([endpoint], { variant: 'standard' }))).toThrow()
-  expect(() => scanArtifactFromBundle(bundle([{ id: 'endpoint' }]))).toThrow()
+  expect(() => scanArtifactFromLegacyBundle(bundle([endpoint], { variant: 'standard' }))).toThrow()
+  expect(() => scanArtifactFromLegacyBundle(bundle([{ id: 'endpoint' }]))).toThrow()
 
   warn.mockRestore()
 })

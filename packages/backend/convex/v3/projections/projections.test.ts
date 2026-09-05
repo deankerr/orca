@@ -48,7 +48,7 @@ describe('scan projection', () => {
       ...projection.models.values(),
       ...projection.providers.values(),
       ...projection.endpoints.values(),
-      ...projection.prices.values(),
+      ...projection.pricing.values(),
     ]
 
     expect(rows.map((row) => row.scan_at)).toEqual(Array.from({ length: 4 }, () => 'artifact-time'))
@@ -83,7 +83,9 @@ describe('scan projection', () => {
       table: 'endpointListings',
       row: { endpoint_id: 'two', scan_at: '2026-01-02', state: 'unlisted' },
     })
-    expect(writes[2]).toMatchObject({ row: { prompt: '2' } })
+    expect(writes[2]).toMatchObject({
+      row: { discount: 0, meters: { completion: '2', prompt: '2' } },
+    })
     expect(writes[3]).toEqual({
       table: 'stats',
       row: {
@@ -93,6 +95,35 @@ describe('scan projection', () => {
         sample: { ignored: 1 },
       },
     })
+  })
+
+  test('retains and detects arbitrary pricing meters', () => {
+    const previousEndpoint = {
+      ...endpoint('one', '1'),
+      pricing: { ...endpoint('one', '1').pricing, future_meter: '1' },
+    }
+    const nextEndpoint = {
+      ...endpoint('one', '1'),
+      pricing: { ...endpoint('one', '1').pricing, future_meter: '2' },
+    }
+
+    const writes = diffScanProjections(
+      createScanProjection(artifact('2026-01-01', [previousEndpoint])),
+      createScanProjection(artifact('2026-01-02', [nextEndpoint])),
+    )
+
+    expect(writes).toEqual([
+      {
+        table: 'endpointsPricing',
+        row: {
+          endpoint_id: 'one',
+          scan_at: '2026-01-02',
+          discount: 0,
+          meters: { completion: '2', future_meter: '2', prompt: '1' },
+          overrides: undefined,
+        },
+      },
+    ])
   })
 
   test('records listing and relisting transitions only', () => {

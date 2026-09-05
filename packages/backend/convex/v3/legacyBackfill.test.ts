@@ -2,7 +2,7 @@
 
 import { expect, test } from 'bun:test'
 
-import { crawlHour, legacyBackfillEndCrawlId, nextCrawlHour } from './backfill'
+import { crawlHour, legacyBackfillEndCrawlId, nextCrawlHour } from './legacyBackfill'
 
 test('uses UTC hour boundaries for legacy sampling', () => {
   expect(crawlHour(Date.parse('2026-09-01T23:42:15.123Z').toString())).toEqual({

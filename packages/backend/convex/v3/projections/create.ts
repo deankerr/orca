@@ -4,7 +4,7 @@ import type { ScanArtifact } from '../../scan/artifact'
 import type { ScanArtifactEntry } from '../../scan/schema'
 import { IdentifiedModel } from '../../scan/schema'
 import type { EndpointRow, MetadataRecord, ModelRow, ProviderRow } from '../entities.table'
-import type { EndpointsPricingRow, StatsRow } from '../series.table'
+import type { EndpointPricingRow, EndpointStatsRow } from '../series.table'
 
 type MetadataValue = MetadataRecord[string]
 type ProjectedEndpointRow = Omit<EndpointRow, 'unlisted_at'>
@@ -34,8 +34,8 @@ function projectModel(scan_at: string, entry: ScanArtifactEntry): ModelRow {
     model_id: entry.model_id,
     permaslug: model.permaslug,
     variant: entry.variant,
-    input_modalities: model.input_modalities,
-    output_modalities: model.output_modalities,
+    input_modalities: model.input_modalities.toSorted(),
+    output_modalities: model.output_modalities.toSorted(),
     or_created_at: model.created_at,
     display_name: model.short_name,
     metadata: flattenMetadata(model, MODEL_METADATA_OMIT),
@@ -68,25 +68,20 @@ const ENDPOINT_METADATA_OMIT = new Set([
   'display_pricing',
   'pricing_json',
   'pricing_version_id',
+  'model_variant_slug',
   'stats',
   'statsByTier',
   'status',
 ])
 
-const EndpointPricing = z.object({
-  prompt: z.string(),
-  completion: z.string(),
-  discount: z.number(),
-  image: z.string().optional(),
-  image_output: z.string().optional(),
-  input_cache_read: z.string().optional(),
-  input_cache_write: z.string().optional(),
-  input_cache_write_1h: z.string().optional(),
-  audio: z.string().optional(),
-  input_audio_cache: z.string().optional(),
-  web_search: z.string().optional(),
-  overrides: z.array(z.record(z.string(), z.unknown())).optional(),
-})
+const EndpointPricing = z
+  .object({
+    prompt: z.string(),
+    completion: z.string(),
+    discount: z.number(),
+    overrides: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .catchall(z.string())
 
 const StatsSource = z.object({ endpoint_id: z.string() }).catchall(z.number())
 
@@ -120,21 +115,21 @@ function projectStats(
   endpoint_id: string,
   scan_at: string,
   endpoint: z.infer<typeof EndpointSource>,
-): StatsRow[] {
+): EndpointStatsRow | null {
   if (endpoint.stats === undefined) {
-    return []
+    return null
   }
 
   const { endpoint_id: _, ...sample } = endpoint.stats
-  return [{ endpoint_id, scan_at, tier: 'default', sample }]
+  return { endpoint_id, scan_at, tier: 'default', sample }
 }
 
 function projectPricing(
   endpoint_id: string,
   scan_at: string,
   pricing: z.infer<typeof EndpointPricing>,
-): EndpointsPricingRow {
-  const { overrides, ...meters } = pricing
+): EndpointPricingRow {
+  const { discount, overrides, ...meters } = pricing
   const projectedOverrides = overrides
     ?.map((override) => flattenMetadata(override, new Set()))
     .filter((override) => Object.keys(override).length > 0)
@@ -142,35 +137,39 @@ function projectPricing(
   return {
     endpoint_id,
     scan_at,
+    discount,
+    meters,
     overrides: projectedOverrides,
-    ...meters,
   }
 }
 
+/** Entity views and series samples derived from one scan artifact. */
 export type ScanProjection = {
   scan_at: string
   models: Map<string, ModelRow>
   endpoints: Map<string, ProjectedEndpointRow>
   providers: Map<string, ProviderRow>
-  prices: Map<string, EndpointsPricingRow>
-  stats: StatsRow[]
+  pricing: Map<string, EndpointPricingRow>
+  stats: Map<string, EndpointStatsRow>
 }
 
+/** Empty projection used before the first ingested scan artifact. */
 export const INITIAL_SCAN_PROJECTION: ScanProjection = {
   scan_at: '',
   models: new Map(),
   providers: new Map(),
   endpoints: new Map(),
-  prices: new Map(),
-  stats: [],
+  pricing: new Map(),
+  stats: new Map(),
 }
 
+/** Create a complete projection from a parsed scan artifact. */
 export function createScanProjection(artifact: ScanArtifact): ScanProjection {
   const { entries, scan_at } = artifact
   const models = new Map<string, ModelRow>()
   const endpoints = new Map<string, ProjectedEndpointRow>()
-  const prices = new Map<string, EndpointsPricingRow>()
-  const stats: StatsRow[] = []
+  const pricing = new Map<string, EndpointPricingRow>()
+  const stats = new Map<string, EndpointStatsRow>()
   const providers = new Map<string, ProviderRow>()
 
   for (const entry of entries) {
@@ -186,9 +185,12 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
       providers.set(provider.provider_id, provider)
 
       endpoints.set(endpoint.id, projectEndpoint(scan_at, entry, endpoint, provider))
-      prices.set(endpoint.id, projectPricing(endpoint.id, scan_at, endpoint.pricing))
+      pricing.set(endpoint.id, projectPricing(endpoint.id, scan_at, endpoint.pricing))
 
-      stats.push(...projectStats(endpoint.id, scan_at, endpoint))
+      const endpointStats = projectStats(endpoint.id, scan_at, endpoint)
+      if (endpointStats !== null) {
+        stats.set(endpoint.id, endpointStats)
+      }
     }
   }
 
@@ -197,7 +199,7 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
     models,
     endpoints,
     providers,
-    prices,
+    pricing,
     stats,
   }
 }

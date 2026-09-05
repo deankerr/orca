@@ -10,25 +10,29 @@ import { getArchiveBundleOrThrow } from '../snapshots/shared/bundle'
 import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
 import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
-import { scanArtifactFromBundle } from './scanArtifactFromBundle'
+import { scanArtifactFromLegacyBundle } from './scanArtifactFromLegacyBundle'
 
 const HOUR_MS = 60 * 60 * 1000
 const LegacyBackfillEndScanAt = z.iso.datetime()
 
+/** Convert the configured legacy cutoff to its crawl ID representation. */
 export function legacyBackfillEndCrawlId(value: string | undefined) {
   const parsed = LegacyBackfillEndScanAt.safeParse(value)
   return parsed.success ? Date.parse(parsed.data).toString() : null
 }
 
+/** Return the UTC hour containing a legacy crawl ID. */
 export function crawlHour(crawl_id: string) {
   const from = Math.floor(Number(crawl_id) / HOUR_MS) * HOUR_MS
   return { fromCrawlId: from.toString(), beforeCrawlId: (from + HOUR_MS).toString() }
 }
 
+/** Return the first crawl ID in the UTC hour after a scan timestamp. */
 export function nextCrawlHour(scan_at: string) {
   return crawlHour(Date.parse(scan_at).toString()).beforeCrawlId
 }
 
+/** Find the first legacy crawl ID in an ordered half-open range. */
 export const archiveCrawlIdInRange = internalQuery({
   args: {
     fromCrawlId: v.string(),
@@ -49,6 +53,7 @@ export const archiveCrawlIdInRange = internalQuery({
   },
 })
 
+/** Convert and project the next valid hourly legacy archive, then continue. */
 export const run = internalAction({
   args: {},
   returns: v.null(),
@@ -87,13 +92,13 @@ export const run = internalAction({
     }
 
     console.log(`backfill: ${fromArtifactId} to ${nextArtifact.id}`)
-    await ctx.runMutation(internal.v3.projections.apply.run, {
+    await ctx.runMutation(internal.v3.projections.apply.apply, {
       fromArtifactId,
       toArtifactId: nextArtifact.id,
       writes,
     })
 
-    await ctx.scheduler.runAfter(0, internal.v3.backfill.run, {})
+    await ctx.scheduler.runAfter(0, internal.v3.legacyBackfill.run, {})
     return null
   },
 })
@@ -107,7 +112,7 @@ async function nextLegacyScanArtifact(
 
   while (true) {
     const firstCrawlId: string | null = await ctx.runQuery(
-      internal.v3.backfill.archiveCrawlIdInRange,
+      internal.v3.legacyBackfill.archiveCrawlIdInRange,
       {
         fromCrawlId,
         beforeCrawlId: endCrawlId,
@@ -123,7 +128,7 @@ async function nextLegacyScanArtifact(
 
     while (true) {
       const crawl_id: string | null = await ctx.runQuery(
-        internal.v3.backfill.archiveCrawlIdInRange,
+        internal.v3.legacyBackfill.archiveCrawlIdInRange,
         {
           fromCrawlId: hour.fromCrawlId,
           beforeCrawlId,
@@ -134,7 +139,7 @@ async function nextLegacyScanArtifact(
         break
       }
 
-      const artifact = scanArtifactFromBundle(await getArchiveBundleOrThrow(ctx, crawl_id))
+      const artifact = scanArtifactFromLegacyBundle(await getArchiveBundleOrThrow(ctx, crawl_id))
       if (artifact !== null) {
         return artifact
       }

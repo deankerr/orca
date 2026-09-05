@@ -1,6 +1,7 @@
 # V3
 
-- Includes the `scan`, `objects` and `locks` modules.
+- Builds on the `scan` and `objects` modules.
+- Ingestion is manually single-flight, so it does not currently use locks.
 - Will run in parallel with existing backend systems in production.
 - Will be gradually adopted in public-facing systems.
 - Should implement schema-breaking revisions now, if advantageous.
@@ -20,7 +21,7 @@
 - Removes purely duplicated data, cutting the final artifact size from ~10MB to ~5.5MB.
 - Are always complete. Any request failure fails the entire scan.
 - The parallel request process takes only ~1.5 to ~3 seconds, including object storage.
-- Runs independently of any downstream ingestation functions.
+- Runs independently of any downstream ingestion functions.
 - Legacy archives will be converted to this more efficient format.
 
 # Projections
@@ -39,7 +40,7 @@
   - Are never required to contain a specific property, or a normalised set across entities.
   - May exclude upstream properties by key name if known to be unnecessary or superfluous.
   - Public queries will use something like zod to create a normalized shape with default fallbacks.
-- Update surppression is a performance optimisation only.
+- Update suppression is a performance optimisation only.
 - `scan_at` links to the last scan which caused the entity view to update.
   - It does not indicate staleness. It is only updated if the view was updated.
 

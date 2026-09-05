@@ -2,21 +2,24 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import * as R from 'remeda'
 
-import { endpointsTable, modelsTable, providersTable } from '../entities.table'
+import { endpointsViewTable, modelsViewTable, providersViewTable } from '../entities.table'
 import { endpointsListingTable, endpointsPricingTable, endpointsStatsTable } from '../series.table'
 import type { ScanProjection } from './create'
 
+/** Validator for one database write derived from a projection diff. */
 export const ScanProjectionWrite = v.union(
-  v.object({ table: v.literal('models'), row: modelsTable.validator }),
-  v.object({ table: v.literal('providers'), row: providersTable.validator }),
-  v.object({ table: v.literal('endpoints'), row: endpointsTable.validator }),
+  v.object({ table: v.literal('models'), row: modelsViewTable.validator }),
+  v.object({ table: v.literal('providers'), row: providersViewTable.validator }),
+  v.object({ table: v.literal('endpoints'), row: endpointsViewTable.validator }),
   v.object({ table: v.literal('endpointListings'), row: endpointsListingTable.validator }),
   v.object({ table: v.literal('endpointsPricing'), row: endpointsPricingTable.validator }),
   v.object({ table: v.literal('stats'), row: endpointsStatsTable.validator }),
 )
 
+/** One database write derived from a projection diff. */
 export type ScanProjectionWrite = Infer<typeof ScanProjectionWrite>
 
+/** Compare adjacent projections and return the writes needed for the next state. */
 export function diffScanProjections(
   previous: ScanProjection,
   next: ScanProjection,
@@ -69,13 +72,13 @@ export function diffScanProjections(
     )
   }
 
-  for (const row of next.prices.values()) {
-    if (!sameRecord(previous.prices.get(row.endpoint_id), row)) {
+  for (const row of next.pricing.values()) {
+    if (!sameRecord(previous.pricing.get(row.endpoint_id), row)) {
       writes.push({ table: 'endpointsPricing', row })
     }
   }
 
-  for (const row of next.stats) {
+  for (const row of next.stats.values()) {
     writes.push({ table: 'stats', row })
   }
 

@@ -36,6 +36,7 @@ export const get = internalQuery({
   },
 })
 
+/** Return the first object name ordered after `afterName` within a path. */
 export const nextName = internalQuery({
   args: {
     path: v.string(),

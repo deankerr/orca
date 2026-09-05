@@ -11,7 +11,8 @@ const CatalogEndpoint = z.object({
   variant: z.string(),
 })
 
-export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact | null {
+/** Convert a valid legacy archive bundle into a scan artifact. */
+export function scanArtifactFromLegacyBundle(bundle: CrawlArchiveBundle): ScanArtifact | null {
   const { crawl_id } = bundle
   const scan_at = new Date(Number(crawl_id)).toISOString()
 

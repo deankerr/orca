@@ -30,3 +30,21 @@ test('creates a parsed scan artifact', () => {
     ],
   })
 })
+
+test('artifact timestamp overrides an entry timestamp', () => {
+  const scan_at = '2026-09-04T00:00:00.000Z'
+  const entry = {
+    model_id: 'author/model',
+    variant: 'standard',
+    model: {
+      slug: 'author/model',
+      permaslug: 'author/model',
+      input_modalities: ['text'],
+      output_modalities: ['text'],
+    },
+    endpoints: null,
+  }
+  Object.defineProperty(entry, 'scan_at', { value: 'wrong' })
+
+  expect(createScanArtifact([entry], scan_at).entries[0]?.scan_at).toBe(scan_at)
+})

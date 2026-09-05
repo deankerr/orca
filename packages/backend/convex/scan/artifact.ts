@@ -7,23 +7,26 @@ import { ScanArtifactEntry } from './schema'
 
 const SCAN_ARTIFACT_OBJECT_PATH = 'scans'
 
+/** A parsed scan artifact and its object-store identity. */
 export type ScanArtifact = {
   id: string
   scan_at: string
   entries: ScanArtifactEntry[]
 }
 
+/** Parse scan entries and assign one authoritative timestamp to the artifact. */
 export function createScanArtifact(
-  entries: object[],
+  entries: (Record<string, unknown> & { scan_at?: never })[],
   scan_at: string = new Date().toISOString(),
 ): ScanArtifact {
   return {
     id: `scan.${scan_at}.jsonl`,
     scan_at,
-    entries: entries.map((entry) => ScanArtifactEntry.parse({ scan_at, ...entry })),
+    entries: entries.map((entry) => ScanArtifactEntry.parse({ ...entry, scan_at })),
   }
 }
 
+/** Store a scan artifact in the named object store. */
 export async function storeScanArtifact(ctx: ActionCtx, artifact: ScanArtifact): Promise<void> {
   await store(ctx, {
     path: SCAN_ARTIFACT_OBJECT_PATH,
@@ -32,11 +35,13 @@ export async function storeScanArtifact(ctx: ActionCtx, artifact: ScanArtifact):
   })
 }
 
+/** Load and parse a required scan artifact. */
 export async function loadScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact> {
   const text = z.string().parse(await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id }))
   return parseScanArtifact(id, text)
 }
 
+/** Load and parse a scan artifact when it exists. */
 export async function findScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact | null> {
   const text = await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id })
   return text === null ? null : parseScanArtifact(id, text)
@@ -55,6 +60,7 @@ function parseScanArtifact(id: string, text: string): ScanArtifact {
   }
 }
 
+/** Return the first scan artifact ID ordered after `afterId`. */
 export async function nextScanArtifactId(ctx: ActionCtx, afterId: string): Promise<string | null> {
   return await ctx.runQuery(internal.objects.locators.nextName, {
     path: SCAN_ARTIFACT_OBJECT_PATH,
