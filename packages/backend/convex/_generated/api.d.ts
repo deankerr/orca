@@ -91,6 +91,12 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
+import type * as v3_ingest from "../v3/ingest.js";
+import type * as v3_legacyBackfill from "../v3/legacyBackfill.js";
+import type * as v3_projections_apply from "../v3/projections/apply.js";
+import type * as v3_projections_create from "../v3/projections/create.js";
+import type * as v3_projections_diff from "../v3/projections/diff.js";
+import type * as v3_scanArtifactFromLegacyBundle from "../v3/scanArtifactFromLegacyBundle.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
 import type * as workflows_analytics_process from "../workflows/analytics/process.js";
 import type * as workflows_analytics_scheduled from "../workflows/analytics/scheduled.js";
@@ -188,6 +194,12 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
+  "v3/ingest": typeof v3_ingest;
+  "v3/legacyBackfill": typeof v3_legacyBackfill;
+  "v3/projections/apply": typeof v3_projections_apply;
+  "v3/projections/create": typeof v3_projections_create;
+  "v3/projections/diff": typeof v3_projections_diff;
+  "v3/scanArtifactFromLegacyBundle": typeof v3_scanArtifactFromLegacyBundle;
   "workflows/analytics/manual": typeof workflows_analytics_manual;
   "workflows/analytics/process": typeof workflows_analytics_process;
   "workflows/analytics/scheduled": typeof workflows_analytics_scheduled;

@@ -13,6 +13,7 @@ const orFetch = up(fetch, () => ({
   },
 }))
 
+/** Fetch one complete set of model and endpoint scan entries. */
 export async function scan() {
   const catalog = await fetchCatalogModels()
 
@@ -68,5 +69,5 @@ async function fetchEndpoints(permaslug: string, variant: string) {
     }),
   })
 
-  return data.map(R.omit(['model']))
+  return data
 }

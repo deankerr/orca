@@ -1,7 +1,7 @@
+import * as R from 'remeda'
 import { z } from 'zod'
 
-export const SCAN_ARTIFACT_OBJECT_PATH = 'scans' as const
-
+/** Model fields required to identify and project a scan entry. */
 export const IdentifiedModel = z.looseObject({
   slug: z.string(),
   permaslug: z.string(),
@@ -9,12 +9,16 @@ export const IdentifiedModel = z.looseObject({
   output_modalities: z.array(z.string()),
 })
 
-export const IdentifiedEndpoint = z.looseObject({
-  id: z.string(),
-  model_variant_slug: z.string(),
-  variant: z.string(),
-})
+/** Endpoint fields required to identify and project a scan entry. */
+export const IdentifiedEndpoint = z
+  .looseObject({
+    id: z.string(),
+    model_variant_slug: z.string(),
+    variant: z.string(),
+  })
+  .transform((endpoint) => R.omit(endpoint, ['model']))
 
+/** One validated model and its endpoints in a scan artifact. */
 export const ScanArtifactEntry = z.object({
   scan_at: z.string(),
   model_id: z.string(),
@@ -23,4 +27,5 @@ export const ScanArtifactEntry = z.object({
   endpoints: z.array(IdentifiedEndpoint).nullable(),
 })
 
+/** Parsed scan artifact entry. */
 export type ScanArtifactEntry = z.infer<typeof ScanArtifactEntry>
