@@ -93,7 +93,10 @@ import type * as snapshots_materializedChanges_output from "../snapshots/materia
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as v3_diffScanArtifacts from "../v3/diffScanArtifacts.js";
-import type * as v3_projectScan from "../v3/projectScan.js";
+import type * as v3_ingest from "../v3/ingest.js";
+import type * as v3_projections_apply from "../v3/projections/apply.js";
+import type * as v3_projections_create from "../v3/projections/create.js";
+import type * as v3_projections_diff from "../v3/projections/diff.js";
 import type * as v3_scanArtifactFromBundle from "../v3/scanArtifactFromBundle.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
 import type * as workflows_analytics_process from "../workflows/analytics/process.js";
@@ -194,7 +197,10 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   "v3/diffScanArtifacts": typeof v3_diffScanArtifacts;
-  "v3/projectScan": typeof v3_projectScan;
+  "v3/ingest": typeof v3_ingest;
+  "v3/projections/apply": typeof v3_projections_apply;
+  "v3/projections/create": typeof v3_projections_create;
+  "v3/projections/diff": typeof v3_projections_diff;
   "v3/scanArtifactFromBundle": typeof v3_scanArtifactFromBundle;
   "workflows/analytics/manual": typeof workflows_analytics_manual;
   "workflows/analytics/process": typeof workflows_analytics_process;

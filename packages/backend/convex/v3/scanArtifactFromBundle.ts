@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { createScanArtifact } from '../scan/artifact'
 import type { ScanArtifact } from '../scan/artifact'
-import { IdentifiedEndpoint, ScanArtifactEntry } from '../scan/schema'
+import { IdentifiedEndpoint } from '../scan/schema'
 import type { CrawlArchiveBundle } from '../snapshots/crawl/main'
 
 const CatalogEndpoint = z.object({
@@ -69,10 +69,5 @@ export function scanArtifactFromBundle(bundle: CrawlArchiveBundle): ScanArtifact
     })
   }
 
-  const sorted = R.sortBy(entries, R.prop('model_id'))
-  const parsed = sorted.map((entry) =>
-    R.omit(ScanArtifactEntry.parse({ scan_at, ...entry }), ['scan_at']),
-  )
-
-  return createScanArtifact(parsed, scan_at)
+  return createScanArtifact(R.sortBy(entries, R.prop('model_id')), scan_at)
 }

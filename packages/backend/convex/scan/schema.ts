@@ -1,8 +1,6 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
-export const SCAN_ARTIFACT_OBJECT_PATH = 'scans' as const
-
 export const IdentifiedModel = z.looseObject({
   slug: z.string(),
   permaslug: z.string(),

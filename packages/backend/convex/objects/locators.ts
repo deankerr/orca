@@ -36,6 +36,22 @@ export const get = internalQuery({
   },
 })
 
+export const nextName = internalQuery({
+  args: {
+    path: v.string(),
+    afterName: v.string(),
+  },
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx, args) => {
+    const locator = await ctx.db
+      .query(OBJECTS_LOCATORS_TABLE)
+      .withIndex('by_path_name', (q) => q.eq('path', args.path).gt('name', args.afterName))
+      .first()
+
+    return locator?.name ?? null
+  },
+})
+
 /**
  * Insert a locator. Insert-only.
  *

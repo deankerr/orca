@@ -7,6 +7,17 @@ export const vMetadataRecord = v.record(
   v.union(v.boolean(), v.number(), v.null(), v.string(), v.array(v.string())),
 )
 
+/** Append-only endpoint listing transitions. */
+export const V3_ENDPOINTS_LISTING_SERIES_TABLE = 'v3_endpoints_listing_series' as const
+
+export const endpointsListingTable = defineTable({
+  endpoint_id: v.string(),
+  scan_at: v.string(),
+  state: v.union(v.literal('listed'), v.literal('unlisted')),
+}).index('by_endpoint_id_and_scan_at', ['endpoint_id', 'scan_at'])
+
+export type EndpointListingRow = Infer<typeof endpointsListingTable.validator>
+
 export const V3_ENDPOINTS_PRICING_SERIES_TABLE = 'v3_endpoints_pricing_series' as const
 
 export const endpointsPricingTable = defineTable({

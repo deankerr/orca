@@ -2,10 +2,12 @@
 
 - `shared/` runtime code used by both the convex backend and web app.
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
+- Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
 
-### crawl_id
+### Legacy `snapshot_crawl_archives` data
 
-Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
+- `crawl_id` Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
+- All non-model/endpoints data in early bundles (apps, analytics etc.) has been copied into cold storage.
 
 ### Manual bundle retrieval
 
@@ -28,11 +30,6 @@ We use the Convex to Axiom log drain connector, which is configured in the Conve
 - Runtime metrics with function names are captured for every execution, including on any `console.{log|warn|error}` or uncaught exception.
 - Use `ConvexError` to throw errors with relevant domain data and a concise `message`.
 - Do not catch server exceptions solely to log and rethrow them. Catch only to recover, translate an expected failure, or add information that observability does not already capture; uncaught mutation exceptions are logged and roll back the transaction. This does not apply to React error boundaries.
-
-### Workflows & R2
-
-- A process in `workflows` has been added for `analytics` and `topApps` data collection (currently unused), to store in an R2 bucket
-- Once the processes have been proved in production, they will be removed from standard archive bundle
 
 <!-- convex-ai-start -->
 

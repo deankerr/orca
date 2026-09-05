@@ -18,9 +18,12 @@ import {
   modelsTable as v3ModelsTable,
   providersTable as v3ProvidersTable,
 } from './v3/entities.table'
+import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
 import {
+  V3_ENDPOINTS_LISTING_SERIES_TABLE,
   V3_ENDPOINTS_PRICING_SERIES_TABLE,
   V3_ENDPOINTS_STATS_SERIES_TABLE,
+  endpointsListingTable,
   endpointsPricingTable,
   endpointsStatsTable,
 } from './v3/series.table'
@@ -45,8 +48,10 @@ export default defineSchema(
     [V3_ENDPOINTS_VIEW_TABLE]: v3EndpointsTable,
     [V3_MODELS_VIEW_TABLE]: v3ModelsTable,
     [V3_PROVIDERS_VIEW_TABLE]: v3ProvidersTable,
+    [V3_ENDPOINTS_LISTING_SERIES_TABLE]: endpointsListingTable,
     [V3_ENDPOINTS_PRICING_SERIES_TABLE]: endpointsPricingTable,
     [V3_ENDPOINTS_STATS_SERIES_TABLE]: endpointsStatsTable,
+    [V3_SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
   },
   {
     strictTableNameTypes: true,
