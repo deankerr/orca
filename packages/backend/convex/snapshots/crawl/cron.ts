@@ -2,16 +2,14 @@ import { literals } from 'convex-helpers/validators'
 import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
-import { internalAction } from '../../_generated/server'
-import { getBooleanEnv } from '../../lib/env'
+import { env, internalAction } from '../../_generated/server'
 
 export const runSnapshot = internalAction({
   args: {
     type: v.optional(literals('full', 'minimal')),
   },
   handler: async (ctx) => {
-    const enabled = getBooleanEnv('ORCA_CRAWL_CRON_ENABLED', false)
-    if (!enabled) {
+    if (env.ORCA_CRAWL_CRON_ENABLED !== 'true') {
       return
     }
 

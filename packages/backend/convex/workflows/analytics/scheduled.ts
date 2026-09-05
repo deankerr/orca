@@ -1,22 +1,13 @@
 import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
-import { internalAction } from '../../_generated/server'
-import { getNumberEnv } from '../../lib/env'
-
-export function getAnalyticsWorkflowConfig() {
-  return {
-    everyHours: getNumberEnv('ORCA_WORKFLOWS_ANALYTICS_EVERY_HOURS', 0),
-  }
-}
+import { env, internalAction } from '../../_generated/server'
 
 export const start = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const config = getAnalyticsWorkflowConfig()
-    const hour = new Date().getUTCHours()
-    if (config.everyHours <= 0 || hour % config.everyHours !== 0) {
+    if (env.ORCA_WORKFLOWS_ANALYTICS_ENABLED !== 'true') {
       return null
     }
 

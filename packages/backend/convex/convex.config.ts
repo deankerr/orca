@@ -16,9 +16,9 @@ const app = defineApp({
     DISCORD_PUBLIC_KEY: v.optional(v.string()),
 
     // Missing controls disable the corresponding scheduled job or backfill.
-    ORCA_CRAWL_CRON_ENABLED: v.optional(v.string()),
-    ORCA_WORKFLOWS_ANALYTICS_EVERY_HOURS: v.optional(v.string()),
-    ORCA_WORKFLOWS_TOP_APPS_EVERY_HOURS: v.optional(v.string()),
+    ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     LEGACY_BACKFILL_END_SCAN_AT: v.optional(v.string()),
   },
 })

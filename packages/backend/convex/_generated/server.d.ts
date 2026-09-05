@@ -35,14 +35,14 @@ type Env = {
   readonly DISCORD_PUBLIC_KEY: string | undefined;
   readonly ENTITY_LOGO_SERVICE_ORIGIN: string;
   readonly LEGACY_BACKFILL_END_SCAN_AT: string | undefined;
-  readonly ORCA_CRAWL_CRON_ENABLED: string | undefined;
+  readonly ORCA_CRAWL_CRON_ENABLED: "true" | "false" | undefined;
   readonly ORCA_PUBLIC_URL: string;
   readonly ORCA_R2_ACCESS_KEY_ID: string;
   readonly ORCA_R2_ACCOUNT_ID: string;
   readonly ORCA_R2_BUCKET: string;
   readonly ORCA_R2_SECRET_ACCESS_KEY: string;
-  readonly ORCA_WORKFLOWS_ANALYTICS_EVERY_HOURS: string | undefined;
-  readonly ORCA_WORKFLOWS_TOP_APPS_EVERY_HOURS: string | undefined;
+  readonly ORCA_WORKFLOWS_ANALYTICS_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_WORKFLOWS_TOP_APPS_ENABLED: "true" | "false" | undefined;
 };
 
 /**
