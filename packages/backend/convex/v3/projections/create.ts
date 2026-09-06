@@ -1,3 +1,4 @@
+import * as R from 'remeda'
 import { z } from 'zod'
 
 import type { ScanArtifact } from '../../scan/artifact'
@@ -74,14 +75,12 @@ const ENDPOINT_METADATA_OMIT = new Set([
   'status',
 ])
 
-const EndpointPricing = z
-  .object({
-    prompt: z.string(),
-    completion: z.string(),
-    discount: z.number(),
-    overrides: z.array(z.record(z.string(), z.unknown())).optional(),
-  })
-  .catchall(z.string())
+const EndpointPricing = z.looseObject({
+  prompt: z.string(),
+  completion: z.string(),
+  discount: z.number(),
+  overrides: z.array(z.record(z.string(), z.unknown())).optional(),
+})
 
 const StatsSource = z.object({ endpoint_id: z.string() }).catchall(z.number())
 
@@ -138,7 +137,7 @@ function projectPricing(
     endpoint_id,
     scan_at,
     discount,
-    meters,
+    meters: R.pickBy(meters, R.isString),
     overrides: projectedOverrides,
   }
 }

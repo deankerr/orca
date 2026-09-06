@@ -126,6 +126,37 @@ describe('scan projection', () => {
     ])
   })
 
+  test('ignores non-string pricing properties while preserving overrides', () => {
+    const source = endpoint('one', '1')
+    const overrides = [{ prompt: '3', condition: { min_tokens: 32_000 } }]
+    const projection = createScanProjection(
+      artifact('2026-01-01', [
+        {
+          ...source,
+          pricing: {
+            ...source.pricing,
+            future_meter: '4',
+            line_items: [{ type: 'long_context_threshold', value: '32000' }],
+            future_array: [],
+            future_object: { prompt: '5' },
+            future_number: 6,
+            future_boolean: false,
+            future_null: null,
+            overrides,
+          },
+        },
+      ]),
+    )
+
+    expect(projection.pricing.get('one')).toEqual({
+      endpoint_id: 'one',
+      scan_at: '2026-01-01',
+      discount: 0,
+      meters: { prompt: '1', completion: '2', future_meter: '4' },
+      overrides: [{ prompt: '3', 'condition.min_tokens': 32_000 }],
+    })
+  })
+
   test('records listing and relisting transitions only', () => {
     const absent = createScanProjection(artifact('2026-01-01', []))
     const listed = createScanProjection(artifact('2026-01-02', [endpoint('one', '1')]))
