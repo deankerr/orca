@@ -1,52 +1,32 @@
 import { expect, test } from 'bun:test'
-/* eslint-disable typescript/no-unsafe-type-assertion -- Minimal database double and access to Convex's runtime handler for recovery tests. */
+/* eslint-disable typescript/no-unsafe-type-assertion -- Minimal database double and access to Convex's runtime handlers for recovery tests. */
 import assert from 'node:assert/strict'
 
-import type { FunctionArgs } from 'convex/server'
+import { getFunctionName } from 'convex/server'
 
-import type { internal } from '../../_generated/api'
 import type { MutationCtx } from '../../_generated/server'
 import { V3_SCAN_INGESTIONS_TABLE } from '../ingestions.table'
-import {
-  apply,
-  applyScanProjection,
-  projectionWriteBatches,
-  MAX_BATCH_WRITES,
-  TARGET_BATCH_BYTES,
-} from './apply'
+import { V3_ENDPOINTS_STATS_SERIES_TABLE } from '../series.table'
+import * as mutations from './apply'
 import type { ScanProjectionWrite } from './diff'
 
-const writes: ScanProjectionWrite[] = Array.from(
-  { length: MAX_BATCH_WRITES * 2 + 1 },
-  (_, index) => ({
+const writes: ScanProjectionWrite[] = [
+  ...Array.from({ length: 501 }, (_, index): ScanProjectionWrite => ({
     table: 'endpointListings',
     row: { endpoint_id: String(index), scan_at: '2026-09-05', state: 'listed' },
-  }),
-)
+  })),
+  {
+    table: 'stats',
+    row: { endpoint_id: 'one', scan_at: '2026-09-05', tier: 'default', sample: { latency: 1 } },
+  },
+]
 
-test('bounds batches by count and bytes, including an empty diff', () => {
-  const batches = projectionWriteBatches(writes)
-  expect(batches.map((batch) => batch.length)).toEqual([MAX_BATCH_WRITES, MAX_BATCH_WRITES, 1])
-  expect(batches.flat()).toEqual(writes)
-  expect(projectionWriteBatches([])).toEqual([[]])
-  const large: ScanProjectionWrite = {
-    table: 'endpointsPricing',
-    row: {
-      endpoint_id: 'one',
-      scan_at: 'now',
-      discount: 0,
-      meters: { large: 'x'.repeat(Math.ceil(TARGET_BATCH_BYTES / 2)) },
-    },
-  }
-  expect(projectionWriteBatches([large, large]).map((batch) => batch.length)).toEqual([1, 1])
-})
-
-test('replays a partially applied scan without duplicate history or early cursor advancement', async () => {
-  // Small database double: exercise the actual mutation handler and action orchestration.
+test('replays table writes and commits stats last without querying stats', async () => {
   const rows: Record<string, Record<string, unknown>[]> = {}
   const ctx = {
     db: {
       query(table: string) {
+        expect(table).not.toBe(V3_ENDPOINTS_STATS_SERIES_TABLE)
         let matches = rows[table] ?? []
         const query = {
           order: () => query,
@@ -73,38 +53,46 @@ test('replays a partially applied scan without duplicate history or early cursor
       },
     },
   } as unknown as MutationCtx
-  const handler = (
-    apply as unknown as {
-      _handler: (
-        ctx: MutationCtx,
-        args: FunctionArgs<typeof internal.v3.projections.apply.apply>,
-      ) => Promise<null>
-    }
-  )._handler
-  let calls = 0
+  type Args = { fromArtifactId: string; toArtifactId: string; rows: unknown[] }
+  const handlers = mutations as unknown as Record<
+    string,
+    { _handler: (ctx: MutationCtx, args: Args) => Promise<null> }
+  >
+  const calls: string[] = []
+  let interrupt = true
   const actionCtx = {
-    runMutation: async (
-      _ref: unknown,
-      args: FunctionArgs<typeof internal.v3.projections.apply.apply>,
-    ) => {
-      calls += 1
-      if (calls === 2) {
+    runMutation: async (ref, args) => {
+      const [, name] = getFunctionName(ref).split(':')
+      calls.push(name)
+      if (name === 'stats' && interrupt) {
+        interrupt = false
         throw new Error('interrupted')
       }
-      return await handler(ctx, args)
+      return await handlers[name]._handler(ctx, args as Args)
     },
-  } as Parameters<typeof applyScanProjection>[0]
+  } as Parameters<typeof mutations.applyScanProjection>[0]
   const args = { fromArtifactId: 'initial', toArtifactId: 'next', writes }
-  await assert.rejects(applyScanProjection(actionCtx, args), /interrupted/)
+  await assert.rejects(mutations.applyScanProjection(actionCtx, args), /interrupted/)
+  expect(calls).toEqual(['endpointListings', 'stats'])
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toBeUndefined()
-  expect(Object.values(rows).flat()).toHaveLength(MAX_BATCH_WRITES)
-  await applyScanProjection(actionCtx, args)
-  expect(Object.values(rows).flat()).toHaveLength(writes.length + 1)
+  expect(Object.values(rows).flat()).toHaveLength(501)
+  await mutations.applyScanProjection(actionCtx, args)
+  expect(Object.values(rows).flat()).toHaveLength(503)
+  expect(rows[V3_ENDPOINTS_STATS_SERIES_TABLE]).toHaveLength(1)
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toHaveLength(1)
-  await applyScanProjection(actionCtx, args)
-  expect(Object.values(rows).flat()).toHaveLength(writes.length + 1)
+  await mutations.applyScanProjection(actionCtx, args)
+  expect(Object.values(rows).flat()).toHaveLength(503)
   await assert.rejects(
-    handler(ctx, { ...args, toArtifactId: 'stale', complete: true }),
+    mutations.applyScanProjection(actionCtx, { ...args, toArtifactId: 'stale' }),
     /cursor changed/,
   )
+  calls.length = 0
+  await mutations.applyScanProjection(actionCtx, {
+    fromArtifactId: 'next',
+    toArtifactId: 'empty',
+    writes: [],
+  })
+  expect(calls).toEqual(['stats'])
+  expect(rows[V3_SCAN_INGESTIONS_TABLE]).toHaveLength(2)
+  expect(rows[V3_ENDPOINTS_STATS_SERIES_TABLE]).toHaveLength(1)
 })
