@@ -129,6 +129,7 @@ function projectPricing(
   pricing: z.infer<typeof EndpointPricing>,
 ): EndpointPricingRow {
   const { discount, overrides, ...meters } = pricing
+
   const projectedOverrides = overrides
     ?.map((override) => flattenMetadata(override, new Set()))
     .filter((override) => Object.keys(override).length > 0)
@@ -187,6 +188,7 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
       pricing.set(endpoint.id, projectPricing(endpoint.id, scan_at, endpoint.pricing))
 
       const endpointStats = projectStats(endpoint.id, scan_at, endpoint)
+
       if (endpointStats !== null) {
         stats.set(endpoint.id, endpointStats)
       }
@@ -220,6 +222,7 @@ function flattenMetadata(
     }
 
     const path = prefix === '' ? key : `${prefix}.${key}`
+
     if (!isMetadataKey(path)) {
       continue
     }
@@ -241,9 +244,11 @@ function isMetadataValue(value: unknown): value is MetadataValue {
   if (value === null) {
     return true
   }
+
   if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
     return true
   }
+
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 

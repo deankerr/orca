@@ -8,6 +8,7 @@ const init = internalMutation({
     console.log('[init] snapshot')
 
     const endpoint = await ctx.db.query('or_views_endpoints').first()
+
     if (endpoint) {
       console.log('[init] abort: or_views_endpoints is not empty')
       return

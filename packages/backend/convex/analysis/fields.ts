@@ -88,15 +88,19 @@ const getFieldKind = (value: unknown): FieldState['kind'] => {
   if (typeof value === 'string') {
     return 'string'
   }
+
   if (typeof value === 'number') {
     return 'number'
   }
+
   if (typeof value === 'boolean') {
     return 'boolean'
   }
+
   if (Array.isArray(value)) {
     return 'array'
   }
+
   if (isPlainObject(value)) {
     return 'object'
   }
@@ -110,12 +114,15 @@ const createFieldState = (value: unknown): FieldState => {
   if (kind === 'string') {
     return { kind, definedCount: 0 }
   }
+
   if (kind === 'number') {
     return { kind, definedCount: 0 }
   }
+
   if (kind === 'boolean') {
     return { kind, trueCount: 0, falseCount: 0 }
   }
+
   if (kind === 'array') {
     return { kind, definedCount: 0, totalValues: 0, values: {} }
   }
@@ -127,9 +134,11 @@ const getArrayBucket = (value: unknown) => {
   if (typeof value === 'string') {
     return value
   }
+
   if (value === null) {
     return 'type:null'
   }
+
   if (Array.isArray(value)) {
     return 'type:array'
   }
@@ -154,6 +163,7 @@ const addValueToState = (state: FieldState, value: unknown) => {
     } else {
       state.falseCount += 1
     }
+
     return
   }
 
@@ -299,6 +309,7 @@ export const model = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
     const allModels = await ctx.db.query('or_views_models').collect()
+
     const models = excludeUnavailable
       ? allModels.filter((modelDoc) => modelDoc.unavailable_at === undefined)
       : allModels
@@ -311,6 +322,7 @@ export const provider = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
     const allProviders = await ctx.db.query('or_views_providers').collect()
+
     const providers = excludeUnavailable
       ? allProviders.filter((providerDoc) => providerDoc.unavailable_at === undefined)
       : allProviders
@@ -323,6 +335,7 @@ export const endpoint = internalMutation({
   args: { excludeUnavailable: v.boolean() },
   handler: async (ctx, { excludeUnavailable }) => {
     const allEndpoints = await ctx.db.query('or_views_endpoints').collect()
+
     const endpoints = excludeUnavailable
       ? allEndpoints.filter((endpointDoc) => endpointDoc.unavailable_at === undefined)
       : allEndpoints

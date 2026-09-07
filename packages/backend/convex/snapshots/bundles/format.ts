@@ -59,6 +59,7 @@ export function formatBundle(bundle: CrawlArchiveBundle): ModelEndpointsV1 {
     }
 
     const { endpoints } = entry
+
     if (!Array.isArray(endpoints)) {
       throw new ConvexError({
         message: 'This bundle contains a FetchError and should be discarded.',

@@ -17,9 +17,11 @@ test('keeps the locator on storage failure and safely retries missing files', as
     codec: 'gzip',
     size: 1,
   } as Locator
+
   const calls: string[] = []
   let fileExists = true
   let fail = true
+
   const ctx = {
     db: {
       query: () => ({
@@ -33,12 +35,14 @@ test('keeps the locator on storage failure and safely retries missing files', as
     storage: {
       delete: () => {
         calls.push('file')
+
         if (fail) {
           throw new Error('storage unavailable')
         }
       },
     },
   } as unknown as MutationCtx
+
   const handler = (
     finish as unknown as {
       _handler: (ctx: MutationCtx, args: { locator: Locator }) => Promise<null>
@@ -62,16 +66,20 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
   const secret = process.env.ORCA_R2_SECRET_ACCESS_KEY
   process.env.ORCA_R2_ACCESS_KEY_ID = 'test'
   process.env.ORCA_R2_SECRET_ACCESS_KEY = 'test'
+
   const request = spyOn(AwsClient.prototype, 'fetch').mockResolvedValue(
     new Response(null, { status: 403 }),
   )
+
   let removed = false
+
   const ctx = {
     runQuery: () => ({ backend: 'r2', r2_key: 'test/one' }),
     runMutation: () => {
       removed = true
     },
   } as unknown as ActionCtx
+
   const handler = (
     run as unknown as {
       _handler: (ctx: ActionCtx, args: { path: string; name: string }) => Promise<null>
@@ -86,11 +94,13 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
     expect(request.mock.calls[0]?.[1]?.method).toBe('DELETE')
   } finally {
     request.mockRestore()
+
     if (key === undefined) {
       delete process.env.ORCA_R2_ACCESS_KEY_ID
     } else {
       process.env.ORCA_R2_ACCESS_KEY_ID = key
     }
+
     if (secret === undefined) {
       delete process.env.ORCA_R2_SECRET_ACCESS_KEY
     } else {

@@ -35,6 +35,7 @@ export const listForModel = defineQuerySpec({
     // Keep scoped unavailable filtering relative to the full catalog clock.
     const allDocs =
       args.maxTimeUnavailable === undefined ? [] : await ctx.db.query(TABLE_NAME).collect()
+
     const currentTime =
       args.maxTimeUnavailable === undefined ? undefined : getCurrentCatalogTimestamp(allDocs)
 

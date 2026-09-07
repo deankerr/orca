@@ -99,6 +99,7 @@ export const registerCommands = internalAction({
         method: 'PUT',
         body: COMMANDS,
       })
+
       const result = z.array(RegisteredCommandSchema).parse(raw)
 
       console.log('[discord:admin] commands registered', {

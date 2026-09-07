@@ -112,11 +112,13 @@ const MINIMUM_DISCOUNT_DELTA = 5
 
 function isMaterialPricingUpdate(path: string, before: unknown, after: unknown): boolean {
   const key = pricingKeyFromPath(path)
+
   if (key === null || typeof before !== 'number' || typeof after !== 'number') {
     return true
   }
 
   const scaledDelta = Math.abs(after - before) * pricingScale(key)
+
   if (key === 'discount') {
     return scaledDelta >= MINIMUM_DISCOUNT_DELTA
   }
@@ -135,6 +137,7 @@ function computeArrayDiff(before: unknown[], after: unknown[]): ArrayDiffItem[] 
     .toSorted((a, b) => a.localeCompare(b))
     .map((value) => {
       let status: ArrayDiffItem['status'] = 'stable'
+
       if (beforeSet.has(value)) {
         status = afterSet.has(value) ? 'stable' : 'removed'
       } else {
@@ -150,6 +153,7 @@ function computeArrayDiff(before: unknown[], after: unknown[]): ArrayDiffItem[] 
 
 function createFieldChange(doc: Doc<'or_views_changes'>): FieldChange {
   const { path } = doc
+
   if (path === undefined || path === '') {
     throw new Error(`Update change ${doc._id} missing path`)
   }
@@ -206,6 +210,7 @@ function entityKey(doc: Doc<'or_views_changes'>): string {
 
 async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
   const model = await models.get.handler(ctx, { slug })
+
   if (!model) {
     return { slug }
   }
@@ -225,6 +230,7 @@ async function enrichModelRef(ctx: QueryCtx, slug: string): Promise<ModelRef> {
 async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderRef> {
   const baseSlug = baseProviderSlug(slug)
   const provider = await providers.get.handler(ctx, { slug: baseSlug })
+
   if (!provider) {
     return { slug }
   }
@@ -234,6 +240,7 @@ async function enrichProviderRef(ctx: QueryCtx, slug: string): Promise<ProviderR
 
 async function enrichEndpointRef(ctx: QueryCtx, uuid: string): Promise<EndpointRef> {
   const endpoint = await endpoints.get.handler(ctx, { uuid })
+
   if (!endpoint) {
     return { uuid }
   }
@@ -321,6 +328,7 @@ export async function createEntityChanges(
 
     const key = entityKey(doc)
     const bucket = updatesByEntity.get(key)
+
     if (bucket) {
       bucket.push(doc)
     } else {
@@ -330,6 +338,7 @@ export async function createEntityChanges(
 
   for (const [, bucket] of updatesByEntity) {
     const [firstDoc] = bucket
+
     if (firstDoc === undefined) {
       continue
     }

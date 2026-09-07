@@ -54,9 +54,11 @@ function pricingStyle(key: PriceKey): {
   if (key === 'discount') {
     return { scale: 100, unit: '', kind: 'percent' }
   }
+
   if (key === 'image_input' || key === 'image_output') {
     return { scale: 1000, unit: 'KTOK', kind: 'money' }
   }
+
   return { scale: 1_000_000, unit: 'MTOK', kind: 'money' }
 }
 
@@ -64,10 +66,13 @@ export function pricingKeyFromPath(path: string): PriceKey | null {
   if (!path.startsWith('pricing.')) {
     return null
   }
+
   const key = path.slice('pricing.'.length)
+
   if (!isPriceKey(key)) {
     return null
   }
+
   return key
 }
 
@@ -86,6 +91,7 @@ export function formatPricing(key: PriceKey, value: number | undefined): Formatt
 
   const { scale, unit, kind } = pricingStyle(key)
   const scaled = value * scale
+
   const formatted = scaled.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: scaleFractionalDigits(scaled),
@@ -124,9 +130,11 @@ function scaleFractionalDigits(value: number): number {
   if (value <= 0 || !Number.isFinite(value)) {
     return 2
   }
+
   if (value >= 0.01) {
     return 2
   }
+
   const magnitude = Math.floor(Math.log10(value))
   return Math.max(2, -magnitude + 1)
 }

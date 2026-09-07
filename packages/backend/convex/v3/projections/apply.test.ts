@@ -23,11 +23,13 @@ const writes: ScanProjectionWrite[] = [
 
 test('replays table writes and commits stats last without querying stats', async () => {
   const rows: Record<string, Record<string, unknown>[]> = {}
+
   const ctx = {
     db: {
       query(table: string) {
         expect(table).not.toBe(V3_ENDPOINTS_STATS_SERIES_TABLE)
         let matches = rows[table] ?? []
+
         const query = {
           order: () => query,
           first: () => matches.at(-1) ?? null,
@@ -38,6 +40,7 @@ test('replays table writes and commits stats last without querying stats', async
                 return range
               },
             }
+
             select(range)
             return query
           },
@@ -58,19 +61,24 @@ test('replays table writes and commits stats last without querying stats', async
     string,
     { _handler: (ctx: MutationCtx, args: Args) => Promise<null> }
   >
+
   const calls: string[] = []
   let interrupt = true
+
   const actionCtx = {
     runMutation: async (ref, args) => {
       const [, name] = getFunctionName(ref).split(':')
       calls.push(name)
+
       if (name === 'stats' && interrupt) {
         interrupt = false
         throw new Error('interrupted')
       }
+
       return await handlers[name]._handler(ctx, args as Args)
     },
   } as Parameters<typeof mutations.applyScanProjection>[0]
+
   const args = { fromArtifactId: 'initial', toArtifactId: 'next', writes }
   await assert.rejects(mutations.applyScanProjection(actionCtx, args), /interrupted/)
   expect(calls).toEqual(['endpointListings', 'stats'])
@@ -82,16 +90,20 @@ test('replays table writes and commits stats last without querying stats', async
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toHaveLength(1)
   await mutations.applyScanProjection(actionCtx, args)
   expect(Object.values(rows).flat()).toHaveLength(503)
+
   await assert.rejects(
     mutations.applyScanProjection(actionCtx, { ...args, toArtifactId: 'stale' }),
     /cursor changed/,
   )
+
   calls.length = 0
+
   await mutations.applyScanProjection(actionCtx, {
     fromArtifactId: 'next',
     toArtifactId: 'empty',
     writes: [],
   })
+
   expect(calls).toEqual(['stats'])
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toHaveLength(2)
   expect(rows[V3_ENDPOINTS_STATS_SERIES_TABLE]).toHaveLength(1)

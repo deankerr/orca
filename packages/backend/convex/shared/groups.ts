@@ -79,6 +79,7 @@ export function groupChanges(changes: EntityChange[]): ChangeGroup[] {
     if (claimed.has(ep)) {
       continue
     }
+
     groups.push({ slug: ep.model.slug, changes: [ep] })
   }
 

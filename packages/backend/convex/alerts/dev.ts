@@ -20,6 +20,7 @@ export const test = internalAction({
   handler: async (ctx, args) => {
     // resolve crawl_ids
     let crawlIds: string[]
+
     if (args.crawlIds === undefined) {
       crawlIds = await ctx.runQuery(internal.alerts.dev.getRecentCrawlIds, {
         limit: args.lastN ?? 1,

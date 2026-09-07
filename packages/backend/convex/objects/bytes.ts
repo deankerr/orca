@@ -36,6 +36,7 @@ function convexByteStore(ctx: ActionCtx): ByteStore {
       }
 
       const blob = await ctx.storage.get(ref.storage_id)
+
       if (blob === null) {
         return null
       }

@@ -175,13 +175,16 @@ async function fetchModelData(model: z.infer<typeof ModelsDataRecordArray>[numbe
       params: { permaslug: model.permaslug, variant: model.endpoint.variant },
       schema: EndpointsDataRecordArray,
     })
+
     result.endpoints = endpoints
   } catch (error) {
     const errorMessage = getErrorMessage(error)
+
     console.error('[crawl:endpoints]', {
       params: { permaslug: model.permaslug, variant: model.endpoint.variant },
       error: errorMessage,
     })
+
     result.endpoints = { error: errorMessage }
   }
 

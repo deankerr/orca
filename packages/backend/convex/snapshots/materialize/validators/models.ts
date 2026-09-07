@@ -31,6 +31,7 @@ export const ModelTransformSchema = z
   .transform((raw) => {
     // add variant suffix if available
     let { slug } = raw
+
     if (raw.endpoint?.variant && raw.endpoint.variant !== 'standard') {
       slug += `:${raw.endpoint.variant}`
     }

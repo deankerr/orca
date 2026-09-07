@@ -31,9 +31,11 @@ export const serveBundles = httpAction(async (ctx, req) => {
   if (format === 'invalid') {
     return new Response('Invalid format parameter', { status: 400 })
   }
+
   if (pretty === 'invalid') {
     return new Response('Invalid pretty parameter', { status: 400 })
   }
+
   if (gzip === 'invalid') {
     return new Response('Invalid gzip parameter', { status: 400 })
   }
@@ -46,6 +48,7 @@ export const serveBundles = httpAction(async (ctx, req) => {
 
   let payload: unknown = bundle
   let filename = `${bundle.crawl_id}.orca.json`
+
   if (format) {
     try {
       const formattedBundle = formatBundle(bundle)
@@ -81,11 +84,14 @@ function parseBooleanParam(value: string | null, defaultValue: boolean): boolean
   if (value === null) {
     return defaultValue
   }
+
   if (value === 'true') {
     return true
   }
+
   if (value === 'false') {
     return false
   }
+
   return 'invalid'
 }

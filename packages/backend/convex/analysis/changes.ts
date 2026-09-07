@@ -49,6 +49,7 @@ export const run = internalMutation({
         targetMaxRows: batchSize,
         order: 'desc',
       })
+
       hasMore = nextHasMore
 
       for (const change of page) {
@@ -62,6 +63,7 @@ export const run = internalMutation({
 
         // Entity + Change kind distribution (e.g., "endpoint update")
         const entityChangeKey = `${change.entity_type} ${change.change_kind}`
+
         stats.byEntityAndChangeKind[entityChangeKey] =
           (stats.byEntityAndChangeKind[entityChangeKey] || 0) + 1
 
@@ -89,8 +91,10 @@ export const run = internalMutation({
 
         // Changes per day (extract date from crawl_id timestamp)
         const timestamp = Number(change.crawl_id)
+
         if (!Number.isNaN(timestamp)) {
           const day = getDayFromTimestamp(timestamp)
+
           if (day) {
             stats.byDay[day] = (stats.byDay[day] || 0) + 1
           }

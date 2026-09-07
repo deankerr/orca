@@ -60,9 +60,11 @@ export function takeRecentCompleteCrawls(
   }
 
   const boundaryCrawlId = changes[maximumDocuments]?.crawl_id
+
   const retainedChanges = changes
     .slice(0, maximumDocuments)
     .filter((change) => change.crawl_id !== boundaryCrawlId)
+
   const oldestRetainedChange = retainedChanges.at(-1)
 
   return {
@@ -128,6 +130,7 @@ function forgetPrices(state: EndpointState): void {
 
 function addPoint(state: EndpointState, point: PricingHistoryPoint): void {
   const previous = state.points.at(-1)
+
   if (previous?.at === point.at) {
     state.points[state.points.length - 1] = point
   } else {
@@ -157,6 +160,7 @@ function recordBoundary(states: ReadonlyMap<string, EndpointState>, at: number) 
 
 function groupRelevantChanges(changes: readonly PricingHistoryChange[]) {
   const groups = new Map<string, ChangeGroup>()
+
   const relevantChanges = changes
     .filter(
       (change) =>
@@ -168,6 +172,7 @@ function groupRelevantChanges(changes: readonly PricingHistoryChange[]) {
   for (const change of relevantChanges) {
     const key = `${change.crawl_id}:${change.endpoint_uuid}`
     const group = groups.get(key)
+
     if (group === undefined) {
       groups.set(key, [change])
     } else {
@@ -186,6 +191,7 @@ function rewindEndpointState(state: EndpointState, changes: ChangeGroup) {
   for (const change of changes) {
     if (change.change_kind === 'update' && change.path !== undefined) {
       const field = PRICING_PATHS.get(change.path)
+
       if (field !== undefined) {
         setPrice(state, field, change.after)
       }
@@ -197,6 +203,7 @@ function rewindEndpointState(state: EndpointState, changes: ChangeGroup) {
   for (const change of changes) {
     if (change.change_kind === 'update' && change.path !== undefined) {
       const field = PRICING_PATHS.get(change.path)
+
       if (field !== undefined) {
         setPrice(state, field, change.before)
       }
@@ -250,6 +257,7 @@ export function reconstructPricingHistory(args: {
   for (const changes of groupRelevantChanges(args.changes)) {
     const [firstChange] = changes
     const state = states.get(firstChange.endpoint_uuid)
+
     if (state !== undefined) {
       rewindEndpointState(state, changes)
     }

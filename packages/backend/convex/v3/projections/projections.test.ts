@@ -59,6 +59,7 @@ describe('scan projection', () => {
     const previous = createScanProjection(
       artifact('2026-01-01', [endpoint('one', '1'), endpoint('two', '1')]),
     )
+
     const nextEndpoint = {
       ...endpoint('one', '2'),
       stats: { endpoint_id: 'one', ignored: 1 },
@@ -66,26 +67,32 @@ describe('scan projection', () => {
         priority: { endpoint_id: 'one', p50_latency: 10 },
       },
     }
+
     const next = createScanProjection(artifact('2026-01-02', [nextEndpoint]))
     const writes = diffScanProjections(previous, next)
 
     expect([...next.endpoints]).toHaveLength(1)
+
     expect(writes.map((write) => write.table)).toEqual([
       'endpoints',
       'endpointListings',
       'endpointsPricing',
       'stats',
     ])
+
     expect(writes[0]).toMatchObject({
       row: { endpoint_id: 'two', scan_at: '2026-01-02', unlisted_at: '2026-01-02' },
     })
+
     expect(writes[1]).toEqual({
       table: 'endpointListings',
       row: { endpoint_id: 'two', scan_at: '2026-01-02', state: 'unlisted' },
     })
+
     expect(writes[2]).toMatchObject({
       row: { discount: 0, meters: { completion: '2', prompt: '2' } },
     })
+
     expect(writes[3]).toEqual({
       table: 'stats',
       row: {
@@ -102,6 +109,7 @@ describe('scan projection', () => {
       ...endpoint('one', '1'),
       pricing: { ...endpoint('one', '1').pricing, future_meter: '1' },
     }
+
     const nextEndpoint = {
       ...endpoint('one', '1'),
       pricing: { ...endpoint('one', '1').pricing, future_meter: '2' },
@@ -129,6 +137,7 @@ describe('scan projection', () => {
   test('ignores non-string pricing properties while preserving overrides', () => {
     const source = endpoint('one', '1')
     const overrides = [{ prompt: '3', condition: { min_tokens: 32_000 } }]
+
     const projection = createScanProjection(
       artifact('2026-01-01', [
         {
@@ -168,13 +177,16 @@ describe('scan projection', () => {
       table: 'endpointListings',
       row: { endpoint_id: 'one', scan_at: '2026-01-02', state: 'listed' },
     })
+
     expect(
       diffScanProjections(listed, stillListed).filter(({ table }) => table === 'endpointListings'),
     ).toEqual([])
+
     expect(diffScanProjections(stillListed, unlisted)).toContainEqual({
       table: 'endpointListings',
       row: { endpoint_id: 'one', scan_at: '2026-01-04', state: 'unlisted' },
     })
+
     expect(diffScanProjections(unlisted, relisted)).toContainEqual({
       table: 'endpointListings',
       row: { endpoint_id: 'one', scan_at: '2026-01-05', state: 'listed' },

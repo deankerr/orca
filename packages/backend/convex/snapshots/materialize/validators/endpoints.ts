@@ -130,6 +130,7 @@ export const EndpointTransformSchema = z
     const variable_pricings = (raw.variable_pricings ?? [])
       .map((pricing) => {
         const parsed = zVariablePricingPromptThreshold.safeParse(pricing)
+
         if (parsed.success) {
           return {
             type: 'prompt-threshold' as const,
@@ -149,6 +150,7 @@ export const EndpointTransformSchema = z
             pricing,
           })
         }
+
         return null
       })
       .filter(R.isNonNullish)

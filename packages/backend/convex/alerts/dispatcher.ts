@@ -30,6 +30,7 @@ function matchPattern(pattern: string, slug: string): boolean {
   if (pattern === '*') {
     return true
   }
+
   return slug.includes(pattern)
 }
 
@@ -38,6 +39,7 @@ function stampPayload(payload: DiscordPayload, pattern: string): DiscordPayload 
   if (pattern === '*') {
     return payload
   }
+
   const suffix = ` (${pattern})`
   const content = isNonEmptyString(payload.content) ? `${payload.content}${suffix}` : suffix
   return { ...payload, content }
@@ -52,6 +54,7 @@ function buildDeliveries(
 
   for (const sub of subscriptions) {
     const matching = messages.filter((m) => matchPattern(sub.pattern, m.slug))
+
     if (matching.length === 0) {
       continue
     }
@@ -86,9 +89,11 @@ async function sendDeliveries(deliveries: Delivery[]): Promise<void> {
         await (delivery.type === 'channel'
           ? sendToChannel({ channelId: delivery.channel_id, payload })
           : sendToDM({ userId: delivery.user_id, payload }))
+
         sent += 1
       } catch (error) {
         failed += 1
+
         console.error('[discord:bot] send failed', {
           type: delivery.type,
           pattern: delivery.pattern,
@@ -112,6 +117,7 @@ export const run = internalAction({
     const subscriptions: DiscordSubscription[] = await ctx.runQuery(
       internal.discord.subscriptions.getActive,
     )
+
     if (!subscriptions.length) {
       console.log('[alerts:dispatcher] no active subscriptions')
       return
@@ -120,6 +126,7 @@ export const run = internalAction({
     const changes: EntityChange[] = await ctx.runQuery(api.changeBatch.byCrawlId, {
       crawl_id: args.crawl_id,
     })
+
     if (!changes.length) {
       console.log('[alerts:dispatcher] no changes', { crawl_id: args.crawl_id })
       return

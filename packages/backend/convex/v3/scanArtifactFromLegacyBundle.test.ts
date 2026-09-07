@@ -42,6 +42,7 @@ test('only known invalid legacy bundles are recoverable', () => {
 
   expect(scanArtifactFromLegacyBundle(bundle({ error: 'failed' }))).toBeNull()
   expect(scanArtifactFromLegacyBundle(bundle([]))).toBeNull()
+
   expect(
     scanArtifactFromLegacyBundle({ ...bundle([]), data: { ...bundle([]).data, models: [] } }),
   ).toBeNull()

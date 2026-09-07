@@ -82,6 +82,7 @@ export const feedIds = query({
   handler: async (ctx, args) => {
     const limit = Math.max(1, Math.floor(args.limit))
     const { modelSlug } = args
+
     const providerSlug = isNonEmptyString(args.providerSlug)
       ? baseProviderSlug(args.providerSlug)
       : undefined

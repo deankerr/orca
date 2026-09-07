@@ -18,6 +18,7 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, req) => {
     const publicKey = env.DISCORD_PUBLIC_KEY
+
     if (!isNonEmptyString(publicKey)) {
       console.error('[discord:interactions] DISCORD_PUBLIC_KEY not configured')
       return new Response('Server configuration error', { status: 500 })

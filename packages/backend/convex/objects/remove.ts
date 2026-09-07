@@ -11,12 +11,15 @@ export const run = internalAction({
   returns: v.null(),
   handler: async (ctx, args) => {
     const locator = await ctx.runQuery(internal.objects.locators.get, args)
+
     if (locator === null) {
       return null
     }
+
     if (locator.backend === 'r2') {
       await createR2Transport().remove(locator.r2_key)
     }
+
     await ctx.runMutation(internal.objects.remove.finish, { locator })
     return null
   },
@@ -31,9 +34,11 @@ export const finish = internalMutation({
       .query(OBJECTS_LOCATORS_TABLE)
       .withIndex('by_path_name', (q) => q.eq('path', locator.path).eq('name', locator.name))
       .unique()
+
     if (row === null) {
       return null
     }
+
     if (
       row.backend !== locator.backend ||
       (row.backend === 'convex' &&
@@ -43,9 +48,11 @@ export const finish = internalMutation({
     ) {
       throw new Error('Object locator changed during deletion')
     }
+
     if (row.backend === 'convex' && (await ctx.db.system.get(row.storage_id)) !== null) {
       await ctx.storage.delete(row.storage_id)
     }
+
     await ctx.db.delete(row._id)
     return null
   },

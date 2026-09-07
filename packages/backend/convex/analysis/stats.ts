@@ -72,6 +72,7 @@ export const endpointCountFrequency = internalMutation({
     const availableModelSlugs = new Set(
       models.filter((model) => model.unavailable_at === undefined).map((model) => model.slug),
     )
+
     const endpointCountsByModel = new Map(
       [...availableModelSlugs].map((modelSlug) => [modelSlug, 0]),
     )
@@ -88,6 +89,7 @@ export const endpointCountFrequency = internalMutation({
     }
 
     const activeEndpointCounts = [...endpointCountsByModel.values()].filter((count) => count > 0)
+
     const frequency = R.pipe(
       activeEndpointCounts,
       R.countBy(String),
@@ -118,9 +120,11 @@ export const activeModelCreatedAtFrequency = internalMutation({
         .filter((endpoint) => endpoint.unavailable_at === undefined)
         .map((endpoint) => endpoint.model.slug),
     )
+
     const activeModels = models.filter(
       (model) => model.unavailable_at === undefined && activeEndpointModelSlugs.has(model.slug),
     )
+
     const frequency = R.pipe(
       activeModels,
       R.countBy((model) => new Date(model.or_added_at).toISOString().slice(0, 7)),

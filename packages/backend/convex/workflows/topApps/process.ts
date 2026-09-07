@@ -47,6 +47,7 @@ export const run = internalAction({
   returns: v.null(),
   handler: async (ctx, args) => {
     const targets = await ctx.runQuery(internal.workflows.topApps.process.listTargets, {})
+
     const models: Array<{
       slug: string
       version_slug: string

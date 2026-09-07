@@ -49,14 +49,17 @@ export const get = query({
     const asOf = Number(latestArchive?.crawl_id ?? 0)
     const availableSince = Number(earliestArchive?.crawl_id ?? asOf)
     const modelHistoryStart = Math.max(availableSince, model?.or_added_at ?? availableSince)
+
     const changeHistory = takeRecentCompleteCrawls(
       changes.filter(isEndpointChange),
       MAX_HISTORY_CHANGE_DOCUMENTS,
     )
+
     const retainedHistoryStart = Math.max(
       modelHistoryStart,
       changeHistory.oldestExactTimestamp ?? modelHistoryStart,
     )
+
     const since = Math.min(asOf, retainedHistoryStart)
 
     return {

@@ -102,6 +102,7 @@ function parseSubcommand(interaction: DiscordInteraction): {
   options: Record<string, string | number | boolean>
 } {
   const interactionData = interaction.data
+
   if (interactionData === undefined) {
     return { subcommand: null, options: {} }
   }
@@ -131,9 +132,11 @@ function isDMContext(interaction: DiscordInteraction): boolean {
 
 function isUserInstallInGuild(interaction: DiscordInteraction): boolean {
   const owners = interaction.authorizing_integration_owners
+
   if (owners === undefined) {
     return false
   }
+
   const hasGuild = isNonEmptyString(interaction.guild_id)
   // Has guild_id but authorized via user install (key "1"), not guild install (key "0")
   return hasGuild && isNonEmptyString(owners['1']) && !isNonEmptyString(owners['0'])
@@ -178,16 +181,19 @@ async function handleSubscribe(
   options: Record<string, string | number | boolean>,
 ): Promise<Response> {
   const userId = getUserId(interaction)
+
   if (userId === null) {
     return messageResponse('Unable to identify user.', true)
   }
 
   const pattern = getStringOption(options, 'pattern')
+
   if (pattern === undefined) {
     return messageResponse('Please provide a pattern. Example: `/orca subscribe anthropic/`', true)
   }
 
   const validationError = validatePattern(pattern)
+
   if (validationError !== null) {
     return messageResponse(validationError, true)
   }
@@ -232,6 +238,7 @@ async function handleSubscribe(
       false,
     )
   }
+
   const channelId = getChannelId(interaction)
   const guildId = getGuildId(interaction)
 
@@ -302,6 +309,7 @@ async function handleList(ctx: ActionCtx, interaction: DiscordInteraction): Prom
       true,
     )
   }
+
   const channelId = getChannelId(interaction)
 
   if (channelId === undefined) {
@@ -341,6 +349,7 @@ async function handleDelete(
   const userId = getUserId(interaction)
 
   const pattern = getStringOption(options, 'pattern')
+
   if (pattern === undefined) {
     return messageResponse(
       'Please provide a pattern to delete. Use `/orca list` to see patterns.',
@@ -371,6 +380,7 @@ async function handleDelete(
       false,
     )
   }
+
   const channelId = getChannelId(interaction)
 
   if (channelId === undefined) {
@@ -439,6 +449,7 @@ export async function handleInteraction(
   const { body, signature, timestamp, publicKey } = args
 
   const isValid = await verifyKey(body, signature, timestamp, publicKey)
+
   if (!isValid) {
     return new Response('Invalid signature', { status: 401 })
   }
@@ -446,12 +457,14 @@ export async function handleInteraction(
   let interaction: DiscordInteraction
   try {
     const parsedInteraction = InteractionSchema.safeParse(JSON.parse(body))
+
     if (!parsedInteraction.success) {
       console.error('[discord:interactions] invalid payload', {
         error: z.prettifyError(parsedInteraction.error),
       })
       return new Response('Invalid interaction payload', { status: 400 })
     }
+
     interaction = parsedInteraction.data
   } catch {
     return new Response('Invalid interaction payload', { status: 400 })
@@ -476,6 +489,7 @@ export async function handleInteraction(
     }
 
     const { subcommand, options } = parseSubcommand(interaction)
+
     if (subcommand === null) {
       return handleHelp()
     }

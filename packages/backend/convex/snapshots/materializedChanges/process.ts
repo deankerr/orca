@@ -67,14 +67,17 @@ export function computeMaterializedChanges(args: {
     ...args.current.failedModelKeys,
     ...args.previous.failedModelKeys,
   ])
+
   if (allFailedModelKeys.size > 0) {
     excludeByModelKey(previousModels, allFailedModelKeys, (m) => `${m.version_slug}:${m.variant}`)
     excludeByModelKey(currentModels, allFailedModelKeys, (m) => `${m.version_slug}:${m.variant}`)
+
     excludeByModelKey(
       previousEndpoints,
       allFailedModelKeys,
       (e) => `${e.model.version_slug}:${e.model.variant}`,
     )
+
     excludeByModelKey(
       currentEndpoints,
       allFailedModelKeys,
@@ -181,6 +184,7 @@ function processDiff(
     if (!grouped.has(basePath)) {
       grouped.set(basePath, [])
     }
+
     grouped.get(basePath)!.push(change)
   }
 
@@ -227,6 +231,7 @@ function getValueByPath(obj: Record<string, any>, segments: string[]): unknown {
     if (current === null || current === undefined) {
       return undefined
     }
+
     current = current[segment]
   }
   return current

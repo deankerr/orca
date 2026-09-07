@@ -28,6 +28,7 @@ export const list = internalQuery({
     }
 
     const { user_id } = context
+
     const subs = await ctx.db
       .query(TABLE_NAME)
       .withIndex('by_user_id', (q) => q.eq('user_id', user_id).eq('deleted_at', undefined))
@@ -120,6 +121,7 @@ export const remove = internalMutation({
               q.eq('user_id', context.user_id).eq('pattern', pattern).eq('deleted_at', undefined),
             )
             .first()
+
     if (!sub) {
       return null
     }

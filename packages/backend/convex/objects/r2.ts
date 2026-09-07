@@ -26,6 +26,7 @@ export function createR2Transport(): R2Transport {
   return {
     async remove(key) {
       const response = await client.fetch(objectUrl(key), { method: 'DELETE' })
+
       if (!response.ok && response.status !== 404) {
         throw new Error(`R2 DELETE failed: ${response.status} ${response.statusText}`)
       }

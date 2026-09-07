@@ -12,6 +12,7 @@ export const run = internalAction({
     if (env.ORCA_SCAN_ENABLED !== 'true') {
       return null
     }
+
     const entries = await scan()
     const artifact = createScanArtifact(entries)
 

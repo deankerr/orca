@@ -33,45 +33,55 @@ export async function applyScanProjection(
   const { writes, ...cursor } = args
   console.log({ ...cursor, writes: writes.length })
   const modelsRows = writes.filter((write) => write.table === 'models').map((write) => write.row)
+
   if (modelsRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.models, { ...cursor, rows: modelsRows })
   }
+
   const providersRows = writes
     .filter((write) => write.table === 'providers')
     .map((write) => write.row)
+
   if (providersRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.providers, {
       ...cursor,
       rows: providersRows,
     })
   }
+
   const endpointsRows = writes
     .filter((write) => write.table === 'endpoints')
     .map((write) => write.row)
+
   if (endpointsRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpoints, {
       ...cursor,
       rows: endpointsRows,
     })
   }
+
   const endpointListingsRows = writes
     .filter((write) => write.table === 'endpointListings')
     .map((write) => write.row)
+
   if (endpointListingsRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpointListings, {
       ...cursor,
       rows: endpointListingsRows,
     })
   }
+
   const endpointsPricingRows = writes
     .filter((write) => write.table === 'endpointsPricing')
     .map((write) => write.row)
+
   if (endpointsPricingRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpointsPricing, {
       ...cursor,
       rows: endpointsPricingRows,
     })
   }
+
   const statsRows = writes.filter((write) => write.table === 'stats').map((write) => write.row)
   await ctx.runMutation(internal.v3.projections.apply.stats, { ...cursor, rows: statsRows })
 }
@@ -80,12 +90,15 @@ export async function applyScanProjection(
 async function shouldApply(ctx: MutationCtx, args: Cursor) {
   const latest = await ctx.db.query(V3_SCAN_INGESTIONS_TABLE).order('desc').first()
   const current = latest?.to_artifact_id ?? INITIAL_SCAN_ARTIFACT_ID
+
   if (current === args.toArtifactId) {
     return false
   }
+
   if (current !== args.fromArtifactId) {
     throw new Error('Projection ingestion cursor changed')
   }
+
   return true
 }
 
@@ -97,11 +110,13 @@ export const models = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_MODELS_VIEW_TABLE)
         .withIndex('by_model_id', (q) => q.eq('model_id', row.model_id))
         .unique()
+
       await (existing === null
         ? ctx.db.insert(V3_MODELS_VIEW_TABLE, row)
         : ctx.db.replace(existing._id, row))
@@ -118,11 +133,13 @@ export const providers = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_PROVIDERS_VIEW_TABLE)
         .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
         .unique()
+
       await (existing === null
         ? ctx.db.insert(V3_PROVIDERS_VIEW_TABLE, row)
         : ctx.db.replace(existing._id, row))
@@ -139,11 +156,13 @@ export const endpoints = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_VIEW_TABLE)
         .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
         .unique()
+
       await (existing === null
         ? ctx.db.insert(V3_ENDPOINTS_VIEW_TABLE, row)
         : ctx.db.replace(existing._id, row))
@@ -160,6 +179,7 @@ export const endpointListings = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_LISTING_SERIES_TABLE)
@@ -167,6 +187,7 @@ export const endpointListings = internalMutation({
           q.eq('endpoint_id', row.endpoint_id).eq('scan_at', row.scan_at),
         )
         .unique()
+
       if (existing === null) {
         await ctx.db.insert(V3_ENDPOINTS_LISTING_SERIES_TABLE, row)
       }
@@ -183,6 +204,7 @@ export const endpointsPricing = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_PRICING_SERIES_TABLE)
@@ -190,6 +212,7 @@ export const endpointsPricing = internalMutation({
           q.eq('endpoint_id', row.endpoint_id).eq('scan_at', row.scan_at),
         )
         .unique()
+
       if (existing === null) {
         await ctx.db.insert(V3_ENDPOINTS_PRICING_SERIES_TABLE, row)
       }
@@ -206,6 +229,7 @@ export const stats = internalMutation({
     if (!(await shouldApply(ctx, args))) {
       return null
     }
+
     for (const row of args.rows) {
       await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
     }

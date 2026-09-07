@@ -67,9 +67,11 @@ export function buildMessages(changes: EntityChange[]): DiscordMessage[] {
       const embed = buildEmbed(change)
       return embed ? [embed] : []
     })
+
     if (embeds.length === 0) {
       return []
     }
+
     return [{ slug, embeds }]
   })
 }
@@ -78,9 +80,11 @@ function buildEmbed(change: EntityChange): EmbedBuilder | null {
   if (change.entity_type === 'model') {
     return buildModelEmbed(change)
   }
+
   if (change.entity_type === 'endpoint') {
     return buildEndpointEmbed(change)
   }
+
   return buildProviderEmbed(change)
 }
 
@@ -103,13 +107,17 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
       .setColor(COLORS.create)
       .setTitle(`${title}${CHARS.sparkles}`)
       .setAuthor(author)
+
     if (isNonEmptyString(model.model.description)) {
       embed.setDescription(blockquote(model.model.description))
     }
+
     const fields = getNewModelFields(model.model)
+
     if (fields.length > 0) {
       embed.setFields(fields)
     }
+
     return embed
   }
 
@@ -123,9 +131,11 @@ function buildModelEmbed(model: ModelChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(model.event.fields)
+
   if (desc === null) {
     return null
   }
+
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setTitle(title)
@@ -159,10 +169,13 @@ function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
       .setAuthor(author)
       .setFooter(endpointFooter(ep))
       .setDescription('- endpoint discovered')
+
     const fields = getNewEndpointFields(ep)
+
     if (fields.length > 0) {
       embed.setFields(fields)
     }
+
     return embed
   }
 
@@ -176,9 +189,11 @@ function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(ep.event.fields)
+
   if (desc === null) {
     return null
   }
+
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setAuthor(author)
@@ -190,6 +205,7 @@ function buildEndpointEmbed(ep: EndpointChange): EmbedBuilder | null {
 
 function buildProviderEmbed(provider: ProviderChange): EmbedBuilder | null {
   const name = provider.provider.name ?? provider.provider.slug
+
   const author = {
     name: provider.provider.slug,
     iconURL: getLogoIconUrl(provider.provider.slug),
@@ -211,9 +227,11 @@ function buildProviderEmbed(provider: ProviderChange): EmbedBuilder | null {
 
   // entity_updated
   const desc = formatFieldChanges(provider.event.fields)
+
   if (desc === null) {
     return null
   }
+
   return new EmbedBuilder()
     .setColor(COLORS.update)
     .setAuthor(author)
@@ -232,9 +250,11 @@ function getNewModelFields(model: ModelRef): EmbedField[] {
     const parts: string[] = [
       `${model.input_modalities.join(', ')} ${CHARS.arrow} ${model.output_modalities.join(', ')}`,
     ]
+
     if (model.reasoning === true) {
       parts.push('reasoning')
     }
+
     fields.push({ name: 'modalities', value: parts.join(CHARS.dot), inline: false })
   }
 
@@ -245,6 +265,7 @@ function getNewModelFields(model: ModelRef): EmbedField[] {
       inline: false,
     })
   }
+
   if (isNonEmptyString(model.promotion_message)) {
     fields.push({
       name: 'promotion_message',
@@ -265,6 +286,7 @@ function getNewEndpointFields(ep: EndpointChange): EmbedField[] {
       ref.max_output === ref.context_length
         ? ref.context_length.toLocaleString()
         : `${ref.context_length.toLocaleString()} (max: ${ref.max_output?.toLocaleString()})`
+
     fields.push({ name: 'context_length', value: ctx, inline: true })
   }
 
@@ -288,6 +310,7 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
 
   for (const field of fields) {
     const item = formatChangeItem(field)
+
     if (item) {
       items.push(item)
     }
@@ -302,6 +325,7 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
 
   // top-level (no category) first
   const topLevel = grouped.get(null)
+
   if (topLevel) {
     for (const item of topLevel) {
       lines.push(`${item.key}:  ${item.content}`)
@@ -313,6 +337,7 @@ function formatFieldChanges(fields: FieldChange[]): string | null {
     if (category === null) {
       continue
     }
+
     const catLines = catItems.map((item) => `${CHARS.bullet} ${item.key}:  ${item.content}`)
     lines.push(`\n${category}\n${catLines.join('\n')}`)
   }
@@ -332,13 +357,16 @@ function formatChangeItem(
       if (item.status === 'removed') {
         lines.push(`- ${item.value}`)
       }
+
       if (item.status === 'added') {
         lines.push(`+ ${item.value}`)
       }
     }
+
     if (lines.length === 0) {
       return null
     }
+
     return { category, key, content: `\n\`\`\`diff\n${lines.join('\n')}\n\`\`\`` }
   }
 
@@ -346,6 +374,7 @@ function formatChangeItem(
     if (isLong(field.value)) {
       return { category, key, content: `${CHARS.new}\n${blockquote(String(field.value))}` }
     }
+
     return { category, key, content: `${fmt(field.value)} ${CHARS.new}` }
   }
 
@@ -353,6 +382,7 @@ function formatChangeItem(
     if (isLong(field.value)) {
       return { category, key, content: `${CHARS.cross}\n~~${blockquote(String(field.value))}~~` }
     }
+
     return { category, key, content: `~~${fmt(field.value)}~~ ${CHARS.cross}` }
   }
 
@@ -360,6 +390,7 @@ function formatChangeItem(
   if (isLong(field.before) || isLong(field.after)) {
     const before =
       typeof field.before === 'string' ? truncate(field.before, TRUNCATE_LENGTH) : fmt(field.before)
+
     const after =
       typeof field.after === 'string' ? truncate(field.after, TRUNCATE_LENGTH) : fmt(field.after)
     return { category, key, content: `\n> ~~${before}~~\n> ${after}` }
@@ -375,15 +406,18 @@ function formatChangeItem(
 
 function formatChangeValue(value: unknown, path: string): string {
   const key = pricingKeyFromPath(path)
+
   if (key !== null && typeof value === 'number') {
     return formatPricing(key, value)?.value ?? fmtValue(value)
   }
+
   return fmtValue(value)
 }
 
 function fmtDelta(before: unknown, after: unknown, path: string): string {
   const key = pricingKeyFromPath(path)
   const delta = key === null ? computeDelta(before, after) : computePricingDelta(key, before, after)
+
   if (!delta) {
     return ''
   }

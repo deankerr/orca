@@ -40,9 +40,11 @@ export function diffScanProjections(
 
   for (const row of next.endpoints.values()) {
     const previousRow = previous.endpoints.get(row.endpoint_id)
+
     if (!sameRecord(previousRow, row)) {
       writes.push({ table: 'endpoints', row })
     }
+
     if (previousRow === undefined) {
       writes.push({
         table: 'endpointListings',
@@ -89,5 +91,6 @@ function sameRecord<T extends { scan_at: string }>(left: T | undefined, right: T
   if (left === undefined) {
     return false
   }
+
   return R.isDeepEqual(R.omit(left, ['scan_at']), R.omit(right, ['scan_at']))
 }

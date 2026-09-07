@@ -60,6 +60,7 @@ export const run = internalAction({
   returns: v.null(),
   handler: async (ctx) => {
     const endCrawlId = legacyBackfillEndCrawlId(env.LEGACY_BACKFILL_END_SCAN_AT)
+
     if (endCrawlId === null) {
       console.warn('legacy backfill disabled: invalid LEGACY_BACKFILL_END_SCAN_AT')
       return null
@@ -77,6 +78,7 @@ export const run = internalAction({
     }
 
     const converted = await nextLegacyScanArtifact(ctx, fromCrawlId, endCrawlId)
+
     if (converted === null) {
       console.log('legacy backfill complete')
       return null
@@ -93,6 +95,7 @@ export const run = internalAction({
     }
 
     console.log(`backfill: ${fromArtifactId} to ${nextArtifact.id}`)
+
     await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId: nextArtifact.id,
@@ -120,6 +123,7 @@ async function nextLegacyScanArtifact(
         order: 'asc',
       },
     )
+
     if (firstCrawlId === null) {
       return null
     }
@@ -136,11 +140,13 @@ async function nextLegacyScanArtifact(
           order: 'desc',
         },
       )
+
       if (crawl_id === null) {
         break
       }
 
       const artifact = scanArtifactFromLegacyBundle(await getArchiveBundleOrThrow(ctx, crawl_id))
+
       if (artifact !== null) {
         return artifact
       }

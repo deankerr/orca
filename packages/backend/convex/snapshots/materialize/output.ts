@@ -76,6 +76,7 @@ export const upsert = internalMutation({
       for (const currentModel of currentModelsMap.values()) {
         if (currentModel.unavailable_at === undefined) {
           const modelKey = `${currentModel.version_slug}:${currentModel.variant}`
+
           if (failedModelKeys.has(modelKey)) {
             continue
           }
@@ -86,6 +87,7 @@ export const upsert = internalMutation({
               unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
+
           counters.unavailable += 1
         }
       }
@@ -148,6 +150,7 @@ export const upsert = internalMutation({
       for (const currentEndpoint of currentEndpointsMap.values()) {
         if (currentEndpoint.unavailable_at === undefined) {
           const modelKey = `${currentEndpoint.model.version_slug}:${currentEndpoint.model.variant}`
+
           if (failedModelKeys.has(modelKey)) {
             continue
           }
@@ -158,6 +161,7 @@ export const upsert = internalMutation({
               unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
+
           counters.unavailable += 1
         }
       }
@@ -199,6 +203,7 @@ export const upsert = internalMutation({
               unavailable_at: Math.trunc(Number(args.crawl_id)),
             }),
           )
+
           counters.unavailable += 1
         }
       }

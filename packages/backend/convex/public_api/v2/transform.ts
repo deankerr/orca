@@ -33,6 +33,7 @@ function formatPrice(price: number | undefined): string | null {
   if (price === undefined || price === 0) {
     return null
   }
+
   return price.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 20,

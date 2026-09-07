@@ -42,6 +42,7 @@ export const run = internalAction({
     }
 
     console.log(`ingest: ${fromArtifactId} to ${toArtifactId}`)
+
     await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId,

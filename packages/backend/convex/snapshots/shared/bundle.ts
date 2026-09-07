@@ -41,6 +41,7 @@ export async function getArchiveBundleOrThrow(
   }
 
   const bundle = await getArchiveBundle(ctx, resolved_crawl_id)
+
   if (!bundle) {
     throw new Error(`[bundle] no bundle found for crawl_id: ${resolved_crawl_id}`)
   }
@@ -55,13 +56,17 @@ export async function getArchiveBundle(
   const archive = await ctx.runQuery(internal.snapshots.shared.bundle.getByCrawlId, {
     crawl_id: crawlId,
   })
+
   if (!archive) {
     return null
   }
+
   const blob = await ctx.storage.get(archive.storage_id)
+
   if (!blob) {
     return null
   }
+
   const decompressed = gunzipSync(new Uint8Array(await blob.arrayBuffer()))
   return JSON.parse(textDecoder.decode(decompressed)) as CrawlArchiveBundle
 }

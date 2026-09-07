@@ -123,6 +123,7 @@ async function loadMaterializedSnapshot(
   crawl_id: string,
 ): Promise<LoadedMaterializedSnapshot | null> {
   const bundle = await getArchiveBundle(ctx, crawl_id)
+
   if (!bundle) {
     throw new Error(`[materializedChanges] missing bundle for crawl_id: ${crawl_id}`)
   }

@@ -58,6 +58,7 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
       failedModelKeys.add(`${m.model.permaslug}:${m.model.endpoint?.variant}`)
     }
   }
+
   if (failedModelKeys.size > 0) {
     console.warn('[materialize] endpoint fetch errors, skipping models:', [...failedModelKeys])
   }
@@ -98,6 +99,7 @@ export function materializeModelEndpoints(bundle: CrawlArchiveBundle) {
       R.entries(),
       R.map(([msg, count]) => (count > 1 ? `${msg} (x${count})` : msg)),
     )
+
     console.error('[materialize:endpoints]', { issues: consolidatedIssues })
   }
 

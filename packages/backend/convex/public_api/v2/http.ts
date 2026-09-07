@@ -52,6 +52,7 @@ export const serveCached = httpAction(async (ctx, req) => {
   }
 
   const blob = await ctx.storage.get(snapshot.storage_id)
+
   if (blob === null) {
     console.error('[public_api:v2] missing cache blob', { storage_id: snapshot.storage_id })
     return new Response('Internal server error', {
@@ -133,6 +134,7 @@ function representationHeaders(args: {
 
 function shouldReturnNotModified(req: Request, etag: string, updatedAt: number): boolean {
   const ifNoneMatch = req.headers.get('If-None-Match')
+
   if (ifNoneMatch !== null) {
     return ifNoneMatchHits(ifNoneMatch, etag)
   }
@@ -157,6 +159,7 @@ function ifModifiedSinceFresh(header: string | null, updatedAt: number): boolean
   }
 
   const since = Date.parse(header)
+
   if (!Number.isFinite(since)) {
     return false
   }
@@ -175,6 +178,7 @@ function acceptsGzip(acceptEncoding: string | null): boolean {
   for (const part of acceptEncoding.split(',')) {
     const segments = part.trim().split(';')
     const name = segments[0]?.trim().toLowerCase()
+
     if (name === undefined || name === '') {
       continue
     }
@@ -182,8 +186,10 @@ function acceptsGzip(acceptEncoding: string | null): boolean {
     let q = 1
     for (const param of segments.slice(1)) {
       const trimmed = param.trim()
+
       if (trimmed.startsWith('q=')) {
         const parsed = Number(trimmed.slice(2))
+
         if (Number.isFinite(parsed)) {
           q = parsed
         }

@@ -36,6 +36,7 @@ export function scanArtifactFromLegacyBundle(bundle: CrawlArchiveBundle): ScanAr
     }
 
     const { endpoints } = entry
+
     if (!Array.isArray(endpoints)) {
       return invalidBundle({
         crawl_id,
