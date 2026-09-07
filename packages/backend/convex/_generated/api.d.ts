@@ -95,6 +95,8 @@ import type * as v3_legacyBackfill from "../v3/legacyBackfill.js";
 import type * as v3_projections_apply from "../v3/projections/apply.js";
 import type * as v3_projections_create from "../v3/projections/create.js";
 import type * as v3_projections_diff from "../v3/projections/diff.js";
+import type * as v3_projections_pull from "../v3/projections/pull.js";
+import type * as v3_projections_queries from "../v3/projections/queries.js";
 import type * as v3_scanArtifactFromLegacyBundle from "../v3/scanArtifactFromLegacyBundle.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
 import type * as workflows_analytics_process from "../workflows/analytics/process.js";
@@ -197,6 +199,8 @@ declare const fullApi: ApiFromModules<{
   "v3/projections/apply": typeof v3_projections_apply;
   "v3/projections/create": typeof v3_projections_create;
   "v3/projections/diff": typeof v3_projections_diff;
+  "v3/projections/pull": typeof v3_projections_pull;
+  "v3/projections/queries": typeof v3_projections_queries;
   "v3/scanArtifactFromLegacyBundle": typeof v3_scanArtifactFromLegacyBundle;
   "workflows/analytics/manual": typeof workflows_analytics_manual;
   "workflows/analytics/process": typeof workflows_analytics_process;

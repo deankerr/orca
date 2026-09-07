@@ -29,7 +29,7 @@
 - Projection tables include the entity and series tables.
 - Required, validated fields are carefully chosen and always exist.
 - Would support Endpoints Data Grid and Pricing History Charts products.
-- Writes run in one sequential mutation per table without batching. Stats run last and append without per-row existence queries.
+- Scan ingestion writes run in one sequential mutation per table without batching. Stats run last and append without per-row existence queries.
 - The stats mutation atomically appends all stats and advances the ingestion ledger, even when there are no stats. Failed earlier mutations can leave partial projections visible; restart the same ingestion action to replay safely without duplicating series rows.
 - Backfill and normal ingestion must still run one at a time, including during recovery.
 - Failure to ingest a projection halts this process until developer intervention.
@@ -61,3 +61,11 @@
 - Reaching the cutoff stops; normal ingestion is started manually.
 - Known incomplete bundles are skipped; schema failures halt processing.
 - Converted artifacts and projection writes share the normal ingestion ledger.
+
+## Projection pulls
+
+- Public projection queries paginate in creation order and omit deployment-local system fields.
+- `v3/projections/pull:run` accepts `sourceUrl` and copies views, listings, and pricing through the same apply mutations as ingestion. Stats are excluded.
+- View writes upsert by entity identity; immutable series writes skip existing endpoint/scan pairs. These mutations do not depend on the ingestion ledger.
+- Pulls run manually without concurrent pulls or scan ingestion on the destination. Restart from the beginning after failure; pulls neither remove destination-only rows nor propagate source deletions.
+- Preview initialization remains unchanged until production-to-dev pulling is verified.

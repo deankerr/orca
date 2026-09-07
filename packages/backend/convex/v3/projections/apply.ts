@@ -35,7 +35,7 @@ export async function applyScanProjection(
   const modelsRows = writes.filter((write) => write.table === 'models').map((write) => write.row)
 
   if (modelsRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.models, { ...cursor, rows: modelsRows })
+    await ctx.runMutation(internal.v3.projections.apply.models, { rows: modelsRows })
   }
 
   const providersRows = writes
@@ -44,7 +44,6 @@ export async function applyScanProjection(
 
   if (providersRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.providers, {
-      ...cursor,
       rows: providersRows,
     })
   }
@@ -55,7 +54,6 @@ export async function applyScanProjection(
 
   if (endpointsRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpoints, {
-      ...cursor,
       rows: endpointsRows,
     })
   }
@@ -66,7 +64,6 @@ export async function applyScanProjection(
 
   if (endpointListingsRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpointListings, {
-      ...cursor,
       rows: endpointListingsRows,
     })
   }
@@ -77,7 +74,6 @@ export async function applyScanProjection(
 
   if (endpointsPricingRows.length > 0) {
     await ctx.runMutation(internal.v3.projections.apply.endpointsPricing, {
-      ...cursor,
       rows: endpointsPricingRows,
     })
   }
@@ -104,13 +100,9 @@ async function shouldApply(ctx: MutationCtx, args: Cursor) {
 
 /** Apply models rows with replay-safe writes. */
 export const models = internalMutation({
-  args: { ...cursorArgs, rows: v.array(modelsViewTable.validator) },
+  args: { rows: v.array(modelsViewTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_MODELS_VIEW_TABLE)
@@ -127,13 +119,9 @@ export const models = internalMutation({
 
 /** Apply providers rows with replay-safe writes. */
 export const providers = internalMutation({
-  args: { ...cursorArgs, rows: v.array(providersViewTable.validator) },
+  args: { rows: v.array(providersViewTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_PROVIDERS_VIEW_TABLE)
@@ -150,13 +138,9 @@ export const providers = internalMutation({
 
 /** Apply endpoints rows with replay-safe writes. */
 export const endpoints = internalMutation({
-  args: { ...cursorArgs, rows: v.array(endpointsViewTable.validator) },
+  args: { rows: v.array(endpointsViewTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_VIEW_TABLE)
@@ -173,13 +157,9 @@ export const endpoints = internalMutation({
 
 /** Apply endpointListings rows with replay-safe writes. */
 export const endpointListings = internalMutation({
-  args: { ...cursorArgs, rows: v.array(endpointsListingTable.validator) },
+  args: { rows: v.array(endpointsListingTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_LISTING_SERIES_TABLE)
@@ -198,13 +178,9 @@ export const endpointListings = internalMutation({
 
 /** Apply endpointsPricing rows with replay-safe writes. */
 export const endpointsPricing = internalMutation({
-  args: { ...cursorArgs, rows: v.array(endpointsPricingTable.validator) },
+  args: { rows: v.array(endpointsPricingTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
     for (const row of args.rows) {
       const existing = await ctx.db
         .query(V3_ENDPOINTS_PRICING_SERIES_TABLE)
