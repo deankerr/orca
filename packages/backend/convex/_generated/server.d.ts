@@ -41,6 +41,7 @@ type Env = {
   readonly ORCA_R2_ACCOUNT_ID: string;
   readonly ORCA_R2_BUCKET: string;
   readonly ORCA_R2_SECRET_ACCESS_KEY: string;
+  readonly ORCA_SCAN_ENABLED: "true" | "false" | undefined;
   readonly ORCA_WORKFLOWS_ANALYTICS_ENABLED: "true" | "false" | undefined;
   readonly ORCA_WORKFLOWS_TOP_APPS_ENABLED: "true" | "false" | undefined;
 };

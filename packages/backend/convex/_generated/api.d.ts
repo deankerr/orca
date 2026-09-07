@@ -9,7 +9,6 @@
  */
 
 import type * as admin_archives from "../admin/archives.js";
-import type * as admin_storageSweep from "../admin/storageSweep.js";
 import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
 import type * as analysis_changes from "../analysis/changes.js";
@@ -59,6 +58,7 @@ import type * as objects_bytes from "../objects/bytes.js";
 import type * as objects_index from "../objects/index.js";
 import type * as objects_locators from "../objects/locators.js";
 import type * as objects_r2 from "../objects/r2.js";
+import type * as objects_remove from "../objects/remove.js";
 import type * as objects_table from "../objects/table.js";
 import type * as providers from "../providers.js";
 import type * as public_api_v2_cache from "../public_api/v2/cache.js";
@@ -111,7 +111,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "admin/archives": typeof admin_archives;
-  "admin/storageSweep": typeof admin_storageSweep;
   "alerts/dev": typeof alerts_dev;
   "alerts/dispatcher": typeof alerts_dispatcher;
   "analysis/changes": typeof analysis_changes;
@@ -161,6 +160,7 @@ declare const fullApi: ApiFromModules<{
   "objects/index": typeof objects_index;
   "objects/locators": typeof objects_locators;
   "objects/r2": typeof objects_r2;
+  "objects/remove": typeof objects_remove;
   "objects/table": typeof objects_table;
   providers: typeof providers;
   "public_api/v2/cache": typeof public_api_v2_cache;

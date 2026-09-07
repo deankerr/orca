@@ -7,6 +7,7 @@ export type R2Transport = {
   put: (key: string, body: Uint8Array) => Promise<void>
   /** Compressed bytes, or `null` if the key is missing. */
   get: (key: string) => Promise<Uint8Array | null>
+  remove: (key: string) => Promise<void>
 }
 
 /** R2 object key for this identity. Listing prefix is `path`. */
@@ -23,6 +24,12 @@ export function createR2Transport(): R2Transport {
   const client = r2Client()
 
   return {
+    async remove(key) {
+      const response = await client.fetch(objectUrl(key), { method: 'DELETE' })
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`R2 DELETE failed: ${response.status} ${response.statusText}`)
+      }
+    },
     async put(key, body) {
       const buffer = new ArrayBuffer(body.byteLength)
       new Uint8Array(buffer).set(body)

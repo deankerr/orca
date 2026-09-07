@@ -17,6 +17,7 @@ const app = defineApp({
 
     // Missing controls disable the corresponding scheduled job or backfill.
     ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     LEGACY_BACKFILL_END_SCAN_AT: v.optional(v.string()),

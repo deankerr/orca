@@ -55,6 +55,7 @@
 
 ## Legacy backfill
 
+- **Has been successfully completed on production backend.**
 - Converts the latest valid legacy archive per UTC hour before `LEGACY_BACKFILL_END_SCAN_AT`.
 - Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
 - Reaching the cutoff stops; normal ingestion is started manually.
