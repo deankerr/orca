@@ -2,7 +2,7 @@ import { httpRouter } from 'convex/server'
 
 import { env, httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
-import { load } from './objects'
+import { serve as serveObject } from './objects/http'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,
@@ -50,25 +50,9 @@ http.route({
 })
 
 http.route({
-  path: '/r2/artifact',
+  path: '/objects',
   method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const url = new URL(req.url)
-    const path = url.searchParams.get('path')
-    const name = url.searchParams.get('name')
-
-    if (!isNonEmptyString(path) || !isNonEmptyString(name)) {
-      return new Response('Missing path or name parameter', { status: 400 })
-    }
-
-    const text = await load(ctx, { path, name })
-
-    if (text === null) {
-      return new Response('Object not found', { status: 404 })
-    }
-
-    return Response.json(JSON.parse(text) as unknown)
-  }),
+  handler: serveObject,
 })
 
 // Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.

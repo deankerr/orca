@@ -3,7 +3,7 @@
  *
  * Import `store` / `load` from this module. Callers pass uncompressed text.
  * UTF-8, gzip, the storage backend, and the locators table stay inside the
- * module. Backend is chosen from `path` in `backend.ts`.
+ * module. Backend is configured in `backend.ts`.
  */
 import { ConvexError } from 'convex/values'
 import { gunzipSync, gzipSync } from 'fflate'
@@ -60,7 +60,7 @@ export async function store(
   // gzip mtime: 0 keeps the compressor header stable
   const compressed = gzipSync(encoded, { mtime: 0 })
 
-  const backend = backendFor(args.path)
+  const backend = backendFor()
   const ref = await byteStoreFor(ctx, backend).put(compressed, identity)
 
   await insertLocator(ctx, identity, {

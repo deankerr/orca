@@ -1,7 +1,7 @@
 # V3
 
 - Builds on the `scan` and `objects` modules.
-- Ingestion is manually single-flight, so it does not currently use locks.
+- Ingestion assumes a single runner and does not currently use locks.
 - Will run in parallel with existing backend systems in production.
 - Will be gradually adopted in public-facing systems.
 - Should implement schema-breaking revisions now, if advantageous.
@@ -77,5 +77,13 @@
 - Pulls import the captured current scan and its stats together after copying other projections.
 - A source argument or default `ORCA_PULL_SOURCE_URL` enables pulling.
 - Previews pull alongside the legacy crawl until the frontend migrates.
-- Pulls copy product projections without scan artifacts or historical stats.
+- Pulls copy the captured scan artifact and product projections, excluding historical stats.
 - Imported ingestion records establish the current scan without requiring continuous local history.
+
+## Deployment controls
+
+- Previews bootstrap through init pull; scheduled processes are disabled unless explicitly enabled.
+- Scans run hourly at :40 with ORCA_SCAN_ENABLED; ingestion runs at :42 with ORCA_INGEST_ENABLED.
+- Objects default to Convex storage; ORCA_OBJECTS_BACKEND=r2 selects R2 for new writes.
+- Existing objects always load through their stored locators.
+- Pull the baseline before enabling scans and ingestion for an independent preview timeline.

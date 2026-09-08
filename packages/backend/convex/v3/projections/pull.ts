@@ -5,6 +5,7 @@ import type { Value } from 'convex/values'
 
 import { api, internal } from '../../_generated/api'
 import { env, internalAction, internalMutation } from '../../_generated/server'
+import { store } from '../../objects'
 import { getCurrentScan } from '../ingestions'
 import { scanIngestionsTable, V3_SCAN_INGESTIONS_TABLE } from '../ingestions.table'
 import { endpointsStatsTable, V3_ENDPOINTS_STATS_SERIES_TABLE } from '../series.table'
@@ -29,6 +30,21 @@ export const run = internalAction({
     if (scan === null) {
       console.log('pull skipped: source has no current scan')
       return null
+    }
+
+    const identity = { path: 'scans', name: scan.to_artifact_id }
+    const existing = await ctx.runQuery(internal.objects.locators.get, identity)
+
+    if (existing === null) {
+      const artifactUrl = new URL('/objects', url.replace('.convex.cloud', '.convex.site'))
+      artifactUrl.search = new URLSearchParams(identity).toString()
+      const response = await fetch(artifactUrl)
+
+      if (!response.ok) {
+        throw new ConvexError(`Artifact pull failed: ${response.status}`)
+      }
+
+      await store(ctx, { ...identity, text: await response.text() })
     }
 
     async function copy<Row extends Value>(

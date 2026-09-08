@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
-import { internalAction, internalQuery } from '../_generated/server'
+import { env, internalAction, internalQuery } from '../_generated/server'
 import { loadScanArtifact, nextScanArtifactId } from '../scan/artifact'
 import { getCurrentScan } from './ingestions'
 import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
@@ -52,6 +52,19 @@ export const run = internalAction({
     })
 
     await ctx.scheduler.runAfter(0, internal.v3.ingest.run, {})
+    return null
+  },
+})
+
+/** Opt-in hourly ingestion, independent of scan scheduling. */
+export const scheduled = internalAction({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    if (env.ORCA_INGEST_ENABLED === 'true') {
+      await ctx.runAction(internal.v3.ingest.run, {})
+    }
+
     return null
   },
 })

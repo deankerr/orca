@@ -55,6 +55,7 @@ import type * as models from "../models.js";
 import type * as monitor from "../monitor.js";
 import type * as objects_backend from "../objects/backend.js";
 import type * as objects_bytes from "../objects/bytes.js";
+import type * as objects_http from "../objects/http.js";
 import type * as objects_index from "../objects/index.js";
 import type * as objects_locators from "../objects/locators.js";
 import type * as objects_r2 from "../objects/r2.js";
@@ -164,6 +165,7 @@ declare const fullApi: ApiFromModules<{
   monitor: typeof monitor;
   "objects/backend": typeof objects_backend;
   "objects/bytes": typeof objects_bytes;
+  "objects/http": typeof objects_http;
   "objects/index": typeof objects_index;
   "objects/locators": typeof objects_locators;
   "objects/r2": typeof objects_r2;

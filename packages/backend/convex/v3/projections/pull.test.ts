@@ -36,10 +36,28 @@ test('pulls five tables then commits the captured scan even when it has no stats
     }
   })
 
+  let stored = false
+  const artifactFetch = spyOn(globalThis, 'fetch').mockImplementation((async (
+    input: URL | RequestInfo,
+  ) => {
+    const url = new URL(input instanceof Request ? input.url : input)
+    expect(url.pathname).toBe('/objects')
+    expect(url.searchParams.get('path')).toBe('scans')
+    expect(url.searchParams.get('name')).toBe(scan.to_artifact_id)
+    return new Response('{"scan_at":"2026-09-09T00:00:00.000Z"}\n')
+  }) as typeof fetch)
+
   const ctx = {
+    runQuery: async () => (stored ? { backend: 'convex' } : null),
+    storage: { store: async () => 'storage-id' } as unknown as ActionCtx['storage'],
     runMutation: async (ref, args) => {
       const [, name] = getFunctionName(ref).split(':')
+      if (name === 'insert') {
+        stored = true
+        return null
+      }
       if (name === 'currentScan') {
+        assert.equal(stored, true)
         assert.deepEqual(args, { scan, rows: [] })
         applied.push(name)
         return null
@@ -49,11 +67,14 @@ test('pulls five tables then commits the captured scan even when it has no stats
       applied.push(name)
       return null
     },
-  } as Pick<ActionCtx, 'runMutation'>
+  } as Pick<ActionCtx, 'runMutation' | 'runQuery' | 'storage'>
 
   const handler = (
     run as unknown as {
-      _handler: (ctx: Pick<ActionCtx, 'runMutation'>, args: { sourceUrl?: string }) => Promise<null>
+      _handler: (
+        ctx: Pick<ActionCtx, 'runMutation' | 'runQuery' | 'storage'>,
+        args: { sourceUrl?: string },
+      ) => Promise<null>
     }
   )._handler
 
@@ -94,8 +115,10 @@ test('pulls five tables then commits the captured scan even when it has no stats
     process.env.ORCA_PULL_SOURCE_URL = 'https://default.convex.cloud'
     await handler(ctx, {})
     expect(applied).toHaveLength(22)
+    expect(artifactFetch).toHaveBeenCalledTimes(1)
   } finally {
     query.mockRestore()
+    artifactFetch.mockRestore()
 
     if (previousSource === undefined) {
       delete process.env.ORCA_PULL_SOURCE_URL
