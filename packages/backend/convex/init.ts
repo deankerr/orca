@@ -1,12 +1,15 @@
 import { internal } from './_generated/api'
 import { internalMutation } from './_generated/server'
 
-// run a single initial snapshot
+// runs automatically on preview deployments
 
 const init = internalMutation({
   handler: async (ctx) => {
-    console.log('[init] snapshot')
+    // v3 idempotent seed from default source (production)
+    await ctx.scheduler.runAfter(0, internal.v3.projections.pull.run, {})
 
+    // run legacy snapshot
+    console.log('[init] snapshot')
     const endpoint = await ctx.db.query('or_views_endpoints').first()
 
     if (endpoint) {

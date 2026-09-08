@@ -12,6 +12,7 @@ import { run } from './pull'
 test('pulls all five tables sequentially, including pages after an empty partial page', async () => {
   const applied: string[] = []
   const cursors: (string | null)[] = []
+
   const query = spyOn(ConvexHttpClient.prototype, 'query').mockImplementation(async (ref, args) => {
     const { cursor } = (args as { paginationOpts: PaginationOptions }).paginationOpts
     cursors.push(cursor)
@@ -21,6 +22,7 @@ test('pulls all five tables sequentially, including pages after an empty partial
       isDone: cursor === 'last',
     }
   })
+
   const ctx = {
     runMutation: async (ref, args) => {
       const [, name] = getFunctionName(ref).split(':')
@@ -29,14 +31,18 @@ test('pulls all five tables sequentially, including pages after an empty partial
       return null
     },
   } as Pick<ActionCtx, 'runMutation'>
+
   const handler = (
     run as unknown as {
-      _handler: (ctx: Pick<ActionCtx, 'runMutation'>, args: { sourceUrl: string }) => Promise<null>
+      _handler: (ctx: Pick<ActionCtx, 'runMutation'>, args: { sourceUrl?: string }) => Promise<null>
     }
   )._handler
 
+  const previousSource = process.env.ORCA_PULL_SOURCE_URL
   try {
+    process.env.ORCA_PULL_SOURCE_URL = 'invalid-default-overridden-by-argument'
     await handler(ctx, { sourceUrl: 'https://example.convex.cloud' })
+
     expect(applied).toEqual([
       'models',
       'models',
@@ -49,15 +55,32 @@ test('pulls all five tables sequentially, including pages after an empty partial
       'endpointsPricing',
       'endpointsPricing',
     ])
+
     expect(cursors).toEqual(Array.from({ length: 5 }, () => [null, 'empty', 'last']).flat())
 
     query.mockRejectedValueOnce(new Error('source unavailable'))
+
     await assert.rejects(
       handler(ctx, { sourceUrl: 'https://example.convex.cloud' }),
       /source unavailable/,
     )
+
     expect(applied).toHaveLength(10)
+
+    delete process.env.ORCA_PULL_SOURCE_URL
+    await handler(ctx, {})
+    expect(applied).toHaveLength(10)
+
+    process.env.ORCA_PULL_SOURCE_URL = 'https://default.convex.cloud'
+    await handler(ctx, {})
+    expect(applied).toHaveLength(20)
   } finally {
     query.mockRestore()
+
+    if (previousSource === undefined) {
+      delete process.env.ORCA_PULL_SOURCE_URL
+    } else {
+      process.env.ORCA_PULL_SOURCE_URL = previousSource
+    }
   }
 })

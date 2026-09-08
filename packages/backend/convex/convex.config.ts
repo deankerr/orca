@@ -11,6 +11,7 @@ const app = defineApp({
 
     DISCORD_BOT_TOKEN: v.string(),
     ORCA_PUBLIC_URL: v.string(),
+    ORCA_PULL_SOURCE_URL: v.optional(v.string()),
     ENTITY_LOGO_SERVICE_ORIGIN: v.string(),
     DISCORD_APPLICATION_ID: v.optional(v.string()),
     DISCORD_PUBLIC_KEY: v.optional(v.string()),

@@ -1,71 +1,9 @@
-# V3
+# Documentation
 
-- Builds on the `scan` and `objects` modules.
-- Ingestion is manually single-flight, so it does not currently use locks.
-- Will run in parallel with existing backend systems in production.
-- Will be gradually adopted in public-facing systems.
-- Should implement schema-breaking revisions now, if advantageous.
-
-# Change Event Streams (CES)
-
-- Encompasses Monitor/Alerts products.
-- Are completely distinct from Projections. Projections updates have no relation to change events.
-- Will be processed as part of an `ingest` action.
-- Will likely involve `json-diff-ts`, but will not use the atomic `or_views_changes` strategy.
-- Currently out of scope.
-
-# Scans
-
-- Are a snapshot of model/endpoint API data.
-- Requires carefully chosen properties to be validated.
-- Removes purely duplicated data, cutting the final artifact size from ~10MB to ~5.5MB.
-- Are always complete. Any request failure fails the entire scan.
-- The parallel request process takes only ~1.5 to ~3 seconds, including object storage.
-- Runs independently of any downstream ingestion functions.
-- Legacy archives will be converted to this more efficient format.
-
-# Projections
-
-- Projection tables include the entity and series tables.
-- Required, validated fields are carefully chosen and always exist.
-- Would support Endpoints Data Grid and Pricing History Charts products.
-- Scan ingestion writes run in one sequential mutation per table without batching. Stats run last and append without per-row existence queries.
-- The stats mutation atomically appends all stats and advances the ingestion ledger, even when there are no stats. Failed earlier mutations can leave partial projections visible; restart the same ingestion action to replay safely without duplicating series rows.
-- Backfill and normal ingestion must still run one at a time, including during recovery.
-- Failure to ingest a projection halts this process until developer intervention.
-
-## Views
-
-- Entity views are like a "cache" of the latest ingested scan.
-- They do not model "change" or "history" (aside from `unlisted_at`).
-- Entity views store arbitrary properties in the `metadata` record with a restricted value schema.
-  - They allow us to manage upstream schema changes without changing ours.
-  - Are never required to contain a specific property, or a normalised set across entities.
-  - May exclude upstream properties by key name if known to be unnecessary or superfluous.
-  - Public queries will use something like zod to create a normalized shape with default fallbacks.
-- Update suppression is a performance optimisation only.
-- `scan_at` links to the last scan which caused the entity view to update.
-  - It does not indicate staleness. It is only updated if the view was updated.
-
-## Series
-
-- Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
-- Endpoint pricing rows are inserted whenever a change is detected.
-- Endpoint stats rows are always inserted when present.
-
-## Legacy backfill
-
-- **Has been successfully completed on production backend.**
-- Converts the latest valid legacy archive per UTC hour before `LEGACY_BACKFILL_END_SCAN_AT`.
-- Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
-- Reaching the cutoff stops; normal ingestion is started manually.
-- Known incomplete bundles are skipped; schema failures halt processing.
-- Converted artifacts and projection writes share the normal ingestion ledger.
-
-## Projection pulls
-
-- Public projection queries paginate in creation order and omit deployment-local system fields.
-- `v3/projections/pull:run` accepts `sourceUrl` and copies views, listings, and pricing through the same apply mutations as ingestion. Stats are excluded.
-- View writes upsert by entity identity; immutable series writes skip existing endpoint/scan pairs. These mutations do not depend on the ingestion ledger.
-- Pulls run manually without concurrent pulls or scan ingestion on the destination. Restart from the beginning after failure; pulls neither remove destination-only rows nor propagate source deletions.
-- Preview initialization remains unchanged until production-to-dev pulling is verified.
+- Read README.md for system context.
+- Keep README.md focused on critical facts, leaving implementation detail to the code.
+- Use single-sentence bullets that consolidate related claims with concise, precise language.
+- Keep lines within 100 characters, allowing a few extra when useful.
+- Describe what the system is and does through affirmative claims.
+- Reserve negative claims for clarifying expectations about unimplemented work.
+- Reference symbols sparingly and use short names rather than full file paths.

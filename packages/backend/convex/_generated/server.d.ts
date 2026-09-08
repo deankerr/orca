@@ -37,6 +37,7 @@ type Env = {
   readonly LEGACY_BACKFILL_END_SCAN_AT: string | undefined;
   readonly ORCA_CRAWL_CRON_ENABLED: "true" | "false" | undefined;
   readonly ORCA_PUBLIC_URL: string;
+  readonly ORCA_PULL_SOURCE_URL: string | undefined;
   readonly ORCA_R2_ACCESS_KEY_ID: string;
   readonly ORCA_R2_ACCOUNT_ID: string;
   readonly ORCA_R2_BUCKET: string;
