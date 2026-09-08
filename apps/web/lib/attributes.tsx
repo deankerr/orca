@@ -1,4 +1,3 @@
-import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
 import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -35,9 +34,9 @@ import {
 
 import type { ColorIconBadgeColor } from '@/components/shared/color-icon-badge'
 import { InlineCode } from '@/components/shared/inline-code'
+import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
-type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
-type EndpointPartial = Partial<EndpointProjectionLike>
+type EndpointPartial = Partial<GridEndpoint>
 type AttributeIcon = LucideIcon
 
 export interface AttributeState {
@@ -75,7 +74,7 @@ function formatAttributePrice(field: Parameters<typeof formatPricing>[0], value:
   return formatted.unit ? `${formatted.value}/${formatted.unit}` : formatted.value
 }
 
-function formatAttributeDateTime(timestamp: number): string {
+function formatAttributeDateTime(timestamp: string): string {
   return new Date(timestamp)
     .toLocaleString('en-CA', {
       year: 'numeric',
@@ -104,7 +103,7 @@ export const attributes = defineAttributes({
     color: 'indigo',
     referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/reasoning-tokens',
     resolve: (endpoint) => ({
-      active: endpoint.model?.reasoning ?? false,
+      active: endpoint.reasoning ?? false,
     }),
   },
 
@@ -313,7 +312,7 @@ export const attributes = defineAttributes({
     color: 'pink',
     referenceUrl: 'https://openrouter.ai/docs/guides/routing/model-variants/free',
     resolve: (endpoint) => ({
-      active: endpoint.model?.variant === 'free',
+      active: endpoint.variant === 'free',
     }),
   },
 
@@ -348,12 +347,12 @@ export const attributes = defineAttributes({
     description: 'This endpoint is no longer available.',
     color: 'rose',
     resolve: (endpoint) => ({
-      active: hasValue(endpoint.unavailable_at),
-      details: hasValue(endpoint.unavailable_at)
+      active: hasValue(endpoint.unlisted_at),
+      details: hasValue(endpoint.unlisted_at)
         ? [
             {
               label: 'Last Seen',
-              value: formatAttributeDateTime(endpoint.unavailable_at),
+              value: formatAttributeDateTime(endpoint.unlisted_at),
             },
           ]
         : undefined,

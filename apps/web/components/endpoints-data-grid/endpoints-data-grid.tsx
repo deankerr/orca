@@ -1,6 +1,5 @@
 'use client'
 
-import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -12,6 +11,7 @@ import { useMemo } from 'react'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { attributes, isAttributeKey } from '@/lib/attributes'
 import { createSlugSearcher } from '@/lib/slug-search'
+import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
 import { DataGrid } from '../data-grid/data-grid'
 import {
@@ -21,7 +21,6 @@ import {
   DataGridCardToolbar,
 } from '../data-grid/data-grid-card'
 import { DataGridTableVirtual } from '../data-grid/data-grid-table'
-import type { EndpointRow } from './columns'
 import { columns } from './columns'
 import { DataGridControls } from './controls'
 import { EndpointsEmptyState } from './endpoints-empty-state'
@@ -33,10 +32,8 @@ import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { hasEndpointGridQuery, useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'
 
-type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
-
 function filterEndpointsByFacets(
-  endpoints: readonly EndpointProjectionLike[],
+  endpoints: readonly GridEndpoint[],
   facetFilters: FacetFilterState,
 ) {
   return endpoints.filter((endpoint) => {
@@ -65,7 +62,7 @@ function useEndpointGridRows({
   facetFilters,
   query,
 }: {
-  endpoints: EndpointProjectionLike[]
+  endpoints: GridEndpoint[]
   facetFilters: FacetFilterState
   query: string
 }) {
@@ -78,14 +75,13 @@ function useEndpointGridRows({
     () =>
       createSlugSearcher(facetRows, {
         getFields: (endpoint) => [
-          { name: 'model.slug', value: endpoint.model.slug },
-          { name: 'model.version_slug', value: endpoint.model.version_slug },
-          { name: 'provider.tag_slug', value: endpoint.provider.tag_slug },
+          { name: 'model_id', value: endpoint.model_id },
+          { name: 'provider_tag', value: endpoint.provider_tag },
         ],
         compareItems: (left, right) =>
-          right.model.or_added_at - left.model.or_added_at ||
-          left.model.slug.localeCompare(right.model.slug) ||
-          left.provider.tag_slug.localeCompare(right.provider.tag_slug),
+          right.model.or_created_at.localeCompare(left.model.or_created_at) ||
+          left.model_id.localeCompare(right.model_id) ||
+          left.provider_tag.localeCompare(right.provider_tag),
       }),
     [facetRows],
   )
@@ -108,7 +104,7 @@ export function EndpointsDataGrid({
   endpoints,
   isPending,
 }: {
-  endpoints: EndpointProjectionLike[]
+  endpoints: GridEndpoint[]
   isPending: boolean
 }) {
   'use no memo'
@@ -123,17 +119,17 @@ export function EndpointsDataGrid({
   })
   const isMobile = useIsMobile()
 
-  const rowDataAttributes = (row: EndpointRow) => {
+  const rowDataAttributes = (row: GridEndpoint) => {
     let status: 'gone' | 'disabled' | undefined
-    if (row.unavailable_at !== undefined && row.unavailable_at !== null) {
+    if (row.unlisted_at !== undefined && row.unlisted_at !== null) {
       status = 'gone'
-    } else if (row.disabled) {
+    } else if (row.disabled === true) {
       status = 'disabled'
     }
 
     return {
       ...(status === undefined ? {} : { 'data-row-status': status }),
-      ...(focus.highlightUuid && row.uuid.startsWith(focus.highlightUuid)
+      ...(focus.highlightUuid && row.endpoint_id.startsWith(focus.highlightUuid)
         ? { 'data-highlighted': 'true' }
         : {}),
     }

@@ -1,15 +1,18 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
-import { useQuery } from '@tanstack/react-query'
-import ms from 'ms'
+import { useEndpoints, useModels, useProviders } from '@/lib/v3/entities'
+import { buildGridEndpoints } from '@/lib/v3/grid-endpoints'
 
 import { EndpointsDataGrid } from './endpoints-data-grid'
 
 export function EndpointsDataGridPage() {
-  const { data: endpoints = [], isPending } = useQuery(
-    convexQuery(api.endpoints.list, { maxTimeUnavailable: ms('30d'), requireTextOutput: true }),
-  )
-  return <EndpointsDataGrid endpoints={endpoints} isPending={isPending} />
+  const endpoints = useEndpoints()
+  const models = useModels()
+  const providers = useProviders()
+  const isPending = endpoints.isPending || models.isPending || providers.isPending
+  const rows = isPending
+    ? []
+    : buildGridEndpoints(endpoints.data ?? [], models.data ?? [], providers.data ?? [])
+
+  return <EndpointsDataGrid endpoints={rows} isPending={isPending} />
 }
