@@ -2,6 +2,8 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
+import { endpointsPricingTable } from './series.table'
+
 const vMetadataRecord = v.record(
   v.string(),
   v.union(v.boolean(), v.number(), v.null(), v.string(), v.array(v.string())),
@@ -33,6 +35,7 @@ export const endpointsViewTable = defineTable({
   output_modalities: v.array(v.string()),
   provider_display_name: v.string(),
 
+  pricing: endpointsPricingTable.validator.pick('discount', 'meters', 'overrides'),
   metadata: vMetadataRecord,
 
   /** Start of this catalog absence. Unset means listed. */

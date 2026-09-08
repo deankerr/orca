@@ -1,30 +1,16 @@
 import type { api } from '@orca/backend/convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 
-// Temporary series shape: values remain absent until pricing and stats are migrated.
-const series: {
-  pricing: Partial<
-    Record<
-      | 'text_input'
-      | 'text_output'
-      | 'cache_read'
-      | 'cache_write'
-      | 'audio_input'
-      | 'audio_cache_read'
-      | 'image_input'
-      | 'image_output'
-      | 'web_search',
-      number
-    >
-  >
-  stats?: { p50_throughput: number; p50_latency: number }
-} = { pricing: {} }
-
-/** Add temporary series fields to the self-contained endpoint query result. */
+/** Compose current endpoint details and readings without falling back to historical stats. */
 export function buildGridEndpoints(
   endpoints: FunctionReturnType<typeof api.v3.public.endpoints.list>,
+  stats: FunctionReturnType<typeof api.v3.public.stats.list>,
 ) {
-  return endpoints.map((endpoint) => ({ ...endpoint, ...series }))
+  const readings = new Map(stats.map((reading) => [reading.endpoint_id, reading]))
+  return endpoints.map((endpoint) => ({
+    ...endpoint,
+    stats: endpoint.unlisted_at === undefined ? readings.get(endpoint.endpoint_id) : undefined,
+  }))
 }
 
 export type GridEndpoint = ReturnType<typeof buildGridEndpoints>[number]

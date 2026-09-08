@@ -75,25 +75,31 @@ describe('scan projection', () => {
 
     expect(writes.map((write) => write.table)).toEqual([
       'endpoints',
+      'endpoints',
       'endpointListings',
       'endpointsPricing',
       'stats',
     ])
 
     expect(writes[0]).toMatchObject({
+      table: 'endpoints',
+      row: { endpoint_id: 'one', pricing: { meters: { prompt: '2' } } },
+    })
+
+    expect(writes[1]).toMatchObject({
       row: { endpoint_id: 'two', scan_at: '2026-01-02', unlisted_at: '2026-01-02' },
     })
 
-    expect(writes[1]).toEqual({
+    expect(writes[2]).toEqual({
       table: 'endpointListings',
       row: { endpoint_id: 'two', scan_at: '2026-01-02', state: 'unlisted' },
     })
 
-    expect(writes[2]).toMatchObject({
+    expect(writes[3]).toMatchObject({
       row: { discount: 0, meters: { completion: '2', prompt: '2' } },
     })
 
-    expect(writes[3]).toEqual({
+    expect(writes[4]).toEqual({
       table: 'stats',
       row: {
         endpoint_id: 'one',
@@ -120,7 +126,12 @@ describe('scan projection', () => {
       createScanProjection(artifact('2026-01-02', [nextEndpoint])),
     )
 
-    expect(writes).toEqual([
+    expect(writes[0]).toMatchObject({
+      table: 'endpoints',
+      row: { pricing: { meters: { future_meter: '2' } } },
+    })
+
+    expect(writes.slice(1)).toEqual([
       {
         table: 'endpointsPricing',
         row: {

@@ -15,3 +15,7 @@ export function useProviders() {
 export function useEndpoints() {
   return useQuery(convexQuery(api.v3.public.endpoints.list, {}))
 }
+
+export function useStats() {
+  return useQuery(convexQuery(api.v3.public.stats.list, {}))
+}

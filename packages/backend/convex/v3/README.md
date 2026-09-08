@@ -28,12 +28,14 @@
 
 - Projection tables include the entity and series tables.
 - Required, validated fields are carefully chosen and always exist.
+- The latest ingestion record identifies the current scan, whose scan time is the ORCA clock.
+- Public endpoint listings retain endpoints unlisted within 30 days of the ORCA clock.
 - Models must include text in both modality arrays to produce entity or series projections.
 - Would support Endpoints Data Grid and Pricing History Charts products.
 - Each projection table is applied atomically.
-- Stats and the ingestion ledger commit together, including for scans without stats.
+- Stats and the ingestion record commit together, including for scans without stats.
 - Failed ingestion can leave partial projections visible.
-- Replaying the interrupted ingestion repairs partial writes without duplicating series rows.
+- Retrying an interrupted ingestion repairs partial writes without duplicating series rows.
 - Backfill and normal ingestion must still run one at a time, including during recovery.
 - Failure to ingest a projection halts this process until developer intervention.
 
@@ -41,6 +43,7 @@
 
 - Entity views are like a "cache" of the latest ingested scan.
 - Endpoint views copy model identity, names, modalities, and creation date for independent reads.
+- Endpoint views retain current pricing separately from metadata, including when unlisted.
 - They do not model "change" or "history" (aside from `unlisted_at`).
 - Entity views store arbitrary properties in the `metadata` record with a restricted value schema.
   - They allow us to manage upstream schema changes without changing ours.
@@ -56,6 +59,7 @@
 - Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
 - Endpoint pricing rows are inserted whenever a change is detected.
 - Endpoint stats rows are always inserted when present.
+- Current stats contain only readings at the ORCA clock; missing readings remain absent.
 
 ## Legacy backfill
 
@@ -64,12 +68,14 @@
 - Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
 - Reaching the cutoff stops; normal ingestion is started manually.
 - Known incomplete bundles are skipped; schema failures halt processing.
-- Converted artifacts and projection writes share the normal ingestion ledger.
+- Legacy backfill records ingestions through the same process as normal ingestion.
 
 ## Projection pulls
 
 - Pulls idempotently merge views, listings, and pricing in creation order through shared writes.
-- Pulls run exclusively on the destination and recover by replaying from the beginning.
-- Projection writes are ledger-independent; stats commit with the ingestion ledger.
+- Pulls run exclusively on the destination and refresh by rerunning from the beginning.
+- Pulls import the captured current scan and its stats together after copying other projections.
 - A source argument or default `ORCA_PULL_SOURCE_URL` enables pulling.
 - Previews pull alongside the legacy crawl until the frontend migrates.
+- Pulls copy product projections without scan artifacts or historical stats.
+- Imported ingestion records establish the current scan without requiring continuous local history.

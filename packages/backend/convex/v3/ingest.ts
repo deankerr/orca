@@ -3,17 +3,18 @@ import { v } from 'convex/values'
 import { internal } from '../_generated/api'
 import { internalAction, internalQuery } from '../_generated/server'
 import { loadScanArtifact, nextScanArtifactId } from '../scan/artifact'
-import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from './ingestions.table'
+import { getCurrentScan } from './ingestions'
+import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
 import { applyScanProjection } from './projections/apply'
 import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
 import { diffScanProjections } from './projections/diff'
 
-/** Return the artifact ID at the current end of the ingestion ledger. */
+/** Return the artifact ID at the current scan. */
 export const currentArtifactId = internalQuery({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
-    const latest = await ctx.db.query(V3_SCAN_INGESTIONS_TABLE).order('desc').first()
+    const latest = await getCurrentScan(ctx)
     return latest?.to_artifact_id ?? INITIAL_SCAN_ARTIFACT_ID
   },
 })
@@ -46,6 +47,7 @@ export const run = internalAction({
     await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId,
+      scan_at: next.scan_at,
       writes: diffScanProjections(previous, next),
     })
 

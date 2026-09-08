@@ -99,6 +99,7 @@ export const run = internalAction({
     await applyScanProjection(ctx, {
       fromArtifactId,
       toArtifactId: nextArtifact.id,
+      scan_at: next.scan_at,
       writes,
     })
 

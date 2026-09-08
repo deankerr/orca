@@ -99,6 +99,7 @@ function projectEndpoint(
   endpoint: z.infer<typeof EndpointSource>,
   model: ModelRow,
   provider: ProviderRow,
+  pricing: EndpointPricingRow,
 ): ProjectedEndpointRow {
   return {
     scan_at,
@@ -108,6 +109,7 @@ function projectEndpoint(
     provider_tag: endpoint.provider_slug,
     provider_id: provider.provider_id,
     ...endpointEntityFields(model, provider),
+    pricing: R.pick(pricing, ['discount', 'meters', 'overrides']),
     metadata: flattenMetadata(endpoint, ENDPOINT_METADATA_OMIT),
   }
 }
@@ -214,8 +216,12 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
       const provider = projectProvider(scan_at, endpoint.provider_info)
       providers.set(provider.provider_id, provider)
 
-      endpoints.set(endpoint.id, projectEndpoint(scan_at, entry, endpoint, model, provider))
-      pricing.set(endpoint.id, projectPricing(endpoint.id, scan_at, endpoint.pricing))
+      const endpointPricing = projectPricing(endpoint.id, scan_at, endpoint.pricing)
+      endpoints.set(
+        endpoint.id,
+        projectEndpoint(scan_at, entry, endpoint, model, provider, endpointPricing),
+      )
+      pricing.set(endpoint.id, endpointPricing)
 
       const endpointStats = projectStats(endpoint.id, scan_at, endpoint)
 

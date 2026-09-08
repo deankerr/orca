@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { query } from '../../_generated/server'
 import { V3_ENDPOINTS_VIEW_TABLE } from '../entities.table'
+import { getCurrentScan } from '../ingestions'
 import { Model } from './models'
 import { Provider } from './providers'
 
@@ -9,6 +10,41 @@ import { Provider } from './providers'
 const zQuantity = z.number().nonnegative().nullable().catch(null)
 const zPolicy = z.boolean().nullable().catch(null)
 const zCapability = z.boolean().nullable().catch(null)
+
+// Preserve free prices; missing or malformed meters remain absent.
+const zPrice = z
+  .string()
+  .trim()
+  .min(1)
+  .pipe(z.coerce.number<string>().nonnegative())
+  .optional()
+  .catch(undefined)
+
+const EndpointPricing = z
+  .object({
+    meters: z.object({
+      prompt: zPrice,
+      completion: zPrice,
+      input_cache_read: zPrice,
+      input_cache_write: zPrice,
+      audio: zPrice,
+      input_audio_cache: zPrice,
+      image: zPrice,
+      image_output: zPrice,
+      web_search: zPrice,
+    }),
+  })
+  .transform(({ meters }) => ({
+    text_input: meters.prompt,
+    text_output: meters.completion,
+    cache_read: meters.input_cache_read,
+    cache_write: meters.input_cache_write,
+    audio_input: meters.audio,
+    audio_cache_read: meters.input_audio_cache,
+    image_input: meters.image,
+    image_output: meters.image_output,
+    web_search: meters.web_search,
+  }))
 
 const EndpointMetadata = z
   .object({
@@ -82,21 +118,34 @@ export const Endpoint = z
     input_modalities: Model.shape.input_modalities,
     output_modalities: Model.shape.output_modalities,
     provider_display_name: Provider.shape.display_name,
+    pricing: EndpointPricing,
     metadata: EndpointMetadata,
   })
   .transform(({ metadata, ...identity }) => ({ ...identity, ...metadata }))
 
 export type Endpoint = z.infer<typeof Endpoint>
 
-/** List self-contained baseline details for listed endpoints. */
+/** List current endpoint details, including endpoints unlisted in the last 30 scan days. */
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const rows = await ctx.db
+    const scan = await getCurrentScan(ctx)
+
+    if (scan === null) {
+      return []
+    }
+
+    const cutoff = new Date(Date.parse(scan.scan_at) - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const listed = await ctx.db
       .query(V3_ENDPOINTS_VIEW_TABLE)
       .withIndex('by_unlisted_at', (q) => q.eq('unlisted_at', undefined))
       .collect()
 
-    return rows.map((row) => Endpoint.parse(row))
+    const unlisted = await ctx.db
+      .query(V3_ENDPOINTS_VIEW_TABLE)
+      .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', cutoff))
+      .collect()
+
+    return [...listed, ...unlisted].map((row) => Endpoint.parse(row))
   },
 })
