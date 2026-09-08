@@ -7,8 +7,8 @@ export default defineConfig({
   extends: [core, react, next],
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
-    '.agents/skills',
-    '.claude/skills',
+    '**/.agents/skills',
+    '**/.claude/skills',
     '**/components/ui',
     '**/worker-configuration.d.ts',
     'repos/**',

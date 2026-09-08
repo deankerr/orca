@@ -5,8 +5,8 @@ import { ignorePatterns } from './node_modules/ultracite/config/shared/ignores.m
 export default defineConfig({
   ignorePatterns: [
     ...ignorePatterns,
-    '.agents/skills',
-    '.claude/skills',
+    '**/.agents/skills',
+    '**/.claude/skills',
     '**/components/ui',
     '**/worker-configuration.d.ts',
     'repos/**',
