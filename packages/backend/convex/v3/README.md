@@ -28,6 +28,7 @@
 
 - Projection tables include the entity and series tables.
 - Required, validated fields are carefully chosen and always exist.
+- Models must include text in both modality arrays to produce entity or series projections.
 - Would support Endpoints Data Grid and Pricing History Charts products.
 - Each projection table is applied atomically.
 - Stats and the ingestion ledger commit together, including for scans without stats.
@@ -39,6 +40,7 @@
 ## Views
 
 - Entity views are like a "cache" of the latest ingested scan.
+- Endpoint views copy model identity, names, modalities, and creation date for independent reads.
 - They do not model "change" or "history" (aside from `unlisted_at`).
 - Entity views store arbitrary properties in the `metadata` record with a restricted value schema.
   - They allow us to manage upstream schema changes without changing ours.

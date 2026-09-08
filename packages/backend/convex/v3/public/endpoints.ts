@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import { query } from '../../_generated/server'
 import { V3_ENDPOINTS_VIEW_TABLE } from '../entities.table'
+import { Model } from './models'
+import { Provider } from './providers'
 
 // Missing or invalid metadata remains unknown rather than implying a value.
 const zQuantity = z.number().nonnegative().nullable().catch(null)
@@ -74,13 +76,19 @@ export const Endpoint = z
     provider_id: z.string(),
     provider_tag: z.string(),
     variant: z.string(),
+    model_display_name: Model.shape.display_name,
+    model_permaslug: Model.shape.permaslug,
+    model_or_created_at: Model.shape.or_created_at,
+    input_modalities: Model.shape.input_modalities,
+    output_modalities: Model.shape.output_modalities,
+    provider_display_name: Provider.shape.display_name,
     metadata: EndpointMetadata,
   })
   .transform(({ metadata, ...identity }) => ({ ...identity, ...metadata }))
 
 export type Endpoint = z.infer<typeof Endpoint>
 
-/** List baseline endpoint details with model/provider references for client joins. */
+/** List self-contained baseline details for listed endpoints. */
 export const list = query({
   args: {},
   handler: async (ctx) => {

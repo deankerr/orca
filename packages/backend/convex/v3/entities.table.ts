@@ -26,6 +26,13 @@ export const endpointsViewTable = defineTable({
   /** `provider_info.slug`. */
   provider_id: v.string(),
 
+  model_display_name: v.string(),
+  model_permaslug: v.string(),
+  model_or_created_at: v.string(),
+  input_modalities: v.array(v.string()),
+  output_modalities: v.array(v.string()),
+  provider_display_name: v.string(),
+
   metadata: vMetadataRecord,
 
   /** Start of this catalog absence. Unset means listed. */

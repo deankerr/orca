@@ -79,7 +79,7 @@ function useEndpointGridRows({
           { name: 'provider_tag', value: endpoint.provider_tag },
         ],
         compareItems: (left, right) =>
-          right.model.or_created_at.localeCompare(left.model.or_created_at) ||
+          right.model_or_created_at.localeCompare(left.model_or_created_at) ||
           left.model_id.localeCompare(right.model_id) ||
           left.provider_tag.localeCompare(right.provider_tag),
       }),

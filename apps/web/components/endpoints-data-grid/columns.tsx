@@ -23,7 +23,7 @@ function EmptyCell() {
 export const columns: ColumnDef<GridEndpoint>[] = [
   {
     id: 'model',
-    accessorFn: (row) => `${row.model.display_name} ${row.model_id}`,
+    accessorFn: (row) => `${row.model_display_name} ${row.model_id}`,
     header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
     cell: ({ row }) => {
       const endpoint = row.original
@@ -31,7 +31,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         <EntityOverviewTrigger
           type="model"
           slug={endpoint.model_id}
-          render={<EntityIdentity name={endpoint.model.display_name} slug={endpoint.model_id} />}
+          render={<EntityIdentity name={endpoint.model_display_name} slug={endpoint.model_id} />}
         />
       )
     },
@@ -44,7 +44,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
 
   {
     id: 'provider',
-    accessorFn: (row) => `${row.provider.display_name} ${row.provider_id}`,
+    accessorFn: (row) => `${row.provider_display_name} ${row.provider_id}`,
     header: ({ column }) => <DataGridColumnHeader column={column} title="PROVIDER" />,
     cell: ({ row }) => {
       const endpoint = row.original
@@ -53,7 +53,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
           type="provider"
           slug={endpoint.provider_id}
           render={
-            <EntityIdentity name={endpoint.provider.display_name} slug={endpoint.provider_tag} />
+            <EntityIdentity name={endpoint.provider_display_name} slug={endpoint.provider_tag} />
           }
         />
       )
@@ -309,7 +309,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
 
   {
     id: 'modelAddedAt',
-    accessorFn: (row) => row.model.or_created_at,
+    accessorFn: (row) => row.model_or_created_at,
     sortingFn: 'basic',
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />

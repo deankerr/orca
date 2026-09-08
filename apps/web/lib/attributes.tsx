@@ -497,7 +497,7 @@ export const attributes = defineAttributes({
     color: 'violet',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/images',
     resolve: (endpoint) => {
-      const active = endpoint.model?.input_modalities?.includes('image') ?? false
+      const active = endpoint.input_modalities?.includes('image') ?? false
       const items = []
       const imageInputPrice = endpoint.pricing?.image_input
 
@@ -523,7 +523,7 @@ export const attributes = defineAttributes({
     color: 'violet',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/image-generation',
     resolve: (endpoint) => {
-      const active = endpoint.model?.output_modalities?.includes('image') ?? false
+      const active = endpoint.output_modalities?.includes('image') ?? false
       const items = []
       const imageOutputPrice = endpoint.pricing?.image_output
 
@@ -548,7 +548,7 @@ export const attributes = defineAttributes({
     description: 'Returns text in the completion response.',
     color: 'zinc',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('text') ?? false,
+      active: endpoint.output_modalities?.includes('text') ?? false,
     }),
   },
 
@@ -560,7 +560,7 @@ export const attributes = defineAttributes({
     color: 'sky',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/pdfs',
     resolve: (endpoint) => ({
-      active: endpoint.model?.input_modalities?.includes('file') ?? false,
+      active: endpoint.input_modalities?.includes('file') ?? false,
     }),
   },
 
@@ -572,7 +572,7 @@ export const attributes = defineAttributes({
     color: 'fuchsia',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => {
-      const active = endpoint.model?.input_modalities?.includes('audio') ?? false
+      const active = endpoint.input_modalities?.includes('audio') ?? false
       const items = []
       const audioInputPrice = endpoint.pricing?.audio_input
       const audioCacheReadPrice = endpoint.pricing?.audio_cache_read
@@ -606,7 +606,7 @@ export const attributes = defineAttributes({
     color: 'fuchsia',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('audio') ?? false,
+      active: endpoint.output_modalities?.includes('audio') ?? false,
     }),
   },
 
@@ -618,7 +618,7 @@ export const attributes = defineAttributes({
     color: 'cyan',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('speech') ?? false,
+      active: endpoint.output_modalities?.includes('speech') ?? false,
     }),
   },
 
@@ -630,7 +630,7 @@ export const attributes = defineAttributes({
     color: 'emerald',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
     resolve: (endpoint) => ({
-      active: endpoint.model?.input_modalities?.includes('video') ?? false,
+      active: endpoint.input_modalities?.includes('video') ?? false,
     }),
   },
 
@@ -642,7 +642,7 @@ export const attributes = defineAttributes({
     color: 'emerald',
     referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('video') ?? false,
+      active: endpoint.output_modalities?.includes('video') ?? false,
     }),
   },
 
@@ -654,7 +654,7 @@ export const attributes = defineAttributes({
     color: 'amber',
     referenceUrl: 'https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('embeddings') ?? false,
+      active: endpoint.output_modalities?.includes('embeddings') ?? false,
     }),
   },
 
@@ -665,7 +665,7 @@ export const attributes = defineAttributes({
     description: 'Returns ranked results with relevance scores for reranking workloads.',
     color: 'amber',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('rerank') ?? false,
+      active: endpoint.output_modalities?.includes('rerank') ?? false,
     }),
   },
 
@@ -677,7 +677,7 @@ export const attributes = defineAttributes({
     color: 'lime',
     referenceUrl: 'https://openrouter.ai/docs/api/api-reference/audio/create-transcription',
     resolve: (endpoint) => ({
-      active: endpoint.model?.output_modalities?.includes('transcription') ?? false,
+      active: endpoint.output_modalities?.includes('transcription') ?? false,
     }),
   },
 })
