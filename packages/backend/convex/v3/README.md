@@ -22,7 +22,7 @@
 - Any request failure fails the entire scan.
 - The parallel request process takes only ~1.5 to ~3 seconds, including object storage.
 - Runs independently of any downstream ingestion functions.
-- Legacy archives will be converted to this more efficient format.
+- Legacy archives have been converted to this more efficient format.
 
 # Projections
 
@@ -60,15 +60,6 @@
 - Endpoint pricing rows are inserted whenever a change is detected.
 - Endpoint stats rows are always inserted when present.
 - Current stats contain only readings at the ORCA clock; missing readings remain absent.
-
-## Legacy backfill
-
-- **Has been successfully completed on production backend.**
-- Converts the latest valid legacy archive per UTC hour before `LEGACY_BACKFILL_END_SCAN_AT`.
-- Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
-- Reaching the cutoff stops; normal ingestion is started manually.
-- Known incomplete bundles are skipped; schema failures halt processing.
-- Legacy backfill records ingestions through the same process as normal ingestion.
 
 ## Projection pulls
 

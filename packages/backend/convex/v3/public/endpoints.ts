@@ -11,12 +11,12 @@ const zQuantity = z.number().nonnegative().nullable().catch(null)
 const zPolicy = z.boolean().nullable().catch(null)
 const zCapability = z.boolean().nullable().catch(null)
 
-// Preserve free prices; missing or malformed meters remain absent.
+// The grid treats zero prices as absent, alongside missing or malformed meters.
 const zPrice = z
   .string()
   .trim()
   .min(1)
-  .pipe(z.coerce.number<string>().nonnegative())
+  .pipe(z.coerce.number<string>().positive())
   .optional()
   .catch(undefined)
 

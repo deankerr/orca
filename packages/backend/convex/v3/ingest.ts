@@ -24,7 +24,6 @@ export const run = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    // ponytail: artifact selection assumes this action is single-flight; add a cursor CAS if not.
     const fromArtifactId: string = await ctx.runQuery(internal.v3.ingest.currentArtifactId, {})
     const toArtifactId = await nextScanArtifactId(ctx, fromArtifactId)
 
