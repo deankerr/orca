@@ -89,11 +89,12 @@ function transformEndpoint(input: Doc<'or_views_endpoints'>): OrcaPublicApiV2End
     implicit_caching: input.implicit_caching,
     moderated: input.moderated,
     native_web_search: input.native_web_search,
-    stats_last_30m: input.stats
-      ? {
-          latency_ms_p50: input.stats.p50_latency,
-          tokens_per_sec_p50: input.stats.p50_throughput,
-        }
-      : null,
+    stats_last_30m:
+      input.stats?.p50_latency !== undefined && input.stats.p50_throughput !== undefined
+        ? {
+            latency_ms_p50: input.stats.p50_latency,
+            tokens_per_sec_p50: input.stats.p50_throughput,
+          }
+        : null,
   }
 }

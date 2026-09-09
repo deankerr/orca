@@ -111,8 +111,8 @@ export const endpointsTable = defineTable({
 
   stats: v.optional(
     v.object({
-      p50_throughput: v.number(),
-      p50_latency: v.number(),
+      p50_throughput: v.optional(v.number()),
+      p50_latency: v.optional(v.number()),
     }),
   ),
 

@@ -103,9 +103,10 @@ export const EndpointTransformSchema = z
 
     stats: z
       .object({
-        p50_throughput: z.number(),
-        p50_latency: z.number(),
+        p50_throughput: z.number().nullish(),
+        p50_latency: z.number().nullish(),
       })
+      .transform(R.pickBy(R.isNonNullish))
       .optional(),
   })
   .transform(R.pickBy(R.isNonNullish))
