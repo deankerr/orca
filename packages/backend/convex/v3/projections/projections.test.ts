@@ -2,7 +2,10 @@
 
 import { describe, expect, test } from 'bun:test'
 
+import { validate } from 'convex-helpers/validators'
+
 import { createScanArtifact } from '../../scan/artifact'
+import { endpointsStatsTable } from '../series.table'
 import { createScanProjection } from './create'
 import { diffScanProjections } from './diff'
 
@@ -40,6 +43,31 @@ function endpoint(id: string, prompt: string) {
 }
 
 describe('scan projection', () => {
+  test('preserves numeric, string, and null stats through projection and storage validation', () => {
+    const sample = {
+      latency_metric: 'latency',
+      p50_latency: 13,
+      p50_throughput: null,
+      throughput_request_count: 0,
+    }
+
+    const projection = createScanProjection(
+      artifact('2026-09-09', [
+        { ...endpoint('one', '1'), stats: { endpoint_id: 'one', ...sample } },
+      ]),
+    )
+
+    const row = projection.stats.get('one')
+
+    expect(row).toEqual({
+      endpoint_id: 'one',
+      scan_at: '2026-09-09',
+      tier: 'default',
+      sample,
+    })
+    expect(validate(endpointsStatsTable.validator, row)).toBe(true)
+  })
+
   test('uses the artifact timestamp', () => {
     const source = artifact('entry-time', [endpoint('one', '1')])
     const projection = createScanProjection({ ...source, scan_at: 'artifact-time' })

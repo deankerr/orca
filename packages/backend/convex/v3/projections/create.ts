@@ -82,7 +82,9 @@ const EndpointPricing = z.looseObject({
   overrides: z.array(z.record(z.string(), z.unknown())).optional(),
 })
 
-const StatsSource = z.object({ endpoint_id: z.string() }).catchall(z.number())
+const StatsSource = z
+  .object({ endpoint_id: z.string() })
+  .catchall(z.union([z.number(), z.string(), z.null()]))
 
 const EndpointSource = z.looseObject({
   id: z.string(),
