@@ -8,6 +8,7 @@ import Link from 'next/link'
 import * as R from 'remeda'
 
 import { useExperimentalFeatures } from '@/app/experimental-features-provider'
+import { PricingHistoryOverlay } from '@/components/pricing-history/history-overlay'
 import { CopyableEntitySlug } from '@/components/shared/copyable-entity-slug'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -224,9 +225,7 @@ function OverviewLayout({
                 Model page
               </PageLink>
             )}
-            <PageLink href={`/beta/pricing-history/${slug}`} onClick={close}>
-              Pricing history (beta)
-            </PageLink>
+            <PricingHistoryOverlay modelId={slug} name={name} />
           </div>
         )}
       </div>

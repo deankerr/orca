@@ -100,6 +100,7 @@ import type * as v3_projections_pull from "../v3/projections/pull.js";
 import type * as v3_projections_queries from "../v3/projections/queries.js";
 import type * as v3_public_endpoints from "../v3/public/endpoints.js";
 import type * as v3_public_models from "../v3/public/models.js";
+import type * as v3_public_pricingHistory from "../v3/public/pricingHistory.js";
 import type * as v3_public_providers from "../v3/public/providers.js";
 import type * as v3_public_stats from "../v3/public/stats.js";
 import type * as workflows_analytics_manual from "../workflows/analytics/manual.js";
@@ -208,6 +209,7 @@ declare const fullApi: ApiFromModules<{
   "v3/projections/queries": typeof v3_projections_queries;
   "v3/public/endpoints": typeof v3_public_endpoints;
   "v3/public/models": typeof v3_public_models;
+  "v3/public/pricingHistory": typeof v3_public_pricingHistory;
   "v3/public/providers": typeof v3_public_providers;
   "v3/public/stats": typeof v3_public_stats;
   "workflows/analytics/manual": typeof workflows_analytics_manual;
