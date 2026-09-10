@@ -43,7 +43,7 @@ function projectModel(scan_at: string, entry: ScanArtifactEntry): ModelRow {
   }
 }
 
-const PROVIDER_METADATA_OMIT = new Set(['slug', 'displayName', 'dataPolicy'])
+const PROVIDER_METADATA_OMIT = new Set(['slug', 'displayName'])
 
 const ProviderInfo = z.looseObject({
   slug: z.string(),

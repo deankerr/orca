@@ -18,11 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { providerColor } from './colors'
+import { usePricingHistory } from './history-context'
 import { DAY, dailyTrace, historyTraces, tagPrices } from './history-data'
 import type { History } from './history-data'
 
@@ -59,13 +60,22 @@ const dateLabel = (at: number) =>
   })
 const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—'
 
-/** Nested in the entity sheet so closing restores the trigger and keeps the page mounted. */
-export function PricingHistoryOverlay({ modelId, name }: { modelId: string; name: string }) {
-  const [open, setOpen] = useState(false)
+/** App-level overlay that can be opened independently of an entity overview. */
+export function PricingHistoryOverlay() {
+  const { model, close } = usePricingHistory()
+  const open = model !== null
+  const modelId = model?.modelId ?? ''
+  const name = model?.name ?? ''
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="outline" />}>Pricing history</SheetTrigger>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          close()
+        }
+      }}
+    >
       <SheetContent
         side="top"
         className="mx-auto max-w-[1600px] overflow-hidden border shadow-2xl data-[side=top]:top-0 data-[side=top]:h-dvh sm:rounded-lg sm:data-[side=top]:inset-x-6 sm:data-[side=top]:top-6 sm:data-[side=top]:h-[calc(100dvh-3rem)]"
