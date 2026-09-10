@@ -1,0 +1,11 @@
+family,organization,current_endpoints
+Claude,Amazon Bedrock,26
+Claude,Anthropic,25
+Claude,Azure,14
+Claude,Claude Platform on AWS,9
+Claude,Google,31
+Gemini,Google,57
+Gemini,Google AI Studio,46
+OpenAI proprietary,Amazon Bedrock,5
+OpenAI proprietary,Azure,59
+OpenAI proprietary,OpenAI,114

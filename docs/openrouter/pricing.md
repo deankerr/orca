@@ -36,8 +36,10 @@ mapping and conversion mean this object is not reliably derivable from `pricing_
 
 - In the frontend bundle, `prompt`, `completion`, `discount`, and `display_pricing` are present on
   every endpoint.
-- A zero `prompt` or `completion` rate means the meter is not applicable or has no charge in that
-  endpoint's context; it does not identify which case applies.
+- A zero meter value and an absent meter are equivalent: both mean **unmetered**.
+- Unmetered does not establish whether the endpoint supports the associated feature or is free.
+- 🧭 Ignore transitions between zero and absence when interpreting pricing changes; they expose
+  OpenRouter's internal representation, not a pricing event.
 - `display_pricing` is copied under `pricing` as well as exposed at the endpoint root.
 - 🔄 Normalized rates can incorporate a discount or the active band of conditional pricing.
 
@@ -107,13 +109,16 @@ The normalized rates and headline values in `display_pricing` already include th
 `pricing.overrides` is an array of conditional rate rows. The key is absent when no conditional
 pricing is exposed.
 
-- Time-conditioned rows contain `utc_start` and `utc_end`.
+- 🧭 Detect schedule pricing when any object in the array has a property beginning with `utc_`.
 - Prompt-length rows contain `min_prompt_tokens` and rates above that threshold.
 - The normalized `pricing.*` fields present the active schedule band or the default prompt-length
   band.
 - 📊 `overrides` appeared on 109 of 1,080 text-input-and-output endpoints (10.1%) in the 2026-08-24
   bundle.
 - 🧭 Beyond detecting the type of override in use, the content values should not be interpreted.
+- Schedules vary and do not provide a universal base price or default band.
+- 🧭 Exclude scheduled pricing observations from pricing-change counts; movement through an
+  existing schedule is not repricing.
 
 ## `display_pricing`
 
@@ -178,8 +183,13 @@ moved and does not infer that one changed field explains another.
 Pricing representations and individual keys have been introduced and removed over time. Compare
 the state actually present in each observation.
 
-- 🧭 Treat field presence and absence as state.
-- ⚠️ A missing historical field is not a zero rate.
+- 🧭 Preserve the raw observations, but normalize zero and absent meters to unmetered for analysis.
+- Historical snapshots include temporary upstream mistakes, schema migrations, and mass property
+  changes as well as pricing changes.
+- 🧭 Investigate spikes before interpreting them as market activity.
+- Pricing conventions and feature adoption have changed substantially during collection; use the
+  population listed at each historical time rather than today's survivors to measure historical
+  prevalence.
 
 ## Reasoning meters
 

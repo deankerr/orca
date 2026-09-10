@@ -1,0 +1,1268 @@
+model_id,provider_tag,organization,endpoint_id,cohort,family,variant,prompt,all_meter_changes_30d,input_changes_30d,listed_days_30d,all_meter_changes_90d,input_changes_90d,listed_days_90d
+aion-labs/aion-2.0,aion-labs,AionLabs,1e93b0bb-eb0f-49bc-8fda-947105413b86,misc,aion-labs,standard,8E-7,0,0,30.0,0,0,90.0
+aion-labs/aion-3.0,aion-labs,AionLabs,8c8f827d-2bef-468a-8f9e-8e27b470de5e,misc,aion-labs,standard,0.000003,0,0,30.0,0,0,62.99310009259317
+aion-labs/aion-3.0-mini,aion-labs,AionLabs,0ad7ab68-a351-4a96-b2ef-fa8fe13adae3,misc,aion-labs,standard,7E-7,0,0,30.0,0,0,62.99310009259317
+aion-labs/aion-rp-llama-3.1-8b,aion-labs,AionLabs,fd456f92-a506-4249-8527-988e9c1d84b3,misc,aion-labs,standard,8E-7,0,0,30.0,0,0,90.0
+amazon/nova-2-lite-v1,amazon-bedrock,Amazon Bedrock,b1b489e5-7029-4ab2-9e12-5415b55b4afa,other_hosted_candidates,amazon,standard,3E-7,0,0,30.0,0,0,90.0
+amazon/nova-2-lite-v1,amazon-bedrock/eu-west-1,Amazon Bedrock,bccd64e6-206f-4723-a55e-25167dc4e253,other_hosted_candidates,amazon,standard,3E-7,0,0,30.0,0,0,90.0
+amazon/nova-lite-v1,amazon-bedrock,Amazon Bedrock,72eda073-d180-4482-8e4f-81051cb66f7e,other_hosted_candidates,amazon,standard,6E-8,0,0,30.0,0,0,90.0
+amazon/nova-lite-v1,amazon-bedrock/eu-west-1,Amazon Bedrock,908f5353-fba6-488c-8fd4-e9f041d32ac1,other_hosted_candidates,amazon,standard,6E-8,0,0,30.0,0,0,90.0
+amazon/nova-micro-v1,amazon-bedrock,Amazon Bedrock,474f0074-66f9-42f0-a866-81a2ffebb001,other_hosted_candidates,amazon,standard,3.5E-8,0,0,30.0,0,0,90.0
+amazon/nova-micro-v1,amazon-bedrock/eu-west-1,Amazon Bedrock,b2fd24f9-80a2-4d47-8b3b-209fbc345d69,other_hosted_candidates,amazon,standard,3.5E-8,0,0,30.0,0,0,90.0
+amazon/nova-premier-v1,amazon-bedrock,Amazon Bedrock,6e4da481-6c8d-45d0-a3f5-11a9ba527485,other_hosted_candidates,amazon,standard,0.0000025,0,0,30.0,0,0,90.0
+amazon/nova-pro-v1,amazon-bedrock,Amazon Bedrock,959381a4-8054-450f-9daf-5fcab64ba9aa,other_hosted_candidates,amazon,standard,8E-7,0,0,30.0,0,0,90.0
+amazon/nova-pro-v1,amazon-bedrock/eu-west-1,Amazon Bedrock,ffa54e7c-474e-4dc9-ac20-ef8015adb8d0,other_hosted_candidates,amazon,standard,8E-7,0,0,30.0,0,0,90.0
+anthracite-org/magnum-v4-72b,mancer/fp8,Mancer 2,7f8d0c76-0eab-4606-9f4c-d0b4414e2cf1,misc,anthracite-org,standard,0.0000025,1,1,30.0,1,1,90.0
+anthropic/claude-3-haiku,amazon-bedrock,Amazon Bedrock,401c6f0f-caeb-4c84-92b7-e163dbccf7c2,major_labs,Claude,standard,2.5E-7,0,0,30.0,1,0,90.0
+anthropic/claude-fable-5,google-vertex/europe,Google,212020fd-ae3e-48f8-a1b9-ba46a74b835b,major_labs,Claude,standard,0.000011,0,0,30.0,1,0,63.90976172453827
+anthropic/claude-fable-5,amazon-bedrock,Amazon Bedrock,52afa9b6-8499-4575-9932-f67190705711,major_labs,Claude,standard,0.00001,0,0,30.0,1,0,89.87499496527845
+anthropic/claude-fable-5,azure,Azure,60a9611a-2aac-4918-9bf7-4879278d9fff,major_labs,Claude,standard,0.00001,0,0,30.0,1,0,89.87499496527845
+anthropic/claude-fable-5,claude-on-aws,Claude Platform on AWS,633d55f8-e2bf-42d2-9224-4da5dea7f657,major_labs,Claude,standard,0.00001,0,0,21.92361101851971,0,0,21.92361101851971
+anthropic/claude-fable-5,google-vertex/global,Google,71317945-4da9-4076-ba2f-511f47ce3a24,major_labs,Claude,standard,0.00001,0,0,30.0,1,0,89.87499496527845
+anthropic/claude-fable-5,anthropic,Anthropic,adbe7cef-baaa-428c-8b8d-59d93e17cb47,major_labs,Claude,standard,0.00001,0,0,30.0,1,0,89.87499496527845
+anthropic/claude-fable-5.1,azure,Azure,0436a142-e531-4024-bd04-4d77cb7c342e,major_labs,Claude,standard,0.00001,0,0,7.006943321760606,0,0,7.006943321760606
+anthropic/claude-fable-5.1,amazon-bedrock,Amazon Bedrock,36ca6ce4-8e92-4ad6-bb37-728544d6eb09,major_labs,Claude,standard,0.00001,0,0,7.006943321760606,0,0,7.006943321760606
+anthropic/claude-fable-5.1,anthropic,Anthropic,72afe8d6-08ba-4171-a15f-fab2259daf02,major_labs,Claude,standard,0.00001,0,0,7.048610578703659,0,0,7.048610578703659
+anthropic/claude-fable-5.1,google-vertex/global,Google,94d16598-ea5b-4a68-9f25-89d39e74ade9,major_labs,Claude,standard,0.00001,0,0,7.006943321760606,0,0,7.006943321760606
+anthropic/claude-fable-5.1:batch,anthropic,Anthropic,4cb611cc-4395-4219-bac4-b59f40bf1f5a,major_labs,Claude,batch,0.000005,0,0,6.548609687501082,0,0,6.548609687501082
+anthropic/claude-fable-5:batch,anthropic,Anthropic,7e4185f2-5a38-48ae-805d-ff954a2aa881,major_labs,Claude,batch,0.000005,0,0,30.0,1,0,36.34027754629652
+anthropic/claude-haiku-4.5,google-vertex/us-east5,Google,0dcd21d6-4dc2-44ef-9495-c327c9b150ef,major_labs,Claude,standard,0.0000011,0,0,30.0,0,0,34.59027726851956
+anthropic/claude-haiku-4.5,anthropic,Anthropic,41d2915a-92e6-4993-b537-210b4e10cba8,major_labs,Claude,standard,0.000001,0,0,30.0,1,0,90.0
+anthropic/claude-haiku-4.5,amazon-bedrock/us,Amazon Bedrock,6d959414-9365-4caa-9b39-8e48ef4e1fc8,major_labs,Claude,standard,0.0000011,0,0,25.88194420138995,0,0,25.88194420138995
+anthropic/claude-haiku-4.5,google-vertex/global,Google,8a5e69a1-ea0d-4af6-899e-8b7e1c93a7a9,major_labs,Claude,standard,0.000001,0,0,30.0,1,0,90.0
+anthropic/claude-haiku-4.5,azure/global,Azure,8d380bdc-aa3c-4cee-9969-f7e18327c061,major_labs,Claude,standard,0.000001,0,0,30.0,0,0,63.28476858796345
+anthropic/claude-haiku-4.5,amazon-bedrock/global,Amazon Bedrock,d000261c-5aeb-47d1-ac87-ad64dbe1cdb6,major_labs,Claude,standard,0.000001,0,0,30.0,1,0,90.0
+anthropic/claude-haiku-4.5,amazon-bedrock/eu-west-1,Amazon Bedrock,d5b19fd2-6e72-4610-8c39-0be29f34b736,major_labs,Claude,standard,0.0000011,0,0,30.0,2,1,90.0
+anthropic/claude-haiku-4.5,google-vertex/europe,Google,e8aa604a-f8cb-41f3-b516-5cd491f89cf7,major_labs,Claude,standard,0.0000011,0,0,30.0,2,1,90.0
+anthropic/claude-haiku-4.5:batch,anthropic,Anthropic,5f81131e-c48b-4650-ad7b-de5c514c942f,major_labs,Claude,batch,5E-7,0,0,30.0,0,0,36.38194344907447
+anthropic/claude-opus-4,google-vertex,Google,02160c8a-a3b3-4958-bbb4-47c83f0376d5,major_labs,Claude,standard,0.000015,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.1,amazon-bedrock,Amazon Bedrock,ece5c3c6-e437-4297-92fc-150a1771ec56,major_labs,Claude,standard,0.000015,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.1,google-vertex/global,Google,fd53ee1e-86ae-40b4-ba95-79bdce79051c,major_labs,Claude,standard,0.000015,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.1:batch,anthropic,Anthropic,a4d7df36-7bdd-44cc-9c51-4625aedc52a0,major_labs,Claude,batch,0.0000075,0,0,30.0,0,0,36.29861126157421
+anthropic/claude-opus-4.5,claude-on-aws,Claude Platform on AWS,4d2d1f7b-36e3-4858-a7a3-0404d6f71c0c,major_labs,Claude,standard,0.000005,0,0,21.756945300927317,0,0,21.756945300927317
+anthropic/claude-opus-4.5,azure/global,Azure,5d048218-c60f-4cff-9719-6cb2b71acd57,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,63.28476858796345
+anthropic/claude-opus-4.5,anthropic,Anthropic,be883404-eb42-4b2d-b6e4-c7daa3aa8d62,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.5,amazon-bedrock,Amazon Bedrock,de32581c-2e11-4f54-8d29-e8a6e19d3038,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.5,google-vertex/global,Google,f28aad62-67fa-4156-a139-0b80b28bc08f,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.5,amazon-bedrock/eu-west-1,Amazon Bedrock,fcea0eb0-1c49-4f72-bebe-83de5b19e4e3,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.5:batch,anthropic,Anthropic,672356cd-5f32-4756-b0aa-5c0aef4bfc88,major_labs,Claude,batch,0.0000025,0,0,30.0,0,0,36.29861126157421
+anthropic/claude-opus-4.6,azure/global,Azure,5bc0e1b6-d533-4cd1-ad21-20009af0a6d7,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.6,google-vertex/global,Google,8dba71f8-55ed-4f21-bdc3-0d46b9e3f247,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.6,amazon-bedrock,Amazon Bedrock,a8708fb9-08ea-43bb-a3b1-165c87ef09df,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.6,anthropic,Anthropic,c926c048-563e-44b0-8434-95965bee924c,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.6,claude-on-aws,Claude Platform on AWS,ce1eca0d-578f-455f-8bad-f0f7e914d80a,major_labs,Claude,standard,0.000005,0,0,21.756945300927317,0,0,21.756945300927317
+anthropic/claude-opus-4.6,google-vertex/europe,Google,cf1bf458-2a55-4b88-bdca-56db673fe847,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.6:batch,anthropic,Anthropic,b98aa7bc-de98-4767-93fd-a6eeda03de93,major_labs,Claude,batch,0.0000025,0,0,30.0,0,0,36.29861126157421
+anthropic/claude-opus-4.7,amazon-bedrock/global,Amazon Bedrock,0fa65117-00d9-4835-808d-9b68041d9ce4,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.7,amazon-bedrock/eu-west-1,Amazon Bedrock,202e9449-eb0e-490a-ac07-722e15dcc4e6,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.7,google-vertex/global,Google,29c5b0a7-b6ed-4f4d-8ef4-ea650f535c5f,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.7,google-vertex/europe,Google,2b609378-53d9-4b23-9219-3804d5f33e95,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.7,claude-on-aws,Claude Platform on AWS,4238074b-5a44-4a05-bc84-987fdad85582,major_labs,Claude,standard,0.000005,0,0,21.756945300927317,0,0,21.756945300927317
+anthropic/claude-opus-4.7,google-vertex/us,Google,5d1c1ece-f4e8-473f-9c92-80e754886436,major_labs,Claude,standard,0.0000055,0,0,30.0,0,0,34.75694445602044
+anthropic/claude-opus-4.7,anthropic,Anthropic,71784905-0c14-4c62-851a-c998ae9a222c,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.7,azure/global,Azure,f67303a6-c606-43f3-a1c4-1f48a569c5a5,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,63.78476630787055
+anthropic/claude-opus-4.7:batch,anthropic,Anthropic,b8b72169-c315-4f28-b134-06a2497d9395,major_labs,Claude,batch,0.0000025,0,0,30.0,0,0,36.29861126157421
+anthropic/claude-opus-4.8,google-vertex/europe,Google,31ea1e5f-504e-4f9a-9156-3e8c9ed288e5,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.8,anthropic/fast,Anthropic,34c7c6ba-4cb1-4aa1-a940-bda19245da16,major_labs,Claude,standard,0.00001,0,0,7.298610821760915,0,0,7.298610821760915
+anthropic/claude-opus-4.8,amazon-bedrock/us,Amazon Bedrock,36d8aabe-fe9f-4d66-a1dd-d40ff2d211c1,major_labs,Claude,standard,0.0000055,0,0,25.88194420138995,0,0,25.88194420138995
+anthropic/claude-opus-4.8,google-vertex/global,Google,37ca59bb-cb63-4806-a46e-7ad51de3ec2f,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.8,azure/us,Azure,3e89c112-69b4-4ea4-b2f6-bea421af6dc6,major_labs,Claude,standard,0.000005,0,0,25.04860780092853,0,0,25.04860780092853
+anthropic/claude-opus-4.8,google-vertex/us,Google,6827ffe6-2ece-4f5b-b4e5-a66f899da8b6,major_labs,Claude,standard,0.0000055,0,0,30.0,0,0,34.71527695602013
+anthropic/claude-opus-4.8,amazon-bedrock/eu-west-1,Amazon Bedrock,82bbe0e6-ec8a-48c2-9593-86c3ccb86e54,major_labs,Claude,standard,0.0000055,0,0,30.0,2,1,90.0
+anthropic/claude-opus-4.8,amazon-bedrock,Amazon Bedrock,c17fb1eb-dbda-4889-971f-1f15f517da90,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.8,azure/global,Azure,c2bb6b96-c319-4e78-b0ea-42308136dd67,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,63.826435347224276
+anthropic/claude-opus-4.8,anthropic,Anthropic,dfc0e5bd-d703-4fe2-a7bb-655eb95d5441,major_labs,Claude,standard,0.000005,0,0,30.0,1,0,90.0
+anthropic/claude-opus-4.8,claude-on-aws,Claude Platform on AWS,e48efef9-391a-4329-9154-49ff7b3499e2,major_labs,Claude,standard,0.000005,0,0,21.756945300927317,0,0,21.756945300927317
+anthropic/claude-opus-4.8:batch,anthropic,Anthropic,a3359b46-c907-4df2-9eb7-09b892b3ad7a,major_labs,Claude,batch,0.0000025,0,0,30.0,0,0,36.34027754629652
+anthropic/claude-opus-5,google-vertex/us,Google,164e05da-0b09-4bf3-94a3-0967a014bd93,major_labs,Claude,standard,0.0000055,0,0,30.0,0,0,34.71527695602013
+anthropic/claude-opus-5,claude-on-aws,Claude Platform on AWS,2edf66f3-04ad-4c38-b05a-bc69cf1a29ef,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,44.95113362268717
+anthropic/claude-opus-5,anthropic/fast,Anthropic,510863e2-e533-4f26-83c1-2b6bb831eb13,major_labs,Claude,standard,0.00001,0,0,7.298610821760915,0,0,7.298610821760915
+anthropic/claude-opus-5,google-vertex/europe,Google,829181b6-a898-4e91-8f5d-b781dc08fbdb,major_labs,Claude,standard,0.0000055,0,0,30.0,0,0,45.992798923612746
+anthropic/claude-opus-5,azure/global,Azure,82f0a682-38d7-49ce-9326-ace4af311a83,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,45.992798923612746
+anthropic/claude-opus-5,anthropic,Anthropic,a6a218f6-0bca-440c-98b5-66bccd2f9480,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,46.076132824076
+anthropic/claude-opus-5,google-vertex/global,Google,ac3766aa-9807-45c1-9cf5-b55267e8bddd,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,45.992798923612746
+anthropic/claude-opus-5,azure/us,Azure,bb81069a-b9eb-4c88-b50b-00eb56ec6c0c,major_labs,Claude,standard,0.000005,0,0,25.04860780092853,0,0,25.04860780092853
+anthropic/claude-opus-5,amazon-bedrock/us-east-1,Amazon Bedrock,c073101a-44d4-4060-86a4-b98c3fc168b3,major_labs,Claude,standard,0.0000055,0,0,30.0,0,0,35.159467685186755
+anthropic/claude-opus-5,amazon-bedrock,Amazon Bedrock,f599d683-cce8-4b4d-988f-c54bf9e8208e,major_labs,Claude,standard,0.000005,0,0,30.0,0,0,46.076132824076
+anthropic/claude-opus-5:batch,anthropic,Anthropic,1881dacf-5279-4a4c-b428-7d75a383dfd5,major_labs,Claude,batch,0.0000025,0,0,30.0,0,0,33.4236106365726
+anthropic/claude-sonnet-4,google-vertex/global,Google,3a66dd68-b711-4d75-bbea-56012edd68bb,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4,google-vertex,Google,5e3f0568-c089-416a-ab7b-6c432999b571,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4,amazon-bedrock/eu-west-1,Amazon Bedrock,6fa7a335-1c7d-444a-a20f-a2c67fc4011b,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4,google-vertex/europe,Google,a35a9a4d-ee64-4a06-ae63-60502277a15a,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4,amazon-bedrock,Amazon Bedrock,b2abae2d-f225-48ce-8672-cb1d08da5d7d,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.5,google-vertex/global,Google,3a2c65ff-b039-4459-804a-9aafcb4d693c,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.5,azure/global,Azure,63eb7cf5-99b7-429b-a7e3-1b2fab706208,major_labs,Claude,standard,0.000003,0,0,30.0,0,0,63.28476858796345
+anthropic/claude-sonnet-4.5,claude-on-aws,Claude Platform on AWS,6544ac65-5419-4b89-b883-a73fd1f70e2a,major_labs,Claude,standard,0.000003,0,0,21.92361101851971,0,0,21.92361101851971
+anthropic/claude-sonnet-4.5,google-vertex/us-east5,Google,83c3ce47-c679-4cb1-9e21-a5defad78b61,major_labs,Claude,standard,0.0000033,0,0,30.0,2,1,90.0
+anthropic/claude-sonnet-4.5,amazon-bedrock/eu-west-1,Amazon Bedrock,ba1b74b0-6c1b-4a2d-b615-a070cd457656,major_labs,Claude,standard,0.0000033,0,0,30.0,2,1,90.0
+anthropic/claude-sonnet-4.5,amazon-bedrock,Amazon Bedrock,d8bee848-f020-454a-b2be-4a7ce868f99f,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.5,anthropic,Anthropic,f2e829ec-4a2c-45c4-9657-fd5998271267,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.5:batch,anthropic,Anthropic,f221ae41-0f60-429b-9e24-75e9ac650bdf,major_labs,Claude,batch,0.0000015,0,0,30.0,0,0,36.256944178240715
+anthropic/claude-sonnet-4.6,google-vertex/us-east5,Google,2054a2ee-87da-429b-ae50-8d727c24eef9,major_labs,Claude,standard,0.0000033,0,0,26.965277453705117,2,1,81.80580976851836
+anthropic/claude-sonnet-4.6,claude-on-aws,Claude Platform on AWS,3ad4538c-bdd2-4161-86d8-8350c2bb8efa,major_labs,Claude,standard,0.000003,0,0,21.756945300927317,0,0,21.756945300927317
+anthropic/claude-sonnet-4.6,amazon-bedrock/eu-west-1,Amazon Bedrock,6450da7b-3556-4987-a859-f837c9fd5bd1,major_labs,Claude,standard,0.0000033,0,0,30.0,2,1,90.0
+anthropic/claude-sonnet-4.6,anthropic,Anthropic,6d408764-7dd7-4626-bb87-a6cc1589bc86,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.6,amazon-bedrock/us,Amazon Bedrock,7ab8c256-8b13-48d5-934c-1e98b1a9b17e,major_labs,Claude,standard,0.0000033,0,0,25.88194420138995,0,0,25.88194420138995
+anthropic/claude-sonnet-4.6,google-vertex/europe,Google,7d0c3c85-dc14-40c7-8153-999dae5232d9,major_labs,Claude,standard,0.0000033,0,0,30.0,2,1,90.0
+anthropic/claude-sonnet-4.6,amazon-bedrock/global,Amazon Bedrock,83d802cb-44f2-45a0-a9d5-cb9bf79777c8,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.6,azure/global,Azure,d913caa4-4687-4819-bdb3-4c62cba9a325,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.6,google-vertex/global,Google,f69cbc53-394a-440b-bc6e-d9a7952ad44e,major_labs,Claude,standard,0.000003,0,0,30.0,1,0,90.0
+anthropic/claude-sonnet-4.6:batch,anthropic,Anthropic,fa199746-90d3-41af-a665-902840b98847,major_labs,Claude,batch,0.0000015,0,0,30.0,0,0,33.256944930556195
+anthropic/claude-sonnet-5,anthropic,Anthropic,0a2a206f-95f6-4173-9475-fe65a9a36171,major_labs,Claude,standard,0.000002,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5,claude-on-aws,Claude Platform on AWS,271b132a-a9c4-44ba-aee8-2da96cd1a0a5,major_labs,Claude,standard,0.000002,0,0,21.92361101851971,0,0,21.92361101851971
+anthropic/claude-sonnet-5,azure/global,Azure,49b62192-00ff-489b-8e96-11e59f89e6bd,major_labs,Claude,standard,0.000002,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5,google-vertex/us,Google,4bf89e41-e9ae-4c3c-843c-848828ede8d3,major_labs,Claude,standard,0.0000022,0,0,30.0,0,0,34.71527695602013
+anthropic/claude-sonnet-5,amazon-bedrock/us-east-1,Amazon Bedrock,60f59aae-6853-46f7-8f03-f2a59ce61a41,major_labs,Claude,standard,0.0000022,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5,google-vertex/global,Google,726c3113-e360-4b1d-9a85-48fc70e57bf8,major_labs,Claude,standard,0.000002,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5,azure/us,Azure,a6443a42-73a4-48c3-baa1-c8174e63a991,major_labs,Claude,standard,0.000002,0,0,25.04860780092853,0,0,25.04860780092853
+anthropic/claude-sonnet-5,amazon-bedrock/global,Amazon Bedrock,d8902adb-b8a3-47fb-918d-788daf9ebd89,major_labs,Claude,standard,0.000002,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5,google-vertex/europe,Google,ed4b5a4b-5211-41ac-8fb5-b7a268d7bb89,major_labs,Claude,standard,0.0000022,0,0,30.0,0,0,70.03476809027846
+anthropic/claude-sonnet-5:batch,anthropic,Anthropic,57cc41a4-501a-4f28-91d5-5a04990946d7,major_labs,Claude,batch,0.000001,0,0,30.0,0,0,36.298610462963026
+arcee-ai/trinity-large-thinking,arcee-ai,Arcee AI,ccba276d-40ea-4973-b7a1-c0fd57e1f9d8,misc,arcee-ai,standard,2.5E-7,0,0,30.0,0,0,90.0
+baidu/ernie-4.5-vl-424b-a47b,novita/fp16,Novita,1fe59382-263d-4107-a768-d7d2007bd3b6,misc,baidu,standard,4.2E-7,0,0,30.0,0,0,90.0
+bytedance-seed/seed-1.6,seed/fp8,Seed,d85c3862-4e0d-4f8d-955b-babc62f98124,misc,bytedance-seed,standard,2.5E-7,0,0,30.0,0,0,90.0
+bytedance-seed/seed-1.6-flash,seed/fp8,Seed,e01a1227-001b-44d4-a376-90850668fa84,misc,bytedance-seed,standard,7.5E-8,0,0,30.0,0,0,90.0
+bytedance-seed/seed-2-1-turbo,seed/fp8,Seed,d4339029-2784-4408-bd78-2d9f6193b667,misc,bytedance-seed,standard,5E-7,0,0,27.13194186342811,0,0,27.13194186342811
+bytedance-seed/seed-2.0-code,seed/fp8,Seed,c8534af4-90fc-4a27-9f4e-de565f89a92b,misc,bytedance-seed,standard,5E-7,0,0,28.090276620371473,0,0,28.090276620371473
+bytedance-seed/seed-2.0-lite,seed/fp8,Seed,bf1a3473-7a0a-46d3-aaa5-adb8f876a697,misc,bytedance-seed,standard,2.5E-7,0,0,30.0,0,0,90.0
+bytedance-seed/seed-2.0-mini,seed/fp8,Seed,9265aa87-9657-4d40-b9d7-2a70318e57d9,misc,bytedance-seed,standard,1E-7,0,0,30.0,0,0,90.0
+bytedance/ui-tars-1.5-7b,parasail/bf16,Parasail,22a474a1-cb4e-42d2-b19a-c1be103f5abd,misc,bytedance,standard,1E-7,0,0,30.0,0,0,90.0
+cognitivecomputations/dolphin-mistral-24b-venice-edition,venice/fp16,Venice,7e8cc035-ab66-4fe4-a484-657a83d1be50,misc,cognitivecomputations,standard,2E-7,0,0,30.0,0,0,60.78476577546309
+cohere/command-a,cohere,Cohere,2e152629-dac1-41b0-8f4f-f8c449d2d504,open_weight_families,cohere,standard,0.0000025,0,0,30.0,0,0,90.0
+cohere/command-r-08-2024,cohere,Cohere,3d8c4986-1fc9-4ce1-b07d-d379bb75eb36,open_weight_families,cohere,standard,1.5E-7,0,0,30.0,0,0,90.0
+cohere/command-r-plus-08-2024,cohere,Cohere,cd63714a-d459-4806-bdf2-0dfea4f6614c,open_weight_families,cohere,standard,0.0000025,0,0,30.0,0,0,90.0
+cohere/command-r7b-12-2024,cohere,Cohere,d4a57205-8124-413a-ab4e-5ae94eb7aa9d,open_weight_families,cohere,standard,3.75E-8,0,0,30.0,0,0,90.0
+cohere/north-mini-code:free,cohere,Cohere,d3a18412-b833-40de-bc07-c4ba9a1dea53,open_weight_families,cohere,free,,0,0,30.0,0,0,82.8680931712963
+deepseek/deepseek-chat,streamlake,StreamLake,511ddb79-1d9e-4f5f-9863-c12b0f9b80ba,deepseek_glm_kimi_qwen,DeepSeek,standard,2.574E-7,0,0,30.0,3,3,90.0
+deepseek/deepseek-chat,deepinfra/fp4,DeepInfra,5294d55f-9012-496b-8f22-8cc919432dcd,deepseek_glm_kimi_qwen,DeepSeek,standard,3.2E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3-0324,crusoe/bf16,Crusoe,53c6eade-9c4e-4a02-8b6b-353cf02a2e89,deepseek_glm_kimi_qwen,DeepSeek,standard,5E-7,0,0,30.0,0,0,46.78446662037185
+deepseek/deepseek-chat-v3-0324,gmicloud/fp8,GMICloud,5e298981-e6d6-4db4-8240-d3e16f205239,deepseek_glm_kimi_qwen,DeepSeek,standard,2.9E-7,1,1,20.215278576388954,1,1,20.215278576388954
+deepseek/deepseek-chat-v3-0324,deepinfra/fp4,DeepInfra,820376cb-f110-4d56-ab52-5bd6ca269420,deepseek_glm_kimi_qwen,DeepSeek,standard,2.4E-7,0,0,30.0,1,1,90.0
+deepseek/deepseek-chat-v3-0324,siliconflow/fp8,SiliconFlow,d562908f-c5eb-4a32-9a91-24d53b176fd8,deepseek_glm_kimi_qwen,DeepSeek,standard,2.5E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,deepinfra/fp4,DeepInfra,012f7d1f-23d4-4d03-9aa3-432d8ad82757,deepseek_glm_kimi_qwen,DeepSeek,standard,2.5E-7,0,0,30.0,1,1,90.0
+deepseek/deepseek-chat-v3.1,atlas-cloud/fp8,AtlasCloud,0bfe3535-ed02-47ea-a98f-60cc8af4fab2,deepseek_glm_kimi_qwen,DeepSeek,standard,3E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,mara,Mara,1680c090-a0fc-4a77-891b-37c889be9d79,deepseek_glm_kimi_qwen,DeepSeek,standard,6E-7,0,0,30.0,0,0,64.0347688310207
+deepseek/deepseek-chat-v3.1,google-vertex/us-west2,Google,26971f72-0b43-4255-a39d-98da9ca32119,deepseek_glm_kimi_qwen,DeepSeek,standard,6E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,siliconflow/fp8,SiliconFlow,5d5c9c1d-af0d-4e4a-8aee-c5cd2b3883f3,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,novita/fp8,Novita,715d05e1-9fa7-4ceb-834a-833f5e26a55a,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,sambanova/fp8,SambaNova,9abe71b4-ff68-4f47-bf15-6cf4d76d9a80,deepseek_glm_kimi_qwen,DeepSeek,standard,6.5E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-chat-v3.1,coreweave/fp8,CoreWeave,c55d8fd3-2319-4fe0-b929-12a6abe79e52,deepseek_glm_kimi_qwen,DeepSeek,standard,5.5E-7,0,0,30.0,0,0,46.99280038194524
+deepseek/deepseek-r1,novita/fp8,Novita,cca51d1b-db1d-44d2-bc90-268311214746,deepseek_glm_kimi_qwen,DeepSeek,standard,7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-r1-0528,novita/fp8,Novita,04c4f1eb-bb42-42b6-823b-107ae08cf7a2,deepseek_glm_kimi_qwen,DeepSeek,standard,7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-r1-0528,siliconflow/fp8,SiliconFlow,09c6f79f-1cd9-4822-b247-ee1b6be7e4d4,deepseek_glm_kimi_qwen,DeepSeek,standard,5E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-r1-0528,deepinfra/fp4,DeepInfra,0f47837d-9d06-4c68-a93c-29b0c7cd9027,deepseek_glm_kimi_qwen,DeepSeek,standard,5E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-r1-0528,streamlake,StreamLake,d4f38905-f90a-4a4b-aecb-cdd706b87a9e,deepseek_glm_kimi_qwen,DeepSeek,standard,5.71E-7,0,0,30.0,2,2,90.0
+deepseek/deepseek-r1-distill-llama-70b,novita/bf16,Novita,797ebc09-6e53-4795-9d9e-2669ce7aee03,deepseek_glm_kimi_qwen,DeepSeek,standard,8E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.1-terminus,streamlake,StreamLake,32a989a8-2cc0-475f-b881-dc7d54718c41,deepseek_glm_kimi_qwen,DeepSeek,standard,3.426E-7,0,0,30.0,2,2,90.0
+deepseek/deepseek-v3.1-terminus,novita/fp8,Novita,812bc18a-5b61-42d0-a550-f9ed8c2164c5,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.1-terminus,atlas-cloud/fp8,AtlasCloud,8f2f0039-59ed-49ba-bb9a-970eff9de91d,deepseek_glm_kimi_qwen,DeepSeek,standard,3E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.1-terminus,siliconflow/fp8,SiliconFlow,fa1b201b-a932-41f3-8d2d-c125e2c1c6f7,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,phala,Phala,0807964d-e117-49cb-b19f-0b025f782948,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000001,0,0,30.0,0,0,64.0764345949088
+deepseek/deepseek-v3.2,sambanova,SambaNova,162e9abc-d246-4e91-bf61-c1ef89e39bff,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000003,0,0,30.0,0,0,89.95833321759271
+deepseek/deepseek-v3.2,atlas-cloud/fp8,AtlasCloud,3570a950-b80f-4acd-bb92-8e1c1c51fafc,deepseek_glm_kimi_qwen,DeepSeek,standard,2.6E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,friendli,Friendli,41463842-75f5-45bd-8c8e-291590ce6861,deepseek_glm_kimi_qwen,DeepSeek,standard,5E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,gmicloud/fp8,GMICloud,4a4416f7-de7b-42d6-982d-3ab52d67a775,deepseek_glm_kimi_qwen,DeepSeek,standard,2.088E-7,6,6,30.0,7,7,64.0764345949088
+deepseek/deepseek-v3.2,digitalocean,DigitalOcean,6d2ef8d9-ce55-4cae-97b0-5a34b524352f,deepseek_glm_kimi_qwen,DeepSeek,standard,2.5E-7,2,2,30.0,4,3,90.0
+deepseek/deepseek-v3.2,baidu/fp8,Baidu,75e0b00b-8cf7-407a-aa0a-6564f158b431,deepseek_glm_kimi_qwen,DeepSeek,standard,2.8E-7,1,1,30.0,4,4,46.49280171296387
+deepseek/deepseek-v3.2,alibaba/fp8,Alibaba,7970f607-c232-4ff1-83bd-e22bf1170902,deepseek_glm_kimi_qwen,DeepSeek,standard,3.705E-7,0,0,30.0,1,0,90.0
+deepseek/deepseek-v3.2,novita/fp8,Novita,8a5fb6d3-ef71-4958-af54-269ffa3a3c6e,deepseek_glm_kimi_qwen,DeepSeek,standard,2.69E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,google-vertex,Google,a933135e-3dfc-49e2-b9ad-be0bcd2bcdf2,deepseek_glm_kimi_qwen,DeepSeek,standard,5.6E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,siliconflow/fp8,SiliconFlow,b39a588a-b338-43ba-b046-226b9e24afa8,deepseek_glm_kimi_qwen,DeepSeek,standard,2.59E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2,streamlake/fp8,StreamLake,ce0390ec-c98c-4f93-852d-0df126d4936c,deepseek_glm_kimi_qwen,DeepSeek,standard,2.145E-7,0,0,30.0,4,3,90.0
+deepseek/deepseek-v3.2,mara,Mara,ced2365b-3ed1-4b98-a2cc-4db47c6dbd18,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000003,0,0,8.090277615741448,0,0,8.090277615741448
+deepseek/deepseek-v3.2,venice,Venice,ddb017ad-2fc6-4632-8d4d-19617005ffaa,deepseek_glm_kimi_qwen,DeepSeek,standard,3.3E-7,0,0,30.0,0,0,75.9931009837985
+deepseek/deepseek-v3.2,deepinfra/fp4,DeepInfra,f270e10b-1d21-4345-9e4e-662ddb5ba441,deepseek_glm_kimi_qwen,DeepSeek,standard,2.6E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2-exp,novita/fp8,Novita,1b484aef-be8f-4016-8762-2e3caabbab9f,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2-exp,siliconflow/fp8,SiliconFlow,65bd0608-39e6-4575-bebe-5e42bbdf3864,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v3.2-exp,atlas-cloud/fp8,AtlasCloud,97f2da45-4785-4a33-b5fc-a74132751813,deepseek_glm_kimi_qwen,DeepSeek,standard,2.7E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-flash,atlas-cloud/fp4,AtlasCloud,0796a52d-5f3e-493a-9261-715e9a76d33f,deepseek_glm_kimi_qwen,DeepSeek,standard,1.4E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-flash,streamlake/fp8,StreamLake,13515b01-fed6-4afb-a382-ca3b4d7d7b8b,deepseek_glm_kimi_qwen,DeepSeek,standard,8.4E-8,234,234,30.0,264,264,90.0
+deepseek/deepseek-v4-flash,novita/fp8,Novita,1b4b487b-abc0-4646-8ffa-534b344de4e3,deepseek_glm_kimi_qwen,DeepSeek,standard,1.4E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-flash,phala,Phala,5f8f1c28-da27-42ed-9eca-444f301534a3,deepseek_glm_kimi_qwen,DeepSeek,standard,2E-7,0,0,30.0,1,0,36.28446873842566
+deepseek/deepseek-v4-flash,alibaba/fp8,Alibaba,7f605b68-c19f-4db7-acf7-516a21f88ab4,deepseek_glm_kimi_qwen,DeepSeek,standard,1.34E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-flash,nextbit/fp8,NextBit,8dee9509-03a4-420d-a1ae-ed40c9a83d2b,deepseek_glm_kimi_qwen,DeepSeek,standard,1.5E-7,1,1,12.131943298611375,1,1,12.131943298611375
+deepseek/deepseek-v4-flash,deepinfra/fp8,DeepInfra,934a69f9-bd54-474b-beca-24560f721e12,deepseek_glm_kimi_qwen,DeepSeek,standard,9E-8,0,0,30.0,1,1,90.0
+deepseek/deepseek-v4-flash,mancer/fp8,Mancer 2,98376df9-af44-4693-8fb9-bb83b6f33118,deepseek_glm_kimi_qwen,DeepSeek,standard,1.9E-7,25,25,30.0,34,31,43.49280089120622
+deepseek/deepseek-v4-flash,digitalocean,DigitalOcean,ca159a90-46f3-436c-b3a3-92d856c59e37,deepseek_glm_kimi_qwen,DeepSeek,standard,6.79E-8,3,3,30.0,6,5,90.0
+deepseek/deepseek-v4-flash,parasail/fp8,Parasail,e0865465-6069-4c7b-af2b-cc4d8f7fc617,deepseek_glm_kimi_qwen,DeepSeek,standard,1.4E-7,0,0,30.0,2,2,90.0
+deepseek/deepseek-v4-flash,siliconflow/fp8,SiliconFlow,e0ed4c27-3f53-4928-bbee-2948494ec1f0,deepseek_glm_kimi_qwen,DeepSeek,standard,1.3E-7,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-flash,gmicloud/fp8,GMICloud,e9b742d8-f524-4795-8d84-0d5815e9b73b,deepseek_glm_kimi_qwen,DeepSeek,standard,9.1E-8,22,22,30.0,27,26,90.0
+deepseek/deepseek-v4-flash,venice,Venice,e9c6a329-3555-418b-8686-a3cb8e787237,deepseek_glm_kimi_qwen,DeepSeek,standard,1.38E-7,0,0,30.0,1,1,90.0
+deepseek/deepseek-v4-flash,azure/us,Azure,f371f6c3-f895-4fed-be39-7549dec64dbd,deepseek_glm_kimi_qwen,DeepSeek,standard,2.1E-7,0,0,25.04860780092853,0,0,25.04860780092853
+deepseek/deepseek-v4-flash,baidu/fp8,Baidu,fa22fe84-7ea9-49b0-a8eb-4d87ede9de31,deepseek_glm_kimi_qwen,DeepSeek,standard,8.54E-8,214,214,30.0,222,222,90.0
+deepseek/deepseek-v4-flash-0731,baidu/fp8,Baidu,223c54e7-4db1-4098-980f-47741e7637ab,deepseek_glm_kimi_qwen,DeepSeek,standard,6.496E-8,54,54,30.0,55,55,35.11780089120622
+deepseek/deepseek-v4-flash-0731,fireworks,Fireworks,2da47185-782a-4f49-bb59-aa7cf7f026ec,deepseek_glm_kimi_qwen,DeepSeek,standard,2.2E-7,1,1,30.0,2,2,38.826135462964025
+deepseek/deepseek-v4-flash-0731,deepseek,DeepSeek,354f2e34-3024-4b72-816d-617193b784d0,deepseek_glm_kimi_qwen,DeepSeek,standard,2.2E-7,0,0,30.0,0,0,39.45112799768646
+deepseek/deepseek-v4-flash-0731,atlas-cloud/fp4,AtlasCloud,35b202d3-9dbe-4367-9bc1-f2b327472493,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,1,1,30.0,1,1,38.826135462964025
+deepseek/deepseek-v4-flash-0731,parasail/fp8,Parasail,3dc8bdba-8bee-42b8-9c9e-0d295c28e385,deepseek_glm_kimi_qwen,DeepSeek,standard,1.4E-7,1,0,30.0,1,0,38.951132638890435
+deepseek/deepseek-v4-flash-0731,baseten/fp8,BaseTen,47a93b18-a9c6-485b-9a47-2afb6ca790dc,deepseek_glm_kimi_qwen,DeepSeek,standard,1.3E-7,0,0,7.048610578703659,0,0,7.048610578703659
+deepseek/deepseek-v4-flash-0731,reka/fp4,Reka,497727f1-91e7-4775-a469-ccdd96e0f0d8,deepseek_glm_kimi_qwen,DeepSeek,standard,1.1E-7,2,1,19.590277175928154,2,1,19.590277175928154
+deepseek/deepseek-v4-flash-0731,wafer/fast,Wafer,4d5286fc-8f37-40c2-a518-e1ae100d45fc,deepseek_glm_kimi_qwen,DeepSeek,standard,1E-7,4,4,30.0,4,4,31.59027760416821
+deepseek/deepseek-v4-flash-0731,makora,Makora,562d5188-97d1-49f7-8881-d0e417e31ada,deepseek_glm_kimi_qwen,DeepSeek,standard,9E-8,0,0,13.881944293981348,0,0,13.881944293981348
+deepseek/deepseek-v4-flash-0731,relace/fp4,Relace,57c1bfab-049c-4d6a-ab34-ac1007a6043b,deepseek_glm_kimi_qwen,DeepSeek,standard,6.5E-8,15,15,26.090273171293514,15,15,26.090273171293514
+deepseek/deepseek-v4-flash-0731,sail-research/fp4,Sail Research,5c1818a9-3b96-4418-b539-c1a28648f14d,deepseek_glm_kimi_qwen,DeepSeek,standard,6.5E-8,3,3,24.256880231483116,3,3,25.42353928240913
+deepseek/deepseek-v4-flash-0731,together,Together,604391ba-7c17-4f8b-8a18-b38c5b45ac52,deepseek_glm_kimi_qwen,DeepSeek,standard,1.4E-7,0,0,30.0,0,0,35.78446743055626
+deepseek/deepseek-v4-flash-0731,nextbit/fp8,NextBit,78a67815-225d-4f55-84a9-f0b1b379a3a0,deepseek_glm_kimi_qwen,DeepSeek,standard,3.52E-7,6,5,12.381944247685649,6,5,12.381944247685649
+deepseek/deepseek-v4-flash-0731,inceptron/fp4,Inceptron,89e67dfe-8499-4a5c-a1eb-2baf0e8d63ee,deepseek_glm_kimi_qwen,DeepSeek,standard,1.3E-7,0,0,28.25694564814921,0,0,28.25694564814921
+deepseek/deepseek-v4-flash-0731,gmicloud/fp8,GMICloud,967edb29-6a8d-4dcd-b482-b37ca52e0916,deepseek_glm_kimi_qwen,DeepSeek,standard,2.86E-7,21,21,30.0,26,26,38.7844658912056
+deepseek/deepseek-v4-flash-0731,phala,Phala,9a748990-4133-40da-9619-45273c3010d9,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,2,2,30.0,2,2,35.65946756944612
+deepseek/deepseek-v4-flash-0731,mancer/fp8,Mancer 2,9c83b6fb-0614-4d50-b30b-123a09ba354a,deepseek_glm_kimi_qwen,DeepSeek,standard,1.65E-7,29,29,30.0,31,31,38.15946643518629
+deepseek/deepseek-v4-flash-0731,novita/fp8,Novita,a50c19c5-10cf-488f-b9cc-10e88e429de1,deepseek_glm_kimi_qwen,DeepSeek,standard,4.092E-7,2,2,30.0,2,2,38.20113366898287
+deepseek/deepseek-v4-flash-0731,cloudflare,Cloudflare,b9ded695-ebd6-482d-ac05-8123e54e62cb,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,3,3,30.0,3,3,39.03446674768571
+deepseek/deepseek-v4-flash-0731,deepinfra/fp8,DeepInfra,c1980fff-0a72-4bce-8d62-a7d3fc582200,deepseek_glm_kimi_qwen,DeepSeek,standard,6E-8,2,2,30.0,2,2,38.951132638890435
+deepseek/deepseek-v4-flash-0731,digitalocean,DigitalOcean,cb029acf-a84f-4280-8103-909d269e1e5f,deepseek_glm_kimi_qwen,DeepSeek,standard,7.9996E-8,2,2,29.875070821758772,4,4,32.4653465162052
+deepseek/deepseek-v4-flash-0731,coreweave/fp8,CoreWeave,cbfecbd7-9a18-45ea-bcd1-fabaa868db5c,deepseek_glm_kimi_qwen,DeepSeek,standard,1.3E-7,0,0,30.0,0,0,34.09027667824317
+deepseek/deepseek-v4-flash-0731,baseten/fp8,BaseTen,ceaae883-4cba-45dd-b986-5cd0e6bf06af,deepseek_glm_kimi_qwen,DeepSeek,standard,1.3E-7,0,0,30.0,0,0,34.63194315972427
+deepseek/deepseek-v4-flash-0731,streamlake/fp8,StreamLake,d880a270-04ff-479c-b312-6246c0f985b0,deepseek_glm_kimi_qwen,DeepSeek,standard,1.32E-7,57,57,30.0,60,60,33.256944930556195
+deepseek/deepseek-v4-flash-0731,siliconflow/fp8,SiliconFlow,e48f3cc5-cecd-4095-99e2-297f51f36d7b,deepseek_glm_kimi_qwen,DeepSeek,standard,2.2E-7,1,1,30.0,1,1,38.7844658912056
+deepseek/deepseek-v4-flash-0731,alibaba,Alibaba,f098dac5-389b-4ba6-baa1-327d1c2f73a6,deepseek_glm_kimi_qwen,DeepSeek,standard,1.76E-7,0,0,19.38194391203699,0,0,19.38194391203699
+deepseek/deepseek-v4-flash-0731,venice,Venice,f45eb809-95d6-4a0b-8b13-7f56a7b86375,deepseek_glm_kimi_qwen,DeepSeek,standard,1.75E-7,0,0,30.0,0,0,35.951133587964705
+deepseek/deepseek-v4-flash-0731,open-inference/fp8,OpenInference,f954a48e-1c90-433b-9348-4720f8030331,deepseek_glm_kimi_qwen,DeepSeek,standard,5E-8,25,16,27.673604826389088,25,16,27.673604826389088
+deepseek/deepseek-v4-flash-0731,morph/bf16,Morph,fc1cac03-9834-4ed8-8dfe-2dfb8543b690,deepseek_glm_kimi_qwen,DeepSeek,standard,1.23438E-7,6,4,30.0,9,6,34.798611967593985
+deepseek/deepseek-v4-flash-0731:batch,together,Together,75863e13-2514-4335-8716-d290d5a62f7d,deepseek_glm_kimi_qwen,DeepSeek,batch,1.4E-7,0,0,10.965277592594976,0,0,10.965277592594976
+deepseek/deepseek-v4-flash-0731:batch,fireworks,Fireworks,cea6b126-5bd9-4a9e-aa2d-521f735e13a1,deepseek_glm_kimi_qwen,DeepSeek,batch,1.1E-7,0,0,0.12500190972454017,0,0,0.12500190972454017
+deepseek/deepseek-v4-flash-vision-exp,deepinfra/fp8,DeepInfra,53d3d2f0-295e-4fcc-8031-a4f19d41a9cd,deepseek_glm_kimi_qwen,DeepSeek,standard,2.156E-7,0,0,5.583335231481879,0,0,5.583335231481879
+deepseek/deepseek-v4-flash-vision-exp,atlas-cloud/fp8,AtlasCloud,60ed936e-9e2f-4e58-95a7-c03a42979719,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,0,0,4.124994826391339,0,0,4.124994826391339
+deepseek/deepseek-v4-flash-vision-exp,novita,Novita,9877f782-d917-40cd-9e79-afd5c40f7390,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,0,0,8.340276770834569,0,0,8.340276770834569
+deepseek/deepseek-v4-flash-vision-exp,siliconflow/fp8,SiliconFlow,a2822625-351a-4985-a613-e6529592b3ec,deepseek_glm_kimi_qwen,DeepSeek,standard,4.4E-7,0,0,4.541668877317398,0,0,4.541668877317398
+deepseek/deepseek-v4-flash-vision-exp,fireworks,Fireworks,beb9f671-9ddd-4392-a094-e6fd3ff24e76,deepseek_glm_kimi_qwen,DeepSeek,standard,2.2E-7,0,0,7.09027695602013,0,0,7.09027695602013
+deepseek/deepseek-v4-flash-vision-exp,deepseek,DeepSeek,d6cd6c56-b90c-4328-8901-2774024bc62f,deepseek_glm_kimi_qwen,DeepSeek,standard,2.2E-7,0,0,18.298610451389795,0,0,18.298610451389795
+deepseek/deepseek-v4-flash-vision-exp:batch,fireworks,Fireworks,c1772e84-2714-4a56-a29e-d42556e33617,deepseek_glm_kimi_qwen,DeepSeek,batch,1.1E-7,0,0,0.16666891203710327,0,0,0.16666891203710327
+deepseek/deepseek-v4-pro,baseten/fp4,BaseTen,115fa517-477f-4b89-9d4d-a036cf9d2c32,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000174,0,0,7.048610578703659,0,0,7.048610578703659
+deepseek/deepseek-v4-pro,baseten/fp4,BaseTen,349baf29-4833-4f15-8313-bf17b7b7b37a,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000174,0,0,30.0,0,0,63.95143284722335
+deepseek/deepseek-v4-pro,baidu/fp8,Baidu,48f7c1a9-3b0c-4f31-a55b-4650d37e35f3,deepseek_glm_kimi_qwen,DeepSeek,standard,9.4978E-7,188,188,30.0,225,225,90.0
+deepseek/deepseek-v4-pro,azure/us,Azure,6796208c-d124-4f20-b1bd-b27d93dd1d8d,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000191,0,0,25.04860780092853,0,0,25.04860780092853
+deepseek/deepseek-v4-pro,nextbit/fp8,NextBit,6c7fe442-3fa4-462a-b6e3-4357d1c010e7,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000018,2,2,12.215277222223856,2,2,12.215277222223856
+deepseek/deepseek-v4-pro,siliconflow/fp8,SiliconFlow,6ee768ff-a2d0-4d3c-8318-0d7ffd338418,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000150162,0,0,30.0,1,1,90.0
+deepseek/deepseek-v4-pro,venice,Venice,8b7cc94e-51ee-4ae6-ad04-5351067df6b1,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000165,0,0,30.0,1,1,90.0
+deepseek/deepseek-v4-pro,alibaba/fp8,Alibaba,8cd1049b-ad0c-440b-a5a5-1639856d255d,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000001416,0,0,30.0,3,3,90.0
+deepseek/deepseek-v4-pro,gmicloud/fp8,GMICloud,8e8586a6-1dbc-4ae9-8df1-158ae9934756,deepseek_glm_kimi_qwen,DeepSeek,standard,9.57E-7,22,22,30.0,28,27,90.0
+deepseek/deepseek-v4-pro,novita/fp8,Novita,9b918aa8-bd4d-4489-b665-df3f6df60aec,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000016,15,15,30.0,36,36,90.0
+deepseek/deepseek-v4-pro,fireworks,Fireworks,afecb467-c4c7-472e-8597-166225d2db24,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000012,1,1,30.0,1,1,90.0
+deepseek/deepseek-v4-pro,streamlake/fp8,StreamLake,b3598fb1-4093-4373-93ec-4c671abaf943,deepseek_glm_kimi_qwen,DeepSeek,standard,9.48126E-7,196,196,30.0,251,251,90.0
+deepseek/deepseek-v4-pro,deepinfra/fp8,DeepInfra,b78e06e2-7021-47a2-b71e-53534b9ef7e8,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000013,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-pro,atlas-cloud/fp4,AtlasCloud,c6619e8a-d980-4ed4-a74c-74f24700338e,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000168,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-pro,parasail/fp8,Parasail,deb583ce-a8c7-4034-b8df-7df27c8e162d,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000174,0,0,30.0,0,0,90.0
+deepseek/deepseek-v4-pro,digitalocean,DigitalOcean,fa8537ee-adda-4a95-b729-e0a1547dccbd,deepseek_glm_kimi_qwen,DeepSeek,standard,8.7E-7,2,2,30.0,5,4,90.0
+deepseek/deepseek-v4-pro-0813,streamlake,StreamLake,072c1c23-c069-4242-bb6d-1b30ca5f4eb8,deepseek_glm_kimi_qwen,DeepSeek,standard,6.6E-7,32,32,21.29860936342842,32,32,21.29860936342842
+deepseek/deepseek-v4-pro-0813,coreweave/fp8,CoreWeave,15560c07-2edc-40a6-b5ee-30819e66728a,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000131,0,0,11.048610266204234,0,0,11.048610266204234
+deepseek/deepseek-v4-pro-0813,together,Together,218b0cec-3278-4b88-8ee0-3f346eccd35f,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,23.631943113425816,0,0,23.631943113425816
+deepseek/deepseek-v4-pro-0813,deepseek,DeepSeek,3b1b0465-08e5-4144-9b29-24eb9e7d572d,deepseek_glm_kimi_qwen,DeepSeek,standard,6.6E-7,0,0,27.13194186342811,0,0,27.13194186342811
+deepseek/deepseek-v4-pro-0813,novita/fp8,Novita,46f2098d-3994-4c59-b3f9-cbbbf44a2f45,deepseek_glm_kimi_qwen,DeepSeek,standard,9.9E-7,7,5,25.29861218750201,7,5,25.29861218750201
+deepseek/deepseek-v4-pro-0813,parasail/fp8,Parasail,487a0ef9-ddaa-4d3d-b882-7912daa08555,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,21.881944050926855,0,0,21.881944050926855
+deepseek/deepseek-v4-pro-0813,siliconflow/fp8,SiliconFlow,65367950-3b6c-4abd-9cb0-d553a47de6d9,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,1,0,25.59027758101898,1,0,25.59027758101898
+deepseek/deepseek-v4-pro-0813,sail-research/fp4,Sail Research,6811c06b-8624-4796-ad6e-807e33b97ae6,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,15.631951458332715,0,0,15.631951458332715
+deepseek/deepseek-v4-pro-0813,baseten/fp4,BaseTen,85bb5a4a-983d-4d11-b97b-c7e5b348375f,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,25.04860780092853,0,0,25.04860780092853
+deepseek/deepseek-v4-pro-0813,digitalocean,DigitalOcean,928ab2e9-a85f-427f-adcb-15b2394c70d5,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,22.131944525465368,0,0,22.131944525465368
+deepseek/deepseek-v4-pro-0813,baidu/fp8,Baidu,a040a5d7-5f1a-416e-bc79-f4b86d692ba5,deepseek_glm_kimi_qwen,DeepSeek,standard,5.7948E-7,4,4,4.291665682872688,4,4,4.291665682872688
+deepseek/deepseek-v4-pro-0813,gmicloud/fp8,GMICloud,a11bdcb9-acb5-49df-9ff5-8c1486186664,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000001056,11,11,26.131942337963867,11,11,26.131942337963867
+deepseek/deepseek-v4-pro-0813,deepinfra/fp8,DeepInfra,a69687f5-7209-4d1d-b4d6-50a9939aa5ce,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000013,0,0,16.67361097222401,0,0,16.67361097222401
+deepseek/deepseek-v4-pro-0813,cloudflare,Cloudflare,b27d93a2-5f9d-4768-a1e0-a7b13ab9aaed,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,25.84027674768534,0,0,25.84027674768534
+deepseek/deepseek-v4-pro-0813,ionstream/fp4,Ionstream,b78282db-d715-4a4f-8b6e-010dc7e67943,deepseek_glm_kimi_qwen,DeepSeek,standard,0.0000011,0,0,1.2500012847229287,0,0,1.2500012847229287
+deepseek/deepseek-v4-pro-0813,phala,Phala,bb1fb528-2000-460c-a65e-b82dc347c019,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000145,0,0,19.298609918979583,0,0,19.298609918979583
+deepseek/deepseek-v4-pro-0813,baseten/fp4,BaseTen,bc1be763-ca65-4d43-84ff-5d6c16560713,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,7.048610578703659,0,0,7.048610578703659
+deepseek/deepseek-v4-pro-0813,nextbit/fp8,NextBit,ca5f0ff9-8764-4809-b5fa-968219bdfc4e,deepseek_glm_kimi_qwen,DeepSeek,standard,0.000001122,3,3,8.17360409722284,3,3,8.17360409722284
+deepseek/deepseek-v4-pro-0813,alibaba,Alibaba,e719d276-b080-47ee-ae4f-63ed656a0b7a,deepseek_glm_kimi_qwen,DeepSeek,standard,5.808E-7,1,1,21.92361101851971,1,1,21.92361101851971
+deepseek/deepseek-v4-pro-0813,fireworks,Fireworks,ef03a21f-1e70-4f34-9fd9-c6e823f2fcfd,deepseek_glm_kimi_qwen,DeepSeek,standard,0.00000132,0,0,25.631944074076085,0,0,25.631944074076085
+deepseek/deepseek-v4-pro-0813:batch,fireworks,Fireworks,46b161a0-0b77-40b1-8bce-7cade5e3c2d3,deepseek_glm_kimi_qwen,DeepSeek,batch,6.6E-7,0,0,0.12500190972454017,0,0,0.12500190972454017
+deepseek/deepseek-v4-pro-0813:batch,together,Together,9d944259-a34a-4059-b555-af113b5b90c4,deepseek_glm_kimi_qwen,DeepSeek,batch,0.00000132,0,0,10.965277592594976,0,0,10.965277592594976
+dots-studio/dots-3-note-preview:free,atlas-cloud/fp8,AtlasCloud,2b0adee4-4900-4027-98f1-e49712ae42b8,misc,dots-studio,free,,0,0,24.63194174768748,0,0,24.63194174768748
+google/gemini-2.5-flash,google-ai-studio,Google AI Studio,16c01e26-9b91-4d22-b487-ed35634b017d,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash,google-ai-studio/priority,Google AI Studio,1feef984-fd72-49c0-8005-033f7c107737,major_labs,Gemini,standard,5.4E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash,google-ai-studio/flex,Google AI Studio,66608b03-96e3-42fc-a2fa-9af33f49302e,major_labs,Gemini,standard,1.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash,google-vertex,Google,97e59ce4-f517-45e4-8933-bf86a700b2b6,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash,google-vertex/global/priority,Google,b9adf293-c95a-4fcf-8c3e-ab26475fab51,major_labs,Gemini,standard,5.4E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-2.5-flash,google-vertex/global,Google,b9b095f0-6448-46bb-8e4c-0111ba2bf1b0,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash,google-vertex/eu,Google,d9b81424-1623-45ef-aa8c-c8df3357c495,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-image,google-ai-studio/flex,Google AI Studio,20a5d1f2-ed79-4fae-a6fa-0482ae4667c6,major_labs,Gemini,standard,1.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash-image,google-ai-studio,Google AI Studio,2341e1bc-99ea-46ab-ae2d-9a83846afb43,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-image,google-ai-studio/priority,Google AI Studio,82f3cbe1-17c4-40fe-b9da-98ee71231765,major_labs,Gemini,standard,5.4E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash-image,google-vertex/global,Google,9fc81a95-52d2-4a94-adc5-f99869ab1351,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-lite,google-ai-studio/flex,Google AI Studio,11c3f0e0-a05f-4669-ad64-ab362651d306,major_labs,Gemini,standard,5E-8,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash-lite,google-vertex/eu,Google,6b2ea9bc-3a79-441d-97a4-9b7d33210122,major_labs,Gemini,standard,1E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-lite,google-ai-studio,Google AI Studio,ce839073-aa24-4f29-8358-15b319bd05ec,major_labs,Gemini,standard,1E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-lite,google-vertex,Google,ebdbef25-737d-4ac3-9e98-fd3928724e45,major_labs,Gemini,standard,1E-7,0,0,30.0,0,0,90.0
+google/gemini-2.5-flash-lite,google-ai-studio/priority,Google AI Studio,fe7ae5dd-ca4a-477b-8b53-e91fe4c0ff48,major_labs,Gemini,standard,1.8E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-flash-lite:batch,google-vertex/eu,Google,392c012a-f29d-4745-99b7-adbc44202965,major_labs,Gemini,batch,5E-8,0,0,30.0,0,0,36.256944178240715
+google/gemini-2.5-flash:batch,google-vertex/global,Google,73dc8ca7-10c2-4e6f-9766-83c24dbf657a,major_labs,Gemini,batch,1.5E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-2.5-pro,google-ai-studio/priority,Google AI Studio,080aa070-74ae-4e89-84f5-5c085a89c42a,major_labs,Gemini,standard,0.00000225,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-pro,google-ai-studio/flex,Google AI Studio,22e19e43-a6c1-4186-9327-fd96f40b1d1c,major_labs,Gemini,standard,6.25E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-2.5-pro,google-vertex/global,Google,43106252-bd69-498f-84f5-1fde678783f7,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro,google-vertex/global/priority,Google,4634323c-f82d-46c5-aeab-6acd452f73d4,major_labs,Gemini,standard,0.00000225,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-2.5-pro,google-vertex/us,Google,4ebed968-2df0-4b40-ac46-6af592e9487e,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro,google-vertex/eu,Google,4ec3ad9d-d6cd-4a0a-a57a-514356c0c1e6,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro,google-ai-studio,Google AI Studio,b261d15b-95ce-4c8c-8bce-00eb0dc1ff77,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro-preview,google-vertex/global,Google,018040ae-9cda-43cd-8813-d8ca83f6c7ed,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro-preview-05-06,google-vertex,Google,9d2cac4d-81d4-4e67-ac7a-6c73040655ee,major_labs,Gemini,standard,0.00000125,0,0,30.0,0,0,90.0
+google/gemini-2.5-pro:batch,google-vertex/global,Google,b135c1e4-1ee2-41c7-beb2-a13cd023f1e5,major_labs,Gemini,batch,6.25E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-3-flash-preview,google-ai-studio,Google AI Studio,6e82f652-2693-4b60-bbe0-7362d6e345f0,major_labs,Gemini,standard,5E-7,0,0,30.0,0,0,90.0
+google/gemini-3-flash-preview,google-vertex/global/flex,Google,776fc659-df1b-418a-9fc2-86f776b99e95,major_labs,Gemini,standard,2.5E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3-flash-preview,google-vertex/global/priority,Google,97216a48-d799-4e7a-9fcf-932d220acf6e,major_labs,Gemini,standard,9E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3-flash-preview,google-ai-studio/priority,Google AI Studio,c7c4ac21-c0af-4d09-9c45-184ecbddd5b0,major_labs,Gemini,standard,9E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3-flash-preview,google-ai-studio/flex,Google AI Studio,cadc6420-b2ce-484e-9a7b-f0d3c744c70e,major_labs,Gemini,standard,2.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3-flash-preview,google-vertex/global,Google,d06bdb18-3cc2-46b0-bf23-922e485dc255,major_labs,Gemini,standard,5E-7,0,0,30.0,0,0,90.0
+google/gemini-3-flash-preview:batch,google-vertex/global,Google,1f93e91a-080f-4ac4-a092-c86d90a2442c,major_labs,Gemini,batch,2.5E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-3-pro-image,google-vertex/global,Google,459bc165-dafa-4e03-9fd0-bdd22c19d516,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,82.61810060185415
+google/gemini-3-pro-image,google-ai-studio/global,Google AI Studio,f02ab84e-7c15-48e0-b1c6-b9555314e331,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,82.61810060185415
+google/gemini-3-pro-image-preview,google-ai-studio/global/flex,Google AI Studio,5f821ba8-a51a-42a2-9de2-7823e24b4917,major_labs,Gemini,standard,0.000001,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3-pro-image-preview,google-ai-studio/global,Google AI Studio,f5a725e2-8f66-4754-9232-7550685ab3d0,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,90.0
+google/gemini-3.1-flash-image,google-vertex/global,Google,275d7d39-ae50-4df3-8140-5dd69c3ab883,major_labs,Gemini,standard,5E-7,0,0,30.0,0,0,82.61810060185415
+google/gemini-3.1-flash-image,google-ai-studio,Google AI Studio,a5c8267a-c7ec-42d3-9a53-08f34bce6af9,major_labs,Gemini,standard,5E-7,0,0,30.0,0,0,82.61810060185415
+google/gemini-3.1-flash-image-preview,google-ai-studio,Google AI Studio,2d3e3ef1-e1fb-4515-b5c8-6f0779b0e7aa,major_labs,Gemini,standard,5E-7,0,0,30.0,0,0,90.0
+google/gemini-3.1-flash-lite,google-vertex/global,Google,0d6ee1b8-2f68-491f-9707-4febcfa3a6c4,major_labs,Gemini,standard,2.5E-7,0,0,30.0,0,0,90.0
+google/gemini-3.1-flash-lite,google-ai-studio/priority,Google AI Studio,146d8437-c28d-4c93-ba8e-a0e62ad54b6c,major_labs,Gemini,standard,4.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-flash-lite,google-ai-studio,Google AI Studio,237af107-d2e9-46c7-b146-c74d75980dee,major_labs,Gemini,standard,2.5E-7,0,0,30.0,0,0,90.0
+google/gemini-3.1-flash-lite,google-vertex/us,Google,38f720a7-7220-4605-93c7-83eef1b3ce58,major_labs,Gemini,standard,2.75E-7,0,0,30.0,0,0,31.756942997685186
+google/gemini-3.1-flash-lite,google-vertex/eu,Google,3b5d6cdb-68b9-45c7-bba0-470690b95072,major_labs,Gemini,standard,2.75E-7,0,0,12.840277361113715,0,0,12.840277361113715
+google/gemini-3.1-flash-lite,google-vertex/global/priority,Google,5bf2970a-9911-4cc3-874e-863522e4a717,major_labs,Gemini,standard,4.5E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.1-flash-lite,google-vertex/global/flex,Google,6cb146c8-35db-415a-8684-2b508617a650,major_labs,Gemini,standard,1.25E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.1-flash-lite,google-ai-studio/flex,Google AI Studio,850d0069-0b0c-4943-864f-3aef557f258d,major_labs,Gemini,standard,1.25E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-flash-lite-image,google-ai-studio,Google AI Studio,55b53628-1e94-4ee3-9494-2c04e7f2c43a,major_labs,Gemini,standard,2.5E-7,0,0,30.0,0,0,70.11810267361226
+google/gemini-3.1-flash-lite-image,google-vertex/global,Google,a1fb76ba-8406-44ff-b113-4129addd1eee,major_labs,Gemini,standard,2.5E-7,0,0,30.0,0,0,70.11810267361226
+google/gemini-3.1-flash-lite-preview,google-ai-studio/flex,Google AI Studio,087f1741-2f64-4709-a80e-f2da544448f7,major_labs,Gemini,standard,1.25E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-flash-lite-preview,google-ai-studio/priority,Google AI Studio,9d31c590-6638-4979-9367-50065424e699,major_labs,Gemini,standard,4.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-flash-lite-preview,google-ai-studio,Google AI Studio,e004ce39-eb0c-4474-93d5-55072e725970,major_labs,Gemini,standard,2.5E-7,0,0,30.0,0,0,90.0
+google/gemini-3.1-flash-lite:batch,google-vertex/global,Google,d7f2978b-4764-4477-a660-bbf8b355cfca,major_labs,Gemini,batch,1.25E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-3.1-pro-preview,google-ai-studio,Google AI Studio,2abf5677-0826-45d9-8470-3d62c31d54a1,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,90.0
+google/gemini-3.1-pro-preview,google-ai-studio/flex,Google AI Studio,9ba25d78-b6b9-4233-999c-0edfa5540298,major_labs,Gemini,standard,0.000001,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-pro-preview,google-vertex/global/flex,Google,abfd57e7-9ce3-4d76-9e0a-9ae3f2b328c5,major_labs,Gemini,standard,0.000001,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.1-pro-preview,google-vertex/global,Google,c006453b-684d-49d2-a499-eebd54d58e92,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,90.0
+google/gemini-3.1-pro-preview,google-ai-studio/priority,Google AI Studio,ca9ac230-5015-4aeb-8b5c-0082b2300079,major_labs,Gemini,standard,0.0000036,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.1-pro-preview,google-vertex/global/priority,Google,dda51284-ffbc-49b9-b569-3924b15b1b0f,major_labs,Gemini,standard,0.0000036,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.1-pro-preview-customtools,google-ai-studio,Google AI Studio,3ccc4f6d-d337-43ed-9c40-bb43618ba0ca,major_labs,Gemini,standard,0.000002,0,0,30.0,0,0,90.0
+google/gemini-3.1-pro-preview:batch,google-vertex/global,Google,a7871437-0dd8-4ec7-8ddd-25ecf1383fdb,major_labs,Gemini,batch,0.000001,0,0,30.0,0,0,36.256944178240715
+google/gemini-3.5-flash,google-vertex/global/flex,Google,37b2e71c-bef9-4699-9609-2f0a975e3ad1,major_labs,Gemini,standard,7.5E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.5-flash,google-vertex/us,Google,47ab833d-a6ea-4f4f-9c0a-76beeb686228,major_labs,Gemini,standard,0.00000165,0,0,30.0,0,0,31.756942997685186
+google/gemini-3.5-flash,google-vertex/global/priority,Google,506034ca-e2e3-447a-8ca4-5ebc052785b2,major_labs,Gemini,standard,0.0000027,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.5-flash,google-ai-studio/priority,Google AI Studio,af10ee5d-2c51-44c4-8245-c782c8d3367c,major_labs,Gemini,standard,0.0000027,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.5-flash,google-ai-studio,Google AI Studio,bd50061c-e1d8-469e-96b1-d322e77378f8,major_labs,Gemini,standard,0.0000015,0,0,30.0,0,0,90.0
+google/gemini-3.5-flash,google-vertex/global,Google,d6dbb005-2f82-48a0-906c-222832fcd1ab,major_labs,Gemini,standard,0.0000015,0,0,30.0,0,0,90.0
+google/gemini-3.5-flash,google-ai-studio/flex,Google AI Studio,ff46d1e7-3646-4264-8246-9a84e98b72ea,major_labs,Gemini,standard,7.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.5-flash-lite,google-vertex/us,Google,27d4a81e-5406-4181-909f-de3c6a5c6420,major_labs,Gemini,standard,3.3E-7,0,0,30.0,0,0,31.756942997685186
+google/gemini-3.5-flash-lite,google-vertex/global/flex,Google,46ba4a0e-87e9-4db7-9e69-f3f9cc7d799b,major_labs,Gemini,standard,1.5E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.5-flash-lite,google-vertex/eu,Google,4b471bd3-d337-4697-bcdb-8e0fed68e30a,major_labs,Gemini,standard,3.3E-7,0,0,12.840277361113715,0,0,12.840277361113715
+google/gemini-3.5-flash-lite,google-ai-studio/flex,Google AI Studio,67123002-c963-4781-8f9c-9bce16957f2d,major_labs,Gemini,standard,1.5E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.5-flash-lite,google-ai-studio,Google AI Studio,6bd8f433-79e1-416c-b407-1772eb796c9a,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,49.159467523150425
+google/gemini-3.5-flash-lite,google-ai-studio/priority,Google AI Studio,bbd2012d-08b2-4b43-9982-012e1ed863d6,major_labs,Gemini,standard,5.4E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.5-flash-lite,google-vertex/global/priority,Google,c41311ca-9d67-424e-9049-1f30b84cf634,major_labs,Gemini,standard,5.4E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.5-flash-lite,google-vertex/global,Google,fe0e0167-572a-482b-8145-f262c1797e79,major_labs,Gemini,standard,3E-7,0,0,30.0,0,0,49.03446655092692
+google/gemini-3.5-flash-lite:batch,google-vertex/global,Google,e5e2c3a1-ff6d-427b-9028-30fddbe28967,major_labs,Gemini,batch,1.5E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-3.5-flash:batch,google-vertex/global,Google,50c771c0-4130-4692-ae67-799703c8b22a,major_labs,Gemini,batch,7.5E-7,0,0,30.0,0,0,36.256944178240715
+google/gemini-3.6-flash,google-vertex/us,Google,1d75db49-68b2-4cc9-a82b-42fde4a6f14a,major_labs,Gemini,standard,8.25E-7,1,1,28.00694393518622,1,1,28.00694393518622
+google/gemini-3.6-flash,google-vertex/global/priority,Google,46270dac-6e39-4b85-9c9a-1d495081958c,major_labs,Gemini,standard,0.00000135,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.6-flash,google-ai-studio,Google AI Studio,5d6d133d-a953-4781-a835-7ee76f4e1388,major_labs,Gemini,standard,7.5E-7,1,1,30.0,1,1,49.159467523150425
+google/gemini-3.6-flash,google-ai-studio/priority,Google AI Studio,623e4907-8fa3-4a08-a3e4-d8c21eca695b,major_labs,Gemini,standard,0.00000135,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.6-flash,google-vertex/global,Google,773559b7-003d-4013-a393-7e64844f5f0c,major_labs,Gemini,standard,7.5E-7,1,1,30.0,1,1,49.03446655092692
+google/gemini-3.6-flash,google-ai-studio/flex,Google AI Studio,99ab51a2-2ac1-454d-83b6-c327b5d3fd6a,major_labs,Gemini,standard,3.75E-7,0,0,8.048611967593983,0,0,8.048611967593983
+google/gemini-3.6-flash,google-vertex/global/flex,Google,e1fe155d-c774-4482-bc01-085a108f764f,major_labs,Gemini,standard,3.75E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.6-flash:batch,google-vertex/global,Google,c72615be-0575-485f-b97f-5188235aa134,major_labs,Gemini,batch,3.75E-7,1,1,30.0,1,1,36.256944178240715
+google/gemini-3.7-flash,google-ai-studio/flex,Google AI Studio,175a3a14-306b-4b42-9338-d6d57e5a8dd1,major_labs,Gemini,standard,3.75E-7,0,0,8.090277615741448,0,0,8.090277615741448
+google/gemini-3.7-flash,google-vertex/global/flex,Google,1d2cfda0-1bd9-42c6-817c-27a210743592,major_labs,Gemini,standard,3.75E-7,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.7-flash,google-vertex/global/priority,Google,5dc0ebcc-375e-464f-add2-3aed43a9b906,major_labs,Gemini,standard,0.00000135,0,0,7.923609606482916,0,0,7.923609606482916
+google/gemini-3.7-flash,google-ai-studio/priority,Google AI Studio,99778155-4b41-4ed6-8ee0-b18ebbb380fc,major_labs,Gemini,standard,0.00000135,0,0,8.090277615741448,0,0,8.090277615741448
+google/gemini-3.7-flash,google-ai-studio,Google AI Studio,dd072012-3274-417d-97e3-e290cba37e31,major_labs,Gemini,standard,7.5E-7,1,0,26.090278750001282,1,0,26.090278750001282
+google/gemini-3.7-flash,google-vertex/global,Google,e28074f6-26f6-4ba2-adf9-0bb807bc970e,major_labs,Gemini,standard,7.5E-7,3,1,26.090278750001282,3,1,26.090278750001282
+google/gemini-3.7-flash:batch,google-vertex/global,Google,27ade0e4-3ed8-4624-b147-102c76c5d1be,major_labs,Gemini,batch,3.75E-7,3,2,26.090278750001282,3,2,26.090278750001282
+google/gemini-3.8-flash,google-vertex/global,Google,10520141-5227-49ce-a7c8-a81bfaab8e01,major_labs,Gemini,standard,7.5E-7,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash,google-ai-studio/flex,Google AI Studio,1c23c105-3636-4602-8147-e4474f76bc45,major_labs,Gemini,standard,3.75E-7,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash,google-ai-studio/priority,Google AI Studio,7ad7b95e-757c-4693-83ba-b1e5c0b045fe,major_labs,Gemini,standard,0.00000135,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash,google-vertex/global/flex,Google,a077f3f7-c904-477a-8a8b-877b853b17d9,major_labs,Gemini,standard,3.75E-7,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash,google-vertex/global/priority,Google,b9096b4d-8998-45cb-b43b-ff98f5398e20,major_labs,Gemini,standard,0.00000135,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash,google-ai-studio,Google AI Studio,d376f781-516d-42f9-936d-46f19abca6cc,major_labs,Gemini,standard,7.5E-7,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemini-3.8-flash:batch,google-vertex/global,Google,3b28aefd-6c6d-4a1c-bf4e-2970ccf860da,major_labs,Gemini,batch,3.75E-7,0,0,6.16666789352066,0,0,6.16666789352066
+google/gemma-2-27b-it,nextbit/int4,NextBit,03a23b91-c1f2-4a5e-891b-df7e13c87472,open_weight_families,Gemma,standard,6.5E-7,0,0,30.0,0,0,90.0
+google/gemma-3-12b-it,deepinfra/bf16,DeepInfra,eb06dc92-5a16-47ec-a776-6ef956457c47,open_weight_families,Gemma,standard,5E-8,0,0,30.0,0,0,90.0
+google/gemma-3-27b-it,parasail/fp8,Parasail,2f608ade-87b1-46ed-8ae7-2714dddf2abb,open_weight_families,Gemma,standard,8E-8,0,0,30.0,0,0,90.0
+google/gemma-3-27b-it,deepinfra/fp8,DeepInfra,8f22002c-c045-446f-a1b9-9896133536b8,open_weight_families,Gemma,standard,8E-8,0,0,30.0,0,0,90.0
+google/gemma-3-27b-it,novita/bf16,Novita,cf530f36-7cb8-4eb9-8953-880eef952af3,open_weight_families,Gemma,standard,1.19E-7,0,0,30.0,0,0,90.0
+google/gemma-3-27b-it,nebius/fp8,Nebius,d481286e-cef7-40c9-9e1c-d0548efde87e,open_weight_families,Gemma,standard,1E-7,0,0,30.0,0,0,90.0
+google/gemma-3-4b-it,deepinfra/bf16,DeepInfra,d3de3bd4-81bc-48fb-924f-2a87b2a36e75,open_weight_families,Gemma,standard,5E-8,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,novita/bf16,Novita,03b96766-ef7e-454f-9519-c76b70654b49,open_weight_families,Gemma,standard,1.3E-7,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,darkbloom,Darkbloom,0e9b72a2-e1eb-45bd-adc5-81f0f31e185f,open_weight_families,Gemma,standard,4.2E-8,2,2,19.09027714120569,2,2,19.09027714120569
+google/gemma-4-26b-a4b-it,venice/bf16,Venice,2e9daaa4-87bf-49f7-a44a-2c1d617c2c51,open_weight_families,Gemma,standard,1.3E-7,0,0,30.0,1,1,90.0
+google/gemma-4-26b-a4b-it,parasail/bf16,Parasail,91f05fe1-9a18-4bcf-8cfa-093c369d8cea,open_weight_families,Gemma,standard,1.3E-7,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,deepinfra/fp8,DeepInfra,d71c6981-347d-4622-a86b-2c9e5d0f2c6c,open_weight_families,Gemma,standard,7E-8,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,nextbit/bf16,NextBit,e22ce918-7adb-4e4f-b2e2-c6c5b3066b69,open_weight_families,Gemma,standard,1E-7,1,1,30.0,18,15,90.0
+google/gemma-4-26b-a4b-it,cloudflare,Cloudflare,e2a16fa6-1f65-413e-9ecb-93901089ddb1,open_weight_families,Gemma,standard,1E-7,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,siliconflow/fp8,SiliconFlow,eb382d64-dce1-42d5-b23d-6fefb91948a3,open_weight_families,Gemma,standard,1.2E-7,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it,google-vertex/global,Google,f286e714-9e04-4948-8001-3b478b51e1ec,open_weight_families,Gemma,standard,1.5E-7,0,0,30.0,0,0,90.0
+google/gemma-4-26b-a4b-it:free,google-ai-studio,Google AI Studio,9d057a54-dce2-49d5-af13-f063a029b2ef,open_weight_families,Gemma,free,,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,deepinfra/turbo,DeepInfra,0178c93a-f177-44c9-8873-ac815d9ac7fe,open_weight_families,Gemma,standard,9E-8,0,0,30.0,2,1,90.0
+google/gemma-4-31b-it,venice/bf16,Venice,29b94af5-d8f8-419a-9cf1-ae1f2831142b,open_weight_families,Gemma,standard,1.2E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,deepinfra/fp8,DeepInfra,4149ab03-3b69-45a0-b94c-6c253b8641a1,open_weight_families,Gemma,standard,1.3E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,crusoe,Crusoe,443b1870-80be-434d-81f5-919b8d44d17e,open_weight_families,Gemma,standard,1.4E-7,0,0,30.0,0,0,46.65946432870571
+google/gemma-4-31b-it,cerebras/fp16,Cerebras,56640245-fe0d-4ccb-96a7-41277c4e7f54,open_weight_families,Gemma,standard,9.9E-7,0,0,30.0,0,0,59.20143546296491
+google/gemma-4-31b-it,together,Together,576fca5b-f09c-4bda-b560-9989c39ac3ab,open_weight_families,Gemma,standard,3.9E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,chutes/fp4,Chutes,5a7d69c8-0cb3-4b4b-995d-c711e42bd42e,open_weight_families,Gemma,standard,1.2E-7,0,0,30.0,2,1,90.0
+google/gemma-4-31b-it,siliconflow/fp8,SiliconFlow,5cbbae78-c69d-4a66-94b4-159975f8634c,open_weight_families,Gemma,standard,1.3E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,friendli,Friendli,5f39227d-1f41-4e5f-858f-5798bfb80e5e,open_weight_families,Gemma,standard,1.4E-7,0,0,30.0,0,0,53.57643568287293
+google/gemma-4-31b-it,novita/bf16,Novita,69279254-6a96-4e9d-abc6-ea76e6bf8e97,open_weight_families,Gemma,standard,1.4E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,deepinfra/ultra,DeepInfra,7ab4b82c-30a1-4626-b6c8-4c04ef721cbe,open_weight_families,Gemma,standard,2.7E-7,0,0,27.715278831019447,0,0,27.715278831019447
+google/gemma-4-31b-it,parasail/fp8,Parasail,9d4644e9-a5e5-41f4-b810-d75f484d2c24,open_weight_families,Gemma,standard,1.5E-7,0,0,30.0,0,0,90.0
+google/gemma-4-31b-it,coreweave/fp4,CoreWeave,a3bb7748-8088-4463-a894-4b19c64045bd,open_weight_families,Gemma,standard,1E-7,0,0,30.0,1,1,46.951133356483446
+google/gemma-4-31b-it,sambanova,SambaNova,ad20736d-3f92-4cff-8034-294555a8f6a6,open_weight_families,Gemma,standard,3.8E-7,0,0,30.0,35,35,78.20143121527853
+google/gemma-4-31b-it,modelrun/fp4,ModelRun,bb363372-c31e-44ce-b876-9f32cb4b169f,open_weight_families,Gemma,standard,7.5E-7,2,2,30.0,3,3,79.20144570602035
+google/gemma-4-31b-it:batch,together,Together,0c81cb86-f7fb-4aff-b89d-76a45c6a2b0b,open_weight_families,Gemma,batch,3.9E-7,0,0,10.965277592594976,0,0,10.965277592594976
+google/gemma-4-31b-it:free,google-ai-studio,Google AI Studio,65b19119-a8d5-427b-9cbd-03329ef0d939,open_weight_families,Gemma,free,,0,0,30.0,0,0,90.0
+gryphe/mythomax-l2-13b,mancer/fp8,Mancer 2,2ffda66b-b09e-405f-9a32-fe06a4097943,misc,gryphe,standard,3.5E-7,1,1,30.0,4,3,90.0
+gryphe/mythomax-l2-13b,nextbit/int4,NextBit,3a9bbd50-68e9-4ebf-92e4-faa0395a1229,misc,gryphe,standard,6E-8,0,0,30.0,0,0,90.0
+gryphe/mythomax-l2-13b,parasail/fp16,Parasail,52570ba8-9b01-40b5-868b-d5aedd6ca00b,misc,gryphe,standard,8E-8,0,0,30.0,0,0,40.8261350925929
+gryphe/mythomax-l2-13b,deepinfra/fp16,DeepInfra,ffd94635-42cb-47e4-988a-b905c2e7fa57,misc,gryphe,standard,4E-7,0,0,30.0,0,0,90.0
+ibm-granite/granite-4.0-h-micro,cloudflare,Cloudflare,99acb983-d859-4f77-bb89-5d9f05985bbe,open_weight_families,ibm-granite,standard,1.7E-8,0,0,30.0,0,0,90.0
+ibm-granite/granite-4.2-8b,coreweave/bf16,CoreWeave,0aaad85e-20b0-4103-bd71-d6608c23d0e1,open_weight_families,ibm-granite,standard,1E-7,0,0,7.923609606482916,0,0,7.923609606482916
+ibm-granite/granite-4.2-8b,deepinfra/bf16,DeepInfra,8efd9dc5-fd52-4046-a925-581ad09a6f22,open_weight_families,ibm-granite,standard,6E-8,0,0,5.416669097222663,0,0,5.416669097222663
+inception/mercury-2,inception,Inception,c2a24e34-c306-4b4d-9e2f-b162c2d8bf0e,other_hosted_candidates,inception,standard,2.5E-7,0,0,30.0,0,0,90.0
+inception/mercury-2.5,inception,Inception,ab391d03-af3c-4401-8d90-88bf793e8a53,other_hosted_candidates,inception,standard,4E-8,1,1,0.04164896990965914,1,1,0.04164896990965914
+inclusionai/ling-3.0-flash,deepinfra/bf16,DeepInfra,6f2011e4-e17d-433a-9030-2bc4a40662f6,misc,inclusionai,standard,6E-8,1,1,30.0,6,6,33.798607986111335
+inclusionai/ling-3.0-flash,novita,Novita,ad853a79-97b2-4260-8163-fbe2a796cebf,misc,inclusionai,standard,2.1E-8,0,0,30.0,0,0,33.00694546296365
+inclusionai/ling-3.0-flash-fin,deepinfra/fp4,DeepInfra,c48fe5e8-e0e7-4f6d-a9ec-84e20378b017,misc,inclusionai,standard,6E-8,0,0,5.12500195602024,0,0,5.12500195602024
+inclusionai/ling-3.0-flash-fin:free,novita,Novita,8038288b-4522-40be-a879-bbda74641979,misc,inclusionai,free,,0,0,12.131943298611375,0,0,12.131943298611375
+inclusionai/ling-3.0-flash-sante:free,novita,Novita,5fc76936-9f54-43b4-94ad-6490135b5340,misc,inclusionai,free,,0,0,4.041666863428222,0,0,4.041666863428222
+kwaipilot/kat-coder-pro-v2,atlas-cloud/fp8,AtlasCloud,ecad3695-1609-4396-8241-07f00d4d3d54,misc,kwaipilot,standard,3E-7,0,0,30.0,0,0,90.0
+kwaipilot/kat-coder-pro-v2.5,atlas-cloud/fp8,AtlasCloud,c00de5ed-eda1-4a65-9b04-c0c7e0ba20dd,misc,kwaipilot,standard,7.4E-7,0,0,11.840277418982652,0,0,11.840277418982652
+liquid/lfm-2.5-2.6b:free,liquid/fp8,Liquid,789f02b8-56f5-48d0-bae5-91b4957376c7,misc,liquid,free,,0,0,27.131936631944995,0,0,27.131936631944995
+mancer/weaver,mancer/fp8,Mancer 2,c8fb1a1b-9f2c-4dc6-b2be-43b25f999502,misc,mancer,standard,4E-7,1,1,28.916666388889706,2,2,88.91666638888971
+meituan/longcat-2.0,atlas-cloud/fp8,AtlasCloud,1c1713d4-6398-47a1-9ff7-a6488c16e6c0,misc,meituan,standard,3E-7,0,0,30.0,0,0,50.2014335763896
+meta-llama/llama-3.1-70b-instruct,deepinfra/turbo,DeepInfra,036dfa0a-ebbb-4a51-aa90-091a75c2cadb,meta_mistral,Meta,standard,4E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.1-70b-instruct,amazon-bedrock,Amazon Bedrock,7d0d3cad-3dd0-4d9c-aaee-5777f3c59cd9,meta_mistral,Meta,standard,7.2E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.1-8b-instruct,groq,Groq,74af5aaf-6ad5-4389-ae0f-1bd2c7337386,meta_mistral,Meta,standard,5E-8,0,0,30.0,0,0,90.0
+meta-llama/llama-3.1-8b-instruct,coreweave/bf16,CoreWeave,9f805364-f309-49a7-9de4-b0ca172bffb6,meta_mistral,Meta,standard,2.2E-7,0,0,30.0,0,0,46.951133356483446
+meta-llama/llama-3.1-8b-instruct,cloudflare/fp8,Cloudflare,b805bc63-f9f0-402b-9f5c-e992dc1e90b8,meta_mistral,Meta,standard,1.52E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.1-8b-instruct,novita/fp8,Novita,baecce7a-5028-432e-aaa8-d78b5b700929,meta_mistral,Meta,standard,2E-8,0,0,30.0,0,0,90.0
+meta-llama/llama-3.1-8b-instruct,deepinfra/fp8,DeepInfra,d7de0517-e8de-4f1b-b4bc-c5ebd29a0315,meta_mistral,Meta,standard,2E-8,0,0,30.0,1,0,90.0
+meta-llama/llama-3.2-1b-instruct,cloudflare,Cloudflare,6a1461d2-2074-404f-8202-bd5d52971983,meta_mistral,Meta,standard,2.7E-8,0,0,30.0,0,0,90.0
+meta-llama/llama-3.2-3b-instruct,parasail/bf16,Parasail,87c79cad-7b66-421b-82a0-b6026faef55f,meta_mistral,Meta,standard,5E-8,0,0,30.0,0,0,63.993099039354256
+meta-llama/llama-3.2-3b-instruct,cloudflare,Cloudflare,d3d36982-b3b4-43e8-9c5a-14e0e5769b78,meta_mistral,Meta,standard,5.09E-8,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,groq,Groq,0d4cc43e-1b8b-4694-b2d5-57ea43dc0909,meta_mistral,Meta,standard,5.9E-7,0,0,30.0,1,0,90.0
+meta-llama/llama-3.3-70b-instruct,together,Together,0f0f7609-28d7-40d1-848e-2b2e69d11912,meta_mistral,Meta,standard,0.00000104,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,crusoe/bf16,Crusoe,12cf24eb-5c21-4130-9bdb-d565c2158687,meta_mistral,Meta,standard,2.5E-7,0,0,30.0,0,0,46.65946432870571
+meta-llama/llama-3.3-70b-instruct,coreweave/fp16,CoreWeave,3c8ebbd4-853a-4a59-a276-f7eb5a319564,meta_mistral,Meta,standard,7.1E-7,0,0,30.0,0,0,46.99280038194524
+meta-llama/llama-3.3-70b-instruct,google-vertex/us-central1,Google,426b3528-6539-4ece-b898-f26500c356e3,meta_mistral,Meta,standard,7.2E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,google-vertex,Google,4b49bf33-fc17-4e36-97ec-a163b306d8d9,meta_mistral,Meta,standard,7.2E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,nebius/fp8,Nebius,5f78cde2-65d7-4e4a-86a2-79f702973039,meta_mistral,Meta,standard,1.3E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,akashml/fp8,AkashML,63d08afe-bb7c-478f-9d67-1832b10ad6ea,meta_mistral,Meta,standard,2E-7,1,1,29.958334849537522,1,1,89.87500059027639
+meta-llama/llama-3.3-70b-instruct,cloudflare/fp8,Cloudflare,7427a4ca-e462-4d5f-94e0-41666c4a6593,meta_mistral,Meta,standard,2.93E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,novita/bf16,Novita,8f74ff86-f435-4f1b-aea0-f7869c7eaa51,meta_mistral,Meta,standard,1.35E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,parasail/fp8,Parasail,d0567a96-c81f-4106-bc94-eb36da460587,meta_mistral,Meta,standard,2.2E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,deepinfra/turbo,DeepInfra,e3b0a527-44d6-4ea6-9ec2-6a6416a84c7c,meta_mistral,Meta,standard,1E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-3.3-70b-instruct,sambanova-turbo,SambaNova,e3cb933e-a526-472c-b69b-df1d8302e016,meta_mistral,Meta,standard,4.5E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-maverick,google-vertex/us-east5,Google,3479a1df-3f25-46b3-9e3d-bb323bee5d23,meta_mistral,Meta,standard,3.5E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-maverick,parasail/fp8,Parasail,48b01f86-ff55-464f-ac51-01f97ebf88a1,meta_mistral,Meta,standard,3.5E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-maverick,novita/fp8,Novita,52093e97-a003-4dfa-b247-53ead8bb300c,meta_mistral,Meta,standard,2.7E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-maverick,deepinfra/base,DeepInfra,69a5d06e-1935-4aa5-903f-71058e64399f,meta_mistral,Meta,standard,2E-7,0,0,30.0,1,1,90.0
+meta-llama/llama-4-maverick,digitalocean,DigitalOcean,caa850a1-e628-41bd-8585-9b3076efea90,meta_mistral,Meta,standard,2E-7,2,2,30.0,3,3,77.1597671874999
+meta-llama/llama-4-scout,google-vertex/us-east5,Google,6b6ca1d2-f0a3-4b14-afd1-9ec651371658,meta_mistral,Meta,standard,2.5E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-scout,deepinfra/fp8,DeepInfra,9cf05ded-eefe-41b4-8c08-0c6460feffea,meta_mistral,Meta,standard,1E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-4-scout,novita/bf16,Novita,b0352c4a-a51c-4ee0-9f5e-cfa527c3a208,meta_mistral,Meta,standard,1.8E-7,0,0,30.0,0,0,90.0
+meta-llama/llama-guard-4-12b,deepinfra/bf16,DeepInfra,850b84c3-42a7-4cec-99c0-b5582d0da66b,meta_mistral,Meta,standard,1.8E-7,0,0,30.0,0,0,90.0
+meta/muse-glimmer-30b,fireworks,Fireworks,38b85376-97ef-4ae3-b2f4-b23ca1ee2495,meta_mistral,Meta,standard,3.5E-7,0,0,27.79861111111111,0,0,27.79861111111111
+meta/muse-glimmer-30b,phala,Phala,6244f10e-1e45-488b-a47f-f575e0edd12b,meta_mistral,Meta,standard,3E-7,2,1,26.173609965278043,2,1,26.173609965278043
+meta/muse-glimmer-30b,deepinfra/bf16,DeepInfra,a9912acb-568e-4147-8ed3-5d20aea22135,meta_mistral,Meta,standard,3E-7,0,0,28.00694393518622,0,0,28.00694393518622
+meta/muse-glimmer-30b,together,Together,e6c588fa-aef0-4e1b-bb7f-78185dd5b6da,meta_mistral,Meta,standard,3.5E-7,0,0,28.88194547453964,0,0,28.88194547453964
+meta/muse-glimmer-30b:batch,fireworks,Fireworks,7b8c3d5b-04c2-4af0-ad53-ac2e994151f9,meta_mistral,Meta,batch,1.75E-7,0,0,0.08332298611325246,0,0,0.08332298611325246
+meta/muse-glimmer-30b:batch,together,Together,80345d0c-f6ca-4c85-9e12-fa4a96ad800a,meta_mistral,Meta,batch,3.5E-7,0,0,10.965277592594976,0,0,10.965277592594976
+meta/muse-spark-1.1,meta,Meta,b2b9f6f9-8880-41c1-bd0c-867650fd5238,meta_mistral,Meta,standard,0.00000125,0,0,30.0,0,0,54.15976774305657
+meta/muse-spark-1.2,meta,Meta,ffc8e76e-808a-44d2-bd21-c6ac16e721cb,meta_mistral,Meta,standard,0.00000125,0,0,30.0,0,0,33.96527649305761
+meta/muse-spark-1.2-contributor,meta,Meta,91327d91-f7af-4acb-81fe-4eafab2a4012,meta_mistral,Meta,standard,1E-7,0,0,17.881945613426744,0,0,17.881945613426744
+meta/muse-spark-1.3,meta,Meta,cf4f1b4e-1719-4b65-9111-7dd7635e5a2f,meta_mistral,Meta,standard,0.00000125,0,0,5.9582641319461445,0,0,5.9582641319461445
+meta/muse-spark-1.3-contributor,meta,Meta,5091e855-21de-4496-86fc-76185d0d1096,meta_mistral,Meta,standard,1E-7,0,0,5.9582641319461445,0,0,5.9582641319461445
+microsoft/phi-4,deepinfra/bf16,DeepInfra,8e48942d-17fc-4d00-a234-4723034fd971,open_weight_families,microsoft,standard,7E-8,0,0,30.0,0,0,90.0
+microsoft/wizardlm-2-8x22b,novita/bf16,Novita,92d0658f-b48a-4746-96e7-75ea71d5e060,open_weight_families,microsoft,standard,6.2E-7,0,0,30.0,0,0,90.0
+minimax/minimax-01,minimax,Minimax,352546d2-3758-4aa1-9e98-e1a83748aa4e,misc,minimax,standard,2E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m1,novita/bf16,Novita,aaecb87e-e042-4c74-836b-936baab09de1,misc,minimax,standard,5.5E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m1,minimax,Minimax,dd5bc8d5-68a7-48a7-a680-db37579d5c14,misc,minimax,standard,4E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2,novita/fp8,Novita,09da61cf-71a6-4717-9ebd-857e7203e3b4,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2,minimax/fp8,Minimax,46585386-044e-4e91-852c-f56bf056e1af,misc,minimax,standard,2.55E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2,google-vertex,Google,c80588c8-ce64-46f2-b375-19bf4504133e,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2-her,minimax,Minimax,38c32567-be85-4c82-a6d8-592a4158d436,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.1,novita/fp8,Novita,a300fcbb-ec0e-4c1f-a4d4-d06dc8c19cf9,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.1,minimax/highspeed,Minimax,c50d2c64-f2f2-4c53-9d00-2fba240de96f,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.1,minimax/fp8,Minimax,e1e246cc-6062-43ca-96cd-b7e580ea81c7,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,novita/fp8,Novita,05387b87-6e10-4520-87e9-be7c49693ba1,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,venice,Venice,3146f103-e8d8-4832-851c-2a0284feec7c,misc,minimax,standard,2.7E-7,0,0,30.0,1,1,90.0
+minimax/minimax-m2.5,minimax/fp8,Minimax,3afb00c4-6135-4c55-96e9-6befa9679b06,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,minimax/highspeed,Minimax,489502e5-7555-4113-a3f3-18b8f71e8bb2,misc,minimax,standard,6E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,streamlake,StreamLake,727c732a-1bc8-45e1-9f83-a5bf626f41d0,misc,minimax,standard,2.7E-7,0,0,30.0,3,2,90.0
+minimax/minimax-m2.5,digitalocean,DigitalOcean,99edb5d1-e3be-4d26-8858-7fe9ce62d3d7,misc,minimax,standard,3E-7,1,1,30.0,7,6,89.9514358101868
+minimax/minimax-m2.5,atlas-cloud/fp8,AtlasCloud,acf82778-f331-40d9-ad3f-8c57494d4c4b,misc,minimax,standard,2.95E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,siliconflow/fp8,SiliconFlow,e89b11ef-ca0e-4cc1-9333-69343ec25819,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.5,friendli,Friendli,f82a6fab-f636-4837-bbee-81e634f92666,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.7,mara,Mara,00366232-455a-441e-906a-4da12292f801,misc,minimax,standard,2.4E-7,0,0,30.0,3,3,90.0
+minimax/minimax-m2.7,novita/fp8,Novita,08522fae-76f1-4090-ac0c-f9d444d7a13c,misc,minimax,standard,2.7E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.7,atlas-cloud/fp8,AtlasCloud,09984f54-0446-4c98-81d3-ad80b71e8bd9,misc,minimax,standard,3E-7,0,0,30.0,0,0,64.0347688310207
+minimax/minimax-m2.7,sambanova,SambaNova,27fcd402-0ef2-419a-949e-901106de4c71,misc,minimax,standard,6E-7,0,0,30.0,1,0,90.0
+minimax/minimax-m2.7,minimax/fp8,Minimax,471cf4ea-3548-4dd7-9f86-8c0f9c21d3ca,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.7,gmicloud/fp8,GMICloud,9527b5ea-67a3-430d-8a8b-fae7913bd89b,misc,minimax,standard,2.1E-7,5,5,30.0,5,5,64.0347688310207
+minimax/minimax-m2.7,groq,Groq,9c8f0a11-a427-467d-99c4-b5e6d91950e3,misc,minimax,standard,6E-7,0,0,30.0,0,0,74.03476825231479
+minimax/minimax-m2.7,deepinfra/fp8,DeepInfra,a9f3cc2f-1560-4d2c-aa1c-25b0334649f4,misc,minimax,standard,2.5E-7,0,0,30.0,1,1,90.0
+minimax/minimax-m2.7,minimax/highspeed,Minimax,c444cecf-adc6-4373-9eca-a85b77b50d75,misc,minimax,standard,6E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m2.7,deepinfra/turbo,DeepInfra,d0e5d670-f9fa-4bab-90d9-a58019be3377,misc,minimax,standard,3.8E-7,0,0,30.0,4,3,83.82643214120357
+minimax/minimax-m3,parasail/fp8,Parasail,20cc2ca2-c6bd-40f6-8ad9-ad93bc8d20a7,misc,minimax,standard,3E-7,0,0,30.0,2,2,85.99309723379712
+minimax/minimax-m3,atlas-cloud/fp8,AtlasCloud,22303844-15e2-47bd-ae20-c9f5b55f28f3,misc,minimax,standard,3E-7,0,0,30.0,2,2,87.95142876157607
+minimax/minimax-m3,novita/fp8,Novita,23cebf5b-eb26-47d6-ae16-2f328570f5c2,misc,minimax,standard,3E-7,0,0,30.0,0,0,88.2014318634266
+minimax/minimax-m3,gmicloud/fp8,GMICloud,250eaee0-fb99-4e79-8bfd-d091dfeacaca,misc,minimax,standard,2.4E-7,2,2,30.0,4,4,59.8264358564825
+minimax/minimax-m3,streamlake/fp8,StreamLake,2b729570-b8ed-4b94-b6bd-d4e16ab66054,misc,minimax,standard,3E-7,1,1,26.63194153935269,1,1,26.63194153935269
+minimax/minimax-m3,together,Together,302d8ec4-28b7-40e4-810a-ea66a83878a2,misc,minimax,standard,3E-7,0,0,21.493057314817,0,0,74.06949111111462
+minimax/minimax-m3,venice/fp8,Venice,54f0ed93-658b-4143-ba10-65f20bf0da95,misc,minimax,standard,3E-7,0,0,30.0,0,0,59.868099039354256
+minimax/minimax-m3,minimax/fp8,Minimax,6851b352-a7e2-45ad-a69e-67ed1208a416,misc,minimax,standard,3E-7,0,0,30.0,0,0,90.0
+minimax/minimax-m3,modelrun/fp4,ModelRun,b2dbe1de-fd55-4a28-b7bf-141ea45079e3,misc,minimax,standard,7.5E-7,1,1,25.79860915509363,1,1,25.79860915509363
+minimax/minimax-m3,coreweave/fp4,CoreWeave,b4c27216-5aed-4eac-ac2e-e3109cc778e7,misc,minimax,standard,2.3E-7,0,0,26.75694542824118,0,0,26.75694542824118
+minimax/minimax-m3,deepinfra/fp8,DeepInfra,b7674b48-d188-4cd1-96af-e7cf9643d3c8,misc,minimax,standard,2.8E-7,0,0,30.0,1,1,66.57643438657401
+minimax/minimax-m3,sambanova,SambaNova,f16e7dd1-736b-4adb-b3e9-6fdfe9422b2d,misc,minimax,standard,6E-7,0,0,18.881943611113563,0,0,18.881943611113563
+minimax/minimax-m3:batch,together,Together,f9fca75b-49e6-4ec7-b425-8611563d56d2,misc,minimax,batch,3E-7,1,1,30.0,1,1,36.173611516204694
+mistralai/codestral-2508,mistral/eu,Mistral,24a9920c-5f55-482a-adb0-1e0b7d9dc637,meta_mistral,Mistral,standard,3.3E-7,0,0,15.00694413194502,0,0,15.00694413194502
+mistralai/codestral-2508,mistral,Mistral,dfdc2841-297c-4de9-96fe-eab0ccfa25a6,meta_mistral,Mistral,standard,3E-7,0,0,30.0,0,0,90.0
+mistralai/devstral-2512,mistral/eu,Mistral,4c36e65e-bcbc-4015-93a3-016865d9c861,meta_mistral,Mistral,standard,4E-7,1,1,15.131943599537568,1,1,15.131943599537568
+mistralai/ministral-14b-2512,mistral,Mistral,0b53717b-9af5-4de3-80af-ebedd2adf981,meta_mistral,Mistral,standard,2E-7,0,0,30.0,0,0,90.0
+mistralai/ministral-14b-2512,mistral/eu,Mistral,84aeb794-2869-44ec-bcfe-3f7950b30711,meta_mistral,Mistral,standard,2.2E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/ministral-14b-2512,mistral/zdr,Mistral,92bddaca-2023-43db-b04f-97032276bc71,meta_mistral,Mistral,standard,2E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/ministral-3b-2512,mistral/eu,Mistral,23b35ccd-2ca4-4e53-9834-39e15c0bf481,meta_mistral,Mistral,standard,1.1E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/ministral-3b-2512,mistral/zdr,Mistral,b32dc02b-9622-4917-b3ed-a37798d30c91,meta_mistral,Mistral,standard,1E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/ministral-3b-2512,mistral,Mistral,b9f6828f-aef9-498a-91f5-6816fbf72420,meta_mistral,Mistral,standard,1E-7,0,0,30.0,0,0,90.0
+mistralai/ministral-8b-2512,mistral/zdr,Mistral,4cd33cd8-b087-45c0-ad7f-424100ba09a4,meta_mistral,Mistral,standard,1.5E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/ministral-8b-2512,mistral,Mistral,c85d26e1-1e0c-449b-9775-2afce7ae510b,meta_mistral,Mistral,standard,1.5E-7,0,0,30.0,0,0,90.0
+mistralai/ministral-8b-2512,mistral/eu,Mistral,d4087534-eee4-42f6-984f-191608855d9c,meta_mistral,Mistral,standard,1.65E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/mistral-large,mistral/eu,Mistral,9d1cfde2-4ef8-40b7-8107-2ba7d7f44a31,meta_mistral,Mistral,standard,0.0000022,0,0,12.840277361113715,0,0,12.840277361113715
+mistralai/mistral-large,mistral,Mistral,f1a57233-f872-4fa0-ad37-66c9a6b00469,meta_mistral,Mistral,standard,0.000002,0,0,30.0,0,0,90.0
+mistralai/mistral-large-2407,mistral,Mistral,4a128170-b056-42d7-8462-a5cea647f9ad,meta_mistral,Mistral,standard,0.000002,0,0,30.0,0,0,90.0
+mistralai/mistral-large-2407,mistral/zdr,Mistral,5155ea3c-d700-416c-879d-89a8e266f470,meta_mistral,Mistral,standard,0.000002,0,0,5.00000023148402,0,0,5.00000023148402
+mistralai/mistral-large-2407,mistral/eu,Mistral,a06b6c12-c036-4a3c-855b-2ee3f27e1841,meta_mistral,Mistral,standard,0.0000022,0,0,12.840277361113715,0,0,12.840277361113715
+mistralai/mistral-large-2512,mistral/zdr,Mistral,66d228a7-697c-4868-a1bf-531cf47e2dff,meta_mistral,Mistral,standard,5E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/mistral-large-2512,mistral/eu,Mistral,f381be12-319a-463b-b39c-9e948fece30f,meta_mistral,Mistral,standard,5.5E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/mistral-large-2512,mistral,Mistral,fa718841-07ea-4b7e-b8a3-6069545c7e6a,meta_mistral,Mistral,standard,5E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-medium-3,mistral/eu,Mistral,1f3978fc-535f-45f3-ac75-6b6f1ae46501,meta_mistral,Mistral,standard,4.4E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/mistral-medium-3,mistral,Mistral,9d5ba5bf-8465-46df-9185-1330820338f5,meta_mistral,Mistral,standard,4E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-medium-3,mistral/zdr,Mistral,a61ba147-e35a-4e10-a76a-0c2327f52a94,meta_mistral,Mistral,standard,4E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/mistral-medium-3-5,mistral/eu,Mistral,0f838043-00a4-4287-aa0b-d336b1ce180b,meta_mistral,Mistral,standard,0.00000165,0,0,14.715277650463912,0,0,14.715277650463912
+mistralai/mistral-medium-3-5,mistral,Mistral,38ef23a9-5cb3-46fa-85ec-7aed174f04eb,meta_mistral,Mistral,standard,0.0000015,0,0,30.0,0,0,90.0
+mistralai/mistral-medium-3-5,mistral/zdr,Mistral,d21d316f-d540-4718-b36e-3beff85d0cf9,meta_mistral,Mistral,standard,0.0000015,0,0,14.715277650463912,0,0,14.715277650463912
+mistralai/mistral-medium-3-5:batch,mistral,Mistral,d0131604-f3be-43b4-a1ca-54e97a5db7e4,meta_mistral,Mistral,batch,7.5E-7,0,0,11.4652768865752,0,0,11.4652768865752
+mistralai/mistral-medium-3.1,mistral,Mistral,13c5002b-8c5b-490c-8a5f-52ec0242804f,meta_mistral,Mistral,standard,4E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-medium-3.1,mistral/zdr,Mistral,3e1361dd-dd38-44f4-bee7-5983e20f1989,meta_mistral,Mistral,standard,4E-7,0,0,15.090276064814793,0,0,15.090276064814793
+mistralai/mistral-medium-3.1,mistral/eu,Mistral,61ca897d-a7f7-431f-afef-32a2fac7cd76,meta_mistral,Mistral,standard,4.4E-7,0,0,15.131943599537568,0,0,15.131943599537568
+mistralai/mistral-nemo,parasail/fp8,Parasail,0e9c6d0e-d8d9-4bdb-a33c-e54a7d3dfb4e,meta_mistral,Mistral,standard,3E-8,0,0,30.0,0,0,38.7844658912056
+mistralai/mistral-nemo,io-net/fp16,Io Net,3a7bd110-77e6-43b7-aa15-c18f1f68feb8,meta_mistral,Mistral,standard,4.4E-8,1,1,30.0,5,5,42.20112957175959
+mistralai/mistral-nemo,deepinfra/fp8,DeepInfra,3e0aa374-de51-4cd0-911b-29ae65067e21,meta_mistral,Mistral,standard,1.9E-8,0,0,30.0,1,1,90.0
+mistralai/mistral-nemo,novita/fp8,Novita,b61351b1-7c99-4bab-a6c8-87cb4807cc66,meta_mistral,Mistral,standard,4E-8,0,0,30.0,0,0,90.0
+mistralai/mistral-saba,mistral/eu,Mistral,20f6061a-a601-42a1-888a-f7436f687bb8,meta_mistral,Mistral,standard,2.2E-7,0,0,12.840277361113715,0,0,12.840277361113715
+mistralai/mistral-saba,mistral/zdr,Mistral,b86f6347-ac74-4160-9bfe-561894a7ef93,meta_mistral,Mistral,standard,2E-7,0,0,5.00000023148402,0,0,5.00000023148402
+mistralai/mistral-saba,mistral,Mistral,c5a8bebe-8564-47ed-9d05-4151aa3c6e3a,meta_mistral,Mistral,standard,2E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-small-24b-instruct-2501,deepinfra/fp8,DeepInfra,a911739a-dc2e-424d-a221-5c776f1552f0,meta_mistral,Mistral,standard,5E-8,0,0,30.0,0,0,90.0
+mistralai/mistral-small-2603,mistral/eu,Mistral,5b4e456b-ecd9-4013-b8cd-ea3e903eaec4,meta_mistral,Mistral,standard,1.65E-7,0,0,15.00694413194502,0,0,15.00694413194502
+mistralai/mistral-small-2603,mistral/zdr,Mistral,7a90a100-ff71-4d05-bb5d-7e65632eddbf,meta_mistral,Mistral,standard,1.5E-7,0,0,15.00694413194502,0,0,15.00694413194502
+mistralai/mistral-small-2603,mistral,Mistral,f5ed6283-4e17-457d-98cd-2ec0c318171d,meta_mistral,Mistral,standard,1.5E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-small-2603,venice/fp8,Venice,fdab3bae-d774-46cf-913b-e7a281def423,meta_mistral,Mistral,standard,1.875E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-small-3.1-24b-instruct,cloudflare,Cloudflare,35a93f0c-ce8f-4475-a6db-a383cc128360,meta_mistral,Mistral,standard,3.51E-7,0,0,30.0,0,0,90.0
+mistralai/mistral-small-3.2-24b-instruct,deepinfra/fp8,DeepInfra,0ebc91cd-74bd-44ab-9c9a-c1f17d19f128,meta_mistral,Mistral,standard,7.5E-8,0,0,30.0,0,0,90.0
+mistralai/mistral-small-3.2-24b-instruct,parasail/bf16,Parasail,fa50f0f7-ddc9-4155-bd92-d20c92dec640,meta_mistral,Mistral,standard,9E-8,0,0,30.0,0,0,88.16666599536936
+mistralai/mixtral-8x22b-instruct,mistral/eu,Mistral,23b689b2-6720-4e74-b114-6099ae1165f5,meta_mistral,Mistral,standard,0.0000022,0,0,12.840277361113715,0,0,12.840277361113715
+mistralai/mixtral-8x22b-instruct,mistral/zdr,Mistral,424c1412-9232-4520-ba87-dd7c985b328f,meta_mistral,Mistral,standard,0.000002,0,0,5.00000023148402,0,0,5.00000023148402
+mistralai/mixtral-8x22b-instruct,mistral,Mistral,e55a0c16-08a0-4871-ae6a-97482cc3231a,meta_mistral,Mistral,standard,0.000002,0,0,30.0,0,0,90.0
+mistralai/voxtral-small-24b-2507,mistral/eu,Mistral,73c36ff8-e5ff-4e17-a815-340e256a437b,meta_mistral,Mistral,standard,1.1E-7,0,0,11.0902769791666,0,0,11.0902769791666
+mistralai/voxtral-small-24b-2507,mistral,Mistral,814f9be0-e226-4b8c-bb5d-bf684359da13,meta_mistral,Mistral,standard,1E-7,0,0,30.0,0,0,90.0
+mistralai/voxtral-small-24b-2507,mistral/zdr,Mistral,cb5eedb5-7e23-4343-9ef7-7ae2280a6741,meta_mistral,Mistral,standard,1E-7,0,0,11.0902769791666,0,0,11.0902769791666
+moonshotai/kimi-k2,novita/fp8,Novita,f5265deb-6c78-49da-97e8-0f0b3dae6c5b,deepseek_glm_kimi_qwen,Kimi,standard,5.7E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2-0905,novita/fp8,Novita,262402a8-8891-4131-bc3c-a76c4bb9b391,deepseek_glm_kimi_qwen,Kimi,standard,6E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2-thinking,novita/bf16,Novita,a5cbd682-c60f-49d4-afda-520de76d9435,deepseek_glm_kimi_qwen,Kimi,standard,6E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2-thinking,google-vertex,Google,e841d362-719d-4f53-86c8-f83f5bbd7361,deepseek_glm_kimi_qwen,Kimi,standard,6E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.5,amazon-bedrock/us-east-2,Amazon Bedrock,062ddd73-a626-43ea-9212-f7eaef16e013,deepseek_glm_kimi_qwen,Kimi,standard,6E-7,0,0,30.0,0,0,38.951132638890435
+moonshotai/kimi-k2.5,siliconflow/int4,SiliconFlow,34bb2131-6727-40e5-9dec-8793b254ba5c,deepseek_glm_kimi_qwen,Kimi,standard,4.5E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.5,phala,Phala,84574054-5d03-4b0a-bf3d-8d52d056d13e,deepseek_glm_kimi_qwen,Kimi,standard,6E-7,0,0,30.0,1,0,90.0
+moonshotai/kimi-k2.5,novita,Novita,96a2baea-9e77-43d3-8aed-32f3cafc2685,deepseek_glm_kimi_qwen,Kimi,standard,5.7E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.5,digitalocean,DigitalOcean,97e7ae5f-9f21-44ff-8ca5-a725a2ec4f21,deepseek_glm_kimi_qwen,Kimi,standard,5E-7,1,1,30.0,7,6,90.0
+moonshotai/kimi-k2.5,atlas-cloud/int4,AtlasCloud,c1de3dab-1e75-4a69-9c51-fde39ae5bb7e,deepseek_glm_kimi_qwen,Kimi,standard,4.9E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.5,venice,Venice,c884a526-d529-4263-bd90-a58ea25e99d1,deepseek_glm_kimi_qwen,Kimi,standard,5.32E-7,1,1,30.0,1,1,90.0
+moonshotai/kimi-k2.6,streamlake/fp8,StreamLake,225a0c22-0d82-4616-9171-261ee03beabc,deepseek_glm_kimi_qwen,Kimi,standard,5.985E-7,1,1,30.0,5,5,90.0
+moonshotai/kimi-k2.6,digitalocean,DigitalOcean,2a0301df-dc82-4c78-96f7-1b55fef17ec6,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,1,1,30.0,3,2,90.0
+moonshotai/kimi-k2.6,fireworks,Fireworks,474c6f97-9be3-41a9-b3a8-29c456b6389e,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,1,1,90.0
+moonshotai/kimi-k2.6,decart/fp4,Decart,641632d6-7216-4329-9ac3-32491a8889c0,deepseek_glm_kimi_qwen,Kimi,standard,5.865E-7,35,35,30.0,41,39,89.04166474537165
+moonshotai/kimi-k2.6,crusoe/bf16,Crusoe,6543d82c-39bc-43f3-b686-5a30533f6ad7,deepseek_glm_kimi_qwen,Kimi,standard,7E-7,0,0,30.0,0,0,47.117798935183224
+moonshotai/kimi-k2.6,siliconflow/fp8,SiliconFlow,6ebc1d51-2760-4277-8c1e-c8ce9e01c18e,deepseek_glm_kimi_qwen,Kimi,standard,7.7E-7,0,0,30.0,2,0,90.0
+moonshotai/kimi-k2.6,baidu/fp4,Baidu,78cbd7eb-84cd-46ea-8347-0578e3415f83,deepseek_glm_kimi_qwen,Kimi,standard,5.795E-7,78,78,30.0,84,84,90.0
+moonshotai/kimi-k2.6,baseten/fp4,BaseTen,85421399-264f-405d-9ad9-67835b01a3e0,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,1,0,90.0
+moonshotai/kimi-k2.6,cloudflare,Cloudflare,85e7870f-601c-4891-98ab-f7ac2ed4d718,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,1,1,90.0
+moonshotai/kimi-k2.6,baseten/fp4,BaseTen,8ef401c9-419b-4d2c-9dee-dacf8ee5d6f6,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,7.048610578703659,0,0,7.048610578703659
+moonshotai/kimi-k2.6,moonshotai/int4,Moonshot AI,90b5957c-b5ba-485a-9b23-d3e9a8abffc1,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.6,inceptron/int4,Inceptron,9bdd7d54-5cfa-4fa8-988b-345ef4b9fd68,deepseek_glm_kimi_qwen,Kimi,standard,5.895E-7,17,11,30.0,28,17,90.0
+moonshotai/kimi-k2.6,deepinfra/fp4,DeepInfra,a2828210-ff0a-4882-9a4f-cce2aca73946,deepseek_glm_kimi_qwen,Kimi,standard,7.5E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.6,venice/int4,Venice,aa515fc0-facb-44e0-934b-aa0fd1e5e60f,deepseek_glm_kimi_qwen,Kimi,standard,7.5E-7,0,0,30.0,1,1,90.0
+moonshotai/kimi-k2.6,parasail/int4,Parasail,add59ea9-3c98-449b-b159-c5ff38127068,deepseek_glm_kimi_qwen,Kimi,standard,7.5E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.6,novita,Novita,af0285b7-6e2d-44e3-b867-c23c6c18e8cb,deepseek_glm_kimi_qwen,Kimi,standard,8E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.6,chutes/int4,Chutes,b16f9c10-99ee-4a75-bd5f-7f9b8b2b2b06,deepseek_glm_kimi_qwen,Kimi,standard,5.8E-7,0,0,30.0,3,2,90.0
+moonshotai/kimi-k2.6,phala,Phala,bb5de010-8234-4abb-b511-025d1817134a,deepseek_glm_kimi_qwen,Kimi,standard,0.00000109,0,0,30.0,1,0,90.0
+moonshotai/kimi-k2.6,atlas-cloud/int4,AtlasCloud,c72793fd-50f1-43c4-ae81-0ec212e23c05,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,0,0,90.0
+moonshotai/kimi-k2.6,gmicloud/fp8,GMICloud,d389256f-8808-43ee-a6c9-1943d104b9a0,deepseek_glm_kimi_qwen,Kimi,standard,8.55E-7,4,4,15.00694413194502,4,4,15.00694413194502
+moonshotai/kimi-k2.6,coreweave/fp4,CoreWeave,e69ee126-96d0-46cd-89e8-7519b66ad0b1,deepseek_glm_kimi_qwen,Kimi,standard,6.5E-7,0,0,30.0,1,1,46.951133356483446
+moonshotai/kimi-k2.7-code,streamlake,StreamLake,097b43e0-9746-4c41-8606-0636206ec985,deepseek_glm_kimi_qwen,Kimi,standard,7.125E-7,1,1,8.256943831018827,1,1,8.256943831018827
+moonshotai/kimi-k2.7-code,gmicloud/fp8,GMICloud,0ca28fc9-3a70-433b-a65b-6b4e3746ec41,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,20.006942488426965,0,0,20.006942488426965
+moonshotai/kimi-k2.7-code,fireworks,Fireworks,114a3cc7-181d-4df7-ac49-c7a3d1d7f607,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,4.541668877317398,0,0,4.541668877317398
+moonshotai/kimi-k2.7-code,cloudflare,Cloudflare,40a8c7d2-10f8-481d-8e79-e0a6457238bc,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,0,0,87.2014265393521
+moonshotai/kimi-k2.7-code,siliconflow/fp8,SiliconFlow,40cb12bf-2be8-4938-959d-7635ac774d25,deepseek_glm_kimi_qwen,Kimi,standard,8.5916E-7,0,0,30.0,1,1,81.61810021990979
+moonshotai/kimi-k2.7-code,moonshotai/highspeed,Moonshot AI,571461af-99ef-45f0-8b18-b13b9d4fa17e,deepseek_glm_kimi_qwen,Kimi,standard,0.0000019,0,0,30.0,0,0,84.32643188657585
+moonshotai/kimi-k2.7-code,baseten/fp4,BaseTen,5973274f-d658-4434-beb1-22057a2ec683,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,7.048610578703659,0,0,7.048610578703659
+moonshotai/kimi-k2.7-code,moonshotai/int4,Moonshot AI,71c89bc8-f596-4940-a9d6-fc996d99e5b1,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,0,0,88.28476561342677
+moonshotai/kimi-k2.7-code,inceptron/int4,Inceptron,7371d3a6-b4b2-4175-9efa-7f75319aa509,deepseek_glm_kimi_qwen,Kimi,standard,7.062E-7,5,3,30.0,10,7,78.15976552083536
+moonshotai/kimi-k2.7-code,modelrun/fp4,ModelRun,94292147-54b8-4c31-929c-5728cb265b55,deepseek_glm_kimi_qwen,Kimi,standard,8.5E-7,0,0,30.0,1,1,49.07613343750161
+moonshotai/kimi-k2.7-code,novita/int4,Novita,a8f81f96-c85e-4e23-83b2-a9d985d10790,deepseek_glm_kimi_qwen,Kimi,standard,9.12E-7,0,0,30.0,2,2,88.2014318634266
+moonshotai/kimi-k2.7-code,venice/int4,Venice,b2f000ce-d5c6-4b24-8a29-b70ed6043d61,deepseek_glm_kimi_qwen,Kimi,standard,7.5E-7,0,0,30.0,1,1,83.78476817129663
+moonshotai/kimi-k2.7-code,alibaba/fp8,Alibaba,ddb46cb3-7a0d-46af-9d0c-dc73857999f8,deepseek_glm_kimi_qwen,Kimi,standard,9.5E-7,0,0,30.0,0,0,39.99279988426025
+moonshotai/kimi-k2.7-code,deepinfra/fp4,DeepInfra,e7a9a3c1-6f00-4524-9dd4-ca1ae87050d6,deepseek_glm_kimi_qwen,Kimi,standard,6.8E-7,0,0,30.0,2,2,84.0764314930555
+moonshotai/kimi-k2.7-code,coreweave/int4,CoreWeave,e8970c45-7333-4e54-8456-7c8e696474c0,deepseek_glm_kimi_qwen,Kimi,standard,7.1E-7,0,0,30.0,1,1,46.951133356483446
+moonshotai/kimi-k3,baseten/fp8,BaseTen,1119cd79-663f-4b30-bb1b-84a862607544,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,0,0,43.0761325231498
+moonshotai/kimi-k3,deepinfra/bf16,DeepInfra,2f9124ef-703c-48bb-aaca-5b200abc76df,deepseek_glm_kimi_qwen,Kimi,standard,0.00000285,0,0,30.0,1,1,31.340277569445746
+moonshotai/kimi-k3,morph/fp4,Morph,315170e6-0362-4b17-8c5c-1561d5d5cdb8,deepseek_glm_kimi_qwen,Kimi,standard,0.0000025,5,5,30.0,8,8,41.951132407409176
+moonshotai/kimi-k3,fireworks/fast,Fireworks,3b35bc1d-1b58-48de-a137-fef1df4e426c,deepseek_glm_kimi_qwen,Kimi,standard,0.0000045,0,0,20.249998148147156,0,0,33.201132291665786
+moonshotai/kimi-k3,fireworks/us,Fireworks,40858a97-f093-4e81-9990-03f8d282ccc3,deepseek_glm_kimi_qwen,Kimi,standard,0.0000033,0,0,19.631944050926855,0,0,19.631944050926855
+moonshotai/kimi-k3,digitalocean,DigitalOcean,41a52135-d32a-4e3d-bb99-6e83f56199e2,deepseek_glm_kimi_qwen,Kimi,standard,0.00000285,2,2,30.0,4,3,43.11779863426255
+moonshotai/kimi-k3,together,Together,4f904c8c-3c21-4f73-81bd-d503fd3974e8,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,0,0,43.034465532407715
+moonshotai/kimi-k3,sail-research/fp4,Sail Research,57615dec-899a-41e7-8cab-1e2914497f0c,deepseek_glm_kimi_qwen,Kimi,standard,0.0000026,3,3,26.923612615742066,3,3,26.923612615742066
+moonshotai/kimi-k3,moonshotai/mxfp4,Moonshot AI,650c9b12-7b6d-444d-8d92-df8daef84d7a,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,0,0,54.15976774305657
+moonshotai/kimi-k3,wafer,Wafer,7ca93c5c-e560-4e12-b256-d362cbaf2bca,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,1,0,22.125000300926192,1,0,31.631945185186687
+moonshotai/kimi-k3,parasail/fp4,Parasail,8af1d210-6170-42c4-bcfc-a6c59a33ebbe,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,14.340282372686046,0,0,14.381948287037236
+moonshotai/kimi-k3,morph/fast,Morph,8d05a2c7-5687-4d2e-afca-982bd8b7f275,deepseek_glm_kimi_qwen,Kimi,standard,0.000006,0,0,30.0,0,0,36.82613329861175
+moonshotai/kimi-k3,phala,Phala,b705bdc1-8eb8-4909-ad60-45bfa5c5ff45,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,1,0,27.09025549768574,1,0,27.09025549768574
+moonshotai/kimi-k3,fireworks,Fireworks,c931306c-7eb4-4d77-be86-7cdf65f1ca9a,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,1,1,43.159467037038674
+moonshotai/kimi-k3,relace/fp4,Relace,d7e7eb39-4ba4-44f2-a447-020dab97a25d,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,0.08332298611325246,0,0,0.08332298611325246
+moonshotai/kimi-k3,modal/mxfp4,Modal,dc5986e0-9167-488a-b5a3-8a879ac5c373,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,0,0,41.95113327546528
+moonshotai/kimi-k3,alibaba,Alibaba,e028b763-82b2-4bfd-8269-7d787cd5c083,deepseek_glm_kimi_qwen,Kimi,standard,0.00000345,0,0,17.92361122685174,0,0,17.92361122685174
+moonshotai/kimi-k3,chutes/mxfp4,Chutes,eef7b4ee-55f8-466d-b0e9-4f991823345a,deepseek_glm_kimi_qwen,Kimi,standard,0.000003,0,0,30.0,1,0,36.11780149305584
+moonshotai/kimi-k3,makora,Makora,ef3af8e5-7a36-4eaa-af96-b68ca1dcdb68,deepseek_glm_kimi_qwen,Kimi,standard,0.00000255,0,0,13.881944293981348,0,0,13.881944293981348
+moonshotai/kimi-k3:batch,together,Together,8cc0cd85-49d9-4880-a166-6302d8c37a7d,deepseek_glm_kimi_qwen,Kimi,batch,0.000003,0,0,10.965277592594976,0,0,10.965277592594976
+morph/morph-v3-fast,morph,Morph,f636f582-98c3-45dd-b468-0b9b0973b1f6,other_hosted_candidates,morph,standard,8E-7,0,0,30.0,0,0,90.0
+morph/morph-v3-large,morph/fp8,Morph,df8da1e4-a390-4020-a25f-d12d77f65b22,other_hosted_candidates,morph,standard,9E-7,0,0,30.0,0,0,90.0
+nex-agi/nex-n2.5-mini:free,nex-agi/bf16,Nex AGI,5095cd11-1416-4d0d-a7cb-19700f0153ff,misc,nex-agi,free,,0,0,0.04164896990965914,0,0,0.04164896990965914
+nex-agi/nex-n2.5-pro:free,nex-agi/fp8,Nex AGI,b2b5363f-df5f-4579-8cf5-045249d69452,misc,nex-agi,free,,0,0,0.04164896990965914,0,0,0.04164896990965914
+nousresearch/hermes-3-llama-3.1-405b,deepinfra/fp8,DeepInfra,3280e8f8-0960-400c-8284-2e03a0bcb446,misc,nousresearch,standard,0.000001,0,0,30.0,0,0,90.0
+nousresearch/hermes-3-llama-3.1-70b,deepinfra/fp8,DeepInfra,2151651b-f4e9-4db7-b20d-8b91fb524bf8,misc,nousresearch,standard,7E-7,0,0,30.0,0,0,90.0
+nousresearch/hermes-4-405b,nebius/fp8,Nebius,c575da03-bbd8-4d9e-963d-497ea0ffcb13,misc,nousresearch,standard,0.000001,0,0,30.0,0,0,90.0
+nousresearch/hermes-4-70b,nebius/fp8,Nebius,9e1bd3ed-059c-4fcf-9435-c1993ef564db,misc,nousresearch,standard,1.3E-7,0,0,30.0,0,0,90.0
+nvidia/nemotron-3-nano-30b-a3b,novita/fp4,Novita,0cbc2efc-e7b3-408d-834b-c876c3df5280,open_weight_families,nvidia,standard,5E-8,0,0,30.0,0,0,84.65976714120418
+nvidia/nemotron-3-nano-30b-a3b,deepinfra/fp4,DeepInfra,2bd3912d-8b35-4818-b873-24ccfefa6cf9,open_weight_families,nvidia,standard,5E-8,0,0,30.0,1,0,90.0
+nvidia/nemotron-3-nano-30b-a3b,nebius/fp8,Nebius,38ce4c8d-18d4-4d62-b370-d4f7babd9f2b,open_weight_families,nvidia,standard,6E-8,1,1,15.131943599537568,1,1,15.131943599537568
+nvidia/nemotron-3-nano-30b-a3b,crusoe/fp8,Crusoe,8532db0a-9cc7-48ad-b411-b3c98185c08c,open_weight_families,nvidia,standard,5E-8,0,0,30.0,0,0,46.65946432870571
+nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free,nvidia,Nvidia,36402cf4-40a3-4188-b964-5625d8052cc0,open_weight_families,nvidia,free,,0,0,30.0,0,0,90.0
+nvidia/nemotron-3-super-120b-a12b,digitalocean,DigitalOcean,4b423372-2463-45ff-babc-2556971774d0,open_weight_families,nvidia,standard,3E-7,1,1,30.0,4,3,90.0
+nvidia/nemotron-3-super-120b-a12b,deepinfra/bf16,DeepInfra,b893e351-21c8-4215-8f36-c761298acf9e,open_weight_families,nvidia,standard,8.5E-8,0,0,30.0,1,1,90.0
+nvidia/nemotron-3-super-120b-a12b:free,nvidia,Nvidia,970aecad-f13b-4ec3-9362-e1758aea3e56,open_weight_families,nvidia,free,,0,0,30.0,0,0,90.0
+nvidia/nemotron-3-ultra-550b-a55b,deepinfra/fp4,DeepInfra,7d4f9061-1fd5-46d6-b439-e85b0b9fcd87,open_weight_families,nvidia,standard,5E-7,0,0,30.0,1,0,90.0
+nvidia/nemotron-3-ultra-550b-a55b,baseten/fp4,BaseTen,9c07a229-5887-471b-ba3f-174838d8d44a,open_weight_families,nvidia,standard,6E-7,0,0,7.048610578703659,0,0,7.048610578703659
+nvidia/nemotron-3-ultra-550b-a55b,baseten/fp4,BaseTen,e3762805-f8b2-46e6-ba1e-acd877fc6cd3,open_weight_families,nvidia,standard,6E-7,0,0,30.0,0,0,53.03476806713199
+nvidia/nemotron-3-ultra-550b-a55b,venice/fp8,Venice,f37857fa-c111-47e7-a6ba-123d71371ace,open_weight_families,nvidia,standard,6.25E-7,0,0,30.0,0,0,59.8264358564825
+nvidia/nemotron-3-ultra-550b-a55b:free,nvidia,Nvidia,72416acd-887a-4940-9ccc-1f22d9e17dbc,open_weight_families,nvidia,free,,0,0,30.0,0,0,90.0
+nvidia/nemotron-3.5-content-safety,deepinfra/bf16,DeepInfra,5158ac8e-39bb-43a9-8616-0b5b01ece4cb,open_weight_families,nvidia,standard,2E-7,0,0,4.791619953706308,0,0,4.791619953706308
+nvidia/nemotron-3.5-content-safety:free,nvidia,Nvidia,e1bc6262-4e47-42c0-9b9b-00236a52a01a,open_weight_families,nvidia,free,,0,0,30.0,0,0,90.0
+nvidia/nemotron-3.5-lightning,deepinfra/bf16,DeepInfra,9675f992-cf53-4946-a49b-e4f5a3e82584,open_weight_families,nvidia,standard,8E-8,1,1,28.048610520834725,1,1,28.048610520834725
+nvidia/nemotron-3.5-lightning,coreweave/bf16,CoreWeave,97653104-c300-4849-83c4-0a2ad548447b,open_weight_families,nvidia,standard,1E-7,0,0,28.090276620371473,0,0,28.090276620371473
+nvidia/nemotron-3.5-lightning:free,nvidia/nvfp4,Nvidia,022e8198-179c-47a3-a359-9147cb1b8909,open_weight_families,nvidia,free,,0,0,28.25694564814921,0,0,28.25694564814921
+openai/gpt-3.5-turbo,openai,OpenAI,3a632f37-731d-4200-9e38-413a5f5dd39d,major_labs,OpenAI proprietary,standard,5E-7,0,0,30.0,0,0,90.0
+openai/gpt-3.5-turbo-0613,azure,Azure,f29e5bba-56f3-408a-a036-185e3dc20be3,major_labs,OpenAI proprietary,standard,0.000001,0,0,30.0,0,0,90.0
+openai/gpt-3.5-turbo-16k,azure,Azure,8c793d52-3eea-429a-8524-bf4899ce050a,major_labs,OpenAI proprietary,standard,0.000003,0,0,30.0,0,0,90.0
+openai/gpt-3.5-turbo-16k,openai,OpenAI,eb1a93d0-a295-4afb-86d3-e2d10538c12d,major_labs,OpenAI proprietary,standard,0.000003,0,0,30.0,0,0,90.0
+openai/gpt-3.5-turbo-instruct,openai,OpenAI,39594b4d-6c7e-4ccd-aeed-79f9b3ca5819,major_labs,OpenAI proprietary,standard,0.0000015,0,0,30.0,0,0,90.0
+openai/gpt-3.5-turbo:batch,openai,OpenAI,a6ba47d3-00d7-42da-9b9c-006beac11587,major_labs,OpenAI proprietary,batch,2.5E-7,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4,azure,Azure,1fef5a78-ade5-4602-a137-509eec665653,major_labs,OpenAI proprietary,standard,0.00003,0,0,30.0,0,0,90.0
+openai/gpt-4,openai,OpenAI,355b1df4-06c8-4c36-a091-3d50477095fb,major_labs,OpenAI proprietary,standard,0.00003,0,0,30.0,0,0,90.0
+openai/gpt-4-turbo,openai,OpenAI,da16824f-3ba0-43a1-86f8-a6131837f457,major_labs,OpenAI proprietary,standard,0.00001,0,0,30.0,0,0,90.0
+openai/gpt-4-turbo-preview,openai,OpenAI,003933da-395a-48eb-86a3-0c4ec486d67f,major_labs,OpenAI proprietary,standard,0.00001,0,0,30.0,0,0,90.0
+openai/gpt-4-turbo:batch,openai,OpenAI,e19acbe0-a16a-4e1f-b854-b91dcaceae69,major_labs,OpenAI proprietary,batch,0.000005,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4.1,azure/swedencentral,Azure,6221adb9-aa14-49f0-9ec0-11924dd4fd66,major_labs,OpenAI proprietary,standard,0.0000022,0,0,30.0,1,1,90.0
+openai/gpt-4.1,openai,OpenAI,c235abe8-11cc-42d3-95ad-72f4d198287a,major_labs,OpenAI proprietary,standard,0.000002,0,0,30.0,0,0,90.0
+openai/gpt-4.1,azure,Azure,f8f1a490-d8f9-4fd5-8c0a-8f9c5e3eba25,major_labs,OpenAI proprietary,standard,0.000002,0,0,30.0,0,0,90.0
+openai/gpt-4.1-mini,azure,Azure,1551aa56-4221-448a-b280-f862f73c27de,major_labs,OpenAI proprietary,standard,4E-7,0,0,30.0,0,0,90.0
+openai/gpt-4.1-mini,openai,OpenAI,872eccb7-9c85-45fc-974a-ff7c8e2407e6,major_labs,OpenAI proprietary,standard,4E-7,0,0,30.0,0,0,90.0
+openai/gpt-4.1-mini,azure/swedencentral,Azure,fd1475c4-5864-42c0-bca0-d78568a069cb,major_labs,OpenAI proprietary,standard,4.4E-7,0,0,30.0,1,1,90.0
+openai/gpt-4.1-mini:batch,openai,OpenAI,fe95eb82-a92a-4886-8492-7a138b2afc5f,major_labs,OpenAI proprietary,batch,2E-7,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4.1-nano,azure,Azure,1826e686-ee39-4fdd-af2b-6e0c6fb2e6da,major_labs,OpenAI proprietary,standard,1E-7,0,0,30.0,0,0,90.0
+openai/gpt-4.1-nano,openai,OpenAI,9251cee5-5503-4be9-9439-7ae21ff062a3,major_labs,OpenAI proprietary,standard,1E-7,0,0,30.0,0,0,90.0
+openai/gpt-4.1-nano,azure/swedencentral,Azure,979ace8a-e355-4e28-8447-7a770b1498b8,major_labs,OpenAI proprietary,standard,1.1E-7,0,0,30.0,1,1,90.0
+openai/gpt-4.1-nano:batch,openai,OpenAI,b2ebb058-b93f-48a0-8545-ef25b8bbb27f,major_labs,OpenAI proprietary,batch,5E-8,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4.1:batch,openai,OpenAI,41e72505-ba5c-4ab6-b55f-620e033a284a,major_labs,OpenAI proprietary,batch,0.000001,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4o,openai,OpenAI,452a72a0-2c24-4e31-98cb-d6cc1084fb99,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-4o,azure,Azure,a1dcf276-9b84-441f-8e6e-7cfedb115751,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-4o-2024-05-13,openai,OpenAI,3d6584e7-a2bb-48d6-903d-24e3d90e7e55,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,90.0
+openai/gpt-4o-2024-05-13,azure,Azure,ef6b0afa-fd92-4db6-96e0-b8f0e5e4734b,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,90.0
+openai/gpt-4o-2024-08-06,azure,Azure,59ea8d2a-1b1b-47f1-83de-a358a724caeb,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-4o-2024-08-06,openai,OpenAI,9d15935a-34e6-4a5e-a5bc-c7dda213e876,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-4o-2024-11-20,openai,OpenAI,3e86b7c5-bffe-4b60-a3dd-b36451978775,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-4o-mini,azure,Azure,685e6cfb-ecef-4c83-8e2d-aa1ba667d744,major_labs,OpenAI proprietary,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-4o-mini,azure/swedencentral,Azure,74a2cb83-3a90-447c-b27a-8b6d955d082f,major_labs,OpenAI proprietary,standard,1.65E-7,0,0,30.0,1,1,90.0
+openai/gpt-4o-mini,openai,OpenAI,77e40332-6f2a-4c48-bc14-e44596b30ce2,major_labs,OpenAI proprietary,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-4o-mini-2024-07-18,openai,OpenAI,ebcc1f0a-6621-4cdc-a93f-88a6e2cc2e15,major_labs,OpenAI proprietary,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-4o-mini:batch,openai,OpenAI,548cbdaa-c3d2-43ef-81c4-62d65dca9063,major_labs,OpenAI proprietary,batch,7.5E-8,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-4o:batch,openai,OpenAI,35e5dca8-d246-411f-b281-f5e8500f7b8c,major_labs,OpenAI proprietary,batch,0.00000125,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-5,azure/swedencentral,Azure,301846ae-36c6-4900-8c41-1e98761fdaf4,major_labs,OpenAI proprietary,standard,0.000001375,0,0,30.0,1,1,90.0
+openai/gpt-5,openai/default,OpenAI,7c2f859a-7890-4e8e-b1de-1cd1c0a800b4,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5,azure,Azure,df54c692-a4df-49c3-aeef-21041a805a19,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5-image,openai,OpenAI,be0ed145-8bfc-4aec-a62d-685ed334fe17,major_labs,OpenAI proprietary,standard,0.00001,0,0,30.0,0,0,90.0
+openai/gpt-5-image-mini,openai,OpenAI,7c09094a-64ec-4d53-bd69-c165ac31c465,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-5-mini,azure/swedencentral,Azure,17e2190d-6dc0-4c96-8833-3285bf0a4556,major_labs,OpenAI proprietary,standard,2.75E-7,0,0,30.0,1,1,90.0
+openai/gpt-5-mini,azure,Azure,2609e67e-dcd4-401e-ae80-014ea7f111d8,major_labs,OpenAI proprietary,standard,2.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-5-mini,openai/flex,OpenAI,784594bd-7a8c-4be1-ba47-e2af1f41dcb5,major_labs,OpenAI proprietary,standard,1.25E-7,0,0,15.00694413194502,0,0,15.00694413194502
+openai/gpt-5-mini,openai,OpenAI,c4f66d01-20b0-4c27-a225-438ea22fda43,major_labs,OpenAI proprietary,standard,2.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-5-mini:batch,openai,OpenAI,e4e688dd-454d-484a-b4c3-cf2d81407583,major_labs,OpenAI proprietary,batch,1.25E-7,0,0,26.333331782409438,0,0,32.63194304398365
+openai/gpt-5-nano,azure,Azure,36b76b2b-0b8d-423c-9e90-a8bba875ef45,major_labs,OpenAI proprietary,standard,5E-8,0,0,30.0,0,0,90.0
+openai/gpt-5-nano,openai,OpenAI,50329d77-04e1-4979-a184-c33030289476,major_labs,OpenAI proprietary,standard,5E-8,0,0,30.0,0,0,90.0
+openai/gpt-5-nano,azure/swedencentral,Azure,51fdda78-2226-45d4-8edc-22283b07a322,major_labs,OpenAI proprietary,standard,5.5E-8,0,0,30.0,1,1,90.0
+openai/gpt-5-nano,openai/flex,OpenAI,72224607-a759-452e-9fb6-1c44c122b6d3,major_labs,OpenAI proprietary,standard,2.5E-8,0,0,14.923611307872667,0,0,14.923611307872667
+openai/gpt-5-nano:batch,openai,OpenAI,1745e1e7-4a49-4e0c-8464-b08e3465ebb3,major_labs,OpenAI proprietary,batch,2.5E-8,0,0,26.333331782409438,0,0,32.7152743171321
+openai/gpt-5-pro,openai,OpenAI,86e3e664-d291-415d-a769-8e08b96a79e9,major_labs,OpenAI proprietary,standard,0.000015,0,0,30.0,0,0,90.0
+openai/gpt-5-pro:batch,openai,OpenAI,a76d0730-f1fa-4377-9503-6dc8f0157a25,major_labs,OpenAI proprietary,batch,0.0000075,0,0,26.333331782409438,0,0,29.590276712965633
+openai/gpt-5.1,azure/swedencentral,Azure,27893b2c-45bb-4fe9-858d-8736dd491aa1,major_labs,OpenAI proprietary,standard,0.000001375,0,0,30.0,1,1,90.0
+openai/gpt-5.1,openai/flex,OpenAI,5d3e0056-1b97-4638-9c0e-61f9492169cc,major_labs,OpenAI proprietary,standard,6.25E-7,0,0,14.215277337964487,0,0,14.215277337964487
+openai/gpt-5.1,openai,OpenAI,764eb97f-8bab-4326-b29b-7a8799b00a70,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5.1,openai/fast,OpenAI,7823da09-0b84-4e58-a02f-c727190d10bf,major_labs,OpenAI proprietary,standard,0.0000025,0,0,14.215277337964487,0,0,14.215277337964487
+openai/gpt-5.1,azure,Azure,d8fb40be-2c8f-48b2-8d7d-7b61da673876,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5.1-codex,azure,Azure,6cbf24ac-808c-4cbf-9e6c-c971f69c4de6,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5.1-codex-max,azure,Azure,40b40238-5f11-44f4-b56b-0c702bd6c5b2,major_labs,OpenAI proprietary,standard,0.00000125,0,0,30.0,0,0,90.0
+openai/gpt-5.1-codex-mini,azure,Azure,cdb3ebc6-45e5-40ec-b586-48336ea95841,major_labs,OpenAI proprietary,standard,2.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-5.1:batch,openai,OpenAI,6c6e6f9c-10ac-41ec-8ba9-6989c3ee9c90,major_labs,OpenAI proprietary,batch,6.25E-7,0,0,26.333331782409438,0,0,32.63194304398365
+openai/gpt-5.2,openai/fast,OpenAI,01f0daf8-3af9-4fbf-8269-ce28370450cc,major_labs,OpenAI proprietary,standard,0.0000035,0,0,15.090276064814793,0,0,15.090276064814793
+openai/gpt-5.2,azure,Azure,1b754062-b0f3-4cab-89d6-48b43782a25d,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.2,openai,OpenAI,f00142c2-6a93-49ce-9e36-5593b904ce3b,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.2,openai/flex,OpenAI,f5d32118-9aa6-47cb-844a-5925f4d20a0a,major_labs,OpenAI proprietary,standard,8.75E-7,0,0,15.090276064814793,0,0,15.090276064814793
+openai/gpt-5.2-chat,azure,Azure,d07e4a1d-4d2a-4d11-92dc-2985c1a5a596,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.2-codex,azure,Azure,112d4970-7f22-40d4-8ddb-3ca917583981,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.2-pro,openai,OpenAI,1abae580-6f7a-4092-ae6c-b87ce6067f61,major_labs,OpenAI proprietary,standard,0.000021,0,0,30.0,0,0,90.0
+openai/gpt-5.2-pro:batch,openai,OpenAI,8bb13b1e-8039-4bb4-a532-7ecf2ad5f4b6,major_labs,OpenAI proprietary,batch,0.0000105,0,0,26.333331782409438,0,0,29.631943796299122
+openai/gpt-5.2:batch,openai,OpenAI,1a1f1f74-906f-4e46-a14c-78640ec6bfee,major_labs,OpenAI proprietary,batch,8.75E-7,0,0,26.333331782409438,0,0,32.63194304398365
+openai/gpt-5.3-codex,openai/fast,OpenAI,52318d70-1648-4d96-9f77-e3eefc3eecee,major_labs,OpenAI proprietary,standard,0.0000035,0,0,14.756943807872357,0,0,14.756943807872357
+openai/gpt-5.3-codex,openai,OpenAI,75bb5ca0-7b08-4f1a-aca5-aa2bbf44d98e,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.3-codex,azure,Azure,deb7cc8e-9ad8-4d0d-8c4c-b4a2d2bf3c76,major_labs,OpenAI proprietary,standard,0.00000175,0,0,30.0,0,0,90.0
+openai/gpt-5.4,openai/flex,OpenAI,0470fafb-9cf8-49d1-95ba-33e174daed96,major_labs,OpenAI proprietary,standard,0.00000125,0,0,14.298606423611442,0,0,14.298606423611442
+openai/gpt-5.4,openai/fast,OpenAI,1a7c2745-257e-4ae4-aa98-0ebdc7cd0bb9,major_labs,OpenAI proprietary,standard,0.000005,0,0,14.298606423611442,0,0,14.298606423611442
+openai/gpt-5.4,azure/us,Azure,4a089b93-da76-40dc-97ca-06822b48dc44,major_labs,OpenAI proprietary,standard,0.00000275,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.4,amazon-bedrock/us-east-1,Amazon Bedrock,7613e7df-3f5d-44e4-a238-ca4cc8f95be5,major_labs,OpenAI proprietary,standard,0.0000027500000000000004,0,0,30.0,1,1,40.159467881945545
+openai/gpt-5.4,openai,OpenAI,9ff5625c-403f-4d7f-b895-58ac7295062c,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-5.4,azure,Azure,e417cc03-4996-4875-ba43-f90f246e1e92,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-5.4,azure/eu,Azure,ec58141f-0609-475b-86ed-0ebe76e9c80f,major_labs,OpenAI proprietary,standard,0.00000275,0,0,30.0,0,0,74.20143458333557
+openai/gpt-5.4-image-2,openai,OpenAI,5acf5b3b-66dd-4ee8-8db2-2eed7d795b17,major_labs,OpenAI proprietary,standard,0.000008,0,0,30.0,0,0,90.0
+openai/gpt-5.4-mini,openai/fast,OpenAI,24caae54-4b41-4ae2-9b75-c6e3c5567efe,major_labs,OpenAI proprietary,standard,0.0000015,0,0,14.131944097222553,0,0,14.131944097222553
+openai/gpt-5.4-mini,azure,Azure,689cfb85-f673-4da5-961a-4f4711cc7d88,major_labs,OpenAI proprietary,standard,7.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-5.4-mini,openai/flex,OpenAI,72026512-703c-48f9-8957-d158dfe37591,major_labs,OpenAI proprietary,standard,3.75E-7,0,0,14.131944097222553,0,0,14.131944097222553
+openai/gpt-5.4-mini,openai,OpenAI,9ee065b2-3d1c-43bc-bdd7-28af3b148282,major_labs,OpenAI proprietary,standard,7.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-5.4-mini,azure/us,Azure,a7914423-09e5-459c-a7a9-110cacbb2ae1,major_labs,OpenAI proprietary,standard,8.25E-7,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.4-mini:batch,openai,OpenAI,b6a2b660-f0f1-429e-9ff7-24c0d96f7570,major_labs,OpenAI proprietary,batch,3.75E-7,0,0,26.333331782409438,0,0,32.7152743171321
+openai/gpt-5.4-nano,openai,OpenAI,0c835f2e-c18d-4e8c-b245-e1e3bd08b97f,major_labs,OpenAI proprietary,standard,2E-7,0,0,30.0,0,0,90.0
+openai/gpt-5.4-nano,azure/us,Azure,3986e556-fea6-44f1-aa0e-63a15a5efe07,major_labs,OpenAI proprietary,standard,2.2E-7,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.4-nano,openai/flex,OpenAI,992caea4-d6d8-447f-85f8-88b5f25bc1e2,major_labs,OpenAI proprietary,standard,1E-7,0,0,14.09027387731605,0,0,14.09027387731605
+openai/gpt-5.4-nano,azure,Azure,b6040dff-d381-47ee-82d2-a8aff4b6b281,major_labs,OpenAI proprietary,standard,2E-7,0,0,30.0,0,0,90.0
+openai/gpt-5.4-nano:batch,openai,OpenAI,44ec9d1d-751b-4da6-a664-fa57248bca38,major_labs,OpenAI proprietary,batch,1E-7,0,0,26.333331782409438,0,0,32.7152743171321
+openai/gpt-5.4-pro,azure,Azure,03502d26-37dd-432c-9d82-f48c0329b020,major_labs,OpenAI proprietary,standard,0.00003,0,0,30.0,0,0,90.0
+openai/gpt-5.4-pro,openai/flex,OpenAI,c42c6793-ff03-4b27-85e3-81783c3458c0,major_labs,OpenAI proprietary,standard,0.000015,0,0,13.881944293981348,0,0,13.881944293981348
+openai/gpt-5.4-pro,openai,OpenAI,f369d808-6935-4154-8e12-0fb6cc0a333f,major_labs,OpenAI proprietary,standard,0.00003,0,0,30.0,0,0,90.0
+openai/gpt-5.4-pro:batch,openai,OpenAI,7977696f-44ea-4cc3-8e46-b303ecaf0814,major_labs,OpenAI proprietary,batch,0.000015,0,0,26.333331782409438,0,0,29.673608784725268
+openai/gpt-5.4:batch,openai,OpenAI,beed36e2-016a-425b-b16a-fdcb5ad481c8,major_labs,OpenAI proprietary,batch,0.00000125,0,0,26.333331782409438,0,0,32.67360932870596
+openai/gpt-5.5,openai/flex,OpenAI,2c65a6f5-f3c3-4b71-8769-4065995ff5d8,major_labs,OpenAI proprietary,standard,0.0000025,0,0,15.298611331019137,0,0,15.298611331019137
+openai/gpt-5.5,openai/fast,OpenAI,318458e8-fb72-4fc3-ab55-38d3ce63f51b,major_labs,OpenAI proprietary,standard,0.0000125,0,0,15.298611331019137,0,0,15.298611331019137
+openai/gpt-5.5,amazon-bedrock/us-east-1,Amazon Bedrock,3ed7f032-a16e-4100-84e3-810777e63647,major_labs,OpenAI proprietary,standard,0.000005500000000000001,0,0,30.0,1,1,40.159467881945545
+openai/gpt-5.5,azure,Azure,42da77cc-cd0e-43a4-923a-3b742f7b124d,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,90.0
+openai/gpt-5.5,openai,OpenAI,58e5b336-423e-430b-a2ab-8bc353f0c51b,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,90.0
+openai/gpt-5.5,azure/eu,Azure,e2070a36-33b6-4e42-857a-1db6de46200a,major_labs,OpenAI proprietary,standard,0.0000055,0,0,30.0,0,0,90.0
+openai/gpt-5.5,azure/us,Azure,fbeb2656-c4d0-4a50-8514-5d26afdc3566,major_labs,OpenAI proprietary,standard,0.0000055,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.5-pro,openai,OpenAI,947d13c4-fbd4-48d6-8bf3-c923edab343e,major_labs,OpenAI proprietary,standard,0.00003,0,0,30.0,0,0,90.0
+openai/gpt-5.5-pro,openai/flex,OpenAI,9ea137eb-fbf6-47c3-b716-95bc3fbad4d7,major_labs,OpenAI proprietary,standard,0.000015,0,0,13.756935590279323,0,0,13.756935590279323
+openai/gpt-5.5-pro:batch,openai,OpenAI,7e09d95d-31e8-4479-8db5-583154679138,major_labs,OpenAI proprietary,batch,0.000015,0,0,26.333331782409438,0,0,29.673608784725268
+openai/gpt-5.5:batch,openai,OpenAI,34bd7c03-d5bf-4981-93d8-0f8bd0423045,major_labs,OpenAI proprietary,batch,0.0000025,0,0,26.333331782409438,0,0,32.7152743171321
+openai/gpt-5.6-luna,openai/fast,OpenAI,297a2285-308d-4bfb-a120-a9c2ead800b0,major_labs,OpenAI proprietary,standard,4E-7,0,0,10.006943275464906,0,0,10.006943275464906
+openai/gpt-5.6-luna,azure,Azure,3e1fe018-94f7-4499-874b-34254ca271a7,major_labs,OpenAI proprietary,standard,2E-7,1,1,30.0,1,1,60.9931023842593
+openai/gpt-5.6-luna,amazon-bedrock/us-east-1,Amazon Bedrock,84f2862d-b070-4497-b1f2-e44af8304e7f,major_labs,OpenAI proprietary,standard,2.2E-7,0,0,30.0,3,2,40.159467881945545
+openai/gpt-5.6-luna,azure/eu,Azure,bf333980-ba45-412c-9eb3-bac520ea764d,major_labs,OpenAI proprietary,standard,2.2E-7,1,1,30.0,1,1,60.9931023842593
+openai/gpt-5.6-luna,azure/us,Azure,eb706c2a-0b59-4497-ac86-31baf7e4876e,major_labs,OpenAI proprietary,standard,2.2E-7,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.6-luna,openai,OpenAI,eebea444-34a5-4642-a766-cb319471d33a,major_labs,OpenAI proprietary,standard,2E-7,2,1,30.0,6,3,61.07643281250088
+openai/gpt-5.6-luna,openai/flex,OpenAI,ff94b1f1-db76-42c5-a21e-06083c3cc7d0,major_labs,OpenAI proprietary,standard,1E-7,0,0,10.006943275464906,0,0,10.006943275464906
+openai/gpt-5.6-luna-pro,openai/fast,OpenAI,06ebd6cc-a1c0-486e-9e1b-317145f9cb1d,major_labs,OpenAI proprietary,standard,4E-7,0,0,9.965276759261334,0,0,9.965276759261334
+openai/gpt-5.6-luna-pro,azure,Azure,0ffa892c-07fc-43d2-8bf5-ba0892060aa3,major_labs,OpenAI proprietary,standard,2E-7,1,1,30.0,1,1,60.9931023842593
+openai/gpt-5.6-luna-pro,openai,OpenAI,5adc53de-3433-4f63-b5d3-b717763aced7,major_labs,OpenAI proprietary,standard,2E-7,2,1,30.0,6,3,61.07643281250088
+openai/gpt-5.6-luna-pro,azure/eu,Azure,733ee0b1-12ce-4cba-a12e-cee08edefb15,major_labs,OpenAI proprietary,standard,2.2E-7,1,1,30.0,1,1,60.9931023842593
+openai/gpt-5.6-luna-pro,openai/flex,OpenAI,89564020-af23-49f4-b570-2d9d47e7e40f,major_labs,OpenAI proprietary,standard,1E-7,0,0,9.965276759261334,0,0,9.965276759261334
+openai/gpt-5.6-luna-pro:batch,openai,OpenAI,6c251ade-2801-424a-b7cb-2cdbca9dee28,major_labs,OpenAI proprietary,batch,1E-7,0,0,26.333331782409438,0,0,29.590276712965633
+openai/gpt-5.6-luna:batch,openai,OpenAI,d43bcaad-59ce-4805-a4a8-4274bb06c768,major_labs,OpenAI proprietary,batch,1E-7,0,0,26.333331782409438,0,0,29.590276712965633
+openai/gpt-5.6-sol,openai/flex,OpenAI,04c905e9-f886-468f-9410-553cd8d95c4c,major_labs,OpenAI proprietary,standard,0.000001,0,0,9.21527872685205,0,0,9.21527872685205
+openai/gpt-5.6-sol,azure,Azure,12763e1a-d544-44ef-9827-2e99becd6f18,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,60.9931023842593
+openai/gpt-5.6-sol,openai/fast,OpenAI,1e875238-51a0-4cf4-8915-b46af937cf10,major_labs,OpenAI proprietary,standard,0.000004,0,0,9.21527872685205,0,0,9.21527872685205
+openai/gpt-5.6-sol,azure/eu,Azure,1f666206-8516-4635-9a4e-634039a0e8dc,major_labs,OpenAI proprietary,standard,0.0000055,0,0,30.0,0,0,60.9931023842593
+openai/gpt-5.6-sol,openai,OpenAI,a54c5de0-89bf-4ad7-a212-cf977eed918a,major_labs,OpenAI proprietary,standard,0.000002,2,2,30.0,3,2,61.07643281250088
+openai/gpt-5.6-sol,amazon-bedrock/us-east-1,Amazon Bedrock,c6f96c51-8925-4e0d-a29c-f75f093c90af,major_labs,OpenAI proprietary,standard,0.0000044,1,1,30.0,3,3,40.159467881945545
+openai/gpt-5.6-sol,azure/us,Azure,d67f2e04-a629-4049-8d82-92fb346b4ae7,major_labs,OpenAI proprietary,standard,0.0000055,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.6-sol-pro,openai,OpenAI,24801a82-7216-49bb-89a6-5480320ae736,major_labs,OpenAI proprietary,standard,0.000002,2,2,30.0,3,2,61.07643281250088
+openai/gpt-5.6-sol-pro,openai/fast,OpenAI,478afd18-1161-40dc-9e13-192e7ea58ea2,major_labs,OpenAI proprietary,standard,0.000004,0,0,9.21527872685205,0,0,9.21527872685205
+openai/gpt-5.6-sol-pro,openai/flex,OpenAI,58df9357-1156-45e0-92cc-3c541f25b11e,major_labs,OpenAI proprietary,standard,0.000001,0,0,9.21527872685205,0,0,9.21527872685205
+openai/gpt-5.6-sol-pro,azure,Azure,946e8bff-0892-4c72-89e1-030302b0663b,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,61.03476725694482
+openai/gpt-5.6-sol-pro,azure/eu,Azure,d514d96e-fab0-43aa-b4d4-3cf7d498aa3e,major_labs,OpenAI proprietary,standard,0.0000055,0,0,30.0,0,0,61.03476725694482
+openai/gpt-5.6-sol-pro:batch,openai,OpenAI,35e7ec32-49ee-4789-97ad-c6aa17680ccc,major_labs,OpenAI proprietary,batch,0.000001,2,2,26.333331782409438,2,2,29.590276712965633
+openai/gpt-5.6-sol:batch,openai,OpenAI,e92a9dd7-2d27-46ce-aa29-aef883ba6db6,major_labs,OpenAI proprietary,batch,0.000001,2,2,26.333331782409438,2,2,29.590276712965633
+openai/gpt-5.6-terra,azure/eu,Azure,24a6d684-1294-4c14-9db7-f8020a6f72eb,major_labs,OpenAI proprietary,standard,0.0000022,1,1,30.0,1,1,61.03476725694482
+openai/gpt-5.6-terra,openai,OpenAI,3cc89000-ae34-4dde-9c7d-5ce009c8af0b,major_labs,OpenAI proprietary,standard,0.000002,2,1,30.0,6,4,61.07643281250088
+openai/gpt-5.6-terra,openai/flex,OpenAI,bf8a8d37-5c1b-4343-8f0f-eee99b60c5f2,major_labs,OpenAI proprietary,standard,0.000001,0,0,8.92360924768779,0,0,8.92360924768779
+openai/gpt-5.6-terra,openai/fast,OpenAI,cca25f67-7c0d-4cb9-84b2-1b53a1be000f,major_labs,OpenAI proprietary,standard,0.000004,0,0,8.92360924768779,0,0,8.92360924768779
+openai/gpt-5.6-terra,amazon-bedrock/us-east-1,Amazon Bedrock,d2feac90-4e50-43c1-aadf-ccd3b06fbc82,major_labs,OpenAI proprietary,standard,0.0000022,0,0,30.0,3,3,40.159467881945545
+openai/gpt-5.6-terra,azure/us,Azure,de9e0ac6-808e-4f28-9d22-9b6d9f578b85,major_labs,OpenAI proprietary,standard,0.0000022,0,0,25.04860780092853,0,0,25.04860780092853
+openai/gpt-5.6-terra,azure,Azure,ec06d42d-6e7e-46da-a2f3-8fc3a8dda58c,major_labs,OpenAI proprietary,standard,0.000002,1,1,30.0,1,1,61.03476725694482
+openai/gpt-5.6-terra-pro,azure/eu,Azure,618181d5-af5a-457f-b9f1-13d1f33c7146,major_labs,OpenAI proprietary,standard,0.0000022,1,1,30.0,1,1,61.03476725694482
+openai/gpt-5.6-terra-pro,openai/flex,OpenAI,67323917-8a17-4858-a3ad-0ec3bda83c8a,major_labs,OpenAI proprietary,standard,0.000001,0,0,8.92360924768779,0,0,8.92360924768779
+openai/gpt-5.6-terra-pro,azure,Azure,977689ed-f4b0-42f4-8b88-6f9fe3bb3d93,major_labs,OpenAI proprietary,standard,0.000002,1,1,30.0,1,1,60.9931023842593
+openai/gpt-5.6-terra-pro,openai,OpenAI,a775a298-1154-44d8-9db7-c2b9e75fba9a,major_labs,OpenAI proprietary,standard,0.000002,2,1,30.0,6,4,61.07643281250088
+openai/gpt-5.6-terra-pro,openai/fast,OpenAI,ed722d80-aa3d-4e80-b3f1-d787705bddf8,major_labs,OpenAI proprietary,standard,0.000004,0,0,8.92360924768779,0,0,8.92360924768779
+openai/gpt-5.6-terra-pro:batch,openai,OpenAI,a18c5dd5-5f04-4997-ae6f-1c8fc1225fe0,major_labs,OpenAI proprietary,batch,0.000001,0,0,26.333331782409438,0,0,29.590276712965633
+openai/gpt-5.6-terra:batch,openai,OpenAI,a4e49d78-5c47-4e7e-b8ca-1e85ff06b0d9,major_labs,OpenAI proprietary,batch,0.000001,0,0,26.333331782409438,0,0,29.590276712965633
+openai/gpt-5:batch,openai,OpenAI,74c59f3a-ff24-4194-aa97-7ecc53b8fd93,major_labs,OpenAI proprietary,batch,6.25E-7,0,0,26.333331782409438,0,0,32.67360932870596
+openai/gpt-6-astra,openai/fast,OpenAI,1071a095-b9bc-40cd-8d66-88b484b1827d,major_labs,OpenAI proprietary,standard,0.00002,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra,azure,Azure,58a1125d-b0a0-4f59-a511-ae45f9a3f0ec,major_labs,OpenAI proprietary,standard,0.00001,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-6-astra,openai/flex,OpenAI,64614955-f8a2-4d65-bad7-88186222018e,major_labs,OpenAI proprietary,standard,0.000005,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra,azure/us,Azure,c06c7858-73a1-4449-95d2-7ffc7ca3d69c,major_labs,OpenAI proprietary,standard,0.000011,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-6-astra,openai,OpenAI,c2928094-b04c-4f41-84b2-2bf508091421,major_labs,OpenAI proprietary,standard,0.00001,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra-pro,azure,Azure,00dadce2-dc5c-496f-a26f-944d2e85131c,major_labs,OpenAI proprietary,standard,0.00001,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-6-astra-pro,openai/fast,OpenAI,44a23a77-0b5d-4112-b392-3082d3c3d3d8,major_labs,OpenAI proprietary,standard,0.00002,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra-pro,openai/flex,OpenAI,486bb2d0-d2d2-4a85-a0af-7254df652cc5,major_labs,OpenAI proprietary,standard,0.000005,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra-pro,openai,OpenAI,51316ada-2b30-415b-adc1-1671322cf289,major_labs,OpenAI proprietary,standard,0.00001,0,0,3.9583282986117734,0,0,3.9583282986117734
+openai/gpt-6-astra-pro,azure/us,Azure,73ddd88b-2dd3-402b-a7ae-f589767550a6,major_labs,OpenAI proprietary,standard,0.000011,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-6-astra-pro:batch,openai,OpenAI,74a19965-cef7-41c9-b914-dc9db43c6586,major_labs,OpenAI proprietary,batch,0.000005,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-6-astra:batch,openai,OpenAI,31c60bf7-25a5-4d45-b0e7-c53a5eaf40f5,major_labs,OpenAI proprietary,batch,0.000005,0,0,3.916668495370282,0,0,3.916668495370282
+openai/gpt-audio,openai,OpenAI,df1ccb5f-8dce-4d7e-8a34-5a6613b65995,major_labs,OpenAI proprietary,standard,0.0000025,0,0,30.0,0,0,90.0
+openai/gpt-audio-mini,openai,OpenAI,53417803-f19f-4905-af00-f7e023d09858,major_labs,OpenAI proprietary,standard,6E-7,0,0,30.0,0,0,90.0
+openai/gpt-chat-latest,openai,OpenAI,144906de-89e6-4ba4-a986-640af2562cfa,major_labs,OpenAI proprietary,standard,0.000005,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,baseten/fp4,BaseTen,000e507a-4d52-4dee-927a-8ece3a7b0c28,open_weight_families,GPT-OSS,standard,1E-7,0,0,30.0,1,0,90.0
+openai/gpt-oss-120b,akashml/bf16,AkashML,08a6dab7-09b5-4875-8f9b-f498f8f4173a,open_weight_families,GPT-OSS,standard,3E-8,1,1,29.875001736112214,1,1,31.79861278935439
+openai/gpt-oss-120b,mara,Mara,1d1e46ad-d325-4d4c-9472-b3f284404cb2,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,2,2,90.0
+openai/gpt-oss-120b,cerebras/fp16,Cerebras,20cbeb96-747f-42b6-a371-266a1bcd1e6c,open_weight_families,GPT-OSS,standard,3.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,deepinfra/turbo,DeepInfra,38ee5d29-5f91-486e-8485-eaf2408ee328,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,novita/fp4,Novita,3dc95f88-3960-4c91-b2bb-bbd2f5069c48,open_weight_families,GPT-OSS,standard,5E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,coreweave/fp4,CoreWeave,5595698f-9ce8-4aa8-8037-f0d7d3c13d2a,open_weight_families,GPT-OSS,standard,3E-8,0,0,30.0,1,1,46.99280038194524
+openai/gpt-oss-120b,deepinfra/bf16,DeepInfra,85835306-dba3-4334-87bc-ab9ffa5c9c62,open_weight_families,GPT-OSS,standard,3.7E-8,0,0,30.0,2,1,90.0
+openai/gpt-oss-120b,baseten/fp4,BaseTen,8727923e-c4b6-4dac-b5d5-6f2238b35a25,open_weight_families,GPT-OSS,standard,1E-7,0,0,7.048610578703659,0,0,7.048610578703659
+openai/gpt-oss-120b,groq,Groq,900c5273-4931-4e9f-bb52-57935dd154b4,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,phala,Phala,909fdbc8-1b02-46ea-a9fc-cc3cfe65d992,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,google-vertex/global,Google,93ec7f6d-c7aa-44c1-b9a7-2cd664a17b13,open_weight_families,GPT-OSS,standard,9E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,deepinfra/fp8,DeepInfra,a9e13c68-b2bb-4ba7-8379-523a8f06e767,open_weight_families,GPT-OSS,standard,2E-7,0,0,3.458335949074891,0,0,3.458335949074891
+openai/gpt-oss-120b,amazon-bedrock,Amazon Bedrock,b3f80c05-e31a-44f6-b63f-414467b87553,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,together,Together,c7cc0654-cfe3-4531-bd8a-68cd162ba020,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,siliconflow/fp8,SiliconFlow,ce118593-d9b2-4d2d-bcd4-33f0609b42f1,open_weight_families,GPT-OSS,standard,5E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,parasail/fp4,Parasail,cedca069-169c-4bc2-963a-7ad3a21380c8,open_weight_families,GPT-OSS,standard,1E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,mancer/fp8,Mancer 2,d4a6816a-826d-4988-a8ed-2caa3f7f398d,open_weight_families,GPT-OSS,standard,5.5E-8,29,29,30.0,58,58,73.78476877314901
+openai/gpt-oss-120b,nebius/fp4,Nebius,de9b9344-2116-44ea-b30a-fd9ec94b1157,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,amazon-bedrock/eu-west-1,Amazon Bedrock,eda49f69-50b8-4385-9ecd-8452c15a8253,open_weight_families,GPT-OSS,standard,1.5E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,sambanova,SambaNova,f487438c-e29a-408a-b38b-14045101a90d,open_weight_families,GPT-OSS,standard,1.4E-7,0,0,30.0,0,0,90.0
+openai/gpt-oss-120b,digitalocean,DigitalOcean,f731010c-7359-4b80-b327-eea871e58f55,open_weight_families,GPT-OSS,standard,5.5E-8,2,2,30.0,5,4,90.0
+openai/gpt-oss-120b:batch,together,Together,ec02c2fd-89f3-49df-89fb-df461624e7c3,open_weight_families,GPT-OSS,batch,1.5E-7,0,0,10.965277592594976,0,0,10.965277592594976
+openai/gpt-oss-20b,together,Together,10107fa7-70af-44d9-9c95-1e032f704752,open_weight_families,GPT-OSS,standard,5E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,amazon-bedrock,Amazon Bedrock,3dab0c5c-47bb-4f84-aaf0-dcc5aec260bf,open_weight_families,GPT-OSS,standard,7E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,phala,Phala,4a818281-fd73-4ab0-9498-6d903bbfbe67,open_weight_families,GPT-OSS,standard,4E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,groq,Groq,60654a45-42cc-48ee-8b1d-47bd44d0ecb0,open_weight_families,GPT-OSS,standard,7.5E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,siliconflow/fp8,SiliconFlow,73e031d2-12fd-49a3-8284-44d902295c23,open_weight_families,GPT-OSS,standard,4E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,parasail/fp4,Parasail,8febad8c-bc14-42f6-9b78-67e46f6c0cfb,open_weight_families,GPT-OSS,standard,3E-8,0,0,30.0,1,1,90.0
+openai/gpt-oss-20b,amazon-bedrock/eu-west-1,Amazon Bedrock,9dd64d3e-4b3f-4cf0-b045-35a2c5e1c821,open_weight_families,GPT-OSS,standard,7E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,akashml/fp4,AkashML,b61e45c4-cd4f-49c1-945f-fbfc22213878,open_weight_families,GPT-OSS,standard,2E-8,1,1,6.923613437502472,1,1,6.923613437502472
+openai/gpt-oss-20b,deepinfra/bf16,DeepInfra,bfc33027-e2bd-4d16-9ee2-cee1913475f0,open_weight_families,GPT-OSS,standard,3E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,novita/fp4,Novita,c3e700d0-32ff-45cb-a018-c57f16219648,open_weight_families,GPT-OSS,standard,4E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,google-vertex/us-central1,Google,d14eeefb-d9fc-4732-b0d7-db609aad8308,open_weight_families,GPT-OSS,standard,7E-8,0,0,30.0,0,0,90.0
+openai/gpt-oss-20b,darkbloom/fp8,Darkbloom,e5149726-1456-4cba-8f55-2fd44345af51,open_weight_families,GPT-OSS,standard,2E-8,0,0,14.506943900463758,0,0,14.506943900463758
+openai/gpt-oss-20b,coreweave/fp4,CoreWeave,e668be79-ecd1-4163-9cec-7a3664486541,open_weight_families,GPT-OSS,standard,3E-8,0,0,30.0,0,0,46.99280038194524
+openai/gpt-oss-20b:batch,together,Together,bc3ee74f-6d01-4a71-83cd-75feafad490b,open_weight_families,GPT-OSS,batch,5E-8,0,0,10.965277592594976,0,0,10.965277592594976
+openai/gpt-oss-safeguard-20b,groq,Groq,d83e34dd-4624-428d-8c3e-524be778e27f,open_weight_families,GPT-OSS,standard,7.5E-8,0,0,30.0,1,0,90.0
+openai/o1,openai,OpenAI,82738f61-f3cb-44a5-b5d1-e6787ae64e3b,major_labs,OpenAI proprietary,standard,0.000015,0,0,30.0,0,0,90.0
+openai/o1-pro,openai,OpenAI,046ae30d-fe99-44b4-b020-21127e4342c7,major_labs,OpenAI proprietary,standard,0.00015,0,0,30.0,0,0,90.0
+openai/o3,openai,OpenAI,42e72619-d01c-411c-a201-f991644768b7,major_labs,OpenAI proprietary,standard,0.000002,0,0,30.0,0,0,90.0
+openai/o3-mini,openai,OpenAI,e93c942e-7f8f-410d-8478-21ec37bc6b0d,major_labs,OpenAI proprietary,standard,0.0000011,0,0,30.0,0,0,90.0
+openai/o3-mini-high,openai,OpenAI,4a8663f2-89f3-40e9-9b50-e4838fff0155,major_labs,OpenAI proprietary,standard,0.0000011,0,0,30.0,0,0,90.0
+openai/o3-mini:batch,openai,OpenAI,af1c0e88-eeb7-4255-9767-28ac87cbb2c8,major_labs,OpenAI proprietary,batch,5.5E-7,0,0,26.333331782409438,0,0,29.590276712965633
+openai/o3-pro,openai,OpenAI,b8222376-66ee-4b89-a7c9-e627ba35db79,major_labs,OpenAI proprietary,standard,0.00002,0,0,30.0,0,0,90.0
+openai/o3:batch,openai,OpenAI,2f5700a6-f81a-4a92-8f27-5f13bb3bf301,major_labs,OpenAI proprietary,batch,0.000001,0,0,26.333331782409438,0,0,29.590276712965633
+openai/o4-mini,openai,OpenAI,bd121898-b27c-4e2c-bc92-278627465a54,major_labs,OpenAI proprietary,standard,0.0000011,0,0,30.0,0,0,90.0
+openai/o4-mini-high,openai,OpenAI,60020533-2fb2-4aa1-9454-181029fd52de,major_labs,OpenAI proprietary,standard,0.0000011,0,0,30.0,0,0,90.0
+openai/o4-mini:batch,openai,OpenAI,c34ab2fb-a9a3-4449-ad68-675e66d9667b,major_labs,OpenAI proprietary,batch,5.5E-7,0,0,26.333331782409438,0,0,29.590276712965633
+perceptron/perceptron-mk1,perceptron,Perceptron,92521bd2-ad85-4d32-bc48-34528189a0de,misc,perceptron,standard,1.5E-7,0,0,30.0,0,0,90.0
+perplexity/sonar,perplexity,Perplexity,5f831e7a-c555-4d3a-b228-88286347558a,other_hosted_candidates,perplexity,standard,0.000001,0,0,30.0,0,0,90.0
+perplexity/sonar-deep-research,perplexity,Perplexity,47dadaf5-a2e7-4c17-ac4b-e4811f3c0a28,other_hosted_candidates,perplexity,standard,0.000002,0,0,30.0,0,0,90.0
+perplexity/sonar-pro,perplexity,Perplexity,e19b1036-fab9-4f97-9579-8ea67959cc9b,other_hosted_candidates,perplexity,standard,0.000003,0,0,30.0,0,0,90.0
+perplexity/sonar-pro-search,perplexity,Perplexity,c78926bd-fa25-4883-8794-22de8c1ce79c,other_hosted_candidates,perplexity,standard,0.000003,0,0,30.0,0,0,90.0
+perplexity/sonar-reasoning-pro,perplexity,Perplexity,0d28660e-435a-4853-a2c6-9d916df28fc7,other_hosted_candidates,perplexity,standard,0.000002,0,0,30.0,0,0,90.0
+poolside/laguna-s-2.1,poolside/fp4,Poolside,ab7f9e97-1af5-4b81-b099-cc932f54234e,open_weight_families,poolside,standard,9E-8,0,0,30.0,1,1,49.076135289354454
+poolside/laguna-s-2.1:free,poolside/fp4,Poolside,1671d9aa-18c8-444a-96c7-f5f6231591bb,open_weight_families,poolside,free,,0,0,30.0,0,0,49.076135289354454
+poolside/laguna-xs-2.1,poolside/fp8,Poolside,089ec178-f6dc-4450-aff5-46f68798ce97,open_weight_families,poolside,standard,6E-8,0,0,30.0,0,0,68.15976587963048
+poolside/laguna-xs-2.1:free,poolside/fp8,Poolside,9c35bcfc-edcc-405a-acee-a0b991ec61cb,open_weight_families,poolside,free,,0,0,30.0,0,0,68.15976587963048
+qwen/qwen-2.5-72b-instruct,deepinfra/fp8,DeepInfra,8b6b26e9-621a-4b31-b55a-c9aaa7482ede,deepseek_glm_kimi_qwen,Qwen,standard,3.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen-2.5-72b-instruct,novita/bf16,Novita,a2a8a9fd-2784-448f-99b8-076fb6e1d8e5,deepseek_glm_kimi_qwen,Qwen,standard,3.8E-7,0,0,30.0,0,0,90.0
+qwen/qwen-2.5-7b-instruct,phala,Phala,3a6186c9-0ece-4797-9f97-45d7fab8c546,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,1,1,90.0
+qwen/qwen-2.5-coder-32b-instruct,cloudflare,Cloudflare,3ad816a5-5e65-4f9a-8d4b-da3c1ddb20fe,deepseek_glm_kimi_qwen,Qwen,standard,6.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen-plus,alibaba,Alibaba,47e88ae3-94ed-4d6a-96bb-a150dd354853,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen-plus-2025-07-28,alibaba,Alibaba,23a86833-b536-4529-94c4-a18746e95c60,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen2.5-vl-72b-instruct,parasail/fp8,Parasail,3f0b8e14-7b24-431d-a19e-f2e257967b0a,deepseek_glm_kimi_qwen,Qwen,standard,8E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-14b,deepinfra/fp8,DeepInfra,778bdebf-d018-4a24-a34e-230fce0f2045,deepseek_glm_kimi_qwen,Qwen,standard,1.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-14b,alibaba,Alibaba,b845a37e-3369-44ef-86ac-9f494e453af1,deepseek_glm_kimi_qwen,Qwen,standard,2.275E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-14b,nextbit/int4,NextBit,c399a914-434e-4f21-b11b-8f4b3b2ec72c,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,1,0,90.0
+qwen/qwen3-235b-a22b,alibaba,Alibaba,6f60fa24-0b39-42e2-a3ce-b524504c5cfa,deepseek_glm_kimi_qwen,Qwen,standard,4.55E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,parasail/fp8,Parasail,043eb28f-fc28-4b0d-9800-b249fcfcfbf9,deepseek_glm_kimi_qwen,Qwen,standard,1.4E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,streamlake,StreamLake,0ee0379f-93ca-4158-9ef0-b5d8acbec0ef,deepseek_glm_kimi_qwen,Qwen,standard,2.1E-7,0,0,30.0,2,2,90.0
+qwen/qwen3-235b-a22b-2507,deepinfra/fp8,DeepInfra,3e3e2284-a12c-46b5-b3db-bc4eb148c7d9,deepseek_glm_kimi_qwen,Qwen,standard,9E-8,0,0,30.0,1,0,90.0
+qwen/qwen3-235b-a22b-2507,google-vertex/us-south1,Google,5369c603-15de-42f2-95d3-1e9559206ff9,deepseek_glm_kimi_qwen,Qwen,standard,2.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,nebius/fp8,Nebius,60fe2e34-32d7-46f8-872b-fdfc5be25560,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,63.95143284722335
+qwen/qwen3-235b-a22b-2507,gmicloud/fp8,GMICloud,7f8598e4-091b-424e-a9c2-158532af1537,deepseek_glm_kimi_qwen,Qwen,standard,8.75E-8,6,6,20.215278576388954,6,6,20.215278576388954
+qwen/qwen3-235b-a22b-2507,alibaba,Alibaba,813ce28a-1334-47e3-881e-a7f8833b34b4,deepseek_glm_kimi_qwen,Qwen,standard,1.495E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,google-vertex/us-south1,Google,89b84b73-e965-4777-a728-3421dfaefcbe,deepseek_glm_kimi_qwen,Qwen,standard,2.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,venice/fp8,Venice,9e9cb601-dc7d-4529-b7f9-5a410ee07363,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,80.95143234953836
+qwen/qwen3-235b-a22b-2507,atlas-cloud/fp8,AtlasCloud,aaae5602-0949-4bc9-bd77-588b4b285341,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-2507,novita/fp8,Novita,cf186489-d252-4fb7-aca9-87ef7b557eff,deepseek_glm_kimi_qwen,Qwen,standard,9E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-thinking-2507,novita/fp8,Novita,73c2b27b-a51d-4bab-b54d-93ce28732702,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-235b-a22b-thinking-2507,venice/fp8,Venice,dcaa5e88-7e41-42c8-8d6d-e3b4a984f7b9,deepseek_glm_kimi_qwen,Qwen,standard,4.5E-7,0,0,30.0,0,0,63.95143284722335
+qwen/qwen3-235b-a22b-thinking-2507,alibaba,Alibaba,f246192a-ff8f-4b6c-b2ac-62b3bd24c455,deepseek_glm_kimi_qwen,Qwen,standard,2.3E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-30b-a3b,alibaba,Alibaba,9faa8215-912f-4c21-ab3b-9290accf3916,deepseek_glm_kimi_qwen,Qwen,standard,1.3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-30b-a3b,deepinfra/fp8,DeepInfra,efdfff77-9574-4695-8e08-32d968a43376,deepseek_glm_kimi_qwen,Qwen,standard,1.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-30b-a3b-instruct-2507,streamlake,StreamLake,4ea9b8c2-e4a8-4707-8e4b-a8693745edbe,deepseek_glm_kimi_qwen,Qwen,standard,4.815E-8,0,0,30.0,2,2,90.0
+qwen/qwen3-30b-a3b-instruct-2507,nebius/fp8,Nebius,52dbed07-6ee1-40d4-ae95-7375769ab577,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-30b-a3b-instruct-2507,alibaba,Alibaba,64103172-a7d0-4c84-a908-fdd09043dca2,deepseek_glm_kimi_qwen,Qwen,standard,1.3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-30b-a3b-instruct-2507,siliconflow/fp8,SiliconFlow,73b51933-48c6-42d4-9440-2ce3c91ce131,deepseek_glm_kimi_qwen,Qwen,standard,9E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-30b-a3b-thinking-2507,alibaba,Alibaba,86834360-63c5-482a-8ef9-85b22ddf0980,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-32b,deepinfra/fp8,DeepInfra,6b8c829d-3094-45e7-8139-0a67e09060c3,deepseek_glm_kimi_qwen,Qwen,standard,8E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-32b,siliconflow/fp8,SiliconFlow,6f9e09e5-e836-4de0-a27d-27c74b866001,deepseek_glm_kimi_qwen,Qwen,standard,1.4E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-8b,alibaba,Alibaba,633e82ca-271e-48a2-a8b3-9b69db4e2311,deepseek_glm_kimi_qwen,Qwen,standard,1.17E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder,venice/fp8,Venice,042e96a9-24e0-43c1-a472-b93b506f211c,deepseek_glm_kimi_qwen,Qwen,standard,3.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder,novita/fp8,Novita,223e0b1b-e924-4da4-8d45-74cc9deeb40f,deepseek_glm_kimi_qwen,Qwen,standard,3.8E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder,deepinfra/turbo,DeepInfra,6982ced0-1d3c-4fd0-bc36-21297218fdbe,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder,google-vertex/us-south1,Google,803d4906-0d0b-49b6-8705-7ae0a4d45217,deepseek_glm_kimi_qwen,Qwen,standard,2.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder,alibaba/opensource,Alibaba,eb365617-e7c9-41fa-98ea-a3aa2183ce58,deepseek_glm_kimi_qwen,Qwen,standard,9.75E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-30b-a3b-instruct,alibaba,Alibaba,4977811c-1f48-4d0f-8b67-5acabe42ab7c,deepseek_glm_kimi_qwen,Qwen,standard,2.925E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-30b-a3b-instruct,siliconflow/fp8,SiliconFlow,cc97b4c8-6ac2-438e-94f0-7b8b972c8c2f,deepseek_glm_kimi_qwen,Qwen,standard,7E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-30b-a3b-instruct,novita/fp8,Novita,ded7fa7f-5261-4772-87fb-96994d95c6b9,deepseek_glm_kimi_qwen,Qwen,standard,7E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-30b-a3b-instruct,amazon-bedrock,Amazon Bedrock,e127a93b-3750-4e1f-8743-d1023dad1dc4,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-flash,alibaba,Alibaba,ded5f1ed-4249-476c-a19e-df63b005a8b7,deepseek_glm_kimi_qwen,Qwen,standard,1.95E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-next,streamlake,StreamLake,06ff1e1e-a7cb-4daf-a4e7-1c557bc94a3b,deepseek_glm_kimi_qwen,Qwen,standard,1.8E-7,0,0,30.0,2,2,90.0
+qwen/qwen3-coder-next,alibaba,Alibaba,9e0465f3-2bd0-4cce-8ba5-8d13f97624aa,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,1,1,64.0764345949088
+qwen/qwen3-coder-next,parasail/bf16,Parasail,abacc5e9-91e6-40bf-93c6-9112334a4042,deepseek_glm_kimi_qwen,Qwen,standard,1.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-next,novita/fp8,Novita,b4755e91-8718-4dc6-82e8-5e8d37de8598,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-coder-plus,alibaba,Alibaba,bc011219-e28e-416d-9cca-9aaf022f227e,deepseek_glm_kimi_qwen,Qwen,standard,6.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-max,alibaba,Alibaba,5e31ba3c-d5bf-4ced-a52d-96e2e6635f95,deepseek_glm_kimi_qwen,Qwen,standard,7.8E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-max-thinking,alibaba,Alibaba,0c13d1a9-ea55-4e4f-ad48-55e6319c0a3e,deepseek_glm_kimi_qwen,Qwen,standard,7.8E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-instruct,parasail/fp8,Parasail,566f9428-0fa4-42dc-8d00-48965e87a9cc,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-instruct,deepinfra/fp8,DeepInfra,74635ab6-7ba2-4cd7-8f2f-10651305385a,deepseek_glm_kimi_qwen,Qwen,standard,9E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-instruct,google-vertex/global,Google,f65277dd-2a8c-4105-a8a1-f47c6d813131,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-instruct,alibaba,Alibaba,fb6f5134-ae6f-4ffa-9d64-16c2731bef93,deepseek_glm_kimi_qwen,Qwen,standard,9.75E-8,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-instruct,novita/bf16,Novita,fe32eb3f-05ec-415f-8f63-3e05327d1644,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-next-80b-a3b-thinking,alibaba,Alibaba,1b075e5f-051b-4d60-9bc3-20f69ff6355d,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-next-80b-a3b-thinking,google-vertex/global,Google,d1deb834-ad6a-43c7-a877-3107eb9ac03f,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-235b-a22b-instruct,venice/fp8,Venice,1a247ee7-2973-430d-8445-7c7a30adb983,deepseek_glm_kimi_qwen,Qwen,standard,2.1E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-vl-235b-a22b-instruct,novita/bf16,Novita,7f224e57-ba59-49bb-92f7-0fe85eff0e72,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-235b-a22b-instruct,parasail/fp8,Parasail,9d2c36b8-0885-4ea2-9df4-954e856e4f7a,deepseek_glm_kimi_qwen,Qwen,standard,2.1E-7,0,0,30.0,8,8,90.0
+qwen/qwen3-vl-235b-a22b-instruct,deepinfra/fp8,DeepInfra,a352cc82-2bdb-411b-9f99-bd7829655412,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-235b-a22b-instruct,alibaba,Alibaba,ffa79fb8-8758-4c19-a790-40706e9033d6,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-235b-a22b-thinking,alibaba,Alibaba,a4766f32-79c6-485a-8371-bff388d93df8,deepseek_glm_kimi_qwen,Qwen,standard,4E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-vl-235b-a22b-thinking,novita/bf16,Novita,c611a942-6a7c-43c7-b26e-d91cf0fb7b83,deepseek_glm_kimi_qwen,Qwen,standard,9.8E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-instruct,novita/bf16,Novita,0ae33e05-f2b8-49bd-8a58-f61a835466bd,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-instruct,siliconflow/fp8,SiliconFlow,1553890e-99fa-45d4-b77c-132776f6cac6,deepseek_glm_kimi_qwen,Qwen,standard,2.9E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-instruct,alibaba,Alibaba,27e433ca-988e-4aaa-902a-37bc06c59e3b,deepseek_glm_kimi_qwen,Qwen,standard,1.3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-instruct,deepinfra/fp8,DeepInfra,9b9d1187-7d55-4ec6-87b0-734dd1432829,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-thinking,siliconflow/fp8,SiliconFlow,775d37c0-03e1-435f-aefa-d7252f4b1c56,deepseek_glm_kimi_qwen,Qwen,standard,2.9E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-30b-a3b-thinking,alibaba,Alibaba,bad35a82-60b3-4cbb-ad64-fb0fa0e25318,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,1,1,90.0
+qwen/qwen3-vl-32b-instruct,alibaba,Alibaba,5e9377cb-bd6f-4940-8a25-c787a4ccec95,deepseek_glm_kimi_qwen,Qwen,standard,1.04E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-8b-instruct,alibaba,Alibaba,0122dcb7-c876-4445-8a8e-610a7b44d12b,deepseek_glm_kimi_qwen,Qwen,standard,1.17E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-8b-instruct,parasail/bf16,Parasail,91501e15-158f-48c3-967c-faf664e98284,deepseek_glm_kimi_qwen,Qwen,standard,2.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3-vl-8b-thinking,alibaba,Alibaba,6cb46014-347b-4d67-aefa-7b83e065b8c3,deepseek_glm_kimi_qwen,Qwen,standard,1.8E-7,0,0,30.0,1,1,90.0
+qwen/qwen3.5-122b-a10b,siliconflow/fp8,SiliconFlow,0a90a7cd-5063-4bcf-a228-e51ebb87feee,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-122b-a10b,alibaba,Alibaba,33d466d1-d2f7-45ed-8ff3-fda7d2e32351,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-122b-a10b,atlas-cloud/fp8,AtlasCloud,4774bc7a-1bc5-40f4-b61e-2541e3c6313e,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-122b-a10b,deepinfra/fp4,DeepInfra,69f51f6a-2f3c-42b0-9bbc-aae7d9061688,deepseek_glm_kimi_qwen,Qwen,standard,2.9E-7,0,0,30.0,0,0,59.20143546296491
+qwen/qwen3.5-122b-a10b,novita/bf16,Novita,fa56b1c6-5be1-461d-9f1f-9a97dd64ddd7,deepseek_glm_kimi_qwen,Qwen,standard,4E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-27b,atlas-cloud/fp8,AtlasCloud,1cb5bae9-63d4-4621-9da4-a1fc25bd607c,deepseek_glm_kimi_qwen,Qwen,standard,2.7E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-27b,phala,Phala,5208d81b-4770-4abc-91d1-337c45e9e922,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,1,0,90.0
+qwen/qwen3.5-27b,siliconflow/fp8,SiliconFlow,69738ad0-9730-45fb-9d22-05b3077aaf39,deepseek_glm_kimi_qwen,Qwen,standard,2.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-27b,novita/bf16,Novita,6b144fae-965a-4109-8671-7342cba04e70,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-27b,alibaba,Alibaba,f3f88554-0c22-4d57-973b-0dec948808e8,deepseek_glm_kimi_qwen,Qwen,standard,1.95E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-27b,deepinfra/fp8,DeepInfra,f7b0a806-7952-4b61-b485-7a7d6d98c60c,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,deepinfra/fp8,DeepInfra,098f81e1-07f9-4f7c-a006-65c81138ddea,deepseek_glm_kimi_qwen,Qwen,standard,1.4E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,parasail/fp8,Parasail,09b7c9ad-3344-41a7-9571-0849cf9ac950,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,atlas-cloud/fp8,AtlasCloud,40c8d6a1-072d-413c-8a06-d3c8e980b5d4,deepseek_glm_kimi_qwen,Qwen,standard,2.25E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,alibaba,Alibaba,48c1210f-b7d2-4688-a340-f7424fc99d2b,deepseek_glm_kimi_qwen,Qwen,standard,1.625E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,venice,Venice,4fc06329-fa64-4840-8b40-a755ebdbb09b,deepseek_glm_kimi_qwen,Qwen,standard,3.125E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,siliconflow/fp8,SiliconFlow,623c5b4c-6e0f-4f31-adb2-01281c941acd,deepseek_glm_kimi_qwen,Qwen,standard,2.4E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-35b-a3b,darkbloom/fp4,Darkbloom,b6b5a442-34e5-4dd9-9961-70b17a88dbf2,deepseek_glm_kimi_qwen,Qwen,standard,8E-8,0,0,12.965277372686952,0,0,12.965277372686952
+qwen/qwen3.5-397b-a17b,alibaba,Alibaba,180484a2-e24b-495a-ba41-b34b680d5a9f,deepseek_glm_kimi_qwen,Qwen,standard,3.9E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,novita,Novita,2873f79d-2a83-4f29-86e7-38be27a40a6f,deepseek_glm_kimi_qwen,Qwen,standard,6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,deepinfra/fp8,DeepInfra,43089c62-fc4d-4908-a8ca-188eaf2cbb9e,deepseek_glm_kimi_qwen,Qwen,standard,4.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,gmicloud/fp8,GMICloud,abf33300-5917-46d4-9bff-449d4a1802b3,deepseek_glm_kimi_qwen,Qwen,standard,6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,streamlake,StreamLake,b32658ba-56b3-48a5-a2d3-2d05ab75612c,deepseek_glm_kimi_qwen,Qwen,standard,6E-7,0,0,30.0,2,2,90.0
+qwen/qwen3.5-397b-a17b,venice,Venice,b67fac87-8915-4264-950f-5e3662c346d1,deepseek_glm_kimi_qwen,Qwen,standard,7.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,parasail/fp8,Parasail,c44f326d-715f-4c77-9526-1ecc3416078e,deepseek_glm_kimi_qwen,Qwen,standard,5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,digitalocean,DigitalOcean,c7d8eec6-5bcd-417f-966a-eb5a69e0062c,deepseek_glm_kimi_qwen,Qwen,standard,5.5E-7,1,1,30.0,4,3,87.86809862268744
+qwen/qwen3.5-397b-a17b,atlas-cloud/fp8,AtlasCloud,ca5088a7-9042-417b-bdd4-4c1fdc8f16ee,deepseek_glm_kimi_qwen,Qwen,standard,5.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-397b-a17b,phala,Phala,e155a95a-b7c2-491a-ad31-569e34a1e537,deepseek_glm_kimi_qwen,Qwen,standard,5.5E-7,0,0,30.0,1,0,90.0
+qwen/qwen3.5-9b,together,Together,00d506d9-a5e9-4382-a2b9-d54732365594,deepseek_glm_kimi_qwen,Qwen,standard,1.7E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-9b,parasail/bf16,Parasail,02b618a1-b3fa-4b5c-8626-45c0e7c157d0,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,62.74310223379621
+qwen/qwen3.5-9b,deepinfra/bf16,DeepInfra,073a2dde-9ebc-4ae0-840f-c84fc8f72247,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-9b,siliconflow/fp8,SiliconFlow,9de3d9d3-be5f-402f-8bb0-fb5de1bf0f91,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-9b,darkbloom/fp4,Darkbloom,a805a3bd-3eec-4311-b47c-d3d75bbff5c3,deepseek_glm_kimi_qwen,Qwen,standard,8E-8,0,0,1.458334618056262,0,0,1.458334618056262
+qwen/qwen3.5-9b,venice/fp8,Venice,f8e609ab-d193-4bb7-b7e7-ff76ac405a7d,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-9b:batch,together,Together,286ac94a-eacd-4ebc-a184-10282b2e50c7,deepseek_glm_kimi_qwen,Qwen,batch,1.7E-7,0,0,10.965277592594976,0,0,10.965277592594976
+qwen/qwen3.5-flash-02-23,alibaba,Alibaba,5f6b71b5-8672-4b27-8b2d-f674429f9e63,deepseek_glm_kimi_qwen,Qwen,standard,6.5E-8,0,0,30.0,0,0,90.0
+qwen/qwen3.5-plus-02-15,alibaba,Alibaba,71e0f6c3-7815-4734-92d3-8a04f3b0ca91,deepseek_glm_kimi_qwen,Qwen,standard,2.6E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.5-plus-20260420,alibaba,Alibaba,8b4a0fbb-6705-4f8d-a7f1-ad18ecc0edbc,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-27b,chutes/fp8,Chutes,328bee10-7e34-44f8-a7cc-c33c8f8775ed,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,1,0,90.0
+qwen/qwen3.6-27b,siliconflow/fp8,SiliconFlow,33b43f52-9a4d-495e-9843-1de4b35098c0,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-27b,deepinfra/fp8,DeepInfra,450be8a0-0ccb-4a62-844f-e83040dfc9cc,deepseek_glm_kimi_qwen,Qwen,standard,3.2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-27b,alibaba,Alibaba,82097366-3a73-4790-ac36-f96ba9f6f577,deepseek_glm_kimi_qwen,Qwen,standard,4.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-27b,phala,Phala,9180b066-c688-4624-8395-bc96cfd367f1,deepseek_glm_kimi_qwen,Qwen,standard,3.2E-7,0,0,30.0,0,0,88.15976447916694
+qwen/qwen3.6-27b,venice/fp8,Venice,c9496737-ca51-4bb6-96aa-697b715141d6,deepseek_glm_kimi_qwen,Qwen,standard,3.25E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-35b-a3b,coreweave/fp8,CoreWeave,13884dd2-337d-4b36-a853-606e5eb1049a,deepseek_glm_kimi_qwen,Qwen,standard,2.5E-7,0,0,30.0,0,0,46.951133356483446
+qwen/qwen3.6-35b-a3b,atlas-cloud/fp8,AtlasCloud,179c6985-3a1c-48f1-a009-9f3e3e402cdd,deepseek_glm_kimi_qwen,Qwen,standard,1.86E-7,0,0,30.0,1,1,90.0
+qwen/qwen3.6-35b-a3b,venice/fp8,Venice,35f996a0-1f00-4ec8-bf24-b0e4c510ef6d,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,1,1,29.95833339120227,4,3,47.95113540509233
+qwen/qwen3.6-35b-a3b,akashml/fp8,AkashML,4b2c2cec-2b41-42d0-adf6-131c28558141,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,1,1,29.916659074075245,3,2,89.8333248148141
+qwen/qwen3.6-35b-a3b,parasail/fp8,Parasail,57ebdffc-b059-4d92-a1ac-94436bae3d31,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-35b-a3b,io-net/fp8,Io Net,78091889-fad8-46f1-811b-b93ee343059a,deepseek_glm_kimi_qwen,Qwen,standard,1.4E-7,2,2,30.0,8,8,49.20113516203783
+qwen/qwen3.6-35b-a3b,deepinfra/fp8,DeepInfra,8858bfd6-7383-41fa-8cc1-f14511cb2e09,deepseek_glm_kimi_qwen,Qwen,standard,1E-7,0,0,30.0,0,0,41.867801840277735
+qwen/qwen3.6-35b-a3b,phala,Phala,a3cff4e7-f9b7-4eb2-a795-8c5dd47d6186,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,44.90946773148245
+qwen/qwen3.6-35b-a3b,darkbloom/fp4,Darkbloom,babd4746-9e93-4855-8578-4b40539a5f4a,deepseek_glm_kimi_qwen,Qwen,standard,5E-8,2,2,20.131945011574363,2,2,20.131945011574363
+qwen/qwen3.6-35b-a3b,siliconflow/fp8,SiliconFlow,c1ef920a-0527-464d-ac1c-a320de7539ab,deepseek_glm_kimi_qwen,Qwen,standard,2E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-flash,alibaba,Alibaba,2435bec9-c808-4f27-9fc8-12f3460d7b66,deepseek_glm_kimi_qwen,Qwen,standard,1.875E-7,0,0,30.0,0,0,90.0
+qwen/qwen3.6-max-preview,alibaba,Alibaba,ca7fc0c7-f23d-4ac5-b2e0-945be5b61787,deepseek_glm_kimi_qwen,Qwen,standard,0.000001027,0,0,30.0,1,1,90.0
+qwen/qwen3.6-plus,alibaba,Alibaba,2102b4bc-ef48-4aab-964c-33e043b3f3f2,deepseek_glm_kimi_qwen,Qwen,standard,3.25E-7,0,0,30.0,2,2,90.0
+qwen/qwen3.7-flash,alibaba,Alibaba,5a9a0ee6-874a-4d03-92be-e5094c0df4e7,deepseek_glm_kimi_qwen,Qwen,standard,3E-8,0,0,30.0,0,0,42.78446527777999
+qwen/qwen3.7-max,alibaba,Alibaba,6d30fdc6-f2a7-4bdf-b6ba-32353496d723,deepseek_glm_kimi_qwen,Qwen,standard,0.000001475,0,0,30.0,4,4,90.0
+qwen/qwen3.7-plus,alibaba,Alibaba,b77fd6ef-e2e0-4e92-96e1-8ffbf62d9792,deepseek_glm_kimi_qwen,Qwen,standard,3.2E-7,0,0,30.0,1,1,90.0
+qwen/qwen3.8-2.4t-a95b,siliconflow/fp8,SiliconFlow,05e65ad4-e6ed-462b-8013-3be86ba59dad,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,0,0,25.131943888890522,0,0,25.131943888890522
+qwen/qwen3.8-2.4t-a95b,modal,Modal,553a8719-4bf1-402c-8469-45e761d0b212,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,0,0,26.63194153935269,0,0,26.63194153935269
+qwen/qwen3.8-2.4t-a95b,deepinfra/fp4,DeepInfra,57870cab-954a-44ee-8231-e525460f55a9,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,1,1,26.79861108796464,1,1,26.79861108796464
+qwen/qwen3.8-2.4t-a95b,together,Together,6151a50a-47bf-4e39-9d0f-63d2fe7b41e0,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,3,3,26.63194153935269,3,3,26.63194153935269
+qwen/qwen3.8-2.4t-a95b,venice,Venice,ad9ab674-7100-4b21-af0b-f3d7f395c590,deepseek_glm_kimi_qwen,Qwen,standard,0.0000025,0,0,24.88194545139041,0,0,24.88194545139041
+qwen/qwen3.8-2.4t-a95b,alibaba,Alibaba,b7eadc37-5099-4808-b89d-161c27763c17,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,0,0,25.88194420138995,0,0,25.88194420138995
+qwen/qwen3.8-2.4t-a95b,novita,Novita,fbb272e9-93a9-4f8e-9abf-d9cac58b46c5,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,0,0,12.090278043981504,0,0,12.090278043981504
+qwen/qwen3.8-2.4t-a95b:batch,together,Together,44f7456b-2324-4ced-be7d-6ea12e3a5af6,deepseek_glm_kimi_qwen,Qwen,batch,0.000002,5,5,11.131944606483534,5,5,11.131944606483534
+qwen/qwen3.8-27b,reka/fp8,Reka,15086968-df2f-4d69-86bb-c74c31644bb6,deepseek_glm_kimi_qwen,Qwen,standard,2.14E-7,8,6,20.506946354168985,8,6,20.506946354168985
+qwen/qwen3.8-27b,alibaba,Alibaba,255a02bd-df93-4ea7-bda9-44d4373aae18,deepseek_glm_kimi_qwen,Qwen,standard,4.25E-7,3,3,19.96527553240734,3,3,19.96527553240734
+qwen/qwen3.8-27b,novita,Novita,2af35fbf-0463-4d96-96d1-1e82b1a46dc7,deepseek_glm_kimi_qwen,Qwen,standard,4.2E-7,1,1,12.090278043981504,1,1,12.090278043981504
+qwen/qwen3.8-27b,ionstream/fp8,Ionstream,360e373e-d445-4de9-ae30-e33d6198715b,deepseek_glm_kimi_qwen,Qwen,standard,3.5E-7,0,0,7.21527704861153,0,0,7.21527704861153
+qwen/qwen3.8-27b,chutes/fp8,Chutes,864c5d5b-af7f-4dda-a797-eb7d1e566f2f,deepseek_glm_kimi_qwen,Qwen,standard,3.2E-7,4,4,23.256943726854193,4,4,23.256943726854193
+qwen/qwen3.8-27b,venice/fp8,Venice,96058344-d6fa-4cfe-a99f-dbce2b53c90a,deepseek_glm_kimi_qwen,Qwen,standard,4.5E-7,0,0,21.67361060185289,0,0,21.67361060185289
+qwen/qwen3.8-27b,parasail/fp8,Parasail,a58a4a1f-4e83-4776-a40e-9f55b72783cb,deepseek_glm_kimi_qwen,Qwen,standard,2.4E-7,5,4,19.840276504630843,5,4,19.840276504630843
+qwen/qwen3.8-27b,coreweave/fp8,CoreWeave,adcebe80-d2d9-40e1-a7a4-37444a12860e,deepseek_glm_kimi_qwen,Qwen,standard,4E-7,0,0,17.965278090279963,0,0,17.965278090279963
+qwen/qwen3.8-27b,darkbloom/fp4,Darkbloom,c02dc976-15cf-47bb-9d26-bd5250f94b8d,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,3,2,4.791619953706308,3,2,4.791619953706308
+qwen/qwen3.8-27b,akashml/fp8,AkashML,c15e008c-6180-4155-8707-bde541bc7884,deepseek_glm_kimi_qwen,Qwen,standard,2.5E-7,6,4,24.715280277778707,6,4,24.715280277778707
+qwen/qwen3.8-27b,io-net/fp8,Io Net,c65c4547-63a7-49fb-8354-a45d118663c3,deepseek_glm_kimi_qwen,Qwen,standard,2.85E-7,5,5,22.465277372686952,5,5,22.465277372686952
+qwen/qwen3.8-27b,phala,Phala,cfc4d0ca-df7c-4b5f-9c74-328c41a7cbc3,deepseek_glm_kimi_qwen,Qwen,standard,3E-7,2,1,15.00694413194502,2,1,15.00694413194502
+qwen/qwen3.8-27b,cloudflare,Cloudflare,e56a0de7-f040-4dee-a36a-824fb379d883,deepseek_glm_kimi_qwen,Qwen,standard,4.5E-7,0,0,15.00694413194502,0,0,15.00694413194502
+qwen/qwen3.8-flash,alibaba,Alibaba,84b1e4a7-5aed-4464-818f-1994f0b4ee18,deepseek_glm_kimi_qwen,Qwen,standard,1.5E-7,1,1,12.881944166667484,1,1,12.881944166667484
+qwen/qwen3.8-max-0902,alibaba,Alibaba,0fe01449-9981-49eb-804f-a31e57e4fb09,deepseek_glm_kimi_qwen,Qwen,standard,0.000002,0,0,3.6250023379645966,0,0,3.6250023379645966
+rekaai/reka-edge,reka/bf16,Reka,0cd3013f-24e9-467d-a617-6232877aedb9,open_weight_families,rekaai,standard,1E-7,2,0,30.0,2,0,90.0
+rekaai/reka-flash-3,reka/fp8,Reka,5b2eb40d-677c-4fb3-a8bc-340b1bacc417,open_weight_families,rekaai,standard,1E-7,2,0,30.0,2,0,90.0
+relace/relace-apply-3,relace/fp8,Relace,7df5d5d2-c60a-487a-9770-7f68c2229d38,other_hosted_candidates,relace,standard,8.5E-7,0,0,30.0,0,0,90.0
+relace/relace-search,relace/bf16,Relace,fbf41fc0-742d-4108-b97e-147ee85eff31,other_hosted_candidates,relace,standard,0.000001,0,0,30.0,0,0,90.0
+sakana/fugu-ultra,sakana,Sakana AI,99a9a85f-3c29-4b33-a21c-e5becb008160,misc,sakana,standard,0.000005,0,0,30.0,0,0,76.57643357638959
+sakana/sakana-namazu,sakana,Sakana AI,7c5c9b97-46c3-439c-8c85-d7844c95fa22,misc,sakana,standard,9.5E-7,0,0,28.67361211805708,0,0,28.67361211805708
+sao10k/l3-lunaris-8b,parasail/bf16,Parasail,802c16d5-fb79-4761-93e1-b40d07fc7a1b,misc,sao10k,standard,4E-8,0,0,30.0,0,0,38.826135462964025
+sao10k/l3-lunaris-8b,deepinfra/turbo,DeepInfra,cc4c8dc5-8b3f-4d54-84e2-8381184ff841,misc,sao10k,standard,4E-8,0,0,30.0,0,0,90.0
+sao10k/l3-lunaris-8b,novita/bf16,Novita,d5d16ef3-adbc-4e45-8421-bc7d343e902f,misc,sao10k,standard,5E-8,0,0,30.0,0,0,90.0
+sao10k/l3.1-euryale-70b,deepinfra/fp8,DeepInfra,7ab4ba43-98eb-4842-9046-f7f1822ab3a2,misc,sao10k,standard,8.5E-7,0,0,30.0,0,0,90.0
+sao10k/l3.1-euryale-70b,novita/fp8,Novita,9170f475-2eac-4b4d-950d-22be425df236,misc,sao10k,standard,0.0000014504,0,0,30.0,1,1,90.0
+sao10k/l3.3-euryale-70b,nextbit/bf16,NextBit,fde3788e-a185-4487-93a7-10fb4412d412,misc,sao10k,standard,6.5E-7,0,0,30.0,0,0,90.0
+stepfun/step-3.5-flash,siliconflow/fp8,SiliconFlow,24266140-f37e-4c0f-8898-30821cb00ae3,misc,stepfun,standard,1E-7,0,0,30.0,0,0,90.0
+stepfun/step-3.7-flash,stepfun/fp8,StepFun,1e380b07-8052-4bd4-bd89-f20790fb0996,misc,stepfun,standard,2E-7,0,0,30.0,0,0,90.0
+stepfun/step-3.7-flash,deepinfra,DeepInfra,32a8cd01-1604-436f-9f52-8a3b7befb155,misc,stepfun,standard,1.6E-7,1,1,30.0,1,1,83.95143245370576
+stepfun/step-3.7-flash,novita/fp8,Novita,f8c8b575-4b37-479f-8461-91b8b8976df3,misc,stepfun,standard,2E-7,0,0,30.0,1,1,84.28476648148288
+tencent/hunyuan-a13b-instruct,siliconflow/fp8,SiliconFlow,519e0e1e-7254-41de-abe1-2e0ebf026ce9,misc,tencent,standard,1.4E-7,0,0,30.0,0,0,90.0
+tencent/hy-mt2-1.8b,tencent/fp8,Tencent,da6a7d6d-fab7-4273-a9ed-488d61d19477,misc,tencent,standard,4.4E-8,0,0,19.25694268518576,0,0,19.25694268518576
+tencent/hy-mt2-30b-a3b,tencent/fp8,Tencent,16cf5d0b-f9e4-45c2-acb3-47ca2adb0159,misc,tencent,standard,7.4E-8,0,0,19.25694268518576,0,0,19.25694268518576
+tencent/hy-mt2-7b,tencent/fp8,Tencent,f8e78ec2-a9f6-4437-91e7-2e76267afdb7,misc,tencent,standard,7.4E-8,0,0,16.881939259259788,0,0,16.881939259259788
+tencent/hy3,tencent/fp8,Tencent,04d9b15b-71c5-47dc-92be-981aea63fc74,misc,tencent,standard,8.25E-8,0,0,30.0,0,0,50.11810082175941
+tencent/hy3,novita,Novita,1aa0b6b6-cae2-43d8-a456-67f2e4a650e4,misc,tencent,standard,1.4E-7,0,0,30.0,0,0,49.784468564816095
+tencent/hy3,phala,Phala,223ca2b5-e29c-4308-949c-f6823c1cf73d,misc,tencent,standard,1.5E-7,0,0,18.17360929398349,0,0,18.17360929398349
+tencent/hy3,deepinfra/fp8,DeepInfra,303ca380-d3c5-4c24-9b5e-10419181a353,misc,tencent,standard,1.4E-7,0,0,30.0,0,0,58.78476774305657
+tencent/hy3,atlas-cloud/fp8,AtlasCloud,d21104ff-c035-4e91-b936-940c0dded521,misc,tencent,standard,2E-7,0,0,30.0,4,1,64.20143528935257
+tencent/hy3,gmicloud/bf16,GMICloud,ee5137bb-2a97-4d01-812c-1027c24cd112,misc,tencent,standard,1.4E-7,6,6,30.0,7,7,61.99310243055776
+tencent/hy3-preview,gmicloud/bf16,GMICloud,e062ae6d-577e-4d12-8232-8eabc472c4ec,misc,tencent,standard,1.8E-7,1,1,30.0,3,3,90.0
+tencent/hy4-preview,tencent/fp8,Tencent,ad2a4093-3d2a-41d9-adf1-8b499ac8445d,misc,tencent,standard,8.34E-7,0,0,11.548610358798394,0,0,11.548610358798394
+thedrummer/cydonia-24b-v4.1,parasail/bf16,Parasail,4d46db86-63fe-47eb-85f1-6a7567af190c,misc,thedrummer,standard,3E-7,0,0,30.0,0,0,90.0
+thedrummer/skyfall-36b-v2,parasail/fp8,Parasail,1eb01ded-ae11-49e6-8aa6-3067584070bd,misc,thedrummer,standard,5.5E-7,0,0,30.0,0,0,90.0
+thedrummer/unslopnemo-12b,nextbit/fp8,NextBit,08cb2fef-fad6-4a41-b292-b2d79f782a08,misc,thedrummer,standard,4E-7,0,0,30.0,0,0,90.0
+thedrummer/unslopnemo-12b,parasail/bf16,Parasail,37d8c9c3-e52a-4aef-b75c-347b24d8431f,misc,thedrummer,standard,4E-7,0,0,30.0,0,0,39.82612945601896
+thinkingmachines/inkling,baseten/fp8,BaseTen,691c185e-aaed-4f04-aa1e-69cba3df74ea,open_weight_families,thinkingmachines,standard,0.000001,0,0,7.048610578703659,0,0,7.048610578703659
+thinkingmachines/inkling,together,Together,9911deb9-f44e-4e18-87fe-9d7b60acee72,open_weight_families,thinkingmachines,standard,0.000001,0,0,30.0,0,0,52.86810092592681
+thinkingmachines/inkling,baseten/fp8,BaseTen,ba2df08c-c0a0-4e0e-9f31-d79a9c475b70,open_weight_families,thinkingmachines,standard,0.000001,0,0,30.0,0,0,47.15946680555741
+thinkingmachines/inkling,deepinfra/fp8,DeepInfra,d6b9d68e-115a-49d7-81cd-1ad1c6942b0e,open_weight_families,thinkingmachines,standard,9.5E-7,0,0,30.0,1,1,47.15946680555741
+thinkingmachines/inkling-small,together,Together,0ed263b7-f746-4eb6-a14c-54f2e1cc2269,open_weight_families,thinkingmachines,standard,5E-7,0,0,30.0,0,0,38.951132638890435
+thinkingmachines/inkling-small,deepinfra/fp8,DeepInfra,d1d9657b-3c3a-49b5-8f81-33204e7c71c3,open_weight_families,thinkingmachines,standard,4.5E-7,0,0,30.0,2,2,39.15946659722262
+thinkingmachines/inkling-small,baseten/fp8,BaseTen,faa5ad38-86c9-427e-b1cb-99c43bc4827b,open_weight_families,thinkingmachines,standard,5E-7,0,0,19.006943981481925,0,0,19.006943981481925
+thinkingmachines/inkling-small:batch,together,Together,cfe8b278-814f-4586-93cc-ff65dbd33fb0,open_weight_families,thinkingmachines,batch,5E-7,0,0,10.965277592594976,0,0,10.965277592594976
+thinkingmachines/inkling-small:free,thinkingmachines/nvfp4,Thinking Machines,e27a9a6d-1451-4be4-876e-292ffcbf1e71,open_weight_families,thinkingmachines,free,,0,0,17.965278090279963,0,0,17.965278090279963
+thinkingmachines/inkling:batch,together,Together,35e3278d-b652-4a9c-990c-bc837a77546a,open_weight_families,thinkingmachines,batch,0.000001,1,1,30.0,1,1,33.256944930556195
+thinkingmachines/inkling:free,thinkingmachines/nvfp4,Thinking Machines,89249263-425e-4099-a555-ea5c9698ba76,open_weight_families,thinkingmachines,free,,0,0,17.965278090279963,0,0,17.965278090279963
+undi95/remm-slerp-l2-13b,nextbit/bf16,NextBit,061b3f45-8511-4ad9-8537-a5ac7aeeb163,misc,undi95,standard,4.5E-7,0,0,30.0,0,0,90.0
+undi95/remm-slerp-l2-13b,mancer/fp8,Mancer 2,75f85fa5-1ee8-474a-b0ae-24ccc2bbb113,misc,undi95,standard,3.5E-7,1,1,30.0,3,2,90.0
+upstage/solar-pro-3,upstage,Upstage,64e8da4e-6768-4de2-a17d-8dba04f8cdac,misc,upstage,standard,1.5E-7,0,0,30.0,0,0,90.0
+upstage/solar-pro4,upstage,Upstage,000381e4-18ad-455e-937b-ceeb3863fd67,misc,upstage,standard,3E-8,0,0,28.79861085648338,0,0,28.79861085648338
+upstage/solar-pro4,upstage/zdr,Upstage,a333a821-533b-4977-af91-256dfb08db0d,misc,upstage,standard,3E-8,0,0,13.631943148148281,0,0,13.631943148148281
+writer/palmyra-x5,amazon-bedrock,Amazon Bedrock,c684c4e7-1b77-4ca5-9516-7ecc66e2c455,other_hosted_candidates,writer,standard,6E-7,0,0,30.0,0,0,90.0
+x-ai/grok-4.20,xai,xAI,3ecee37f-b217-4093-87fb-aaf0afe307af,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,0,0,90.0
+x-ai/grok-4.20,xai/zdr/priority,xAI,4917f9cf-a2c6-4830-8c5d-47caa78699da,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.756943564815101,0,0,8.756943564815101
+x-ai/grok-4.20,xai/priority,xAI,59dacbc4-ab59-4176-bfb1-8c286d01fb65,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.756943564815101,0,0,8.756943564815101
+x-ai/grok-4.20,xai/zdr,xAI,b17f55ac-e8fa-47ef-9e2e-5081c2124c7d,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,0,0,74.86810158564812
+x-ai/grok-4.20-multi-agent,xai/priority,xAI,2c67c56b-38e1-4713-8ccd-40e7a6a829cc,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.756943564815101,0,0,8.756943564815101
+x-ai/grok-4.20-multi-agent,xai,xAI,53d81bc9-64b3-458d-9b4d-2bd1bc8393e9,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,1,1,90.0
+x-ai/grok-4.20-multi-agent,xai/zdr,xAI,5f5b5f6c-e80d-4b77-9c06-d1cb35452bab,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,0,0,74.86810158564812
+x-ai/grok-4.20-multi-agent,xai/zdr/priority,xAI,6e7f666e-81dc-42d3-947b-6b86399bc187,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.756943564815101,0,0,8.756943564815101
+x-ai/grok-4.3,xai,xAI,45623cb8-18e5-4b32-8fc4-85d05439982d,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,0,0,90.0
+x-ai/grok-4.3,xai/zdr,xAI,5110cba8-da2e-4c85-be65-837bdfbedafe,other_hosted_candidates,x-ai,standard,0.00000125,0,0,30.0,0,0,74.86810158564812
+x-ai/grok-4.3,xai/priority,xAI,86bbef82-cce9-40e3-ba5a-28ed7f9fc90f,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.256943831018827,0,0,8.256943831018827
+x-ai/grok-4.3,xai/zdr/priority,xAI,f9282adb-84af-43b4-be0f-37a2b52977e6,other_hosted_candidates,x-ai,standard,0.0000025,0,0,8.256943831018827,0,0,8.256943831018827
+x-ai/grok-4.3:batch,xai,xAI,7447a255-268c-4075-8aec-d3545bb256bf,other_hosted_candidates,x-ai,batch,0.000001,0,0,4.75000160879835,0,0,4.75000160879835
+x-ai/grok-4.5,xai,xAI,0e927811-b1a8-4604-8b86-db5ce6eaa87c,other_hosted_candidates,x-ai,standard,0.000002,0,0,30.0,1,0,62.03476627314808
+x-ai/grok-4.5,xai/zdr,xAI,78a73286-52c4-4d1d-9d13-c1870c25b143,other_hosted_candidates,x-ai,standard,0.000002,0,0,30.0,1,0,62.03476627314808
+x-ai/grok-4.5,xai/zdr/priority,xAI,a69fdd80-311d-43ac-ba8d-33305cc297f2,other_hosted_candidates,x-ai,standard,0.000004,0,0,8.256943831018827,0,0,8.256943831018827
+x-ai/grok-4.5,xai/priority,xAI,f47a837e-aae1-4036-a546-b8440ab02ee0,other_hosted_candidates,x-ai,standard,0.000004,0,0,8.256943831018827,0,0,8.256943831018827
+x-ai/grok-4.6,xai,xAI,0d0536e3-7eb1-4acb-8249-c8813365c2d8,other_hosted_candidates,x-ai,standard,0.000002,0,0,27.13194186342811,0,0,27.13194186342811
+x-ai/grok-4.6,xai/zdr/priority,xAI,4f775f02-2aab-4941-91c3-6acb21917154,other_hosted_candidates,x-ai,standard,0.000004,0,0,8.17360409722284,0,0,8.17360409722284
+x-ai/grok-4.6,xai/zdr,xAI,67ed3d9b-4f05-4e79-9bb6-1e8423a6c276,other_hosted_candidates,x-ai,standard,0.000002,0,0,27.13194186342811,0,0,27.13194186342811
+x-ai/grok-4.6,amazon-bedrock/us-west-2,Amazon Bedrock,aff6d1a0-bbf9-4d47-ab91-abcbed720c44,other_hosted_candidates,x-ai,standard,0.0000022,0,0,14.00694321759321,0,0,14.00694321759321
+x-ai/grok-4.6,xai/priority,xAI,ed945e16-23e0-44ab-8fcc-b45f5b21f8e5,other_hosted_candidates,x-ai,standard,0.000004,0,0,8.17360409722284,0,0,8.17360409722284
+x-ai/grok-build-0.1,xai,xAI,2d3cdd47-cfc2-4372-96bb-82980f6a032d,other_hosted_candidates,x-ai,standard,0.000001,0,0,30.0,0,0,62.826432349538365
+x-ai/grok-build-0.1,xai/priority,xAI,3fdd8e18-7af6-4d33-b7d5-454ec99b5510,other_hosted_candidates,x-ai,standard,0.000002,0,0,8.17360409722284,0,0,8.17360409722284
+x-ai/grok-build-0.1,xai/zdr,xAI,71c1af0c-3c30-4079-8ac0-2ab129d26240,other_hosted_candidates,x-ai,standard,0.000001,0,0,30.0,0,0,90.0
+x-ai/grok-build-0.1,xai/zdr/priority,xAI,eebc88de-94e0-4914-8eea-ef6fdd70ff17,other_hosted_candidates,x-ai,standard,0.000002,0,0,8.17360409722284,0,0,8.17360409722284
+xiaomi/mimo-v2.5,deepinfra/fp8,DeepInfra,06ae9856-7905-4133-9974-4f21759fbe01,misc,xiaomi,standard,1.3E-7,1,1,30.0,1,1,68.95143547453814
+xiaomi/mimo-v2.5,novita/fp8,Novita,0a0ee639-4272-4196-8c6e-2ff9510d5ecc,misc,xiaomi,standard,1.68E-7,0,0,30.0,0,0,56.2431021990765
+xiaomi/mimo-v2.5,xiaomi/fp8,Xiaomi,2af4bf94-26fa-42b9-bce0-8b11071e105a,misc,xiaomi,standard,1.4E-7,0,0,30.0,0,0,90.0
+xiaomi/mimo-v2.5,gmicloud/fp8,GMICloud,fb34a890-eaa9-428e-8fc4-4ad0fdcba2ff,misc,xiaomi,standard,1.19E-7,5,5,30.0,8,7,56.2431021990765
+xiaomi/mimo-v2.5,streamlake,StreamLake,fdfd0a98-24aa-4f03-b646-d5544e8e4a37,misc,xiaomi,standard,1.68E-7,1,1,12.673611342595132,1,1,12.673611342595132
+xiaomi/mimo-v2.5-pro,gmicloud/bf16,GMICloud,362a7650-63ed-41d8-b74e-1886ad31b3d9,misc,xiaomi,standard,3.045E-7,5,5,30.0,8,7,56.951435601852005
+xiaomi/mimo-v2.5-pro,novita,Novita,55527da0-5822-488b-b5ac-8c52361e821d,misc,xiaomi,standard,4.8024E-7,0,0,30.0,1,1,88.28476561342677
+xiaomi/mimo-v2.5-pro,xiaomi/fp8,Xiaomi,5c24ecc9-5ba1-4af0-8877-3402889e7d0a,misc,xiaomi,standard,4.35E-7,0,0,30.0,0,0,90.0
+xiaomi/mimo-v2.5-pro,deepinfra/fp8,DeepInfra,a33ef298-de6c-4872-809f-9c2ab9fb2389,misc,xiaomi,standard,3.9E-7,1,1,30.0,1,1,90.0
+xiaomi/mimo-v2.5-pro,digitalocean,DigitalOcean,ba38961a-dfae-445d-a176-c44a09930667,misc,xiaomi,standard,4E-7,2,2,30.0,6,5,82.65976793981812
+xiaomi/mimo-v2.5-pro,atlas-cloud/fp8,AtlasCloud,f2257b20-228a-4b85-bd79-415011d3dedf,misc,xiaomi,standard,4.35E-7,0,0,30.0,0,0,71.25698732639077
+xiaomi/mimo-v2.5-pro,streamlake,StreamLake,fde46175-9517-4c34-8ead-a27d87c718da,misc,xiaomi,standard,5.22E-7,0,0,30.0,0,0,39.61779861111332
+z-ai/glm-4.5,z-ai/fp8,Z.AI,48b95ad9-4c60-411f-8b5b-c3f1745c4f62,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.5-air,novita/bf16,Novita,90fc9bb3-01bb-419f-bb58-dea60a80d201,deepseek_glm_kimi_qwen,GLM,standard,1.3E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.5-air,z-ai/fp8,Z.AI,c8760514-8a81-4a73-ae2c-be4942ba93f3,deepseek_glm_kimi_qwen,GLM,standard,2E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.5-air,siliconflow/fp8,SiliconFlow,f7dc79ca-bbbd-41a1-8eef-616d981ff1cb,deepseek_glm_kimi_qwen,GLM,standard,1.4E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.5v,novita/fp8,Novita,30f10717-f218-430f-a3d7-858bf5fdf303,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.5v,z-ai/fp8,Z.AI,d1b1044b-35cd-48df-8a1e-dbf567d8776a,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.6,atlas-cloud/fp8,AtlasCloud,3971cf0a-5d2a-4938-b0e3-a5e480fdd9a3,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.6,novita/bf16,Novita,562fe77f-c92f-4556-b43b-ea7da6891b6a,deepseek_glm_kimi_qwen,GLM,standard,5.5E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.6,venice/fp4,Venice,76fb879b-32f4-4ac0-8020-d29c0f9c60fa,deepseek_glm_kimi_qwen,GLM,standard,4.3E-7,0,0,30.0,1,1,90.0
+z-ai/glm-4.6,z-ai/fp4,Z.AI,a87bfa67-bad9-4ce3-8c20-99b61249cfc3,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.6,deepinfra/fp4,DeepInfra,c8607edc-8577-4199-b03d-1213da4743dc,deepseek_glm_kimi_qwen,GLM,standard,5E-7,0,0,30.0,1,1,90.0
+z-ai/glm-4.6v,novita/bf16,Novita,a44ea9fe-fc2b-4765-804b-2e31215b5ca5,deepseek_glm_kimi_qwen,GLM,standard,3E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.6v,z-ai/fp8,Z.AI,edd46a04-7eac-4d37-bfb6-207ef7905f90,deepseek_glm_kimi_qwen,GLM,standard,3E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,atlas-cloud/fp8,AtlasCloud,2135fe57-5da2-4920-94c4-4b5f8f37bfd1,deepseek_glm_kimi_qwen,GLM,standard,5.2E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,novita/fp8,Novita,53d155e7-021c-4268-bde4-991847ef8389,deepseek_glm_kimi_qwen,GLM,standard,5.4E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,deepinfra/fp4,DeepInfra,ab79ffa8-8dcc-41c4-9a9f-6cc408135243,deepseek_glm_kimi_qwen,GLM,standard,4E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,z-ai/fp4,Z.AI,be4acbf5-9fcf-4332-a01d-76dfeb6d7b99,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,mancer/fp4,Mancer 2,cc473714-fdbf-40fa-b943-2fced9742a9a,deepseek_glm_kimi_qwen,GLM,standard,7E-7,2,2,30.0,5,5,33.88193918981486
+z-ai/glm-4.7,google-vertex,Google,f1bbf654-df93-4228-a30d-a44b5e6b98f0,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7,venice/fp4,Venice,f99f5dca-50a5-4169-a758-60b2cd09d599,deepseek_glm_kimi_qwen,GLM,standard,5.5E-7,0,0,30.0,0,0,90.0
+z-ai/glm-4.7-flash,novita/bf16,Novita,6999081f-9017-4517-bbdb-47df8778c940,deepseek_glm_kimi_qwen,GLM,standard,7E-8,0,0,30.0,0,0,90.0
+z-ai/glm-4.7-flash,deepinfra/bf16,DeepInfra,6efb5994-8fcb-4300-9c64-ba393193f5f6,deepseek_glm_kimi_qwen,GLM,standard,6E-8,0,0,30.0,0,0,90.0
+z-ai/glm-4.7-flash,venice/fp8,Venice,d6aa4f82-a597-459b-8280-89da15a70210,deepseek_glm_kimi_qwen,GLM,standard,6E-8,0,0,30.0,1,1,90.0
+z-ai/glm-4.7-flash,cloudflare,Cloudflare,fd8e4536-9605-437d-984e-183124a149c3,deepseek_glm_kimi_qwen,GLM,standard,6.05E-8,0,0,30.0,0,0,90.0
+z-ai/glm-5,venice/fp8,Venice,4a90ead5-f1e2-4648-8dcd-673ff9003b15,deepseek_glm_kimi_qwen,GLM,standard,0.000001,0,0,30.0,0,0,90.0
+z-ai/glm-5,baidu/fp8,Baidu,5511be67-bb6c-441b-8271-3037b1582491,deepseek_glm_kimi_qwen,GLM,standard,7E-7,0,0,30.0,0,0,90.0
+z-ai/glm-5,z-ai/fp8,Z.AI,85146950-32c1-410b-9b81-4467d938fd16,deepseek_glm_kimi_qwen,GLM,standard,0.000001,0,0,30.0,0,0,90.0
+z-ai/glm-5,novita/fp8,Novita,898a8e6d-04a4-48c0-8457-36690a68782b,deepseek_glm_kimi_qwen,GLM,standard,0.000001,0,0,30.0,0,0,90.0
+z-ai/glm-5,amazon-bedrock,Amazon Bedrock,a53482cb-6c2a-4c86-a427-5a8ffcf59fb8,deepseek_glm_kimi_qwen,GLM,standard,0.000001,0,0,30.0,0,0,90.0
+z-ai/glm-5,gmicloud/fp8,GMICloud,a9ca9362-3ad6-458a-bd00-a9f09e42796c,deepseek_glm_kimi_qwen,GLM,standard,6E-7,6,6,30.0,6,6,90.0
+z-ai/glm-5,siliconflow/fp8,SiliconFlow,c173ea30-3dc0-4957-850e-f2df8c031f10,deepseek_glm_kimi_qwen,GLM,standard,9.5E-7,0,0,30.0,0,0,90.0
+z-ai/glm-5,streamlake/fp8,StreamLake,d109ea64-6b71-42ab-9ab6-fe31d5f233e3,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,3,3,90.0
+z-ai/glm-5,digitalocean,DigitalOcean,d83ce62a-e247-4219-9ece-b0c7a69a232c,deepseek_glm_kimi_qwen,GLM,standard,0.000001,1,1,30.0,4,3,90.0
+z-ai/glm-5,deepinfra/fp4,DeepInfra,fc28f8b4-9560-49bb-991e-3bb7bc1c3c1d,deepseek_glm_kimi_qwen,GLM,standard,6E-7,0,0,30.0,0,0,90.0
+z-ai/glm-5-turbo,z-ai,Z.AI,9ce3b132-3a17-4fea-8092-0e8e519ed32b,deepseek_glm_kimi_qwen,GLM,standard,0.0000012,0,0,30.0,0,0,78.07643416666875
+z-ai/glm-5.1,siliconflow/fp8,SiliconFlow,0ef82a37-906f-4cbe-99fc-3645b17597ff,deepseek_glm_kimi_qwen,GLM,standard,0.00000119,0,0,30.0,2,1,90.0
+z-ai/glm-5.1,crusoe/fp8,Crusoe,28b149cd-9d0f-46af-9108-b8dd4c9dbb48,deepseek_glm_kimi_qwen,GLM,standard,0.0000012,0,0,30.0,0,0,49.70113530092769
+z-ai/glm-5.1,nebius/fp8,Nebius,30ba5a6d-171a-430b-b4ed-fe4f7e2ec608,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,63.95143284722335
+z-ai/glm-5.1,digitalocean,DigitalOcean,38cd489c-782d-47e3-894c-43e63642f277,deepseek_glm_kimi_qwen,GLM,standard,0.0000013,1,1,30.0,4,3,76.0764334722222
+z-ai/glm-5.1,chutes/fp8,Chutes,38f2e994-462f-4d3c-8de9-9c4fe7984a5a,deepseek_glm_kimi_qwen,GLM,standard,9.8E-7,0,0,30.0,2,1,90.0
+z-ai/glm-5.1,baidu/fp8,Baidu,44b42eb7-1926-4e06-99ce-29b6f710b86f,deepseek_glm_kimi_qwen,GLM,standard,9.646E-7,64,64,30.0,68,68,90.0
+z-ai/glm-5.1,venice/fp8,Venice,4abfbfd2-a5df-48b4-acb7-f627d651169d,deepseek_glm_kimi_qwen,GLM,standard,0.00000154,0,0,30.0,1,1,90.0
+z-ai/glm-5.1,z-ai/fp8,Z.AI,4ce9a513-17dc-4130-8960-2c4ceed3ea56,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,90.0
+z-ai/glm-5.1,alibaba/fp8,Alibaba,61991812-0836-4250-8607-b5740ee60e07,deepseek_glm_kimi_qwen,GLM,standard,0.00000133,0,0,30.0,0,0,39.99279988426025
+z-ai/glm-5.1,gmicloud/fp8,GMICloud,64689e77-b452-4c30-b23e-4b36d364cac6,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,7,7,30.0,7,7,90.0
+z-ai/glm-5.1,atlas-cloud/fp8,AtlasCloud,7e919c5e-6c06-4182-adaf-2910d5d4b5a8,deepseek_glm_kimi_qwen,GLM,standard,0.00000126,0,0,30.0,0,0,90.0
+z-ai/glm-5.1,phala,Phala,821c357a-76d4-4ec0-a0fa-0740d54aefec,deepseek_glm_kimi_qwen,GLM,standard,0.00000121,0,0,30.0,1,0,90.0
+z-ai/glm-5.1,streamlake/fp8,StreamLake,a6757bd7-f1e5-4f4d-bcb3-a2719537142a,deepseek_glm_kimi_qwen,GLM,standard,9.66E-7,0,0,30.0,4,4,90.0
+z-ai/glm-5.1,friendli,Friendli,d4443f1c-fdb1-4cf0-a381-5b77b7e25ae7,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,90.0
+z-ai/glm-5.1,novita/fp8,Novita,e5835f58-53a4-4bf2-a7b6-0f4c70b56ea5,deepseek_glm_kimi_qwen,GLM,standard,0.00000138,0,0,30.0,0,0,90.0
+z-ai/glm-5.1,deepinfra/fp4,DeepInfra,e888c44c-6a07-4a9e-bc56-cb26511865ec,deepseek_glm_kimi_qwen,GLM,standard,0.00000105,0,0,30.0,0,0,90.0
+z-ai/glm-5.2,cloudflare,Cloudflare,2b5b7b20-d015-4c4b-a8ef-48e958d0f1b8,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,83.90976545139043
+z-ai/glm-5.2,digitalocean,DigitalOcean,2bb351d3-a495-4291-9a64-662c53c5b113,deepseek_glm_kimi_qwen,GLM,standard,7E-7,4,4,30.0,8,7,76.90976748842608
+z-ai/glm-5.2,fireworks,Fireworks,31e994c5-1f47-4c07-b488-8e2e8de1fea4,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,1,0,82.03476840277789
+z-ai/glm-5.2,novita/fp8,Novita,3aeb6605-8a07-4494-a5d7-e89fee4fa47e,deepseek_glm_kimi_qwen,GLM,standard,6.832E-7,87,87,30.0,555,555,83.99310099537173
+z-ai/glm-5.2,ambient/fp8,Ambient,41fd5712-bc61-4fdb-ab07-88089b309a29,deepseek_glm_kimi_qwen,GLM,standard,6E-7,1,1,30.0,13,12,70.61810155092842
+z-ai/glm-5.2,fireworks/fast-us,Fireworks,4365678f-93f3-4518-bb98-ff5b3cbe963b,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,0,0,19.631944050926855,0,0,19.631944050926855
+z-ai/glm-5.2,z-ai/fp8,Z.AI,442ea97f-ad5e-40d5-b9a6-66e9e0417dce,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,84.0764314930555
+z-ai/glm-5.2,atlas-cloud/fp8,AtlasCloud,47a0f2e1-dedb-4d26-9148-a7bb40a5b40c,deepseek_glm_kimi_qwen,GLM,standard,9.38E-7,1,1,30.0,3,3,83.20141859953878
+z-ai/glm-5.2,baseten/fast,BaseTen,4c134f42-ca48-4e2b-9668-3b7f118f90ba,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,0,0,7.048610578703659,0,0,7.048610578703659
+z-ai/glm-5.2,baidu/fp8,Baidu,515ff417-d0f5-4455-9f58-b5a82be6d842,deepseek_glm_kimi_qwen,GLM,standard,4.13E-7,119,119,30.0,169,169,69.15976881944471
+z-ai/glm-5.2,mistral/zdr,Mistral,5210e748-21d8-4569-a11f-92fa86f9499a,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,14.923611307872667,0,0,14.923611307872667
+z-ai/glm-5.2,deepinfra/fp4,DeepInfra,6260c35a-6fd4-44be-98c0-3c3d4edbb56f,deepseek_glm_kimi_qwen,GLM,standard,4.875E-7,1,1,30.0,6,6,83.90976545139043
+z-ai/glm-5.2,baidu/fp4,Baidu,6a2f11d2-5404-4c5f-aefc-2d72c53e423a,deepseek_glm_kimi_qwen,GLM,standard,0.00000225,0,0,1.4166691435211234,0,0,1.4166691435211234
+z-ai/glm-5.2,baseten/fp8,BaseTen,78c8ae59-a960-4a40-bb26-0c94381848c9,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,7.048610578703659,0,0,7.048610578703659
+z-ai/glm-5.2,alibaba/fast,Alibaba,7bd34824-0f4a-4ef4-a9b6-94856b97b491,deepseek_glm_kimi_qwen,GLM,standard,0.00000231,0,0,30.0,3,2,49.159467523150425
+z-ai/glm-5.2,parasail/fp4,Parasail,8a4a8285-addf-4bb6-87fc-707f6f9eb3c5,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,82.9930990972232
+z-ai/glm-5.2,alibaba/fp8,Alibaba,98eed1d3-8593-4a46-a8a6-c47e8fb2ab0f,deepseek_glm_kimi_qwen,GLM,standard,9.66E-7,0,0,30.0,7,7,74.86810158564812
+z-ai/glm-5.2,decart/fast,Decart,a8af1801-7d64-46f4-ac94-8dcbddc5cf38,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,3,3,2.083334375001766,3,3,2.083334375001766
+z-ai/glm-5.2,together,Together,aaf91835-0c0a-4e0e-8b83-af689c6a2a4e,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,79.95143421296444
+z-ai/glm-5.2,siliconflow/fp8,SiliconFlow,ae3052d2-2dc9-42c7-b7ec-45b3a9c57f7e,deepseek_glm_kimi_qwen,GLM,standard,0.00000119,0,0,30.0,2,2,78.82643358796282
+z-ai/glm-5.2,mistral,Mistral,bcee8d95-aee5-49c5-a7bb-71cd202e1e6d,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,17.965278090279963,0,0,17.965278090279963
+z-ai/glm-5.2,fireworks/fast,Fireworks,c0c2eae6-b239-4e74-b7da-0b64b7847c49,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,0,0,30.0,0,0,74.86810158564812
+z-ai/glm-5.2,coreweave/fp4,CoreWeave,c2317f99-2076-48bf-87aa-2c27ab98f70e,deepseek_glm_kimi_qwen,GLM,standard,7.6E-7,0,0,30.0,1,1,46.99280038194524
+z-ai/glm-5.2,crusoe/fp8,Crusoe,c3c46551-27ab-4359-9191-e58d767aafcc,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,37.0344670601879
+z-ai/glm-5.2,phala/fp8,Phala,c9bb54c3-988a-461c-974f-b6bf474b22e9,deepseek_glm_kimi_qwen,GLM,standard,0.00000126,2,1,30.0,5,3,82.1597654282412
+z-ai/glm-5.2,baseten/fp8,BaseTen,cd46df79-a451-442a-8522-77b509c7dd8d,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,1,0,54.9097689814838
+z-ai/glm-5.2,baseten/fast,BaseTen,cec37412-e6c6-4859-8b2c-a3f547f49178,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,0,0,30.0,0,0,46.78446662037185
+z-ai/glm-5.2,streamlake/fp8,StreamLake,d3402db2-8df2-4611-8495-9c1c08ebc154,deepseek_glm_kimi_qwen,GLM,standard,4.2E-7,97,97,30.0,547,547,82.8680931712963
+z-ai/glm-5.2,inceptron/fp4,Inceptron,d7c8669e-877a-4253-b71d-9af964713cc0,deepseek_glm_kimi_qwen,GLM,standard,0.00000125,3,2,30.0,27,25,74.11810181713214
+z-ai/glm-5.2,venice/fp8,Venice,e6efeae0-daac-444c-b612-6ea7295ac894,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,78.07643282407412
+z-ai/glm-5.2,friendli,Friendli,e7113236-8b75-417a-add3-b5a5579bcf38,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,30.0,0,0,83.95143245370576
+z-ai/glm-5.2,gmicloud/fp8,GMICloud,ea96a46d-1ad3-44c8-82eb-2abea7813491,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,8,8,30.0,12,12,78.11810150462996
+z-ai/glm-5.2,mistral/eu,Mistral,f1f2235c-fe8d-485e-b3b2-64b9c0665af1,deepseek_glm_kimi_qwen,GLM,standard,0.00000154,0,0,14.923611307872667,0,0,14.923611307872667
+z-ai/glm-5.2:batch,fireworks,Fireworks,52600a18-609e-4c45-8dd7-e5f53a57fd87,deepseek_glm_kimi_qwen,GLM,batch,7E-7,0,0,0.16666891203710327,0,0,0.16666891203710327
+z-ai/glm-5.3,gmicloud/fp8,GMICloud,09113121-7385-4aab-80e7-64b64555bd23,deepseek_glm_kimi_qwen,GLM,standard,0.00000112,1,1,11.0902769791666,1,1,11.0902769791666
+z-ai/glm-5.3,digitalocean,DigitalOcean,09738197-8512-443b-bdda-03cfddd58fb9,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,10.840277557872511,0,0,10.840277557872511
+z-ai/glm-5.3,modal,Modal,0ed0cc5a-aec4-4f60-b0d5-baef3b6a87f4,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,10.881943969908688,0,0,10.881943969908688
+z-ai/glm-5.3,parasail/fp8,Parasail,14352c48-92c0-4e0f-b73a-dcafd16057bf,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,10.798611064815411,0,0,10.798611064815411
+z-ai/glm-5.3,baseten/fp8,BaseTen,1d1b0387-30bf-4b5a-a438-c232ebfc6b2c,deepseek_glm_kimi_qwen,GLM,standard,0.0000021,0,0,5.8333349537049175,0,0,5.8333349537049175
+z-ai/glm-5.3,akashml/fp8,AkashML,21452c02-0c70-4fcc-8e93-73f1eeab8f52,deepseek_glm_kimi_qwen,GLM,standard,0.00000117,1,1,10.715277337964487,1,1,10.715277337964487
+z-ai/glm-5.3,friendli,Friendli,235a0f49-0546-4324-a5f1-e4f21d824302,deepseek_glm_kimi_qwen,GLM,standard,0.00000126,1,1,11.131944606483534,1,1,11.131944606483534
+z-ai/glm-5.3,crusoe/fp4,Crusoe,23dcedc3-0ac4-4aa3-b70a-673c020ff7ce,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,2.041667256945813,0,0,2.041667256945813
+z-ai/glm-5.3,fireworks,Fireworks,3f8e9e83-5afe-4d89-8b50-295596798350,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,1,1,11.00694457176107,1,1,11.00694457176107
+z-ai/glm-5.3,decart/fp4,Decart,4d67d501-6f88-4519-b572-320d1e451f9d,deepseek_glm_kimi_qwen,GLM,standard,0.00000119,8,8,8.131944016204388,8,8,8.131944016204388
+z-ai/glm-5.3,together,Together,647ef611-8c3c-4ceb-80e3-1ced53f97444,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,10.798611064815411,0,0,10.798611064815411
+z-ai/glm-5.3,siliconflow/fp8,SiliconFlow,7d50c92d-ca51-47f3-8466-74d82615076d,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,8.54860754629804,0,0,8.54860754629804
+z-ai/glm-5.3,venice,Venice,90ba1d03-97d5-468d-b44c-f8c99e015583,deepseek_glm_kimi_qwen,GLM,standard,0.00000175,0,0,8.006943425928002,0,0,8.006943425928002
+z-ai/glm-5.3,baseten/fp4,BaseTen,98b6133d-ac3d-4d5c-856f-593d9d5fbaa0,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,11.0902769791666,0,0,11.0902769791666
+z-ai/glm-5.3,io-net/fp8,Io Net,a170f6e1-79dd-4607-a512-66d08810a58d,deepseek_glm_kimi_qwen,GLM,standard,0.0000011875,4,4,11.131944606483534,4,4,11.131944606483534
+z-ai/glm-5.3,cloudflare,Cloudflare,a243c90a-4976-4c24-81cb-0370f9232eb3,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,11.0902769791666,0,0,11.0902769791666
+z-ai/glm-5.3,phala,Phala,b2554f44-9dca-42bb-8924-31058dd34e65,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,8.67361090277908,0,0,8.67361090277908
+z-ai/glm-5.3,deepinfra/fp4,DeepInfra,b711bea7-3994-4935-873d-fb845bd40c00,deepseek_glm_kimi_qwen,GLM,standard,0.0000012,2,1,11.131944606483534,2,1,11.131944606483534
+z-ai/glm-5.3,reka/fp8,Reka,d99be598-65f7-4ff0-9c18-92be7290f06e,deepseek_glm_kimi_qwen,GLM,standard,0.00000117,3,3,8.506943495372932,3,3,8.506943495372932
+z-ai/glm-5.3,streamlake/fp8,StreamLake,da2182f1-2cb3-4dca-89d7-8a54e9695f9c,deepseek_glm_kimi_qwen,GLM,standard,0.000001113,2,2,1.625000474538516,2,2,1.625000474538516
+z-ai/glm-5.3,z-ai/fp8,Z.AI,db975786-e7f6-4838-9e56-3e0b77f1bdc2,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,20.923610289353462,0,0,20.923610289353462
+z-ai/glm-5.3,morph/fp4,Morph,dd64dfe2-61e9-437b-bc86-c0755f48d630,deepseek_glm_kimi_qwen,GLM,standard,0.00000125,2,1,10.673611736112722,2,1,10.673611736112722
+z-ai/glm-5.3,novita/fp8,Novita,dfbc5aac-4913-4e88-94c1-94af625aadf9,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,10.673611736112722,0,0,10.673611736112722
+z-ai/glm-5.3,atlas-cloud/fp8,AtlasCloud,e4a66cc5-7fbe-4f4e-992d-bf39d8a5b2e7,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,1,1,6.083329548612237,1,1,6.083329548612237
+z-ai/glm-5.3,sail-research/fp8,Sail Research,e75b6aa4-e55e-418d-88cf-b638ba4d0ab2,deepseek_glm_kimi_qwen,GLM,standard,0.0000014,0,0,6.798611111111111,0,0,6.798611111111111
+z-ai/glm-5.3,makora/fp4,Makora,f8fc284a-08a0-491d-8718-52afb19007aa,deepseek_glm_kimi_qwen,GLM,standard,0.00000135,0,0,6.840276678243169,0,0,6.840276678243169
+z-ai/glm-5.3,inceptron/fp4,Inceptron,fcd269ed-cf26-4492-a7de-57bb66d6b3ea,deepseek_glm_kimi_qwen,GLM,standard,0.00000125,1,1,7.09027695602013,1,1,7.09027695602013
+z-ai/glm-5.3,wafer,Wafer,fdba52ce-2d94-467b-91c6-a331910f8c27,deepseek_glm_kimi_qwen,GLM,standard,0.00000119,1,1,7.673609675927847,1,1,7.673609675927847
+z-ai/glm-5.3-flash,coreweave/fp8,CoreWeave,107375f6-fb9f-4dd5-bbdf-fa7957caabab,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,3.9583282986117734,0,0,3.9583282986117734
+z-ai/glm-5.3-flash,deepinfra/fp4,DeepInfra,132d6a0f-aa11-4dfb-8b08-15783ea353c1,deepseek_glm_kimi_qwen,GLM,standard,7.5E-8,1,1,12.965277372686952,1,1,12.965277372686952
+z-ai/glm-5.3-flash,baseten/fp8,BaseTen,1a652828-0813-4a86-8af1-b13f503b59ce,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,12.840277361113715,0,0,12.840277361113715
+z-ai/glm-5.3-flash,together,Together,1f64afbd-4c77-4708-b9d7-06961b3d8854,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,12.506943148148281,0,0,12.506943148148281
+z-ai/glm-5.3-flash,digitalocean,DigitalOcean,1febec4d-c3c0-4fa3-9758-dae2e3092053,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,11.75694268518576,0,0,11.75694268518576
+z-ai/glm-5.3-flash,modal/fp8,Modal,3a7455e9-f41c-427b-a7e9-e6b1109a85c4,deepseek_glm_kimi_qwen,GLM,standard,1.49985E-7,0,0,12.673618425928332,0,0,12.673618425928332
+z-ai/glm-5.3-flash,gmicloud/fp8,GMICloud,3c46ccde-ef63-481d-98f3-d34cf6f7c0f6,deepseek_glm_kimi_qwen,GLM,standard,7.5E-8,2,2,12.965277372686952,2,2,12.965277372686952
+z-ai/glm-5.3-flash,phala/fp8,Phala,3ed884cc-9445-43ba-9381-a3f2bf08926c,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,8.423610347225159,0,0,8.423610347225159
+z-ai/glm-5.3-flash,streamlake/fp8,StreamLake,49ac1aa8-9ae7-4212-b505-ef0e91dfc9d7,deepseek_glm_kimi_qwen,GLM,standard,1.35E-7,1,1,7.631943888890523,1,1,7.631943888890523
+z-ai/glm-5.3-flash,siliconflow/fp8,SiliconFlow,49deec2a-075d-4fb2-bec7-6889e7d975d4,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,10.715277152778926,0,0,10.715277152778926
+z-ai/glm-5.3-flash,sail-research/fp8,Sail Research,4ac6be6b-0e23-4957-a4c4-b556defbecfb,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,6.000002106483336,0,0,6.000002106483336
+z-ai/glm-5.3-flash,friendli,Friendli,516713c5-3500-49b4-88c6-6b342b2c800c,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,11.256943483796936,0,0,11.256943483796936
+z-ai/glm-5.3-flash,nextbit/fp8,NextBit,6b189479-b2af-4269-88dc-0e28114c895b,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,7.298610821760915,0,0,7.298610821760915
+z-ai/glm-5.3-flash,makora,Makora,7a8e74c9-df09-4a74-9d9b-3c7263c86cdc,deepseek_glm_kimi_qwen,GLM,standard,1.4E-7,2,2,9.923610891205845,2,2,9.923610891205845
+z-ai/glm-5.3-flash,wafer,Wafer,7c22a43e-fac7-4201-bdc2-226a97e8a0d7,deepseek_glm_kimi_qwen,GLM,standard,1E-7,1,1,12.090278043981504,1,1,12.090278043981504
+z-ai/glm-5.3-flash,novita/fp8,Novita,7e1222fc-b9ab-4299-b75a-dd80e1ccd206,deepseek_glm_kimi_qwen,GLM,standard,7.5E-8,1,1,13.090276851852735,1,1,13.090276851852735
+z-ai/glm-5.3-flash,z-ai/fp8,Z.AI,8e9fe48b-2f91-41c3-a8a7-e4a93a8c4ff0,deepseek_glm_kimi_qwen,GLM,standard,7.5E-8,0,0,13.215277627314682,0,0,13.215277627314682
+z-ai/glm-5.3-flash,morph/fp8,Morph,96bd1f63-870f-4b8b-a0ce-5eb7ff7c63f3,deepseek_glm_kimi_qwen,GLM,standard,3.88E-7,8,4,11.798612210648479,8,4,11.798612210648479
+z-ai/glm-5.3-flash,fireworks,Fireworks,a2e983c1-2f37-48eb-b931-1d0e6e8d89c5,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,1,0,10.548610300926699,1,0,10.548610300926699
+z-ai/glm-5.3-flash,io-net/fp8,Io Net,ccba7110-ab3d-42ca-bed7-f77331e025a1,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,13.006938032408556,0,0,13.006938032408556
+z-ai/glm-5.3-flash,cloudflare,Cloudflare,e970b1ed-66e5-473c-92bc-2407aa13ebfc,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,0,0,13.006938032408556,0,0,13.006938032408556
+z-ai/glm-5.3-flash,parasail/fp8,Parasail,f11e0445-97f5-4cf1-8acb-d9bb16b5b278,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,1,0,12.631944004631153,1,0,12.631944004631153
+z-ai/glm-5.3-flash,venice,Venice,fec4a816-d66c-4611-a2b4-0c6457a5a45c,deepseek_glm_kimi_qwen,GLM,standard,1.5E-7,1,1,12.590278206020594,1,1,12.590278206020594
+z-ai/glm-5.3-flash:batch,together,Together,712814e8-735e-4b03-adf4-0f4914cddb22,deepseek_glm_kimi_qwen,GLM,batch,1.5E-7,0,0,10.965277592594976,0,0,10.965277592594976
+z-ai/glm-5.3-flash:batch,fireworks,Fireworks,ada66048-d218-4f11-aa57-ac1e6a7ed477,deepseek_glm_kimi_qwen,GLM,batch,7.5E-8,0,0,0.08332298611325246,0,0,0.08332298611325246
+z-ai/glm-5.3:batch,fireworks,Fireworks,7d70d71d-24db-4911-b60a-c72fbef6fa5e,deepseek_glm_kimi_qwen,GLM,batch,7E-7,0,0,0.16666891203710327,0,0,0.16666891203710327
+z-ai/glm-5v-turbo,z-ai/fp8,Z.AI,a3b0220b-6a75-47bd-aa99-70f955e5b84d,deepseek_glm_kimi_qwen,GLM,standard,0.0000012,0,0,30.0,0,0,78.07643416666875
