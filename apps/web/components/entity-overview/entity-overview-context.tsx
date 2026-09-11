@@ -1,33 +1,36 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
-type EntityState = { type: 'model' | 'provider'; slug: string } | null
+type OverviewEntity = { type: 'model' | 'provider'; slug: string }
 
 type EntityOverviewContextValue = {
-  entity: EntityState
-  openOverview: (entity: { type: 'model' | 'provider'; slug: string }) => void
+  entity: OverviewEntity | null
+  openOverview: (entity: OverviewEntity) => void
   close: () => void
 }
 
 const EntityOverviewContext = createContext<EntityOverviewContextValue | null>(null)
 
 export function EntityOverviewProvider({ children }: { children: ReactNode }) {
-  const [entity, setEntity] = useState<EntityState>(null)
-  const openOverview = useCallback((next: NonNullable<EntityState>) => {
-    setEntity(next)
-  }, [])
-  const close = useCallback(() => {
+  const pathname = usePathname()
+  const [entity, setEntity] = useState<OverviewEntity | null>(null)
+  const [entityPath, setEntityPath] = useState(pathname)
+  if (entityPath !== pathname) {
+    setEntityPath(pathname)
     setEntity(null)
-  }, [])
+  }
   const value = useMemo(
     () => ({
       entity,
-      openOverview,
-      close,
+      openOverview: setEntity,
+      close: () => {
+        setEntity(null)
+      },
     }),
-    [entity, openOverview, close],
+    [entity],
   )
 
   return <EntityOverviewContext.Provider value={value}>{children}</EntityOverviewContext.Provider>

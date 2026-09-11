@@ -1,26 +1,40 @@
 'use client'
 
-import { createContext, useContext, useState, useMemo } from 'react'
+import { useQueryStates } from 'nuqs'
+import { createContext, useContext, useMemo } from 'react'
 
-type Model = { modelId: string; name: string }
+import {
+  chartModelIdFromParams,
+  chartQueryPatch,
+  overlayStateOptions,
+  overlayStateParsers,
+} from '@/lib/overlay-query-state'
+
 const HistoryContext = createContext<{
-  model: Model | null
-  openHistory: (model: Model) => void
+  modelId: string | null
+  openHistory: (modelId: string) => void
   close: () => void
 } | null>(null)
 
 export function PricingHistoryProvider({ children }: { children: React.ReactNode }) {
-  const [model, setModel] = useState<Model | null>(null)
-
+  const [params, setParams] = useQueryStates(
+    {
+      chart: overlayStateParsers.chart,
+    },
+    overlayStateOptions,
+  )
+  const modelId = chartModelIdFromParams(params.chart)
   const value = useMemo(
     () => ({
-      model,
-      openHistory: setModel,
+      modelId,
+      openHistory: (nextModelId: string) => {
+        void setParams(chartQueryPatch(nextModelId))
+      },
       close: () => {
-        setModel(null)
+        void setParams(chartQueryPatch(null))
       },
     }),
-    [model],
+    [modelId, setParams],
   )
 
   return <HistoryContext value={value}>{children}</HistoryContext>

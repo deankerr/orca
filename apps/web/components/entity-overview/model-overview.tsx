@@ -3,19 +3,20 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
-import { ChartNoAxesCombinedIcon } from 'lucide-react'
-
-import { usePricingHistory } from '@/components/pricing-history/history-context'
 
 import { DataValue, DataLink, DataDate, DataDescription } from './overview-data'
-import { OverviewHeader, OverviewActions, OverviewAction, OverviewStatus } from './overview-layout'
+import {
+  OverviewHeader,
+  OverviewActions,
+  OverviewChartAction,
+  OverviewStatus,
+} from './overview-layout'
 import { reasoningLabel, orderEfforts } from './reasoning'
 
 export function ModelOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
     convexQuery(api.v3.public.entityOverviews.model, { modelId: slug }),
   )
-  const { openHistory } = usePricingHistory()
 
   if (!data) {
     return (
@@ -35,14 +36,7 @@ export function ModelOverview({ slug }: { slug: string }) {
       <OverviewHeader slug={slug} name={data.display_name} />
       <div className="flex flex-col gap-4 p-4">
         <OverviewActions type="model" slug={slug}>
-          <OverviewAction
-            icon={ChartNoAxesCombinedIcon}
-            onClick={() => {
-              openHistory({ modelId: slug, name: data.display_name })
-            }}
-          >
-            Pricing History
-          </OverviewAction>
+          <OverviewChartAction modelId={slug} />
         </OverviewActions>
         <DataDescription value={data.description} />
         <dl>

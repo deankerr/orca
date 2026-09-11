@@ -62,10 +62,8 @@ const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.
 
 /** App-level overlay that can be opened independently of an entity overview. */
 export function PricingHistoryOverlay() {
-  const { model, close } = usePricingHistory()
-  const open = model !== null
-  const modelId = model?.modelId ?? ''
-  const name = model?.name ?? ''
+  const { modelId, close } = usePricingHistory()
+  const open = modelId !== null
 
   return (
     <Sheet
@@ -81,13 +79,26 @@ export function PricingHistoryOverlay() {
         className="mx-auto max-w-[1600px] overflow-hidden border shadow-2xl data-[side=top]:top-0 data-[side=top]:h-dvh sm:rounded-lg sm:data-[side=top]:inset-x-6 sm:data-[side=top]:top-6 sm:data-[side=top]:h-[calc(100dvh-3rem)]"
         aria-describedby={undefined}
       >
-        <div className="flex shrink-0 items-center gap-3 border-b p-4 pe-14">
-          <SheetTitle className="sr-only">{name} · Pricing history</SheetTitle>
-          <EntityIdentity slug={modelId} name={name} />
-        </div>
-        {open && <HistoryLoader key={modelId} modelId={modelId} />}
+        {open && (
+          <>
+            <HistoryIdentity modelId={modelId} />
+            <HistoryLoader key={modelId} modelId={modelId} />
+          </>
+        )}
       </SheetContent>
     </Sheet>
+  )
+}
+
+function HistoryIdentity({ modelId }: { modelId: string }) {
+  const { data } = useQuery(convexQuery(api.v3.public.entityOverviews.model, { modelId }))
+  const name = data?.display_name
+
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-b p-4 pe-14">
+      <SheetTitle className="sr-only">{name ?? modelId} · Pricing history</SheetTitle>
+      <EntityIdentity slug={modelId} name={name} />
+    </div>
   )
 }
 

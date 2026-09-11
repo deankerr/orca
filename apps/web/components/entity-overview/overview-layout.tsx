@@ -1,12 +1,26 @@
+'use client'
+
 import type { LucideIcon } from 'lucide-react'
-import { CopyIcon, ArrowRightIcon, Table2Icon, ActivityIcon } from 'lucide-react'
+import {
+  CopyIcon,
+  ArrowRightIcon,
+  Table2Icon,
+  ActivityIcon,
+  ChartNoAxesCombinedIcon,
+} from 'lucide-react'
 import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import {
+  buildOverviewChartHref,
+  buildOverviewEndpointsHref,
+  buildOverviewMonitorHref,
+} from '@/lib/overlay-query-state'
 import { cn } from '@/lib/utils'
 
 import { useEntityOverview } from './entity-overview-context'
@@ -56,7 +70,7 @@ export function OverviewAction({
 
   if (href !== undefined) {
     return (
-      <Link href={href} onClick={onClick} className={actionClassName}>
+      <Link href={href} scroll={false} onClick={onClick} className={actionClassName}>
         {content}
       </Link>
     )
@@ -78,19 +92,21 @@ export function OverviewActions({
   slug: string
   children?: React.ReactNode
 }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams().toString()
   const { close } = useEntityOverview()
 
   return (
     <div className="flex flex-col gap-2">
       <OverviewAction
-        href={`/?${new URLSearchParams({ q: slug })}`}
+        href={buildOverviewEndpointsHref({ pathname, searchParams, slug })}
         onClick={close}
         icon={Table2Icon}
       >
         Endpoints
       </OverviewAction>
       <OverviewAction
-        href={`/monitor?${new URLSearchParams({ [type]: slug })}`}
+        href={buildOverviewMonitorHref({ pathname, searchParams, type, slug })}
         onClick={close}
         icon={ActivityIcon}
       >
@@ -98,6 +114,20 @@ export function OverviewActions({
       </OverviewAction>
       {children}
     </div>
+  )
+}
+
+export function OverviewChartAction({ modelId }: { modelId: string }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams().toString()
+
+  return (
+    <OverviewAction
+      href={buildOverviewChartHref({ pathname, searchParams, modelId })}
+      icon={ChartNoAxesCombinedIcon}
+    >
+      Pricing History
+    </OverviewAction>
   )
 }
 
