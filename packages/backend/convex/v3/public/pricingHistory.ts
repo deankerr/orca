@@ -6,7 +6,7 @@ import { getCurrentScan } from '../ingestions'
 import { endpointsListingTable, endpointsPricingTable } from '../series.table'
 
 const listing = endpointsListingTable.validator.pick('scan_at', 'state')
-const price = endpointsPricingTable.validator.pick('scan_at', 'meters', 'overrides')
+const price = endpointsPricingTable.validator.pick('scan_at', 'meters')
 const endpointHistory = v.object({
   id: v.string(),
   tag: v.string(),
@@ -67,7 +67,7 @@ export const get = query({
         id: endpoint.endpoint_id,
         tag: endpoint.provider_tag,
         listings: listings.map(({ scan_at, state }) => ({ scan_at, state })),
-        prices: prices.map(({ scan_at, meters, overrides }) => ({ scan_at, meters, overrides })),
+        prices: prices.map(({ scan_at, meters }) => ({ scan_at, meters })),
       })
     }
 

@@ -11,6 +11,14 @@ import { useState } from 'react'
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -18,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
@@ -60,13 +67,12 @@ const dateLabel = (at: number) =>
   })
 const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—'
 
-/** App-level overlay that can be opened independently of an entity overview. */
 export function PricingHistoryOverlay() {
   const { modelId, close } = usePricingHistory()
   const open = modelId !== null
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(next) => {
         if (!next) {
@@ -74,19 +80,15 @@ export function PricingHistoryOverlay() {
         }
       }}
     >
-      <SheetContent
-        side="top"
-        className="mx-auto max-w-[1600px] overflow-hidden border shadow-2xl data-[side=top]:top-0 data-[side=top]:h-dvh sm:rounded-lg sm:data-[side=top]:inset-x-6 sm:data-[side=top]:top-6 sm:data-[side=top]:h-[calc(100dvh-3rem)]"
-        aria-describedby={undefined}
-      >
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden sm:max-w-6xl">
         {open && (
           <>
             <HistoryIdentity modelId={modelId} />
             <HistoryLoader key={modelId} modelId={modelId} />
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -95,10 +97,13 @@ function HistoryIdentity({ modelId }: { modelId: string }) {
   const name = data?.display_name
 
   return (
-    <div className="flex shrink-0 items-center gap-3 border-b p-4 pe-14">
-      <SheetTitle className="sr-only">{name ?? modelId} · Pricing history</SheetTitle>
+    <DialogHeader className="flex-row items-center pe-8">
+      <DialogTitle className="sr-only">{name ?? modelId} · Pricing history</DialogTitle>
+      <DialogDescription className="sr-only">
+        Historical OpenRouter provider pricing
+      </DialogDescription>
       <EntityIdentity slug={modelId} name={name} />
-    </div>
+    </DialogHeader>
   )
 }
 
@@ -107,17 +112,17 @@ function HistoryLoader({ modelId }: { modelId: string }) {
     convexQuery(api.v3.public.pricingHistory.get, { modelId }),
   )
 
+  let body
   if (isPending) {
-    return (
-      <output className="flex flex-1 items-center justify-center gap-2">
+    body = (
+      <output className="flex items-center justify-center gap-2 py-8">
         <Spinner />
         Loading pricing history…
       </output>
     )
-  }
-  if (error) {
-    return (
-      <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-3">
+  } else if (error) {
+    body = (
+      <div role="alert" className="flex flex-col items-center justify-center gap-3 py-8">
         <p>
           {error instanceof ConvexError && typeof error.data === 'string'
             ? error.data
@@ -134,11 +139,19 @@ function HistoryLoader({ modelId }: { modelId: string }) {
         </Button>
       </div>
     )
+  } else if (data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
+    body = <HistoryContent history={data} />
+  } else {
+    body = (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No pricing history available</EmptyTitle>
+        </EmptyHeader>
+      </Empty>
+    )
   }
-  if (!data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
-    return <p className="p-6">No pricing history available.</p>
-  }
-  return <HistoryContent history={data} />
+
+  return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{body}</div>
 }
 
 function HistoryContent({ history }: { history: History }) {
@@ -211,8 +224,8 @@ function HistoryContent({ history }: { history: History }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-      <div className="relative h-[40vh] max-h-[30rem] min-h-64 shrink-0">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+      <div className="relative h-64 shrink-0 sm:h-96">
         <Plot
           traces={visible}
           since={since}
@@ -288,7 +301,7 @@ function HistoryContent({ history }: { history: History }) {
           ))}
         </ToggleGroup>
       </div>
-      <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="tabular-nums">
             {dateLabel(at)}
@@ -326,17 +339,10 @@ function HistoryContent({ history }: { history: History }) {
       </div>
       <ul
         aria-label="Provider prices"
-        className="grid min-h-32 flex-1 [scrollbar-gutter:stable] grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] content-start gap-x-5 overflow-y-auto"
+        className="grid min-h-0 flex-1 [scrollbar-gutter:stable] grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] content-start gap-x-5 overflow-y-auto"
       >
         {tags.map((tag) => {
           const prices = tagPrices(traces, tag, at, history.asOf)
-          const scheduled = traces.some(
-            (trace) =>
-              trace.tag === tag &&
-              trace.scheduled &&
-              trace.end >= range[0] &&
-              trace.start <= range[1],
-          )
           return (
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Delegate hover and focus across both row buttons without making the list item another tab stop.
             <li
@@ -377,14 +383,6 @@ function HistoryContent({ history }: { history: History }) {
                 />
                 <span className="truncate">{tag}</span>
               </Button>
-              {scheduled && (
-                <span
-                  title="Scheduled pricing observed in this history"
-                  aria-label="Scheduled pricing"
-                >
-                  ◷
-                </span>
-              )}
               <span className="min-w-[7ch] text-right font-mono whitespace-nowrap tabular-nums group-data-hidden:opacity-40">
                 {prices.length
                   ? `${priceLabel(prices[0])}${prices.length > 1 ? `–${priceLabel(prices.at(-1) ?? 0)}` : ''}`

@@ -18,11 +18,11 @@ test('steps normalize unmetered values and never carry quotes across a relisting
           { scan_at: iso(2 * DAY), state: 'listed' },
         ],
         prices: [
-          { scan_at: iso(0), meters: { prompt: '1' }, overrides: undefined },
-          { scan_at: iso(DAY / 2), meters: { prompt: '2' }, overrides: undefined },
-          { scan_at: iso(2.5 * DAY), meters: { prompt: '3' }, overrides: [{ utc_start: '12:00' }] },
-          { scan_at: iso(3 * DAY), meters: { prompt: '0' }, overrides: undefined },
-          { scan_at: iso(3.5 * DAY), meters: {}, overrides: undefined },
+          { scan_at: iso(0), meters: { prompt: '1' } },
+          { scan_at: iso(DAY / 2), meters: { prompt: '2' } },
+          { scan_at: iso(2.5 * DAY), meters: { prompt: '3' } },
+          { scan_at: iso(3 * DAY), meters: { prompt: '0' } },
+          { scan_at: iso(3.5 * DAY), meters: {} },
         ],
       },
     ],
@@ -33,7 +33,6 @@ test('steps normalize unmetered values and never carry quotes across a relisting
     [2.5 * DAY, 3 * DAY],
   ])
   expect(tagPrices(traces, 'provider', 2.25 * DAY, history.asOf)).toEqual([])
-  expect(traces[1].scheduled).toBe(true)
   expect(tagPrices(traces, 'provider', DAY, history.asOf)).toEqual([])
 })
 
@@ -43,7 +42,6 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
     tag: 'provider',
     start: 0,
     end: 2.5 * DAY,
-    scheduled: false,
     current: true,
     samples: [
       [0, 1],
@@ -78,10 +76,8 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
             ...(unlisted ? [{ scan_at: iso(DAY), state: 'unlisted' as const }] : []),
           ],
           prices: [
-            { scan_at: iso(0), meters: { prompt: '1' }, overrides: undefined },
-            ...(unlisted
-              ? []
-              : [{ scan_at: iso(DAY), meters: { prompt: '0' }, overrides: undefined }]),
+            { scan_at: iso(0), meters: { prompt: '1' } },
+            ...(unlisted ? [] : [{ scan_at: iso(DAY), meters: { prompt: '0' } }]),
           ],
         },
       ],

@@ -10,7 +10,6 @@ export type Trace = {
   start: number
   end: number
   samples: Sample[]
-  scheduled: boolean
   current: boolean
 }
 
@@ -52,10 +51,6 @@ export function historyTraces(history: History, meter: string): Trace[] {
         continue
       }
 
-      const scheduled =
-        row.overrides?.some((override) =>
-          Object.keys(override).some((key) => key.startsWith('utc_')),
-        ) ?? false
       if (!trace) {
         trace = {
           id: `${endpoint.id}:${at}`,
@@ -63,12 +58,10 @@ export function historyTraces(history: History, meter: string): Trace[] {
           start: at,
           end: history.asOf,
           samples: [],
-          scheduled,
           current: true,
         }
         traces.push(trace)
       }
-      trace.scheduled ||= scheduled
       if (trace.samples.at(-1)?.[1] !== value) {
         trace.samples.push([at, value])
       }
