@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import {
+  buildLegacyPricingHistoryHref,
   buildOverviewChartHref,
   buildOverviewEndpointsHref,
   buildOverviewMonitorHref,
@@ -156,5 +157,20 @@ describe('overview action hrefs', () => {
         modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/?chart=z-ai%2Fglm-5.2')
+  })
+})
+
+describe('legacy pricing history redirects', () => {
+  it('opens the data-grid overlay for a model id path', () => {
+    expect(buildLegacyPricingHistoryHref(['z-ai', 'glm-5.2'])).toBe('/?chart=z-ai%2Fglm-5.2')
+  })
+
+  it('decodes a single encoded segment', () => {
+    expect(buildLegacyPricingHistoryHref(['z-ai%2Fglm-5.2'])).toBe('/?chart=z-ai%2Fglm-5.2')
+  })
+
+  it('falls back to the grid when the path is empty', () => {
+    expect(buildLegacyPricingHistoryHref([])).toBe('/')
+    expect(buildLegacyPricingHistoryHref(['  '])).toBe('/')
   })
 })

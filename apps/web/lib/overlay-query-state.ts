@@ -23,6 +23,14 @@ export function chartQueryPatch(modelId: string | null): { chart: string | null 
   return { chart: modelId }
 }
 
+export function buildLegacyPricingHistoryHref(modelIdSegments: string[]): string {
+  const modelId = modelIdSegments.map((part) => decodeURIComponent(part)).join('/')
+  if (chartModelIdFromParams(modelId) === null) {
+    return '/'
+  }
+  return buildOverviewChartHref({ pathname: '/', searchParams: '', modelId })
+}
+
 export function buildOverviewEndpointsHref({
   pathname,
   searchParams,
