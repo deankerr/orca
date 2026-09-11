@@ -55,6 +55,7 @@ const Plot = dynamic(
     ),
   },
 )
+
 const METERS = [
   { value: 'prompt', label: 'Input', scale: 1e6, unit: '$/MTOK' },
   { value: 'completion', label: 'Output', scale: 1e6, unit: '$/MTOK' },
@@ -76,7 +77,9 @@ const dateLabel = (at: number) =>
     minute: '2-digit',
     timeZoneName: 'short',
   })
+
 const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—'
+
 const quotedPrice = (prices: number[]) =>
   prices.length === 0
     ? '—'
@@ -130,11 +133,13 @@ function Identity({ modelId }: { modelId: string }) {
 
 function Loader({ modelId }: { modelId: string }) {
   const { close } = usePricingHistory()
+
   const { data, isPending, error, refetch } = useQuery(
     convexQuery(api.v3.public.pricingHistory.get, { modelId }),
   )
 
   let body
+
   if (isPending) {
     body = (
       <output aria-live="polite" className="flex items-center justify-center gap-2 py-8">
@@ -193,19 +198,23 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const activeTag = hoveredTag ?? plotTag ?? focusedTag
   const emphasis = activeTag !== null && !hidden.has(activeTag) ? activeTag : null
   const [hoverAt, setHoverAt] = useState<number | null>(null)
+
   const available = METERS.filter((meter) =>
     pricingHistory.endpoints.some((endpoint) =>
       endpoint.prices.some((price) => Number(price.meters[meter.value]) > 0),
     ),
   )
+
   const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
   const meters = available.length > 0 ? available : [meter]
+
   const since = Math.min(
     pricingHistory.asOf,
     ...pricingHistory.endpoints.flatMap((endpoint) =>
       endpoint.listings.map((row) => Date.parse(row.scan_at)),
     ),
   )
+
   const range: [number, number] =
     preset === '' && window !== null
       ? window
@@ -218,6 +227,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
 
   const daily = range[1] - range[0] > 7 * DAY + 1
   const exact = pricingHistoryTraces(pricingHistory, meter.value)
+
   const traces = exact.map((trace) => {
     const sampled = daily ? dailyTrace(trace, pricingHistory.asOf) : trace
     return {
@@ -225,6 +235,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
       samples: sampled.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
     }
   })
+
   const tagSet = new Set<string>()
   for (const trace of traces) {
     if (trace.end >= range[0] && trace.start <= range[1]) {
@@ -242,22 +253,27 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
     setPreset('')
     setHoverAt(null)
   }
+
   const inspect = (next: number | null) => {
     startTransition(() => {
       setHoverAt(next)
     })
   }
+
   const toggle = (tag: string) => {
     setHidden((current) => {
       const next = new Set(current)
+
       if (next.has(tag)) {
         next.delete(tag)
       } else {
         next.add(tag)
       }
+
       return next
     })
   }
+
   const showAllTime = () => {
     changeRange([since, pricingHistory.asOf])
     setPreset('all')
@@ -296,6 +312,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
             value === 'all' ? since : Math.max(since, pricingHistory.asOf - Number(value) * DAY),
             pricingHistory.asOf,
           ])
+
           setPreset(value)
         }}
       />
@@ -440,6 +457,7 @@ function Toolbar({
         variant="outline"
         onValueChange={(values) => {
           const [value] = values
+
           if (value) {
             onPreset(value)
           }

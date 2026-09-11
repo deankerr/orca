@@ -18,10 +18,12 @@ export function EntityOverviewProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [entity, setEntity] = useState<OverviewEntity | null>(null)
   const [entityPath, setEntityPath] = useState(pathname)
+
   if (entityPath !== pathname) {
     setEntityPath(pathname)
     setEntity(null)
   }
+
   const value = useMemo(
     () => ({
       entity,
@@ -38,8 +40,10 @@ export function EntityOverviewProvider({ children }: { children: ReactNode }) {
 
 export function useEntityOverview() {
   const context = useContext(EntityOverviewContext)
+
   if (!context) {
     throw new Error('useEntityOverview must be used within EntityOverviewProvider')
   }
+
   return context
 }

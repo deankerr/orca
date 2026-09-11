@@ -65,27 +65,36 @@ export function PricingHistoryPlot({
 
   useEffect(() => {
     const node = container.current
+
     if (!node) {
       return undefined
     }
+
     const instance = init(node, undefined, { renderer: 'canvas' })
     chart.current = instance
+
     const measure = () => {
       frame.current = node.getBoundingClientRect()
     }
+
     measure()
+
     const resize = new ResizeObserver(() => {
       measure()
       instance.resize()
     })
+
     resize.observe(node)
 
     instance.on('datazoom', (payload: unknown) => {
       const zoom = zoomEvent(payload)
+
       if (zoom === null) {
         return
       }
+
       const bounds = callbacks.current
+
       callbacks.current.onRange([
         bounds.since + ((bounds.asOf - bounds.since) * zoom.start) / 100,
         bounds.since + ((bounds.asOf - bounds.since) * zoom.end) / 100,
@@ -102,19 +111,24 @@ export function PricingHistoryPlot({
         callbacks.current.onEmphasis(event.seriesName)
       }
     })
+
     instance.on('mouseout', () => {
       callbacks.current.onEmphasis(null)
     })
 
     const inspect = (event: MouseEvent) => {
       const rect = frame.current
+
       if (rect === null) {
         return
       }
+
       const pixel = [event.clientX - rect.left, event.clientY - rect.top]
+
       if (instance.containPixel('grid', pixel)) {
         const value = instance.convertFromPixel({ gridIndex: 0 }, pixel)
         const [at] = value
+
         if (Number.isFinite(at)) {
           applyInspectedPointer(instance, at, callbacks.current.asOf)
           callbacks.current.onInspect(at)
@@ -124,15 +138,18 @@ export function PricingHistoryPlot({
         callbacks.current.onInspect(null)
       }
     }
+
     const leave = () => {
       applyInspectedPointer(instance, null, callbacks.current.asOf)
       callbacks.current.onInspect(null)
     }
+
     const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey) {
         event.stopPropagation()
       }
     }
+
     node.addEventListener('mousemove', inspect)
     node.addEventListener('mouseleave', leave)
     node.addEventListener('wheel', wheel, { capture: true, passive: true })
@@ -154,6 +171,7 @@ export function PricingHistoryPlot({
         if (trace.end < range[0] || trace.start > range[1]) {
           return []
         }
+
         return [
           sampleAt(trace.samples, range[0]) ?? 0,
           ...trace.samples
@@ -162,7 +180,9 @@ export function PricingHistoryPlot({
         ]
       }),
     )
+
     const span = Math.max(1, asOf - since)
+
     chart.current?.setOption(
       {
         animation: true,
@@ -254,6 +274,7 @@ export function PricingHistoryPlot({
 
   useEffect(() => {
     chart.current?.dispatchAction({ type: 'downplay' })
+
     if (emphasis !== null) {
       chart.current?.dispatchAction({ type: 'highlight', seriesName: emphasis })
     }
@@ -280,18 +301,22 @@ export function PricingHistoryPlot({
       onKeyDown={(event) => {
         const step = (range[1] - range[0]) / 100
         const current = inspectedAt ?? range[1]
+
         const next = {
           ArrowLeft: current - step,
           ArrowRight: current + step,
           Home: range[0],
           End: range[1],
         }[event.key]
+
         if (next !== undefined) {
           event.preventDefault()
           const at = Math.max(range[0], Math.min(range[1], next))
+
           if (chart.current) {
             applyInspectedPointer(chart.current, at, asOf)
           }
+
           onInspect(at)
         }
       }}
@@ -303,9 +328,11 @@ function zoomEvent(value: unknown): { start: number; end: number } | null {
   if (typeof value !== 'object' || value === null) {
     return null
   }
+
   if ('batch' in value && Array.isArray(value.batch)) {
     return zoomEvent(value.batch[0])
   }
+
   if (
     'start' in value &&
     typeof value.start === 'number' &&
@@ -319,6 +346,7 @@ function zoomEvent(value: unknown): { start: number; end: number } | null {
   ) {
     return { start: value.start, end: value.end }
   }
+
   return null
 }
 

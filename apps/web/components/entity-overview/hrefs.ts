@@ -17,9 +17,11 @@ export function buildEndpointsHref({
   if (pathname === '/') {
     const current = toSearchParams(searchParams)
     const next = pickParams(current, GRID_QUERY_KEYS)
+
     if ((next.get('q') ?? '') !== slug) {
       next.delete('uuid')
     }
+
     next.set('q', slug)
     return href('/', next)
   }

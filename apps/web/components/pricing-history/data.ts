@@ -33,21 +33,25 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
           trace.current = false
           trace = undefined
         }
+
         listed = listing === 'listed'
       }
 
       const row = prices.get(at)
+
       if (!listed || !row) {
         continue
       }
 
       const value = Number(row.meters[meter])
+
       if (!Number.isFinite(value) || value <= 0) {
         if (trace) {
           trace.end = at
           trace.current = false
           trace = undefined
         }
+
         continue
       }
 
@@ -60,8 +64,10 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
           samples: [],
           current: true,
         }
+
         traces.push(trace)
       }
+
       if (trace.samples.at(-1)?.[1] !== value) {
         trace.samples.push([at, value])
       }
@@ -77,6 +83,7 @@ export function sampleAt(samples: Sample[], at: number): number | undefined {
     if (sample[0] > at) {
       break
     }
+
     const [, price] = sample
     value = price
   }
@@ -86,9 +93,11 @@ export function sampleAt(samples: Sample[], at: number): number | undefined {
 /** Daily UTC boundary samples, retaining span boundaries and the latest observed quote. */
 export function dailyTrace(trace: Trace, asOf: number): Trace {
   const [first] = trace.samples
+
   if (trace.samples.length === 0) {
     return trace
   }
+
   const samples: Sample[] = [first]
   let current = first
   let index = 0
@@ -102,9 +111,11 @@ export function dailyTrace(trace: Trace, asOf: number): Trace {
     samples.push([at, current[1]])
   }
   const latest = trace.samples.at(-1)
+
   if (trace.current && trace.end === asOf && latest) {
     samples.push([asOf, latest[1]])
   }
+
   return { ...trace, samples }
 }
 

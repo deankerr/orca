@@ -18,6 +18,7 @@ const PricingHistoryContext = createContext<{
 export function PricingHistoryProvider({ children }: { children: React.ReactNode }) {
   const [params, setParams] = useQueryStates(pricingHistoryParsers, pricingHistoryStateOptions)
   const modelId = pricingHistoryModelIdFromParams(params.pricingHistory)
+
   const value = useMemo(
     () => ({
       modelId,

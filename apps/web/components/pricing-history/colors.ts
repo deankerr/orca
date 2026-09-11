@@ -16,6 +16,7 @@ const MUD_BAND_END = 120
 /** Return the browser-facing OKLCH color for a provider's chart line and legend controls. */
 export function providerColor(providerId: string) {
   const cached = oklchById.get(providerId)
+
   if (cached !== undefined) {
     return cached
   }
@@ -29,6 +30,7 @@ export function providerColor(providerId: string) {
 /** Return the same color in sRGB because ECharts cannot parse OKLCH. */
 export function providerSrgbColor(providerId: string) {
   const cached = srgbById.get(providerId)
+
   if (cached !== undefined) {
     return cached
   }
@@ -55,6 +57,7 @@ function fnv1aHash(text: string) {
 
 function providerColorCoordinates(providerId: string) {
   const cached = coordinatesById.get(providerId)
+
   if (cached) {
     return cached
   }
@@ -110,6 +113,7 @@ function findMaxSrgbChroma(lightness: number, hue: number) {
   // each color comparable vividness without shifting its intended hue.
   for (let step = 0; step < SEARCH_STEPS; step += 1) {
     const candidate = (lower + upper) / 2
+
     if (isInSrgbGamut(lightness, candidate, hue)) {
       lower = candidate
     } else {

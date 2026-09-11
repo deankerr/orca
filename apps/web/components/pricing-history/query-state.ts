@@ -48,8 +48,10 @@ export function buildPricingHistoryHref({
 
 export function buildLegacyPricingHistoryHref(modelIdSegments: string[]): string {
   const modelId = modelIdSegments.map((part) => decodeURIComponent(part)).join('/')
+
   if (pricingHistoryModelIdFromParams(modelId) === null) {
     return '/'
   }
+
   return buildPricingHistoryHref({ pathname: '/', searchParams: '', modelId })
 }

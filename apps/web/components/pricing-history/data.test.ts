@@ -27,11 +27,14 @@ test('steps normalize unmetered values and never carry quotes across a relisting
       },
     ],
   }
+
   const traces = pricingHistoryTraces(pricingHistory, 'prompt')
+
   expect(traces.map(({ start, end }) => [start, end])).toEqual([
     [0, DAY],
     [2.5 * DAY, 3 * DAY],
   ])
+
   expect(tagPrices(traces, 'provider', 2.25 * DAY, pricingHistory.asOf)).toEqual([])
   expect(tagPrices(traces, 'provider', DAY, pricingHistory.asOf)).toEqual([])
 })
@@ -50,14 +53,18 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
       [2.25 * DAY, 2],
     ] as [number, number][],
   }
+
   const daily = dailyTrace(trace, trace.end)
+
   expect(daily.samples).toEqual([
     [0, 1],
     [DAY, 1],
     [2 * DAY, 1],
     [2.5 * DAY, 2],
   ])
+
   expect(tagPrices([daily], 'provider', DAY / 2, trace.end)).toEqual([1])
+
   expect(
     tagPrices([daily, { ...daily, id: 'two', samples: [[0, 3]] }], 'provider', DAY, trace.end),
   ).toEqual([1, 3])
@@ -82,8 +89,10 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
         },
       ],
     }
+
     const traces = pricingHistoryTraces(pricingHistory, 'prompt')
     expect(tagPrices(traces, 'provider', DAY, pricingHistory.asOf)).toEqual([])
+
     expect(
       tagPrices(
         traces.map((trace) => dailyTrace(trace, pricingHistory.asOf)),

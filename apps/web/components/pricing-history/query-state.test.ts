@@ -28,6 +28,7 @@ describe('pricing history hrefs', () => {
         modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/?q=z-ai%2Fglm-5.2&has=reasoning&pricing-history=z-ai%2Fglm-5.2')
+
     expect(
       buildPricingHistoryHref({
         pathname: '/monitor',

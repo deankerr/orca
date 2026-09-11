@@ -58,6 +58,7 @@ export function DataDescription({ value }: { value: string | null }) {
 
   useLayoutEffect(() => {
     const el = textRef.current
+
     if (el === null) {
       return undefined
     }

@@ -3,12 +3,15 @@ export function reasoningLabel(supported: boolean | null, required: boolean | nu
   if (required === true) {
     return 'Required'
   }
+
   if (supported === false) {
     return 'Unsupported'
   }
+
   if (supported === true) {
     return required === false ? 'Optional' : 'Supported'
   }
+
   return null
 }
 

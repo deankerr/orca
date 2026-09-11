@@ -17,6 +17,7 @@
     "logos": "bun run --cwd apps/logos build",
     "prepare": "lefthook install --reset-hooks-path",
     "release": "turbo run release --filter=web",
+    "space": "bun run packages/scripts/space-multiline-statements.ts",
     "start": "turbo run start --filter=web"
   },
   "devDependencies": {

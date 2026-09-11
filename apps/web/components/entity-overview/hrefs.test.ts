@@ -5,6 +5,7 @@ import { buildEndpointsHref, buildMonitorHref } from './hrefs'
 describe('overview action hrefs', () => {
   const gridSearch =
     'q=openai/gpt-5.4&uuid=abc123&has=reasoning&not=image&sort=price&order=asc&pricing-history=openai/gpt-5.4'
+
   const monitorSearch = 'model=openai/gpt-5.4&provider=akashml&pricing-history=openai/gpt-5.4'
 
   it('merges Endpoints on the grid and keeps facets and sort', () => {
@@ -56,6 +57,7 @@ describe('overview action hrefs', () => {
         slug: 'z-ai/glm-5.2',
       }),
     ).toBe('/monitor?model=z-ai%2Fglm-5.2&provider=akashml')
+
     expect(
       buildMonitorHref({
         pathname: '/monitor',
@@ -75,6 +77,7 @@ describe('overview action hrefs', () => {
         slug: 'z-ai/glm-5.2',
       }),
     ).toBe('/monitor?model=z-ai%2Fglm-5.2')
+
     expect(
       buildMonitorHref({
         pathname: '/',
@@ -93,6 +96,7 @@ describe('overview action hrefs', () => {
         slug: 'openai/gpt-5.4',
       }),
     ).toBe('/?q=openai%2Fgpt-5.4&uuid=abc123&has=reasoning&not=image&sort=price&order=asc')
+
     expect(
       buildMonitorHref({
         pathname: '/monitor',
