@@ -66,6 +66,10 @@ const dateLabel = (at: number) =>
     timeZoneName: 'short',
   })
 const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—'
+const quotedPrice = (prices: number[]) =>
+  prices.length === 0
+    ? '—'
+    : `${priceLabel(prices[0])}${prices.length > 1 ? `–${priceLabel(prices.at(-1) ?? 0)}` : ''}`
 
 export function PricingHistoryOverlay() {
   const { modelId, close } = usePricingHistory()
@@ -172,6 +176,7 @@ function HistoryContent({ history }: { history: History }) {
     ),
   )
   const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
+  const meters = available.length > 0 ? available : [meter]
   const since = Math.min(
     history.asOf,
     ...history.endpoints.flatMap((endpoint) =>
@@ -261,14 +266,14 @@ function HistoryContent({ history }: { history: History }) {
                 setRequestedMeter(value)
               }
             }}
-            items={available}
+            items={meters}
           >
             <SelectTrigger aria-label="Pricing meter">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {available.map((item) => (
+                {meters.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -301,115 +306,116 @@ function HistoryContent({ history }: { history: History }) {
           ))}
         </ToggleGroup>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="tabular-nums">
-            {dateLabel(at)}
-            {pinnedAt === null ? '' : ' · Pinned'}
-          </p>
-          {pinnedAt !== null && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setPinnedAt(null)
-                setHoverAt(null)
-              }}
-            >
-              Unpin
-            </Button>
-          )}
-        </div>
-        <div className="ms-auto flex items-center gap-3">
-          <span className="text-muted-foreground">
-            {shownCount} of {tags.length} providers
-          </span>
-          <Button
-            variant="ghost"
-            disabled={tags.length === 0}
-            onClick={() => {
-              setHidden(
-                allShown ? new Set(history.endpoints.map((endpoint) => endpoint.tag)) : new Set(),
-              )
-            }}
-          >
-            {allShown ? 'Hide all' : 'Restore all'}
-          </Button>
-        </div>
-      </div>
-      <ul
-        aria-label="Provider prices"
-        className="grid min-h-0 flex-1 [scrollbar-gutter:stable] grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] content-start gap-x-5 overflow-y-auto"
-      >
-        {tags.map((tag) => {
-          const prices = tagPrices(traces, tag, at, history.asOf)
-          return (
-            // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Delegate hover and focus across both row buttons without making the list item another tab stop.
-            <li
-              key={tag}
-              data-hidden={hidden.has(tag) || undefined}
-              data-highlighted={emphasis === tag || undefined}
-              className="group flex min-w-0 items-center gap-1 rounded-sm transition-colors duration-150 focus-within:bg-muted/50 hover:bg-muted/50 data-highlighted:bg-muted/50 motion-reduce:transition-none"
-              onMouseEnter={() => {
-                setHoveredTag(tag)
-              }}
-              onMouseLeave={() => {
-                setHoveredTag(null)
-              }}
-              onFocusCapture={() => {
-                setFocusedTag(tag)
-              }}
-              onBlurCapture={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) {
-                  setFocusedTag(null)
-                }
-              }}
-            >
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="tabular-nums">Prices at {dateLabel(at)}</p>
+            {pinnedAt !== null && (
               <Button
-                variant="ghost"
-                className="min-w-0 flex-1 justify-start group-data-hidden:opacity-40 hover:bg-transparent"
-                title={tag}
-                aria-pressed={!hidden.has(tag)}
+                variant="outline"
+                size="sm"
                 onClick={() => {
-                  toggle(tag)
+                  setPinnedAt(null)
+                  setHoverAt(null)
                 }}
               >
-                <span
-                  className="size-2 shrink-0 rounded-full"
-                  style={{
-                    background: hidden.has(tag) ? 'transparent' : providerColor(tag),
-                    outline: `1px solid ${providerColor(tag)}`,
-                  }}
-                />
-                <span className="truncate">{tag}</span>
+                Unpin
               </Button>
-              <span className="min-w-[7ch] text-right font-mono whitespace-nowrap tabular-nums group-data-hidden:opacity-40">
-                {prices.length
-                  ? `${priceLabel(prices[0])}${prices.length > 1 ? `–${priceLabel(prices.at(-1) ?? 0)}` : ''}`
-                  : '—'}
+            )}
+          </div>
+          {tags.length > 1 && (
+            <div className="ms-auto flex items-center gap-3">
+              <span className="text-muted-foreground">
+                {shownCount} of {tags.length} providers
               </span>
               <Button
                 variant="ghost"
-                size="sm"
-                className="duration-150 motion-reduce:transition-none pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100 pointer-fine:group-data-highlighted:opacity-100"
-                disabled={shownCount === 1 && !hidden.has(tag)}
-                aria-label={`Show only ${tag}`}
                 onClick={() => {
-                  setHidden(
-                    new Set(
-                      history.endpoints
-                        .map((endpoint) => endpoint.tag)
-                        .filter((candidate) => candidate !== tag),
-                    ),
-                  )
+                  setHidden(allShown ? new Set(tags) : new Set())
                 }}
               >
-                Only
+                {allShown ? 'Hide all' : 'Show all'}
               </Button>
+            </div>
+          )}
+        </div>
+        <ul
+          aria-label="Providers"
+          className="grid min-h-0 flex-1 [scrollbar-gutter:stable] grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),16rem))] content-start justify-center gap-2 overflow-y-auto"
+        >
+          {tags.map((tag) => (
+            <li key={tag} className="min-w-0">
+              <LegendItem
+                tag={tag}
+                price={quotedPrice(tagPrices(traces, tag, at, history.asOf))}
+                hidden={hidden.has(tag)}
+                highlighted={emphasis === tag}
+                onToggle={() => {
+                  toggle(tag)
+                }}
+                onHover={setHoveredTag}
+                onFocusVisible={setFocusedTag}
+              />
             </li>
-          )
-        })}
-      </ul>
+          ))}
+        </ul>
+      </div>
     </div>
+  )
+}
+
+function LegendItem({
+  tag,
+  price,
+  hidden,
+  highlighted,
+  onToggle,
+  onHover,
+  onFocusVisible,
+}: {
+  tag: string
+  price: string
+  hidden: boolean
+  highlighted: boolean
+  onToggle: () => void
+  onHover: (tag: string | null) => void
+  onFocusVisible: (tag: string | null) => void
+}) {
+  return (
+    <button
+      type="button"
+      title={tag}
+      aria-pressed={!hidden}
+      data-hidden={hidden || undefined}
+      data-highlighted={highlighted || undefined}
+      className="flex h-7 w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-transparent px-2 text-start text-xs transition-colors duration-150 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30 data-hidden:opacity-40 data-highlighted:bg-muted/50 motion-reduce:transition-none"
+      onMouseEnter={() => {
+        onHover(tag)
+      }}
+      onMouseLeave={() => {
+        onHover(null)
+      }}
+      onFocus={(event) => {
+        if (event.currentTarget.matches(':focus-visible')) {
+          onFocusVisible(tag)
+        }
+      }}
+      onBlur={() => {
+        onFocusVisible(null)
+      }}
+      onClick={onToggle}
+    >
+      <span
+        className="size-2 shrink-0 rounded-full"
+        style={{
+          background: hidden ? 'transparent' : providerColor(tag),
+          outline: `1px solid ${providerColor(tag)}`,
+        }}
+      />
+      <span className="min-w-0 flex-1 truncate">{tag}</span>
+      <span className="min-w-[7ch] shrink-0 text-end font-mono whitespace-nowrap tabular-nums">
+        {price}
+      </span>
+    </button>
   )
 }
