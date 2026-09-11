@@ -1,7 +1,7 @@
 import type { api } from '@orca/backend/convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 
-export type History = FunctionReturnType<typeof api.v3.public.pricingHistory.get>
+export type PricingHistory = FunctionReturnType<typeof api.v3.public.pricingHistory.get>
 export const DAY = 86_400_000
 export type Sample = [at: number, price: number]
 export type Trace = {
@@ -14,10 +14,10 @@ export type Trace = {
 }
 
 /** Listed, positively metered spans. Never carry a quote across a listing gap. */
-export function historyTraces(history: History, meter: string): Trace[] {
+export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: string): Trace[] {
   const traces: Trace[] = []
 
-  for (const endpoint of history.endpoints) {
+  for (const endpoint of pricingHistory.endpoints) {
     let trace: Trace | undefined
     let listed = false
     const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row.state]))
@@ -56,7 +56,7 @@ export function historyTraces(history: History, meter: string): Trace[] {
           id: `${endpoint.id}:${at}`,
           tag: endpoint.tag,
           start: at,
-          end: history.asOf,
+          end: pricingHistory.asOf,
           samples: [],
           current: true,
         }

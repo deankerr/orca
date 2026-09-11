@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
-import { EntityOverviewTrigger } from '../entity-overview/entity-overview-trigger'
+import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityIdentity } from '../shared/entity-identity'

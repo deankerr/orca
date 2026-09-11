@@ -16,14 +16,11 @@ import { Button } from '@/components/ui/button'
 import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import {
-  buildOverviewChartHref,
-  buildOverviewEndpointsHref,
-  buildOverviewMonitorHref,
-} from '@/lib/overlay-query-state'
 import { cn } from '@/lib/utils'
 
-import { useEntityOverview } from './entity-overview-context'
+import { buildPricingHistoryHref } from '../pricing-history/query-state'
+import { useEntityOverview } from './context'
+import { buildEndpointsHref, buildMonitorHref } from './hrefs'
 
 const actionClassName =
   'group flex min-h-10 w-full items-center gap-2.5 rounded-md bg-card px-3 text-xs font-medium ring-1 ring-foreground/10 transition-[color,box-shadow,transform] outline-none hover:ring-foreground/25 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]'
@@ -49,7 +46,7 @@ export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
   )
 }
 
-export function OverviewAction({
+function OverviewAction({
   href,
   onClick,
   icon: Icon,
@@ -99,14 +96,14 @@ export function OverviewActions({
   return (
     <div className="flex flex-col gap-2">
       <OverviewAction
-        href={buildOverviewEndpointsHref({ pathname, searchParams, slug })}
+        href={buildEndpointsHref({ pathname, searchParams, slug })}
         onClick={close}
         icon={Table2Icon}
       >
         Endpoints
       </OverviewAction>
       <OverviewAction
-        href={buildOverviewMonitorHref({ pathname, searchParams, type, slug })}
+        href={buildMonitorHref({ pathname, searchParams, type, slug })}
         onClick={close}
         icon={ActivityIcon}
       >
@@ -117,13 +114,13 @@ export function OverviewActions({
   )
 }
 
-export function OverviewChartAction({ modelId }: { modelId: string }) {
+export function PricingHistoryAction({ modelId }: { modelId: string }) {
   const pathname = usePathname()
   const searchParams = useSearchParams().toString()
 
   return (
     <OverviewAction
-      href={buildOverviewChartHref({ pathname, searchParams, modelId })}
+      href={buildPricingHistoryHref({ pathname, searchParams, modelId })}
       icon={ChartNoAxesCombinedIcon}
     >
       Pricing History

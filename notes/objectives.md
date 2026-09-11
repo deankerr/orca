@@ -46,11 +46,10 @@ Note: These are separate products but should share event data, i.e. a Discord al
 
 - Durable, observable broadcast system (rebuild with Cloudflare stack)
 
-### Pricing History Charts
+### Pricing History
 
 - Replace data source
 - Constrain granularity
-- ❓ Should also just use Monitor change events
 
 ## Ultimate Objective
 

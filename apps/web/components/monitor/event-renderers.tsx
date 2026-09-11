@@ -12,7 +12,7 @@ import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'l
 
 import { cn } from '@/lib/utils'
 
-import { EntityOverviewTrigger } from '../entity-overview/entity-overview-trigger'
+import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { EntityIdentity } from '../shared/entity-identity'
 import { InlineMarkdown } from '../shared/inline-markdown'
 import { Badge } from '../ui/badge'

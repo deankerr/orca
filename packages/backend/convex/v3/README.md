@@ -31,7 +31,7 @@
 - The latest ingestion record identifies the current scan, whose scan time is the ORCA clock.
 - Public endpoint listings retain endpoints unlisted within 30 days of the ORCA clock.
 - Models must include text in both modality arrays to produce entity or series projections.
-- Would support Endpoints Data Grid and Pricing History Charts products.
+- Supports Endpoints Data Grid, Entity Overview, and Pricing History.
 - Each projection table is applied atomically.
 - Stats and the ingestion record commit together, including for scans without stats.
 - Failed ingestion can leave partial projections visible.

@@ -1,12 +1,12 @@
 import { expect, test } from 'bun:test'
 
-import { DAY, dailyTrace, historyTraces, tagPrices } from './history-data'
-import type { History } from './history-data'
+import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
+import type { PricingHistory } from './data'
 
 const iso = (at: number) => new Date(at).toISOString()
 
 test('steps normalize unmetered values and never carry quotes across a relisting', () => {
-  const history: History = {
+  const pricingHistory: PricingHistory = {
     asOf: 4 * DAY,
     endpoints: [
       {
@@ -27,13 +27,13 @@ test('steps normalize unmetered values and never carry quotes across a relisting
       },
     ],
   }
-  const traces = historyTraces(history, 'prompt')
+  const traces = pricingHistoryTraces(pricingHistory, 'prompt')
   expect(traces.map(({ start, end }) => [start, end])).toEqual([
     [0, DAY],
     [2.5 * DAY, 3 * DAY],
   ])
-  expect(tagPrices(traces, 'provider', 2.25 * DAY, history.asOf)).toEqual([])
-  expect(tagPrices(traces, 'provider', DAY, history.asOf)).toEqual([])
+  expect(tagPrices(traces, 'provider', 2.25 * DAY, pricingHistory.asOf)).toEqual([])
+  expect(tagPrices(traces, 'provider', DAY, pricingHistory.asOf)).toEqual([])
 })
 
 test('daily samples lose excursions but preserve boundaries, latest quote and shared-tag ranges', () => {
@@ -65,7 +65,7 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
 
 test('a removal or unmetered quote at the latest scan is not a current price', () => {
   for (const unlisted of [true, false]) {
-    const history: History = {
+    const pricingHistory: PricingHistory = {
       asOf: DAY,
       endpoints: [
         {
@@ -82,14 +82,14 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
         },
       ],
     }
-    const traces = historyTraces(history, 'prompt')
-    expect(tagPrices(traces, 'provider', DAY, history.asOf)).toEqual([])
+    const traces = pricingHistoryTraces(pricingHistory, 'prompt')
+    expect(tagPrices(traces, 'provider', DAY, pricingHistory.asOf)).toEqual([])
     expect(
       tagPrices(
-        traces.map((trace) => dailyTrace(trace, history.asOf)),
+        traces.map((trace) => dailyTrace(trace, pricingHistory.asOf)),
         'provider',
         DAY,
-        history.asOf,
+        pricingHistory.asOf,
       ),
     ).toEqual([])
   }

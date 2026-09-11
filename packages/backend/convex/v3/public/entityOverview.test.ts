@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { ModelMetadata, ProviderMetadata } from './entityOverviews'
+import { ModelMetadata, ProviderMetadata } from './entityOverview'
 
 test('overview metadata tolerates absent and malformed fields without losing false values', () => {
   expect(ModelMetadata.parse({}).description).toBeNull()

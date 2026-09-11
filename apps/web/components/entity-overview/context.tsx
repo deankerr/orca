@@ -33,7 +33,7 @@ export function EntityOverviewProvider({ children }: { children: ReactNode }) {
     [entity],
   )
 
-  return <EntityOverviewContext.Provider value={value}>{children}</EntityOverviewContext.Provider>
+  return <EntityOverviewContext value={value}>{children}</EntityOverviewContext>
 }
 
 export function useEntityOverview() {

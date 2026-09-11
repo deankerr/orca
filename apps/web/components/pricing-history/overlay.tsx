@@ -30,12 +30,12 @@ import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { providerColor } from './colors'
-import { usePricingHistory } from './history-context'
-import { DAY, dailyTrace, historyTraces, tagPrices } from './history-data'
-import type { History } from './history-data'
+import { usePricingHistory } from './context'
+import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
+import type { PricingHistory } from './data'
 
 const Plot = dynamic(
-  async () => await import('./history-plot').then((module) => module.HistoryPlot),
+  async () => await import('./plot').then((module) => module.PricingHistoryPlot),
   {
     ssr: false,
     loading: () => (
@@ -87,8 +87,8 @@ export function PricingHistoryOverlay() {
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden sm:max-w-6xl">
         {open && (
           <>
-            <HistoryIdentity modelId={modelId} />
-            <HistoryLoader key={modelId} modelId={modelId} />
+            <Identity modelId={modelId} />
+            <Loader key={modelId} modelId={modelId} />
           </>
         )}
       </DialogContent>
@@ -96,13 +96,13 @@ export function PricingHistoryOverlay() {
   )
 }
 
-function HistoryIdentity({ modelId }: { modelId: string }) {
-  const { data } = useQuery(convexQuery(api.v3.public.entityOverviews.model, { modelId }))
+function Identity({ modelId }: { modelId: string }) {
+  const { data } = useQuery(convexQuery(api.v3.public.entityOverview.model, { modelId }))
   const name = data?.display_name
 
   return (
     <DialogHeader className="flex-row items-center pe-8">
-      <DialogTitle className="sr-only">{name ?? modelId} · Pricing history</DialogTitle>
+      <DialogTitle className="sr-only">{name ?? modelId} · Pricing History</DialogTitle>
       <DialogDescription className="sr-only">
         Historical OpenRouter provider pricing
       </DialogDescription>
@@ -111,7 +111,7 @@ function HistoryIdentity({ modelId }: { modelId: string }) {
   )
 }
 
-function HistoryLoader({ modelId }: { modelId: string }) {
+function Loader({ modelId }: { modelId: string }) {
   const { data, isPending, error, refetch } = useQuery(
     convexQuery(api.v3.public.pricingHistory.get, { modelId }),
   )
@@ -144,7 +144,7 @@ function HistoryLoader({ modelId }: { modelId: string }) {
       </div>
     )
   } else if (data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
-    body = <HistoryContent history={data} />
+    body = <Content pricingHistory={data} />
   } else {
     body = (
       <Empty>
@@ -158,28 +158,28 @@ function HistoryLoader({ modelId }: { modelId: string }) {
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{body}</div>
 }
 
-function HistoryContent({ history }: { history: History }) {
+function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const [requestedMeter, setRequestedMeter] = useState('prompt')
   const [window, setWindow] = useState<[number, number] | null>(null)
   const [preset, setPreset] = useState('30')
   const [hidden, setHidden] = useState<Set<string>>(new Set())
-  const [chartTag, setChartTag] = useState<string | null>(null)
+  const [plotTag, setPlotTag] = useState<string | null>(null)
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
   const [focusedTag, setFocusedTag] = useState<string | null>(null)
-  const activeTag = hoveredTag ?? chartTag ?? focusedTag
+  const activeTag = hoveredTag ?? plotTag ?? focusedTag
   const emphasis = activeTag !== null && !hidden.has(activeTag) ? activeTag : null
   const [hoverAt, setHoverAt] = useState<number | null>(null)
   const [pinnedAt, setPinnedAt] = useState<number | null>(null)
   const available = METERS.filter((meter) =>
-    history.endpoints.some((endpoint) =>
+    pricingHistory.endpoints.some((endpoint) =>
       endpoint.prices.some((price) => Number(price.meters[meter.value]) > 0),
     ),
   )
   const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
   const meters = available.length > 0 ? available : [meter]
   const since = Math.min(
-    history.asOf,
-    ...history.endpoints.flatMap((endpoint) =>
+    pricingHistory.asOf,
+    ...pricingHistory.endpoints.flatMap((endpoint) =>
       endpoint.listings.map((row) => Date.parse(row.scan_at)),
     ),
   )
@@ -187,14 +187,16 @@ function HistoryContent({ history }: { history: History }) {
     preset === '' && window !== null
       ? window
       : [
-          preset === 'all' ? since : Math.max(since, history.asOf - Number(preset || '30') * DAY),
-          history.asOf,
+          preset === 'all'
+            ? since
+            : Math.max(since, pricingHistory.asOf - Number(preset || '30') * DAY),
+          pricingHistory.asOf,
         ]
 
   const daily = range[1] - range[0] > 7 * DAY + 1
-  const exact = historyTraces(history, meter.value)
+  const exact = pricingHistoryTraces(pricingHistory, meter.value)
   const traces = exact.map((trace) => {
-    const sampled = daily ? dailyTrace(trace, history.asOf) : trace
+    const sampled = daily ? dailyTrace(trace, pricingHistory.asOf) : trace
     return {
       ...sampled,
       samples: sampled.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
@@ -234,12 +236,12 @@ function HistoryContent({ history }: { history: History }) {
         <Plot
           traces={visible}
           since={since}
-          asOf={history.asOf}
+          asOf={pricingHistory.asOf}
           range={range}
           emphasis={emphasis}
           inspectedAt={hoverAt !== null || pinnedAt !== null ? at : null}
           onRange={changeRange}
-          onEmphasis={setChartTag}
+          onEmphasis={setPlotTag}
           onInspect={(value, pin) => {
             if (pin) {
               setPinnedAt(value)
@@ -251,7 +253,7 @@ function HistoryContent({ history }: { history: History }) {
         {visible.length === 0 && (
           <p className="pointer-events-none absolute inset-0 flex items-center justify-center">
             {tags.length
-              ? 'Select a provider below to show its history.'
+              ? 'Select a provider below to show its pricing history.'
               : 'No metered prices in this period.'}
           </p>
         )}
@@ -284,7 +286,7 @@ function HistoryContent({ history }: { history: History }) {
           <span className="text-muted-foreground">{meter.unit}</span>
         </div>
         <ToggleGroup
-          aria-label="History period"
+          aria-label="Pricing history period"
           multiple={false}
           value={preset ? [preset] : []}
           variant="outline"
@@ -292,8 +294,10 @@ function HistoryContent({ history }: { history: History }) {
             const [value] = values
             if (value) {
               changeRange([
-                value === 'all' ? since : Math.max(since, history.asOf - Number(value) * DAY),
-                history.asOf,
+                value === 'all'
+                  ? since
+                  : Math.max(since, pricingHistory.asOf - Number(value) * DAY),
+                pricingHistory.asOf,
               ])
               setPreset(value)
             }
@@ -347,7 +351,7 @@ function HistoryContent({ history }: { history: History }) {
             <li key={tag} className="min-w-0">
               <LegendItem
                 tag={tag}
-                price={quotedPrice(tagPrices(traces, tag, at, history.asOf))}
+                price={quotedPrice(tagPrices(traces, tag, at, pricingHistory.asOf))}
                 hidden={hidden.has(tag)}
                 highlighted={emphasis === tag}
                 onToggle={() => {

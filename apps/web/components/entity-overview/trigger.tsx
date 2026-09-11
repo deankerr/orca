@@ -5,7 +5,7 @@ import { useRender } from '@base-ui/react/use-render'
 
 import { cn } from '@/lib/utils'
 
-import { useEntityOverview } from './entity-overview-context'
+import { useEntityOverview } from './context'
 
 export function EntityOverviewTrigger({
   type,

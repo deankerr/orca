@@ -1,6 +1,7 @@
 # apps/web
 
-- Model page links are behind a feature flag and are technically unreleased.
+- Entity Overview and Pricing History are overlays on the grid and Monitor, not standalone pages.
+- Pricing History is opened by `?pricing-history=<modelId>`. `/beta/pricing-history/...` redirects there.
 - Styling: Dark theme, monospace fonts, dense layouts
 
 ## React Compiler

@@ -2,11 +2,9 @@
 
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 
-import { useEntityOverview } from './entity-overview-context'
-import { ModelOverview } from './model-overview'
-import { ProviderOverview } from './provider-overview'
-
-export { EntityOverviewProvider } from './entity-overview-context'
+import { useEntityOverview } from './context'
+import { ModelOverview } from './model'
+import { ProviderOverview } from './provider'
 
 export function EntityOverviewSheet() {
   const { entity, close } = useEntityOverview()

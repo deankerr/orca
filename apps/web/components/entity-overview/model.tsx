@@ -4,18 +4,13 @@ import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
 
-import { DataValue, DataLink, DataDate, DataDescription } from './overview-data'
-import {
-  OverviewHeader,
-  OverviewActions,
-  OverviewChartAction,
-  OverviewStatus,
-} from './overview-layout'
+import { DataValue, DataLink, DataDate, DataDescription } from './data'
+import { OverviewHeader, OverviewActions, PricingHistoryAction, OverviewStatus } from './layout'
 import { reasoningLabel, orderEfforts } from './reasoning'
 
 export function ModelOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v3.public.entityOverviews.model, { modelId: slug }),
+    convexQuery(api.v3.public.entityOverview.model, { modelId: slug }),
   )
 
   if (!data) {
@@ -36,7 +31,7 @@ export function ModelOverview({ slug }: { slug: string }) {
       <OverviewHeader slug={slug} name={data.display_name} />
       <div className="flex flex-col gap-4 p-4">
         <OverviewActions type="model" slug={slug}>
-          <OverviewChartAction modelId={slug} />
+          <PricingHistoryAction modelId={slug} />
         </OverviewActions>
         <DataDescription value={data.description} />
         <dl>

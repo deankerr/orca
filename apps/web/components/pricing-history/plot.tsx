@@ -9,8 +9,8 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 
 import { providerSrgbColor } from './colors'
-import { sampleAt } from './history-data'
-import type { Trace } from './history-data'
+import { sampleAt } from './data'
+import type { Trace } from './data'
 
 register([LineChart, AxisPointerComponent, DataZoomComponent, GridComponent, CanvasRenderer])
 
@@ -18,7 +18,7 @@ register([LineChart, AxisPointerComponent, DataZoomComponent, GridComponent, Can
 const NAVIGATOR_HANDLE =
   'path://M-22-22H22V22H-22ZM-22-22V22H22V-22H-22ZM-3-16Q-5-16-5-14V14Q-5 16-3 16H3Q5 16 5 14V-14Q5-16 3-16Z'
 
-export function HistoryPlot({
+export function PricingHistoryPlot({
   traces,
   since,
   asOf,

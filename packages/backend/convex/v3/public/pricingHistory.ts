@@ -31,7 +31,7 @@ export const get = query({
       .take(201)
 
     if (endpoints.length > 200) {
-      throw new ConvexError('This model has too much history to load in one chart.')
+      throw new ConvexError('This model has too much pricing history to load.')
     }
 
     // ponytail: one model fits one query today; paginate history if this budget is reached.
@@ -48,7 +48,7 @@ export const get = query({
       remaining -= listings.length
 
       if (remaining < 0) {
-        throw new ConvexError('This model has too much history to load in one chart.')
+        throw new ConvexError('This model has too much pricing history to load.')
       }
 
       const prices = await ctx.db
@@ -60,7 +60,7 @@ export const get = query({
       remaining -= prices.length
 
       if (remaining < 0) {
-        throw new ConvexError('This model has too much history to load in one chart.')
+        throw new ConvexError('This model has too much pricing history to load.')
       }
 
       histories.push({

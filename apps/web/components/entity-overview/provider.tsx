@@ -4,12 +4,12 @@ import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
 import { useQuery } from '@tanstack/react-query'
 
-import { DataValue, DataLink } from './overview-data'
-import { OverviewHeader, OverviewActions, OverviewStatus } from './overview-layout'
+import { DataValue, DataLink } from './data'
+import { OverviewHeader, OverviewActions, OverviewStatus } from './layout'
 
 export function ProviderOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v3.public.entityOverviews.provider, { providerId: slug }),
+    convexQuery(api.v3.public.entityOverview.provider, { providerId: slug }),
   )
 
   if (!data) {
