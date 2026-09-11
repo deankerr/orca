@@ -1,7 +1,7 @@
 # V3
 
 - Builds on the `scan` and `objects` modules.
-- Ingestion is manually single-flight, so it does not currently use locks.
+- Ingestion assumes a single runner and does not currently use locks.
 - Will run in parallel with existing backend systems in production.
 - Will be gradually adopted in public-facing systems.
 - Should implement schema-breaking revisions now, if advantageous.
@@ -22,23 +22,28 @@
 - Any request failure fails the entire scan.
 - The parallel request process takes only ~1.5 to ~3 seconds, including object storage.
 - Runs independently of any downstream ingestion functions.
-- Legacy archives will be converted to this more efficient format.
+- Legacy archives have been converted to this more efficient format.
 
 # Projections
 
 - Projection tables include the entity and series tables.
 - Required, validated fields are carefully chosen and always exist.
+- The latest ingestion record identifies the current scan, whose scan time is the ORCA clock.
+- Public endpoint listings retain endpoints unlisted within 30 days of the ORCA clock.
+- Models must include text in both modality arrays to produce entity or series projections.
 - Would support Endpoints Data Grid and Pricing History Charts products.
 - Each projection table is applied atomically.
-- Stats and the ingestion ledger commit together, including for scans without stats.
+- Stats and the ingestion record commit together, including for scans without stats.
 - Failed ingestion can leave partial projections visible.
-- Replaying the interrupted ingestion repairs partial writes without duplicating series rows.
+- Retrying an interrupted ingestion repairs partial writes without duplicating series rows.
 - Backfill and normal ingestion must still run one at a time, including during recovery.
 - Failure to ingest a projection halts this process until developer intervention.
 
 ## Views
 
 - Entity views are like a "cache" of the latest ingested scan.
+- Endpoint views copy model identity, names, modalities, and creation date for independent reads.
+- Endpoint views retain current pricing separately from metadata, including when unlisted.
 - They do not model "change" or "history" (aside from `unlisted_at`).
 - Entity views store arbitrary properties in the `metadata` record with a restricted value schema.
   - They allow us to manage upstream schema changes without changing ours.
@@ -54,20 +59,22 @@
 - Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
 - Endpoint pricing rows are inserted whenever a change is detected.
 - Endpoint stats rows are always inserted when present.
-
-## Legacy backfill
-
-- **Has been successfully completed on production backend.**
-- Converts the latest valid legacy archive per UTC hour before `LEGACY_BACKFILL_END_SCAN_AT`.
-- Missing or invalid `LEGACY_BACKFILL_END_SCAN_AT` disables the action.
-- Reaching the cutoff stops; normal ingestion is started manually.
-- Known incomplete bundles are skipped; schema failures halt processing.
-- Converted artifacts and projection writes share the normal ingestion ledger.
+- Current stats contain only readings at the ORCA clock; missing readings remain absent.
 
 ## Projection pulls
 
 - Pulls idempotently merge views, listings, and pricing in creation order through shared writes.
-- Pulls run exclusively on the destination and recover by replaying from the beginning.
-- Projection writes are ledger-independent; stats commit with the ingestion ledger.
+- Pulls run exclusively on the destination and refresh by rerunning from the beginning.
+- Pulls import the captured current scan and its stats together after copying other projections.
 - A source argument or default `ORCA_PULL_SOURCE_URL` enables pulling.
 - Previews pull alongside the legacy crawl until the frontend migrates.
+- Pulls copy the captured scan artifact and product projections, excluding historical stats.
+- Imported ingestion records establish the current scan without requiring continuous local history.
+
+## Deployment controls
+
+- Previews bootstrap through init pull; scheduled processes are disabled unless explicitly enabled.
+- Scans run hourly at :40 with ORCA_SCAN_ENABLED; ingestion runs at :42 with ORCA_INGEST_ENABLED.
+- Objects default to Convex storage; ORCA_OBJECTS_BACKEND=r2 selects R2 for new writes.
+- Existing objects always load through their stored locators.
+- Pull the baseline before enabling scans and ingestion for an independent preview timeline.

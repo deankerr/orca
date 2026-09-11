@@ -4,10 +4,11 @@ import { v } from 'convex/values'
 
 const app = defineApp({
   env: {
-    ORCA_R2_ACCESS_KEY_ID: v.string(),
-    ORCA_R2_SECRET_ACCESS_KEY: v.string(),
-    ORCA_R2_ACCOUNT_ID: v.string(),
-    ORCA_R2_BUCKET: v.string(),
+    ORCA_OBJECTS_BACKEND: v.optional(v.union(v.literal('convex'), v.literal('r2'))),
+    ORCA_R2_ACCESS_KEY_ID: v.optional(v.string()),
+    ORCA_R2_SECRET_ACCESS_KEY: v.optional(v.string()),
+    ORCA_R2_ACCOUNT_ID: v.optional(v.string()),
+    ORCA_R2_BUCKET: v.optional(v.string()),
 
     DISCORD_BOT_TOKEN: v.string(),
     ORCA_PUBLIC_URL: v.string(),
@@ -18,6 +19,7 @@ const app = defineApp({
 
     // Missing controls disable the corresponding scheduled job or backfill.
     ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),

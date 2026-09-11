@@ -1,4 +1,5 @@
 import { AwsClient } from 'aws4fetch'
+import { ConvexError } from 'convex/values'
 
 import { env } from '../_generated/server'
 
@@ -66,17 +67,25 @@ export function createR2Transport(): R2Transport {
 
 function r2Client() {
   return new AwsClient({
-    accessKeyId: env.ORCA_R2_ACCESS_KEY_ID,
-    secretAccessKey: env.ORCA_R2_SECRET_ACCESS_KEY,
+    accessKeyId: required(env.ORCA_R2_ACCESS_KEY_ID),
+    secretAccessKey: required(env.ORCA_R2_SECRET_ACCESS_KEY),
     service: 's3',
     region: 'auto',
   })
 }
 
 function objectUrl(key: string) {
-  const accountId = env.ORCA_R2_ACCOUNT_ID
-  const bucket = env.ORCA_R2_BUCKET
+  const accountId = required(env.ORCA_R2_ACCOUNT_ID)
+  const bucket = required(env.ORCA_R2_BUCKET)
   const encodedKey = key.split('/').map(encodeURIComponent).join('/')
 
   return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`
+}
+
+function required(value: string | undefined): string {
+  if (value === undefined || value === '') {
+    throw new ConvexError('R2 storage requires all ORCA_R2 credentials and bucket settings')
+  }
+
+  return value
 }

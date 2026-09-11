@@ -43,8 +43,8 @@ export const endpointsStatsTable = defineTable({
   scan_at: v.string(),
   /** Currently always `default` for the endpoint `stats` object. */
   tier: v.string(),
-  /** Numeric fields of the upstream stats object, minus `endpoint_id`. */
-  sample: v.record(v.string(), v.number()),
+  /** Upstream stats values, minus `endpoint_id`. */
+  sample: v.record(v.string(), v.union(v.number(), v.string(), v.null())),
 })
   .index('by_endpoint_id_and_scan_at', ['endpoint_id', 'scan_at'])
   .index('by_scan_at', ['scan_at'])

@@ -21,7 +21,7 @@ const writes: ScanProjectionWrite[] = [
   },
 ]
 
-test('replays table writes and commits stats last without querying stats', async () => {
+test('retries table writes and commits stats last without querying stats', async () => {
   const rows: Record<string, Record<string, unknown>[]> = {}
 
   const ctx = {
@@ -79,7 +79,7 @@ test('replays table writes and commits stats last without querying stats', async
     },
   } as Parameters<typeof mutations.applyScanProjection>[0]
 
-  const args = { fromArtifactId: 'initial', toArtifactId: 'next', writes }
+  const args = { fromArtifactId: 'initial', toArtifactId: 'next', scan_at: '2026-09-05', writes }
   await assert.rejects(mutations.applyScanProjection(actionCtx, args), /interrupted/)
   expect(calls).toEqual(['endpointListings', 'stats'])
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toBeUndefined()
@@ -99,6 +99,7 @@ test('replays table writes and commits stats last without querying stats', async
   calls.length = 0
 
   await mutations.applyScanProjection(actionCtx, {
+    scan_at: '2026-09-06',
     fromArtifactId: 'next',
     toArtifactId: 'empty',
     writes: [],
@@ -106,5 +107,6 @@ test('replays table writes and commits stats last without querying stats', async
 
   expect(calls).toEqual(['stats'])
   expect(rows[V3_SCAN_INGESTIONS_TABLE]).toHaveLength(2)
+  expect(rows[V3_SCAN_INGESTIONS_TABLE].at(-1)?.scan_at).toBe('2026-09-06')
   expect(rows[V3_ENDPOINTS_STATS_SERIES_TABLE]).toHaveLength(1)
 })

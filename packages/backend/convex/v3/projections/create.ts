@@ -82,7 +82,9 @@ const EndpointPricing = z.looseObject({
   overrides: z.array(z.record(z.string(), z.unknown())).optional(),
 })
 
-const StatsSource = z.object({ endpoint_id: z.string() }).catchall(z.number())
+const StatsSource = z
+  .object({ endpoint_id: z.string() })
+  .catchall(z.union([z.number(), z.string(), z.null()]))
 
 const EndpointSource = z.looseObject({
   id: z.string(),
@@ -97,7 +99,9 @@ function projectEndpoint(
   scan_at: string,
   entry: ScanArtifactEntry,
   endpoint: z.infer<typeof EndpointSource>,
+  model: ModelRow,
   provider: ProviderRow,
+  pricing: EndpointPricingRow,
 ): ProjectedEndpointRow {
   return {
     scan_at,
@@ -106,8 +110,33 @@ function projectEndpoint(
     variant: entry.variant,
     provider_tag: endpoint.provider_slug,
     provider_id: provider.provider_id,
+    ...endpointEntityFields(model, provider),
+    pricing: R.pick(pricing, ['discount', 'meters', 'overrides']),
     metadata: flattenMetadata(endpoint, ENDPOINT_METADATA_OMIT),
   }
+}
+
+/** Copy the entity details needed to read endpoints without joins. */
+export function endpointEntityFields(
+  model: Pick<
+    ModelRow,
+    'display_name' | 'permaslug' | 'or_created_at' | 'input_modalities' | 'output_modalities'
+  >,
+  provider: Pick<ProviderRow, 'display_name'>,
+) {
+  return {
+    model_display_name: model.display_name,
+    model_permaslug: model.permaslug,
+    model_or_created_at: model.or_created_at,
+    input_modalities: model.input_modalities,
+    output_modalities: model.output_modalities,
+    provider_display_name: provider.display_name,
+  }
+}
+
+/** Projection scope includes text input and output, alongside any other modalities. */
+export function supportsText(model: Pick<ModelRow, 'input_modalities' | 'output_modalities'>) {
+  return model.input_modalities.includes('text') && model.output_modalities.includes('text')
 }
 
 function projectStats(
@@ -173,7 +202,12 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
   const providers = new Map<string, ProviderRow>()
 
   for (const entry of entries) {
-    models.set(entry.model_id, projectModel(scan_at, entry))
+    if (!supportsText(entry.model)) {
+      continue
+    }
+
+    const model = projectModel(scan_at, entry)
+    models.set(entry.model_id, model)
 
     if (entry.endpoints === null) {
       continue
@@ -184,8 +218,12 @@ export function createScanProjection(artifact: ScanArtifact): ScanProjection {
       const provider = projectProvider(scan_at, endpoint.provider_info)
       providers.set(provider.provider_id, provider)
 
-      endpoints.set(endpoint.id, projectEndpoint(scan_at, entry, endpoint, provider))
-      pricing.set(endpoint.id, projectPricing(endpoint.id, scan_at, endpoint.pricing))
+      const endpointPricing = projectPricing(endpoint.id, scan_at, endpoint.pricing)
+      endpoints.set(
+        endpoint.id,
+        projectEndpoint(scan_at, entry, endpoint, model, provider, endpointPricing),
+      )
+      pricing.set(endpoint.id, endpointPricing)
 
       const endpointStats = projectStats(endpoint.id, scan_at, endpoint)
 

@@ -1,10 +1,10 @@
-import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
 import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
+import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
 import { EntityOverviewTrigger } from '../entity-overview/entity-overview-trigger'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
@@ -12,33 +12,26 @@ import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityIdentity } from '../shared/entity-identity'
 import { dataGridPopoverHandle } from './popover-handle'
 
-type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
-export type EndpointRow = EndpointProjectionLike
-
-function formatGridDate(timestamp: number): string {
+function formatGridDate(timestamp: string): string {
   return new Date(timestamp).toLocaleDateString('en-CA')
-}
-
-function hasTextOutput(endpoint: EndpointRow) {
-  return endpoint.model.output_modalities.includes('text')
 }
 
 function EmptyCell() {
   return <span className="text-muted-foreground">&ndash;</span>
 }
 
-export const columns: ColumnDef<EndpointRow>[] = [
+export const columns: ColumnDef<GridEndpoint>[] = [
   {
     id: 'model',
-    accessorFn: (row) => `${row.model.name} ${row.model.slug}`,
+    accessorFn: (row) => `${row.model_display_name} ${row.model_id}`,
     header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
         <EntityOverviewTrigger
           type="model"
-          slug={endpoint.model.slug}
-          render={<EntityIdentity name={endpoint.model.name} slug={endpoint.model.slug} />}
+          slug={endpoint.model_id}
+          render={<EntityIdentity name={endpoint.model_display_name} slug={endpoint.model_id} />}
         />
       )
     },
@@ -51,16 +44,16 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'provider',
-    accessorFn: (row) => `${row.provider.name} ${row.provider.slug}`,
+    accessorFn: (row) => `${row.provider_display_name} ${row.provider_id}`,
     header: ({ column }) => <DataGridColumnHeader column={column} title="PROVIDER" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
         <EntityOverviewTrigger
           type="provider"
-          slug={endpoint.provider.slug}
+          slug={endpoint.provider_id}
           render={
-            <EntityIdentity name={endpoint.provider.name} slug={endpoint.provider.tag_slug} />
+            <EntityIdentity name={endpoint.provider_display_name} slug={endpoint.provider_tag} />
           }
         />
       )
@@ -189,19 +182,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'contextLength',
-    accessorFn: (row) =>
-      row.context_length === 0 && !hasTextOutput(row) ? undefined : row.context_length,
+    accessorFn: (row) => row.context_length ?? undefined,
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
     ),
-    cell: ({ getValue, row }) => {
+    cell: ({ getValue }) => {
       const contextLength = getValue<number | undefined>()
 
-      if (contextLength === undefined && !hasTextOutput(row.original)) {
-        return <EmptyCell />
-      }
-
-      return contextLength?.toLocaleString()
+      return contextLength?.toLocaleString() ?? <EmptyCell />
     },
     size: 105,
     sortUndefined: 'last',
@@ -212,22 +200,14 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'maxOutput',
-    accessorFn: (row) => (row.max_output === 0 && !hasTextOutput(row) ? undefined : row.max_output),
+    accessorFn: (row) => row.max_output ?? undefined,
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
     ),
-    cell: ({ getValue, row }) => {
+    cell: ({ getValue }) => {
       const maxOutput = getValue<number | undefined>()
 
-      if (
-        maxOutput === undefined &&
-        row.original.max_output === 0 &&
-        !hasTextOutput(row.original)
-      ) {
-        return <EmptyCell />
-      }
-
-      return maxOutput?.toLocaleString()
+      return maxOutput?.toLocaleString() ?? <EmptyCell />
     },
     size: 105,
     sortUndefined: 'last',
@@ -239,24 +219,13 @@ export const columns: ColumnDef<EndpointRow>[] = [
   {
     id: 'quantization',
     accessorFn: (row) =>
-      row.quantization === undefined || row.quantization === 'unknown'
-        ? undefined
-        : row.quantization,
+      row.quantization === 'unknown' ? undefined : (row.quantization ?? undefined),
     header: ({ column }) => <DataGridColumnHeader column={column} title="QUANT." />,
-    cell: ({ row }) => {
-      const { quantization } = row.original
-      const label = quantization === undefined || quantization === 'unknown' ? '?' : quantization
-
-      if (label === '?' && !hasTextOutput(row.original)) {
-        return null
-      }
-
-      return (
-        <Badge variant="outline" className="font-mono text-xs uppercase">
-          {label}
-        </Badge>
-      )
-    },
+    cell: ({ getValue }) => (
+      <Badge variant="outline" className="font-mono text-xs uppercase">
+        {getValue<string | undefined>() ?? '?'}
+      </Badge>
+    ),
     size: 90,
     sortUndefined: 'last',
     meta: {
@@ -340,17 +309,12 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'modelAddedAt',
-    accessorFn: (row) => row.model.or_added_at,
+    accessorFn: (row) => row.model_or_created_at,
+    sortingFn: 'basic',
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />
     ),
-    cell: ({ getValue }) => {
-      const timestamp = getValue<number>()
-      if (timestamp) {
-        return formatGridDate(timestamp)
-      }
-      return <EmptyCell />
-    },
+    cell: ({ getValue }) => formatGridDate(getValue<string>()),
     size: 100,
     sortUndefined: 'last',
     meta: {
@@ -380,12 +344,12 @@ export const columns: ColumnDef<EndpointRow>[] = [
 
   {
     id: 'uuid',
-    accessorFn: (row) => row.uuid,
+    accessorFn: (row) => row.endpoint_id,
     header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
     cell: ({ row }) => (
       <EndpointUuid
-        uuid={row.original.uuid}
-        modelSlug={row.original.model.slug}
+        uuid={row.original.endpoint_id}
+        modelSlug={row.original.model_id}
         handle={dataGridPopoverHandle}
       />
     ),

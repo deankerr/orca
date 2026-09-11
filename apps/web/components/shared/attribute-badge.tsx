@@ -1,7 +1,6 @@
-import type { EndpointProjection } from '@orca/backend/convex/catalog/endpoints'
-
 import type { Attribute, AttributeSlots, AttributeState } from '@/lib/attributes'
 import { resolveEndpointAttributeSlot } from '@/lib/attributes'
+import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
 import { ColorIconBadge } from './color-icon-badge'
 import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
@@ -11,8 +10,6 @@ import {
   PopoverCardTitle,
   PopoverCardTrigger,
 } from './popover-card'
-
-type EndpointProjectionLike = Omit<EndpointProjection, '_id'> & { _id: string }
 
 // --- Popover content ---
 
@@ -86,7 +83,7 @@ export function AttributeBadgeSet({
   reserve = false,
   handle,
 }: {
-  endpoint: EndpointProjectionLike
+  endpoint: GridEndpoint
   slots: AttributeSlots
   reserve?: boolean
   handle: React.ComponentProps<typeof PopoverCardTrigger>['handle']
