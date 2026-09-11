@@ -42,6 +42,7 @@ export const endpointsViewTable = defineTable({
   unlisted_at: v.optional(v.string()),
 })
   .index('by_endpoint_id', ['endpoint_id'])
+  .index('by_model_id', ['model_id'])
   .index('by_unlisted_at', ['unlisted_at'])
 
 /** Convex table name for the latest known model views. */

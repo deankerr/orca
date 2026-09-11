@@ -1,415 +1,357 @@
 'use client'
 
+import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import { LineChart } from 'echarts/charts'
-import {
-  AriaComponent,
-  DataZoomComponent,
-  GridComponent,
-  TooltipComponent,
-} from 'echarts/components'
-import { init, use as registerEChartsModules } from 'echarts/core'
+import { AxisPointerComponent, DataZoomComponent, GridComponent } from 'echarts/components'
+import { init, use as register } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
-import type { RefObject } from 'react'
 
-import { pricingMetricMetadata } from '@/lib/pricing-fields'
+import { providerSrgbColor } from './colors'
+import { sampleAt } from './data'
+import type { Trace } from './data'
 
-import {
-  createPricingHistoryChartOption,
-  createZoomedAxesOption,
-  FULL_HISTORY_WINDOW,
-  ZOOM_ANIMATION_DURATION,
-  zoomWindowsEqual,
-} from './chart-option'
-import type { ZoomContext, ZoomWindow } from './chart-option'
-import { hasMetricHistory } from './series'
-import type { EndpointPricingHistory, PricingMetric } from './types'
+register([LineChart, AxisPointerComponent, DataZoomComponent, GridComponent, CanvasRenderer])
 
-// The core ECharts build stays out of the client bundle unless each required
-// chart, component, and renderer is registered explicitly.
-registerEChartsModules([
-  LineChart,
-  AriaComponent,
-  DataZoomComponent,
-  GridComponent,
-  TooltipComponent,
-  CanvasRenderer,
-])
+// Opposing outer paths preserve a 44px hit area around the visible handle.
+const NAVIGATOR_HANDLE =
+  'path://M-22-22H22V22H-22ZM-22-22V22H22V-22H-22ZM-3-16Q-5-16-5-14V14Q-5 16-3 16H3Q5 16 5 14V-14Q5-16 3-16Z'
 
-export type PricingHistoryPlotHandle = {
-  /** Animates the visible window to the given percentage range. */
-  zoomTo: (target: ZoomWindow) => void
-  /** Emphasizes every chart segment belonging to the named provider series. */
-  setSeriesEmphasis: (seriesName: string, emphasized: boolean) => void
+function applyInspectedPointer(instance: ECharts, at: number | null, asOf: number) {
+  instance.setOption({
+    xAxis: {
+      axisPointer: {
+        triggerEmphasis: false,
+        show: at !== null,
+        label: { show: false },
+        value: at ?? asOf,
+        status: at === null ? 'hide' : 'show',
+        lineStyle: { color: '#a1a1aa', type: 'dashed' },
+      },
+    },
+  })
 }
 
-/**
- * Pure canvas: the card owns all durable UI state (metric, selected providers)
- * and the surrounding layout, while this component owns the ECharts instance
- * and the high-frequency zoom interaction. The handle ref bridges those two
- * lifecycles without rerendering React for every pixel the slider moves.
- */
 export function PricingHistoryPlot({
-  handleRef,
-  history,
-  metric,
-  onAxisHoverChange,
-  onSeriesHoverChange,
-  onZoomWindowChange,
-  selectedProviderIds,
+  traces,
+  since,
+  asOf,
+  range,
+  emphasis,
+  inspectedAt,
+  onRange,
+  onInspect,
+  onEmphasis,
 }: {
-  handleRef: RefObject<PricingHistoryPlotHandle | null>
-  history: EndpointPricingHistory
-  metric: PricingMetric
-  onAxisHoverChange: (timestamp: number | null) => void
-  onSeriesHoverChange: (seriesName: string | null) => void
-  onZoomWindowChange: (window: ZoomWindow) => void
-  selectedProviderIds: ReadonlySet<string>
+  traces: Trace[]
+  since: number
+  asOf: number
+  range: [number, number]
+  emphasis: string | null
+  inspectedAt: number | null
+  onRange: (range: [number, number]) => void
+  onInspect: (at: number | null) => void
+  onEmphasis: (tag: string | null) => void
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<ECharts | null>(null)
-  const zoomContextRef = useRef<ZoomContext | null>(null)
-  const zoomWindowRef = useRef<ZoomWindow>(FULL_HISTORY_WINDOW)
-  const zoomAnimationRef = useRef<number | null>(null)
-  const historyBoundsRef = useRef<HistoryBounds | null>(null)
-  // Chart events fire from listeners registered once at mount; the ref keeps
-  // them calling the latest callbacks without re-subscribing.
-  const callbacksRef = useRef({ onAxisHoverChange, onSeriesHoverChange, onZoomWindowChange })
+  const container = useRef<HTMLDivElement>(null)
+  const chart = useRef<ECharts | null>(null)
+  const frame = useRef<DOMRect | null>(null)
+  const callbacks = useRef({ onRange, onInspect, onEmphasis, since, asOf })
 
   useEffect(() => {
-    callbacksRef.current = { onAxisHoverChange, onSeriesHoverChange, onZoomWindowChange }
-  })
-
-  const zoomTo = (target: ZoomWindow) => {
-    const chart = chartRef.current
-    if (chart === null) {
-      return
-    }
-
-    cancelZoomAnimation(zoomAnimationRef)
-
-    const initialWindow = zoomWindowRef.current
-    if (zoomWindowsEqual(initialWindow, target)) {
-      return
-    }
-
-    if (prefersReducedMotion()) {
-      dispatchZoomWindow(chart, target)
-      return
-    }
-
-    // ECharts does not interpolate a dataZoom dispatch for us. Driving the
-    // percentage window frame-by-frame keeps the transition smooth and interruptible.
-    const startAnimation = (startedAt: number) => {
-      const animate = (now: number) => {
-        const progress = Math.min(1, (now - startedAt) / ZOOM_ANIMATION_DURATION)
-        const easedProgress = 1 - (1 - progress) ** 3
-
-        dispatchZoomWindow(chart, {
-          start: initialWindow.start + (target.start - initialWindow.start) * easedProgress,
-          end: initialWindow.end + (target.end - initialWindow.end) * easedProgress,
-        })
-
-        zoomAnimationRef.current = progress < 1 ? requestAnimationFrame(animate) : null
-      }
-
-      animate(startedAt)
-    }
-
-    zoomAnimationRef.current = requestAnimationFrame(startAnimation)
-  }
-
-  const setSeriesEmphasis = (seriesName: string, emphasized: boolean) => {
-    chartRef.current?.dispatchAction({
-      type: emphasized ? 'highlight' : 'downplay',
-      // Availability gaps are separate chart series with the same provider
-      // name, so targeting by name emphasizes every segment together.
-      seriesName,
-    })
-  }
-
-  // Republish on every render so the handle always closes over fresh state.
-  useEffect(() => {
-    handleRef.current = { zoomTo, setSeriesEmphasis }
-    return () => {
-      handleRef.current = null
-    }
+    callbacks.current = { onRange, onInspect, onEmphasis, since, asOf }
   })
 
   useEffect(() => {
-    const container = containerRef.current
-    if (container === null) {
+    const node = container.current
+
+    if (!node) {
       return undefined
     }
 
-    // One imperative chart instance lives for the lifetime of its DOM node.
-    // Later React updates replace its option rather than recreating the canvas.
-    const chart = init(container, undefined, { renderer: 'canvas' })
-    chartRef.current = chart
+    const instance = init(node, undefined, { renderer: 'canvas' })
+    chart.current = instance
 
-    const handleDirectManipulation = () => {
-      // A pointer or wheel gesture always wins over the reset animation.
-      cancelZoomAnimation(zoomAnimationRef)
+    const measure = () => {
+      frame.current = node.getBoundingClientRect()
     }
 
-    const handleDataZoom = (event: unknown) => {
-      const zoom = zoomWindowFromEvent(event, zoomWindowRef.current)
-      zoomWindowRef.current = zoom
-      callbacksRef.current.onZoomWindowChange(zoom)
+    measure()
 
-      const context = zoomContextRef.current
-      if (context !== null) {
-        // Zoom events can arrive every animation frame. Patch only the axes;
-        // rebuilding all line segments here would make the slider feel heavy.
-        chart.setOption(createZoomedAxesOption(context, zoom), { lazyUpdate: true })
+    const resize = new ResizeObserver(() => {
+      measure()
+      instance.resize()
+    })
+
+    resize.observe(node)
+
+    instance.on('datazoom', (payload: unknown) => {
+      const zoom = zoomEvent(payload)
+
+      if (zoom === null) {
+        return
+      }
+
+      const bounds = callbacks.current
+
+      callbacks.current.onRange([
+        bounds.since + ((bounds.asOf - bounds.since) * zoom.start) / 100,
+        bounds.since + ((bounds.asOf - bounds.since) * zoom.end) / 100,
+      ])
+    })
+
+    instance.on('mouseover', (event: unknown) => {
+      if (
+        typeof event === 'object' &&
+        event !== null &&
+        'seriesName' in event &&
+        typeof event.seriesName === 'string'
+      ) {
+        callbacks.current.onEmphasis(event.seriesName)
+      }
+    })
+
+    instance.on('mouseout', () => {
+      callbacks.current.onEmphasis(null)
+    })
+
+    const inspect = (event: MouseEvent) => {
+      const rect = frame.current
+
+      if (rect === null) {
+        return
+      }
+
+      const pixel = [event.clientX - rect.left, event.clientY - rect.top]
+
+      if (instance.containPixel('grid', pixel)) {
+        const value = instance.convertFromPixel({ gridIndex: 0 }, pixel)
+        const [at] = value
+
+        if (Number.isFinite(at)) {
+          applyInspectedPointer(instance, at, callbacks.current.asOf)
+          callbacks.current.onInspect(at)
+        }
+      } else {
+        applyInspectedPointer(instance, null, callbacks.current.asOf)
+        callbacks.current.onInspect(null)
       }
     }
 
-    const handleSeriesMouseOver = (event: unknown) => {
-      const seriesName = seriesNameFromEvent(event)
-      if (seriesName !== null) {
-        callbacksRef.current.onSeriesHoverChange(seriesName)
-      }
+    const leave = () => {
+      applyInspectedPointer(instance, null, callbacks.current.asOf)
+      callbacks.current.onInspect(null)
     }
 
-    const handleSeriesMouseOut = (event: unknown) => {
-      if (seriesNameFromEvent(event) !== null) {
-        callbacksRef.current.onSeriesHoverChange(null)
-      }
-    }
-
-    // The axis pointer snaps to change-event timestamps, so the value only
-    // changes when the pointer crosses an event; identical updates are
-    // no-op setStates for the card.
-    const handleUpdateAxisPointer = (event: unknown) => {
-      const timestamp = axisPointerTimestamp(event)
-      if (timestamp !== null) {
-        callbacksRef.current.onAxisHoverChange(timestamp)
-      }
-    }
-
-    const handleGlobalOut = () => {
-      callbacksRef.current.onAxisHoverChange(null)
-    }
-
-    // zrender preventDefaults every wheel event over the canvas, even though
-    // zooming requires ctrl - trapping page scroll whenever the cursor lands
-    // on the chart. Divert plain wheel events before zrender sees them so the
-    // page keeps scrolling; ctrl+wheel (and trackpad pinch) still zooms.
-    const handleWheelCapture = (event: WheelEvent) => {
+    const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey) {
         event.stopPropagation()
       }
     }
-    container.addEventListener('wheel', handleWheelCapture, { capture: true })
 
-    chart.on('datazoom', handleDataZoom)
-    chart.on('mouseover', handleSeriesMouseOver)
-    chart.on('mouseout', handleSeriesMouseOut)
-    chart.on('updateAxisPointer', handleUpdateAxisPointer)
-    chart.getZr().on('mousedown', handleDirectManipulation)
-    chart.getZr().on('mousewheel', handleDirectManipulation)
-    chart.getZr().on('globalout', handleGlobalOut)
-
-    const observer = new ResizeObserver(() => {
-      chart.resize()
-    })
-    observer.observe(container)
+    node.addEventListener('mousemove', inspect)
+    node.addEventListener('mouseleave', leave)
+    node.addEventListener('wheel', wheel, { capture: true, passive: true })
 
     return () => {
-      cancelZoomAnimation(zoomAnimationRef)
-      observer.disconnect()
-      container.removeEventListener('wheel', handleWheelCapture, { capture: true })
-      chart.off('datazoom', handleDataZoom)
-      chart.off('mouseover', handleSeriesMouseOver)
-      chart.off('mouseout', handleSeriesMouseOut)
-      chart.off('updateAxisPointer', handleUpdateAxisPointer)
-      chart.getZr().off('mousedown', handleDirectManipulation)
-      chart.getZr().off('mousewheel', handleDirectManipulation)
-      chart.getZr().off('globalout', handleGlobalOut)
-      chart.dispose()
-      chartRef.current = null
+      resize.disconnect()
+      node.removeEventListener('mousemove', inspect)
+      node.removeEventListener('mouseleave', leave)
+      node.removeEventListener('wheel', wheel, { capture: true })
+      instance.dispose()
+      chart.current = null
     }
   }, [])
 
   useEffect(() => {
-    const chart = chartRef.current
-    if (chart === null) {
-      return
-    }
+    const maximum = Math.max(
+      0,
+      ...traces.flatMap((trace) => {
+        if (trace.end < range[0] || trace.start > range[1]) {
+          return []
+        }
 
-    const previousBounds = historyBoundsRef.current
-    historyBoundsRef.current = { since: history.since, asOf: history.asOf }
-    if (
-      previousBounds !== null &&
-      (previousBounds.since !== history.since || previousBounds.asOf !== history.asOf)
-    ) {
-      // Zoom is percentage-based, so a fresh snapshot extending the bounds
-      // would silently shift the window onto different dates. Re-express it
-      // against the new bounds so the user keeps looking at the same period.
-      const rescaled = rescaleZoomWindow(zoomWindowRef.current, previousBounds, {
-        since: history.since,
-        asOf: history.asOf,
-      })
-      zoomWindowRef.current = rescaled
-      callbacksRef.current.onZoomWindowChange(rescaled)
-    }
-
-    const renderedSeries = history.series.filter(
-      (series) =>
-        selectedProviderIds.has(series.provider.tag_slug) && hasMetricHistory(series, metric),
-    )
-    const zoom = zoomWindowRef.current
-    const context: ZoomContext = {
-      since: history.since,
-      asOf: history.asOf,
-      series: renderedSeries,
-      metric,
-    }
-    zoomContextRef.current = context
-
-    // Provider selection, metric, and history are low-frequency changes.
-    // Replacing the option here also removes stale segment series cleanly.
-    chart.setOption(
-      createPricingHistoryChartOption({
-        animateUpdates: !prefersReducedMotion(),
-        context,
-        zoom,
+        return [
+          sampleAt(trace.samples, range[0]) ?? 0,
+          ...trace.samples
+            .filter(([at]) => at >= range[0] && at <= range[1])
+            .map(([, price]) => price),
+        ]
       }),
-      { lazyUpdate: false, notMerge: true },
     )
-  }, [history, metric, selectedProviderIds])
+
+    const span = Math.max(1, asOf - since)
+
+    chart.current?.setOption(
+      {
+        animation: true,
+        animationDuration: 0,
+        animationDurationUpdate: 0,
+        stateAnimation: {
+          duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 150,
+          easing: 'cubicOut',
+        },
+        grid: { left: 58, right: 16, top: 20, bottom: 85 },
+        xAxis: {
+          type: 'time',
+          min: since,
+          max: asOf,
+          axisLabel: { color: '#a1a1aa', hideOverlap: true },
+          axisLine: { lineStyle: { color: '#3f3f46' } },
+        },
+        yAxis: {
+          type: 'value',
+          min: 0,
+          max: maximum > 0 ? niceCeiling(maximum * 1.08) : 1,
+          axisLabel: {
+            color: '#a1a1aa',
+            formatter: (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—',
+          },
+          splitLine: { lineStyle: { color: '#27272a' } },
+        },
+        dataZoom: [
+          {
+            type: 'inside',
+            start: ((range[0] - since) / span) * 100,
+            end: ((range[1] - since) / span) * 100,
+            filterMode: 'none',
+            zoomOnMouseWheel: 'ctrl',
+            moveOnMouseWheel: false,
+            minValueSpan: Math.min(60_000, span),
+          },
+          {
+            type: 'slider',
+            realtime: true,
+            throttle: 50,
+            start: ((range[0] - since) / span) * 100,
+            end: ((range[1] - since) / span) * 100,
+            filterMode: 'none',
+            bottom: 12,
+            left: 16,
+            right: 16,
+            height: 24,
+            brushSelect: false,
+            moveHandleSize: 0,
+            handleIcon: NAVIGATOR_HANDLE,
+            handleSize: 44,
+            handleLabel: { show: false },
+            handleStyle: {
+              color: '#e5e5e5',
+              borderWidth: 0,
+              shadowBlur: 4,
+              shadowColor: 'rgba(0,0,0,0.5)',
+            },
+            minValueSpan: Math.min(60_000, span),
+            showDetail: false,
+            showDataShadow: false,
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderRadius: 4,
+            backgroundColor: '#0a0a0a',
+            fillerColor: '#262626',
+            textStyle: { color: '#a1a1aa' },
+          },
+        ],
+        series: traces.map((trace) => {
+          const color = providerSrgbColor(trace.tag)
+          return {
+            id: trace.id,
+            name: trace.tag,
+            type: 'line',
+            triggerEvent: 'line',
+            step: 'end',
+            showSymbol: false,
+            data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
+            lineStyle: { width: 1.5, color },
+            itemStyle: { color },
+            emphasis: { focus: 'series', lineStyle: { width: 3 } },
+          }
+        }),
+      },
+      { replaceMerge: ['series'] },
+    )
+  }, [traces, since, asOf, range])
+
+  useEffect(() => {
+    chart.current?.dispatchAction({ type: 'downplay' })
+
+    if (emphasis !== null) {
+      chart.current?.dispatchAction({ type: 'highlight', seriesName: emphasis })
+    }
+  }, [emphasis, traces, range])
+
+  useEffect(() => {
+    if (chart.current) {
+      applyInspectedPointer(chart.current, inspectedAt, asOf)
+    }
+  }, [inspectedAt, asOf, traces, range])
 
   return (
     <div
-      aria-label={`${pricingMetricMetadata(metric).label} pricing history chart`}
-      className="h-full w-full"
-      data-testid="pricing-history-plot"
-      ref={containerRef}
+      ref={container}
+      className="h-full w-full rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- The canvas itself is the time inspector; an input would introduce a second visible control.
+      role="slider"
+      aria-valuemin={range[0]}
+      aria-valuemax={range[1]}
+      aria-valuenow={inspectedAt ?? range[1]}
+      aria-valuetext={new Date(inspectedAt ?? range[1]).toLocaleString()}
+      tabIndex={0}
+      aria-label="Pricing history chart. Use arrow keys to inspect prices, Home for the start and End for the latest in view."
+      onKeyDown={(event) => {
+        const step = (range[1] - range[0]) / 100
+        const current = inspectedAt ?? range[1]
+
+        const next = {
+          ArrowLeft: current - step,
+          ArrowRight: current + step,
+          Home: range[0],
+          End: range[1],
+        }[event.key]
+
+        if (next !== undefined) {
+          event.preventDefault()
+          const at = Math.max(range[0], Math.min(range[1], next))
+
+          if (chart.current) {
+            applyInspectedPointer(chart.current, at, asOf)
+          }
+
+          onInspect(at)
+        }
+      }}
     />
   )
 }
 
-function dispatchZoomWindow(chart: ECharts, zoom: ZoomWindow) {
-  chart.dispatchAction({ type: 'dataZoom', start: zoom.start, end: zoom.end })
-}
-
-type HistoryBounds = { since: number; asOf: number }
-
-/**
- * Re-expresses a percentage window against new history bounds so it covers
- * the same dates. A window touching the live edge stays pinned to it, which
- * keeps "most recent" views tracking the latest data as snapshots arrive.
- */
-function rescaleZoomWindow(zoom: ZoomWindow, from: HistoryBounds, to: HistoryBounds): ZoomWindow {
-  const toSpan = to.asOf - to.since
-  if (toSpan <= 0) {
-    return FULL_HISTORY_WINDOW
-  }
-
-  const fromSpan = from.asOf - from.since
-  const startAt = from.since + (fromSpan * zoom.start) / 100
-  const endAt = from.since + (fromSpan * zoom.end) / 100
-  const toPercent = (at: number) => Math.min(100, Math.max(0, ((at - to.since) / toSpan) * 100))
-
-  const end = zoom.end >= 99.99 ? 100 : toPercent(endAt)
-  return { start: Math.min(toPercent(startAt), end), end }
-}
-
-/** Extracts the hovered X-axis timestamp from an updateAxisPointer event. */
-function axisPointerTimestamp(event: unknown): number | null {
-  if (typeof event !== 'object' || event === null) {
+function zoomEvent(value: unknown): { start: number; end: number } | null {
+  if (typeof value !== 'object' || value === null) {
     return null
   }
 
-  const { axesInfo } = event as { axesInfo?: unknown }
-  if (!Array.isArray(axesInfo)) {
-    return null
+  if ('batch' in value && Array.isArray(value.batch)) {
+    return zoomEvent(value.batch[0])
   }
 
-  for (const axis of axesInfo as unknown[]) {
-    if (typeof axis !== 'object' || axis === null) {
-      continue
-    }
-    const { value } = axis as { value?: unknown }
-    if (typeof value === 'number') {
-      return value
-    }
+  if (
+    'start' in value &&
+    typeof value.start === 'number' &&
+    'end' in value &&
+    typeof value.end === 'number' &&
+    Number.isFinite(value.start) &&
+    Number.isFinite(value.end) &&
+    value.start >= 0 &&
+    value.end <= 100 &&
+    value.start <= value.end
+  ) {
+    return { start: value.start, end: value.end }
   }
+
   return null
 }
 
-/** Extracts the provider series name from a chart mouse event, if it has one. */
-function seriesNameFromEvent(event: unknown): string | null {
-  if (typeof event !== 'object' || event === null) {
-    return null
-  }
-
-  const candidate = event as { componentType?: unknown; seriesName?: unknown }
-  return candidate.componentType === 'series' && typeof candidate.seriesName === 'string'
-    ? candidate.seriesName
-    : null
-}
-
-function cancelZoomAnimation(animationRef: { current: number | null }) {
-  if (animationRef.current === null) {
-    return
-  }
-
-  cancelAnimationFrame(animationRef.current)
-  animationRef.current = null
-}
-
-function prefersReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-/** ECharts uses either a direct payload or a `batch` payload depending on how zoom was initiated. */
-function zoomWindowFromEvent(event: unknown, current: ZoomWindow): ZoomWindow {
-  if (!isDataZoomEvent(event)) {
-    return current
-  }
-
-  const [batch] = event.batch ?? []
-
-  return {
-    start:
-      typeof batch?.start === 'number'
-        ? batch.start
-        : typeof event.start === 'number'
-          ? event.start
-          : current.start,
-    end:
-      typeof batch?.end === 'number'
-        ? batch.end
-        : typeof event.end === 'number'
-          ? event.end
-          : current.end,
-  }
-}
-
-function isDataZoomEvent(
-  value: unknown,
-): value is Partial<ZoomWindow> & { batch?: Partial<ZoomWindow>[] } {
-  if (!isZoomWindowValue(value)) {
-    return false
-  }
-
-  return (
-    !('batch' in value) ||
-    value.batch === undefined ||
-    (Array.isArray(value.batch) && value.batch.every(isZoomWindowValue))
-  )
-}
-
-function isZoomWindowValue(value: unknown): value is Partial<ZoomWindow> {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  return (
-    (!('start' in value) || value.start === undefined || typeof value.start === 'number') &&
-    (!('end' in value) || value.end === undefined || typeof value.end === 'number')
-  )
+function niceCeiling(value: number) {
+  const magnitude = 10 ** Math.floor(Math.log10(value / 5))
+  const step = Math.ceil(value / 5 / magnitude) * magnitude
+  return Math.ceil(value / step) * step
 }

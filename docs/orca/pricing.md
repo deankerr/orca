@@ -4,9 +4,10 @@ How ORCA names, displays, and treats endpoint prices. Upstream OpenRouter repres
 (`pricing`, `pricing_json`, `display_pricing`, …) are documented in `docs/openrouter/pricing.md`.
 This note is the product policy those observations get projected into.
 
-There is no one display form. Grid, Monitor, Discord, and the flag-gated model page have different
-space and density. They should share _meaning_ — which keys are prices, what they measure, what is
-dead — not a single formatting function. Multiple formatters exist because we tried to enforce one.
+There is no one display form. Grid, Monitor, Discord, Entity Overview, and Pricing History have
+different space and density. They should share _meaning_ — which keys are prices, what they
+measure, what is dead — not a single formatting function. Multiple formatters exist because we
+tried to enforce one.
 
 ## Surfaces
 
@@ -14,11 +15,9 @@ Public:
 
 - Endpoints data grid
 - Monitor
+- Entity Overview
+- Pricing History
 - Discord embeds (the squeeze: mobile-width embed fields)
-
-Behind the experimental-features flag, so not a public pricing surface:
-
-- Model page, including provider comparison and pricing history
 
 Discord is where long keys fail first. Policy has to survive that width, not just a desktop table.
 
@@ -151,7 +150,7 @@ off-peak disagree across those schedule endpoints. Ingest does not pick one, doe
 `pricing_json` to find one, and does not suppress schedule samples. A new pricing row is an
 observation that presented rates moved — including discount battles and schedule band flips.
 
-A new row is not a user-facing “price changed” event. Grid, history, Monitor, and Discord decide
+A new row is not a user-facing “price changed” event. Grid, Pricing History, Monitor, and Discord decide
 whether that movement is worth showing. Use `overrides` on the sample for schedule / viewer-now
 display. Do not join the current endpoint view for that: `pricing_version_id` lives only on
 current metadata, so it is not a historical signal on the pricing series.
@@ -159,6 +158,6 @@ current metadata, so it is not a historical signal on the pricing series.
 ## What this is not
 
 - A requirement that every surface call the same `formatPricing`.
-- A requirement that every catalog key appear in the grid, history, or Discord.
+- A requirement that every catalog key appear in the grid, Pricing History, or Discord.
 - A schema or data migration. Storage keeps what we ingested; product policy decides what is a
   price today.

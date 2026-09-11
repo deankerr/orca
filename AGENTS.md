@@ -33,6 +33,18 @@ Change tracking feed showing field-level diffs between snapshots. Reveals model/
 
 - `apps/web/components/monitor/`
 
+### Entity Overview
+
+Sheet with model or provider details, opened from the grid and Monitor. Links into Endpoints, Monitor, and Pricing History.
+
+- `apps/web/components/entity-overview/`
+
+### Pricing History
+
+Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
+
+- `apps/web/components/pricing-history/`
+
 ### Discord Alerts Bot
 
 Users can subscribe to model id patterns, providing a personalized version of Monitor via Discord. There is no frontend component.

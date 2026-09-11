@@ -237,3 +237,26 @@ describe('scan projection', () => {
     expect(() => createScanProjection(artifact('2026-01-01', [withoutPricing]))).toThrow()
   })
 })
+
+test('retains provider dataPolicy metadata', () => {
+  const projection = createScanProjection(
+    artifact('2026-09-10T00:00:00Z', [
+      {
+        ...endpoint('one', '1'),
+        provider_info: {
+          slug: 'provider',
+          displayName: 'Provider',
+          dataPolicy: {
+            termsOfServiceURL: 'https://example.com/terms',
+            privacyPolicyURL: null,
+            retainsPrompts: true,
+          },
+        },
+      },
+    ]),
+  )
+  const metadata = projection.providers.get('provider')?.metadata
+  expect(metadata?.['dataPolicy.termsOfServiceURL']).toBe('https://example.com/terms')
+  expect(metadata?.['dataPolicy.privacyPolicyURL']).toBeNull()
+  expect(metadata?.['dataPolicy.retainsPrompts']).toBe(true)
+})
