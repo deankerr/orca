@@ -36,7 +36,7 @@ export function PricingHistoryPlot({
   emphasis: string | null
   inspectedAt: number | null
   onRange: (range: [number, number]) => void
-  onInspect: (at: number | null, pin: boolean) => void
+  onInspect: (at: number | null) => void
   onEmphasis: (tag: string | null) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
@@ -85,54 +85,34 @@ export function PricingHistoryPlot({
       callbacks.current.onEmphasis(null)
     })
 
-    let pointerStart: [number, number] | null = null
-    const down = (event: PointerEvent) => {
-      pointerStart = [event.clientX, event.clientY]
-    }
-    const inspect = (event: MouseEvent, pin: boolean) => {
+    const inspect = (event: MouseEvent) => {
       const rect = node.getBoundingClientRect()
       const pixel = [event.clientX - rect.left, event.clientY - rect.top]
       if (instance.containPixel('grid', pixel)) {
         const value = instance.convertFromPixel({ gridIndex: 0 }, pixel)
         const [at] = value
         if (Number.isFinite(at)) {
-          callbacks.current.onInspect(at, pin)
+          callbacks.current.onInspect(at)
         }
-      } else if (!pin) {
-        callbacks.current.onInspect(null, false)
+      } else {
+        callbacks.current.onInspect(null)
       }
-    }
-    const move = (event: MouseEvent) => {
-      inspect(event, false)
-    }
-    const click = (event: MouseEvent) => {
-      if (
-        pointerStart !== null &&
-        Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) < 5
-      ) {
-        inspect(event, true)
-      }
-      pointerStart = null
     }
     const leave = () => {
-      callbacks.current.onInspect(null, false)
+      callbacks.current.onInspect(null)
     }
     const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey) {
         event.stopPropagation()
       }
     }
-    node.addEventListener('pointerdown', down)
-    node.addEventListener('mousemove', move)
-    node.addEventListener('click', click)
+    node.addEventListener('mousemove', inspect)
     node.addEventListener('mouseleave', leave)
     node.addEventListener('wheel', wheel, { capture: true })
 
     return () => {
       resize.disconnect()
-      node.removeEventListener('pointerdown', down)
-      node.removeEventListener('mousemove', move)
-      node.removeEventListener('click', click)
+      node.removeEventListener('mousemove', inspect)
       node.removeEventListener('mouseleave', leave)
       node.removeEventListener('wheel', wheel, { capture: true })
       instance.dispose()
@@ -287,7 +267,7 @@ export function PricingHistoryPlot({
         }[event.key]
         if (next !== undefined) {
           event.preventDefault()
-          onInspect(Math.max(range[0], Math.min(range[1], next)), true)
+          onInspect(Math.max(range[0], Math.min(range[1], next)))
         }
       }}
     />

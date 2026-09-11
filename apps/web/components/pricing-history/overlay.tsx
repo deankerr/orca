@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { cn } from '@/lib/utils'
 
 import { providerColor } from './colors'
 import { usePricingHistory } from './context'
@@ -46,21 +48,21 @@ const Plot = dynamic(
   },
 )
 const METERS = [
-  { value: 'prompt', label: 'Input', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'completion', label: 'Output', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'input_cache_read', label: 'Cache read', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'input_cache_write', label: 'Cache write', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'input_cache_write_1h', label: 'Cache write · 1h', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'audio', label: 'Audio input', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'input_audio_cache', label: 'Audio cache', scale: 1e6, unit: '$ / MTOK' },
-  { value: 'image', label: 'Image input', scale: 1000, unit: '$ / 1K images' },
-  { value: 'image_output', label: 'Image output', scale: 1000, unit: '$ / 1K images' },
+  { value: 'prompt', label: 'Input', scale: 1e6, unit: '$/MTOK' },
+  { value: 'completion', label: 'Output', scale: 1e6, unit: '$/MTOK' },
+  { value: 'input_cache_read', label: 'Cache read', scale: 1e6, unit: '$/MTOK' },
+  { value: 'input_cache_write', label: 'Cache write', scale: 1e6, unit: '$/MTOK' },
+  { value: 'input_cache_write_1h', label: 'Cache write · 1h', scale: 1e6, unit: '$/MTOK' },
+  { value: 'audio', label: 'Audio input', scale: 1e6, unit: '$/MTOK' },
+  { value: 'input_audio_cache', label: 'Audio cache', scale: 1e6, unit: '$/MTOK' },
+  { value: 'image', label: 'Image input', scale: 1000, unit: '$/KTOK' },
+  { value: 'image_output', label: 'Image output', scale: 1000, unit: '$/KTOK' },
 ]
 const dateLabel = (at: number) =>
   new Date(at).toLocaleString(undefined, {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     timeZoneName: 'short',
@@ -84,7 +86,7 @@ export function PricingHistoryOverlay() {
         }
       }}
     >
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden sm:max-w-6xl">
+      <DialogContent className="flex h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden sm:max-w-6xl">
         {open && (
           <>
             <Identity modelId={modelId} />
@@ -169,7 +171,6 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const activeTag = hoveredTag ?? plotTag ?? focusedTag
   const emphasis = activeTag !== null && !hidden.has(activeTag) ? activeTag : null
   const [hoverAt, setHoverAt] = useState<number | null>(null)
-  const [pinnedAt, setPinnedAt] = useState<number | null>(null)
   const available = METERS.filter((meter) =>
     pricingHistory.endpoints.some((endpoint) =>
       endpoint.prices.some((price) => Number(price.meters[meter.value]) > 0),
@@ -212,12 +213,11 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const shownCount = tags.filter((tag) => !hidden.has(tag)).length
   const allShown = tags.length > 0 && shownCount === tags.length
   const visible = traces.filter((trace) => tags.includes(trace.tag) && !hidden.has(trace.tag))
-  const at = Math.max(range[0], Math.min(range[1], pinnedAt ?? hoverAt ?? range[1]))
+  const at = Math.max(range[0], Math.min(range[1], hoverAt ?? range[1]))
 
   const changeRange = (next: [number, number]) => {
     setWindow(next)
     setPreset('')
-    setPinnedAt(null)
     setHoverAt(null)
   }
   const toggle = (tag: string) => {
@@ -239,16 +239,10 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
           asOf={pricingHistory.asOf}
           range={range}
           emphasis={emphasis}
-          inspectedAt={hoverAt !== null || pinnedAt !== null ? at : null}
+          inspectedAt={hoverAt === null ? null : at}
           onRange={changeRange}
           onEmphasis={setPlotTag}
-          onInspect={(value, pin) => {
-            if (pin) {
-              setPinnedAt(value)
-            } else if (pinnedAt === null) {
-              setHoverAt(value)
-            }
-          }}
+          onInspect={setHoverAt}
         />
         {visible.length === 0 && (
           <p className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -270,7 +264,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
             }}
             items={meters}
           >
-            <SelectTrigger aria-label="Pricing meter">
+            <SelectTrigger aria-label="Pricing meter" className="min-w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +277,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <span className="text-muted-foreground">{meter.unit}</span>
+          <span className="font-mono text-muted-foreground">{meter.unit}</span>
         </div>
         <ToggleGroup
           aria-label="Pricing history period"
@@ -304,36 +298,28 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
           }}
         >
           {['7', '30', '90', 'all'].map((value) => (
-            <ToggleGroupItem key={value} value={value}>
+            <ToggleGroupItem key={value} value={value} className="w-11">
               {value === 'all' ? 'All' : `${value}d`}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p className="tabular-nums">Prices at {dateLabel(at)}</p>
-            {pinnedAt !== null && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setPinnedAt(null)
-                  setHoverAt(null)
-                }}
-              >
-                Unpin
-              </Button>
-            )}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-muted-foreground">Price at</span>
+            <time dateTime={new Date(at).toISOString()} className="font-mono tabular-nums">
+              {dateLabel(at)}
+            </time>
           </div>
           {tags.length > 1 && (
-            <div className="ms-auto flex items-center gap-3">
-              <span className="text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground tabular-nums">
                 {shownCount} of {tags.length} providers
               </span>
               <Button
                 variant="ghost"
+                className="w-16"
                 onClick={() => {
                   setHidden(allShown ? new Set(tags) : new Set())
                 }}
@@ -343,26 +329,28 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
             </div>
           )}
         </div>
-        <ul
-          aria-label="Providers"
-          className="grid min-h-0 flex-1 [scrollbar-gutter:stable] grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),16rem))] content-start justify-center gap-2 overflow-y-auto"
-        >
-          {tags.map((tag) => (
-            <li key={tag} className="min-w-0">
-              <LegendItem
-                tag={tag}
-                price={quotedPrice(tagPrices(traces, tag, at, pricingHistory.asOf))}
-                hidden={hidden.has(tag)}
-                highlighted={emphasis === tag}
-                onToggle={() => {
-                  toggle(tag)
-                }}
-                onHover={setHoveredTag}
-                onFocusVisible={setFocusedTag}
-              />
-            </li>
-          ))}
-        </ul>
+        <ScrollArea className="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:absolute [&>[data-slot=scroll-area-viewport]]:inset-0">
+          <ul
+            aria-label="Providers"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),16rem))] content-start justify-center gap-2"
+          >
+            {tags.map((tag) => (
+              <li key={tag} className="min-w-0">
+                <LegendItem
+                  tag={tag}
+                  price={quotedPrice(tagPrices(traces, tag, at, pricingHistory.asOf))}
+                  hidden={hidden.has(tag)}
+                  highlighted={emphasis === tag}
+                  onToggle={() => {
+                    toggle(tag)
+                  }}
+                  onHover={setHoveredTag}
+                  onFocusVisible={setFocusedTag}
+                />
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
       </div>
     </div>
   )
@@ -386,13 +374,16 @@ function LegendItem({
   onFocusVisible: (tag: string | null) => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       title={tag}
       aria-pressed={!hidden}
-      data-hidden={hidden || undefined}
-      data-highlighted={highlighted || undefined}
-      className="flex h-7 w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-transparent px-2 text-start text-xs transition-colors duration-150 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30 data-hidden:opacity-40 data-highlighted:bg-muted/50 motion-reduce:transition-none"
+      className={cn(
+        'w-full min-w-0 justify-start bg-transparent text-start dark:bg-transparent',
+        hidden && 'opacity-40',
+        highlighted && 'bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted',
+      )}
       onMouseEnter={() => {
         onHover(tag)
       }}
@@ -410,16 +401,16 @@ function LegendItem({
       onClick={onToggle}
     >
       <span
-        className="size-2 shrink-0 rounded-full"
+        className="mr-1 size-2 shrink-0 rounded-full"
         style={{
           background: hidden ? 'transparent' : providerColor(tag),
           outline: `1px solid ${providerColor(tag)}`,
         }}
       />
-      <span className="min-w-0 flex-1 truncate">{tag}</span>
+      <span className="min-w-0 flex-1 truncate text-start">{tag}</span>
       <span className="min-w-[7ch] shrink-0 text-end font-mono whitespace-nowrap tabular-nums">
         {price}
       </span>
-    </button>
+    </Button>
   )
 }

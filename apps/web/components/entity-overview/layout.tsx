@@ -13,17 +13,21 @@ import { usePathname, useSearchParams } from 'next/navigation'
 
 import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item'
 import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { cn } from '@/lib/utils'
 
 import { buildPricingHistoryHref } from '../pricing-history/query-state'
 import { useEntityOverview } from './context'
 import { buildEndpointsHref, buildMonitorHref } from './hrefs'
-
-const actionClassName =
-  'group flex min-h-10 w-full items-center gap-2.5 rounded-md bg-card px-3 text-xs font-medium ring-1 ring-foreground/10 transition-[color,box-shadow,transform] outline-none hover:ring-foreground/25 focus-visible:ring-2 focus-visible:ring-ring/30 active:scale-[0.96]'
 
 export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
   const copy = useCopyToClipboard()
@@ -52,31 +56,27 @@ function OverviewAction({
   icon: Icon,
   children,
 }: {
-  href?: string
+  href: string
   onClick?: () => void
   icon: LucideIcon
   children: React.ReactNode
 }) {
-  const content = (
-    <>
-      <Icon className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-      <span>{children}</span>
-      <ArrowRightIcon className="ms-auto size-3.5 text-muted-foreground transition-transform group-hover:text-foreground" />
-    </>
-  )
-
-  if (href !== undefined) {
-    return (
-      <Link href={href} scroll={false} onClick={onClick} className={actionClassName}>
-        {content}
-      </Link>
-    )
-  }
-
   return (
-    <button type="button" onClick={onClick} className={cn(actionClassName, 'cursor-pointer')}>
-      {content}
-    </button>
+    <Item
+      variant="outline"
+      size="sm"
+      render={<Link href={href} scroll={false} onClick={onClick} />}
+    >
+      <ItemMedia variant="icon">
+        <Icon />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{children}</ItemTitle>
+      </ItemContent>
+      <ItemActions className="[&_svg:not([class*='size-'])]:size-4">
+        <ArrowRightIcon />
+      </ItemActions>
+    </Item>
   )
 }
 
@@ -94,7 +94,7 @@ export function OverviewActions({
   const { close } = useEntityOverview()
 
   return (
-    <div className="flex flex-col gap-2">
+    <ItemGroup>
       <OverviewAction
         href={buildEndpointsHref({ pathname, searchParams, slug })}
         onClick={close}
@@ -110,7 +110,7 @@ export function OverviewActions({
         Monitor
       </OverviewAction>
       {children}
-    </div>
+    </ItemGroup>
   )
 }
 
