@@ -18,6 +18,21 @@ register([LineChart, AxisPointerComponent, DataZoomComponent, GridComponent, Can
 const NAVIGATOR_HANDLE =
   'path://M-22-22H22V22H-22ZM-22-22V22H22V-22H-22ZM-3-16Q-5-16-5-14V14Q-5 16-3 16H3Q5 16 5 14V-14Q5-16 3-16Z'
 
+function applyInspectedPointer(instance: ECharts, at: number | null, asOf: number) {
+  instance.setOption({
+    xAxis: {
+      axisPointer: {
+        triggerEmphasis: false,
+        show: at !== null,
+        label: { show: false },
+        value: at ?? asOf,
+        status: at === null ? 'hide' : 'show',
+        lineStyle: { color: '#a1a1aa', type: 'dashed' },
+      },
+    },
+  })
+}
+
 export function PricingHistoryPlot({
   traces,
   since,
@@ -41,6 +56,7 @@ export function PricingHistoryPlot({
 }) {
   const container = useRef<HTMLDivElement>(null)
   const chart = useRef<ECharts | null>(null)
+  const frame = useRef<DOMRect | null>(null)
   const callbacks = useRef({ onRange, onInspect, onEmphasis, since, asOf })
 
   useEffect(() => {
@@ -54,7 +70,12 @@ export function PricingHistoryPlot({
     }
     const instance = init(node, undefined, { renderer: 'canvas' })
     chart.current = instance
+    const measure = () => {
+      frame.current = node.getBoundingClientRect()
+    }
+    measure()
     const resize = new ResizeObserver(() => {
+      measure()
       instance.resize()
     })
     resize.observe(node)
@@ -86,19 +107,25 @@ export function PricingHistoryPlot({
     })
 
     const inspect = (event: MouseEvent) => {
-      const rect = node.getBoundingClientRect()
+      const rect = frame.current
+      if (rect === null) {
+        return
+      }
       const pixel = [event.clientX - rect.left, event.clientY - rect.top]
       if (instance.containPixel('grid', pixel)) {
         const value = instance.convertFromPixel({ gridIndex: 0 }, pixel)
         const [at] = value
         if (Number.isFinite(at)) {
+          applyInspectedPointer(instance, at, callbacks.current.asOf)
           callbacks.current.onInspect(at)
         }
       } else {
+        applyInspectedPointer(instance, null, callbacks.current.asOf)
         callbacks.current.onInspect(null)
       }
     }
     const leave = () => {
+      applyInspectedPointer(instance, null, callbacks.current.asOf)
       callbacks.current.onInspect(null)
     }
     const wheel = (event: WheelEvent) => {
@@ -108,7 +135,7 @@ export function PricingHistoryPlot({
     }
     node.addEventListener('mousemove', inspect)
     node.addEventListener('mouseleave', leave)
-    node.addEventListener('wheel', wheel, { capture: true })
+    node.addEventListener('wheel', wheel, { capture: true, passive: true })
 
     return () => {
       resize.disconnect()
@@ -205,18 +232,21 @@ export function PricingHistoryPlot({
             textStyle: { color: '#a1a1aa' },
           },
         ],
-        series: traces.map((trace) => ({
-          id: trace.id,
-          name: trace.tag,
-          type: 'line',
-          triggerEvent: 'line',
-          step: 'end',
-          showSymbol: false,
-          data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
-          lineStyle: { width: 1.5, color: providerSrgbColor(trace.tag) },
-          itemStyle: { color: providerSrgbColor(trace.tag) },
-          emphasis: { focus: 'series', lineStyle: { width: 3 } },
-        })),
+        series: traces.map((trace) => {
+          const color = providerSrgbColor(trace.tag)
+          return {
+            id: trace.id,
+            name: trace.tag,
+            type: 'line',
+            triggerEvent: 'line',
+            step: 'end',
+            showSymbol: false,
+            data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
+            lineStyle: { width: 1.5, color },
+            itemStyle: { color },
+            emphasis: { focus: 'series', lineStyle: { width: 3 } },
+          }
+        }),
       },
       { replaceMerge: ['series'] },
     )
@@ -230,18 +260,9 @@ export function PricingHistoryPlot({
   }, [emphasis, traces, range])
 
   useEffect(() => {
-    chart.current?.setOption({
-      xAxis: {
-        axisPointer: {
-          triggerEmphasis: false,
-          show: inspectedAt !== null,
-          label: { show: false },
-          value: inspectedAt ?? asOf,
-          status: inspectedAt === null ? 'hide' : 'show',
-          lineStyle: { color: '#a1a1aa', type: 'dashed' },
-        },
-      },
-    })
+    if (chart.current) {
+      applyInspectedPointer(chart.current, inspectedAt, asOf)
+    }
   }, [inspectedAt, asOf, traces, range])
 
   return (
@@ -267,7 +288,11 @@ export function PricingHistoryPlot({
         }[event.key]
         if (next !== undefined) {
           event.preventDefault()
-          onInspect(Math.max(range[0], Math.min(range[1], next)))
+          const at = Math.max(range[0], Math.min(range[1], next))
+          if (chart.current) {
+            applyInspectedPointer(chart.current, at, asOf)
+          }
+          onInspect(at)
         }
       }}
     />

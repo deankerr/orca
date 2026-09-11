@@ -1,7 +1,7 @@
 'use client'
 
 import { useQueryStates } from 'nuqs'
-import { createContext, useContext, useMemo } from 'react'
+import { createContext, use, useMemo } from 'react'
 
 import {
   pricingHistoryModelIdFromParams,
@@ -32,7 +32,7 @@ export function PricingHistoryProvider({ children }: { children: React.ReactNode
 }
 
 export function usePricingHistory() {
-  const context = useContext(PricingHistoryContext)
+  const context = use(PricingHistoryContext)
 
   if (context === null) {
     throw new Error('usePricingHistory must be used within PricingHistoryProvider')

@@ -4,6 +4,10 @@ const CHROMA_FRACTION = 0.85
 const MAX_CHROMA = 0.4
 const SEARCH_STEPS = 16
 
+const coordinatesById = new Map<string, { lightness: number; chroma: number; hue: number }>()
+const oklchById = new Map<string, string>()
+const srgbById = new Map<string, string>()
+
 // olive hues read as murky at chart lightness, so the hue wheel
 // skips this band entirely. Everything else stays reachable.
 const MUD_BAND_START = 100
@@ -11,17 +15,29 @@ const MUD_BAND_END = 120
 
 /** Return the browser-facing OKLCH color for a provider's chart line and legend controls. */
 export function providerColor(providerId: string) {
-  const { lightness, chroma, hue } = providerColorCoordinates(providerId)
+  const cached = oklchById.get(providerId)
+  if (cached !== undefined) {
+    return cached
+  }
 
-  return `oklch(${formatChannel(lightness)} ${formatChannel(chroma)} ${formatChannel(hue)})`
+  const { lightness, chroma, hue } = providerColorCoordinates(providerId)
+  const color = `oklch(${formatChannel(lightness)} ${formatChannel(chroma)} ${formatChannel(hue)})`
+  oklchById.set(providerId, color)
+  return color
 }
 
 /** Return the same color in sRGB because ECharts cannot parse OKLCH. */
 export function providerSrgbColor(providerId: string) {
+  const cached = srgbById.get(providerId)
+  if (cached !== undefined) {
+    return cached
+  }
+
   const { lightness, chroma, hue } = providerColorCoordinates(providerId)
   const [red, green, blue] = linearSrgbChannels(lightness, chroma, hue).map(linearToSrgbByte)
-
-  return `rgb(${red}, ${green}, ${blue})`
+  const color = `rgb(${red}, ${green}, ${blue})`
+  srgbById.set(providerId, color)
+  return color
 }
 
 /* oxlint-disable no-bitwise, unicorn/prefer-math-trunc -- FNV-1a hashing is inherently 32-bit integer math. */
@@ -38,6 +54,11 @@ function fnv1aHash(text: string) {
 }
 
 function providerColorCoordinates(providerId: string) {
+  const cached = coordinatesById.get(providerId)
+  if (cached) {
+    return cached
+  }
+
   const hash = fnv1aHash(providerId)
 
   // Colors derive purely from the provider id: adding or hiding providers can
@@ -51,8 +72,9 @@ function providerColorCoordinates(providerId: string) {
   const hue = (MUD_BAND_END + hueFraction * usableHueRange) % 360
   const lightness = MIN_LIGHTNESS + lightnessFraction * LIGHTNESS_RANGE
   const chroma = findMaxSrgbChroma(lightness, hue) * CHROMA_FRACTION
-
-  return { lightness, chroma, hue }
+  const coordinates = { lightness, chroma, hue }
+  coordinatesById.set(providerId, coordinates)
+  return coordinates
 }
 
 function linearSrgbChannels(lightness: number, chroma: number, hue: number) {

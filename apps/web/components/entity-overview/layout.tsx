@@ -25,6 +25,7 @@ import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
+import { preloadPricingHistoryPlot } from '../pricing-history/preload'
 import { buildPricingHistoryHref } from '../pricing-history/query-state'
 import { useEntityOverview } from './context'
 import { buildEndpointsHref, buildMonitorHref } from './hrefs'
@@ -53,11 +54,15 @@ export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
 function OverviewAction({
   href,
   onClick,
+  onMouseEnter,
+  onFocus,
   icon: Icon,
   children,
 }: {
   href: string
   onClick?: () => void
+  onMouseEnter?: () => void
+  onFocus?: () => void
   icon: LucideIcon
   children: React.ReactNode
 }) {
@@ -65,7 +70,15 @@ function OverviewAction({
     <Item
       variant="outline"
       size="sm"
-      render={<Link href={href} scroll={false} onClick={onClick} />}
+      render={
+        <Link
+          href={href}
+          scroll={false}
+          onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onFocus={onFocus}
+        />
+      }
     >
       <ItemMedia variant="icon">
         <Icon />
@@ -122,6 +135,8 @@ export function PricingHistoryAction({ modelId }: { modelId: string }) {
     <OverviewAction
       href={buildPricingHistoryHref({ pathname, searchParams, modelId })}
       icon={ChartNoAxesCombinedIcon}
+      onMouseEnter={preloadPricingHistoryPlot}
+      onFocus={preloadPricingHistoryPlot}
     >
       Pricing History
     </OverviewAction>
