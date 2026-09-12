@@ -18,7 +18,7 @@ Endpoint rows for one model variant are fetched from the stats endpoint, not fro
 - `permaslug` is the catalog model's `permaslug`.
 - `variant` is the nested catalog `endpoint.variant` (`standard` when the slug has no variant suffix).
 - A `404` for a concrete model means there are no endpoints now, not that the model is unknown.
-- ⚠️ Latest aliases (`~` slugs) also `404` here even though the catalog row carries a nested `endpoint`. See [Latest aliases](#latest-aliases).
+- ⚠️ Latest aliases (`~` slugs) also `404` here even though the catalog row carries a nested `endpoint`.
 
 ## Identifiers
 
@@ -58,6 +58,7 @@ Catalog slugs beginning with `~` are "latest" aliases that point at the current 
 Endpoint payloads repeat complete `model` and `provider_info` objects. The nested model can itself contain an endpoint scope.
 
 - ⚠️ These are denormalized copies of the same conceptual entities, not additional identities.
+- See [Catalog model and endpoint examples](appendix/catalog-model-and-endpoint-examples.md) for annotated payloads showing the nested records.
 
 ## Catalog-wide rewrites
 

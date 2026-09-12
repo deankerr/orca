@@ -4,7 +4,7 @@
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
 - Top level files export the stable public interface, with implementation details concealed in modules.
-- Current development focus: `convex/v3/`
+- Current development focus: migration to `convex/v3/`
 
 ### Concepts
 

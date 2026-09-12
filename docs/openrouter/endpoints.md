@@ -109,15 +109,7 @@ See [[pricing.md]]
 
 ## Telemetry
 
-🔄 These values change independently of durable endpoint configuration.
-
-- `status`
-- `stats`
-- `statsByTier`
-- `routing_heuristics_by_tier`
-- `status_heuristics`
-- `status_heuristics_1d`
-- `status_heuristics_5m`
+See [[telemetry.md]]
 
 ## Embedded records
 

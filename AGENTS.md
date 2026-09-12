@@ -2,64 +2,33 @@
 
 ## Development
 
-- Use `bun run fix` for all work validation, including type checking. Do not use `tsc`.
+- Use `bun run fix` for all validation and formatting. Not `tsc`.
 - Inline linter disables may be used if the reasoning is justified.
 
 ## Overview
 
 ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
 
-- `apps/web`: Next.js 16, React 19, Tailwind CSS 4, TanStack Query/Table/Virtual
+- `apps/web`: Next.js frontend
 - `packages/backend`: Convex
+- `apps/logos`: Asset service
 - "MEPs" = Models, Endpoints, Providers
 
 ## Target Users
 
-Highly technical users who work with OpenRouter and LLMs professionally:
-
+- Highly technical users who work with OpenRouter and LLMs professionally:
 - Deep understanding of AI model concepts (context lengths, quantization, reasoning tokens)
-- Need comprehensive pricing details and capability comparisons
-- Value technical precision and dense data over simplified explanations
+- Want rapid and comprehensive endpoint comparisons
+- Value technical precision and dense data over simplified summaries
 
-### Endpoints Data Grid
+## Products
 
-Primary browsing interface - comprehensive, filterable data grid for comparing models and endpoints. Advanced filtering by capabilities, pricing, modalities, supported parameters. Ongoing evolution as OpenRouter's offerings expand.
+- `apps/web/components/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
 
-- `apps/web/components/endpoints-data-grid/`
+- `apps/web/components/monitor/` Change tracking feed showing field-level diffs between snapshots, revealing activity otherwise impossible to observe.
 
-### Monitor
+- `apps/web/components/pricing-history/` Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
 
-Change tracking feed showing field-level diffs between snapshots. Reveals model/endpoint/provider activity that was previously impossible to observe.
+- `packages/backend/convex/alerts/` Users can subscribe to model id patterns, providing a personalized version of Monitor via Discord. No frontend component.
 
-- `apps/web/components/monitor/`
-
-### Entity Overview
-
-Sheet with model or provider details, opened from the grid and Monitor. Links into Endpoints, Monitor, and Pricing History.
-
-- `apps/web/components/entity-overview/`
-
-### Pricing History
-
-Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
-
-- `apps/web/components/pricing-history/`
-
-### Discord Alerts Bot
-
-Users can subscribe to model id patterns, providing a personalized version of Monitor via Discord. There is no frontend component.
-
-- `packages/backend/convex/alerts/`
-- `packages/backend/convex/discord/`
-
-### ORCA API
-
-Public HTTP API providing programmatic access to ORCA's curated data.
-
-- `packages/backend/convex/public_api/v2/`
-
-## Entity Logos
-
-- `apps/logos`
-- Builds and serves logo assets through a standalone Cloudflare Worker
-- Shared slug-to-service-URL resolution lives in `packages/backend/convex/shared/entityLogo.ts`
+- `packages/backend/convex/public_api/v2/` Public HTTP API providing programmatic access to ORCA's curated data.
