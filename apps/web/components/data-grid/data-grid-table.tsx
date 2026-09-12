@@ -281,16 +281,17 @@ function DataGridTableVirtual() {
   const columnsResizable = props.tableLayout?.columnsResizable === true
   const hasRowBorder = props.tableLayout?.rowBorder === true
 
+  // Invalidate virtual item keys whenever the final row order or membership changes.
+  const { rows } = table.getRowModel()
+  const getItemKey = useCallback((index: number) => rows[index]?.id ?? index, [rows])
+
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
-    count: table.getRowModel().rows.length,
+    count: rows.length,
     getScrollElement: () => viewportRef.current,
     estimateSize: () => rowHeight,
     overscan,
-    getItemKey: useCallback(
-      (index: number) => table.getRowModel().rows[index]?.id ?? index,
-      [table],
-    ),
+    getItemKey,
   })
 
   if (isLoading) {
@@ -342,7 +343,7 @@ function DataGridTableVirtual() {
 
           {virtualRows.length > 0 ? (
             virtualRows.map((virtualRow) => {
-              const row = table.getRowModel().rows[virtualRow.index]
+              const row = rows[virtualRow.index]
               if (row === undefined) {
                 return null
               }
