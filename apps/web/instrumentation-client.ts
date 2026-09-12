@@ -1,4 +1,4 @@
-// oxlint-disable typescript/no-non-null-assertion config env vars
+// oxlint-disable typescript/no-non-null-assertion -- Configuration requires these environment variables.
 import posthogClient from 'posthog-js'
 
 posthogClient.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {

@@ -129,7 +129,7 @@ function HighlightedJsonCode({ code }: { code: string }) {
         'dark:[&_.shiki]:!text-[var(--shiki-dark)]',
         'dark:[&_.shiki_span]:!text-[var(--shiki-dark)]',
       )}
-      // oxlint-disable-next-line react/no-danger required by shiki
+      // oxlint-disable-next-line react/no-danger -- Required to render Shiki's highlighted HTML.
       dangerouslySetInnerHTML={{ __html: highlighted.html }}
     />
   )

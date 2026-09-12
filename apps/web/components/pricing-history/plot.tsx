@@ -278,12 +278,14 @@ export function PricingHistoryPlot({
     if (emphasis !== null) {
       chart.current?.dispatchAction({ type: 'highlight', seriesName: emphasis })
     }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Reapply highlighting after trace or range changes update the chart's series.
   }, [emphasis, traces, range])
 
   useEffect(() => {
     if (chart.current) {
       applyInspectedPointer(chart.current, inspectedAt, asOf)
     }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Restore the inspection pointer after trace or range changes update the chart.
   }, [inspectedAt, asOf, traces, range])
 
   return (

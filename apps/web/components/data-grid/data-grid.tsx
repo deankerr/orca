@@ -52,7 +52,7 @@ export interface DataGridProps<TData extends object> {
 
 type DataGridProviderProps<TData extends object> = Omit<DataGridProps<TData>, 'table'>
 
-// oxlint-disable-next-line typescript/no-explicit-any required for generic params
+// oxlint-disable-next-line typescript/no-explicit-any -- Required for generic parameters.
 const DataGridContext = createContext<DataGridContextProps<any> | undefined>(undefined)
 
 function useDataGrid() {

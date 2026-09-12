@@ -1,4 +1,4 @@
-// oxlint-disable typescript/no-non-null-assertion config env vars
+// oxlint-disable typescript/no-non-null-assertion -- Configuration requires these environment variables.
 import { withPostHogConfig } from '@posthog/nextjs-config'
 import type { NextConfig } from 'next'
 

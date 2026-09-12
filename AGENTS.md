@@ -3,7 +3,7 @@
 ## Development
 
 - Use `bun run fix` for all validation and formatting. Not `tsc`.
-- Inline linter disables may be used if the reasoning is justified.
+- Lint suppression requires an explanation: default to `// oxlint-disable-next-line rule -- Reason.`, or ordinary comments above.
 
 ## Overview
 

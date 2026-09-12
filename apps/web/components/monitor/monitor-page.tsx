@@ -12,7 +12,6 @@ import { FilterBar } from './filter-bar'
 import { useMonitor } from './use-monitor'
 import { useMonitorFilters } from './use-monitor-filters'
 
-// oxlint-disable-next-line react/react-compiler
 export function MonitorPage() {
   const filters = useMonitorFilters()
   const monitor = useMonitor(filters.modelSlug, filters.providerSlug)
