@@ -20,10 +20,10 @@
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
-    "@oxc-project/types": "0.142.0",
+    "@oxc-project/types": "0.149.0",
     "@swaggerexpert/jsonpath": "^4.0.4",
     "@types/bun": "catalog:",
-    "oxc-parser": "0.142.0",
+    "oxc-parser": "0.149.0",
     "typescript": "catalog:"
   }
 }
