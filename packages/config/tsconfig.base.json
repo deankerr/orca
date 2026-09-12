@@ -1,5 +1,5 @@
 {
-  "$schema": "../../node_modules/@effect/tsgo/schema.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext"],
@@ -21,11 +21,6 @@
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ]
+    "noImplicitOverride": true
   }
 }

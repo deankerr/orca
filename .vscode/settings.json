@@ -10,22 +10,5 @@
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
-  },
-
-  "js/ts.preferences.autoImportFileExcludePatterns": ["repos/**"],
-
-  "files.exclude": {
-    "repos/**": true
-  },
-
-  "files.watcherExclude": {
-    "repos/**": true
-  },
-
-  "search.exclude": {
-    "repos/**": true
-  },
-  "js/ts.tsdk.additionalLocations": ["./node_modules/typescript/bin"],
-  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
-  "js/ts.experimental.useTsgo": true
+  }
 }

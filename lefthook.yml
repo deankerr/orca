@@ -5,10 +5,8 @@ pre-commit:
     - name: ultracite
       glob:
         - '*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}'
-      exclude:
-        - 'repos/**'
-      run: bun x ultracite fix --disable-nested-config --no-error-on-unmatched-pattern {staged_files}
+      run: bun x ultracite fix --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
 
     - name: test
-      run: bun test --path-ignore-patterns=repos
+      run: bun test

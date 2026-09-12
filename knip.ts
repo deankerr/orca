@@ -1,7 +1,6 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  ignore: ['repos/**'],
   ignoreIssues: {
     'apps/web/components/data-grid/**': ['exports', 'types'],
     'apps/web/components/ui/**': ['exports', 'types', 'files'],

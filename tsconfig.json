@@ -4,5 +4,5 @@
   "extends": "@orca/config/tsconfig.base.json",
   "files": [],
   "include": [],
-  "exclude": ["repos"]
+  "exclude": []
 }
