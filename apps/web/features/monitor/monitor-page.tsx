@@ -3,12 +3,12 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback } from 'react'
 
+import { PageLoading } from '@/components/app-layout/pages'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 
-import { PageLoading } from '../app-layout/pages'
 import { flattenMonitorFeed, MonitorFeedRowItem } from './crawl-batch'
 import { FilterBar } from './filter-bar'
+import { useInfiniteScroll } from './use-infinite-scroll'
 import { useMonitor } from './use-monitor'
 import { useMonitorFilters } from './use-monitor-filters'
 

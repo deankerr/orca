@@ -1,6 +1,6 @@
 'use client'
 
-import { ModelCombobox, ProviderCombobox } from '../shared/or-entity-combobox'
+import { ModelCombobox, ProviderCombobox } from './or-entity-combobox'
 import type { useMonitorFilters } from './use-monitor-filters'
 
 export function FilterBar({ filters }: { filters: ReturnType<typeof useMonitorFilters> }) {

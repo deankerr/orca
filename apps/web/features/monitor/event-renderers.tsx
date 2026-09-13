@@ -10,12 +10,12 @@ import { formatPricingFields } from '@orca/backend/convex/shared/pricing'
 import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
 
+import { EntityIdentity } from '@/components/shared/entity-identity'
+import { InlineMarkdown } from '@/components/shared/inline-markdown'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 import { EntityOverviewTrigger } from '../entity-overview/trigger'
-import { EntityIdentity } from '../shared/entity-identity'
-import { InlineMarkdown } from '../shared/inline-markdown'
-import { Badge } from '../ui/badge'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
 
 // -- Public API

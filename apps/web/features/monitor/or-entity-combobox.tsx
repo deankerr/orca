@@ -7,13 +7,12 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { CheckIcon } from 'lucide-react'
 import { useId, useMemo, useRef, useState } from 'react'
 
+import { EntityIdentity, EntityIdentitySkeleton } from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-
-import { EntityIdentity, EntityIdentitySkeleton } from './entity-identity'
 
 type EntityItem = {
   name: string

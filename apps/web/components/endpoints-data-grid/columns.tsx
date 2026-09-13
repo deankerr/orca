@@ -3,10 +3,10 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
 import { Badge } from '@/components/ui/badge'
+import { EntityOverviewTrigger } from '@/features/entity-overview/trigger'
 import { endpointAttributeSets } from '@/lib/attribute-groups'
 import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
-import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { AttributeBadgeSet } from '../shared/attribute-badge'
 import { EndpointUuid } from '../shared/endpoint-uuid'
 import { EntityIdentity } from '../shared/entity-identity'

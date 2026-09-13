@@ -11,9 +11,9 @@ OpenRouter's catalog of models, providers, and endpoints changes constantly — 
 That history powers a few things:
 
 - **Endpoints Data Grid** — the primary browsing interface. A dense, filterable grid for comparing models and endpoints across capabilities, pricing, modalities, and supported parameters. Built on TanStack Table and Virtual to stay responsive over the full catalog. (`apps/web/components/endpoints-data-grid/`)
-- **Monitor** — a change feed showing field-level diffs between snapshots, surfacing model, endpoint, and provider activity that is otherwise invisible. (`apps/web/components/monitor/`)
-- **Entity Overview** — a sheet with model or provider details, opened from the grid and Monitor. (`apps/web/components/entity-overview/`)
-- **Pricing History** — a per-model overlay of provider prices over time. (`apps/web/components/pricing-history/`)
+- **Monitor** — a change feed showing field-level diffs between snapshots, surfacing model, endpoint, and provider activity that is otherwise invisible. (`apps/web/features/monitor/`)
+- **Entity Overview** — a sheet with model or provider details, opened from the grid and Monitor. (`apps/web/features/entity-overview/`)
+- **Pricing History** — a per-model overlay of provider prices over time. (`apps/web/features/pricing-history/`)
 - **Discord alerts** — subscribe to model id patterns and receive a personalized version of Monitor in Discord. No frontend; driven entirely by the backend. (`packages/backend/convex/alerts/`, `packages/backend/convex/discord/`)
 - **Public API** — an HTTP endpoint exposing the curated model/endpoint data. See [Public API](#public-api) below.
 
