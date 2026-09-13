@@ -97,5 +97,3 @@ export const ModelSchema = z.looseObject({
   updated_at: z.iso.datetime({ offset: true }),
   warning_message: z.string().nullable(),
 })
-
-export type Model = z.infer<typeof ModelSchema>

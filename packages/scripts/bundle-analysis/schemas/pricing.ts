@@ -96,7 +96,7 @@ export const PricingSchema = z
     }
   })
 
-export const PricingTierSchema = z.looseObject({
+const PricingTierSchema = z.looseObject({
   display_pricing: z.array(DisplayPricingRowSchema),
 })
 

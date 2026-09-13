@@ -96,7 +96,7 @@ export function endpoint(overrides: Record<string, unknown> = {}) {
   }
 }
 
-export function model(overrides: Record<string, unknown> = {}) {
+function model(overrides: Record<string, unknown> = {}) {
   return {
     author: 'example',
     author_display_name: 'Example',

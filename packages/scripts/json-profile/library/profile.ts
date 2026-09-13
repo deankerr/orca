@@ -1,6 +1,6 @@
 // oxlint-disable sort-keys -- Property order is part of the serialized JSON profile format.
 
-export type JsonPrimitive = boolean | null | number | string
+type JsonPrimitive = boolean | null | number | string
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 export type JsonRecord = Record<string, JsonValue>
 
@@ -25,12 +25,12 @@ export interface FieldProfile extends ValueProfile {
 
 export type JsonTypeProfile = ArrayProfile | NullProfile | ObjectProfile | PrimitiveProfile
 
-export interface NullProfile {
+interface NullProfile {
   type: 'null'
   count: number
 }
 
-export interface PrimitiveProfile {
+interface PrimitiveProfile {
   type: 'boolean' | 'number' | 'string'
   count: number
   values: Array<{ value: Exclude<JsonPrimitive, null>; count: number }>
@@ -43,7 +43,7 @@ export interface ObjectProfile {
   fields: FieldProfile[]
 }
 
-export interface ArrayProfile {
+interface ArrayProfile {
   type: 'array'
   count: number
   lengths: Array<{ length: number; count: number }>

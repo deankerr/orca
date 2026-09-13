@@ -115,5 +115,3 @@ export const EndpointSchema = EndpointPricingSourceSchema.extend({
   tiers: TiersSchema.optional(),
   variant: z.string(),
 })
-
-export type Endpoint = z.infer<typeof EndpointSchema>

@@ -22,7 +22,7 @@ export interface BundleProfile {
   endpoints: JsonProfile
 }
 
-export interface BundleRecords {
+interface BundleRecords {
   models: JsonRecord[]
   endpoints: JsonRecord[]
   metadata: BundleProfile['source']
@@ -47,7 +47,7 @@ export function bundleProfileFilename(profile: BundleProfile): string {
   return `json-profile${variant}.${profile.source.crawl_at}.me1.orca.json`
 }
 
-export function extractBundleRecords(
+function extractBundleRecords(
   bundle: ModelEndpointsV1,
   options: BundleProfileOptions = {},
 ): BundleRecords {
