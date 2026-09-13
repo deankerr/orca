@@ -11,7 +11,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useKeys } from 'rooks'
 
-// oxlint-disable-next-line typescript/no-non-null-assertion required var
+// oxlint-disable-next-line typescript/no-non-null-assertion -- The Convex client requires this environment variable.
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 /*

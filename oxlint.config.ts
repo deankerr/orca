@@ -13,6 +13,7 @@ export default defineConfig({
     '**/worker-configuration.d.ts',
   ],
   options: {
+    reportUnusedDisableDirectives: 'warn',
     typeAware: true,
     typeCheck: true,
   },
@@ -24,7 +25,6 @@ export default defineConfig({
         complexity: 'off',
         'no-nested-ternary': 'off',
         'sort-keys': 'off',
-        'unicorn/no-nested-ternary': 'off',
         'unicorn/no-useless-undefined': 'off',
       },
     },
@@ -49,6 +49,7 @@ export default defineConfig({
     'array-type': 'off',
     'func-style': 'off',
     'no-inline-comments': 'off',
+    'no-redeclare': 'off',
     'no-use-before-define': 'off',
     'no-warning-comments': 'off',
     'react/function-component-definition': 'off',
@@ -56,22 +57,13 @@ export default defineConfig({
     'typescript/consistent-type-definitions': 'off',
     'unicorn/consistent-function-scoping': 'off',
 
-    // conflicts
-    'require-await': 'off',
-
-    // legacy code
+    // project specific
     'no-await-in-loop': 'off',
-    'react/jsx-handler-names': 'off',
-    'require-unicode-regexp': 'off',
-
-    // effect/alchemy
     'no-shadow': 'off',
-    'oxc/no-barrel-file': 'off',
-    'promise/prefer-await-to-callbacks': 'off',
-    'promise/prefer-await-to-then': 'off', // Effect.catch / combinators
-    'require-yield': 'off',
+    'promise/prefer-await-to-then': 'off',
+    'react/jsx-handler-names': 'off',
+    'require-await': 'off',
+    'require-unicode-regexp': 'off',
     'unicorn/filename-case': 'off',
-    'unicorn/no-array-for-each': 'off',
-    'unicorn/no-array-method-this-argument': 'off', // Effect.map(fa, f)
   },
 })

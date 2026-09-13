@@ -271,7 +271,6 @@ function DataGridTableEmpty() {
   )
 }
 
-// oxlint-disable-next-line react/react-compiler
 function DataGridTableVirtual() {
   'use no memo'
   const { table, isLoading, props } = useDataGrid()
@@ -336,7 +335,7 @@ function DataGridTableVirtual() {
         <DataGridTableBody>
           {paddingTop > 0 && (
             <tr>
-              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label - not a control */}
+              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label -- Not a control. */}
               <td style={{ height: `${paddingTop}px` }} />
             </tr>
           )}
@@ -366,7 +365,7 @@ function DataGridTableVirtual() {
 
           {paddingBottom > 0 && (
             <tr>
-              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label - not a control */}
+              {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label -- Not a control. */}
               <td style={{ height: `${paddingBottom}px` }} />
             </tr>
           )}

@@ -1,5 +1,3 @@
-// oxlint-disable sort-keys -- Fixtures mirror source data order.
-
 import type { LoadedModelEndpointsV1 } from '../model-endpoints-v1.ts'
 import { ModelEndpointsV1Schema } from '../model-endpoints-v1.ts'
 

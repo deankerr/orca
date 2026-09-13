@@ -1,4 +1,4 @@
-// oxlint-disable typescript/no-explicit-any required for generic params
+// oxlint-disable typescript/no-explicit-any -- Required for generic parameters.
 import type { paginationOptsValidator, PaginationResult } from 'convex/server'
 
 import type { Doc, TableNames } from '../_generated/dataModel'

@@ -9,6 +9,22 @@ Follow [ACQUIRING_LOGOS.md](./ACQUIRING_LOGOS.md) for the sourcing and review re
 add a guessed logo, generated mark, wordmark, unrelated namesake, or third-party placeholder merely
 to close one of these gaps.
 
+## Thinking Machines / Inkling
+
+- **Key:** `thinkingmachines` (author of `thinkingmachines/inkling`)
+- **Last searched:** 2026-09-13 UTC
+- **Identity evidence:** Thinking Machines Lab's official Inkling announcement links to the
+  `thinkingmachines/Inkling` Hugging Face model repository.
+- **Sources checked:** The official homepage, Inkling product page and announcement, their page
+  assets and embedded SVGs, the official Hugging Face model page and organization avatar, web
+  search, installed LobeHub assets, aliases, and existing source assets.
+- **Candidates rejected:** The organization avatar is a text-only wordmark. The website's Apple
+  touch icon is a generic dark rounded square inside a light rounded square. Inkling's product page
+  displays interactive SVG artwork explicitly labelled "Generative ink-blob artwork", rather than
+  a fixed identifying mark. Its other illustrations identify Tinker or depict benchmarks.
+- **Why it failed:** No usable standalone identifying logo was found for either the author or
+  Inkling. Revisit when the owner publishes a fixed mark or an official compact model avatar.
+
 ## Crucible
 
 - **Key:** `crucible`

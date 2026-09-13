@@ -216,7 +216,6 @@ export function ProviderCombobox({
   )
 }
 
-// oxlint-disable-next-line react/react-compiler
 function VirtualizedEntityList({
   items,
   selectedSlug,

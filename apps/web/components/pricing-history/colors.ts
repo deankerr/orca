@@ -42,7 +42,7 @@ export function providerSrgbColor(providerId: string) {
   return color
 }
 
-/* oxlint-disable no-bitwise, unicorn/prefer-math-trunc -- FNV-1a hashing is inherently 32-bit integer math. */
+/* oxlint-disable no-bitwise -- FNV-1a hashing is inherently 32-bit integer math. */
 /** 32-bit FNV-1a: cheap, stable, and well-mixed for short slugs. */
 function fnv1aHash(text: string) {
   let hash = 0x81_1c_9d_c5
@@ -69,7 +69,7 @@ function providerColorCoordinates(providerId: string) {
   // lightness so near-hue collisions still separate a little.
   const hueFraction = (hash & 0xff_ff) / 0x1_00_00
   const lightnessFraction = (hash >>> 16) / 0x1_00_00
-  /* oxlint-enable no-bitwise, unicorn/prefer-math-trunc */
+  /* oxlint-enable no-bitwise */
 
   const usableHueRange = 360 - (MUD_BAND_END - MUD_BAND_START)
   const hue = (MUD_BAND_END + hueFraction * usableHueRange) % 360

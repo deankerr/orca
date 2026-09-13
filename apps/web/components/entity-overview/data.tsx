@@ -75,6 +75,7 @@ export function DataDescription({ value }: { value: string | null }) {
     return () => {
       observer.disconnect()
     }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Text changes require remeasurement and observer attachment even when the clamped element's dimensions stay the same.
   }, [value, expanded])
 
   if (value === null || value === '') {
