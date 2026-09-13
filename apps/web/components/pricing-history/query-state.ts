@@ -2,7 +2,7 @@ import { parseAsString } from 'nuqs'
 
 import { href, toSearchParams } from '@/lib/href'
 
-export const PRICING_HISTORY_PARAM = 'pricing-history'
+const PRICING_HISTORY_PARAM = 'pricing-history'
 
 export const pricingHistoryParsers = {
   pricingHistory: parseAsString,
