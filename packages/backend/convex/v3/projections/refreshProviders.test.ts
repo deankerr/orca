@@ -48,14 +48,12 @@ function harness(history: ScanArtifact | null) {
   const current = artifact('2026-09-15', ['active', 'not-in-views'])
   const sources = new Map([current, ...(history === null ? [] : [history])].map((a) => [a.id, a]))
   const loaded: string[] = []
-  const predecessors: string[] = []
   const writes: { rows: { provider_id: string; metadata: MetadataRecord }[] }[] = []
   const ctx = {
     runQuery(
       ref: FunctionReference<'query'>,
       args: {
         name: string
-        scanAt: string
         paginationOpts: { cursor: string | null }
       },
     ) {
@@ -65,6 +63,7 @@ function harness(history: ScanArtifact | null) {
           return {
             page: (secondPage ? ['absent-b'] : ['active', 'absent-a']).map((provider_id) => ({
               provider_id,
+              scan_at: '2026-09-12',
               metadata: { obsolete: true },
             })),
             isDone: secondPage,
@@ -73,21 +72,6 @@ function harness(history: ScanArtifact | null) {
         }
         case 'v3/ingest:currentArtifactId': {
           return current.id
-        }
-        case 'v3/projections/queries:endpoints': {
-          return {
-            page: [
-              { provider_id: 'absent-a', unlisted_at: '2026-09-14' },
-              { provider_id: 'absent-a', unlisted_at: '2026-08-01' },
-              { provider_id: 'absent-b', unlisted_at: '2026-09-14' },
-            ],
-            isDone: true,
-            continueCursor: '',
-          }
-        }
-        case 'v3/projections/refreshProviders:previousArtifactId': {
-          predecessors.push(args.scanAt)
-          return 'scan.2026-09-12.jsonl'
         }
         case 'objects/locators:get': {
           loaded.push(args.name)
@@ -118,13 +102,12 @@ function harness(history: ScanArtifact | null) {
   const handler = (
     run as unknown as { _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<number> }
   )._handler
-  return { execute: async () => await handler(ctx, {}), writes, loaded, predecessors }
+  return { execute: async () => await handler(ctx, {}), writes, loaded }
 }
 
-test('refreshes only provider views using current and grouped last-observed sources', async () => {
+test('refreshes providers from current or row scan_at sources without endpoint associations', async () => {
   const h = harness(artifact('2026-09-12', ['absent-a', 'absent-b']))
   expect(await h.execute()).toBe(3)
-  expect(h.predecessors).toEqual(['2026-09-14'])
   expect(h.loaded).toEqual(['scan.2026-09-15.jsonl', 'scan.2026-09-12.jsonl'])
   expect(h.writes).toEqual([
     {

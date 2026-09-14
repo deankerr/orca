@@ -11,4 +11,4 @@ export const scanIngestionsTable = defineTable({
   from_artifact_id: v.string(),
   to_artifact_id: v.string(),
   scan_at: v.string(),
-}).index('by_scan_at', ['scan_at'])
+})

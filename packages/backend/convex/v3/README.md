@@ -56,9 +56,9 @@
 
 ### Refresh
 
-- `refreshProviders.run` manually replaces all retained providers' metadata from their latest source.
-- Provider refresh uses full scan projections and resolves absent providers through final unlistings.
-- Refresh requires exclusive execution, complete ingestion history, and access to source artifacts.
+- `refreshProviders.run` replaces provider metadata using full projections of the current scan.
+- Absent providers use their row's `scan_at` artifact, preserving that observation's metadata.
+- Refresh requires exclusive execution and access to every indicated source artifact.
 - Refresh resolves every source before one atomic metadata write; any error aborts the action.
 
 ## Series
