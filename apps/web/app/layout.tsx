@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 import { AppShell } from '@/components/app-layout/app-shell'
-import { Toaster } from '@/components/ui/sonner'
+import { Toaster } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn, withEnvironmentPrefix } from '@/lib/utils'
 
@@ -45,12 +45,13 @@ export default function RootLayout({
         'dark',
       )}
     >
-      <body className="h-full overflow-hidden">
+      {/* Toast portals must sit above sheets and dialogs, which use z-50. */}
+      <body className="h-full overflow-hidden [&_[data-slot=toast-viewport]]:z-60">
         <NuqsAdapter>
           <ConvexClientProvider>
             <TooltipProvider>
               <AppShell>{children}</AppShell>
-              <Toaster position="top-center" theme="dark" />
+              <Toaster />
             </TooltipProvider>
           </ConvexClientProvider>
         </NuqsAdapter>

@@ -1,11 +1,11 @@
 import { Suspense } from 'react'
 
 import { DevBreakpointIndicator } from '@/components/dev-utils/dev-breakpoint-indicator'
+import { EntityOverviewProvider } from '@/features/entity-overview/context'
+import { EntityOverviewSheet } from '@/features/entity-overview/sheet'
+import { PricingHistoryProvider } from '@/features/pricing-history/context'
+import { PricingHistoryOverlay } from '@/features/pricing-history/overlay'
 
-import { EntityOverviewProvider } from '../entity-overview/context'
-import { EntityOverviewSheet } from '../entity-overview/sheet'
-import { PricingHistoryProvider } from '../pricing-history/context'
-import { PricingHistoryOverlay } from '../pricing-history/overlay'
 import { AppHeader } from './app-header'
 
 export function AppShell({ children }: { children: React.ReactNode }) {

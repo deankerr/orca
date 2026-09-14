@@ -1,5 +1,4 @@
 import { entityLogoUrl } from '@orca/backend/convex/shared/entityLogo'
-import Image from 'next/image'
 
 import { cn } from '@/lib/utils'
 
@@ -18,12 +17,21 @@ export function EntityAvatar({
     <span
       data-slot="entity-avatar"
       className={cn(
-        '@container relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border text-sm select-none',
+        'inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border select-none',
         className,
       )}
       {...props}
     >
-      <Image src={logoPath} alt="" fill unoptimized sizes="40px" className="object-contain" />
+      {/* oxlint-disable-next-line nextjs/no-img-element -- The logo service serves pre-sized assets; Next image optimization is unnecessary. */}
+      <img
+        src={logoPath}
+        alt=""
+        width={28}
+        height={28}
+        loading="lazy"
+        decoding="async"
+        className="size-full object-contain"
+      />
     </span>
   )
 }

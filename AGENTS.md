@@ -23,11 +23,11 @@ ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRo
 
 ## Products
 
-- `apps/web/components/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
+- `apps/web/features/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
 
-- `apps/web/components/monitor/` Change tracking feed showing field-level diffs between snapshots, revealing activity otherwise impossible to observe.
+- `apps/web/features/monitor/` Change tracking feed showing field-level diffs between snapshots, revealing activity otherwise impossible to observe.
 
-- `apps/web/components/pricing-history/` Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
+- `apps/web/features/pricing-history/` Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
 
 - `packages/backend/convex/alerts/` Users can subscribe to model id patterns, providing a personalized version of Monitor via Discord. No frontend component.
 

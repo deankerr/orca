@@ -1,6 +1,8 @@
 'use client'
 
+import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
+import { useQuery } from '@tanstack/react-query'
 import {
   BracesIcon,
   ChartNoAxesColumnIncreasingIcon,
@@ -11,14 +13,14 @@ import { useDeferredValue, useMemo, useState } from 'react'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
-import { ExternalLink } from '@/components/shared/external-link'
 import { SearchInput } from '@/components/shared/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useCachedQuery } from '@/hooks/use-cached-query'
 import { cn, getConvexHttpUrl } from '@/lib/utils'
+
+import { ExternalLink } from './external-link'
 
 type EntityKind = 'models' | 'providers'
 type Availability = 'all' | 'available' | 'unavailable'
@@ -59,8 +61,14 @@ const QUICK_LINKS = [
 ] as const
 
 export default function Page() {
-  const models = useCachedQuery(api.models.list, {}, 'models-list')
-  const providers = useCachedQuery(api.providers.list, {}, 'providers-list')
+  const { data: models } = useQuery({
+    ...convexQuery(api.models.list, {}),
+    throwOnError: true,
+  })
+  const { data: providers } = useQuery({
+    ...convexQuery(api.providers.list, {}),
+    throwOnError: true,
+  })
   const [entityKind, setEntityKind] = useState<EntityKind>('models')
   const [availability, setAvailability] = useState<Availability>('all')
   const [query, setQuery] = useState('')

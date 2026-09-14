@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 
-import { CopyToClipboardButton } from '@/components/shared/copy-to-clipboard-button'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 
 import { ClientApiCodeBlock } from './client-api-preview'
+import { CopyToClipboardButton } from './copy-to-clipboard-button'
 import { API_PATH } from './public-api'
 
 async function getPublicApiUrl() {

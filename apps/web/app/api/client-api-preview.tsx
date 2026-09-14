@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
-import { highlightJson } from '@/lib/highlight-json'
 import { cn } from '@/lib/utils'
 
+import { highlightJson } from './highlight-json'
 import { API_PATH } from './public-api'
 
 const SAMPLE_MODEL_LIMIT = 5
