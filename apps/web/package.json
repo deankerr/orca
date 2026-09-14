@@ -40,7 +40,6 @@
     "remeda": "catalog:",
     "rooks": "^9.9.0",
     "shiki": "^4.4.3",
-    "sonner": "^2.0.8",
     "zod": "catalog:"
   },
   "devDependencies": {

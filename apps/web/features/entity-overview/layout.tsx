@@ -40,7 +40,7 @@ export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Copy Identifier"
+        aria-label="Copy identifier"
         onClick={() => {
           void copy(slug, `Copied: ${slug}`)
         }}
