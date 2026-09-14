@@ -54,6 +54,13 @@
 - `scan_at` links to the last scan which caused the entity view to update.
   - It does not indicate staleness.
 
+### Refresh
+
+- `refreshProviders.run` manually replaces all retained providers' metadata from their latest source.
+- Provider refresh uses full scan projections and resolves absent providers through final unlistings.
+- Refresh requires exclusive execution, complete ingestion history, and access to source artifacts.
+- Refresh resolves every source before one atomic metadata write; any error aborts the action.
+
 ## Series
 
 - Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
