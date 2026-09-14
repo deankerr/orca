@@ -2,14 +2,14 @@
 
 import { LayoutGridIcon } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
+
 import {
   endpointModalityInputAttributes,
   endpointModalityOutputAttributes,
-} from '@/lib/attribute-groups'
-import type { EndpointModalityAttribute } from '@/lib/attribute-groups'
-import { attributes } from '@/lib/attributes'
-import { cn } from '@/lib/utils'
-
+} from './attribute-groups'
+import type { EndpointModalityAttribute } from './attribute-groups'
+import { attributes } from './attributes'
 import {
   FilterMenu,
   FilterMenuBody,

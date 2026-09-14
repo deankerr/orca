@@ -2,8 +2,8 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   ignoreIssues: {
-    'apps/web/components/data-grid/**': ['exports', 'types'],
     'apps/web/components/ui/**': ['exports', 'types', 'files'],
+    'apps/web/features/endpoints-data-grid/data-grid/**': ['exports', 'types'],
   },
   workspaces: {
     'apps/web': {

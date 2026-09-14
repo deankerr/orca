@@ -1,9 +1,9 @@
 import type { Column } from '@tanstack/react-table'
 
-import { Shimmer } from '@/components/shared/shimmer'
 import { cn } from '@/lib/utils'
 
 import { useDataGrid } from './data-grid'
+import { Shimmer } from './shimmer'
 
 const ROW_COUNT = 15
 

@@ -1,4 +1,4 @@
-import { useDataGrid } from '../data-grid/data-grid'
+import { useDataGrid } from './data-grid/data-grid'
 
 export function DataGridFooter({
   totalCount,

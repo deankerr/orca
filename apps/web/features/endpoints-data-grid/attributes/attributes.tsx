@@ -32,9 +32,9 @@ import {
   Wrench,
 } from 'lucide-react'
 
-import type { ColorIconBadgeColor } from '@/components/shared/color-icon-badge'
-import { InlineCode } from '@/components/shared/inline-code'
-import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
+import type { GridEndpoint } from '../data/grid-endpoints'
+import type { ColorIconBadgeColor } from './color-icon-badge'
+import { InlineCode } from './inline-code'
 
 type EndpointPartial = Partial<GridEndpoint>
 type AttributeIcon = LucideIcon

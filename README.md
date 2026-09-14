@@ -10,7 +10,7 @@ OpenRouter's catalog of models, providers, and endpoints changes constantly — 
 
 That history powers a few things:
 
-- **Endpoints Data Grid** — the primary browsing interface. A dense, filterable grid for comparing models and endpoints across capabilities, pricing, modalities, and supported parameters. Built on TanStack Table and Virtual to stay responsive over the full catalog. (`apps/web/components/endpoints-data-grid/`)
+- **Endpoints Data Grid** — the primary browsing interface. A dense, filterable grid for comparing models and endpoints across capabilities, pricing, modalities, and supported parameters. Built on TanStack Table and Virtual to stay responsive over the full catalog. (`apps/web/features/endpoints-data-grid/`)
 - **Monitor** — a change feed showing field-level diffs between snapshots, surfacing model, endpoint, and provider activity that is otherwise invisible. (`apps/web/features/monitor/`)
 - **Entity Overview** — a sheet with model or provider details, opened from the grid and Monitor. (`apps/web/features/entity-overview/`)
 - **Pricing History** — a per-model overlay of provider prices over time. (`apps/web/features/pricing-history/`)

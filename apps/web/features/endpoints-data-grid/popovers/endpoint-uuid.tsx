@@ -1,11 +1,11 @@
 import { LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 
-import { buildEndpointGridHref } from '@/components/endpoints-data-grid/use-endpoint-query-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
+import { buildEndpointGridHref } from '../use-endpoint-query-state'
 import { PopoverCardContent, PopoverCardTitle, PopoverCardTrigger } from './popover-card'
 
 // --- Popover content ---

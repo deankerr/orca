@@ -23,7 +23,7 @@ ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRo
 
 ## Products
 
-- `apps/web/components/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
+- `apps/web/features/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
 
 - `apps/web/features/monitor/` Change tracking feed showing field-level diffs between snapshots, revealing activity otherwise impossible to observe.
 

@@ -1,9 +1,9 @@
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs'
 
-import { endpointModalityAttributes } from '@/lib/attribute-groups'
-import type { EndpointModalityAttribute } from '@/lib/attribute-groups'
-import type { AttributeKey } from '@/lib/attributes'
-import { isAttributeKey } from '@/lib/attributes'
+import { endpointModalityAttributes } from './attribute-groups'
+import type { EndpointModalityAttribute } from './attribute-groups'
+import type { AttributeKey } from './attributes'
+import { isAttributeKey } from './attributes'
 
 const endpointGridStateOptions = {
   history: 'push' as const,

@@ -2,11 +2,11 @@
 
 import { FilterIcon } from 'lucide-react'
 
-import { endpointFilterAttributeGroups } from '@/lib/attribute-groups'
-import type { AttributeKey } from '@/lib/attributes'
-import { attributes } from '@/lib/attributes'
 import { cn } from '@/lib/utils'
 
+import { endpointFilterAttributeGroups } from './attribute-groups'
+import type { AttributeKey } from './attributes'
+import { attributes } from './attributes'
 import {
   FilterMenu,
   FilterMenuBody,

@@ -8,26 +8,25 @@ import {
 } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
-import { useIsMobile } from '@/hooks/use-mobile'
-import { attributes, isAttributeKey } from '@/lib/attributes'
-import { createSlugSearcher } from '@/lib/slug-search'
-import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
-
-import { DataGrid } from '../data-grid/data-grid'
+import { attributes, isAttributeKey } from './attributes/attributes'
+import type { FacetFilterState } from './attributes/use-endpoint-facet-state'
+import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
+import { columns } from './columns'
+import { DataGridControls } from './controls'
+import { DataGrid } from './data-grid/data-grid'
 import {
   DataGridCard,
   DataGridCardContent,
   DataGridCardFooter,
   DataGridCardToolbar,
-} from '../data-grid/data-grid-card'
-import { DataGridTableVirtual } from '../data-grid/data-grid-table'
-import { columns } from './columns'
-import { DataGridControls } from './controls'
+} from './data-grid/data-grid-card'
+import { DataGridTableVirtual } from './data-grid/data-grid-table'
+import { useIsMobile } from './data-grid/use-mobile'
+import type { GridEndpoint } from './data/grid-endpoints'
 import { EndpointsEmptyState } from './endpoints-empty-state'
 import { DataGridFooter } from './footer'
-import { DataGridPopoverProvider } from './popover-handle'
-import type { FacetFilterState } from './use-endpoint-facet-state'
-import { useEndpointFacetState } from './use-endpoint-facet-state'
+import { DataGridPopoverProvider } from './popovers/popover-handle'
+import { createSlugSearcher } from './slug-search/slug-search'
 import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { hasEndpointGridQuery, useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'

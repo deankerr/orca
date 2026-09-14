@@ -1,16 +1,16 @@
 import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { ColumnDef } from '@tanstack/react-table'
 
-import { DataGridColumnHeader } from '@/components/data-grid/data-grid-column-header'
+import { EntityIdentity } from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { EntityOverviewTrigger } from '@/features/entity-overview/trigger'
-import { endpointAttributeSets } from '@/lib/attribute-groups'
-import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
 
-import { AttributeBadgeSet } from '../shared/attribute-badge'
-import { EndpointUuid } from '../shared/endpoint-uuid'
-import { EntityIdentity } from '../shared/entity-identity'
-import { dataGridPopoverHandle } from './popover-handle'
+import { AttributeBadgeSet } from './attributes/attribute-badge'
+import { endpointAttributeSets } from './attributes/attribute-groups'
+import { DataGridColumnHeader } from './data-grid/data-grid-column-header'
+import type { GridEndpoint } from './data/grid-endpoints'
+import { EndpointUuid } from './popovers/endpoint-uuid'
+import { dataGridPopoverHandle } from './popovers/popover-handle'
 
 function formatGridDate(timestamp: string): string {
   return new Date(timestamp).toLocaleDateString('en-CA')

@@ -3,6 +3,7 @@
 import { SearchXIcon } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 
+import { Button } from '@/components/ui/button'
 import {
   Empty,
   EmptyContent,
@@ -12,8 +13,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 
-import { Button } from '../ui/button'
-import { useEndpointFacetState } from './use-endpoint-facet-state'
+import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
 import { useEndpointQueryState } from './use-endpoint-query-state'
 
 const endpointGridStateOptions = {

@@ -1,15 +1,14 @@
-import type { Attribute, AttributeSlots, AttributeState } from '@/lib/attributes'
-import { resolveEndpointAttributeSlot } from '@/lib/attributes'
-import type { GridEndpoint } from '@/lib/v3/grid-endpoints'
-
-import { ColorIconBadge } from './color-icon-badge'
-import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
+import type { GridEndpoint } from '../data/grid-endpoints'
 import {
   PopoverCardContent,
   PopoverCardDescription,
   PopoverCardTitle,
   PopoverCardTrigger,
-} from './popover-card'
+} from '../popovers/popover-card'
+import type { Attribute, AttributeSlots, AttributeState } from './attributes'
+import { resolveEndpointAttributeSlot } from './attributes'
+import { ColorIconBadge } from './color-icon-badge'
+import { DataList, DataListItem, DataListLabel, DataListValue } from './data-list'
 
 // --- Popover content ---
 

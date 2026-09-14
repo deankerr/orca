@@ -1,11 +1,12 @@
 import { XIcon } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 
-import { SearchInput } from '../shared/search-input'
-import { Button } from '../ui/button'
-import { AttributeFilterMenu } from './attribute-filter-menu'
-import { ModalityFilterMenu } from './modality-filter-menu'
-import { useEndpointFacetState } from './use-endpoint-facet-state'
+import { SearchInput } from '@/components/shared/search-input'
+import { Button } from '@/components/ui/button'
+
+import { AttributeFilterMenu } from './attributes/attribute-filter-menu'
+import { ModalityFilterMenu } from './attributes/modality-filter-menu'
+import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
 import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'

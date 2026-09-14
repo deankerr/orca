@@ -1,8 +1,8 @@
 import { Popover } from '@base-ui/react/popover'
 
-import { AttributeBadgePopoverContent } from '../shared/attribute-badge'
-import { EndpointUuidPopoverContent } from '../shared/endpoint-uuid'
-import { PopoverCard } from '../shared/popover-card'
+import { AttributeBadgePopoverContent } from '../attributes/attribute-badge'
+import { EndpointUuidPopoverContent } from './endpoint-uuid'
+import { PopoverCard } from './popover-card'
 
 // --- Payload types (derived from content component props + discriminator) ---
 

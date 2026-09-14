@@ -1,8 +1,7 @@
 'use client'
 
-import { useEndpoints, useStats } from '@/lib/v3/entities'
-import { buildGridEndpoints } from '@/lib/v3/grid-endpoints'
-
+import { useEndpoints, useStats } from './data/entities'
+import { buildGridEndpoints } from './data/grid-endpoints'
 import { EndpointsDataGrid } from './endpoints-data-grid'
 
 export function EndpointsDataGridPage() {
