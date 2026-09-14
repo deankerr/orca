@@ -1,17 +1,17 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import {
-  CopyIcon,
-  ArrowRightIcon,
-  Table2Icon,
-  ActivityIcon,
-  ChartNoAxesCombinedIcon,
-} from 'lucide-react'
+import { ArrowRightIcon, Table2Icon, ActivityIcon, ChartNoAxesCombinedIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 
-import { EntityIdentity } from '@/components/shared/entity-identity'
+import { EntityAvatar } from '@/components/shared/entity-avatar'
+import {
+  EntityIdentity,
+  EntityIdentityContent,
+  EntityIdentityName,
+  EntityIdentityCopySlug,
+} from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import {
   Item,
@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/item'
 import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
-import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
 import { preloadPricingHistoryPlot } from '../pricing-history/preload'
 import { buildPricingHistoryHref } from '../pricing-history/query-state'
@@ -31,22 +30,16 @@ import { useEntityOverview } from './context'
 import { buildEndpointsHref, buildMonitorHref } from './hrefs'
 
 export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
-  const copy = useCopyToClipboard()
-
   return (
     <header className="flex items-center gap-2 border-b p-4 pe-14">
       <SheetTitle className="sr-only">{name}</SheetTitle>
-      <EntityIdentity slug={slug} name={name} />
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Copy identifier"
-        onClick={() => {
-          void copy(slug, `Copied: ${slug}`)
-        }}
-      >
-        <CopyIcon />
-      </Button>
+      <EntityIdentity>
+        <EntityAvatar slug={slug} />
+        <EntityIdentityContent>
+          <EntityIdentityName>{name}</EntityIdentityName>
+          <EntityIdentityCopySlug>{slug}</EntityIdentityCopySlug>
+        </EntityIdentityContent>
+      </EntityIdentity>
     </header>
   )
 }

@@ -1,7 +1,13 @@
 import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import type { ColumnDef } from '@tanstack/react-table'
 
-import { EntityIdentity } from '@/components/shared/entity-identity'
+import { EntityAvatar } from '@/components/shared/entity-avatar'
+import {
+  EntityIdentity,
+  EntityIdentityContent,
+  EntityIdentityName,
+  EntityIdentitySlug,
+} from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { EntityOverviewTrigger } from '@/features/entity-overview/trigger'
 
@@ -28,11 +34,15 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ row }) => {
       const endpoint = row.original
       return (
-        <EntityOverviewTrigger
-          type="model"
-          slug={endpoint.model_id}
-          render={<EntityIdentity name={endpoint.model_display_name} slug={endpoint.model_id} />}
-        />
+        <EntityOverviewTrigger type="model" slug={endpoint.model_id} className="size-full">
+          <EntityIdentity>
+            <EntityAvatar slug={endpoint.model_id} />
+            <EntityIdentityContent>
+              <EntityIdentityName>{endpoint.model_display_name}</EntityIdentityName>
+              <EntityIdentitySlug>{endpoint.model_id}</EntityIdentitySlug>
+            </EntityIdentityContent>
+          </EntityIdentity>
+        </EntityOverviewTrigger>
       )
     },
     size: 230,
@@ -49,13 +59,15 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ row }) => {
       const endpoint = row.original
       return (
-        <EntityOverviewTrigger
-          type="provider"
-          slug={endpoint.provider_id}
-          render={
-            <EntityIdentity name={endpoint.provider_display_name} slug={endpoint.provider_tag} />
-          }
-        />
+        <EntityOverviewTrigger type="provider" slug={endpoint.provider_id} className="size-full">
+          <EntityIdentity>
+            <EntityAvatar slug={endpoint.provider_tag} />
+            <EntityIdentityContent>
+              <EntityIdentityName>{endpoint.provider_display_name}</EntityIdentityName>
+              <EntityIdentitySlug>{endpoint.provider_tag}</EntityIdentitySlug>
+            </EntityIdentityContent>
+          </EntityIdentity>
+        </EntityOverviewTrigger>
       )
     },
     size: 180,

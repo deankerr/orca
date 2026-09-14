@@ -7,7 +7,13 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { CheckIcon } from 'lucide-react'
 import { useId, useMemo, useRef, useState } from 'react'
 
-import { EntityIdentity, EntityIdentitySkeleton } from '@/components/shared/entity-identity'
+import { EntityAvatar } from '@/components/shared/entity-avatar'
+import {
+  EntityIdentity,
+  EntityIdentityContent,
+  EntityIdentityName,
+  EntityIdentitySlug,
+} from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -113,7 +119,7 @@ function EntityCombobox({
     if (isPending) {
       return (
         <div className="flex p-2">
-          <EntityIdentitySkeleton className="flex-1" />
+          <FilterIdentitySkeleton />
         </div>
       )
     }
@@ -146,9 +152,9 @@ function EntityCombobox({
         }
       >
         {selected ? (
-          <EntityIdentity name={selected.name} slug={selected.slug} className="flex-1" />
+          <FilterIdentity name={selected.name} slug={selected.slug} />
         ) : value && isPending ? (
-          <EntityIdentitySkeleton className="flex-1" />
+          <FilterIdentitySkeleton />
         ) : (
           <span className="w-full text-muted-foreground">{placeholder}</span>
         )}
@@ -215,6 +221,30 @@ export function ProviderCombobox({
   )
 }
 
+function FilterIdentity({ name, slug }: { name?: string; slug: string }) {
+  return (
+    <EntityIdentity className="flex-1">
+      <EntityAvatar slug={slug} />
+      <EntityIdentityContent>
+        <EntityIdentityName>{name}</EntityIdentityName>
+        <EntityIdentitySlug>{slug}</EntityIdentitySlug>
+      </EntityIdentityContent>
+    </EntityIdentity>
+  )
+}
+
+function FilterIdentitySkeleton() {
+  return (
+    <EntityIdentity aria-hidden="true" className="flex-1 animate-pulse">
+      <span data-slot="entity-avatar" className="shrink-0 rounded-sm bg-muted" />
+      <EntityIdentityContent className="gap-1">
+        <EntityIdentityName className="h-3 w-24 rounded-md bg-muted empty:block" />
+        <EntityIdentitySlug className="h-3 w-36 rounded-md bg-muted" />
+      </EntityIdentityContent>
+    </EntityIdentity>
+  )
+}
+
 function VirtualizedEntityList({
   items,
   selectedSlug,
@@ -256,7 +286,7 @@ function VirtualizedEntityList({
                 onSelect(item)
               }}
             >
-              <EntityIdentity name={item.name} slug={item.slug} className="flex-1" />
+              <FilterIdentity name={item.name} slug={item.slug} />
               {isSelected && <CheckIcon className="size-4 shrink-0 text-primary" />}
             </button>
           )

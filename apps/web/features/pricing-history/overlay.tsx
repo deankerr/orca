@@ -9,7 +9,13 @@ import dynamic from 'next/dynamic'
 import { startTransition, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { EntityIdentity } from '@/components/shared/entity-identity'
+import { EntityAvatar } from '@/components/shared/entity-avatar'
+import {
+  EntityIdentity,
+  EntityIdentityContent,
+  EntityIdentityName,
+  EntityIdentityCopySlug,
+} from '@/components/shared/entity-identity'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -126,7 +132,13 @@ function Identity({ modelId }: { modelId: string }) {
       <DialogDescription className="sr-only">
         Historical OpenRouter provider pricing
       </DialogDescription>
-      <EntityIdentity slug={modelId} name={name} />
+      <EntityIdentity>
+        <EntityAvatar slug={modelId} />
+        <EntityIdentityContent>
+          <EntityIdentityName>{name}</EntityIdentityName>
+          <EntityIdentityCopySlug>{modelId}</EntityIdentityCopySlug>
+        </EntityIdentityContent>
+      </EntityIdentity>
     </DialogHeader>
   )
 }

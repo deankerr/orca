@@ -10,13 +10,47 @@ import { formatPricingFields } from '@orca/backend/convex/shared/pricing'
 import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
 
-import { EntityIdentity } from '@/components/shared/entity-identity'
+import { EntityAvatar } from '@/components/shared/entity-avatar'
+import {
+  EntityIdentity,
+  EntityIdentityContent,
+  EntityIdentityName,
+  EntityIdentitySlug,
+} from '@/components/shared/entity-identity'
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
+
+function EventIdentity({
+  slug,
+  name,
+  isAvailable = true,
+  className,
+}: {
+  slug: string
+  name?: string
+  isAvailable?: boolean
+  className?: string
+}) {
+  return (
+    <EntityIdentity
+      data-unavailable={!isAvailable || undefined}
+      className={cn(
+        'data-unavailable:[&_[data-slot=entity-avatar]]:brightness-50 data-unavailable:[&_[data-slot=entity-identity-name]]:text-muted-foreground data-unavailable:[&_[data-slot=entity-identity-slug]]:line-through',
+        className,
+      )}
+    >
+      <EntityAvatar slug={slug} />
+      <EntityIdentityContent>
+        <EntityIdentityName>{name}</EntityIdentityName>
+        <EntityIdentitySlug>{slug}</EntityIdentitySlug>
+      </EntityIdentityContent>
+    </EntityIdentity>
+  )
+}
 
 // -- Public API
 
@@ -69,17 +103,13 @@ function ProviderEventCard({ change }: { change: ProviderChange }) {
     <EventCard>
       <EventCardHeader>
         <div>
-          <EntityOverviewTrigger
-            type="provider"
-            slug={provider.slug}
-            render={
-              <EntityIdentity
-                slug={provider.slug}
-                name={provider.name}
-                isAvailable={event.kind !== 'entity_unavailable'}
-              />
-            }
-          />
+          <EntityOverviewTrigger type="provider" slug={provider.slug}>
+            <EventIdentity
+              slug={provider.slug}
+              name={provider.name}
+              isAvailable={event.kind !== 'entity_unavailable'}
+            />
+          </EntityOverviewTrigger>
         </div>
 
         {event.kind === 'entity_available' && (
@@ -121,17 +151,13 @@ function ModelEventCard({ change }: { change: ModelChange }) {
     <EventCard>
       <EventCardHeader>
         <div>
-          <EntityOverviewTrigger
-            type="model"
-            slug={model.slug}
-            render={
-              <EntityIdentity
-                slug={model.slug}
-                name={model.name}
-                isAvailable={event.kind !== 'entity_unavailable'}
-              />
-            }
-          />
+          <EntityOverviewTrigger type="model" slug={model.slug}>
+            <EventIdentity
+              slug={model.slug}
+              name={model.name}
+              isAvailable={event.kind !== 'entity_unavailable'}
+            />
+          </EntityOverviewTrigger>
         </div>
 
         {event.kind === 'entity_available' && (
@@ -204,26 +230,20 @@ function EndpointEventCard({ change }: { change: EndpointChange }) {
     <EventCard>
       <EventCardHeader>
         <div>
-          <EntityOverviewTrigger
-            type="model"
-            slug={model.slug}
-            render={<EntityIdentity slug={model.slug} name={model.name} />}
-          />
+          <EntityOverviewTrigger type="model" slug={model.slug}>
+            <EventIdentity slug={model.slug} name={model.name} />
+          </EntityOverviewTrigger>
         </div>
 
         <div className="border-l border-border/50 bg-card">
-          <EntityOverviewTrigger
-            type="provider"
-            slug={baseProviderSlug(provider.slug)}
-            render={
-              <EntityIdentity
-                className="flex-row-reverse text-right"
-                slug={provider.slug}
-                name={provider.name}
-                isAvailable={event.kind !== 'entity_unavailable'}
-              />
-            }
-          />
+          <EntityOverviewTrigger type="provider" slug={baseProviderSlug(provider.slug)}>
+            <EventIdentity
+              className="flex-row-reverse text-right"
+              slug={provider.slug}
+              name={provider.name}
+              isAvailable={event.kind !== 'entity_unavailable'}
+            />
+          </EntityOverviewTrigger>
         </div>
       </EventCardHeader>
 
