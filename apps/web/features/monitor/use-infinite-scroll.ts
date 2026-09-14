@@ -19,8 +19,8 @@ interface UseInfiniteScrollOptions {
  *
  * @example
  * ```tsx
- * const viewportRef = useInfiniteScroll(() => loadMore(1), {
- *   hasMore: status === 'CanLoadMore',
+ * const viewportRef = useInfiniteScroll(monitor.loadMore, {
+ *   hasMore: monitor.hasMore,
  *   threshold: 400,
  * })
  *
@@ -47,9 +47,9 @@ export function useInfiniteScroll(onLoadMore: () => void, options: UseInfiniteSc
     }
   }, [onLoadMore, threshold, hasMore])
 
-  // Note: We don't add local protection against rapid repeated calls to onLoadMore
-  // because the data fetching hooks we use (like usePaginatedQuery) already have
-  // this protection built-in. Adding it here would be redundant.
+  // useMonitor.loadMore owns pagination: it increases the feed-ID query limit
+  // and ignores calls while that query is fetching or has no more results.
+  // Batch queries load separately through TanStack Query; this hook only detects scroll position.
 
   const handleScroll = useCallback(() => {
     checkAndLoadMore()
