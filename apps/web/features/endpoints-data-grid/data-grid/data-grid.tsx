@@ -11,20 +11,18 @@ declare module '@tanstack/react-table' {
   }
 }
 
-export interface DataGridContextProps<TData extends object> {
+interface DataGridContextProps<TData extends object> {
   props: DataGridProviderProps<TData>
   table: Table<TData>
-  recordCount: number
   isLoading: boolean
 }
 
-export interface DataGridProps<TData extends object> {
+interface DataGridProps<TData extends object> {
   table: Table<TData>
-  recordCount: number
   children?: ReactNode
   onRowClick?: (row: TData) => void
   isLoading?: boolean
-  emptyMessage?: ReactNode | string
+  emptyMessage?: ReactNode
   tableLayout?: {
     cellBorder?: boolean
     rowBorder?: boolean
@@ -71,7 +69,6 @@ function DataGridProvider<TData extends object>({
   const contextValue = {
     props,
     table,
-    recordCount: props.recordCount,
     isLoading: props.isLoading ?? false,
   }
 

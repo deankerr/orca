@@ -50,4 +50,4 @@ function DataGridColumnHeader<TData, TValue>({
   return content
 }
 
-export { DataGridColumnHeader, type DataGridColumnHeaderProps }
+export { DataGridColumnHeader }

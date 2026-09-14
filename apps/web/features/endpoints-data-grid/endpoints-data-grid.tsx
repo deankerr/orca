@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
+import { useIsMobile } from '@/hooks/use-mobile'
+
 import { attributes, isAttributeKey } from './attributes/attributes'
 import type { FacetFilterState } from './attributes/use-endpoint-facet-state'
 import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
@@ -21,7 +23,6 @@ import {
   DataGridCardToolbar,
 } from './data-grid/data-grid-card'
 import { DataGridTableVirtual } from './data-grid/data-grid-table'
-import { useIsMobile } from './data-grid/use-mobile'
 import type { GridEndpoint } from './data/grid-endpoints'
 import { EndpointsEmptyState } from './endpoints-empty-state'
 import { DataGridFooter } from './footer'
@@ -154,7 +155,6 @@ export function EndpointsDataGrid({
     <DataGridPopoverProvider>
       <DataGrid
         table={table}
-        recordCount={table.getFilteredRowModel().rows.length}
         isLoading={isPending}
         emptyMessage={<EndpointsEmptyState />}
         rowDataAttributes={rowDataAttributes}

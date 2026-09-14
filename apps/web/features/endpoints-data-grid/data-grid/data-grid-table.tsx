@@ -284,7 +284,7 @@ function DataGridTableVirtual() {
   const { rows } = table.getRowModel()
   const getItemKey = useCallback((index: number) => rows[index]?.id ?? index, [rows])
 
-  // oxlint-disable-next-line react-hooks-js/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual exposes mutable state; this component opts out of React Compiler memoization.
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => viewportRef.current,
