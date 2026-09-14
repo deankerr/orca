@@ -14,7 +14,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 
-import type { FilterMode } from './use-endpoint-facet-state'
+import type { FilterMode } from './facet-state'
 
 function FilterMenu({ ...props }: React.ComponentProps<typeof Popover>) {
   return <Popover {...props} />

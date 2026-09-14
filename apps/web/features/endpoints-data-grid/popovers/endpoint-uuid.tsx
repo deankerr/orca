@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
-import { buildEndpointGridHref } from '../use-endpoint-query-state'
+import { buildEndpointGridHref } from '../links'
 import { PopoverCardContent, PopoverCardTitle, PopoverCardTrigger } from './popover-card'
 
 // --- Popover content ---

@@ -1,10 +1,7 @@
 import type { SortingState } from '@tanstack/react-table'
-import { parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
+import { useQueryStates } from 'nuqs'
 
-const endpointGridStateOptions = {
-  history: 'push' as const,
-  shallow: true,
-}
+import { endpointGridParsers, endpointGridStateOptions } from './query-state'
 
 function getEndpointGridSorting({
   sort,
@@ -25,8 +22,8 @@ function getEndpointGridSorting({
 export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boolean }) {
   const [params, setParams] = useQueryStates(
     {
-      sort: parseAsString,
-      order: parseAsStringEnum(['asc', 'desc'] as const),
+      sort: endpointGridParsers.sort,
+      order: endpointGridParsers.order,
     },
     endpointGridStateOptions,
   )
@@ -62,17 +59,9 @@ export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boole
     })
   }
 
-  const clearSorting = () => {
-    void setParams({
-      sort: null,
-      order: null,
-    })
-  }
-
   return {
     sorting,
     hasActiveSorting: params.sort !== null,
     onSortingChange,
-    clearSorting,
   }
 }

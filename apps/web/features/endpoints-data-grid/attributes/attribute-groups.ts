@@ -11,17 +11,8 @@ export const endpointModalityOutputAttributes = ['image_output', 'audio_output']
 
 export const endpointModalityAttributes = [
   'text_output',
-  'image_input',
-  'file_input',
-  'audio_input',
-  'video_input',
-  'image_output',
-  'audio_output',
-  'speech_output',
-  'video_output',
-  'embeddings_output',
-  'rerank_output',
-  'transcription_output',
+  ...endpointModalityInputAttributes,
+  ...endpointModalityOutputAttributes,
 ] as const
 
 export type EndpointModalityAttribute = (typeof endpointModalityAttributes)[number]
@@ -55,11 +46,6 @@ export const endpointAttributeSets = {
     ['video_input'],
     ['image_output'],
     ['audio_output'],
-    ['speech_output'],
-    ['video_output'],
-    ['embeddings_output'],
-    ['rerank_output'],
-    ['transcription_output'],
   ],
   features: [
     ['reasoning'],

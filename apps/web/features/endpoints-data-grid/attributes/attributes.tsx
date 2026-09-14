@@ -7,11 +7,8 @@ import {
   Braces,
   CakeSlice,
   Calendar,
-  Captions,
   ChevronsDown,
   Database,
-  FileChartColumn,
-  FileDigit,
   FileSpreadsheet,
   Fingerprint,
   Globe,
@@ -27,7 +24,6 @@ import {
   ScrollText,
   ShieldAlert,
   Skull,
-  Speech,
   Video,
   Wrench,
 } from 'lucide-react'
@@ -50,7 +46,6 @@ interface AttributeDefinition {
   label: string
   description: React.ReactNode
   color: ColorIconBadgeColor
-  referenceUrl?: string
   resolve: (endpoint: EndpointPartial) => AttributeState
 }
 
@@ -101,7 +96,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'indigo',
-    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/reasoning-tokens',
     resolve: (endpoint) => ({
       active: endpoint.reasoning ?? false,
     }),
@@ -117,7 +111,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'blue',
-    referenceUrl: 'https://openrouter.ai/docs/guides/features/tool-calling',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('tools') ?? false,
     }),
@@ -134,7 +127,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'teal',
-    referenceUrl: 'https://openrouter.ai/docs/api/reference/parameters',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('response_format') ?? false,
     }),
@@ -151,7 +143,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'teal',
-    referenceUrl: 'https://openrouter.ai/docs/guides/features/structured-outputs',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('structured_outputs') ?? false,
     }),
@@ -163,32 +154,9 @@ export const attributes = defineAttributes({
     label: 'Caching',
     description: 'Reduced pricing on cache hits for repeated prompt content.',
     color: 'cyan',
-    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
-    resolve: (endpoint) => {
-      const cacheRead = endpoint.pricing?.cache_read
-      const cacheWrite = endpoint.pricing?.cache_write
-      const active = hasValue(cacheRead)
-      const items = []
-
-      if (hasValue(cacheRead)) {
-        items.push({
-          label: 'Read',
-          value: formatAttributePrice('cache_read', cacheRead),
-        })
-      }
-
-      if (hasValue(cacheWrite)) {
-        items.push({
-          label: 'Write',
-          value: formatAttributePrice('cache_write', cacheWrite),
-        })
-      }
-
-      return {
-        active,
-        details: items.length > 0 ? items : undefined,
-      }
-    },
+    resolve: (endpoint) => ({
+      active: hasValue(endpoint.pricing?.cache_read),
+    }),
   },
 
   implicit_caching: {
@@ -202,32 +170,9 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'cyan',
-    referenceUrl: 'https://openrouter.ai/docs/guides/best-practices/prompt-caching',
-    resolve: (endpoint) => {
-      const active = endpoint.implicit_caching ?? false
-      const items = []
-      const cacheRead = endpoint.pricing?.cache_read
-      const cacheWrite = endpoint.pricing?.cache_write
-
-      if (hasValue(cacheRead)) {
-        items.push({
-          label: 'Read',
-          value: formatAttributePrice('cache_read', cacheRead),
-        })
-      }
-
-      if (hasValue(cacheWrite)) {
-        items.push({
-          label: 'Write',
-          value: formatAttributePrice('cache_write', cacheWrite),
-        })
-      }
-
-      return {
-        active,
-        details: items.length > 0 ? items : undefined,
-      }
-    },
+    resolve: (endpoint) => ({
+      active: endpoint.implicit_caching ?? false,
+    }),
   },
 
   // Features (OpenRouter)
@@ -248,7 +193,6 @@ export const attributes = defineAttributes({
     label: 'Native Web Search',
     description: 'Provider handles web search natively, without the OpenRouter plugin.',
     color: 'emerald',
-    referenceUrl: 'https://openrouter.ai/docs/guides/features/plugins/web-search',
     resolve: (endpoint) => {
       const active = endpoint.native_web_search ?? false
       const items = []
@@ -281,7 +225,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'blue',
-    referenceUrl: 'https://openrouter.ai/docs/api/reference/overview',
     resolve: (endpoint) => ({
       active: endpoint.completions ?? false,
     }),
@@ -297,7 +240,6 @@ export const attributes = defineAttributes({
       </>
     ),
     color: 'blue',
-    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request',
     resolve: (endpoint) => ({
       active: endpoint.chat_completions ?? false,
     }),
@@ -310,7 +252,6 @@ export const attributes = defineAttributes({
     label: 'Free',
     description: 'Zero-cost inference. May have stricter rate limits and lower availability.',
     color: 'pink',
-    referenceUrl: 'https://openrouter.ai/docs/guides/routing/model-variants/free',
     resolve: (endpoint) => ({
       active: endpoint.variant === 'free',
     }),
@@ -323,7 +264,6 @@ export const attributes = defineAttributes({
     label: 'Deranked',
     description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
     color: 'amber',
-    referenceUrl: 'https://openrouter.ai/docs/guides/routing/auto-exacto',
     resolve: (endpoint) => ({
       active: endpoint.deranked ?? false,
     }),
@@ -366,7 +306,6 @@ export const attributes = defineAttributes({
     label: 'Training',
     description: 'Provider may use your prompts and completions for model training.',
     color: 'orange',
-    referenceUrl: 'https://openrouter.ai/docs/guides/privacy/data-collection',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.may_train_on_data === true,
     }),
@@ -378,7 +317,6 @@ export const attributes = defineAttributes({
     label: 'Data Publishing',
     description: 'Provider may publish or share your data in research or datasets.',
     color: 'orange',
-    referenceUrl: 'https://openrouter.ai/docs/guides/privacy/data-collection',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.may_publish_data === true,
     }),
@@ -390,7 +328,6 @@ export const attributes = defineAttributes({
     label: 'User ID',
     description: 'An anonymized ID is forwarded to the provider with your request.',
     color: 'orange',
-    referenceUrl: 'https://openrouter.ai/docs/guides/administration/user-tracking',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.shares_user_id === true,
     }),
@@ -402,7 +339,6 @@ export const attributes = defineAttributes({
     label: 'Data Retention',
     description: 'Provider stores prompts and completions for a limited period.',
     color: 'orange',
-    referenceUrl: 'https://openrouter.ai/docs/guides/features/zdr',
     resolve: (endpoint) => {
       const active = endpoint.data_policy?.may_retain_data === true
       const days = endpoint.data_policy?.data_retention_days?.toLocaleString()
@@ -421,7 +357,6 @@ export const attributes = defineAttributes({
     label: 'Max Context',
     description: 'Context window limit for this endpoint (may differ from model maximum).',
     color: 'yellow',
-    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.text_input_tokens !== undefined &&
@@ -464,7 +399,6 @@ export const attributes = defineAttributes({
     label: 'Max Requests/Min',
     description: 'Rate limit enforced by this endpoint.',
     color: 'yellow',
-    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.requests_per_minute !== undefined &&
@@ -479,7 +413,6 @@ export const attributes = defineAttributes({
     label: 'Max Requests/Day',
     description: 'Daily request quota enforced by this endpoint.',
     color: 'yellow',
-    referenceUrl: 'https://openrouter.ai/docs/api/reference/limits',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.requests_per_day !== undefined &&
@@ -495,7 +428,6 @@ export const attributes = defineAttributes({
     label: 'Image Input',
     description: 'Accepts images via URL or base64 content parts.',
     color: 'violet',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/images',
     resolve: (endpoint) => {
       const active = endpoint.input_modalities?.includes('image') ?? false
       const items = []
@@ -521,7 +453,6 @@ export const attributes = defineAttributes({
     label: 'Image Output',
     description: 'Generates images inline in the completion response.',
     color: 'violet',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/image-generation',
     resolve: (endpoint) => {
       const active = endpoint.output_modalities?.includes('image') ?? false
       const items = []
@@ -558,7 +489,6 @@ export const attributes = defineAttributes({
     label: 'File Input',
     description: 'Accepts document and file uploads as input.',
     color: 'sky',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/pdfs',
     resolve: (endpoint) => ({
       active: endpoint.input_modalities?.includes('file') ?? false,
     }),
@@ -570,7 +500,6 @@ export const attributes = defineAttributes({
     label: 'Audio Input',
     description: 'Natively processes audio without a separate transcription step.',
     color: 'fuchsia',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => {
       const active = endpoint.input_modalities?.includes('audio') ?? false
       const items = []
@@ -604,21 +533,8 @@ export const attributes = defineAttributes({
     label: 'Audio Output',
     description: 'Generates audio inline in the completion response.',
     color: 'fuchsia',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
     resolve: (endpoint) => ({
       active: endpoint.output_modalities?.includes('audio') ?? false,
-    }),
-  },
-
-  speech_output: {
-    key: 'speech_output',
-    icon: Speech,
-    label: 'Speech Output',
-    description: 'Generates spoken audio output.',
-    color: 'cyan',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/audio',
-    resolve: (endpoint) => ({
-      active: endpoint.output_modalities?.includes('speech') ?? false,
     }),
   },
 
@@ -628,56 +544,8 @@ export const attributes = defineAttributes({
     label: 'Video Input',
     description: 'Accepts video content via URL or base64.',
     color: 'emerald',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
     resolve: (endpoint) => ({
       active: endpoint.input_modalities?.includes('video') ?? false,
-    }),
-  },
-
-  video_output: {
-    key: 'video_output',
-    icon: Video,
-    label: 'Video Output',
-    description: 'Generates video inline in the completion response.',
-    color: 'emerald',
-    referenceUrl: 'https://openrouter.ai/docs/guides/overview/multimodal/videos',
-    resolve: (endpoint) => ({
-      active: endpoint.output_modalities?.includes('video') ?? false,
-    }),
-  },
-
-  embeddings_output: {
-    key: 'embeddings_output',
-    icon: FileDigit,
-    label: 'Embeddings',
-    description: 'Returns vector representations for semantic search and RAG.',
-    color: 'amber',
-    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings',
-    resolve: (endpoint) => ({
-      active: endpoint.output_modalities?.includes('embeddings') ?? false,
-    }),
-  },
-
-  rerank_output: {
-    key: 'rerank_output',
-    icon: FileChartColumn,
-    label: 'Rerank Output',
-    description: 'Returns ranked results with relevance scores for reranking workloads.',
-    color: 'amber',
-    resolve: (endpoint) => ({
-      active: endpoint.output_modalities?.includes('rerank') ?? false,
-    }),
-  },
-
-  transcription_output: {
-    key: 'transcription_output',
-    icon: Captions,
-    label: 'Transcription Output',
-    description: 'Converts audio input to text via the transcriptions endpoint.',
-    color: 'lime',
-    referenceUrl: 'https://openrouter.ai/docs/api/api-reference/audio/create-transcription',
-    resolve: (endpoint) => ({
-      active: endpoint.output_modalities?.includes('transcription') ?? false,
     }),
   },
 })

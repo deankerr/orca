@@ -4,12 +4,20 @@ import {
   applyFilterMode,
   countActiveAttributeFilters,
   countActiveModalityFilters,
+  omitModalityFilters,
+  retainModalityFilters,
   toAttributeFilters,
   toFacetFilters,
   toModalityFilters,
-} from './use-endpoint-facet-state'
+} from './facet-state'
 
 describe('endpoint grid facet helpers', () => {
+  it('clears one facet category while retaining the other', () => {
+    const filters = ['tools', 'image_input', 'disabled', 'video_input', 'audio_output']
+    expect(retainModalityFilters(filters)).toEqual(['image_input', 'video_input', 'audio_output'])
+    expect(omitModalityFilters(filters)).toEqual(['tools', 'disabled'])
+  })
+
   it('updates include and exclude modes without leaving stale values behind', () => {
     expect(applyFilterMode({ has: ['tools'], not: [], key: 'tools', mode: 'exclude' })).toEqual({
       has: [],

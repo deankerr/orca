@@ -23,11 +23,12 @@ import {
 } from '@/components/ui/item'
 import { SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
+import { buildEndpointsHref } from '@/features/endpoints-data-grid/links'
 
 import { preloadPricingHistoryPlot } from '../pricing-history/preload'
 import { buildPricingHistoryHref } from '../pricing-history/query-state'
 import { useEntityOverview } from './context'
-import { buildEndpointsHref, buildMonitorHref } from './hrefs'
+import { buildMonitorHref } from './hrefs'
 
 export function OverviewHeader({ slug, name }: { slug: string; name: string }) {
   return (

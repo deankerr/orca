@@ -1,7 +1,6 @@
 'use client'
 
 import { SearchXIcon } from 'lucide-react'
-import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -15,41 +14,14 @@ import {
 
 import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
 import { useEndpointQueryState } from './use-endpoint-query-state'
-
-const endpointGridStateOptions = {
-  history: 'push' as const,
-  shallow: true,
-}
-
-const parseAsAttributeArray = parseAsArrayOf(parseAsString).withDefault([])
+import { useResetEndpointGrid } from './use-reset-endpoint-grid'
 
 export function EndpointsEmptyState() {
   const query = useEndpointQueryState()
   const facets = useEndpointFacetState()
-  const [, setParams] = useQueryStates(
-    {
-      q: parseAsString,
-      uuid: parseAsString,
-      has: parseAsAttributeArray,
-      not: parseAsAttributeArray,
-      sort: parseAsString,
-      order: parseAsStringEnum(['asc', 'desc']),
-    },
-    endpointGridStateOptions,
-  )
+  const resetAll = useResetEndpointGrid()
 
   const filterCount = facets.activeAttributeCount + facets.activeModalityCount
-
-  const resetAll = () => {
-    void setParams({
-      q: null,
-      uuid: null,
-      has: [],
-      not: [],
-      sort: null,
-      order: null,
-    })
-  }
 
   return (
     <Empty className="border-none font-sans">

@@ -1,5 +1,4 @@
 import { XIcon } from 'lucide-react'
-import { parseAsArrayOf, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 
 import { SearchInput } from '@/components/shared/search-input'
 import { Button } from '@/components/ui/button'
@@ -10,13 +9,7 @@ import { useEndpointFacetState } from './attributes/use-endpoint-facet-state'
 import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'
-
-const endpointGridStateOptions = {
-  history: 'push' as const,
-  shallow: true,
-}
-
-const parseAsAttributeArray = parseAsArrayOf(parseAsString).withDefault([])
+import { useResetEndpointGrid } from './use-reset-endpoint-grid'
 
 function EndpointsSearchInput() {
   const { query, setQuery } = useEndpointQueryState()
@@ -37,31 +30,10 @@ export function DataGridControls() {
   const facets = useEndpointFacetState()
   const query = useEndpointQueryState()
   const sort = useEndpointSortState({ hasActiveQuery: query.hasQuery })
-  const [, setParams] = useQueryStates(
-    {
-      q: parseAsString,
-      uuid: parseAsString,
-      has: parseAsAttributeArray,
-      not: parseAsAttributeArray,
-      sort: parseAsString,
-      order: parseAsStringEnum(['asc', 'desc']),
-    },
-    endpointGridStateOptions,
-  )
+  const clearControls = useResetEndpointGrid()
 
   const hasAnyFilter =
     query.hasQuery || facets.hasActiveFacets || sort.hasActiveSorting || focus.hasFocus
-
-  const clearControls = () => {
-    void setParams({
-      q: null,
-      uuid: null,
-      has: [],
-      not: [],
-      sort: null,
-      order: null,
-    })
-  }
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto px-3 py-3">
