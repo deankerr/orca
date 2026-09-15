@@ -97,6 +97,7 @@ import type * as snapshots_materializedChanges_process from "../snapshots/materi
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as v3_ingest from "../v3/ingest.js";
 import type * as v3_ingestions from "../v3/ingestions.js";
+import type * as v3_projections_queries from "../v3/projections/queries.js";
 import type * as v3_public_endpoints from "../v3/public/endpoints.js";
 import type * as v3_public_entityOverview from "../v3/public/entityOverview.js";
 import type * as v3_public_models from "../v3/public/models.js";
@@ -214,6 +215,7 @@ declare const fullApi: ApiFromModules<{
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   "v3/ingest": typeof v3_ingest;
   "v3/ingestions": typeof v3_ingestions;
+  "v3/projections/queries": typeof v3_projections_queries;
   "v3/public/endpoints": typeof v3_public_endpoints;
   "v3/public/entityOverview": typeof v3_public_entityOverview;
   "v3/public/models": typeof v3_public_models;

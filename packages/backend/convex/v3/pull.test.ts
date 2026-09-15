@@ -19,6 +19,7 @@ test('pulls five tables then commits the captured scan even when it has no stats
   }
 
   const query = spyOn(ConvexHttpClient.prototype, 'query').mockImplementation(async (ref, args) => {
+    assert.equal(getFunctionName(ref).split(':')[0], 'v3/projections/queries')
     if (getFunctionName(ref).endsWith(':currentScan')) {
       return scan
     }
@@ -63,7 +64,7 @@ test('pulls five tables then commits the captured scan even when it has no stats
         return null
       }
 
-      assert.deepEqual(args, { rows: [{ source: `views/exports:${name}` }] })
+      assert.deepEqual(args, { rows: [{ source: `v3/projections/queries:${name}` }] })
       applied.push(name)
       return null
     },

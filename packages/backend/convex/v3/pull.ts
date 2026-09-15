@@ -22,7 +22,8 @@ export const run = internalAction({
     }
 
     const source = new ConvexHttpClient(url)
-    const scan = await source.query(api.views.exports.currentScan, {})
+    // Keep remote calls on the deprecated routes until the stack reaches production.
+    const scan = await source.query(api.v3.projections.queries.currentScan, {})
 
     if (scan === null) {
       console.log('pull skipped: source has no current scan')
@@ -74,28 +75,37 @@ export const run = internalAction({
     }
 
     // Run without concurrent ingestion or another pull on this destination.
-    console.log('models', await copy(api.views.exports.models, internal.views.apply.models))
+    console.log(
+      'models',
+      await copy(api.v3.projections.queries.models, internal.views.apply.models),
+    )
 
     console.log(
       'providers',
-      await copy(api.views.exports.providers, internal.views.apply.providers),
+      await copy(api.v3.projections.queries.providers, internal.views.apply.providers),
     )
 
     console.log(
       'endpoints',
-      await copy(api.views.exports.endpoints, internal.views.apply.endpoints),
+      await copy(api.v3.projections.queries.endpoints, internal.views.apply.endpoints),
     )
 
     console.log(
       'endpointListings',
-      await copy(api.views.exports.endpointListings, internal.views.apply.endpointListings),
+      await copy(
+        api.v3.projections.queries.endpointListings,
+        internal.views.apply.endpointListings,
+      ),
     )
 
     console.log(
       'endpointsPricing',
-      await copy(api.views.exports.endpointsPricing, internal.views.apply.endpointsPricing),
+      await copy(
+        api.v3.projections.queries.endpointsPricing,
+        internal.views.apply.endpointsPricing,
+      ),
     )
-    const rows = await source.query(api.views.exports.scanStats, { scan_at: scan.scan_at })
+    const rows = await source.query(api.v3.projections.queries.scanStats, { scan_at: scan.scan_at })
     await ctx.runMutation(internal.views.apply.currentScan, { scan, rows })
     console.log('current scan', { scan_at: scan.scan_at, readings: rows.length })
     return null

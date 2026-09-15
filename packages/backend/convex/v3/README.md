@@ -50,6 +50,7 @@ Scan-derived current views, historical series, and shared inputs for change proc
 - Pull copies the captured scan artifact and current stats, with selected history rather than a replica.
 - Imported ingestion records establish the current scan without requiring continuous local history.
 - Pull uses the source argument or `ORCA_PULL_SOURCE_URL`; source and destination need matching exports.
+- Pull calls deprecated `v3/projections/queries` aliases until the refactor stack reaches production.
 - Provider refresh replaces retained provider metadata using current or row-`scan_at` source artifacts.
 - Refresh resolves all required sources before one atomic metadata write and requires exclusive execution.
 
