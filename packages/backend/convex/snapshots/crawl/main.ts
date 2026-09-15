@@ -110,9 +110,6 @@ const CrawlArchiveBundleSchema = z.strictObject({
 
 export const run = internalAction({
   args: {
-    uptimes: v.optional(v.boolean()),
-    topApps: v.optional(v.boolean()),
-    analytics: v.optional(v.boolean()),
     onComplete: v.object({
       materialize: v.boolean(),
     }),

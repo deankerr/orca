@@ -1,4 +1,3 @@
-import workflow from '@convex-dev/workflow/convex.config.js'
 import { defineApp } from 'convex/server'
 import { v } from 'convex/values'
 
@@ -23,10 +22,7 @@ const app = defineApp({
     ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    LEGACY_BACKFILL_END_SCAN_AT: v.optional(v.string()),
   },
 })
-
-app.use(workflow)
 
 export default app

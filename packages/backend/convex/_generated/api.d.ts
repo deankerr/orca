@@ -8,12 +8,8 @@
  * @module
  */
 
-import type * as admin_archives from "../admin/archives.js";
 import type * as alerts_dev from "../alerts/dev.js";
 import type * as alerts_dispatcher from "../alerts/dispatcher.js";
-import type * as analysis_changes from "../analysis/changes.js";
-import type * as analysis_fields from "../analysis/fields.js";
-import type * as analysis_stats from "../analysis/stats.js";
 import type * as catalog_endpoints_index from "../catalog/endpoints/index.js";
 import type * as catalog_endpoints_projection from "../catalog/endpoints/projection.js";
 import type * as catalog_endpoints_queries from "../catalog/endpoints/queries.js";
@@ -41,9 +37,6 @@ import type * as discord_messages from "../discord/messages.js";
 import type * as discord_subscriptions from "../discord/subscriptions.js";
 import type * as discord_subscriptions_table from "../discord/subscriptions/table.js";
 import type * as discord_utils from "../discord/utils.js";
-import type * as endpointPricingHistory from "../endpointPricingHistory.js";
-import type * as endpointPricingHistory_reconstruct from "../endpointPricingHistory/reconstruct.js";
-import type * as endpoints from "../endpoints.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as lib_functionSpec from "../lib/functionSpec.js";
@@ -80,8 +73,6 @@ import type * as shared_groups from "../shared/groups.js";
 import type * as shared_pricing from "../shared/pricing.js";
 import type * as shared_utils from "../shared/utils.js";
 import type * as snapshots_archives_table from "../snapshots/archives/table.js";
-import type * as snapshots_bundles_format from "../snapshots/bundles/format.js";
-import type * as snapshots_bundles_http from "../snapshots/bundles/http.js";
 import type * as snapshots_crawl_cron from "../snapshots/crawl/cron.js";
 import type * as snapshots_crawl_main from "../snapshots/crawl/main.js";
 import type * as snapshots_crawl_outputs from "../snapshots/crawl/outputs.js";
@@ -126,12 +117,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "admin/archives": typeof admin_archives;
   "alerts/dev": typeof alerts_dev;
   "alerts/dispatcher": typeof alerts_dispatcher;
-  "analysis/changes": typeof analysis_changes;
-  "analysis/fields": typeof analysis_fields;
-  "analysis/stats": typeof analysis_stats;
   "catalog/endpoints/index": typeof catalog_endpoints_index;
   "catalog/endpoints/projection": typeof catalog_endpoints_projection;
   "catalog/endpoints/queries": typeof catalog_endpoints_queries;
@@ -159,9 +146,6 @@ declare const fullApi: ApiFromModules<{
   "discord/subscriptions": typeof discord_subscriptions;
   "discord/subscriptions/table": typeof discord_subscriptions_table;
   "discord/utils": typeof discord_utils;
-  endpointPricingHistory: typeof endpointPricingHistory;
-  "endpointPricingHistory/reconstruct": typeof endpointPricingHistory_reconstruct;
-  endpoints: typeof endpoints;
   http: typeof http;
   init: typeof init;
   "lib/functionSpec": typeof lib_functionSpec;
@@ -198,8 +182,6 @@ declare const fullApi: ApiFromModules<{
   "shared/pricing": typeof shared_pricing;
   "shared/utils": typeof shared_utils;
   "snapshots/archives/table": typeof snapshots_archives_table;
-  "snapshots/bundles/format": typeof snapshots_bundles_format;
-  "snapshots/bundles/http": typeof snapshots_bundles_http;
   "snapshots/crawl/cron": typeof snapshots_crawl_cron;
   "snapshots/crawl/main": typeof snapshots_crawl_main;
   "snapshots/crawl/outputs": typeof snapshots_crawl_outputs;
@@ -264,6 +246,4 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {
-  workflow: import("@convex-dev/workflow/_generated/component.js").ComponentApi<"workflow">;
-};
+export declare const components: {};

@@ -1,8 +1,5 @@
 import { z } from 'zod'
 
-import { query } from '../../_generated/server'
-import { V3_PROVIDERS_VIEW_TABLE } from '../../views'
-
 /** Lightweight provider details; endpoint-specific tags remain on endpoints. */
 export const Provider = z.object({
   _id: z.string(),
@@ -12,13 +9,3 @@ export const Provider = z.object({
 })
 
 export type Provider = z.infer<typeof Provider>
-
-/** List lightweight provider summaries, including catalog-absent providers. */
-export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    const rows = await ctx.db.query(V3_PROVIDERS_VIEW_TABLE).collect()
-
-    return rows.map((row) => Provider.parse(row))
-  },
-})

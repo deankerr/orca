@@ -18,9 +18,6 @@ const init = internalMutation({
     }
 
     await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
-      uptimes: true,
-      topApps: true,
-      analytics: true,
       onComplete: {
         materialize: true,
       },

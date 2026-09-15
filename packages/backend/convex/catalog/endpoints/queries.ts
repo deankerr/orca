@@ -1,56 +1,9 @@
 import { v } from 'convex/values'
 
 import { defineQuerySpec } from '../../lib/functionSpec'
-import { filterByAvailabilityWindow, getCurrentCatalogTimestamp } from '../shared/availability'
-import { createEndpointProjection, createEndpointProjections } from './projection'
+import { createEndpointProjection } from './projection'
 
 const TABLE_NAME = 'or_views_endpoints'
-
-export const list = defineQuerySpec({
-  args: v.object({
-    maxTimeUnavailable: v.optional(v.number()),
-    requireTextOutput: v.optional(v.boolean()),
-  }),
-  async handler(ctx, args) {
-    const docs = await ctx.db.query(TABLE_NAME).collect()
-
-    // Narrow public browsing views to endpoints whose model can produce text.
-    const filteredDocs =
-      args.requireTextOutput === true
-        ? docs.filter((doc) => doc.model.output_modalities.includes('text'))
-        : docs
-
-    return filterByAvailabilityWindow(createEndpointProjections(filteredDocs), {
-      maxTimeUnavailable: args.maxTimeUnavailable,
-    })
-  },
-})
-
-export const listForModel = defineQuerySpec({
-  args: v.object({
-    modelSlug: v.string(),
-    maxTimeUnavailable: v.optional(v.number()),
-  }),
-  async handler(ctx, args) {
-    // Keep scoped unavailable filtering relative to the full catalog clock.
-    const allDocs =
-      args.maxTimeUnavailable === undefined ? [] : await ctx.db.query(TABLE_NAME).collect()
-
-    const currentTime =
-      args.maxTimeUnavailable === undefined ? undefined : getCurrentCatalogTimestamp(allDocs)
-
-    // Read the model-scoped view through the existing catalog index.
-    const docs = await ctx.db
-      .query(TABLE_NAME)
-      .withIndex('by_model_slug', (q) => q.eq('model.slug', args.modelSlug))
-      .collect()
-
-    return filterByAvailabilityWindow(createEndpointProjections(docs), {
-      currentTime,
-      maxTimeUnavailable: args.maxTimeUnavailable,
-    })
-  },
-})
 
 export const get = defineQuerySpec({
   args: v.object({
