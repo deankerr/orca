@@ -1,6 +1,6 @@
 # ORCA (OpenRouter Capability Analysis)
 
-@docs/objectives.md
+@docs/orca/objectives.md
 
 ## Development
 
