@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { query } from '../../_generated/server'
-import { V3_MODELS_VIEW_TABLE } from '../entities.table'
+import { V3_MODELS_VIEW_TABLE } from '../../views'
 
 /** Lightweight model details shared by endpoint rows and selection controls. */
 export const Model = z.object({

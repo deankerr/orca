@@ -1,5 +1,7 @@
 # ORCA (OpenRouter Capability Analysis)
 
+@docs/objectives.md
+
 ## Development
 
 - Use `bun run fix` for all validation and formatting. Not `tsc`.

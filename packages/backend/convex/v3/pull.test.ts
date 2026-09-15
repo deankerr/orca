@@ -6,7 +6,7 @@ import { ConvexHttpClient } from 'convex/browser'
 import { getFunctionName } from 'convex/server'
 import type { PaginationOptions } from 'convex/server'
 
-import type { ActionCtx } from '../../_generated/server'
+import type { ActionCtx } from '../_generated/server'
 import { run } from './pull'
 
 test('pulls five tables then commits the captured scan even when it has no stats', async () => {
@@ -63,7 +63,7 @@ test('pulls five tables then commits the captured scan even when it has no stats
         return null
       }
 
-      assert.deepEqual(args, { rows: [{ source: `v3/projections/queries:${name}` }] })
+      assert.deepEqual(args, { rows: [{ source: `views/exports:${name}` }] })
       applied.push(name)
       return null
     },

@@ -6,7 +6,7 @@ import { internalMutation } from './_generated/server'
 const init = internalMutation({
   handler: async (ctx) => {
     // v3 idempotent seed from default source (production)
-    await ctx.scheduler.runAfter(0, internal.v3.projections.pull.run, {})
+    await ctx.scheduler.runAfter(0, internal.v3.pull.run, {})
 
     // run legacy snapshot
     console.log('[init] snapshot')

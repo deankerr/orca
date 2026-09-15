@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 import { query } from '../../_generated/server'
+import { V3_ENDPOINTS_STATS_SERIES_TABLE } from '../../views'
 import { getCurrentScan } from '../ingestions'
-import { V3_ENDPOINTS_STATS_SERIES_TABLE } from '../series.table'
 
 const zReading = z.number().nonnegative().optional().catch(undefined)
 

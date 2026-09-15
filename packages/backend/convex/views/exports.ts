@@ -2,18 +2,18 @@ import { omit } from 'convex-helpers'
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '../_generated/server'
+import { getCurrentScan } from '../v3/ingestions'
 import {
   V3_MODELS_VIEW_TABLE,
   V3_PROVIDERS_VIEW_TABLE,
   V3_ENDPOINTS_VIEW_TABLE,
-} from '../entities.table'
-import { getCurrentScan } from '../ingestions'
+} from './entities.table'
 import {
   V3_ENDPOINTS_STATS_SERIES_TABLE,
   V3_ENDPOINTS_LISTING_SERIES_TABLE,
   V3_ENDPOINTS_PRICING_SERIES_TABLE,
-} from '../series.table'
+} from './series.table'
 
 /** Read models in creation order, without deployment-local system fields. */
 export const models = query({

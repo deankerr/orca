@@ -6,10 +6,10 @@ import { getFunctionName } from 'convex/server'
 import type { FunctionReference } from 'convex/server'
 import { gzipSync } from 'fflate'
 
-import type { ActionCtx } from '../../_generated/server'
-import { createScanArtifact } from '../../scan/artifact'
-import type { ScanArtifact } from '../../scan/artifact'
-import type { MetadataRecord } from '../entities.table'
+import type { ActionCtx } from '../_generated/server'
+import { createScanArtifact } from '../scan/artifact'
+import type { ScanArtifact } from '../scan/artifact'
+import type { MetadataRecord } from '../views'
 import { run } from './refreshProviders'
 
 function artifact(scanAt: string, providerIds: string[]) {
@@ -58,7 +58,7 @@ function harness(history: ScanArtifact | null) {
       },
     ) {
       switch (getFunctionName(ref)) {
-        case 'v3/projections/queries:providers': {
+        case 'views/exports:providers': {
           const secondPage = args.paginationOpts.cursor !== null
           return {
             page: (secondPage ? ['absent-b'] : ['active', 'absent-a']).map((provider_id) => ({

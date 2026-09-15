@@ -2,9 +2,10 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import * as R from 'remeda'
 
-import { endpointsViewTable, modelsViewTable, providersViewTable } from '../entities.table'
-import { endpointsListingTable, endpointsPricingTable, endpointsStatsTable } from '../series.table'
-import type { ScanProjection } from './create'
+import type { ScanComparison } from '../projections'
+import { endpointsViewTable, modelsViewTable, providersViewTable } from './entities.table'
+import { createViewRows } from './fromProjection'
+import { endpointsListingTable, endpointsPricingTable, endpointsStatsTable } from './series.table'
 
 /** Validator for one database write derived from a projection diff. */
 export const ScanProjectionWrite = v.union(
@@ -19,21 +20,32 @@ export const ScanProjectionWrite = v.union(
 /** One database write derived from a projection diff. */
 export type ScanProjectionWrite = Infer<typeof ScanProjectionWrite>
 
-/** Compare adjacent projections and return the writes needed for the next state. */
-export function diffScanProjections(
-  previous: ScanProjection,
-  next: ScanProjection,
-): ScanProjectionWrite[] {
+/** Select changed owners and copy complete rows, including dependent endpoint fields. */
+export function planViewWrites(comparison: ScanComparison): ScanProjectionWrite[] {
+  const previous = createViewRows(comparison.previous)
+  const next = createViewRows(comparison.next)
+  const changed = new Map(
+    comparison.document.changes.map((group) => [
+      group.key,
+      new Set(group.changes?.map((owner) => owner.key)),
+    ]),
+  )
+  const changedModels = changed.get('models') ?? new Set<string>()
+  const changedProviders = changed.get('providers') ?? new Set<string>()
+  const changedEndpoints = changed.get('endpoints') ?? new Set<string>()
   const writes: ScanProjectionWrite[] = []
 
   for (const row of next.models.values()) {
-    if (!sameRecord(previous.models.get(row.model_id), row)) {
+    if (changedModels.has(row.model_id) && !sameRecord(previous.models.get(row.model_id), row)) {
       writes.push({ table: 'models', row })
     }
   }
 
   for (const row of next.providers.values()) {
-    if (!sameRecord(previous.providers.get(row.provider_id), row)) {
+    if (
+      changedProviders.has(row.provider_id) &&
+      !sameRecord(previous.providers.get(row.provider_id), row)
+    ) {
       writes.push({ table: 'providers', row })
     }
   }
@@ -41,7 +53,7 @@ export function diffScanProjections(
   for (const row of next.endpoints.values()) {
     const previousRow = previous.endpoints.get(row.endpoint_id)
 
-    if (!sameRecord(previousRow, row)) {
+    if (changedEndpoints.has(row.endpoint_id) && !sameRecord(previousRow, row)) {
       writes.push({ table: 'endpoints', row })
     }
 
@@ -75,7 +87,10 @@ export function diffScanProjections(
   }
 
   for (const row of next.pricing.values()) {
-    if (!sameRecord(previous.pricing.get(row.endpoint_id), row)) {
+    if (
+      changedEndpoints.has(row.endpoint_id) &&
+      !sameRecord(previous.pricing.get(row.endpoint_id), row)
+    ) {
       writes.push({ table: 'endpointsPricing', row })
     }
   }
@@ -87,6 +102,7 @@ export function diffScanProjections(
   return writes
 }
 
+// Broad source changes may affect only fields omitted or normalized by the stored views.
 function sameRecord<T extends { scan_at: string }>(left: T | undefined, right: T) {
   if (left === undefined) {
     return false

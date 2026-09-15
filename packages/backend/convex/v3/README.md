@@ -1,87 +1,68 @@
 # V3
 
-- Builds on the `scan` and `objects` modules.
-- Ingestion assumes a single runner and does not currently use locks.
-- Will run in parallel with existing backend systems in production.
-- Will be gradually adopted in public-facing systems.
-- Should implement schema-breaking revisions now, if advantageous.
+Scan-derived current views, historical series, and shared inputs for change processing.
 
-# Change Event Streams (CES)
+## Modules
 
-- Encompasses Monitor/Alerts products.
-- Projection updates do not produce change events.
-- Will be processed as part of an `ingest` action.
-- Will likely involve `json-diff-ts`, but will not use the atomic `or_views_changes` strategy.
-- Currently out of scope.
+| Module        | Responsibility                                                                       |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `scan`        | Capture, artifact identity, discovery, and loading.                                  |
+| `objects`     | Named-object storage and retrieval through Convex storage or R2.                     |
+| `projections` | Shared validation, text scope, record construction, and structural comparison.       |
+| `views`       | Table-specific adaptation, write planning, application, and exports.                 |
+| `v3`          | Ingestion, ingestion records, pull, provider refresh, and the public Convex queries. |
 
-# Scans
+## Shared projection
 
-- Are a snapshot of model/endpoint API data.
-- Requires carefully chosen properties to be validated.
-- Removes purely duplicated data, cutting the final artifact size from ~10MB to ~5.5MB.
-- Any request failure fails the entire scan.
-- The parallel request process takes only ~1.5 to ~3 seconds, including object storage.
-- Runs independently of any downstream ingestion functions.
-- Legacy archives have been converted to this more efficient format.
+- Models must support both text input and text output to enter the shared catalog.
+- Records contain normalized identities, contextual fields, endpoint pricing, and broad JSON metadata.
+- The last text-eligible occurrence selects the provider record; endpoints keep their observed names.
+- Metadata retains remaining source fields without significance-based key exclusions.
+- Arrays, nulls, and empty objects survive projection; literal dotted-key collisions remain unresolved.
+- Default endpoint stats are extracted and validated separately; `statsByTier` is excluded.
+- Comparison returns complete before/after projections and a versioned `json-diff-ts` change document.
+- Observation times and stats are outside the compared catalog.
 
-# Projections
+## Ingestion
 
-- Projection tables include the entity and series tables.
-- Required, validated fields are carefully chosen and always exist.
-- The latest ingestion record identifies the current scan, whose scan time is the ORCA clock.
-- Public endpoint listings retain endpoints unlisted within 30 days of the ORCA clock.
-- Models must include text in both modality arrays to produce entity or series projections.
-- Supports Endpoints Data Grid, Entity Overview, and Pricing History.
-- Each projection table is applied atomically.
-- Stats and the ingestion record commit together, including for scans without stats.
-- Failed ingestion can leave partial projections visible.
-- Retrying an interrupted ingestion repairs partial writes without duplicating series rows.
-- Backfill and normal ingestion must still run one at a time, including during recovery.
-- Failure to ingest a projection halts this process until developer intervention.
+- Capture runs independently of ingestion and stores scan artifacts as the durable source.
+- Ingestion loads the next source pair and prepares one in-memory comparison.
+- The action calls the ordinary view consumer and reserves a call site for future change processing.
+- Each view table is applied atomically; stats and the ingestion record commit together last.
+- The latest ingestion record defines the current scan and its observation time defines the ORCA clock.
+- Interrupted ingestion can expose partial writes; retrying repairs them without duplicating series rows.
+- Ingestion assumes one runner; backfill, recovery, and pulls require exclusive execution.
+- An ingestion failure stops forward processing until developer intervention.
 
-## Views
+## Views and series
 
-- Entity views are like a "cache" of the latest ingested scan.
-- Endpoint views copy model identity, names, modalities, and creation date for independent reads.
-- Endpoint views retain current pricing separately from metadata, including when unlisted.
-- They do not model "change" or "history" (aside from `unlisted_at`).
-- Entity views store arbitrary properties in the `metadata` record with a restricted value schema.
-  - They allow us to manage upstream schema changes without changing ours.
-  - Are never required to contain a specific property, or a normalised set across entities.
-  - May exclude upstream properties by key name if known to be unnecessary or superfluous.
-  - Public queries will use something like zod to create a normalized shape with default fallbacks.
-- Update suppression is a performance optimisation only.
-- `scan_at` links to the last scan which caused the entity view to update.
-  - It does not indicate staleness.
-
-### Refresh
-
-- `refreshProviders.run` replaces provider metadata using full projections of the current scan.
-- Absent providers use their row's `scan_at` artifact, preserving that observation's metadata.
-- Refresh requires exclusive execution and access to every indicated source artifact.
-- Refresh resolves every source before one atomic metadata write; any error aborts the action.
-
-## Series
-
-- Endpoint listing rows are inserted whenever an endpoint becomes listed or unlisted.
-- Endpoint pricing rows are inserted whenever a change is detected.
-- Endpoint stats rows are always inserted when present.
+- Views adapt shared records to existing table schemas, including restricted metadata values.
+- Endpoint rows retain shared contextual fields and current pricing for independent reads.
+- Unlisted endpoints retain their last known data; public listings include a 30-day retention window.
+- Entity `scan_at` records the last write rather than the latest observation of an unchanged entity.
+- Listing series record endpoint appearance and disappearance; pricing series record stored price changes.
+- Every supplied default stats reading is inserted, including repeated values.
 - Current stats contain only readings at the ORCA clock; missing readings remain absent.
 
-## Projection pulls
+## Pull and provider refresh
 
-- Pulls idempotently merge views, listings, and pricing in creation order through shared writes.
-- Pulls run exclusively on the destination and refresh by rerunning from the beginning.
-- Pulls import the captured current scan and its stats together after copying other projections.
-- A source argument or default `ORCA_PULL_SOURCE_URL` enables pulling.
-- Previews pull alongside the legacy crawl until the frontend migrates.
-- Pulls copy the captured scan artifact and product projections, excluding historical stats.
+- Pull merges views, listings, and pricing through shared writes, then imports current stats and ingestion.
+- Pull copies the captured scan artifact and current stats, with selected history rather than a replica.
 - Imported ingestion records establish the current scan without requiring continuous local history.
+- Pull uses the source argument or `ORCA_PULL_SOURCE_URL`; source and destination need matching exports.
+- Provider refresh replaces retained provider metadata using current or row-`scan_at` source artifacts.
+- Refresh resolves all required sources before one atomic metadata write and requires exclusive execution.
 
 ## Deployment controls
 
-- Previews bootstrap through init pull; scheduled processes are disabled unless explicitly enabled.
-- Scans run hourly at :40 with ORCA_SCAN_ENABLED; ingestion runs at :42 with ORCA_INGEST_ENABLED.
-- Objects default to Convex storage; ORCA_OBJECTS_BACKEND=r2 selects R2 for new writes.
-- Existing objects always load through their stored locators.
-- Pull the baseline before enabling scans and ingestion for an independent preview timeline.
+- Previews bootstrap through init pull; scheduled processes are opt-in.
+- Capture runs hourly at :40 with `ORCA_SCAN_ENABLED`; ingestion runs at :42 with `ORCA_INGEST_ENABLED`.
+- New objects use Convex storage by default or R2 with `ORCA_OBJECTS_BACKEND=r2`.
+- Existing objects load through their stored locators.
+- Pull the baseline before enabling capture and ingestion for an independent preview timeline.
+
+## Design notes
+
+- [Product objectives](../../../../docs/orca/objectives.md)
+- [Change Event Streams](../../../../docs/orca/change-event-streams.md)
+- [Raw change stream](../../../../docs/orca/raw-change-stream.md)

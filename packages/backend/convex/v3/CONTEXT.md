@@ -40,3 +40,16 @@ An endpoint without a reading in that scan has no current stats.
 **Pull**:
 An import of source projections needed by development and preview products.
 A pull supplies current product data and selected history without replicating the source environment.
+
+## Products
+
+**Alerts**:
+ORCA's curated notification stream of announcement-worthy occurrences.
+
+**Monitor**:
+A working name for the intended web presentation of Alerts, showing the same notification content
+with ORCA's own styling.
+
+**Endpoints Data Grid**:
+The browsing interface for the most current endpoint catalog data available to ORCA,
+independent of notification selection and publication.

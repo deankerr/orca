@@ -4,11 +4,14 @@ import assert from 'node:assert/strict'
 
 import { getFunctionName } from 'convex/server'
 
-import type { MutationCtx } from '../../_generated/server'
-import { V3_SCAN_INGESTIONS_TABLE } from '../ingestions.table'
-import { V3_ENDPOINTS_STATS_SERIES_TABLE } from '../series.table'
-import * as mutations from './apply'
-import type { ScanProjectionWrite } from './diff'
+import type { MutationCtx } from '../_generated/server'
+import { V3_SCAN_INGESTIONS_TABLE } from '../v3/ingestions.table'
+import * as registered from './apply'
+import { applyViewWrites } from './consume'
+import { V3_ENDPOINTS_STATS_SERIES_TABLE } from './series.table'
+import type { ScanProjectionWrite } from './writes'
+
+const mutations = { ...registered, applyScanProjection: applyViewWrites }
 
 const writes: ScanProjectionWrite[] = [
   ...Array.from({ length: 501 }, (_, index): ScanProjectionWrite => ({
