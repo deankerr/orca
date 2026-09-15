@@ -2,12 +2,11 @@ import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
 import { env, internalAction, internalQuery } from '../_generated/server'
-import { loadScanArtifact, nextScanArtifactId } from '../scan/artifact'
+import { prepareComparison } from '../projections/documents'
+import { nextScanArtifactId } from '../scan/artifact'
+import { consume } from '../views/consume'
 import { getCurrentScan } from './ingestions'
 import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
-import { applyScanProjection } from './projections/apply'
-import { createScanProjection, INITIAL_SCAN_PROJECTION } from './projections/create'
-import { diffScanProjections } from './projections/diff'
 
 /** Return the artifact ID at the current scan. */
 export const currentArtifactId = internalQuery({
@@ -32,23 +31,16 @@ export const run = internalAction({
       return null
     }
 
-    const nextArtifact = await loadScanArtifact(ctx, toArtifactId)
-    const next = createScanProjection(nextArtifact)
-    let previous = INITIAL_SCAN_PROJECTION
-
-    if (fromArtifactId !== INITIAL_SCAN_ARTIFACT_ID) {
-      const previousArtifact = await loadScanArtifact(ctx, fromArtifactId)
-      previous = createScanProjection(previousArtifact)
-    }
+    const comparison = await prepareComparison(
+      ctx,
+      fromArtifactId === INITIAL_SCAN_ARTIFACT_ID ? null : fromArtifactId,
+      toArtifactId,
+    )
 
     console.log(`ingest: ${fromArtifactId} to ${toArtifactId}`)
 
-    await applyScanProjection(ctx, {
-      fromArtifactId,
-      toArtifactId,
-      scan_at: next.scan_at,
-      writes: diffScanProjections(previous, next),
-    })
+    await consume(ctx, comparison)
+    // Future changeStreams consumer receives this same comparison here.
 
     await ctx.scheduler.runAfter(0, internal.v3.ingest.run, {})
     return null

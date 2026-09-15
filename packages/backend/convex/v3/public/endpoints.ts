@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { query } from '../../_generated/server'
-import { V3_ENDPOINTS_VIEW_TABLE } from '../entities.table'
+import { V3_ENDPOINTS_VIEW_TABLE } from '../../views'
 import { getCurrentScan } from '../ingestions'
 import { Model } from './models'
 import { Provider } from './providers'

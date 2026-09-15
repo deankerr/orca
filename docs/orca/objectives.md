@@ -1,56 +1,55 @@
 # Objectives
 
-- Capture what we use as raw artifacts, then build disposable and rebuildable projections
-- Develop and deploy reliable and accessible bulk data capture solution
-- Unify historical and active capture data sources
-- Enable modular processing pipelines/utilities
-- Satisfy existing product data requirements
+## Data foundation
 
-## Products
+- Capture upstream observations as durable scan artifacts.
+- Build disposable, rebuildable product data from historical and active scans.
+- Share validated records and structural comparisons across views and change processing.
+- Scope current products to models supporting both text input and text output.
+- Keep capture independent of downstream processing.
+- Harmonize field meanings and labels across products.
 
-- Harmonize schema/field label definitions
-- Enable "easy win" feature enhancements via better platforms/deployments
+## Endpoints Data Grid
 
-### Endpoints Data Grid
+- Serve the latest ingested endpoint catalog through reactive Convex views.
+- Update current data independently of notification selection and publication.
+- Expand modality support later through a shared scope decision.
 
-- Live endpoints catalog data projected into a "current" cache or store
-- LLMs only
-- Similar data requirements, but does not need to be a "drop in" schema (make improvements)
-- ❓ Retain Convex for reactive updates
-  - ❓ Transition to new reactive frontend data source
-- 🔮 (Future) Expand modality-specific data support
+## ORCA API
 
-### ORCA API
+- Serve a V2-compatible representation of current data.
+- Develop a V3 schema later.
 
-- Serve a V2-compatible projection from the current store (a separately cached blob is optional)
-- V2 compatible
-- 🔮 (Future) Develop V3 schema
+## Monitor / Alerts
 
-### Monitor / Alerts
+- Derive notifications from shared projected-record comparisons.
+- Use complete before/after records for period-correct contextual metadata.
+- Keep the same text-model scope as the grid, including raw change inspection.
+- Interpret changes in context; a changed value alone does not warrant a notification.
+- Process historical and active observations while restricting broadcasts to eligible live events.
+- Share one curated notification payload between the web and external delivery surfaces.
 
-Note: These are separate products but should share event data, i.e. a Discord alert should have a matching Monitor item
+### Monitor
 
-- Derive change events from artifact diffs
-- Enrich change events with contextual metadata as valid for that period (e.g. model/provider names)
-  - ⚠️ `@orca/backend` Monitor presents current metadata as historical
-- Processing pipeline for both historical and active data
-  - ⚠️ Alerts should not be broadcast for historical data
-- ❓ Baked in or just in time metadata
+- Present notifications as a grid overlay.
+- Treat the Monitor name and distinct identity as provisional.
+- Support useful query dimensions and pagination independent of scan batch sizes.
 
-#### Monitor
+### Alerts
 
-- Improve query dimensions
-- Query page size should not need to be coupled to crawl batch size
+- Provide durable, observable notification delivery.
 
-#### Alerts
+## Pricing History
 
-- Durable, observable broadcast system (rebuild with Cloudflare stack)
+- Serve historical endpoint pricing from scan-derived series.
+- Control history granularity for useful comparison.
 
-### Pricing History
+## Completion target
 
-- Replace data source
-- Constrain granularity
+- Retire the legacy `snapshots` process after its product responsibilities are replaced.
 
-## Ultimate Objective
+## Design notes
 
-- Shut down `@orca/backend` `snapshots` process.
+- [Change Event Streams](change-event-streams.md): notification processing requirements and open design.
+- [Raw change stream](raw-change-stream.md): the first CES product slice.
+- [V3 README](../../packages/backend/convex/v3/README.md): implemented data flow and operating constraints.

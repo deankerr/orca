@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { query } from '../../_generated/server'
-import { V3_MODELS_VIEW_TABLE, V3_PROVIDERS_VIEW_TABLE } from '../entities.table'
+import { V3_MODELS_VIEW_TABLE, V3_PROVIDERS_VIEW_TABLE } from '../../views'
 
 const text = z.string().trim().min(1).nullable().catch(null)
 const flag = z.boolean().nullable().catch(null)
