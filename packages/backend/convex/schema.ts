@@ -10,6 +10,7 @@ import { LOCKS_TABLE, locksTable } from './locks/table'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
+import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -17,8 +18,7 @@ import {
   endpointsViewTable,
   modelsViewTable,
   providersViewTable,
-} from './v3/entities.table'
-import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
+} from './views/entities.table'
 import {
   V3_ENDPOINTS_LISTING_SERIES_TABLE,
   V3_ENDPOINTS_PRICING_SERIES_TABLE,
@@ -26,7 +26,7 @@ import {
   endpointsListingTable,
   endpointsPricingTable,
   endpointsStatsTable,
-} from './v3/series.table'
+} from './views/series.table'
 
 export default defineSchema(
   {

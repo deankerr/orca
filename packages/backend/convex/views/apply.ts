@@ -1,8 +1,13 @@
 import { ConvexError, v } from 'convex/values'
 
-import { internal } from '../../_generated/api'
-import { internalMutation } from '../../_generated/server'
-import type { ActionCtx, MutationCtx } from '../../_generated/server'
+import { internalMutation } from '../_generated/server'
+import type { MutationCtx } from '../_generated/server'
+import { getCurrentScan } from '../v3/ingestions'
+import {
+  INITIAL_SCAN_ARTIFACT_ID,
+  V3_SCAN_INGESTIONS_TABLE,
+  scanIngestionsTable,
+} from '../v3/ingestions.table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -10,9 +15,7 @@ import {
   endpointsViewTable,
   modelsViewTable,
   providersViewTable,
-} from '../entities.table'
-import { getCurrentScan } from '../ingestions'
-import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from '../ingestions.table'
+} from './entities.table'
 import {
   V3_ENDPOINTS_LISTING_SERIES_TABLE,
   V3_ENDPOINTS_PRICING_SERIES_TABLE,
@@ -20,68 +23,10 @@ import {
   endpointsListingTable,
   endpointsPricingTable,
   endpointsStatsTable,
-} from '../series.table'
-import type { ScanProjectionWrite } from './diff'
+} from './series.table'
 
 const cursorArgs = { fromArtifactId: v.string(), toArtifactId: v.string() }
 type Cursor = { fromArtifactId: string; toArtifactId: string }
-
-/** Apply each table atomically; stats and the ingestion cursor commit last. */
-export async function applyScanProjection(
-  ctx: Pick<ActionCtx, 'runMutation'>,
-  args: Cursor & { scan_at: string; writes: ScanProjectionWrite[] },
-) {
-  const { writes, ...cursor } = args
-  console.log({ ...cursor, writes: writes.length })
-  const modelsRows = writes.filter((write) => write.table === 'models').map((write) => write.row)
-
-  if (modelsRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.models, { rows: modelsRows })
-  }
-
-  const providersRows = writes
-    .filter((write) => write.table === 'providers')
-    .map((write) => write.row)
-
-  if (providersRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.providers, {
-      rows: providersRows,
-    })
-  }
-
-  const endpointsRows = writes
-    .filter((write) => write.table === 'endpoints')
-    .map((write) => write.row)
-
-  if (endpointsRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.endpoints, {
-      rows: endpointsRows,
-    })
-  }
-
-  const endpointListingsRows = writes
-    .filter((write) => write.table === 'endpointListings')
-    .map((write) => write.row)
-
-  if (endpointListingsRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.endpointListings, {
-      rows: endpointListingsRows,
-    })
-  }
-
-  const endpointsPricingRows = writes
-    .filter((write) => write.table === 'endpointsPricing')
-    .map((write) => write.row)
-
-  if (endpointsPricingRows.length > 0) {
-    await ctx.runMutation(internal.v3.projections.apply.endpointsPricing, {
-      rows: endpointsPricingRows,
-    })
-  }
-
-  const statsRows = writes.filter((write) => write.table === 'stats').map((write) => write.row)
-  await ctx.runMutation(internal.v3.projections.apply.stats, { ...cursor, rows: statsRows })
-}
 
 /** Reject stale work and skip an already committed ingestion. */
 async function shouldApply(ctx: MutationCtx, args: Cursor) {
@@ -215,6 +160,53 @@ export const stats = internalMutation({
       to_artifact_id: args.toArtifactId,
       scan_at: args.scan_at,
     })
+    return null
+  },
+})
+
+/** Import scan stats and their ingestion record together, including scans without readings. */
+export const currentScan = internalMutation({
+  args: { scan: scanIngestionsTable.validator, rows: v.array(endpointsStatsTable.validator) },
+  returns: v.null(),
+  handler: async (ctx, { scan, rows }) => {
+    if (rows.some((row) => row.scan_at !== scan.scan_at)) {
+      throw new ConvexError('Pulled readings must belong to the captured scan')
+    }
+    const latest = await getCurrentScan(ctx)
+    const existing = await ctx.db
+      .query(V3_ENDPOINTS_STATS_SERIES_TABLE)
+      .withIndex('by_scan_at', (q) => q.eq('scan_at', scan.scan_at))
+      .collect()
+    const keys = new Set(existing.map((row) => JSON.stringify([row.endpoint_id, row.tier])))
+    for (const row of rows) {
+      const key = JSON.stringify([row.endpoint_id, row.tier])
+      if (!keys.has(key)) {
+        await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
+        keys.add(key)
+      }
+    }
+    if (latest?.to_artifact_id !== scan.to_artifact_id) {
+      await ctx.db.insert(V3_SCAN_INGESTIONS_TABLE, scan)
+    }
+    return null
+  },
+})
+
+/** Replace metadata atomically after every provider source has been resolved. */
+export const refreshProviders = internalMutation({
+  args: { rows: v.array(providersViewTable.validator.pick('provider_id', 'metadata')) },
+  returns: v.null(),
+  handler: async (ctx, { rows }) => {
+    for (const row of rows) {
+      const existing = await ctx.db
+        .query(V3_PROVIDERS_VIEW_TABLE)
+        .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
+        .unique()
+      if (existing === null) {
+        throw new ConvexError(`Provider view missing during refresh: ${row.provider_id}`)
+      }
+      await ctx.db.patch(existing._id, { metadata: row.metadata })
+    }
     return null
   },
 })

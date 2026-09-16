@@ -115,6 +115,7 @@
       "name": "@orca/scripts",
       "dependencies": {
         "commander": "^15.0.0",
+        "json-diff-ts": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {

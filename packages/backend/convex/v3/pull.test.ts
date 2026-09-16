@@ -6,7 +6,7 @@ import { ConvexHttpClient } from 'convex/browser'
 import { getFunctionName } from 'convex/server'
 import type { PaginationOptions } from 'convex/server'
 
-import type { ActionCtx } from '../../_generated/server'
+import type { ActionCtx } from '../_generated/server'
 import { run } from './pull'
 
 test('pulls five tables then commits the captured scan even when it has no stats', async () => {
@@ -19,6 +19,7 @@ test('pulls five tables then commits the captured scan even when it has no stats
   }
 
   const query = spyOn(ConvexHttpClient.prototype, 'query').mockImplementation(async (ref, args) => {
+    assert.equal(getFunctionName(ref).split(':')[0], 'v3/projections/queries')
     if (getFunctionName(ref).endsWith(':currentScan')) {
       return scan
     }

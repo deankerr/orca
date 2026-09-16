@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { query } from '../../_generated/server'
-import { V3_PROVIDERS_VIEW_TABLE } from '../entities.table'
+import { V3_PROVIDERS_VIEW_TABLE } from '../../views'
 
 /** Lightweight provider details; endpoint-specific tags remain on endpoints. */
 export const Provider = z.object({

@@ -1,9 +1,8 @@
 import { ConvexError, v } from 'convex/values'
 
 import { query } from '../../_generated/server'
-import { V3_ENDPOINTS_VIEW_TABLE } from '../entities.table'
+import { V3_ENDPOINTS_VIEW_TABLE, endpointsListingTable, endpointsPricingTable } from '../../views'
 import { getCurrentScan } from '../ingestions'
-import { endpointsListingTable, endpointsPricingTable } from '../series.table'
 
 const listing = endpointsListingTable.validator.pick('scan_at', 'state')
 const price = endpointsPricingTable.validator.pick('scan_at', 'meters')
