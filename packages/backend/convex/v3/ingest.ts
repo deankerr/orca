@@ -18,11 +18,11 @@ export const currentArtifactId = internalQuery({
   },
 })
 
-/** Ingest the next stored scan artifact, then continue while artifacts remain. */
+/** Ingest the next stored scan artifact; optionally stop after this one. */
 export const run = internalAction({
-  args: {},
+  args: { once: v.optional(v.boolean()) },
   returns: v.null(),
-  handler: async (ctx) => {
+  handler: async (ctx, { once }) => {
     const fromArtifactId: string = await ctx.runQuery(internal.v3.ingest.currentArtifactId, {})
     const toArtifactId = await nextScanArtifactId(ctx, fromArtifactId)
 
@@ -42,7 +42,9 @@ export const run = internalAction({
     await consume(ctx, comparison)
     // Future changeStreams consumer receives this same comparison here.
 
-    await ctx.scheduler.runAfter(0, internal.v3.ingest.run, {})
+    if (once !== true) {
+      await ctx.scheduler.runAfter(0, internal.v3.ingest.run, {})
+    }
     return null
   },
 })
