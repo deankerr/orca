@@ -8,7 +8,6 @@ import {
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
 import { isNonEmptyString } from './shared/utils'
-import { serveBundles } from './snapshots/bundles/http'
 
 const http = httpRouter()
 
@@ -40,13 +39,6 @@ http.route({
       publicKey,
     })
   }),
-})
-
-// Analysis download of a crawl archive. See snapshots/bundles/http.ts.
-http.route({
-  path: '/bundle',
-  method: 'GET',
-  handler: serveBundles,
 })
 
 http.route({

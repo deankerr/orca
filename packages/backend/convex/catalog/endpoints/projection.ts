@@ -57,8 +57,4 @@ export function createEndpointProjection(doc: EndpointDoc) {
   }
 }
 
-export function createEndpointProjections(docs: EndpointDoc[]) {
-  return docs.map(createEndpointProjection)
-}
-
 export type EndpointProjection = ReturnType<typeof createEndpointProjection>

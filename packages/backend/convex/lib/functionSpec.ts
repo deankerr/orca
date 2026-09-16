@@ -2,7 +2,7 @@
 import type { ArgsArrayForOptionalValidator, DefaultArgsForOptionalValidator } from 'convex/server'
 import type { PropertyValidators, Validator } from 'convex/values'
 
-import type { ActionCtx, MutationCtx, QueryCtx } from '../_generated/server'
+import type { QueryCtx } from '../_generated/server'
 
 type RequiredValidator = Validator<any, 'required', any>
 type FunctionArgsValidator = PropertyValidators | RequiredValidator
@@ -37,7 +37,4 @@ function createFunctionSpecBuilder<Ctx>() {
   return defineFunctionSpec
 }
 
-export const defineFunctionSpec = createFunctionSpecBuilder
 export const defineQuerySpec = createFunctionSpecBuilder<QueryCtx>()
-export const defineMutationSpec = createFunctionSpecBuilder<MutationCtx>()
-export const defineActionSpec = createFunctionSpecBuilder<ActionCtx>()

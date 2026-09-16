@@ -1,8 +1,5 @@
 import { z } from 'zod'
 
-import { query } from '../../_generated/server'
-import { V3_MODELS_VIEW_TABLE } from '../../views'
-
 /** Lightweight model details shared by endpoint rows and selection controls. */
 export const Model = z.object({
   _id: z.string(),
@@ -21,13 +18,3 @@ export const Model = z.object({
 })
 
 export type Model = z.infer<typeof Model>
-
-/** List lightweight model summaries, including catalog-absent models. */
-export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    const rows = await ctx.db.query(V3_MODELS_VIEW_TABLE).collect()
-
-    return rows.map((row) => Model.parse(row))
-  },
-})

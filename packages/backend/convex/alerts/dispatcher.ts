@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import * as R from 'remeda'
 
-import { api, internal } from '../_generated/api'
+import { internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
 import { internalAction } from '../_generated/server'
 import type { EntityChange } from '../changes'
@@ -123,7 +123,7 @@ export const run = internalAction({
       return
     }
 
-    const changes: EntityChange[] = await ctx.runQuery(api.changeBatch.byCrawlId, {
+    const changes: EntityChange[] = await ctx.runQuery(internal.changeBatch.byCrawlId, {
       crawl_id: args.crawl_id,
     })
 
