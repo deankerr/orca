@@ -33,6 +33,15 @@ Scan-derived current views, historical series, and shared inputs for change proc
 - Interrupted ingestion can expose partial writes; retrying repairs them without duplicating series rows.
 - Ingestion assumes one runner; backfill, recovery, and pulls require exclusive execution.
 - An ingestion failure stops forward processing until developer intervention.
+- Manual ingestion accepts `once: true` to consume one artifact without scheduling the next step.
+
+## Raw inspection
+
+- `/admin/changes` browses ingestion pairs and compares explicit artifacts through a public action.
+- Inspection uses shared projections independently of ingestion, including arbitrary net comparisons.
+- Optional owner selection returns scoped changes and complete before/after projected records.
+- Comparisons are computed on demand; the ingestion index alone is reactive.
+- [Raw change inspection](../../../../docs/orca/raw-change-stream.md) documents the interface and CLI.
 
 ## Views and series
 

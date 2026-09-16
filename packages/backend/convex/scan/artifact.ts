@@ -1,3 +1,4 @@
+import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
 import { internal } from '../_generated/api'
@@ -37,8 +38,11 @@ export async function storeScanArtifact(ctx: ActionCtx, artifact: ScanArtifact):
 
 /** Load and parse a required scan artifact. */
 export async function loadScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact> {
-  const text = z.string().parse(await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id }))
-  return parseScanArtifact(id, text)
+  const artifact = await findScanArtifact(ctx, id)
+  if (artifact === null) {
+    throw new ConvexError(`Scan artifact not found: ${id}`)
+  }
+  return artifact
 }
 
 /** Load and parse a scan artifact when it exists. */
