@@ -10,6 +10,8 @@ import { LOCKS_TABLE, locksTable } from './locks/table'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
+import { batches, jobs } from './v3/ces/ingestion/tables'
+import { events } from './v3/ces/processing/tables'
 import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
@@ -30,6 +32,9 @@ import {
 
 export default defineSchema(
   {
+    ces_batches: batches,
+    ces_jobs: jobs,
+    ces_events: events,
     alerts_discord_subscriptions: subscriptionsTable,
 
     [LOCKS_TABLE]: locksTable,

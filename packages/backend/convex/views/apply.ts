@@ -1,13 +1,8 @@
 import { ConvexError, v } from 'convex/values'
 
 import { internalMutation } from '../_generated/server'
-import type { MutationCtx } from '../_generated/server'
-import { getCurrentScan } from '../v3/ingestions'
-import {
-  INITIAL_SCAN_ARTIFACT_ID,
-  V3_SCAN_INGESTIONS_TABLE,
-  scanIngestionsTable,
-} from '../v3/ingestions.table'
+import { getCurrentScan, recordIngestion } from '../v3/ingestions'
+import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from '../v3/ingestions.table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -26,23 +21,6 @@ import {
 } from './series.table'
 
 const cursorArgs = { fromArtifactId: v.string(), toArtifactId: v.string() }
-type Cursor = { fromArtifactId: string; toArtifactId: string }
-
-/** Reject stale work and skip an already committed ingestion. */
-async function shouldApply(ctx: MutationCtx, args: Cursor) {
-  const latest = await getCurrentScan(ctx)
-  const current = latest?.to_artifact_id ?? INITIAL_SCAN_ARTIFACT_ID
-
-  if (current === args.toArtifactId) {
-    return false
-  }
-
-  if (current !== args.fromArtifactId) {
-    throw new ConvexError('Projection ingestion cursor changed')
-  }
-
-  return true
-}
 
 /** Apply models rows with retry-safe writes. */
 export const models = internalMutation({
@@ -148,18 +126,19 @@ export const stats = internalMutation({
   args: { ...cursorArgs, scan_at: v.string(), rows: v.array(endpointsStatsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
+    if (
+      !(await recordIngestion(ctx, {
+        from_artifact_id: args.fromArtifactId,
+        to_artifact_id: args.toArtifactId,
+        scan_at: args.scan_at,
+      }))
+    ) {
       return null
     }
 
     for (const row of args.rows) {
       await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
     }
-    await ctx.db.insert(V3_SCAN_INGESTIONS_TABLE, {
-      from_artifact_id: args.fromArtifactId,
-      to_artifact_id: args.toArtifactId,
-      scan_at: args.scan_at,
-    })
     return null
   },
 })

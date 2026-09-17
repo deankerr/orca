@@ -27,10 +27,10 @@ Scan-derived current views, historical series, and shared inputs for change proc
 
 - Capture runs independently of ingestion and stores scan artifacts as the durable source.
 - Ingestion loads the next source pair and prepares one in-memory comparison.
-- The action calls the ordinary view consumer and reserves a call site for future change processing.
-- Each view table is applied atomically; stats and the ingestion record commit together last.
+- The action feeds CES; view consumption is temporarily disabled while CES ingestion is developed.
+- The ingestion record advances after CES acceptance; failures retry the same source pair.
 - The latest ingestion record defines the current scan and its observation time defines the ORCA clock.
-- Interrupted ingestion can expose partial writes; retrying repairs them without duplicating series rows.
+- CES stages jobs until a comparison is accepted; retries preserve existing jobs and their completion state.
 - Ingestion assumes one runner; backfill, recovery, and pulls require exclusive execution.
 - An ingestion failure stops forward processing until developer intervention.
 - Manual ingestion accepts `once: true` to consume one artifact without scheduling the next step.

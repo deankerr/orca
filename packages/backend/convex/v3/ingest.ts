@@ -4,7 +4,8 @@ import { internal } from '../_generated/api'
 import { env, internalAction, internalQuery } from '../_generated/server'
 import { prepareComparison } from '../projections/documents'
 import { nextScanArtifactId } from '../scan/artifact'
-import { consume } from '../views/consume'
+// import { consume as consumeViews } from '../views/consume'
+import { consume as consumeCes } from './ces/consume'
 import { getCurrentScan } from './ingestions'
 import { INITIAL_SCAN_ARTIFACT_ID } from './ingestions.table'
 
@@ -39,8 +40,13 @@ export const run = internalAction({
 
     console.log(`ingest: ${fromArtifactId} to ${toArtifactId}`)
 
-    await consume(ctx, comparison)
-    // Future changeStreams consumer receives this same comparison here.
+    await consumeCes(ctx, comparison)
+    // await consumeViews(ctx, comparison)
+    await ctx.runMutation(internal.v3.ingestions.complete, {
+      from_artifact_id: fromArtifactId,
+      to_artifact_id: toArtifactId,
+      scan_at: comparison.next.scan_at,
+    })
 
     if (once !== true) {
       await ctx.scheduler.runAfter(0, internal.v3.ingest.run, {})

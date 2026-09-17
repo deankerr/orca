@@ -8,8 +8,12 @@ import {
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
 import { isNonEmptyString } from './shared/utils'
+import { serve as serveCesFeed, serveEvent as serveCesEvent } from './v3/ces/presentation/http'
 
 const http = httpRouter()
+
+http.route({ path: '/ces/feed', method: 'GET', handler: serveCesFeed })
+http.route({ pathPrefix: '/ces/events/', method: 'GET', handler: serveCesEvent })
 
 // Discord bot interactions endpoint
 http.route({
