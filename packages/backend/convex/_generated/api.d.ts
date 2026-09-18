@@ -24,6 +24,12 @@ import type * as catalog_providers_queries from "../catalog/providers/queries.js
 import type * as catalog_providers_table from "../catalog/providers/table.js";
 import type * as catalog_shared_availability from "../catalog/shared/availability.js";
 import type * as changeBatch from "../changeBatch.js";
+import type * as changeEvents_events from "../changeEvents/events.js";
+import type * as changeEvents_ingestion from "../changeEvents/ingestion.js";
+import type * as changeEvents_ingestion_extract from "../changeEvents/ingestion/extract.js";
+import type * as changeEvents_ingestion_store from "../changeEvents/ingestion/store.js";
+import type * as changeEvents_processing from "../changeEvents/processing.js";
+import type * as changeEvents_reset from "../changeEvents/reset.js";
 import type * as changes_index from "../changes/index.js";
 import type * as changes_projection from "../changes/projection.js";
 import type * as changes_queries from "../changes/queries.js";
@@ -87,6 +93,8 @@ import type * as snapshots_materializedChanges_main from "../snapshots/materiali
 import type * as snapshots_materializedChanges_output from "../snapshots/materializedChanges/output.js";
 import type * as snapshots_materializedChanges_process from "../snapshots/materializedChanges/process.js";
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
+import type * as textFeed_http from "../textFeed/http.js";
+import type * as textFeed_markdown from "../textFeed/markdown.js";
 import type * as v3_ingest from "../v3/ingest.js";
 import type * as v3_ingestions from "../v3/ingestions.js";
 import type * as v3_projections_queries from "../v3/projections/queries.js";
@@ -135,6 +143,12 @@ declare const fullApi: ApiFromModules<{
   "catalog/providers/table": typeof catalog_providers_table;
   "catalog/shared/availability": typeof catalog_shared_availability;
   changeBatch: typeof changeBatch;
+  "changeEvents/events": typeof changeEvents_events;
+  "changeEvents/ingestion": typeof changeEvents_ingestion;
+  "changeEvents/ingestion/extract": typeof changeEvents_ingestion_extract;
+  "changeEvents/ingestion/store": typeof changeEvents_ingestion_store;
+  "changeEvents/processing": typeof changeEvents_processing;
+  "changeEvents/reset": typeof changeEvents_reset;
   "changes/index": typeof changes_index;
   "changes/projection": typeof changes_projection;
   "changes/queries": typeof changes_queries;
@@ -198,6 +212,8 @@ declare const fullApi: ApiFromModules<{
   "snapshots/materializedChanges/output": typeof snapshots_materializedChanges_output;
   "snapshots/materializedChanges/process": typeof snapshots_materializedChanges_process;
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
+  "textFeed/http": typeof textFeed_http;
+  "textFeed/markdown": typeof textFeed_markdown;
   "v3/ingest": typeof v3_ingest;
   "v3/ingestions": typeof v3_ingestions;
   "v3/projections/queries": typeof v3_projections_queries;

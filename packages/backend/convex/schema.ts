@@ -4,6 +4,14 @@ import { defineSchema } from 'convex/server'
 import { endpointsTable } from './catalog/endpoints/table'
 import { modelDescriptionsTable, modelsTable } from './catalog/models/table'
 import { providersTable } from './catalog/providers/table'
+import {
+  CHANGE_EVENTS_TABLE,
+  CHANGE_EVENT_INPUTS_TABLE,
+  CHANGE_EVENT_INGESTIONS_TABLE,
+  changeEventsTable,
+  changeEventInputsTable,
+  changeEventIngestionsTable,
+} from './changeEvents/schema'
 import { changesTable } from './changes/table'
 import { subscriptionsTable } from './discord/subscriptions/table'
 import { LOCKS_TABLE, locksTable } from './locks/table'
@@ -30,6 +38,10 @@ import {
 
 export default defineSchema(
   {
+    [CHANGE_EVENTS_TABLE]: changeEventsTable,
+    [CHANGE_EVENT_INPUTS_TABLE]: changeEventInputsTable,
+    [CHANGE_EVENT_INGESTIONS_TABLE]: changeEventIngestionsTable,
+
     alerts_discord_subscriptions: subscriptionsTable,
 
     [LOCKS_TABLE]: locksTable,

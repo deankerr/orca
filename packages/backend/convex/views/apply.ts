@@ -3,11 +3,7 @@ import { ConvexError, v } from 'convex/values'
 import { internalMutation } from '../_generated/server'
 import type { MutationCtx } from '../_generated/server'
 import { getCurrentScan } from '../v3/ingestions'
-import {
-  INITIAL_SCAN_ARTIFACT_ID,
-  V3_SCAN_INGESTIONS_TABLE,
-  scanIngestionsTable,
-} from '../v3/ingestions.table'
+import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from '../v3/ingestions.table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -24,25 +20,7 @@ import {
   endpointsPricingTable,
   endpointsStatsTable,
 } from './series.table'
-
-const cursorArgs = { fromArtifactId: v.string(), toArtifactId: v.string() }
-type Cursor = { fromArtifactId: string; toArtifactId: string }
-
-/** Reject stale work and skip an already committed ingestion. */
-async function shouldApply(ctx: MutationCtx, args: Cursor) {
-  const latest = await getCurrentScan(ctx)
-  const current = latest?.to_artifact_id ?? INITIAL_SCAN_ARTIFACT_ID
-
-  if (current === args.toArtifactId) {
-    return false
-  }
-
-  if (current !== args.fromArtifactId) {
-    throw new ConvexError('Projection ingestion cursor changed')
-  }
-
-  return true
-}
+import type { EndpointStatsRow } from './series.table'
 
 /** Apply models rows with retry-safe writes. */
 export const models = internalMutation({
@@ -143,23 +121,12 @@ export const endpointsPricing = internalMutation({
   },
 })
 
-/** Append stats and advance the cursor in one transaction, including empty scans. */
+/** Append stats idempotently; the ingest action records completion separately. */
 export const stats = internalMutation({
-  args: { ...cursorArgs, scan_at: v.string(), rows: v.array(endpointsStatsTable.validator) },
+  args: { scan_at: v.string(), rows: v.array(endpointsStatsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (!(await shouldApply(ctx, args))) {
-      return null
-    }
-
-    for (const row of args.rows) {
-      await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
-    }
-    await ctx.db.insert(V3_SCAN_INGESTIONS_TABLE, {
-      from_artifact_id: args.fromArtifactId,
-      to_artifact_id: args.toArtifactId,
-      scan_at: args.scan_at,
-    })
+    await appendStats(ctx, args.scan_at, args.rows)
     return null
   },
 })
@@ -173,24 +140,28 @@ export const currentScan = internalMutation({
       throw new ConvexError('Pulled readings must belong to the captured scan')
     }
     const latest = await getCurrentScan(ctx)
-    const existing = await ctx.db
-      .query(V3_ENDPOINTS_STATS_SERIES_TABLE)
-      .withIndex('by_scan_at', (q) => q.eq('scan_at', scan.scan_at))
-      .collect()
-    const keys = new Set(existing.map((row) => JSON.stringify([row.endpoint_id, row.tier])))
-    for (const row of rows) {
-      const key = JSON.stringify([row.endpoint_id, row.tier])
-      if (!keys.has(key)) {
-        await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
-        keys.add(key)
-      }
-    }
+    await appendStats(ctx, scan.scan_at, rows)
     if (latest?.to_artifact_id !== scan.to_artifact_id) {
       await ctx.db.insert(V3_SCAN_INGESTIONS_TABLE, scan)
     }
     return null
   },
 })
+
+async function appendStats(ctx: MutationCtx, scan_at: string, rows: EndpointStatsRow[]) {
+  const existing = await ctx.db
+    .query(V3_ENDPOINTS_STATS_SERIES_TABLE)
+    .withIndex('by_scan_at', (q) => q.eq('scan_at', scan_at))
+    .collect()
+  const keys = new Set(existing.map((row) => JSON.stringify([row.endpoint_id, row.tier])))
+  for (const row of rows) {
+    const key = JSON.stringify([row.endpoint_id, row.tier])
+    if (!keys.has(key)) {
+      await ctx.db.insert(V3_ENDPOINTS_STATS_SERIES_TABLE, row)
+      keys.add(key)
+    }
+  }
+}
 
 /** Replace metadata atomically after every provider source has been resolved. */
 export const refreshProviders = internalMutation({

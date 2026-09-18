@@ -41,6 +41,46 @@ An endpoint without a reading in that scan has no current stats.
 An import of source projections needed by development and preview products.
 A pull supplies current product data and selected history without replicating the source environment.
 
+## Change Event Streams
+
+**CES ingestion**:
+Preparation and retention of change event inputs from projected comparisons, with minimal interpretation.
+
+**Batch**:
+The changes derived from one source comparison, identified by its observation interval; a batch may be empty.
+
+**Change event input**:
+An independently identified, indivisible processing input carrying assigned values and evidence
+of change; its source pair, entity, and category identify the same observation.
+_Avoid_: Observed change, job, ingested event
+
+**Evidence**:
+Observations and context supporting a change event input or event, carried directly or by reference.
+
+**Lifecycle change**:
+An entity's appearance or disappearance in the observed catalog.
+
+**Pricing change**:
+A change to the pricing of an existing entity.
+
+**Attribute change**:
+A change to non-pricing fields of an existing entity; stored with category `attributes`.
+
+**Processing**:
+The CES phase that considers change event inputs using stateful rules and constructs events.
+_Avoid_: Publication (as a phase name)
+
+**Event**:
+A durable, structured account of changes to ORCA entities, ready for presentation and linked to inputs.
+Change event inputs and events can have one-to-one, many-to-one, or one-to-many relationships.
+_Avoid_: Ingested event, published event
+
+**Processed input**:
+A change event input whose interpretation is permanently finished, with or without an event.
+
+**Deferred input**:
+An unprocessed change event input retained for reconsideration on every processing run.
+
 ## Products
 
 **Alerts**:
