@@ -7,6 +7,3 @@ posthogClient.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
   defaults: '2026-01-30',
   capture_exceptions: true,
 })
-
-// tag every event with the app version
-posthogClient.register({ app_version: process.env.NEXT_PUBLIC_APP_VERSION })
