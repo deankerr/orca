@@ -21,7 +21,7 @@ These principles guide future evolution; add fallback handling when unfamiliar f
 rather than building a universal handler in advance.
 
 - Preserve unfamiliar content and keep it moving through the development pipeline.
-- Let processing preserve unfamiliar job content in events; producing no event or deferring a job
+- Let processing preserve unfamiliar input content in events; producing no event or deferring a change
   must be deliberate decisions rather than missing handling.
 - Never render an unfamiliar event as nothing, “Unknown event”, or incomplete prose such as
   “field_name changed.”; expose enough content for the reader to understand the event.
@@ -30,18 +30,18 @@ rather than building a universal handler in advance.
 - Select fallbacks explicitly for unsupported forms, rather than catching failures and treating them
   as unfamiliar events; add specialized handling when the fallback reveals a concrete need.
 
-## Jobs, events, and evidence
+## Change event inputs, events, and evidence
 
-- Retain independently identified jobs carrying or referencing evidence from which events can be constructed.
-- Keep completed jobs and their evidence addressable for explanation and reinterpretation.
-- Treat job completion as permanent; reopening completed jobs is outside the current scope.
-- Reconsider deferred jobs on every processing run, with idempotent handling of repeated input.
-- Track unfinished versus complete jobs; deferral alone needs no separate persistent status.
-- Consider every unfinished job during a run; traversal and concurrent-arrival policies remain open.
-- Commit event creation and completion of contributing jobs atomically.
+- Retain independently identified change event inputs carrying or referencing evidence for events.
+- Keep processed changes and their evidence addressable for explanation and reinterpretation.
+- Treat processing completion as permanent; reopening processed changes is outside the current scope.
+- Reconsider deferred changes on every processing run, with idempotent handling of repeated input.
+- Track unprocessed versus processed changes; deferral alone needs no separate persistent status.
+- Consider every unprocessed change during a run; traversal and concurrent-arrival policies remain open.
+- Commit event creation and processing completion of contributing changes atomically.
 - Allow one-to-one, many-to-one, or one-to-many derivation, with different input and output structures.
 - Reuse validators for shared information without requiring identical event forms across phases.
-- Link events to supporting jobs and embed the context needed to render without current-data lookups.
+- Link events to supporting changes and embed the context needed to render without current-data lookups.
 - Keep events immutable and express corrections through subsequent events.
 
 ## Phases
@@ -50,27 +50,27 @@ Define rules in code, private to each phase, with freedom to filter and transfor
 
 ### 1. Ingestion
 
-Prepare contextual jobs and store them for subsequent processing.
+Prepare contextual change event inputs and store them for subsequent processing.
 
 - Reuse shared projections and keep preparation pure, with loading and persistence handled by callers.
-- Give each job one indivisible responsibility, initially separating lifecycle, pricing, and other updates.
-- Prefer natural job-to-event units for the common one-to-one case; opt in to more complex derivation.
+- Give each change one indivisible responsibility, separating lifecycle, pricing, and attributes.
+- Prefer natural change-to-event units for the common one-to-one case; opt in to complex derivation.
 - Identify repeated work by its source pair, entity, and category rather than traversal order.
 - Distinguish assigned changes from supporting context and carry the evidence ordinary processing needs.
-- Use observation times to correlate jobs and events; artifact loading is not part of ordinary processing.
-- Lifecycle jobs carry appearance or disappearance context; field-update jobs concern existing entities.
+- Use observation times to correlate changes and events; artifact loading is outside ordinary processing.
+- Lifecycle changes concern appearance or disappearance; field changes concern existing entities.
 - Refine boundaries when concrete rules require independent disposition, rather than partial completion.
 - Apply hard filters as a performance optimization for changes known to be irrelevant to event creation.
-- Keep retention independent of event creation: retained jobs may never produce events.
+- Keep retention independent of event creation: retained changes may never produce events.
 
 ### 2. Processing
 
-Consider jobs and construct events through stateful interpretation of retained evidence.
+Consider change event inputs and construct entity events through interpretation of retained evidence.
 
 - Own the data, state, and execution needed for decisions, independently of ingestion's cadence.
 - Let specialized rules choose suitable state, including dedicated tables, rather than imposing
   one universal state format.
-- Combine evidence across jobs, entities, observations, and other relevant context as needed.
+- Combine evidence across changes, entities, observations, and other relevant context as needed.
 - Retain unfinished work and allow completion with or without resulting events.
 - Keep specialized interpretation here and make decisions and supporting evidence inspectable.
 
@@ -95,8 +95,8 @@ Transform events just in time for public queries, broadcasts, and rendered views
 
 ## Time and iteration
 
-- Preserve knowledge that observation has advanced even when no jobs are retained.
-- Interpret the absence of retained jobs in light of ingestion's selection rules.
+- Preserve knowledge that observation has advanced even when no changes are retained.
+- Interpret the absence of retained changes in light of ingestion's selection rules.
 - Give events their own creation order while preserving both ends of their evidence's observation interval.
 - Allow new events to describe earlier observations; processing time must not replace evidence time.
 - Support repeated interpretation of retained evidence independently of source acquisition and preparation.
@@ -123,8 +123,8 @@ build now; keep the ordinary path simple and revisit each story when it becomes 
   within one collection and category; a rule may summarize the affected IDs in one or a few events
   before individual handling completes those inputs, even when they span several execution pages.
 - **A meaningful population:** “most changed endpoints” and “most observed endpoints” have different
-  denominators, and unchanged entities have no jobs; rules may need evidence beyond the unfinished queue.
-- **Reconsidered evidence:** deferred inputs are examined again after unrelated jobs complete;
+  denominators, and unchanged entities have no inputs; rules may need evidence beyond the unfinished queue.
+- **Reconsidered evidence:** deferred inputs are examined again after unrelated changes finish processing;
   a shrinking queue must not accidentally turn the same observation into a newly detected storm.
   Later observations may genuinely change the evidence and warrant a subsequent event.
 - **Imperfect detection:** a pattern obvious to a reader escapes the heuristics; retained evidence

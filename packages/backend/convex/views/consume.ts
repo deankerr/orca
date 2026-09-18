@@ -14,7 +14,7 @@ export async function consume(ctx: Pick<ActionCtx, 'runMutation'>, comparison: S
   })
 }
 
-/** Apply each table atomically; stats and the ingestion cursor commit last. */
+/** Apply each table atomically, finishing with retry-safe stats writes. */
 export async function applyViewWrites(
   ctx: Pick<ActionCtx, 'runMutation'>,
   args: {
@@ -55,5 +55,5 @@ export async function applyViewWrites(
     await ctx.runMutation(internal.views.apply.endpointsPricing, { rows: pricingRows })
   }
   const statsRows = writes.filter((write) => write.table === 'stats').map((write) => write.row)
-  await ctx.runMutation(internal.views.apply.stats, { ...cursor, rows: statsRows })
+  await ctx.runMutation(internal.views.apply.stats, { scan_at: args.scan_at, rows: statsRows })
 }

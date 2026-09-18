@@ -53,6 +53,22 @@ export const nextName = internalQuery({
   },
 })
 
+/** Return the latest object name in a path, optionally strictly before another name. */
+export const previousName = internalQuery({
+  args: { path: v.string(), beforeName: v.optional(v.string()) },
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx, { path, beforeName }) => {
+    const locator = await ctx.db
+      .query(OBJECTS_LOCATORS_TABLE)
+      .withIndex('by_path_name', (q) =>
+        beforeName === undefined ? q.eq('path', path) : q.eq('path', path).lt('name', beforeName),
+      )
+      .order('desc')
+      .first()
+    return locator?.name ?? null
+  },
+})
+
 /**
  * Insert a locator. Insert-only.
  *

@@ -44,42 +44,42 @@ A pull supplies current product data and selected history without replicating th
 ## Change Event Streams
 
 **CES ingestion**:
-Preparation and retention of jobs from projected comparisons, with minimal interpretation.
+Preparation and retention of change event inputs from projected comparisons, with minimal interpretation.
 
 **Batch**:
-The jobs derived from one source comparison, identified by its observation interval; a batch may be empty.
+The changes derived from one source comparison, identified by its observation interval; a batch may be empty.
 
-**Job**:
-An independently identified, indivisible unit of work asking CES to consider an observed change,
-with assigned changes and supporting evidence; its source pair, entity, and category identify the same work.
-_Avoid_: Ingested event
+**Change event input**:
+An independently identified, indivisible processing input carrying assigned values and evidence
+of change; its source pair, entity, and category identify the same observation.
+_Avoid_: Observed change, job, ingested event
 
 **Evidence**:
-Observations and context supporting a job or event, carried directly or identified by reference.
+Observations and context supporting a change event input or event, carried directly or by reference.
 
-**Lifecycle job**:
-A job concerning an entity's appearance or disappearance in the observed catalog.
+**Lifecycle change**:
+An entity's appearance or disappearance in the observed catalog.
 
-**Pricing job**:
-A job concerning pricing changes to an existing entity.
+**Pricing change**:
+A change to the pricing of an existing entity.
 
-**Update job**:
-A job concerning non-pricing changes to an existing entity.
+**Attribute change**:
+A change to non-pricing fields of an existing entity; stored with category `attributes`.
 
 **Processing**:
-The CES phase that considers jobs using stateful rules and constructs events.
+The CES phase that considers change event inputs using stateful rules and constructs events.
 _Avoid_: Publication (as a phase name)
 
 **Event**:
-A durable, structured account of an occurrence, ready for presentation and linked to supporting jobs.
-Jobs and events can have one-to-one, many-to-one, or one-to-many relationships.
+A durable, structured account of changes to ORCA entities, ready for presentation and linked to inputs.
+Change event inputs and events can have one-to-one, many-to-one, or one-to-many relationships.
 _Avoid_: Ingested event, published event
 
-**Complete job**:
-A job whose work is permanently finished, whether or not it contributed to an event.
+**Processed input**:
+A change event input whose interpretation is permanently finished, with or without an event.
 
-**Deferred job**:
-An unfinished job retained for reconsideration on every phase 2 run.
+**Deferred input**:
+An unprocessed change event input retained for reconsideration on every processing run.
 
 ## Products
 
