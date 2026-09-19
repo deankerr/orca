@@ -7,17 +7,17 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "turbo run build --filter=web",
+    "build": "turbo run build --filter=@orca/web",
     "check": "ultracite check",
-    "dev": "turbo run dev --filter=!entity-logo-service",
+    "dev": "turbo run dev",
     "dev:backend": "turbo run dev --filter=@orca/backend",
-    "dev:next": "turbo run dev --filter=web",
+    "dev:web": "turbo run dev --filter=@orca/web",
     "fix": "ultracite fix",
+    "format:spacing": "bun run packages/scripts/space-multiline-statements.ts",
+    "generate:logos": "bun run --cwd apps/logos generate",
     "knip": "knip",
-    "logos": "bun run --cwd apps/logos build",
-    "prepare": "lefthook install --reset-hooks-path",
-    "space": "bun run packages/scripts/space-multiline-statements.ts",
-    "start": "turbo run start --filter=web"
+    "prepare": "lefthook install",
+    "start": "turbo run start --filter=@orca/web"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",

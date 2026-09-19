@@ -3,9 +3,9 @@ version = 1
 name = "orca"
 
 [setup]
-script = "bun install"
+script = "bun install --frozen-lockfile"
 
 [[actions]]
 name = "convex dev"
 icon = "run"
-command = "CONVEX_AGENT_MODE=anonymous bunx convex dev --run init"
+command = "bun run dev:backend"
