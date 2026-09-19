@@ -4,11 +4,11 @@ import type { NextConfig } from 'next'
 
 import { getConvexHttpUrl } from './lib/utils'
 
-// ignored by next if empty
-const localDevOrigin = process.env.LOCAL_DEV_ORIGIN ?? ''
+const localDevOrigin = process.env.LOCAL_DEV_ORIGIN
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: [localDevOrigin],
+  // empty strings are ignored
+  allowedDevOrigins: [localDevOrigin ?? ''],
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
   reactCompiler: true,
@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
     },
   ],
   typescript: {
-    // typescript 7 incompatibility
+    // required until typescript 7 adds compiler api support
     ignoreBuildErrors: true,
   },
 }

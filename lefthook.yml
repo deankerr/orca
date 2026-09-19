@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=./node_modules/lefthook/schema.json
 
+lefthook: bun run lefthook
+
 pre-commit:
   jobs:
     - name: ultracite

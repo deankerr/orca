@@ -4,19 +4,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": ["POSTHOG_API_KEY", "POSTHOG_ENV_ID", "CONVEX_DEPLOY_KEY"],
+      "env": ["POSTHOG_API_KEY", "POSTHOG_PROJECT_ID", "VERCEL_ENV"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["PORTLESS*", "LOCAL_DEV_ORIGIN"]
     },
     "start": {
       "cache": false,
       "persistent": true
-    },
-    "archive-sync": {
-      "cache": false
     }
   }
 }

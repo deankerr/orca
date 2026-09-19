@@ -1,14 +1,13 @@
 {
-  "name": "entity-logo-service",
+  "name": "@orca/logos",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun run src/build.ts",
-    "deploy": "bun run build && wrangler deploy",
-    "dev": "bun run build && wrangler dev",
+    "deploy": "bun run generate && wrangler deploy",
+    "generate": "bun run src/build.ts",
+    "generate:types": "wrangler types",
     "review": "bun run src/review.ts",
-    "test": "bun test",
-    "types": "wrangler types"
+    "test": "bun test"
   },
   "devDependencies": {
     "@lobehub/icons-static-avatar": "1.14.0",

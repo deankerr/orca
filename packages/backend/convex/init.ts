@@ -1,27 +1,16 @@
+import { v } from 'convex/values'
+
 import { internal } from './_generated/api'
 import { internalMutation } from './_generated/server'
 
 // runs automatically on preview deployments
 
 const init = internalMutation({
+  args: {},
+  returns: v.null(),
   handler: async (ctx) => {
-    // v3 idempotent seed from default source (production)
     await ctx.scheduler.runAfter(0, internal.v3.pull.run, {})
-
-    // run legacy snapshot
-    console.log('[init] snapshot')
-    const endpoint = await ctx.db.query('or_views_endpoints').first()
-
-    if (endpoint) {
-      console.log('[init] abort: or_views_endpoints is not empty')
-      return
-    }
-
-    await ctx.scheduler.runAfter(0, internal.snapshots.crawl.main.run, {
-      onComplete: {
-        materialize: true,
-      },
-    })
+    return null
   },
 })
 

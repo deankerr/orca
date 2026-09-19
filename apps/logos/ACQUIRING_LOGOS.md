@@ -148,7 +148,7 @@ evidence does not grant trademark or copyright permission.
 From the repository root:
 
 ```sh
-bun run --cwd apps/logos build
+bun run --cwd apps/logos generate
 bun run --cwd apps/logos test
 bun run --cwd apps/logos review {key}
 ```

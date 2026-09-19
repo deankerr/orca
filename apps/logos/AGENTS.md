@@ -13,7 +13,7 @@ commit provenance metadata or generated review sheets.
 Validate logo changes with:
 
 ```sh
-bun run --cwd apps/logos build
+bun run --cwd apps/logos generate
 bun run --cwd apps/logos test
 bun run --cwd apps/logos review {key}
 bun run fix
