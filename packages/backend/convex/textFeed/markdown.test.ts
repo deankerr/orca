@@ -2,8 +2,46 @@ import { expect, test } from 'bun:test'
 
 import type { EntityChangeContent } from '../changeEvents/schema'
 import { renderFeed } from './markdown'
+import { describeChanges } from './markdown/fields'
 
 type Event = Parameters<typeof renderFeed>[0][number]
+
+test('known metadata uses prose and string arrays describe added and removed entries', () => {
+  const lines = describeChanges(
+    {
+      metadata: {
+        context_length: 262_144,
+        supports_reasoning: false,
+        supported_parameters: ['reasoning', 'tools', 'response_format'],
+      },
+    },
+    {
+      metadata: {
+        context_length: 1_048_576,
+        supports_reasoning: true,
+        supported_parameters: ['reasoning', 'tools', 'logprobs', 'top_logprobs'],
+      },
+    },
+  )
+  expect(lines).toEqual([
+    '- Context length changed from 262,144 to 1,048,576.',
+    '- Reasoning support changed from no to yes.',
+    '- Supported parameters added: ` logprobs `, ` top_logprobs `.',
+    '- Supported parameters removed: ` response_format `.',
+  ])
+  expect(describeChanges({}, { metadata: { 'features.supports_implicit_caching': true } })).toEqual(
+    ['- Implicit caching support was added: yes.'],
+  )
+  expect(describeChanges({ metadata: { quantization: 'fp8' } }, {})).toEqual([
+    '- Quantization was removed; previously ` "fp8" `.',
+  ])
+  expect(
+    describeChanges(
+      { metadata: { supported_parameters: ['tools'] } },
+      { metadata: { supported_parameters: [] } },
+    ),
+  ).toEqual(['- Supported parameters removed: ` tools `.'])
+})
 
 test('time groups combine entity updates and render conflicting operations independently for every kind', () => {
   const record = {

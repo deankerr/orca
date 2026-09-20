@@ -168,7 +168,9 @@ test('split pricing and attributes into independently renderable changes with hi
 
   expect(update.assigned.before?.metadata).not.toHaveProperty('status')
   expect(update.assigned.after?.metadata).not.toHaveProperty('status')
-  expect(updateMarkdown).toContain('Metadata\n\n```diff\n- capacity: 100\n+ capacity: 200\n```')
+  expect(updateMarkdown).toContain(
+    '```diff\n- metadata.capacity: 100\n+ metadata.capacity: 200\n```',
+  )
   expect(updateMarkdown).not.toContain('Status changed')
   expect(updateMarkdown).not.toContain('Input price')
 })
@@ -296,18 +298,18 @@ test('metadata diffs preserve literal booleans, arrays, removals, and Markdown p
       },
     }),
   })
-  expect(markdown).toContain('Metadata\n\n```diff\n')
-  expect(markdown).toContain('+ server_tool_costs_discount_exempt: false')
-  expect(markdown).toContain('+ other_flag: true')
+  expect(markdown).toContain('```diff\n')
+  expect(markdown).toContain('+ metadata.server_tool_costs_discount_exempt: false')
+  expect(markdown).toContain('+ metadata.other_flag: true')
   expect(markdown).toContain(
-    '- excluded_parameters: []\n+ excluded_parameters: ["response_format"]',
+    '- metadata.excluded_parameters: []\n+ metadata.excluded_parameters: ["response_format"]',
   )
-  expect(markdown).toContain('- removed_key: null')
+  expect(markdown).toContain('- metadata.removed_key: null')
   expect(markdown).not.toContain('unchanged')
   expect(markdown).not.toContain('was added')
   expect(markdown).not.toContain('\\_')
-  expect(markdown.split('Metadata\n\n')[1]).not.toContain('\\[')
-  expect(markdown).toContain('+ "odd\\n```key": "literal_`value`\\nnext line"')
+  expect(markdown.split('```diff\n')[1]).not.toContain('\\[')
+  expect(markdown).toContain('+ "metadata.odd\\n```key": "literal_`value`\\nnext line"')
   expect(markdown).toContain('- Name changed from ` "old_name" ` to `` "new_`name`" ``.')
 })
 
@@ -517,4 +519,117 @@ test('partial inputs publish independently, scoped processing retries, and recei
   const unscoped = await processChanges(ctx, { cursor: null })
   expect(unscoped.considered).toBe(1)
   expect(rows.changeEvents).toHaveLength(4)
+
+  const { context } = ChangeEventInputContent.parse(JSON.parse(changes[0].content))
+  const cases = [
+    {
+      entity_kind: 'endpoint',
+      before: {},
+      after: { metadata: { server_tool_costs_discount_exempt: true } },
+      expected: null,
+    },
+    {
+      entity_kind: 'endpoint',
+      before: { metadata: { is_deranked: false } },
+      after: { metadata: { is_deranked: true } },
+      expected: null,
+    },
+    {
+      entity_kind: 'model',
+      before: { metadata: { context_length: 100 } },
+      after: { metadata: { context_length: 200 } },
+      expected: null,
+    },
+    {
+      entity_kind: 'provider',
+      before: { metadata: { context_length: 100 } },
+      after: { metadata: { context_length: 200 } },
+      expected: null,
+    },
+    {
+      entity_kind: 'endpoint',
+      before: { metadata: { context_length: 100, is_deranked: false } },
+      after: {
+        metadata: {
+          context_length: 200,
+          is_deranked: true,
+          server_tool_costs_discount_exempt: true,
+        },
+      },
+      expected: {
+        before: { metadata: { context_length: 100 } },
+        after: { metadata: { context_length: 200 } },
+      },
+    },
+    {
+      entity_kind: 'endpoint',
+      before: { display_name: 'Before', metadata: { is_deranked: false } },
+      after: { display_name: 'After', metadata: { is_deranked: true } },
+      expected: { before: { display_name: 'Before' }, after: { display_name: 'After' } },
+    },
+    {
+      entity_kind: 'endpoint',
+      before: { metadata: { quantization: 'fp8' } },
+      after: { metadata: { 'features.supports_implicit_caching': true } },
+      expected: {
+        before: { metadata: { quantization: 'fp8' } },
+        after: { metadata: { 'features.supports_implicit_caching': true } },
+      },
+    },
+  ] as const
+
+  for (const [index, { entity_kind, before, after, expected }] of cases.entries()) {
+    const eventCount = rows.changeEvents.length
+    const input = {
+      ...changes[0],
+      entity_kind,
+      entity_id: `curation-${index}`,
+      category: 'attributes' as const,
+      content: JSON.stringify({ assigned: { before, after }, context }),
+    }
+    await write(ctx, { inputs: [input] })
+    await processChanges(ctx, { cursor: null })
+    expect(rows.changeEventInputs.at(-1)?.processed).toBe(true)
+    expect(rows.changeEvents).toHaveLength(eventCount + (expected === null ? 0 : 1))
+    if (expected !== null) {
+      const event = EntityChangeContent.parse(JSON.parse(String(rows.changeEvents.at(-1)?.content)))
+      expect(event.changes).toEqual(expected)
+      expect(event.context).toEqual(context)
+    }
+    await write(ctx, { inputs: [input] })
+    const retry = await processChanges(ctx, { cursor: null })
+    expect(retry.considered).toBe(0)
+  }
+
+  for (const priceChanged of [false, true]) {
+    const eventCount = rows.changeEvents.length
+    const before = { pricing: { prompt: '0.000001', display_pricing: [{ price: 'old' }] } }
+    const after = {
+      pricing: {
+        prompt: priceChanged ? '0.000002' : '0.000001',
+        display_pricing: [{ price: 'new' }],
+      },
+    }
+    await write(ctx, {
+      inputs: [
+        {
+          ...changes[0],
+          entity_kind: 'endpoint',
+          entity_id: `pricing-curation-${priceChanged}`,
+          category: 'pricing',
+          content: JSON.stringify({ assigned: { before, after }, context }),
+        },
+      ],
+    })
+    await processChanges(ctx, { cursor: null })
+    expect(rows.changeEventInputs.at(-1)?.processed).toBe(true)
+    expect(rows.changeEvents).toHaveLength(eventCount + Number(priceChanged))
+    if (priceChanged) {
+      const event = EntityChangeContent.parse(JSON.parse(String(rows.changeEvents.at(-1)?.content)))
+      expect(event.changes).toEqual({
+        before: { pricing: { prompt: '0.000001' } },
+        after: { pricing: { prompt: '0.000002' } },
+      })
+    }
+  }
 })

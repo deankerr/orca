@@ -10,7 +10,7 @@ See the [design philosophy and stories](../../../../docs/orca/change-event-strea
 - `ingestion.ts` runs temporary standalone ingestion; `ingestion/` extracts and stores inputs.
 - `processing.ts` traverses pending changes and applies stateful rules within bounded transactions.
 - `events.ts` supplies recent events and individual event lookup to consumers such as `textFeed`.
-- `reset.ts` clears the experiment while preserving scans and scan-ingestion records.
+- `reset.ts` clears CES events, inputs, and receipts while preserving scans and view-ingestion records.
 
 ## Operating notes
 
@@ -26,6 +26,7 @@ See the [design philosophy and stories](../../../../docs/orca/change-event-strea
 - Initial comparisons retain appearances with a null previous observation time.
 - Retries compare parsed content structurally and preserve existing processing state.
 - Run one ingestion chain and one processor, and finish both before resetting the experiment.
+- After reset, choose an explicit replay baseline; the default starts with the latest scan pair.
 - Processing publishes committed inputs immediately, optionally scoped by `scan_at`.
 - A separately invoked processor can publish partial comparisons; retries preserve completed inputs.
 - The feed orders events by `scan_at`, placing backfilled observations in their historical position.
@@ -34,6 +35,11 @@ See the [design philosophy and stories](../../../../docs/orca/change-event-strea
 - JSON payloads preserve arbitrary upstream keys in assigned values and historical context.
 - Ingestion excludes exact metadata keys in `EXCLUDED_METADATA_KEYS` (currently `status`) from updates.
 - Status-only changes create no inputs; mixed updates retain eligible fields and complete context.
+- Processing publishes only selected endpoint metadata keys from the frontend, excluding `is_deranked`.
+- Model and provider metadata updates produce no events; other assigned fields remain publishable.
+- Metadata selection preserves original keys and values, including property additions and removals.
+- Inputs with no remaining changes complete without events; full historical context remains retained.
+- Processing excludes `pricing.display_pricing`, including updates where it is the only changed field.
 - Ingestion batches by measured document bytes, targeting 4 MiB within Convex's 16 MiB budget.
 - Convex's 1 MiB document limit remains the hard stop for oversized inputs or events.
 - Ingestion and processing log total and largest document sizes for each comparison or page.

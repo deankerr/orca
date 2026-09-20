@@ -11,6 +11,29 @@ const labels: Record<string, string> = {
   'pricing.input_cache_write': 'Cache-write price',
   'pricing.discount': 'Discount',
   display_name: 'Name',
+  provider_display_name: 'Provider name',
+  model_display_name: 'Model name',
+  'metadata.context_length': 'Context length',
+  'metadata.max_completion_tokens': 'Maximum completion tokens',
+  'metadata.max_prompt_tokens': 'Maximum prompt tokens',
+  'metadata.max_tokens_per_image': 'Maximum tokens per image',
+  'metadata.max_prompt_images': 'Maximum images per prompt',
+  'metadata.limit_rpm': 'Requests per minute',
+  'metadata.limit_rpd': 'Requests per day',
+  'metadata.quantization': 'Quantization',
+  'metadata.supported_parameters': 'Supported parameters',
+  'metadata.supports_reasoning': 'Reasoning support',
+  'metadata.has_completions': 'Completions support',
+  'metadata.has_chat_completions': 'Chat completions support',
+  'metadata.features.supports_implicit_caching': 'Implicit caching support',
+  'metadata.features.supports_native_web_search': 'Native web search support',
+  'metadata.moderation_required': 'Moderation required',
+  'metadata.is_disabled': 'Disabled',
+  'metadata.data_policy.training': 'May train on data',
+  'metadata.data_policy.canPublish': 'May publish data',
+  'metadata.data_policy.requiresUserIDs': 'Shares user ID',
+  'metadata.data_policy.retainsPrompts': 'May retain data',
+  'metadata.data_policy.retentionDays': 'Data retention days',
 }
 
 export function label(path: string): string {
@@ -113,7 +136,23 @@ function rawChanges(before: RecordValue, after: RecordValue): string {
   ].join('\n')
 }
 
-/** Natural language is opt-in; metadata and other unfamiliar properties use literal diffs. */
+function stringArray(value: Json | undefined): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+/** Describe membership changes without repeating the unchanged entries. */
+function describeStringArray(before: string[], after: string[], path: string): string[] {
+  const added = after.filter((item) => !before.includes(item))
+  const removed = before.filter((item) => !after.includes(item))
+  return [
+    ...(added.length === 0 ? [] : [`- ${label(path)} added: ${added.map(inlineCode).join(', ')}.`]),
+    ...(removed.length === 0
+      ? []
+      : [`- ${label(path)} removed: ${removed.map(inlineCode).join(', ')}.`]),
+  ]
+}
+
+/** Known fields use prose; unfamiliar event fields retain a literal fallback. */
 export function describeChanges(before: RecordValue, after: RecordValue, prefix = ''): string[] {
   const lines: string[] = []
   const rawBefore: RecordValue = {}
@@ -128,10 +167,10 @@ export function describeChanges(before: RecordValue, after: RecordValue, prefix 
 
     const path = prefix === '' ? key : `${prefix}.${key}`
 
-    if (path === 'metadata' && object(previous) && object(next)) {
-      lines.push(`Metadata\n\n${rawChanges(previous, next)}`)
-    } else if (path === 'pricing' && object(previous) && object(next)) {
-      lines.push(...describeChanges(previous, next, path))
+    if ((path === 'metadata' || path === 'pricing') && (object(previous) || object(next))) {
+      lines.push(
+        ...describeChanges(object(previous) ? previous : {}, object(next) ? next : {}, path),
+      )
     } else if (!Object.hasOwn(labels, path)) {
       if (previous !== undefined) {
         rawBefore[path] = previous
@@ -139,6 +178,8 @@ export function describeChanges(before: RecordValue, after: RecordValue, prefix 
       if (next !== undefined) {
         rawAfter[path] = next
       }
+    } else if (stringArray(previous) && stringArray(next)) {
+      lines.push(...describeStringArray(previous, next, path))
     } else if (previous === undefined) {
       lines.push(`- ${label(path)} was added: ${value(next, path)}.`)
     } else if (next === undefined) {

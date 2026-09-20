@@ -1,4 +1,5 @@
 import { getDocumentSize, v } from 'convex/values'
+import { diff } from 'json-diff-ts'
 
 import { internal } from '../_generated/api'
 import type { Doc } from '../_generated/dataModel'
@@ -14,6 +15,55 @@ import {
 const PROCESSING_PAGE_SIZE = 100
 // Each input is also rewritten as processed and copied to an event; leave write-budget headroom.
 const PROCESSING_MAX_BYTES_READ = 2_000_000
+
+// Editorial selection from v3/public/endpoints.ts; is_deranked is not a useful user signal.
+const ENDPOINT_METADATA_KEYS = new Set([
+  'context_length',
+  'max_completion_tokens',
+  'max_prompt_tokens',
+  'max_tokens_per_image',
+  'max_prompt_images',
+  'limit_rpm',
+  'limit_rpd',
+  'quantization',
+  'supported_parameters',
+  'supports_reasoning',
+  'has_completions',
+  'has_chat_completions',
+  'features.supports_implicit_caching',
+  'features.supports_native_web_search',
+  'moderation_required',
+  'is_disabled',
+  'data_policy.training',
+  'data_policy.canPublish',
+  'data_policy.requiresUserIDs',
+  'data_policy.retainsPrompts',
+  'data_policy.retentionDays',
+])
+
+/** Select publishable update fields while preserving their original values. */
+function selectUpdate(
+  record: NonNullable<ChangeEventInputContent['assigned']['before']>,
+  entityKind: Doc<typeof CHANGE_EVENT_INPUTS_TABLE>['entity_kind'],
+  category: Doc<typeof CHANGE_EVENT_INPUTS_TABLE>['category'],
+) {
+  const field = category === 'pricing' ? 'pricing' : 'metadata'
+  const { [field]: values, ...fields } = record
+  if (
+    (field === 'metadata' && entityKind !== 'endpoint') ||
+    values === null ||
+    typeof values !== 'object' ||
+    Array.isArray(values)
+  ) {
+    return fields
+  }
+  const selected = Object.fromEntries(
+    Object.entries(values).filter(([key]) =>
+      field === 'pricing' ? key !== 'display_pricing' : ENDPOINT_METADATA_KEYS.has(key),
+    ),
+  )
+  return Object.keys(selected).length === 0 ? fields : { ...fields, [field]: selected }
+}
 
 /**
  * Visit unfinished inputs in separately committed pages, optionally for one scan.
@@ -72,12 +122,25 @@ export const processPage = internalMutation({
   },
 })
 
-/** Pass through each assignment as an event; creation and input completion commit together. */
+/** Curate assignments before publication; event creation and input completion commit together. */
 async function applyRules(ctx: MutationCtx, changes: Doc<typeof CHANGE_EVENT_INPUTS_TABLE>[]) {
   let totalBytes = 0
   let maxBytes = 0
+  let events = 0
   for (const change of changes) {
     const { assigned, context } = ChangeEventInputContent.parse(JSON.parse(change.content))
+    const selected =
+      change.category !== 'lifecycle' && assigned.before !== null && assigned.after !== null
+        ? {
+            before: selectUpdate(assigned.before, change.entity_kind, change.category),
+            after: selectUpdate(assigned.after, change.entity_kind, change.category),
+          }
+        : assigned
+
+    if (diff(selected.before, selected.after, { treatTypeChangeAsReplace: false }).length === 0) {
+      await ctx.db.patch(CHANGE_EVENT_INPUTS_TABLE, change._id, { processed: true })
+      continue
+    }
 
     const event = {
       from_scan_at: change.from_scan_at,
@@ -86,14 +149,15 @@ async function applyRules(ctx: MutationCtx, changes: Doc<typeof CHANGE_EVENT_INP
       entity_id: change.entity_id,
       category: change.category,
       input_ids: [change._id],
-      content: JSON.stringify(EntityChangeContent.parse({ changes: assigned, context })),
+      content: JSON.stringify(EntityChangeContent.parse({ changes: selected, context })),
     }
 
     const bytes = getDocumentSize(event)
     totalBytes += bytes
     maxBytes = Math.max(maxBytes, bytes)
     await ctx.db.insert(CHANGE_EVENTS_TABLE, event)
+    events += 1
     await ctx.db.patch(CHANGE_EVENT_INPUTS_TABLE, change._id, { processed: true })
   }
-  console.log('Change events created', { events: changes.length, totalBytes, maxBytes })
+  console.log('Change events created', { events, totalBytes, maxBytes })
 }
