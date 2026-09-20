@@ -1,20 +1,13 @@
 import { internal } from '../_generated/api'
 import { httpAction } from '../_generated/server'
-import { renderEvent } from './markdown'
+import { renderFeed } from './markdown'
 
-/** Serve the latest bounded event window as uncached Markdown in event creation order. */
+/** Serve the latest bounded event window as uncached, observation-grouped Markdown. */
 export const serveFeed = httpAction(async (ctx) => {
   // ponytail: one latest window; add navigation when the product needs historical browsing.
   const events = await ctx.runQuery(internal.changeEvents.events.listRecentEvents, {})
 
-  const introduction =
-    events.length === 0
-      ? 'No events yet.'
-      : `Latest ${events.length} events, newest first. All times are UTC.`
-
-  const entries = events.map(renderEvent)
-  const body = `# ORCA change feed\n\n${introduction}\n\n${entries.join('\n\n---\n\n')}\n`
-  return new Response(body, {
+  return new Response(renderFeed(events), {
     headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store' },
   })
 })

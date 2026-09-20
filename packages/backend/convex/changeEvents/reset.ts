@@ -2,13 +2,17 @@ import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
 import { internalAction, internalMutation } from '../_generated/server'
-import { CHANGE_EVENTS_TABLE, CHANGE_EVENT_INPUTS_TABLE } from './schema'
+import {
+  CHANGE_EVENTS_TABLE,
+  CHANGE_EVENT_INPUTS_TABLE,
+  CHANGE_EVENT_INGESTIONS_TABLE,
+} from './schema'
 
 const RESET_PAGE_SIZE = 20
 const RESET_MAX_BYTES_READ = 2_000_000
 
 /**
- * Delete event history and retained inputs without rewinding scan ingestion or deleting scans.
+ * Delete CES events, inputs, and ingestion receipts while preserving scans and view ingestion.
  * Stop ingestion and processing first; each deletion page commits independently.
  */
 export const reset = internalAction({
@@ -16,7 +20,11 @@ export const reset = internalAction({
   returns: v.null(),
   handler: async (ctx): Promise<null> => {
     // Remove events before their supporting inputs so surviving events retain their evidence.
-    for (const table of [CHANGE_EVENTS_TABLE, CHANGE_EVENT_INPUTS_TABLE]) {
+    for (const table of [
+      CHANGE_EVENTS_TABLE,
+      CHANGE_EVENT_INPUTS_TABLE,
+      CHANGE_EVENT_INGESTIONS_TABLE,
+    ]) {
       while (!(await ctx.runMutation(internal.changeEvents.reset.clearPage, { table }))) {
         /* bounded reset transactions */
       }
@@ -28,7 +36,11 @@ export const reset = internalAction({
 /** Delete one bounded page; true means the scan reached the end, assuming no concurrent writers. */
 export const clearPage = internalMutation({
   args: {
-    table: v.union(v.literal(CHANGE_EVENTS_TABLE), v.literal(CHANGE_EVENT_INPUTS_TABLE)),
+    table: v.union(
+      v.literal(CHANGE_EVENTS_TABLE),
+      v.literal(CHANGE_EVENT_INPUTS_TABLE),
+      v.literal(CHANGE_EVENT_INGESTIONS_TABLE),
+    ),
   },
   returns: v.boolean(),
   handler: async (ctx, { table }) => {

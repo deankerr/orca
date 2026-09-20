@@ -8,6 +8,15 @@ import type { entityChangeFields } from '../schema'
 
 type Collection = keyof ScanProjection['catalog']
 
+// Exact keys in projected metadata; excluded changes never become processing responsibilities.
+const EXCLUDED_METADATA_KEYS = new Set(['status'])
+
+function eventMetadata(metadata: Metadata): Metadata {
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => !EXCLUDED_METADATA_KEYS.has(key)),
+  )
+}
+
 /**
  * One natural responsibility per input. Lifecycle takes precedence over field updates; pricing and
  * other updates can proceed independently while retaining the same historical entity context.
@@ -56,7 +65,10 @@ export function* extractChangeEventInputs(
 
       // Field updates: partition pricing from attributes so either can be deferred independently.
       // Assign whole changed top-level fields, retaining nested values for later interpretation.
-      const keys = diff(before, after, { treatTypeChangeAsReplace: false }).map(
+      // Filter both comparison and assignments so mixed metadata updates cannot leak excluded keys.
+      const eligibleBefore = { ...before, metadata: eventMetadata(before.metadata) }
+      const eligibleAfter = { ...after, metadata: eventMetadata(after.metadata) }
+      const keys = diff(eligibleBefore, eligibleAfter, { treatTypeChangeAsReplace: false }).map(
         (field) => field.key,
       )
       for (const category of ['pricing', 'attributes'] as const) {
@@ -76,7 +88,7 @@ export function* extractChangeEventInputs(
           category,
           content: JSON.stringify(
             ChangeEventInputContent.parse({
-              assigned: { before: pick(before), after: pick(after) },
+              assigned: { before: pick(eligibleBefore), after: pick(eligibleAfter) },
               context: evidence,
             }),
           ),

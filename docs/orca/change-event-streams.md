@@ -7,7 +7,7 @@ and belongs to rules implemented within the framework.
 ## Philosophy
 
 - Opt in to complexity in both the framework and its rules as concrete responsibilities require it.
-- Produce events permissively to exercise presentation while specialized interpretation develops.
+- Select publishable metadata explicitly during processing while specialized interpretation develops.
 - Keep processing defaults within the decision logic, where they evolve with the rules.
 - Accommodate new upstream behavior in familiar fields by evolving the responsible phase's rules.
 - Persist fields for current functionality or concrete future responsibilities; keep metrics and
@@ -15,14 +15,14 @@ and belongs to rules implemented within the framework.
 
 ### Evolution and fallbacks
 
-Aim to evolve each phase without requiring simultaneous downstream changes. Opting in to complexity
-and allowing all during development should produce visible, useful fallbacks for unfamiliar events.
+Aim to evolve each phase without requiring simultaneous downstream changes. Processing selects
+publishable changes; presentation provides visible, useful fallbacks for unfamiliar event forms.
 These principles guide future evolution; add fallback handling when unfamiliar forms actually arise,
 rather than building a universal handler in advance.
 
-- Preserve unfamiliar content and keep it moving through the development pipeline.
-- Let processing preserve unfamiliar input content in events; producing no event or deferring a change
-  must be deliberate decisions rather than missing handling.
+- Preserve unfamiliar content in retained evidence for inspection and later interpretation.
+- Apply an explicit metadata allowlist during processing; inputs with no publishable changes complete
+  without events, while deferral remains a deliberate decision to revisit an input.
 - Never render an unfamiliar event as nothing, “Unknown event”, or incomplete prose such as
   “field_name changed.”; expose enough content for the reader to understand the event.
 - Prefer a JSON dump as the first, lowest-complexity fallback; JSON itself is not a presentation requirement.
