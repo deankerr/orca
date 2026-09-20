@@ -15,6 +15,7 @@ import {
 import { changesTable } from './changes/table'
 import { subscriptionsTable } from './discord/subscriptions/table'
 import { LOCKS_TABLE, locksTable } from './locks/table'
+import { catalog as objectExperiment } from './objectExperiment/definition'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
@@ -46,6 +47,7 @@ export default defineSchema(
 
     [LOCKS_TABLE]: locksTable,
     [OBJECTS_LOCATORS_TABLE]: locatorsTable,
+    ...objectExperiment.tables,
 
     or_views_changes: changesTable,
     or_views_endpoints: endpointsTable,

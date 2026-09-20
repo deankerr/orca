@@ -1,0 +1,22 @@
+{
+  "name": "@orca/objects",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./lib/function-spec": "./lib/function-spec.ts",
+    "./lib/table": "./lib/table.ts"
+  },
+  "scripts": {
+    "test": "bun test tests"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "@types/node": "24.10.15",
+    "convex": "1.45.0",
+    "convex-test": "^0.0.59"
+  },
+  "peerDependencies": {
+    "convex": "^1.45.0"
+  }
+}
