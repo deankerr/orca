@@ -95,6 +95,8 @@ import type * as snapshots_materializedChanges_process from "../snapshots/materi
 import type * as snapshots_shared_bundle from "../snapshots/shared/bundle.js";
 import type * as textFeed_http from "../textFeed/http.js";
 import type * as textFeed_markdown from "../textFeed/markdown.js";
+import type * as textFeed_markdown_entity from "../textFeed/markdown/entity.js";
+import type * as textFeed_markdown_fields from "../textFeed/markdown/fields.js";
 import type * as v3_ingest from "../v3/ingest.js";
 import type * as v3_ingestions from "../v3/ingestions.js";
 import type * as v3_projections_queries from "../v3/projections/queries.js";
@@ -214,6 +216,8 @@ declare const fullApi: ApiFromModules<{
   "snapshots/shared/bundle": typeof snapshots_shared_bundle;
   "textFeed/http": typeof textFeed_http;
   "textFeed/markdown": typeof textFeed_markdown;
+  "textFeed/markdown/entity": typeof textFeed_markdown_entity;
+  "textFeed/markdown/fields": typeof textFeed_markdown_fields;
   "v3/ingest": typeof v3_ingest;
   "v3/ingestions": typeof v3_ingestions;
   "v3/projections/queries": typeof v3_projections_queries;

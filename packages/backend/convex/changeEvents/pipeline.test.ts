@@ -6,7 +6,7 @@ import { getDocumentSize } from 'convex/values'
 
 import type { ActionCtx, MutationCtx } from '../_generated/server'
 import { compareScanProjections, ScanProjection } from '../projections'
-import { renderEvent } from '../textFeed/markdown'
+import { renderFeed } from '../textFeed/markdown'
 import { complete, ingestComparison } from './ingestion'
 import { extractChangeEventInputs } from './ingestion/extract'
 import { storeChangeEventInputs } from './ingestion/store'
@@ -14,9 +14,17 @@ import { processPendingInputs, processPage } from './processing'
 import { EntityChangeContent, ChangeEventInputContent } from './schema'
 import type { entityChangeFields } from './schema'
 
+const renderEvent = (event: Parameters<typeof renderFeed>[0][number]) => renderFeed([event])
+
 function project(
   day: number,
-  args: { present?: boolean; price?: string; name?: string; status?: number } = {},
+  args: {
+    present?: boolean
+    price?: string
+    name?: string
+    status?: number
+    capacity?: number
+  } = {},
 ) {
   const scan_at = `2026-09-${day}T00:00:00.000Z`
   return ScanProjection.parse({
@@ -49,6 +57,7 @@ function project(
                     discount: 0,
                   },
                   status: args.status ?? 0,
+                  capacity: args.capacity ?? 100,
                 },
               ],
             },
@@ -80,7 +89,7 @@ test('initial comparison writes appearances in bounded chunks with no previous o
     })
 
     expect(renderEvent({ ...change, _id: 'initial', content: JSON.stringify(event) })).toContain(
-      'Observed 2026-09-15 00:00:00 UTC',
+      'As of 2026-09-15 00:00:00 UTC',
     )
   }
   let writes = 0
@@ -115,7 +124,7 @@ test('initial comparison writes appearances in bounded chunks with no previous o
 test('split pricing and attributes into independently renderable changes with historical context', () => {
   const comparison = compareScanProjections(
     project(15),
-    project(16, { price: '0.000000011', status: 1 }),
+    project(16, { price: '0.000000011', status: 1, capacity: 200 }),
   )
 
   const changes = [...extractChangeEventInputs(comparison)]
@@ -143,7 +152,7 @@ test('split pricing and attributes into independently renderable changes with hi
   )
 
   expect(markdown).not.toContain('Status changed')
-  expect(markdown).toContain('Observed 2026-09-15')
+  expect(markdown).toContain('As of 2026-09-16')
   expect(markdown).toContain('[Full event](/ces/events/test-event)')
   const update = ChangeEventInputContent.parse(JSON.parse(changes[1].content))
   expect(update.assigned.after).not.toHaveProperty('pricing')
@@ -157,8 +166,43 @@ test('split pricing and attributes into independently renderable changes with hi
     }),
   })
 
-  expect(updateMarkdown).toContain('Status changed')
+  expect(update.assigned.before?.metadata).not.toHaveProperty('status')
+  expect(update.assigned.after?.metadata).not.toHaveProperty('status')
+  expect(updateMarkdown).toContain('Metadata\n\n```diff\n- capacity: 100\n+ capacity: 200\n```')
+  expect(updateMarkdown).not.toContain('Status changed')
   expect(updateMarkdown).not.toContain('Input price')
+})
+
+test('status updates, additions, and removals produce no inputs while pricing and evidence survive', () => {
+  for (const [beforeStatus, afterStatus] of [
+    [0, 1],
+    [undefined, 0],
+    [0, undefined],
+  ]) {
+    const before = project(15)
+    const after = project(16)
+    for (const [projection, status] of [
+      [before, beforeStatus],
+      [after, afterStatus],
+    ] as const) {
+      if (status === undefined) {
+        delete projection.catalog.endpoints.endpoint.metadata.status
+      } else {
+        projection.catalog.endpoints.endpoint.metadata.status = status
+      }
+    }
+    expect([...extractChangeEventInputs(compareScanProjections(before, after))]).toEqual([])
+  }
+
+  const before = project(15)
+  const after = project(16, { status: 1, price: '0.00000002' })
+  const changes = [...extractChangeEventInputs(compareScanProjections(before, after))]
+  expect(changes.map((change) => change.category)).toEqual(['pricing'])
+  const { context } = ChangeEventInputContent.parse(JSON.parse(changes[0].content))
+  expect(context.before.entity?.metadata).toHaveProperty('status', 0)
+  expect(context.after.entity?.metadata).toHaveProperty('status', 1)
+  expect(before.catalog.endpoints.endpoint.metadata.status).toBe(0)
+  expect(after.catalog.endpoints.endpoint.metadata.status).toBe(1)
 })
 
 test('lifecycle changes replace field updates and unchanged comparisons produce no inputs', () => {
@@ -180,7 +224,7 @@ test('lifecycle changes replace field updates and unchanged comparisons produce 
           changes: content.assigned,
         }),
       }),
-    ).toContain('disappeared from the observed catalog')
+    ).toContain('removed.')
   }
   const addition = compareScanProjections(project(16, { present: false }), project(17))
   expect([...extractChangeEventInputs(addition)]).toHaveLength(3)
@@ -217,13 +261,61 @@ test('presentation exposes late text edits, structured row changes, and precise 
   const markdown = renderEvent({ ...change, _id: 'test-event', content: JSON.stringify(content) })
   expect(markdown).toContain('old ending')
   expect(markdown).toContain('new ending')
-  expect(markdown).toContain('Schedule / entry 1 / starts changed from “09:00” to “10:00”')
+  expect(markdown).toContain('- schedule: [{"starts":"09:00","price":"0.1"}]')
+  expect(markdown).toContain('+ schedule: [{"starts":"10:00","price":"0.2"}]')
   expect(markdown).toContain('$0.000000000000001 per million tokens')
+})
+
+test('metadata diffs preserve literal booleans, arrays, removals, and Markdown punctuation', () => {
+  const [change] = [
+    ...extractChangeEventInputs(
+      compareScanProjections(project(15), project(16, { capacity: 200 })),
+    ),
+  ]
+  const { context } = ChangeEventInputContent.parse(JSON.parse(change.content))
+  const markdown = renderEvent({
+    ...change,
+    _id: 'metadata-event',
+    content: JSON.stringify({
+      context,
+      changes: {
+        before: {
+          display_name: 'old_name',
+          metadata: { excluded_parameters: [], removed_key: null, unchanged: true },
+        },
+        after: {
+          display_name: 'new_`name`',
+          metadata: {
+            server_tool_costs_discount_exempt: false,
+            other_flag: true,
+            excluded_parameters: ['response_format'],
+            unchanged: true,
+            'odd\n```key': 'literal_`value`\nnext line',
+          },
+        },
+      },
+    }),
+  })
+  expect(markdown).toContain('Metadata\n\n```diff\n')
+  expect(markdown).toContain('+ server_tool_costs_discount_exempt: false')
+  expect(markdown).toContain('+ other_flag: true')
+  expect(markdown).toContain(
+    '- excluded_parameters: []\n+ excluded_parameters: ["response_format"]',
+  )
+  expect(markdown).toContain('- removed_key: null')
+  expect(markdown).not.toContain('unchanged')
+  expect(markdown).not.toContain('was added')
+  expect(markdown).not.toContain('\\_')
+  expect(markdown.split('Metadata\n\n')[1]).not.toContain('\\[')
+  expect(markdown).toContain('+ "odd\\n```key": "literal_`value`\\nnext line"')
+  expect(markdown).toContain('- Name changed from ` "old_name" ` to `` "new_`name`" ``.')
 })
 
 test('malformed event content fails visibly', () => {
   const [change] = [
-    ...extractChangeEventInputs(compareScanProjections(project(15), project(16, { status: 1 }))),
+    ...extractChangeEventInputs(
+      compareScanProjections(project(15), project(16, { capacity: 200 })),
+    ),
   ]
 
   expect(() => renderEvent({ ...change, _id: 'test-event', content: '{broken' })).toThrow()

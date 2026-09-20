@@ -32,10 +32,45 @@ See the [design philosophy and stories](../../../../docs/orca/change-event-strea
 - Entity kind, identity, category, and observation times are native fields on both tables.
 - Events support indexed entity history and retain references to their contributing inputs.
 - JSON payloads preserve arbitrary upstream keys in assigned values and historical context.
+- Ingestion excludes exact metadata keys in `EXCLUDED_METADATA_KEYS` (currently `status`) from updates.
+- Status-only changes create no inputs; mixed updates retain eligible fields and complete context.
 - Ingestion batches by measured document bytes, targeting 4 MiB within Convex's 16 MiB budget.
 - Convex's 1 MiB document limit remains the hard stop for oversized inputs or events.
 - Ingestion and processing log total and largest document sizes for each comparison or page.
 - The separate `textFeed` module serves `/ces/feed` and `/ces/events/<id>`.
+
+## Demo with sampled production scans
+
+Use an isolated dev deployment with `ORCA_PULL_SOURCE_URL` pointing at the source deployment.
+Copy a sparse series of scans to cover a broad timespan; CES compares adjacent available artifacts.
+These comparisons describe net changes across the sampled intervals, not every intervening change.
+
+1. Discover source filenames with a read-only query, choosing dates spread across the desired period:
+
+   ```sh
+   bun run --cwd packages/backend convex run --deployment dependable-husky-550 \
+     --inline-query 'return await ctx.db.query("objects_locators").withIndex("by_path_name", q => q.eq("path", "scans").gte("name", "scan.2026-09-10")).first();'
+   ```
+
+2. Copy the selected artifacts into the dev deployment (example: a nine-day, three-scan sample):
+
+   ```sh
+   bun run --cwd packages/backend convex run v3/pullArtifacts:run \
+     '{"filenames":["scan.2026-09-10T00:40:05.258Z.jsonl","scan.2026-09-17T00:40:05.558Z.jsonl","scan.2026-09-19T00:40:04.327Z.jsonl"]}'
+   ```
+
+3. Ingest from the first artifact as the baseline, producing changes rather than initial appearances:
+
+   ```sh
+   bun run --cwd packages/backend convex run changeEvents/ingestion:run \
+     '{"afterArtifactId":"scan.2026-09-10T00:40:05.258Z.jsonl","process":true}'
+   ```
+
+   The runner schedules subsequent pairs; add `once: true` to process one pair at a time.
+   Receipts in `changeEventIngestions` track completed pairs; pending inputs have `processed: false`.
+
+4. Open the dev deployment's `/ces/feed`; follow `/ces/events/<id>` for complete changes and context.
+   The feed displays only its latest bounded window; earlier events remain in `changeEvents`.
 
 ## Context sizing
 
