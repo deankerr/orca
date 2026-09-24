@@ -1,6 +1,10 @@
 # Catalog
 
-Owns current/last-known MEP caches, their shared refresh and product-facing reads.
+Owns cumulative current/last-known MEP tables, ingestion-time writes and product-facing reads.
+
+> ⚠️ These tables never forget an entity. Although sometimes called caches, their rows are retained
+> and only overwritten with new information. Models/providers remain known; endpoints become
+> unlisted rather than being deleted. Missing from a scan never means delete from Catalog.
 
 ## `currentModels`
 
@@ -9,11 +13,11 @@ One row is the current or useful last-known projection of a model.
 ### Schema
 
 Validated entity fields are top-level fields on their owning current table, using the existing
-projection names where applicable. `metadata` contains the remaining projected facts and shares a
-container validator across all three tables.
+projection names where applicable. `metadata_json` contains remaining projected facts as JSON text
+across all three tables.
 
 ```ts
-const metadata = v.record(v.string(), v.any())
+const metadata_json = v.string()
 
 const currentModels = defineTable({
   model_id: v.string(),
@@ -25,39 +29,42 @@ const currentModels = defineTable({
   or_created_at: v.string(),
   input_modalities: v.array(v.string()),
   output_modalities: v.array(v.string()),
-  metadata,
+  metadata_json,
 }).index('by_model_id', ['model_id'])
 ```
 
 ### Fields and invariants
 
-| Field                                   | Meaning or constraint                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `model_id`                              | Model identity from the scan entry, including its variant suffix; one cache row per model.        |
-| `scan_at`                               | Hydrated source-context time under the [shared hydration rules](#hydration-and-last-known-state). |
-| `slug`                                  | Source model's base slug, retained separately from the variant-aware `model_id`.                  |
-| `permaslug`                             | Source model's versioned identifier.                                                              |
-| `variant`                               | Validated model variant supplied by the scan entry.                                               |
-| `display_name`                          | Source `short_name`.                                                                              |
-| `or_created_at`                         | Source `created_at`, distinct from observation time.                                              |
-| `input_modalities`, `output_modalities` | Validated source modality lists.                                                                  |
-| `metadata`                              | Remaining projected model facts under the metadata contract below.                                |
+| Field                                   | Meaning or constraint                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `model_id`                              | Model identity from the scan entry, including its variant suffix; one cache row per model. |
+| `scan_at`                               | Observation that last updated this row; unchanged observations leave it untouched.         |
+| `slug`                                  | Source model's base slug, retained separately from the variant-aware `model_id`.           |
+| `permaslug`                             | Source model's versioned identifier.                                                       |
+| `variant`                               | Validated model variant supplied by the scan entry.                                        |
+| `display_name`                          | Source `short_name`.                                                                       |
+| `or_created_at`                         | Source `created_at`, distinct from observation time.                                       |
+| `input_modalities`, `output_modalities` | Validated source modality lists.                                                           |
+| `metadata_json`                         | Remaining projected model facts under the metadata contract below.                         |
 
 ### Metadata
 
 The same contract applies to model, provider and endpoint metadata:
 
 - Additional capabilities, limits, policies and other facts not represented by typed entity fields live here.
-- Keys are storage-safe; Projections validates native facts and defines recognized meanings.
+- JSON text preserves arbitrary keys and nested values without database key restrictions.
 - Every metadata fact is optional; missing, `false`, zero and explicit `null` retain distinct meanings.
 - Consumers decode recognized metadata keys; validated entity fields retain their top-level types.
-- Exact value shapes and field retention remain an [open projection question](projections.md#projection-fidelity).
+- Projections supplies shared decoders for recognized facts, including historical absence or invalid
+  values. Product reads return validated fields or JSON text, not arbitrary decoded Convex objects.
+- Model/provider metadata contains their remaining facts directly. Endpoint metadata groups remaining
+  facts under `endpoint`, `model` and `provider`, preserving ownership without source-key collisions.
 
 ### Indexes
 
-| Index         | Purpose                                           |
-| ------------- | ------------------------------------------------- |
-| `by_model_id` | Model identity lookup and refresh reconciliation. |
+| Index         | Purpose                                      |
+| ------------- | -------------------------------------------- |
+| `by_model_id` | Model identity lookup and ingestion upserts. |
 
 ## `currentProviders`
 
@@ -70,24 +77,24 @@ const currentProviders = defineTable({
   provider_id: v.string(),
   scan_at: v.string(),
   display_name: v.string(),
-  metadata,
+  metadata_json,
 }).index('by_provider_id', ['provider_id'])
 ```
 
 ### Fields and invariants
 
-| Field          | Meaning or constraint                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------- |
-| `provider_id`  | Native provider identity from [Records' extraction](records.md#retained-payload); one cache row per provider. |
-| `scan_at`      | Hydrated source-context time under the [shared hydration rules](#hydration-and-last-known-state).             |
-| `display_name` | Validated source `provider_info.displayName`.                                                                 |
-| `metadata`     | Remaining projected provider facts under the [shared metadata contract](#metadata).                           |
+| Field           | Meaning or constraint                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `provider_id`   | Native provider identity from [Scan extraction](scan.md#extraction); one cache row per provider. |
+| `scan_at`       | Observation that last updated this row; unchanged observations leave it untouched.               |
+| `display_name`  | Validated source `provider_info.displayName`.                                                    |
+| `metadata_json` | Remaining projected provider facts under the [shared metadata contract](#metadata).              |
 
 ### Indexes
 
-| Index            | Purpose                                              |
-| ---------------- | ---------------------------------------------------- |
-| `by_provider_id` | Provider identity lookup and refresh reconciliation. |
+| Index            | Purpose                                         |
+| ---------------- | ----------------------------------------------- |
+| `by_provider_id` | Provider identity lookup and ingestion upserts. |
 
 ## `currentEndpoints`
 
@@ -95,7 +102,7 @@ One row is a hydrated current or last-known endpoint, including relationships, p
 
 ### Schema
 
-`pricing` uses the [Prices validator](series.md#endpointprices); `metadata` uses the contract above.
+`pricing` uses the [Prices validator](series.md#endpointprices); `metadata_json` uses the contract above.
 
 ```ts
 const currentEndpoints = defineTable({
@@ -113,7 +120,7 @@ const currentEndpoints = defineTable({
   output_modalities: v.array(v.string()),
   provider_display_name: v.string(),
   pricing,
-  metadata,
+  metadata_json,
 })
   .index('by_endpoint_id', ['endpoint_id'])
   .index('by_model_id', ['model_id'])
@@ -129,13 +136,13 @@ const currentEndpoints = defineTable({
 | `model_id`, `provider_id`                                      | Native model/provider relationships from the endpoint.                                   |
 | `provider_tag`                                                 | Validated `provider_slug` accessor value; mutable endpoint data, not an identity.        |
 | `variant`                                                      | Validated endpoint variant.                                                              |
-| `scan_at`                                                      | Hydrated source-context time, which can differ from the refresh target.                  |
+| `scan_at`                                                      | Observation that last updated this row, including listing-state changes.                 |
 | `unlisted_at`                                                  | Disappearance time from the listing transition; absent for a listed endpoint.            |
 | `model_display_name`, `model_permaslug`, `model_or_created_at` | Typed facts from the related model at the hydrated context time.                         |
 | `input_modalities`, `output_modalities`                        | Typed modality lists from the related model.                                             |
 | `provider_display_name`                                        | Typed display name from the related provider.                                            |
 | `pricing`                                                      | Selected directly from raw endpoint values using the shared Prices contract.             |
-| `metadata`                                                     | Remaining endpoint/model/provider facts under the [shared metadata contract](#metadata). |
+| `metadata_json`                                                | Remaining endpoint/model/provider facts under the [shared metadata contract](#metadata). |
 
 Every endpoint has its required model/provider context. These fields stay top-level, typed and
 required, including for last-known endpoints.
@@ -144,98 +151,51 @@ required, including for last-known endpoints.
 
 | Index                         | Purpose                                          |
 | ----------------------------- | ------------------------------------------------ |
-| `by_endpoint_id`              | Endpoint lookup and refresh reconciliation.      |
+| `by_endpoint_id`              | Endpoint lookup and ingestion upserts.           |
 | `by_model_id`                 | Model endpoint discovery.                        |
 | `by_provider_id_and_model_id` | Provider/model discovery.                        |
 | `by_unlisted_at`              | The grid's listed/recently-unlisted working set. |
 
 ## Hydration and last-known state
 
-All three tables are cumulative, mutable projections of retained history:
+All three tables accumulate the output of the baseline and every subsequent forward ingestion:
 
-- A row can combine facts supplied by several ingestions; `scan_at` describes source context, rather
-  than an ingestion that owns the row.
-- Retain known models and providers even when they have no listed endpoints, following
-  [Records' entity-knowledge policy](records.md#entity-knowledge-and-availability).
-- Retain last-known endpoint values after unlisting.
-- Hydrate an absent endpoint at its last listed context, including related entities resolved then.
-- Apply current [Projections](projections.md#hydration-and-comparison) to the available context.
-- Resolve listing context through [Listings](series.md#endpointlistings).
+- Project both scans through the shared lens, including endpoint model/provider context.
+- Select changed product rows, ignoring `scan_at` when comparing values.
+- Related model/provider changes update listed endpoints even when their own raw values are unchanged.
+- Models/providers omitted from the later scan keep their stored rows.
+- Disappearing endpoints retain the earlier scan's complete projection and gain `unlisted_at`.
+- Reappearing endpoints receive their complete later projection, clearing `unlisted_at`.
+- `scan_at` dates the observation that updated the row, matching V3's last-write meaning. An
+  unlisting update dates the new availability information; its entity facts are last-known values.
 
 **Example:** an endpoint last changes at A, its provider changes at B, and it disappears at C.
-Last-known endpoint hydration includes B's provider facts, even though its own raw revision is at A.
+The update at C retains B's provider facts and records C as both `scan_at` and `unlisted_at`.
 
-## Refresh
+## Ingestion writes
 
-One operation handles forward updates, cold rebuilds, projection changes and interrupted refreshes.
+Forward-only, connected ingestion makes the current tables the cumulative product of all preceding
+ingestions. The main action already has the source pair and prepares only its changed product rows.
 
-### Contract
+1. Populate all three current tables during baseline ingestion.
+2. Prepare subsequent changes from the real scan pair, including related-entity changes and unlisting.
+3. Run one mutation per current table: models, providers, then endpoints.
+4. For each supplied row, look up its native identity and insert or replace the complete row.
+5. Commit each table's writes and ingestion phase advancement together, including empty steps.
 
-- Produce the complete desired projection through the selected completed time and current code.
-- Start from any cache state: empty, stale, partially written or previously projected.
-- Derive correctness from retained Records and required series; existing cache rows offer optional
-  acceleration only.
-- Partial source coverage remains partial after rebuilding. Historical series stay intact.
-- Use the [shared claim protocol](ingestion.md#downstream-concurrency) whether called directly from
-  an ingestion action or by an independent runner.
+The final endpoint phase completes ingestion. Catalog has no separate runner, claim or lock field.
+An interrupted run resumes its stored phase before a later pair is admitted. Catalog failure leaves
+ingestion unfinished; committed table phases are skipped on retry.
 
-### Steps
-
-1. Claim the latest completed ingestion and pin its `scan_at` as target T.
-2. Use [Records' identity discovery](records.md#identity-discovery) to enumerate all retained MEPs.
-3. Hydrate and project the complete desired contents of all three tables through T.
-4. Reconcile rows by native identity using the write rules below.
-5. Finish after all three caches and cleanup complete, using the [request handoff](#refresh-requests).
-
-Discovery, hydration, writes and cleanup use bounded batches. A later forward ingestion can complete
-while this run remains pinned to T.
-
-### Write rules
-
-| Existing row versus desired result | Action                                           |
-| ---------------------------------- | ------------------------------------------------ |
-| Missing                            | Insert the desired row.                          |
-| Different                          | Replace the full row, clearing obsolete facts.   |
-| Equal                              | Leave untouched, avoiding reactive invalidation. |
-| Outside the complete desired set   | Delete the cache-only row.                       |
-
-- Compare stored content, excluding Convex system fields.
-- Absence from one batch is insufficient grounds for deletion.
-
-### Completion and retry
-
-- Convex mutations provide transaction boundaries; a batched run can expose mixed freshness.
-- Interruption can leave partial cache updates. Restart derives the desired result again and repairs
-  them independently of the previous cache state.
-- Cache failure leaves the source ingestion complete.
-- The process outcome records the run against its anchor; only that ingestion receives the outcome.
-
-🚧 Add durable refresh cursors only if restart cost justifies them.
-
-🚧 Add ingestion-assisted deltas when caches reliably represent a compatible starting projection.
-Include model/provider dependants and keep the full-refresh fallback. Extra discovery indexes or an
-identity inventory follow measured read costs.
-
-🚧 Whole-catalog publication can follow a product requirement: stage a generation and switch its
-selected pointer. The starting design uses no generations, build history or `discarded` state.
-
-## Refresh requests
-
-| Situation                                  | Behavior                                         |
-| ------------------------------------------ | ------------------------------------------------ |
-| Ingestion completes                        | Request refresh.                                 |
-| Several requests accumulate                | Coalesce onto the latest completed ingestion.    |
-| Request arrives during refresh             | Let the active run finish its pinned target.     |
-| Refresh finishes with newer completed work | Request the next refresh in the finish mutation. |
-| Forward ingestion remains active at finish | Its completion supplies the next request.        |
-
-**Finish commit:** record the outcome, release the claim and perform the request handoff together.
-Intermediate ingestions can be skipped; they incur no per-ingestion Catalog obligation.
+Routine ingestion assumes the tables represent the preceding ingestions. Rebuilding after a
+projection change, repairing an arbitrary state and processing out-of-order history are non-routine
+operations to design when needed, not requirements of this write path.
 
 ## Product reads
 
-Ordinary cutoffs use the [ORCA clock](ingestion.md#clock-reads), including during mixed-freshness
-refreshes. Cache rows retain their own context times.
+Ordinary time windows use the [ORCA clock](ingestion.md#clock-reads). Current rows update per table
+mutation and can expose mixed observation times while ingestion is in progress; they are not a
+historical snapshot of the completed clock. Completion establishes that all table phases succeeded.
 
 | Consumer      | Read behavior                                                                                                              |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- |

@@ -5,26 +5,19 @@ Prices, Listings and Readings own immutable, time-indexed product data, appended
 
 ## `endpointPrices`
 
-One row is a complete selected quote for an endpoint at an observation time.
+One row contains complete selected pricing for an endpoint at an observation time.
 
 ### Schema
 
 `pricing` is also the stored pricing contract for [current endpoints](catalog.md#currentendpoints).
-The starting fields and indexes match V3; override representation remains part of the
-[open projection-fidelity question](projections.md#projection-fidelity).
+Meter and discount fields retain V3's representation; complete overrides use JSON text rather than
+V3's flattened, restricted metadata representation.
 
 ```ts
 const pricing = v.object({
   discount: v.number(),
   meters: v.record(v.string(), v.string()),
-  overrides: v.optional(
-    v.array(
-      v.record(
-        v.string(),
-        v.union(v.boolean(), v.number(), v.null(), v.string(), v.array(v.string())),
-      ),
-    ),
-  ),
+  overrides_json: v.optional(v.string()),
 })
 
 const endpointPrices = defineTable({
@@ -38,30 +31,33 @@ const endpointPrices = defineTable({
 
 ### Fields and invariants
 
-| Field         | Meaning or constraint                                                                         |
-| ------------- | --------------------------------------------------------------------------------------------- |
-| `endpoint_id` | Native endpoint UUID.                                                                         |
-| `scan_at`     | Observation time of the quote.                                                                |
-| `discount`    | Native source discount, retained without applying it to stored meters.                        |
-| `meters`      | Selected decimal-string meter values; zero and omitted values retain their supplied meanings. |
-| `overrides`   | Optional selected overrides; V3's flattening and value restrictions are a starting proposal.  |
+| Field            | Meaning or constraint                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| `endpoint_id`    | Native endpoint UUID.                                                                         |
+| `scan_at`        | Observation time of the pricing.                                                              |
+| `discount`       | Native source discount, retained without applying it to stored meters.                        |
+| `meters`         | Selected decimal-string meter values; zero and omitted values retain their supplied meanings. |
+| `overrides_json` | Complete supplied override array as JSON text, retaining nested conditions and values.        |
 
 - The selected representation excludes `display_pricing`; full source pricing remains in Records.
+- Meter maps select string values with database-safe keys; other pricing facts remain in Records.
 - Storage adds no unit fields and performs no unit conversion or conditional-price calculation.
 - Consumers decide display/analysis meanings through [shared pricing interpretation](projections.md#pricing-selection).
+- Overrides are curated pricing data, independent of metadata filtering. Shared interpretation
+  validates recognized public-schema structures for rendering; storage preserves the full array.
 
 ### Indexes
 
-| Index                        | Purpose                                                  |
-| ---------------------------- | -------------------------------------------------------- |
-| `by_endpoint_id_and_scan_at` | Quote history and the applicable quote through a cutoff. |
-| `by_scan_at`                 | Observation-time lookup, preserving V3's index contract. |
+| Index                        | Purpose                                                    |
+| ---------------------------- | ---------------------------------------------------------- |
+| `by_endpoint_id_and_scan_at` | Price history and the applicable pricing through a cutoff. |
+| `by_scan_at`                 | Observation-time lookup, preserving V3's index contract.   |
 
 ### Reads and writes
 
-- **Writes:** append the quotes selected by the [price/listing transition matrix](#price-and-listing-transitions).
-- **Reads:** carry quotes forward within listed intervals.
-- **Catalog relationship:** refresh leaves this history intact; current endpoint pricing is selected
+- **Writes:** append the prices selected by the [price/listing transition matrix](#price-and-listing-transitions).
+- **Reads:** carry prices forward within listed intervals.
+- **Catalog relationship:** current-row updates leave this history intact; endpoint pricing is selected
   from raw entity values.
 
 ## `endpointListings`
@@ -122,8 +118,8 @@ The A/P association lasts from T1 to T2, and A/Q from T2 to T3; the endpoint rem
 - **Reads:** build availability and relationship intervals from each endpoint's ordered transitions.
 - **Model discovery:** use the model index to find candidate endpoints, then read their endpoint
   histories; the next row can close a model association while naming a different model.
-- **Catalog relationship:** supply listing transitions for [last-known hydration](catalog.md#hydration-and-last-known-state).
-- **Discovery:** endpoint-membership supplement to [Records' complete MEP identity discovery](records.md#identity-discovery).
+- **Catalog relationship:** the same scan pair supplies listing transitions and
+  [current endpoint availability](catalog.md#hydration-and-last-known-state).
 
 ## `endpointReadings`
 
@@ -178,21 +174,22 @@ const endpointReadings = defineTable({
 
 Prices and Listings use the same comparison and [product scope](projections.md#product-scope).
 
-| Observation                                        | Prices output                                             | Listings output                                           |
-| -------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| First pair's earlier scan                          | Starting quote for each in-scope endpoint                 | Listed baseline state                                     |
-| Appearance/reappearance                            | Current quote, even when repeated                         | Listed state                                              |
-| Selected pricing change                            | Complete quote, including observed zero or omitted meters | No transition                                             |
-| Model or provider relationship change while listed | Starting quote for the new relationship trace             | One listed row with the later model/provider associations |
-| Disappearance from product scope                   | No quote                                                  | Unlisted state with last-known associations               |
-| Other entity change                                | No quote                                                  | No transition                                             |
+| Observation                                        | Prices output                                               | Listings output                                           |
+| -------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------- |
+| First pair's earlier scan                          | Starting pricing for each in-scope endpoint                 | Listed baseline state                                     |
+| Appearance/reappearance                            | Current pricing, even when repeated                         | Listed state                                              |
+| Selected pricing change                            | Complete pricing, including observed zero or omitted meters | No transition                                             |
+| Model or provider relationship change while listed | Starting pricing for the new relationship trace             | One listed row with the later model/provider associations |
+| Disappearance from product scope                   | No price row                                                | Unlisted state with last-known associations               |
+| Other entity change                                | No price row                                                | No transition                                             |
 
 The matrix describes each cause's contribution; a comparison can contain multiple causes, combined
-into at most one quote and one listing row per endpoint at the later scan time.
+into at most one price and one listing row per endpoint at the later scan time.
 
 ## Write composition
 
-Each module validates and appends prepared rows from Projections. Its writer is callable inside
+Each module validates and appends prepared rows. Scan supplies extracted readings; Projections
+selects entity, pricing and listing changes. Each writer is callable inside
 [Ingestion's mutation step](ingestion.md#forward-ingestion), sharing that commit with phase advancement.
 Ingestion owns step ordering, completion and [initialization recovery](ingestion.md#initialization).
 

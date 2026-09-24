@@ -1,6 +1,6 @@
 # Records
 
-Owns retained MEP values, historical context and complete identity discovery.
+Owns retained MEP values and historical context.
 
 ## `entityRecords`
 
@@ -15,7 +15,6 @@ const entityRecords = defineTable({
   entity_id: v.string(),
   model_id: v.optional(v.string()),
   provider_id: v.optional(v.string()),
-  provider_tag: v.optional(v.string()),
   raw_json: v.string(),
 })
   .index('by_entity_kind_and_entity_id_and_scan_at', ['entity_kind', 'entity_id', 'scan_at'])
@@ -24,17 +23,16 @@ const entityRecords = defineTable({
 
 ### Fields and invariants
 
-| Field                      | Meaning or constraint                                                                  |
-| -------------------------- | -------------------------------------------------------------------------------------- |
-| `scan_at`                  | Observation time of this value; an ordinary comparison uses its later scan.            |
-| `entity_kind`, `entity_id` | Native MEP identity; models/providers use slugs and endpoints use UUIDs.               |
-| `model_id`                 | Endpoint's native model relationship.                                                  |
-| `provider_id`              | Endpoint's provider identity, extracted from `provider_info.slug`.                     |
-| `provider_tag`             | Endpoint accessor value from `provider_slug`; mutable and not a relationship identity. |
-| `raw_json`                 | Complete extracted source value as JSON text.                                          |
+| Field                      | Meaning or constraint                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `scan_at`                  | Observation time of this value; an ordinary comparison uses its later scan.                |
+| `entity_kind`, `entity_id` | Native MEP identity; models/providers use slugs and endpoints use UUIDs.                   |
+| `model_id`                 | Endpoint's native model relationship.                                                      |
+| `provider_id`              | Endpoint's provider identity, extracted from `provider_info.slug`.                         |
+| `raw_json`                 | Complete extracted entity observation as JSON text, including ORCA corrections and extras. |
 
 - Logical uniqueness: `(entity_kind, entity_id, scan_at)` has one owned value.
-- Endpoint rows require their model/provider relationships and endpoint accessor value.
+- Endpoint rows require their model/provider relationships; their payload requires `provider_tag`.
 - Rows are immutable. Values stand independently of preceding stored projections.
 - A missing row means unavailable local state; retained values carry forward through later omissions.
 - Comparison provenance lives in [Ingestion](ingestion.md#ingestions), rather than in each row.
@@ -49,30 +47,33 @@ const entityRecords = defineTable({
 
 ### Retained payload
 
-Exact extraction and field-retention choices remain an [open projection question](projections.md#projection-fidelity).
+The payload follows [Scan's extraction contract](scan.md#extraction). `raw_json` means the retained
+input to the product lens, rather than an untouched upstream body. Together with related records,
+it contains everything needed for projection without consulting a current cache.
 
-| Input                    | Retained representation                                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Model                    | Complete source model value.                                                                           |
-| Provider                 | Selected `provider_info` object, keyed by its `slug`.                                                  |
-| Endpoint                 | Source endpoint value with `provider_info`, `stats` and `statsByTier` extracted out.                   |
-| Source pricing           | Retained in full on the endpoint, including presentation fields.                                       |
-| Performance measurements | Stored by [Readings](series.md#endpointreadings), so measurement churn avoids full endpoint revisions. |
+| Input                    | Retained representation                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Model                    | Extracted model facts and scan-derived extras, including variant when supplied.                                |
+| Provider                 | Selected `provider_info` object, keyed by its `slug`.                                                          |
+| Endpoint                 | Extracted endpoint facts without related entity bodies or readings; `provider_slug` renamed to `provider_tag`. |
+| Source pricing           | Retained in full on the endpoint, including presentation fields.                                               |
+| Performance measurements | Stored by [Readings](series.md#endpointreadings), so measurement churn avoids full endpoint revisions.         |
 
 **Provider selection:** after [Scan's text-model filter](scan.md#loaded-dataset), the last provider
 occurrence in the admitted scan encounter order wins. Extraction precedes comparison and field
 interpretation. Endpoint-local names and policies remain with the endpoint; provider-owned context
 comes from the provider record.
 
-**Validation:** the accepting projector validates the raw value before storage. JSON text accommodates
-upstream keys and evolving interpretation; reading projectors interpret the retained value.
+**Validation:** extraction validates the deliberately required entity contract before storage.
+JSON text preserves arbitrary upstream keys and nested values. Optional product facts are decoded
+by the shared lens when used, rather than becoming additional ingestion prerequisites.
 
 ### Indexes
 
-| Index                                      | Purpose                                                                   |
-| ------------------------------------------ | ------------------------------------------------------------------------- |
-| `by_entity_kind_and_entity_id_and_scan_at` | Historical lookup and complete identity discovery through index skipping. |
-| `by_scan_at`                               | Inspect the retained output at an observation time.                       |
+| Index                                      | Purpose                                             |
+| ------------------------------------------ | --------------------------------------------------- |
+| `by_entity_kind_and_entity_id_and_scan_at` | Historical entity lookup.                           |
+| `by_scan_at`                               | Inspect the retained output at an observation time. |
 
 ### Writes
 
@@ -102,18 +103,3 @@ upstream keys and evolving interpretation; reading projectors interpret the reta
   [Projections](projections.md#hydration-and-comparison) to hydrate complete entity fields.
 - Native relationships support historical hydration, new projections and model/provider dependant
   discovery; Listings supplies their availability intervals.
-
-## Identity discovery
-
-For each MEP kind, enumerate `(entity_kind, entity_id, scan_at)` through the identity/time index:
-
-1. Seek the next identity.
-2. Resolve its latest record through the selected completed time T.
-3. Read earlier versions only when last-known hydration requires them.
-4. Seek past that identity's range and repeat.
-
-**Coverage:** visits every retained identity, including identities absent from caches. An identity
-first observed after T contributes no state to that read.
-
-Listings discovers endpoint membership and events are selective; both are supplementary discovery sources.
-Records supplies the complete path used by [Catalog refresh](catalog.md#refresh).

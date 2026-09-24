@@ -1,6 +1,9 @@
 # Scan
 
-Owns capture and discovery of complete scan artifacts, and loading of the scoped dataset.
+Owns capture, discovery and extraction of scan artifacts into scoped entity observations.
+
+Capture, artifact storage and discovery use the existing shared `convex/scan/` module. V4 adds
+extraction of those stored artifacts, not a separate capture action or object-store write path.
 
 ## Artifact contract
 
@@ -30,16 +33,37 @@ remain private to this module.
 - Artifact loading admits models supporting both text input and text output, together with their endpoints.
 - Apply this filter before provider extraction and deduplication; only admitted occurrences can select
   a provider's value.
-- Downstream modules receive the same scoped dataset and take that scope as an input guarantee.
+- Extraction receives this scoped dataset; downstream modules take scope as an output guarantee.
 - Complete captured artifacts remain available for inspection and future derivation outside this scope.
+
+## Extraction
+
+Extraction unwraps the admitted artifact into entity observations and supplied readings. Its output
+is the entity source for downstream modules; understanding upstream nesting is private to Scan.
+
+- Establish native model/provider identities and endpoint UUIDs, with endpoint relationships stored
+  separately from the related entity bodies.
+- Select the last provider occurrence in the admitted encounter order before entity comparison.
+- Remove known redundant entity bodies; retain provider facts in the selected provider observation.
+- Rename the endpoint's `provider_slug` to `provider_tag`, removing the ambiguous source name from
+  the extracted endpoint. The tag targets inference requests and is never a provider identity.
+- Preserve scan-derived extras needed for later interpretation alongside extracted source facts.
+  Model `variant` can remain payload metadata; `model_id` is the variant-aware identity.
+- Separate `stats` and supplied `statsByTier` samples from endpoint values into Readings.
+- Validate deliberately required identity, relationship and entity facts. Preserve other JSON
+  content without imposing database key restrictions or validating hypothetical product uses.
+
+The extracted payload is an ORCA entity observation, not a verbatim upstream body. Structural
+corrections belong here; selection of prices and interpretation of optional facts belong to
+[Projections](projections.md). Records and live-scan projection consume the same entity contract.
 
 ## Operations
 
-| Operation       | Result or completion condition                                   |
-| --------------- | ---------------------------------------------------------------- |
-| `capture`       | Completes after the full artifact is durable.                    |
-| `next`          | Discovers the next available observation.                        |
-| `load(scan_at)` | Verifies identity and returns the scoped model/endpoint records. |
+| Operation       | Result or completion condition                                          |
+| --------------- | ----------------------------------------------------------------------- |
+| `capture`       | Completes after the full artifact is durable.                           |
+| `next`          | Discovers the next available observation.                               |
+| `load(scan_at)` | Verifies identity and extracts scoped entity observations and readings. |
 
 A deployment can start from any selected real pair. [Initialization](ingestion.md#initialization)
 uses its earlier artifact directly for the baseline.

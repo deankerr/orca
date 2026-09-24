@@ -7,6 +7,10 @@ ORCA observes OpenRouter models, endpoints and providers over time.
 **MEPs**:
 Models, endpoints and providers: the three entity kinds observed by ORCA.
 
+**Entity observation**:
+The facts known about one entity at a scan time, including its identity and relationships.
+An observation dates ORCA's knowledge rather than the upstream change itself.
+
 **Model**:
 A model offering identified in ORCA by its model slug, including any variant suffix.
 Once observed, a model remains known even when it has no listed endpoints.

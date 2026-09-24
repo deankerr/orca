@@ -2,6 +2,9 @@
 
 Records options for selecting and moving deployment-local state from the shared observation timeline.
 
+This workflow is deferred under [implementation stages](stages.md). Event-related options below
+are future considerations; they prescribe no current event schema or execution protocol.
+
 ## Transfer options
 
 Choose a strategy and coverage when a concrete workflow emerges from implementation experience.
@@ -30,21 +33,22 @@ schema carries no transfer-specific state.
 
 ## Identity and process-state mapping
 
-| Value                               | Transfer rule                                                              |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| Scan times and artifact identity    | Preserve real observation identity.                                        |
-| Natural scan-pair/entity identities | Portable between deployments.                                              |
-| Convex IDs                          | Remap deployment-local references when copying related tables.             |
-| Ingestion process state             | Map deliberately to local state; a copied active claim has no local owner. |
-| Cache context times                 | Preserve the source context described by each row.                         |
-| Event claims and `published_at`     | Preserve the publication's selected meaning and original storage time.     |
+| Value                               | Transfer rule                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| Scan times and artifact identity    | Preserve real observation identity.                                              |
+| Natural scan-pair/entity identities | Portable between deployments.                                                    |
+| Convex IDs                          | Remap deployment-local references when copying related tables.                   |
+| Ingestion progress                  | Map deliberately to coherent local progress and current Catalog state.           |
+| Cache context times                 | Preserve the source context described by each row.                               |
+| Future event publications           | Revisit preservation of claim meaning and publication time during Events design. |
 
 ## Destination behavior
 
-- Local refresh, interpretation and delivery remain independent decisions.
-- Importing data alone creates no broadcast obligation; [delivery adapters](change-events.md#delivery-adapters)
-  apply their own rules.
-- Copying mutable caches across batches can expose mixed freshness, as local refresh does.
+- Event interpretation and delivery remain local decisions. Resuming ingestion requires a coherent
+  current Catalog and completed clock, since routine updates assume all previous pairs were applied.
+- Importing data alone creates no broadcast obligation; delivery rules belong to the deferred
+  [Events and consumer design](change-events.md).
+- Copying mutable current tables across batches can expose mixed freshness, as ingestion does.
 
 🚧 Automate window extraction, import validation and ID remapping with the chosen workflow.
 

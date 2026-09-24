@@ -1,13 +1,14 @@
 # Projections
 
-Owns the pure extraction, selection and interpretation shared by ingestion, products and Events.
+Owns the pure projection lens, selection and interpretation shared by ingestion, products and Events.
+
+Events is a future consumer whose full design is deferred by the [implementation stages](stages.md).
 
 ## Transform contracts
 
 | Transform          | Input                                         | Output contract                                                                                                                    |
 | ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Raw extraction     | Loaded, scoped scan                           | [Retained entity values](records.md#retained-payload) and [supplied readings](series.md#endpointreadings).                         |
-| Raw comparison     | Two extracted scans                           | [Record write selection](records.md#writes).                                                                                       |
+| Entity comparison  | Two extracted observations                    | [Record write selection](records.md#writes).                                                                                       |
 | Product projection | Subject and related values at a selected time | [Typed entity fields](catalog.md#currentmodels), [selected pricing](series.md#endpointprices) and [metadata](catalog.md#metadata). |
 | Product comparison | Both sides projected through current code     | Interpreted differences for series and Events selection.                                                                           |
 
@@ -15,7 +16,9 @@ Owns the pure extraction, selection and interpretation shared by ingestion, prod
 - For fixed rules, supplied scans determine ingestion output independently of wall-clock time,
   preceding stored projections and current cache contents.
 - Product projection and raw retention are distinct representations.
-- Baseline extraction uses one real scan directly; product starting values use the same projection rules.
+- Baseline population uses one extracted observation directly; product starting values use the same lens.
+- Scan owns extraction. Projection consumes its entity contract, whether supplied directly by Scan
+  or decoded from Records; it never reinterprets upstream entity nesting.
 
 **Implementation recommendation:** build on the existing `projections` module and consolidate
 normalization currently spread through `v3/public` and CES.
@@ -26,20 +29,26 @@ normalization currently spread through `v3/public` and CES.
 - Records, Readings, Catalog, Listings, Prices and Change Events consume that same scoped dataset.
 - Field selection is separate from scope; the artifact retains the complete captured input.
 
-## Projection fidelity
+## Representation and validation
 
-❓ Settle exact field retention and representation in a focused projection-design session: extracted
-`entityRecords` payloads, `metadata` shapes and pricing `overrides` flattening or value restrictions.
-The linked schemas are starting proposals; they do not settle which source values may be omitted or
-transformed. Include scan-entry fields such as model `variant`, nested values, arrays and key collisions.
-
-Validated entity fields belong at the top level of the owning `current*` schema; metadata contains
-the remaining projected facts. This distinction is settled independently of the open fidelity choices.
+- Deliberately required entity fields have typed product contracts; their validation failures mean
+  the observation cannot be interpreted correctly.
+- Remaining upstream facts retain nested JSON structure. Records stores the extracted payload;
+  Catalog stores extensible projected facts in `metadata_json`.
+- Metadata can be parsed inside the pure lens. Encode arbitrary content as JSON text when crossing
+  Convex storage or function seams; decoding alone does not make arbitrary keys Convex-safe.
+- Recognized optional facts have shared decoders that handle historical absence and invalid values
+  as unavailable. Consumers select these meanings rather than implementing their own era handling.
+- Preserve distinctions between absent, explicit null, false and zero. Unknown facts acquire no
+  product meaning simply because they were retained.
+- Flattening is a consumer convenience, not a persistence rule. Preserve nested structures and
+  literal keys in stored JSON rather than resolving collisions or dropping unsupported leaves.
 
 ## Pricing selection
 
-- Produce the [selected quote contract](series.md#endpointprices) from source pricing.
+- Produce the [selected pricing contract](series.md#endpointprices) from source pricing.
 - Use the same selection for historical price rows and current endpoint pricing.
+- Preserve complete selected overrides as JSON text, independently of metadata processing.
 - Share recognized meter meanings, units and display/analysis rules among consumers.
 - Consumer interpretation follows the [pricing knowledge base](../openrouter/pricing.md), including
   already-discounted normalized rates and opaque conditional overrides.
@@ -67,9 +76,12 @@ differences. Events owns announcement judgment.
 
 ## Evolution
 
-| Change               | Where it takes effect                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| Projection code      | New reads use the current interpretation.                                                           |
-| Cached projection    | [Catalog refresh](catalog.md#refresh) applies current code to retained sources.                     |
-| Event interpretation | [Events](change-events.md#execution) owns its execution and publication lifecycle.                  |
-| Raw extraction       | [Scan artifacts](scan.md#artifact-contract) preserve complete inputs for revisiting the derivation. |
+| Change               | Where it takes effect                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Projection code      | New reads use the current interpretation.                                                                          |
+| Current Catalog      | [Ingestion writes](catalog.md#ingestion-writes) apply changes from each pair; broader reprojection is non-routine. |
+| Event interpretation | [Events](change-events.md) design and implementation are deferred.                                                 |
+| Raw extraction       | [Scan artifacts](scan.md#artifact-contract) preserve complete inputs for revisiting the derivation.                |
+
+Changing display or interpretation rules uses retained data directly. Changing which facts were
+selected into historical series can require rebuilding those series; routine ingestion does not do so.
