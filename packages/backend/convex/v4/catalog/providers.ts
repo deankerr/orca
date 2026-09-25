@@ -3,55 +3,40 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { internal } from '../../_generated/api'
-import { query, internalMutation } from '../../_generated/server'
-import type { ActionCtx } from '../../_generated/server'
-import { completeStep, stepArgs } from '../ingestion/step'
-import type { Execution, ObservationPair } from '../ingestion/step'
-import type { ExtractedScan } from '../scan'
-import { changedRows } from './changes'
+import { query } from '../../_generated/server'
+import type { MutationCtx } from '../../_generated/server'
+import type { ExtractedScan, LoadedScanPair } from '../scan'
+import { catalogRows } from './changes'
 import { text, strings, metadata } from './fields'
 import { projectProvider } from './project'
 import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'
+import type { CurrentProviderRow } from './table'
 
 const url = z
   .url({ protocol: /^https?$/ })
   .nullable()
   .catch(null)
 
-/** Commit provider updates and their checkpoint together. */
-export const write = internalMutation({
-  args: { ...stepArgs, rows: v.array(currentProvidersTable.validator) },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    for (const row of args.rows) {
-      const existing = await ctx.db
-        .query(V4_CURRENT_PROVIDERS_TABLE)
-        .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
-        .unique()
-      await (existing === null
-        ? ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, row)
-        : ctx.db.replace(V4_CURRENT_PROVIDERS_TABLE, existing._id, row))
-    }
-    return await completeStep(ctx, args)
-  },
-})
+/** Insert or replace provider rows within the Catalog's mutation. */
+export async function write(ctx: MutationCtx, rows: CurrentProviderRow[]): Promise<void> {
+  for (const row of rows) {
+    const existing = await ctx.db
+      .query(V4_CURRENT_PROVIDERS_TABLE)
+      .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
+      .unique()
 
-export async function process(
-  ctx: ActionCtx,
-  pair: ObservationPair,
-  execution: Execution,
-): Promise<void> {
-  const rows = prepare(pair)
-  await ctx.runMutation(internal.v4.catalog.providers.write, { ...execution, rows })
+    await (existing === null
+      ? ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, row)
+      : ctx.db.replace(V4_CURRENT_PROVIDERS_TABLE, existing._id, row))
+  }
 }
 
-function prepare(pair: ObservationPair) {
+export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean }) {
   const project = (scan: ExtractedScan) =>
     new Map(
       [...scan.providers].map(([id, provider]) => [id, projectProvider(provider, scan.scan_at)]),
     )
-  return changedRows(pair.previous === null ? null : project(pair.previous), project(pair.next))
+  return catalogRows(project(pair.previous), project(pair.next), { baseline })
 }
 
 /** Interpret provider-owned overview facts. */

@@ -5,8 +5,8 @@ import { internal } from '../../_generated/api'
 import { internalMutation, query } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
-import { completeStep, stepArgs } from '../ingestion/step'
-import type { Execution, ObservationPair } from '../ingestion/step'
+import { advanceModuleCursor, logStep, stepArgs } from '../ingestion/step'
+import type { ModuleStep, ObservationPair } from '../ingestion/step'
 import type { Endpoint } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
@@ -20,10 +20,12 @@ export const list = query({
   },
   returns: pageResult(endpointListingsTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, args.cutoff)
+    const cutoff = await cappedCutoff(ctx, 'listings', args.cutoff)
+
     if (cutoff === null) {
       return emptyPage()
     }
+
     const result = await ctx.db
       .query(V4_ENDPOINT_LISTINGS_TABLE)
       .withIndex('by_endpoint_id_and_scan_at', (q) =>
@@ -43,10 +45,12 @@ export const byModel = query({
   },
   returns: pageResult(endpointListingsTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, args.cutoff)
+    const cutoff = await cappedCutoff(ctx, 'listings', args.cutoff)
+
     if (cutoff === null) {
       return emptyPage()
     }
+
     const result = await ctx.db
       .query(V4_ENDPOINT_LISTINGS_TABLE)
       .withIndex('by_model_id_and_scan_at', (q) =>
@@ -58,31 +62,33 @@ export const byModel = query({
   },
 })
 
-/** Write this phase's listing transitions and advance the ingestion. */
-export const write = internalMutation({
+/** Processor transaction: commit listing transitions and the Listings cursor atomically. */
+export const commitStep = internalMutation({
   args: { ...stepArgs, rows: v.array(endpointListingsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
+    logStep(args, { inserts: args.rows.length })
     for (const row of args.rows) {
       await ctx.db.insert(V4_ENDPOINT_LISTINGS_TABLE, row)
     }
-    return await completeStep(ctx, args)
+    return await advanceModuleCursor(ctx, args)
   },
 })
 
 export async function process(
   ctx: ActionCtx,
   pair: ObservationPair,
-  execution: Execution,
+  step: ModuleStep,
 ): Promise<void> {
   const rows = prepare(pair)
-  await ctx.runMutation(internal.v4.history.listings.write, { ...execution, rows })
+  await ctx.runMutation(internal.v4.history.listings.commitStep, { ...step, rows })
 }
 
 function prepare({ previous, next }: ObservationPair) {
   const rows: EndpointListingRow[] = []
   for (const endpoint of next.endpoints.values()) {
     const before = previous?.endpoints.get(endpoint.id)
+
     if (
       before === undefined ||
       before.model_id !== endpoint.model_id ||

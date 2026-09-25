@@ -1,27 +1,40 @@
 import type { QueryCtx } from '../../_generated/server'
 import { assertScanAt } from '../scan/time'
-import { V4_INGESTIONS_TABLE } from './table'
+import { V4_CURSORS_TABLE, V4_INGESTIONS_TABLE } from './table'
+import type { ModuleName } from './table'
 
-/** Greatest completed output time, or null before the first pair finishes. */
-export async function currentScanAt(ctx: QueryCtx): Promise<string | null> {
+/** Latest declared pair's scan time, which the Catalog reflects; null before the first pair. */
+export async function catalogScanAt(ctx: QueryCtx): Promise<string | null> {
   const latest = await ctx.db
     .query(V4_INGESTIONS_TABLE)
-    .withIndex('by_status_and_scan_at', (q) => q.eq('status', 'complete'))
+    .withIndex('by_scan_at')
     .order('desc')
     .first()
-
   return latest?.scan_at ?? null
 }
 
+export async function findCursor(ctx: QueryCtx, module: ModuleName) {
+  return await ctx.db
+    .query(V4_CURSORS_TABLE)
+    .withIndex('by_module', (q) => q.eq('module', module))
+    .unique()
+}
+
 /**
- * Cap a requested cutoff at the completed clock.
- * In-progress output stays unreadable, including baseline rows of an unfinished first pair.
+ * Cap a requested cutoff at the module's cursor.
+ * Output beyond it is unreadable, including baseline rows of an unfinished first pair.
  */
-export async function cappedCutoff(ctx: QueryCtx, requested?: string): Promise<string | null> {
+export async function cappedCutoff(
+  ctx: QueryCtx,
+  module: ModuleName,
+  requested?: string,
+): Promise<string | null> {
   if (requested !== undefined) {
     assertScanAt(requested)
   }
-  const clock = await currentScanAt(ctx)
+
+  const cursor = await findCursor(ctx, module)
+  const clock = cursor?.scan_at ?? null
 
   if (clock === null) {
     return null

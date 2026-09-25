@@ -15,11 +15,13 @@ export async function nextPair(
   clock: string | null,
 ): Promise<ScanPair | null> {
   const from = clock ?? (await nextScanAt(ctx, null))
+
   if (from === null) {
     return null
   }
 
   const to = await nextScanAt(ctx, from)
+
   if (to === null) {
     return null
   }
@@ -28,7 +30,7 @@ export async function nextPair(
   return { from_scan_at: from, scan_at: to }
 }
 
-/** Load the observations belonging to a claimed pair. */
+/** Load the observations from both artifacts in a scan pair. */
 export async function loadPair(ctx: ActionCtx, pair: ScanPair): Promise<LoadedScanPair> {
   const [previous, next] = await Promise.all([
     loadEntities(ctx, pair.from_scan_at),

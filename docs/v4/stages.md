@@ -32,9 +32,8 @@ Rationale: real history reveals source-shape failures and capacity limits before
 
 ### Operating evidence
 
-- Exercise continuation, manual recovery and completed-clock visibility.
+- Exercise continuation, module isolation, catch-up and cursor visibility.
 - Measure mutation volume and runtime through Convex/Axiom metrics.
-- Prioritize Stats as the main volume pressure test.
 - Compare Catalog and current stats with V3 at matching observations.
 - Exercise model moves, tag changes, duplicate tags, gaps and reappearances.
 - Measure complete historical reads, including pagination and entering state.
@@ -42,11 +41,36 @@ Rationale: real history reveals source-shape failures and capacity limits before
 
 ### Operational notes
 
-- `v4/ingestion:run` with `{}` starts the backlog drain.
+Run commands from `packages/backend`, selecting the intended deployment explicitly:
+
+```sh
+bunx convex run --deployment dev <function-path> '<args>'
+```
+
+| Manual command                              | Args                      | Prerequisite and effect                                                                                          | Failure recovery                                                              |
+| ------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `v4/ingestion/initialize:initializeCatalog` | `{}`                      | No declared pair; at least two artifacts. Write the first pair's Catalog, then declare it.                       | Rerun from the beginning; no saved per-table progress.                        |
+| `v4/ingestion/modules:startModule`          | `{ "module": "pricing" }` | After Catalog initialization, start a registered module with no cursor. Create its cursor and schedule catch-up. | Inspect cursors: if created, use `catchUpModule`; otherwise rerun.            |
+| `v4/ingestion/modules:catchUpModule`        | `{ "module": "pricing" }` | Existing module cursor. Schedule one step at a time until it reaches the Catalog clock.                          | Fix the cause and rerun; committed steps remain complete.                     |
+| `v4/ingestion/routine:drainArtifacts`       | `{}`                      | Initialized Catalog. Advance Catalog and current modules, continuing until no newer artifacts exist.             | Rerun for Catalog failure; use `catchUpModule` for a failed following module. |
+
+Start `pricing`, `listings` and `current_stats` independently. Pricing and Listings replay
+declared pairs; current stats jumps to the Catalog clock. Stats history is dormant.
+
+Read-only inspection:
+
+- `v4/ingestion/progress:getCatalogScanAt` with `{}` returns the latest declared scan, or null.
+- `v4/ingestion/progress:listModuleCursors` with `{}` returns started modules and their cursors.
+  A missing module has not started; a null cursor awaits its baseline.
+
+`commitCatalogPair`, `writeInitial…`, `declareInitialPair` and module `commitStep` mutations
+are workflow transaction steps. Run the manual entry points above rather than invoking
+these steps individually. `getNextModuleStep` selects work for orchestration without advancing it.
+
 - `ORCA_V4_INGEST_ENABLED` controls routine cron admission.
+- The cron calls `v4/ingestion/routine:scheduleIfEnabled`; manual draining bypasses the flag.
 - Disabling cron admission does not stop an existing drain.
 - Production already owns the shared artifact backlog.
-- Deployment-sync tooling is not required for production backfill.
 
 ## Integration after reassessment
 

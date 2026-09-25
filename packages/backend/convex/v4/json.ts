@@ -10,6 +10,7 @@ export function canonicalJson(value: unknown, { sortStringArrays = false } = {})
     ) {
       return nested.toSorted()
     }
+
     return isPlainObject(nested)
       ? Object.fromEntries(
           Object.entries(nested).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),

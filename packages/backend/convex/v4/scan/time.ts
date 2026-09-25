@@ -9,6 +9,7 @@ const SCAN_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 /** Accept a real UTC instant in the canonical scan-time form. */
 export function assertScanAt(value: string): string {
   const timestamp = Date.parse(value)
+
   if (
     !SCAN_AT.test(value) ||
     !Number.isFinite(timestamp) ||

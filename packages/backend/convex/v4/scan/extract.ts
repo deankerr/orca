@@ -32,9 +32,12 @@ export function extractScan(scanAt: string, entries: readonly ScanArtifactEntry[
       Model.parse({ ...entry.model, id: entry.model_id, variant: entry.variant }),
     )
 
-    for (const { provider_info, provider_slug, ...body } of entry.endpoints ?? []) {
+    // `status` is noisy and meaningless; dropping it here keeps it out of every consumer.
+    for (const { provider_info, provider_slug, status: _status, ...body } of entry.endpoints ??
+      []) {
       const { slug: provider_id, ...provider } = ProviderBody.parse(provider_info)
       providers.set(provider_id, { ...provider, provider_id })
+
       endpoints.set(
         body.id,
         Endpoint.parse({

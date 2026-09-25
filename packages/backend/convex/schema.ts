@@ -35,7 +35,13 @@ import {
   endpointPricesTable,
   endpointStatsTable,
 } from './v4/history/table'
-import { V4_INGESTIONS_TABLE, ingestionsTable } from './v4/ingestion/table'
+import {
+  V4_CURSORS_TABLE,
+  V4_INGESTIONS_TABLE,
+  cursorsTable,
+  ingestionsTable,
+} from './v4/ingestion/table'
+import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './v4/stats/table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -83,6 +89,8 @@ export default defineSchema(
     [V3_SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
 
     [V4_INGESTIONS_TABLE]: ingestionsTable,
+    [V4_CURSORS_TABLE]: cursorsTable,
+    [V4_CURRENT_STATS_TABLE]: currentStatsTable,
     [V4_ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [V4_ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,
     [V4_ENDPOINT_STATS_TABLE]: endpointStatsTable,

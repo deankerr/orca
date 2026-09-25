@@ -6,13 +6,13 @@ import { internal } from '../../_generated/api'
 import { internalMutation, query } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
-import { completeStep, stepArgs } from '../ingestion/step'
-import type { Execution, ObservationPair } from '../ingestion/step'
+import { advanceModuleCursor, logStep, stepArgs } from '../ingestion/step'
+import type { ModuleStep, ObservationPair } from '../ingestion/step'
 import { selectPricing } from '../pricing'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 
-/** Page one endpoint's complete pricing observations, newest first through the completed clock. */
+/** Page one endpoint's complete pricing observations, newest first through its cursor. */
 export const list = query({
   args: {
     endpoint_id: v.string(),
@@ -20,7 +20,8 @@ export const list = query({
   },
   returns: pageResult(endpointPricesTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, args.cutoff)
+    const cutoff = await cappedCutoff(ctx, 'pricing', args.cutoff)
+
     if (cutoff === null) {
       return emptyPage()
     }
@@ -37,25 +38,26 @@ export const list = query({
   },
 })
 
-/** Write this phase's prices and advance the ingestion. */
-export const write = internalMutation({
+/** Processor transaction: commit prices and the Pricing cursor atomically. */
+export const commitStep = internalMutation({
   args: { ...stepArgs, rows: v.array(endpointPricesTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
+    logStep(args, { inserts: args.rows.length })
     for (const row of args.rows) {
       await ctx.db.insert(V4_ENDPOINT_PRICES_TABLE, row)
     }
-    return await completeStep(ctx, args)
+    return await advanceModuleCursor(ctx, args)
   },
 })
 
 export async function process(
   ctx: ActionCtx,
   pair: ObservationPair,
-  execution: Execution,
+  step: ModuleStep,
 ): Promise<void> {
   const rows = prepare(pair)
-  await ctx.runMutation(internal.v4.history.pricing.write, { ...execution, rows })
+  await ctx.runMutation(internal.v4.history.pricing.commitStep, { ...step, rows })
 }
 
 function prepare(pair: ObservationPair) {

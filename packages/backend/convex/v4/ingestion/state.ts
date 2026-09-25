@@ -1,80 +1,80 @@
-import { withoutSystemFields } from 'convex-helpers'
 import { ConvexError } from 'convex/values'
 
-import type { Id } from '../../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../../_generated/server'
-import { nextPair } from '../scan'
 import type { ScanPair } from '../scan'
 import { assertScanPair } from '../scan/time'
-import { currentScanAt } from './clock'
-import { V4_INGESTIONS_TABLE } from './table'
-import type { Ingestion, IngestionRow } from './table'
+import { catalogScanAt, findCursor } from './clock'
+import { V4_CURSORS_TABLE, V4_INGESTIONS_TABLE } from './table'
+import type { ModuleName } from './table'
 
-/** Claim ready work, or discover and claim the next pair in the same transaction. */
-export async function claimNext(ctx: MutationCtx): Promise<Ingestion | null> {
-  const unfinished = await findUnfinished(ctx)
-  let ingestion: Ingestion
-
-  if (unfinished === null) {
-    const pair = await nextPair(ctx, await currentScanAt(ctx))
-    if (pair === null) {
-      return null
-    }
-    ingestion = await createReadyIngestion(ctx, pair)
-  } else {
-    if (unfinished.status !== 'ready') {
-      return null
-    }
-    ingestion = { ...withoutSystemFields(unfinished), id: unfinished._id }
-  }
-
-  await ctx.db.patch(V4_INGESTIONS_TABLE, ingestion.id, { status: 'running' })
-  return { ...ingestion, status: 'running' }
-}
-
-/** Both explicit preparation and routine discovery occupy the same single slot. */
-export async function createReadyIngestion(ctx: MutationCtx, pair: ScanPair): Promise<Ingestion> {
-  assertScanPair(pair.from_scan_at, pair.scan_at)
-  const unfinished = await findUnfinished(ctx)
-  if (unfinished !== null) {
-    throw new ConvexError({
-      message: 'An unfinished ingestion already exists',
-      ingestionId: unfinished._id,
-      status: unfinished.status,
-    })
-  }
-
-  const clock = await currentScanAt(ctx)
-  if (clock !== null && pair.from_scan_at !== clock) {
-    throw new ConvexError('Ingestion must start at the completed clock')
-  }
-
-  const row: IngestionRow = { ...pair, phase: 'initial', status: 'ready', baseline: clock === null }
-  const id = await ctx.db.insert(V4_INGESTIONS_TABLE, row)
-  return { id, ...row }
-}
-
-/** An attempt that exits without the final commit failed; durable completion stays complete. */
-export async function finishAttempt(
+/** Declare the next pair; only the clock's successor, or the first pair of an empty stream. */
+export async function declarePair(
   ctx: MutationCtx,
-  id: Id<typeof V4_INGESTIONS_TABLE>,
-): Promise<null> {
-  const ingestion = await ctx.db.get(V4_INGESTIONS_TABLE, id)
-  if (ingestion?.status === 'running') {
-    await ctx.db.patch(V4_INGESTIONS_TABLE, id, { status: 'failed' })
+  pair: ScanPair,
+  { baseline }: { baseline: boolean },
+): Promise<void> {
+  assertScanPair(pair.from_scan_at, pair.scan_at)
+  const clock = await catalogScanAt(ctx)
+
+  if (baseline ? clock !== null : clock !== pair.from_scan_at) {
+    throw new ConvexError({ message: 'Pair does not follow the clock', clock, ...pair })
   }
-  return null
+
+  await ctx.db.insert(V4_INGESTIONS_TABLE, pair)
 }
 
-async function findUnfinished(ctx: QueryCtx) {
-  for (const status of ['ready', 'running', 'failed'] as const) {
-    const ingestion = await ctx.db
-      .query(V4_INGESTIONS_TABLE)
-      .withIndex('by_status_and_scan_at', (q) => q.eq('status', status))
-      .unique()
-    if (ingestion !== null) {
-      return ingestion
-    }
+/** Initialization writes are refused once the first pair is declared. */
+export async function assertUninitialized(ctx: QueryCtx): Promise<void> {
+  if ((await catalogScanAt(ctx)) !== null) {
+    throw new ConvexError('Catalog is already initialized')
   }
-  return null
+}
+
+/** Begin following the stream from its baseline. */
+export async function createModuleCursor(ctx: MutationCtx, module: ModuleName): Promise<void> {
+  if ((await findCursor(ctx, module)) !== null) {
+    throw new ConvexError({ message: 'Module already started', module })
+  }
+
+  await ctx.db.insert(V4_CURSORS_TABLE, { module, scan_at: null })
+}
+
+/** A module's next step toward the clock; a null `from_scan_at` needs only the `scan_at` scan. */
+export async function nextModuleStep(
+  ctx: QueryCtx,
+  module: ModuleName,
+  { latestOnly }: { latestOnly: boolean },
+) {
+  const cursor = await findCursor(ctx, module)
+
+  if (cursor === null) {
+    throw new ConvexError({ message: 'Module not started', module })
+  }
+
+  const clock = await catalogScanAt(ctx)
+
+  if (clock === null || cursor.scan_at === clock) {
+    return null
+  }
+
+  if (latestOnly) {
+    return { cursor: cursor.scan_at, from_scan_at: null, scan_at: clock }
+  }
+
+  const at = cursor.scan_at
+
+  const pair = await (at === null
+    ? ctx.db.query(V4_INGESTIONS_TABLE).withIndex('by_scan_at').first()
+    : ctx.db
+        .query(V4_INGESTIONS_TABLE)
+        .withIndex('by_from_scan_at', (q) => q.eq('from_scan_at', at))
+        .unique())
+
+  if (pair === null) {
+    throw new ConvexError({ message: 'Module cursor is not a declared scan', module, at })
+  }
+
+  return at === null
+    ? { cursor: null, from_scan_at: null, scan_at: pair.from_scan_at }
+    : { cursor: at, from_scan_at: pair.from_scan_at, scan_at: pair.scan_at }
 }

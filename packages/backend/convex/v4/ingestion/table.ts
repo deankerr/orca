@@ -2,29 +2,33 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import type { Id } from '../../_generated/dataModel'
-
-/** Convex table for admitted pairs, execution status and completed checkpoints. */
+/** Convex table for declared scan pairs; the latest row is the Catalog clock. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
+/** Convex table for each following module's progress through declared pairs. */
+export const V4_CURSORS_TABLE = 'v4_ingestion_cursors' as const
 
-/** One admitted real scan pair and its ingestion progress. */
+/** Modules that follow the Catalog through declared pairs. */
+export const moduleName = v.union(
+  v.literal('pricing'),
+  v.literal('listings'),
+  v.literal('current_stats'),
+  v.literal('stats'),
+)
+export type ModuleName = Infer<typeof moduleName>
+
+/** One declared scan pair, committed together with the Catalog writes it produced. */
 export const ingestionsTable = defineTable({
   from_scan_at: v.string(),
   scan_at: v.string(),
-  phase: v.string(),
-  status: v.union(
-    v.literal('ready'),
-    v.literal('running'),
-    v.literal('failed'),
-    v.literal('complete'),
-  ),
-  baseline: v.boolean(),
 })
-  .index('by_from_scan_at_and_scan_at', ['from_scan_at', 'scan_at'])
+  .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
-  .index('by_status_and_scan_at', ['status', 'scan_at'])
 
-/** A scan ingestion row, before Convex system fields. */
+/** A module's output reflects every declared pair through `scan_at`; null before its baseline. */
+export const cursorsTable = defineTable({
+  module: moduleName,
+  scan_at: v.union(v.null(), v.string()),
+}).index('by_module', ['module'])
+
+/** A declared pair, before Convex system fields. */
 export type IngestionRow = Infer<typeof ingestionsTable.validator>
-
-export type Ingestion = IngestionRow & { id: Id<typeof V4_INGESTIONS_TABLE> }

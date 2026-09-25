@@ -3,62 +3,46 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { internal } from '../../_generated/api'
-import { query, internalMutation } from '../../_generated/server'
-import type { ActionCtx } from '../../_generated/server'
-import { currentScanAt } from '../ingestion/clock'
-import { completeStep, stepArgs } from '../ingestion/step'
-import type { Execution, ObservationPair } from '../ingestion/step'
-import type { ExtractedScan } from '../scan'
-import { changedRows } from './changes'
+import { query } from '../../_generated/server'
+import type { MutationCtx } from '../../_generated/server'
+import { catalogScanAt } from '../ingestion/clock'
+import type { ExtractedScan, LoadedScanPair } from '../scan'
+import { changedRows, departedRows } from './changes'
 import { flag, strings, date, metadata } from './fields'
 import { projectEndpoints, projectModel } from './project'
 import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
+import type { CurrentEndpointRow } from './table'
 
 const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
-/** Commit endpoint updates and their checkpoint together. */
-export const write = internalMutation({
-  args: { ...stepArgs, rows: v.array(currentEndpointsTable.validator) },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    for (const row of args.rows) {
-      const existing = await ctx.db
-        .query(V4_CURRENT_ENDPOINTS_TABLE)
-        .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
-        .unique()
-      await (existing === null
-        ? ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, row)
-        : ctx.db.replace(V4_CURRENT_ENDPOINTS_TABLE, existing._id, row))
-    }
-    return await completeStep(ctx, args)
-  },
-})
+/** Insert or replace endpoint rows within the Catalog's mutation. */
+export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promise<void> {
+  for (const row of rows) {
+    const existing = await ctx.db
+      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
+      .unique()
 
-export async function process(
-  ctx: ActionCtx,
-  pair: ObservationPair,
-  execution: Execution,
-): Promise<void> {
-  const rows = prepare(pair)
-  await ctx.runMutation(internal.v4.catalog.endpoints.write, { ...execution, rows })
+    await (existing === null
+      ? ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, row)
+      : ctx.db.replace(V4_CURRENT_ENDPOINTS_TABLE, existing._id, row))
+  }
 }
 
-function prepare(pair: ObservationPair) {
+/** Departed endpoints keep the facts of the scan they were last seen in. */
+export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean }) {
   const project = (scan: ExtractedScan) =>
     projectEndpoints(
       scan,
       new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)])),
     )
-  const before = pair.previous === null ? null : project(pair.previous)
+
+  const before = project(pair.previous)
   const after = project(pair.next)
-  const rows = changedRows(before, after)
-  for (const [id, endpoint] of before ?? []) {
-    if (!after.has(id)) {
-      rows.push({ ...endpoint, scan_at: pair.next.scan_at, unlisted_at: pair.next.scan_at })
-    }
-  }
-  return rows
+  return [
+    ...changedRows(baseline ? null : before, after),
+    ...departedRows(before, after).map((row) => ({ ...row, unlisted_at: pair.next.scan_at })),
+  ]
 }
 
 // Keep V3's product meanings: malformed optional facts are unknown, not invented defaults.
@@ -72,6 +56,7 @@ const price = z
   .pipe(z.coerce.number<string>().positive())
   .optional()
   .catch(undefined)
+
 const EndpointPricing = z
   .object({
     meters: z.object({
@@ -180,17 +165,19 @@ export const grid = query({
   args: {},
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx) => {
-    const scanAt = await currentScanAt(ctx)
+    const scanAt = await catalogScanAt(ctx)
 
     if (scanAt === null) {
       return []
     }
 
     const cutoff = new Date(Date.parse(scanAt) - UNLISTED_WINDOW_MS).toISOString()
+
     const listed = await ctx.db
       .query(V4_CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.eq('unlisted_at', undefined))
       .collect()
+
     const unlisted = await ctx.db
       .query(V4_CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', cutoff))

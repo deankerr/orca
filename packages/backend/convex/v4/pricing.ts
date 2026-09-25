@@ -22,6 +22,7 @@ export const Pricing = z
 /** Select decimal meters and preserve complete overrides; discount is already reflected in rates. */
 export function selectPricing(value: Endpoint['pricing']) {
   const { discount, overrides, display_pricing: _display, ...source } = Pricing.parse(value)
+
   const meters = Object.fromEntries(
     Object.entries(source).filter(
       (entry): entry is [string, string] => typeof entry[1] === 'string',

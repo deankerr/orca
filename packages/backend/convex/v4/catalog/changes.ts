@@ -13,3 +13,19 @@ export function changedRows<T extends { scan_at: string }>(
       : []
   })
 }
+
+/** Rows observed in the previous scan and absent from the next. */
+export function departedRows<T>(previous: Map<string, T>, next: Map<string, T>): T[] {
+  return [...previous].flatMap(([id, row]) => (next.has(id) ? [] : [row]))
+}
+
+/** An empty Catalog takes all of the next scan, plus knowledge last seen in the previous one. */
+export function catalogRows<T extends { scan_at: string }>(
+  previous: Map<string, T>,
+  next: Map<string, T>,
+  { baseline }: { baseline: boolean },
+): T[] {
+  return baseline
+    ? [...next.values(), ...departedRows(previous, next)]
+    : changedRows(previous, next)
+}

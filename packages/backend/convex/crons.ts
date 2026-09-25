@@ -11,7 +11,7 @@ crons.cron('workflows/topApps', '15 0 * * *', internal.workflows.topApps.schedul
 crons.cron('scan/workflow', '40 * * * *', internal.scan.action.run, {})
 
 crons.cron('v3/ingest', '42 * * * *', internal.v3.ingest.scheduled, {})
-crons.cron('v4/ingest', '43 * * * *', internal.v4.ingestion.scheduled, {})
+crons.cron('v4/ingest', '43 * * * *', internal.v4.ingestion.routine.scheduleIfEnabled, {})
 crons.cron('changeEvents/ingest', '44 * * * *', internal.changeEvents.ingestion.scheduled, {})
 
 export default crons
