@@ -1,15 +1,15 @@
 import { withoutSystemFields } from 'convex-helpers'
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
-import { internalMutation, query } from '../../_generated/server'
-import type { ActionCtx } from '../../_generated/server'
-import { findCursor } from '../ingestion/clock'
-import { advanceModuleCursor, logStep, stepArgs } from '../ingestion/step'
-import type { ModuleStep, ObservationPair } from '../ingestion/step'
+import { internalAction, internalMutation, internalQuery, query } from '../../_generated/server'
+import { findCursor, ingestionScanAt } from '../ingestion/clock'
+import { V4_CURSORS_TABLE, V4_INGESTIONS_TABLE } from '../ingestion/table'
+import { loadEntities } from '../scan'
 import type { ExtractedScan } from '../scan'
+import { assertScanAt } from '../scan/time'
 import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './table'
 import type { CurrentStatsRow } from './table'
 
@@ -27,12 +27,28 @@ export const grid = query({
   },
 })
 
-/** Processor transaction: reconcile every row against the scan and advance the cursor atomically. */
-export const commitStep = internalMutation({
-  args: { ...stepArgs, rows: v.array(currentStatsTable.validator) },
+/** Publish a complete snapshot and its observation time, or ignore superseded/duplicate work. */
+export const publish = internalMutation({
+  args: { scan_at: v.string(), rows: v.array(currentStatsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    logStep(args, { incoming: args.rows.length })
+    console.log('[v4:current-stats] publish', { scan_at: args.scan_at, incoming: args.rows.length })
+    assertScanAt(args.scan_at)
+    const cursor = await findCursor(ctx, 'current_stats')
+
+    if (cursor !== null && cursor.scan_at !== null && cursor.scan_at >= args.scan_at) {
+      return null
+    }
+
+    const ingestion = await ctx.db
+      .query(V4_INGESTIONS_TABLE)
+      .withIndex('by_scan_at', (q) => q.eq('scan_at', args.scan_at))
+      .unique()
+
+    if (ingestion === null) {
+      throw new ConvexError('Stats observation has not been released')
+    }
+
     const stored = await ctx.db.query(V4_CURRENT_STATS_TABLE).collect()
     const existing = new Map(stored.map((row) => [row.endpoint_id, row]))
     const inserts = []
@@ -48,7 +64,8 @@ export const commitStep = internalMutation({
       }
     }
 
-    logStep(args, {
+    console.log('[v4:current-stats] reconcile', {
+      scan_at: args.scan_at,
       stored: stored.length,
       inserts: inserts.length,
       replaces: replaces.length,
@@ -63,18 +80,52 @@ export const commitStep = internalMutation({
     for (const stale of existing.values()) {
       await ctx.db.delete(V4_CURRENT_STATS_TABLE, stale._id)
     }
-    return await advanceModuleCursor(ctx, args)
+    await (cursor === null
+      ? ctx.db.insert(V4_CURSORS_TABLE, { module: 'current_stats', scan_at: args.scan_at })
+      : ctx.db.patch(V4_CURSORS_TABLE, cursor._id, { scan_at: args.scan_at }))
+    return null
   },
 })
 
-/** Depends only on the next scan, so catching up needs only the latest one. */
-export async function process(
-  ctx: ActionCtx,
-  pair: ObservationPair,
-  step: ModuleStep,
-): Promise<void> {
-  await ctx.runMutation(internal.v4.stats.current.commitStep, { ...step, rows: prepare(pair.next) })
-}
+/** Skip already-published observations before fetching; publish still guards concurrent attempts. */
+export const getRefreshScanAt = internalQuery({
+  args: {},
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx) => {
+    const scanAt = await ingestionScanAt(ctx)
+
+    if (scanAt === null) {
+      return null
+    }
+
+    const cursor = await findCursor(ctx, 'current_stats')
+    return cursor !== null && cursor.scan_at !== null && cursor.scan_at >= scanAt ? null : scanAt
+  },
+})
+
+/** Scheduled after release, or manual recovery: refresh only the newest unpublished observation. */
+export const refreshLatest = internalAction({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const scanAt: string | null = await ctx.runQuery(internal.v4.stats.current.getRefreshScanAt, {})
+
+    if (scanAt === null) {
+      return null
+    }
+
+    const rows = prepare(await loadEntities(ctx, scanAt))
+
+    console.log('[v4:current-stats] prepared', {
+      scan_at: scanAt,
+      rows: rows.length,
+      argumentLength: JSON.stringify(rows).length,
+    })
+
+    await ctx.runMutation(internal.v4.stats.current.publish, { scan_at: scanAt, rows })
+    return null
+  },
+})
 
 const reading = z.number().nonnegative().optional().catch(undefined)
 

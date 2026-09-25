@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { query } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
 import type { ExtractedScan, LoadedScanPair } from '../scan'
-import { catalogRows } from './changes'
+import { changedRows } from './changes'
 import { text, flag, strings, date, metadata } from './fields'
 import { projectModel } from './project'
 import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './table'
@@ -26,10 +26,10 @@ export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<
   }
 }
 
-export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean }) {
+export function prepare(pair: LoadedScanPair) {
   const project = (scan: ExtractedScan) =>
     new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)]))
-  return catalogRows(project(pair.previous), project(pair.next), { baseline })
+  return changedRows(project(pair.previous), project(pair.next))
 }
 
 /** Interpret the model facts consumed by overview products. */

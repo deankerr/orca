@@ -9,7 +9,7 @@ export function pageResult<T extends Validator<Value, 'required', string>>(item:
   return paginationResultValidator(item).extend({ as_of: v.union(v.null(), v.string()) })
 }
 
-/** No historical data is visible before the module completes its baseline. */
+/** Bootstrap output stays hidden until the first ingestion releases the stream. */
 export function emptyPage() {
   return { page: [], isDone: true, continueCursor: '', as_of: null }
 }
