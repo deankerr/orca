@@ -20,6 +20,29 @@ import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
 import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
 import {
+  V4_CURRENT_ENDPOINTS_TABLE,
+  V4_CURRENT_MODELS_TABLE,
+  V4_CURRENT_PROVIDERS_TABLE,
+  currentEndpointsTable,
+  currentModelsTable,
+  currentProvidersTable,
+} from './v4/catalog/table'
+import {
+  V4_ENDPOINT_LISTINGS_TABLE,
+  V4_ENDPOINT_PRICES_TABLE,
+  V4_ENDPOINT_STATS_TABLE,
+  endpointListingsTable,
+  endpointPricesTable,
+  endpointStatsTable,
+} from './v4/history/table'
+import {
+  V4_CURSORS_TABLE,
+  V4_INGESTIONS_TABLE,
+  cursorsTable,
+  ingestionsTable,
+} from './v4/ingestion/table'
+import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './v4/stats/table'
+import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
   V3_PROVIDERS_VIEW_TABLE,
@@ -64,6 +87,16 @@ export default defineSchema(
     [V3_ENDPOINTS_PRICING_SERIES_TABLE]: endpointsPricingTable,
     [V3_ENDPOINTS_STATS_SERIES_TABLE]: endpointsStatsTable,
     [V3_SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
+
+    [V4_INGESTIONS_TABLE]: ingestionsTable,
+    [V4_CURSORS_TABLE]: cursorsTable,
+    [V4_CURRENT_STATS_TABLE]: currentStatsTable,
+    [V4_ENDPOINT_PRICES_TABLE]: endpointPricesTable,
+    [V4_ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,
+    [V4_ENDPOINT_STATS_TABLE]: endpointStatsTable,
+    [V4_CURRENT_MODELS_TABLE]: currentModelsTable,
+    [V4_CURRENT_PROVIDERS_TABLE]: currentProvidersTable,
+    [V4_CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
   },
   {
     strictTableNameTypes: true,

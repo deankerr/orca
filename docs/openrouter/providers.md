@@ -1,7 +1,10 @@
 # Providers
 
-OpenRouter's provider fields flatten three distinct concepts. Their similar names obscure
-important differences.
+OpenRouter's provider fields expose overlapping organization, configuration and endpoint concepts.
+The distinctions below describe observations, not an authoritative upstream entity model.
+
+[ORCA's provider identity and endpoint-local field policy](../orca/provider-identity.md) settles how
+we use these observations. Labels and apparent upstream inconsistencies do not reopen that policy.
 
 🧭 Providers are a low priority for ORCA. The catalog scan captures what the API exposes; deeper
 provider enrichment is intentionally out of scope for now.
@@ -62,12 +65,15 @@ decomposition rule should be built on them.
 - 📊 Observed 2026-08-28 (186 distinct tags over 1,146 endpoints): 75 tags matched a record
   exactly; 111 had no record, of which roughly 99 were quantization suffixes and the rest
   region/speed tags such as `azure/global`, `mistral/eu`, and `openai/flex`.
-- ❓ ORCA has not decided whether to key its provider entity on the record slug or the
-  organization. Record slugs fragment hyperscalers across up to six rows; `name` collapses them
-  at the cost of hiding genuine per-record routing targets.
+- 🧭 ORCA keys provider entities by `provider_info.slug`; do not merge them by organization name
+  or infer a provider hierarchy from labels or tag suffixes.
 
 ## Endpoint-local provider metadata
 
-`provider_display_name`, `provider_model_id`, `provider_region`, and `provider_slug` are endpoint
-properties. `provider_model_id` is specifically the upstream provider's identifier for that
+`provider_display_name`, `provider_name`, `provider_model_id`, `provider_region`, and `provider_slug`
+are endpoint properties. `provider_info` is the related provider observation, not another endpoint
+property with the same ownership. `provider_model_id` is the upstream provider's identifier for that
 endpoint's model.
+
+- 🧭 Display an endpoint using its own `provider_display_name`, never a substituted
+  `provider_info.displayName` or normalized provider name. See the [settled policy](../orca/provider-identity.md).

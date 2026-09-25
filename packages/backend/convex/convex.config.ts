@@ -33,6 +33,8 @@ const app = defineApp({
     ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables scheduled scan ingestion into catalog views and historical series, independently of capture. */
     ORCA_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    /** Enables scheduled V4 ingestion independently of V3; manual backfill works while disabled. */
+    ORCA_V4_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables scheduled change-event ingestion and processing, independently of catalog-view ingestion. */
     ORCA_CES_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */

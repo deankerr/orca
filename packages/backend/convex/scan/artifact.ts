@@ -21,7 +21,7 @@ export function createScanArtifact(
   scan_at: string = new Date().toISOString(),
 ): ScanArtifact {
   return {
-    id: `scan.${scan_at}.jsonl`,
+    id: artifactName(scan_at),
     scan_at,
     entries: entries.map((entry) => ScanArtifactEntry.parse({ ...entry, scan_at })),
   }
@@ -65,9 +65,34 @@ function parseScanArtifact(id: string, text: string): ScanArtifact {
 }
 
 /** Return the first scan artifact ID ordered after `afterId`. */
-export async function nextScanArtifactId(ctx: ActionCtx, afterId: string): Promise<string | null> {
+export async function nextScanArtifactId(
+  ctx: Pick<ActionCtx, 'runQuery'>,
+  afterId: string,
+): Promise<string | null> {
   return await ctx.runQuery(internal.objects.locators.nextName, {
     path: SCAN_ARTIFACT_OBJECT_PATH,
     afterName: afterId,
   })
+}
+
+/** Object name of the artifact captured at a scan time. */
+export function artifactName(scanAt: string): string {
+  return `scan.${scanAt}.jsonl`
+}
+
+/** Discover the next capture time without loading artifact contents. */
+export async function nextScanAt(
+  ctx: Pick<ActionCtx, 'runQuery'>,
+  after: string | null,
+): Promise<string | null> {
+  const id = await nextScanArtifactId(ctx, after === null ? '' : artifactName(after))
+  if (id === null) {
+    return null
+  }
+
+  const scanAt = /^scan\.(?<scanAt>.+)\.jsonl$/.exec(id)?.groups?.scanAt
+  if (scanAt === undefined) {
+    throw new ConvexError({ message: 'Invalid scan artifact name', id })
+  }
+  return scanAt
 }

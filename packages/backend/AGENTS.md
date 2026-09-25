@@ -3,8 +3,12 @@
 - `shared/` runtime code used by both the convex backend and web app.
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
-- Top level files export the stable public interface, with implementation details concealed in modules.
-- Current development focus: migration to `convex/v3/`
+- "v3" modules: `changeEvents/`, `objects/`, `projections/`, `scan/`, `textFeed/`, `v3/`, `views/`
+- "v4" - in-progress rebuild of v3. Modules inside `v4/`, reuses `objects/`, `scan/`.
+- V4 architecture, conventions and operating commands live in `convex/v4/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
+- Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
+- Treat `convex/public_api/` as sealed until a late, explicitly developer-guided compatibility session; legacy field semantics must not shape the contemporary V4 model.
+- other module dirs are "legacy"
 
 ### Concepts
 
