@@ -66,7 +66,7 @@ models the endpoint-local fields separately from `provider_info`. Its omission o
 
 V3's projection reads an endpoint label from `provider_info.displayName`; this is a known source-field
 mistake, not precedent to preserve. V4 copies the endpoint-local label and stores only endpoint-owned
-metadata on Catalog endpoints; the corrections are recorded in [the core refinement stage](../v4/stages.md).
+metadata on Catalog endpoints; see [V4 module boundaries](../../packages/backend/convex/v4/README.md#module-boundaries).
 
 [OpenRouter provider observations](../openrouter/providers.md) supplies empirical background.
 Observed agreements between fields are not identity guarantees and do not override this policy.

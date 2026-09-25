@@ -25,7 +25,6 @@ const histories = { pricing, listings }
  * Overrides routine guarantees: declared pairs track replay progress while Catalog is
  * incomplete until the final sweep. Keep V4 serving and all other ingestion loops off.
  * History resumes via cursors; finalization deliberately restarts its sweep on failure.
- * Operating instructions and the full override live in docs/v4/backfill.md.
  */
 export const run = internalAction({
   args: {},
