@@ -40,3 +40,14 @@ _Avoid_: Provider ID, endpoint ID
 **Listing**:
 An endpoint's observed availability, associated model and provider, and provider tag at an observation time.
 Models and providers have listed endpoints rather than listing states of their own.
+
+**Ingestion**:
+An observation pair whose prerequisites have completed, making it available for downstream processing.
+
+**Pair processor**:
+Derives output from one ingestion's observation pair, independently of earlier or later ingestions.
+Catalog and current stats are not pair processors.
+
+**Processor work**:
+One pair processor's obligation for one ingestion. It remains outstanding until its output commits,
+even if later ingestions have completed for that processor.

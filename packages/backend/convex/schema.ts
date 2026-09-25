@@ -38,8 +38,10 @@ import {
 import {
   V4_CURSORS_TABLE,
   V4_INGESTIONS_TABLE,
+  V4_PROCESSOR_WORK_TABLE,
   cursorsTable,
   ingestionsTable,
+  processorWorkTable,
 } from './v4/ingestion/table'
 import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './v4/stats/table'
 import {
@@ -90,6 +92,7 @@ export default defineSchema(
 
     [V4_INGESTIONS_TABLE]: ingestionsTable,
     [V4_CURSORS_TABLE]: cursorsTable,
+    [V4_PROCESSOR_WORK_TABLE]: processorWorkTable,
     [V4_CURRENT_STATS_TABLE]: currentStatsTable,
     [V4_ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [V4_ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,

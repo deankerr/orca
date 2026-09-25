@@ -2,12 +2,13 @@ import { withoutSystemFields } from 'convex-helpers'
 import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
+import type { Id } from '../../_generated/dataModel'
 import { internalMutation, query } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
-import { advanceModuleCursor, logStep, stepArgs } from '../ingestion/step'
-import type { ModuleStep, ObservationPair } from '../ingestion/step'
-import type { Endpoint } from '../scan'
+import { V4_PROCESSOR_WORK_TABLE } from '../ingestion/table'
+import { assertOutputScan, completeWork, pendingWork } from '../ingestion/work'
+import type { Endpoint, ExtractedScan, LoadedScanPair } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 import type { EndpointListingRow } from './table'
@@ -20,7 +21,7 @@ export const list = query({
   },
   returns: pageResult(endpointListingsTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, 'listings', args.cutoff)
+    const cutoff = await cappedCutoff(ctx, args.cutoff)
 
     if (cutoff === null) {
       return emptyPage()
@@ -45,7 +46,7 @@ export const byModel = query({
   },
   returns: pageResult(endpointListingsTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, 'listings', args.cutoff)
+    const cutoff = await cappedCutoff(ctx, args.cutoff)
 
     if (cutoff === null) {
       return emptyPage()
@@ -62,32 +63,47 @@ export const byModel = query({
   },
 })
 
-/** Processor transaction: commit listing transitions and the Listings cursor atomically. */
+/** Commit this work item's listing transitions and completion together. */
 export const commitStep = internalMutation({
-  args: { ...stepArgs, rows: v.array(endpointListingsTable.validator) },
+  args: { work_id: v.id(V4_PROCESSOR_WORK_TABLE), rows: v.array(endpointListingsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    logStep(args, { inserts: args.rows.length })
+    console.log('[v4:listings] commit', { work_id: args.work_id, inserts: args.rows.length })
+    const work = await pendingWork(ctx, args.work_id, 'listings')
+
+    if (work === null) {
+      return null
+    }
+
+    assertOutputScan(args.rows, work.scan_at)
     for (const row of args.rows) {
       await ctx.db.insert(V4_ENDPOINT_LISTINGS_TABLE, row)
     }
-    return await advanceModuleCursor(ctx, args)
+    await completeWork(ctx, args.work_id)
+    return null
   },
 })
 
 export async function process(
   ctx: ActionCtx,
-  pair: ObservationPair,
-  step: ModuleStep,
+  pair: LoadedScanPair,
+  work_id: Id<typeof V4_PROCESSOR_WORK_TABLE>,
 ): Promise<void> {
   const rows = prepare(pair)
-  await ctx.runMutation(internal.v4.history.listings.commitStep, { ...step, rows })
+
+  console.log('[v4:listings] prepared', {
+    work_id,
+    inserts: rows.length,
+    argumentLength: JSON.stringify(rows).length,
+  })
+
+  await ctx.runMutation(internal.v4.history.listings.commitStep, { work_id, rows })
 }
 
-function prepare({ previous, next }: ObservationPair) {
+function prepare({ previous, next }: LoadedScanPair) {
   const rows: EndpointListingRow[] = []
   for (const endpoint of next.endpoints.values()) {
-    const before = previous?.endpoints.get(endpoint.id)
+    const before = previous.endpoints.get(endpoint.id)
 
     if (
       before === undefined ||
@@ -98,12 +114,19 @@ function prepare({ previous, next }: ObservationPair) {
       rows.push(listingRow(endpoint, next.scan_at, 'listed'))
     }
   }
-  for (const endpoint of previous?.endpoints.values() ?? []) {
+  for (const endpoint of previous.endpoints.values()) {
     if (!next.endpoints.has(endpoint.id)) {
       rows.push(listingRow(endpoint, next.scan_at, 'unlisted'))
     }
   }
   return rows
+}
+
+/** Initial availability is seeded once, not inferred by the routine pair processor. */
+export function initialRows(scan: ExtractedScan) {
+  return [...scan.endpoints.values()].map((endpoint) =>
+    listingRow(endpoint, scan.scan_at, 'listed'),
+  )
 }
 
 function listingRow(

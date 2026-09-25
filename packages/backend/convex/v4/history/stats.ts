@@ -3,16 +3,17 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
+import type { Id } from '../../_generated/dataModel'
 import { internalMutation, query } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
-import { advanceModuleCursor, logStep, stepArgs } from '../ingestion/step'
-import type { ModuleStep, ObservationPair } from '../ingestion/step'
-import type { ExtractedScan } from '../scan'
+import { V4_PROCESSOR_WORK_TABLE } from '../ingestion/table'
+import { assertOutputScan, completeWork, pendingWork } from '../ingestion/work'
+import type { ExtractedScan, LoadedScanPair } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
 
-/** Page one endpoint's supplied samples across tiers, newest first through its cursor. */
+/** Page committed samples across tiers; this processor remains unregistered. */
 export const list = query({
   args: {
     endpoint_id: v.string(),
@@ -20,7 +21,7 @@ export const list = query({
   },
   returns: pageResult(endpointStatsTable.validator),
   handler: async (ctx, args) => {
-    const cutoff = await cappedCutoff(ctx, 'stats', args.cutoff)
+    const cutoff = await cappedCutoff(ctx, args.cutoff)
 
     if (cutoff === null) {
       return emptyPage()
@@ -38,26 +39,41 @@ export const list = query({
   },
 })
 
-/** Processor transaction: commit supplied stats and the Stats-history cursor atomically. */
+/** Commit supplied stats and the work item's completion atomically. */
 export const commitStep = internalMutation({
-  args: { ...stepArgs, rows: v.array(endpointStatsTable.validator) },
+  args: { work_id: v.id(V4_PROCESSOR_WORK_TABLE), rows: v.array(endpointStatsTable.validator) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    logStep(args, { inserts: args.rows.length })
+    console.log('[v4:stats-history] commit', { work_id: args.work_id, inserts: args.rows.length })
+    const work = await pendingWork(ctx, args.work_id, 'stats')
+
+    if (work === null) {
+      return null
+    }
+
+    assertOutputScan(args.rows, work.scan_at)
     for (const row of args.rows) {
       await ctx.db.insert(V4_ENDPOINT_STATS_TABLE, row)
     }
-    return await advanceModuleCursor(ctx, args)
+    await completeWork(ctx, args.work_id)
+    return null
   },
 })
 
 export async function process(
   ctx: ActionCtx,
-  pair: ObservationPair,
-  step: ModuleStep,
+  pair: LoadedScanPair,
+  work_id: Id<typeof V4_PROCESSOR_WORK_TABLE>,
 ): Promise<void> {
   const rows = prepare(pair.next)
-  await ctx.runMutation(internal.v4.history.stats.commitStep, { ...step, rows })
+
+  console.log('[v4:stats-history] prepared', {
+    work_id,
+    inserts: rows.length,
+    argumentLength: JSON.stringify(rows).length,
+  })
+
+  await ctx.runMutation(internal.v4.history.stats.commitStep, { work_id, rows })
 }
 
 /** Retain every supplied observation, including repeated values. */

@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { query } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
-import { catalogScanAt } from '../ingestion/clock'
+import { ingestionScanAt } from '../ingestion/clock'
 import type { ExtractedScan, LoadedScanPair } from '../scan'
 import { changedRows, departedRows } from './changes'
 import { flag, strings, date, metadata } from './fields'
@@ -30,7 +30,7 @@ export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promi
 }
 
 /** Departed endpoints keep the facts of the scan they were last seen in. */
-export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean }) {
+export function prepare(pair: LoadedScanPair) {
   const project = (scan: ExtractedScan) =>
     projectEndpoints(
       scan,
@@ -40,7 +40,7 @@ export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean 
   const before = project(pair.previous)
   const after = project(pair.next)
   return [
-    ...changedRows(baseline ? null : before, after),
+    ...changedRows(before, after),
     ...departedRows(before, after).map((row) => ({ ...row, unlisted_at: pair.next.scan_at })),
   ]
 }
@@ -165,7 +165,7 @@ export const grid = query({
   args: {},
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx) => {
-    const scanAt = await catalogScanAt(ctx)
+    const scanAt = await ingestionScanAt(ctx)
 
     if (scanAt === null) {
       return []

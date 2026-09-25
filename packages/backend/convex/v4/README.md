@@ -1,87 +1,90 @@
 # V4
 
-Scan-derived, cumulative Catalog knowledge and endpoint History, composed by Ingestion.
+Scan-derived Catalog, independently processed endpoint History, and latest-only current stats.
 
-> **Temporary override — production backfill:** This guide describes routine operation.
-> [Backfill guarantees and completeness rules](backfill.md) override the usual Catalog and
-> progress guarantees until finalization. Remove this notice when the backfill is retired.
+## Responsibilities
 
-## Module boundaries
+| Component       | Responsibility                                                                                                                                                                         |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scan            | Resolve upstream structure and identities into shared observations. Reuse `../scan/` capture and `../objects/` storage. Scope to text input/output; discard endpoint `status`.         |
+| Catalog         | Cumulative entity knowledge: retain departed entities' last-known facts. Keep metadata with its owning entity and labels [endpoint-local](../../../../docs/orca/provider-identity.md). |
+| Ingestion       | Commit prerequisites (currently Catalog), release a pair, create processor work and schedule initial attempts atomically.                                                              |
+| Pair processors | Pricing and Listings derive output from that pair alone. Different pairs may run and finish out of order; Stats history stays dormant.                                                 |
+| Current stats   | Publish the latest scan's two default-tier readings and its cursor atomically. Older/duplicate publication is ignored.                                                                 |
 
-Modules own their interpretation and output; Ingestion owns ordering and progress. Independent
-cursors let modules be developed, started and caught up separately without blocking one another.
+## Commit and failure semantics
 
-| Module             | Responsibility                                                                                                                                                                                                                             |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `scan.ts`, `scan/` | Resolve upstream structure and identities into shared observations. Reuse capture and artifact storage from `../scan/` and `../objects/`. Current scope requires text input and output; endpoint `status` is dropped.                      |
-| `catalog/`         | Accumulate entity knowledge, retaining last-known facts for departed entities. Copy model facts onto endpoints for the grid; keep metadata with its owning entity and labels [endpoint-local](../../../../docs/orca/provider-identity.md). |
-| `history/`         | Preserve Pricing and Listings separately: prices carry within continuous availability; reappearance supplies a fresh quote. Stats history remains dormant and unregistered.                                                                |
-| `stats/`           | Reconcile the grid's two default-tier readings against every incoming scan. Missing, null or malformed readings mean absence, never an inherited value. Whole-table reads need no indexes.                                                 |
-| `ingestion/`       | Declare scan pairs, advance independent cursors and coordinate routine draining, initialization and catch-up. `registry.ts` selects processors and replay/latest policy.                                                                   |
+- A `v4_scan_ingestions` record means the pair is released. Catalog writes and the record commit
+  together; Catalog failure releases nothing. Duplicate pair commits do not write or schedule twice.
+- Each released pair creates one `v4_processor_work` row per registered processor. Its `pending` →
+  `complete` transition commits with the entire payload, including empty output. Concurrent attempts
+  cannot commit twice. There are no processing claims, leases or automatic processor retries.
+- Pending work remains outstanding even when later pairs complete. Routine ingestion schedules only
+  new work; manual recovery targets a work ID. Ingestion never waits for processor or stats results.
+- Processor dispatch shares one loaded pair across processors. The handoff is scheduled inside the
+  ingestion transaction, so it survives the orchestrating action stopping after commit.
+- Stats is not a pair processor or an ingestion prerequisite. Failure retains the previous snapshot;
+  the grid serves it even when its cursor trails ingestion. A successful snapshot removes absent,
+  null or malformed readings. Later observations supersede missed work; recovery loads only the latest.
+- History queries pin an upper observation cutoff, **not a completeness frontier**. Earlier pending
+  work can coexist with later committed rows; inspect work records for gaps. Bootstrap history stays
+  hidden until the first ingestion completes. Catalog/history/stats tearing is accepted.
+- `scan_at` dates the source observation, not an upstream change. Catalog has no revision history.
+  History uses endpoint UUIDs and period-correct context; `listings.byModel` discovers UUIDs, then
+  `listings.list` supplies their full timelines, including model moves and mutable provider tags.
+- Payloads fit one mutation per responsibility. Log counts before database work and in callers;
+  failed transactions leave both output and completion unchanged.
 
-## Progress and visibility
+## Fresh deployments
 
-- The latest declared pair defines the Catalog clock. Routine Catalog writes and pair declaration
-  commit atomically; Catalog failure prevents downstream processing of that pair.
-- Each routine action loads one pair once, then runs modules whose cursors match its starting scan.
-  Failed, behind or unstarted modules do not block Catalog or other modules. Draining self-schedules
-  while newer artifacts exist.
-- Each module commits output and its cursor atomically. Expected-cursor checks reject concurrent
-  duplicate commits. Failures are logged, without persisted running/failed markers or automatic recovery.
-- Pricing and Listings catch-up replay declared pairs; current stats jumps to the Catalog clock.
-  Catch-up runs one step per action and rejoins routine processing at the clock.
-- Recovery: fix the cause, then rerun `drainArtifacts` for Catalog or `catchUpModule` for a behind
-  module; invalidated committed output requires repair or replay.
-- `scan_at` is source observation time, not upstream change time. Catalog is cumulative but has no
-  revision history; departed entities retain their last-seen facts and timestamps.
-- History reads stop at their module cursor; multi-request loads pin one cutoff. Catalog and
-  modules may be observed at different progress points. Capture and event publication are independent.
-- Historical offerings use endpoint UUIDs and period-correct provider identity. Tags are mutable
-  and non-unique; Listings, not today's Catalog, determines historical model membership. Windows
-  need entering prices/listings, and pagination boundaries are not changes or gaps.
+With no ingestion records, the routine action calls the separate bootstrap path once two artifacts
+are available. It inserts the **first artifact only**, one table mutation at a time: models,
+providers, endpoints, initial prices and initial listings. Then normal ingestion processes the
+first real pair. There is no baseline flag in routine diffs, synthetic ingestion or bootstrap record.
+
+Bootstrap is deliberately non-resumable. Partial initialization, including failure before the first
+real ingestion commits, needs investigation/reset; repeated inserts into nonempty tables are refused.
 
 ## Operating entry points
 
-These are internal functions, runnable from the dashboard or CLI. From `packages/backend`, select
-the intended deployment explicitly:
+Run internal commands from `packages/backend`, selecting the deployment explicitly:
 
 ```sh
 bunx convex run --deployment dev <function-path> '<args>'
 ```
 
-| Function                                    | Trigger                                               | Args and effect                                                                                                     |
-| ------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `v4/ingestion/initialize:initializeCatalog` | Manual, once per deployment                           | `{}` — requires no declared pair and at least two artifacts; writes initial Catalog tables, then declares the pair. |
-| `v4/ingestion/modules:startModule`          | Manual, once per module                               | `{"module":"pricing"}` — creates a baseline cursor and schedules catch-up; rejects an existing cursor.              |
-| `v4/ingestion/modules:catchUpModule`        | Manual or scheduled by module startup/catch-up        | `{"module":"pricing"}` — advances an existing module cursor until it reaches Catalog.                               |
-| `v4/ingestion/routine:drainArtifacts`       | Manual or scheduled by the cron hook/drain            | `{}` — advances initialized Catalog and current modules until no newer artifacts remain.                            |
-| `v4/ingestion/routine:scheduleIfEnabled`    | Cron, hourly at minute 43 UTC; also manually callable | `{}` — schedules a drain only when `ORCA_V4_INGEST_ENABLED` is exactly `"true"`.                                    |
+| Function                                   | Trigger and arguments                                                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `v4/ingestion/routine:drainArtifacts`      | Manual or scheduled, `{}`. Automatically bootstrap if needed, then drain new pairs.                                                  |
+| `v4/ingestion/routine:scheduleIfEnabled`   | Cron at minute 43 UTC each hour, or manual, `{}`. Admit a drain only when `ORCA_V4_INGEST_ENABLED` is exactly `"true"`.              |
+| `v4/ingestion/processors:retryWork`        | Manual, `{"work_id":"…"}`. Schedule one attempt for pending work.                                                                    |
+| `v4/stats/current:refreshLatest`           | Scheduled after release or manual, `{}`. Publish the newest released scan's stats.                                                   |
+| `v4/ingestion/progress:getIngestionScanAt` | Read-only, `{}`. Latest completed ingestion time.                                                                                    |
+| `v4/ingestion/progress:listProcessorWork`  | Read-only, `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}`. Inspect work and obtain IDs. |
 
-- **Switch:** unset or any other value disables cron admission. Manual `drainArtifacts` bypasses
-  the switch; disabling it does not stop an already scheduled chain.
-- Initialization is deliberately non-routine and non-resumable: table writes commit separately,
-  without checkpoints. On failure rerun from the beginning; identity replacement permits repeats.
-  After success, start `pricing`, `listings` and `current_stats` independently.
-- Inspect with `v4/ingestion/progress:getCatalogScanAt` and
-  `v4/ingestion/progress:listModuleCursors`, both with `{}`. A missing module has not started;
-  a null cursor awaits its baseline.
-- `commitCatalogPair`, `writeInitial…`, `declareInitialPair` and module `commitStep` functions are
-  workflow transaction steps, not standalone commands. `getNextModuleStep` only selects work.
-- Mutations log intended operation counts before database work; callers also log counts and
-  serialized argument length because timeout logs can disappear.
+The env switch controls cron admission only; manual draining bypasses it and existing scheduled
+work continues. `commitIngestion`, processor `commitStep`, stats `publish` and bootstrap inserts
+are transaction steps, not standalone operator commands.
 
-## Conventions
+## Existing-deployment migration
 
-- Public function paths are consumer-facing names. Name manual commands by effect and target;
-  keep transaction steps beside their owning workflow. Tables use the temporary `v4_` prefix.
-- Scan resolves identities once; consumers use its types and validate their required facts.
-  Optional invalid facts may become unknown; repeated observations select a winner.
-- Observations and rules select writes, not existing database contents, except current stats'
-  whole-table reconciliation. Catalog reads identify insert/replace targets; History relies on
-  atomic cursor advancement rather than duplicate checks.
-- Typed fields capture deliberate dependencies; JSON text preserves extensible metadata.
-  Catalog sorts metadata string arrays to avoid order-only writes; pricing override order is retained.
-- Catalog and History share pricing selection and storage representation. Presentation owns units,
-  sampling and chart segmentation; the grid omits zero prices while History retains them.
-- Storage equality does not determine event significance. Artifacts retain evidence for later
-  interpretation; Events context retention and notification eligibility remain undesigned.
+Finish the old production backfill and stop its chain **before deploying this replacement**, which
+removes `v4/backfill.ts`. Keep routine admission disabled and old ingestion/catch-up loops stopped.
+After deployment, run `v4/ingestion/migrateWork:run` with `{}`. It walks ingestions in batches of 100,
+creating Pricing/Listings work records: complete through each frozen legacy cursor, pending after
+it. It never rewrites history or schedules processors, and rerunning preserves existing work.
+
+Confirm migration completion and inspect pending work before enabling routine admission. Legacy
+Pricing/Listings cursor rows are retained as migration evidence; only `current_stats` still advances
+in `v4_ingestion_cursors`. Fresh deployments do not need this migration.
+
+## Data conventions
+
+- Required facts are validated by their consumer; optional invalid facts may become unknown.
+- Observations select Catalog/history writes; database reads identify Catalog insert/replace targets
+  and enforce completion. Current stats deliberately reconciles every stored row.
+- Typed fields capture dependencies; JSON text preserves extensible metadata. Catalog sorts metadata
+  string arrays to suppress order-only writes; pricing override order is retained.
+- Pricing carries within continuous availability; reappearance supplies a fresh quote. Historical
+  windows need entering prices/listings. Presentation owns units and sampling; the grid omits zero
+  prices while History retains them. Storage equality does not determine event significance.

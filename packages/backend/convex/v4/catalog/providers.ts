@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { query } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
 import type { ExtractedScan, LoadedScanPair } from '../scan'
-import { catalogRows } from './changes'
+import { changedRows } from './changes'
 import { text, strings, metadata } from './fields'
 import { projectProvider } from './project'
 import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'
@@ -31,12 +31,12 @@ export async function write(ctx: MutationCtx, rows: CurrentProviderRow[]): Promi
   }
 }
 
-export function prepare(pair: LoadedScanPair, { baseline }: { baseline: boolean }) {
+export function prepare(pair: LoadedScanPair) {
   const project = (scan: ExtractedScan) =>
     new Map(
       [...scan.providers].map(([id, provider]) => [id, projectProvider(provider, scan.scan_at)]),
     )
-  return catalogRows(project(pair.previous), project(pair.next), { baseline })
+  return changedRows(project(pair.previous), project(pair.next))
 }
 
 /** Interpret provider-owned overview facts. */
