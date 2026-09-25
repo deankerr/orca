@@ -4,7 +4,7 @@ import type { Infer } from 'convex/values'
 
 /** Completed ingestions release their observation pairs to downstream processing. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
-/** Current-stats publication cursor and frozen legacy cursors used by the work migration. */
+/** Current-stats publication cursor; also accepts existing deployments' inactive processor rows. */
 export const V4_CURSORS_TABLE = 'v4_ingestion_cursors' as const
 
 /** Retained for compatibility with existing deployments; only current_stats still advances. */
@@ -24,7 +24,7 @@ export const ingestionsTable = defineTable({
   .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
 
-/** Legacy processor progress; current_stats uses this as its latest successfully published scan. */
+/** Only current_stats uses a cursor; pair processors track completion in processorWorkTable. */
 export const cursorsTable = defineTable({
   module: moduleName,
   scan_at: v.union(v.null(), v.string()),

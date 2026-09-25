@@ -55,28 +55,17 @@ bunx convex run --deployment dev <function-path> '<args>'
 
 | Function                                   | Trigger and arguments                                                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `v4/ingestion/routine:drainArtifacts`      | Manual or scheduled, `{}`. Automatically bootstrap if needed, then drain new pairs.                                                  |
-| `v4/ingestion/routine:scheduleIfEnabled`   | Cron at minute 43 UTC each hour, or manual, `{}`. Admit a drain only when `ORCA_V4_INGEST_ENABLED` is exactly `"true"`.              |
+| `v4/ingestion/routine:run`                 | Explicit/manual worker, `{}`. Automatically bootstrap if needed, then drain new pairs.                                               |
+| `v4/ingestion/routine:scheduled`           | Cron at minute 43 UTC each hour, `{}`. Schedule `run` only when `ORCA_V4_INGEST_CRON_ENABLED` is exactly `"true"`.                   |
 | `v4/ingestion/processors:retryWork`        | Manual, `{"work_id":"…"}`. Schedule one attempt for pending work.                                                                    |
 | `v4/stats/current:refreshLatest`           | Scheduled after release or manual, `{}`. Publish the newest released scan's stats.                                                   |
 | `v4/ingestion/progress:getIngestionScanAt` | Read-only, `{}`. Latest completed ingestion time.                                                                                    |
 | `v4/ingestion/progress:listProcessorWork`  | Read-only, `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}`. Inspect work and obtain IDs. |
 
-The env switch controls cron admission only; manual draining bypasses it and existing scheduled
-work continues. `commitIngestion`, processor `commitStep`, stats `publish` and bootstrap inserts
-are transaction steps, not standalone operator commands.
-
-## Existing-deployment migration
-
-Finish the old production backfill and stop its chain **before deploying this replacement**, which
-removes `v4/backfill.ts`. Keep routine admission disabled and old ingestion/catch-up loops stopped.
-After deployment, run `v4/ingestion/migrateWork:run` with `{}`. It walks ingestions in batches of 100,
-creating Pricing/Listings work records: complete through each frozen legacy cursor, pending after
-it. It never rewrites history or schedules processors, and rerunning preserves existing work.
-
-Confirm migration completion and inspect pending work before enabling routine admission. Legacy
-Pricing/Listings cursor rows are retained as migration evidence; only `current_stats` still advances
-in `v4_ingestion_cursors`. Fresh deployments do not need this migration.
+`scheduled` checks the cron flag even when called manually; direct calls to `run` bypass it.
+Disabling the flag stops new cron starts; existing scheduled work and continuation chains proceed.
+`commitIngestion`, processor `commitStep`, stats `publish` and bootstrap inserts are transaction
+steps, not standalone operator commands.
 
 ## Data conventions
 

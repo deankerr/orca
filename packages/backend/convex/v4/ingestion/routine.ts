@@ -14,7 +14,7 @@ import { activeProcessors } from './registry'
 import { ingestionsTable, V4_INGESTIONS_TABLE, V4_PROCESSOR_WORK_TABLE } from './table'
 
 /** Manual or scheduled: release one pair, without waiting for downstream processing. */
-export const drainArtifacts = internalAction({
+export const run = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
@@ -111,18 +111,18 @@ export const commitIngestion = internalMutation({
     })
 
     await ctx.scheduler.runAfter(0, internal.v4.stats.current.refreshLatest, {})
-    await ctx.scheduler.runAfter(0, internal.v4.ingestion.routine.drainArtifacts, {})
+    await ctx.scheduler.runAfter(0, internal.v4.ingestion.routine.run, {})
     return null
   },
 })
 
-/** The flag admits new drains; existing scheduled work and manual drains bypass it. */
-export const scheduleIfEnabled = internalMutation({
+/** Cron entry point: admit a run only when enabled; direct run calls bypass this gate. */
+export const scheduled = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    if (env.ORCA_V4_INGEST_ENABLED === 'true') {
-      await ctx.scheduler.runAfter(0, internal.v4.ingestion.routine.drainArtifacts, {})
+    if (env.ORCA_V4_INGEST_CRON_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.v4.ingestion.routine.run, {})
     }
 
     return null
