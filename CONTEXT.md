@@ -23,6 +23,11 @@ Once observed, a provider remains known even when it has no listed endpoints.
 A provider configuration offering a model, identified by an upstream UUID.
 An endpoint can become unlisted and later listed again under the same identity.
 
+**Endpoint stats**:
+The upstream-provided `stats` or tier-specific `statsByTier` values observed for an endpoint.
+Their contents are upstream-defined; consumers interpret the particular fields they use.
+_Avoid_: Readings, performance samples
+
 **Slug identity**:
 A name-based model or provider identity, distinct from an endpoint's UUID identity.
 A different slug does not by itself establish continuity with a previously known entity.
@@ -33,5 +38,5 @@ It is endpoint data, not an ORCA provider or endpoint identity.
 _Avoid_: Provider ID, endpoint ID
 
 **Listing**:
-An endpoint's observed availability and its associated model and provider at an observation time.
+An endpoint's observed availability, associated model and provider, and provider tag at an observation time.
 Models and providers have listed endpoints rather than listing states of their own.

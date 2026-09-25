@@ -20,11 +20,6 @@ export function assertScanAt(value: string): string {
   return value
 }
 
-/** Object name of the artifact captured at `scanAt`. */
-export function artifactName(scanAt: string): string {
-  return `scan.${assertScanAt(scanAt)}.jsonl`
-}
-
 /** Require a forward pair of canonical scan times. */
 export function assertScanPair(fromScanAt: string, scanAt: string): void {
   assertScanAt(fromScanAt)

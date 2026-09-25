@@ -1,53 +1,30 @@
 import { z } from 'zod'
 
-/** Required model facts; all remaining JSON survives for later interpretation. */
-export const SourceModel = z
+import { IdentifiedModel } from '../../scan/schema'
+
+/** Model body with the variant-aware identity supplied by its scan entry. */
+export const Model = IdentifiedModel.extend({ id: z.string(), variant: z.string() }).catchall(
+  z.json(),
+)
+
+/** Embedded provider body before assigning its neutral entity identity. */
+export const ProviderBody = z.object({ slug: z.string() }).catchall(z.json())
+
+/** Assembled provider identity, with the ambiguous upstream name removed. */
+export const Provider = z.object({ provider_id: z.string() }).catchall(z.json())
+
+/** Endpoint body with explicit relationships; all other source facts remain available to consumers. */
+export const Endpoint = z
   .object({
-    slug: z.string(),
-    permaslug: z.string(),
-    input_modalities: z.array(z.string()),
-    output_modalities: z.array(z.string()),
-    short_name: z.string(),
-    created_at: z.string(),
+    id: z.string(),
+    variant: z.string(),
+    model_id: z.string(),
+    provider_id: z.string(),
+    provider_tag: z.string(),
+    model_variant_slug: z.string(),
   })
   .catchall(z.json())
 
-/** Provider object selected from `provider_info`. */
-export const SourceProvider = z
-  .object({
-    slug: z.string(),
-    displayName: z.string(),
-  })
-  .catchall(z.json())
-
-/** Model observation, including scan-derived identity and variant absent from the source body. */
-export const StoredModel = z.object({
-  model_id: z.string(),
-  variant: z.string(),
-  model: SourceModel,
-})
-
-/** Source pricing object. Product pricing selection belongs to Projections. */
-export const SourcePricing = z
-  .object({
-    discount: z.number(),
-    overrides: z.array(z.record(z.string(), z.json())).optional(),
-  })
-  .catchall(z.json())
-
-/** Endpoint observation after Scan has removed related bodies and renamed its accessor. */
-export const EndpointValue = z
-  .object({
-    id: z.string().min(1),
-    variant: z.string().min(1),
-    provider_tag: z.string().min(1),
-    pricing: SourcePricing,
-  })
-  .catchall(z.json())
-
-export type EndpointValue = z.infer<typeof EndpointValue>
-
-export type SourceModel = z.infer<typeof SourceModel>
-export type SourceProvider = z.infer<typeof SourceProvider>
-export type StoredModel = z.infer<typeof StoredModel>
-export type SourcePricing = z.infer<typeof SourcePricing>
+export type Model = z.infer<typeof Model>
+export type Provider = z.infer<typeof Provider>
+export type Endpoint = z.infer<typeof Endpoint>

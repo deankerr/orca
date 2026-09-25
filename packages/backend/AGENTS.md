@@ -5,7 +5,8 @@
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
 - "v3" modules: `changeEvents/`, `objects/`, `projections/`, `scan/`, `textFeed/`, `v3/`, `views/`
 - "v4" - in-progress rebuild of v3, design docs: `../../docs/v4/`. modules inside `v4/`, reuses `objects/`, `scan/`
-- V4 scope and deferrals are governed by `../../docs/v4/stages.md`; the next stage refines the core data pipeline to product integration readiness.
+- V4 rationale and conventions live in `../../docs/v4/README.md` and `../../docs/v4/conventions.md`; `../../docs/v4/stages.md` owns remaining work and deferrals.
+- Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
 - Treat `convex/public_api/` as sealed until a late, explicitly developer-guided compatibility session; legacy field semantics must not shape the contemporary V4 model.
 - other module dirs are "legacy"
 

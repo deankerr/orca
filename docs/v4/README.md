@@ -1,35 +1,106 @@
-# V4 documentation
+# V4
 
-[Implementation stages](stages.md) owns the work checklist, readiness milestones and deliberate
-deferrals. Read it before expanding implementation scope. The next stage is core data refinement;
-Events is fully deferred and public API compatibility is sealed until a late developer-guided session.
+Purpose: replace V3's grid, overview, current stats and pricing-history backend.
 
-[V4 philosophy](v4.md) defines the model. Start a detailed review at a table below; its page keeps
-the schema, field meanings, indexes and operations together.
+[Conventions](conventions.md) · [Remaining work](stages.md) · [Glossary](../../CONTEXT.md)
 
-[Entity terminology](../../CONTEXT.md) defines identity, lasting entity knowledge and endpoint listing.
+## Module rationale
 
-## Modules and tables
+### Scan: isolate upstream structure
 
-| Module                            | Table or contract                                                                                                                                 | Responsibility                                      |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| [Scan](scan.md)                   | [Artifacts](scan.md#artifact-contract), [Extraction](scan.md#extraction)                                                                          | Capture evidence and extract scoped entities        |
-| [Ingestion](ingestion.md)         | [`ingestions`](ingestion.md#ingestions)                                                                                                           | Admission, progress and clock                       |
-| [Records](records.md)             | [`entityRecords`](records.md#entityrecords)                                                                                                       | Full-value MEP history and contextual reads         |
-| Prices                            | [`endpointPrices`](series.md#endpointprices)                                                                                                      | Retained prices and pricing-history reads           |
-| Listings                          | [`endpointListings`](series.md#endpointlistings)                                                                                                  | Availability intervals and historical relationships |
-| Readings                          | [`endpointReadings`](series.md#endpointreadings)                                                                                                  | Supplied performance samples and stats reads        |
-| [Catalog](catalog.md)             | [`currentModels`](catalog.md#currentmodels), [`currentProviders`](catalog.md#currentproviders), [`currentEndpoints`](catalog.md#currentendpoints) | Cumulative current/last-known entities and reads    |
-| [Change Events](change-events.md) | Deferred design and implementation                                                                                                                | Future interpretation and consumer publications     |
-| [Projections](projections.md)     | [Shared transforms](projections.md#transform-contracts)                                                                                           | Shared product lens, selection and comparison       |
+- Neutral observations spare consumers from decoding upstream nesting and overloaded identities.
+- Current product scope requires both text input and text output.
+- Durable artifacts retain broader evidence for later reinterpretation.
+- Capture and artifact storage remain shared infrastructure.
 
-[Deployment sync](deployment-sync.md) records options for moving useful state between deployments.
-See [Implementation conventions](implementation.md) for code placement, table naming and module composition.
+### Catalog: accumulate knowledge
 
-## Review conventions
+- Omission does not erase knowledge of an entity.
+- Unlisted endpoints retain last-known facts.
+- Rebuilding cumulative state requires historical replay or a coherent baseline.
+- Copied model facts on endpoints serve the grid.
+- Metadata remains with its owning entity.
+- Endpoint labels follow [endpoint-local ownership](../orca/provider-identity.md).
 
-- Unmarked statements record the agreed direction; schema blocks remain proposals for review.
-- **Implementation recommendation** labels a starting point to settle while writing code.
-- ❓ marks a genuine unresolved question or concern.
-- 🚧 marks a known intention deferred beyond the minimum implementation.
-- Each detailed rule lives with its owning table or operation; other pages link to that contract.
+### History: preserve distinct kinds of continuity
+
+- Pricing, Listings and Stats describe the same endpoint timeline.
+- Sparse Listings avoids repeating associations and tags across high-volume Stats.
+- Pricing carries forward within continuous availability.
+- Reappearance supplies a fresh quote, even when its value repeats.
+- Stats retains every supplied upstream observation.
+- Stats contents are upstream-defined.
+- Missing stats never inherit an earlier value.
+- Exact-scan reads avoid maintaining a separate current-stats copy.
+
+### Ingestion: coordinate recoverable progress
+
+- Data modules own interpretation; Ingestion owns execution order and progress.
+- Capture, materialization and event publication have independent completion meanings.
+- Stored artifacts are the backlog.
+
+## Representation decisions
+
+- JSON text preserves extensible metadata beyond Convex object-key restrictions.
+- Typed fields express the facts ORCA deliberately relies on.
+- Query interpretation follows V3's product meanings.
+- Invalid optional facts may become unknown.
+- Malformed required facts fail.
+- Presentation choices do not redefine retained facts.
+- The grid omits zero prices while historical pricing retains them.
+- Catalog sorts metadata string arrays to suppress order-only writes.
+- Pricing override order is preserved.
+- Storage equality does not determine event significance.
+
+## Ingestion assumptions
+
+### Deterministic selection
+
+- Supplied observations and rules determine output selection.
+- Existing database contents never select updates.
+- Catalog identity reads serve insertion or replacement.
+- History inserts omit duplicate checks.
+
+### Exclusive execution
+
+- Ingestion is not idempotent.
+- At most one ingestion may be unfinished.
+- Writes and their checkpoint commit in the same table mutation.
+- Resumption skips committed steps.
+- Final endpoint writes atomically complete ingestion and schedule continuation.
+- One pair per action allows backfills to span action lifetimes.
+- One mutation per table preserves V3's simple transaction model.
+- Transaction splitting requires demonstrated limits.
+
+### Manual recovery
+
+- Recover only after the previous execution has stopped.
+- Restore ready status without resetting the checkpoint.
+- Invalidated committed output requires repair or replay.
+- Unfinished work constrains changes to checkpoint names and derivation rules.
+- Automatic retries, leases, heartbeats and stuck-run recovery are deliberately absent.
+
+## Time and visibility
+
+- Observation time dates ORCA's knowledge, not necessarily an upstream change.
+- Catalog timestamps date the last row update.
+- Catalog becomes visible per table mutation, allowing temporarily mixed observation times.
+- History is visible only through the completed ingestion clock.
+- Multi-request historical loads pin one cutoff.
+- Completion does not make Catalog an arbitrary-time snapshot.
+
+## Historical identity
+
+- Provider tags are mutable and non-unique within a model.
+- Historical offerings retain endpoint UUIDs and period-correct provider identity.
+- A tag change can split an offering without producing a price change.
+- Historical model discovery uses Listings rather than today's Catalog.
+- A later listing under another model closes the earlier association.
+- Historical windows need entering prices and listings.
+- Pagination boundaries do not represent changes or gaps.
+
+## Evidence retained for later work
+
+- Current products do not require general entity revisions or persisted diffs.
+- Artifacts preserve evidence for delayed processing.
+- Future Events requirements will determine its context-retention design.

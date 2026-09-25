@@ -2,17 +2,17 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { pricing } from '../series/table'
+import { pricing } from '../pricing'
 
 // ⚠️ Cumulative entity knowledge: rows are inserted or overwritten, never deleted.
 // Models/providers remain known; endpoints become unlisted. These are not disposable caches.
 
 /** Convex table for the current model cache. */
-export const V4_CURRENT_MODELS_TABLE = 'v4_currentModels' as const
+export const V4_CURRENT_MODELS_TABLE = 'v4_models' as const
 /** Convex table for the current provider cache. */
-export const V4_CURRENT_PROVIDERS_TABLE = 'v4_currentProviders' as const
+export const V4_CURRENT_PROVIDERS_TABLE = 'v4_providers' as const
 /** Convex table for the current endpoint cache. */
-export const V4_CURRENT_ENDPOINTS_TABLE = 'v4_currentEndpoints' as const
+export const V4_CURRENT_ENDPOINTS_TABLE = 'v4_endpoints' as const
 
 /** Remaining projected facts as JSON text, independent of Convex object-key restrictions. */
 const metadata_json = v.string()
@@ -62,9 +62,9 @@ export const currentEndpointsTable = defineTable({
   .index('by_provider_id_and_model_id', ['provider_id', 'model_id'])
   .index('by_unlisted_at', ['unlisted_at'])
 
-/** Row stored in `v4_currentModels`, before Convex system fields. */
+/** A model row, before Convex system fields. */
 export type CurrentModelRow = Infer<typeof currentModelsTable.validator>
-/** Row stored in `v4_currentProviders`, before Convex system fields. */
+/** A provider row, before Convex system fields. */
 export type CurrentProviderRow = Infer<typeof currentProvidersTable.validator>
-/** Row stored in `v4_currentEndpoints`, before Convex system fields. */
+/** An endpoint row, before Convex system fields. */
 export type CurrentEndpointRow = Infer<typeof currentEndpointsTable.validator>

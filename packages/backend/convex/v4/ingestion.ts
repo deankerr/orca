@@ -1,81 +1,96 @@
-import { ConvexError, v } from 'convex/values'
+import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
-import { internalAction } from '../_generated/server'
+import { env, internalAction, internalMutation, query } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
-import { nextScanArtifactId } from '../scan/artifact'
-import { COMPLETE_PHASE, isBaselinePhase } from './ingestion/phases'
-import { consume } from './ingestion/step'
-import { prepareBaseline, prepareForward } from './projections/compare'
-import { loadArtifactEntities } from './scan'
-import { artifactName, assertScanPair } from './scan/time'
+import * as endpoints from './catalog/endpoints'
+import * as models from './catalog/models'
+import * as providers from './catalog/providers'
+import * as listings from './history/listings'
+import * as prices from './history/pricing'
+import * as stats from './history/stats'
+import { currentScanAt } from './ingestion/clock'
+import { remainingSteps } from './ingestion/plan'
+import * as state from './ingestion/state'
+import { ingestionsTable, V4_INGESTIONS_TABLE } from './ingestion/table'
+import type { Ingestion } from './ingestion/table'
+import { loadPair } from './scan'
 
-type Pair = { from_scan_at: string; scan_at: string }
-type Artifacts = { fromArtifactId: string; toArtifactId: string }
-
-/** Ingest one existing artifact pair, resuming unfinished work before discovering another pair. */
+/** Process one pair; its final commit schedules the next action until caught up or blocked. */
 export const run = internalAction({
-  args: { from_scan_at: v.optional(v.string()), scan_at: v.optional(v.string()) },
+  args: {},
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const artifacts = await selectPair(ctx, args)
-
-    if (artifacts === null) {
-      console.log('v4 ingest: no scan pair available')
-      return null
+  handler: async (ctx) => {
+    const ingestion = await ctx.runMutation(internal.v4.ingestion.claimNext, {})
+    if (ingestion !== null) {
+      await processIngestion(ctx, ingestion)
     }
-
-    const previous = await loadArtifactEntities(ctx, artifacts.fromArtifactId)
-    const next = await loadArtifactEntities(ctx, artifacts.toArtifactId)
-    const pair = { from_scan_at: previous.scan_at, scan_at: next.scan_at }
-    assertScanPair(pair.from_scan_at, pair.scan_at)
-    const forward = prepareForward(previous, next)
-    const ingestion = await ctx.runMutation(internal.v4.ingestion.log.admit, pair)
-
-    if (ingestion.phase === COMPLETE_PHASE) {
-      return null
-    }
-
-    if (isBaselinePhase(ingestion.phase)) {
-      ingestion.phase = await consume(ctx, ingestion, prepareBaseline(previous))
-    }
-
-    await consume(ctx, ingestion, forward)
-    console.log('v4 ingest complete', pair)
     return null
   },
 })
 
-async function selectPair(ctx: ActionCtx, requested: Partial<Pair>): Promise<Artifacts | null> {
-  if (requested.from_scan_at !== undefined || requested.scan_at !== undefined) {
-    if (requested.from_scan_at === undefined || requested.scan_at === undefined) {
-      throw new ConvexError('A scan pair needs both from_scan_at and scan_at')
-    }
-    assertScanPair(requested.from_scan_at, requested.scan_at)
-    return {
-      fromArtifactId: artifactName(requested.from_scan_at),
-      toArtifactId: artifactName(requested.scan_at),
-    }
-  }
-
-  const active = await ctx.runQuery(internal.v4.ingestion.log.active, {})
-  if (active !== null) {
-    return {
-      fromArtifactId: artifactName(active.from_scan_at),
-      toArtifactId: artifactName(active.scan_at),
-    }
-  }
-
-  const clock = await ctx.runQuery(internal.v4.ingestion.clock.current, {})
-  const fromId = clock === null ? await nextScanArtifactId(ctx, '') : artifactName(clock)
-  if (fromId === null) {
+/** Prepare a chosen initial/connected pair and start the ordinary drain. */
+export const start = internalMutation({
+  args: ingestionsTable.validator.pick('from_scan_at', 'scan_at').fields,
+  returns: v.null(),
+  handler: async (ctx, pair) => {
+    await state.createReadyIngestion(ctx, pair)
+    await ctx.scheduler.runAfter(0, internal.v4.ingestion.run, {})
     return null
-  }
+  },
+})
 
-  const toId = await nextScanArtifactId(ctx, fromId)
-  if (toId === null) {
+const steps = [
+  { name: 'stats', process: stats.process },
+  { name: 'prices', process: prices.process },
+  { name: 'listings', process: listings.process },
+  { name: 'models', process: models.process },
+  { name: 'providers', process: providers.process },
+  { name: 'endpoints', process: endpoints.process },
+]
+
+/** Opt-in hourly ingestion, independent of V3 and scan capture. Manual runs are always available. */
+export const scheduled = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    if (env.ORCA_V4_INGEST_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.v4.ingestion.run, {})
+    }
     return null
-  }
+  },
+})
 
-  return { fromArtifactId: fromId, toArtifactId: toId }
+async function processIngestion(ctx: ActionCtx, ingestion: Ingestion): Promise<void> {
+  try {
+    const observations = await loadPair(ctx, ingestion)
+    const plan = remainingSteps(steps, ingestion, observations)
+
+    for (const step of plan) {
+      await step.process(ctx, step.observations, step.execution)
+    }
+  } finally {
+    await ctx.runMutation(internal.v4.ingestion.finishAttempt, { id: ingestion.id })
+  }
 }
+
+/** Read the completed observation clock. */
+export const current = query({
+  args: {},
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx) => await currentScanAt(ctx),
+})
+
+/** Atomically claim ready work or discover and claim the next pair. */
+export const claimNext = internalMutation({
+  args: {},
+  returns: v.union(v.null(), ingestionsTable.validator.extend({ id: v.id(V4_INGESTIONS_TABLE) })),
+  handler: async (ctx): Promise<Ingestion | null> => await state.claimNext(ctx),
+})
+
+/** Preserve committed progress when an attempt exits. */
+export const finishAttempt = internalMutation({
+  args: { id: v.id(V4_INGESTIONS_TABLE) },
+  returns: v.null(),
+  handler: async (ctx, { id }) => await state.finishAttempt(ctx, id),
+})

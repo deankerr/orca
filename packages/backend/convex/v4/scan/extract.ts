@@ -1,183 +1,52 @@
-import { omit } from 'convex-helpers'
-import { ConvexError } from 'convex/values'
-import { isDeepEqual, isPlainObject } from 'remeda'
-
 import type { ScanArtifactEntry } from '../../scan/schema'
-import { EndpointValue, SourceProvider, StoredModel } from './entities'
+import { Endpoint, Model, ProviderBody } from './entities'
+import type { Provider } from './entities'
 
-type Sample = Record<string, number | string | null>
-
-/** One extracted model or provider value. */
-export type ExtractedEntity = {
-  entity_id: string
-  raw: unknown
-}
-
-/** One in-scope endpoint, with relationships required by record storage. */
-export type ExtractedEndpoint = ExtractedEntity & {
-  model_id: string
-  provider_id: string
-  raw: EndpointValue
-}
-
-/** Scoped extraction of one loaded artifact. Readings are exact samples, not carried state. */
+/** Neutral entity bodies, assembled from one text-scoped scan. */
 export type ExtractedScan = {
   scan_at: string
-  models: Map<string, ExtractedEntity>
-  providers: Map<string, ExtractedEntity>
-  endpoints: Map<string, ExtractedEndpoint>
-  readings: Array<{ endpoint_id: string; tier: string; sample: Sample }>
+  models: Map<string, Model>
+  providers: Map<string, Provider>
+  endpoints: Map<string, Endpoint>
 }
 
-/** Text input and text output are the shared product scope. Apply this before provider selection. */
-export function hasTextModalities(model: {
-  input_modalities: readonly string[]
-  output_modalities: readonly string[]
-}): boolean {
+/** Apply product scope before assembling providers from embedded observations. */
+export function hasTextModalities(model: ScanArtifactEntry['model']): boolean {
   return model.input_modalities.includes('text') && model.output_modalities.includes('text')
 }
 
-/**
- * Extract text-scoped entity values and supplied readings from a captured scan.
- * The last admitted provider occurrence wins. Endpoint-local fields stay on the endpoint.
- */
+/** Assemble entities by identity, preserving source facts for downstream consumers. */
 export function extractScan(scanAt: string, entries: readonly ScanArtifactEntry[]): ExtractedScan {
-  const models = new Map<string, ExtractedEntity>()
-  const providers = new Map<string, ExtractedEntity>()
-  const endpoints = new Map<string, ExtractedEndpoint>()
-  const readings: ExtractedScan['readings'] = []
+  const models: ExtractedScan['models'] = new Map()
+  const providers: ExtractedScan['providers'] = new Map()
+  const endpoints: ExtractedScan['endpoints'] = new Map()
 
   for (const entry of entries) {
-    if (!hasTextModalities(entry.model)) {
+    // Lyria music models report text input/output because they also return lyrics.
+    if (entry.model_id.startsWith('google/lyria') || !hasTextModalities(entry.model)) {
       continue
     }
 
-    const stored = StoredModel.parse({
-      model_id: entry.model_id,
-      variant: entry.variant,
-      model: entry.model,
-    })
-    const previous = models.get(entry.model_id)
-
-    if (previous !== undefined && !isDeepEqual(previous.raw, stored)) {
-      throw new ConvexError(`Scan repeats model ${entry.model_id} with conflicting values`)
-    }
-
-    models.set(entry.model_id, { entity_id: entry.model_id, raw: stored })
-
-    for (const rawEndpoint of entry.endpoints ?? []) {
-      const source = asRecord(rawEndpoint, 'endpoint')
-      const provider = SourceProvider.parse(source.provider_info)
-      const extracted = extractEndpoint(entry.model_id, provider.slug, source)
-      const existing = endpoints.get(extracted.entity_id)
-
-      if (existing !== undefined) {
-        throw new ConvexError(`Scan repeats endpoint ${extracted.entity_id}`)
-      }
-
-      endpoints.set(extracted.entity_id, extracted)
-      // Last text-eligible occurrence in encounter order selects the provider record.
-      providers.set(extracted.provider_id, {
-        entity_id: extracted.provider_id,
-        raw: provider,
-      })
-      readings.push(...extractReadings(extracted.entity_id, source))
-    }
-  }
-
-  return { scan_at: scanAt, models, providers, endpoints, readings }
-}
-
-function extractEndpoint(
-  modelId: string,
-  providerId: string,
-  endpoint: Record<string, unknown>,
-): ExtractedEndpoint {
-  const raw = EndpointValue.parse({
-    ...omit(endpoint, ['provider_info', 'model', 'provider_slug', 'stats', 'statsByTier']),
-    provider_tag: endpoint.provider_slug,
-  })
-  const rawModelId = endpoint.model_variant_slug
-
-  if (typeof rawModelId === 'string' && rawModelId !== modelId) {
-    throw new ConvexError(
-      `Endpoint ${raw.id} model ${rawModelId} does not match scan entry ${modelId}`,
+    models.set(
+      entry.model_id,
+      Model.parse({ ...entry.model, id: entry.model_id, variant: entry.variant }),
     )
-  }
 
-  return {
-    entity_id: raw.id,
-    model_id: modelId,
-    provider_id: providerId,
-    raw,
-  }
-}
-
-function extractReadings(
-  endpointId: string,
-  endpoint: Record<string, unknown>,
-): ExtractedScan['readings'] {
-  const samples = new Map<string, Sample>()
-
-  if (endpoint.stats !== undefined) {
-    samples.set('default', flatSample(endpoint.stats, endpointId, 'default'))
-  }
-
-  if (endpoint.statsByTier !== undefined) {
-    const tiers = asRecord(endpoint.statsByTier, `endpoint ${endpointId} statsByTier`)
-
-    for (const [tier, value] of Object.entries(tiers)) {
-      if (value === undefined) {
-        continue
-      }
-
-      const sample = flatSample(value, endpointId, tier)
-      const existing = samples.get(tier)
-
-      if (existing !== undefined && !isDeepEqual(existing, sample)) {
-        throw new ConvexError(`Endpoint ${endpointId} has conflicting ${tier} samples`)
-      }
-
-      samples.set(tier, sample)
-    }
-  }
-
-  return [...samples.entries()].map(([tier, sample]) => ({ endpoint_id: endpointId, tier, sample }))
-}
-
-function flatSample(value: unknown, endpointId: string, tier: string): Sample {
-  const record = asRecord(value, `endpoint ${endpointId} ${tier} sample`)
-  const sample: Sample = {}
-
-  for (const [key, nested] of Object.entries(record)) {
-    if (key === 'endpoint_id') {
-      continue
-    }
-
-    if (!isStorageKey(key) || !isSampleValue(nested)) {
-      throw new ConvexError(
-        `Endpoint ${endpointId} tier ${tier} has an unsupported sample field ${key}`,
+    for (const { provider_info, provider_slug, ...body } of entry.endpoints ?? []) {
+      const { slug: provider_id, ...provider } = ProviderBody.parse(provider_info)
+      providers.set(provider_id, { ...provider, provider_id })
+      endpoints.set(
+        body.id,
+        Endpoint.parse({
+          ...body,
+          variant: entry.variant,
+          model_id: entry.model_id,
+          provider_id,
+          provider_tag: provider_slug,
+        }),
       )
     }
-
-    sample[key] = nested
   }
 
-  return sample
-}
-
-function asRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isPlainObject(value)) {
-    throw new ConvexError(`${label} must be an object`)
-  }
-
-  return value
-}
-
-function isSampleValue(value: unknown): value is number | string | null {
-  return value === null || typeof value === 'number' || typeof value === 'string'
-}
-
-function isStorageKey(key: string): boolean {
-  return key.length > 0 && !key.startsWith('$') && !key.startsWith('_')
+  return { scan_at: scanAt, models, providers, endpoints }
 }

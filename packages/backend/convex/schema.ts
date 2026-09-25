@@ -27,16 +27,15 @@ import {
   currentModelsTable,
   currentProvidersTable,
 } from './v4/catalog/table'
-import { V4_INGESTIONS_TABLE, ingestionsTable } from './v4/ingestion/table'
-import { V4_ENTITY_RECORDS_TABLE, entityRecordsTable } from './v4/records/table'
 import {
   V4_ENDPOINT_LISTINGS_TABLE,
   V4_ENDPOINT_PRICES_TABLE,
-  V4_ENDPOINT_READINGS_TABLE,
+  V4_ENDPOINT_STATS_TABLE,
   endpointListingsTable,
   endpointPricesTable,
-  endpointReadingsTable,
-} from './v4/series/table'
+  endpointStatsTable,
+} from './v4/history/table'
+import { V4_INGESTIONS_TABLE, ingestionsTable } from './v4/ingestion/table'
 import {
   V3_ENDPOINTS_VIEW_TABLE,
   V3_MODELS_VIEW_TABLE,
@@ -84,10 +83,9 @@ export default defineSchema(
     [V3_SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
 
     [V4_INGESTIONS_TABLE]: ingestionsTable,
-    [V4_ENTITY_RECORDS_TABLE]: entityRecordsTable,
     [V4_ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [V4_ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,
-    [V4_ENDPOINT_READINGS_TABLE]: endpointReadingsTable,
+    [V4_ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [V4_CURRENT_MODELS_TABLE]: currentModelsTable,
     [V4_CURRENT_PROVIDERS_TABLE]: currentProvidersTable,
     [V4_CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
