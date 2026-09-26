@@ -11,6 +11,14 @@ Models, endpoints and providers: the three entity kinds observed by ORCA.
 The facts known about one entity at a scan time, including its identity and relationships.
 An observation dates ORCA's knowledge rather than the upstream change itself.
 
+**Baseline**:
+The observation at which a deployment's retained knowledge begins. Facts present in it were already
+true when observed; it does not establish when they first became true upstream.
+
+**Initialization**:
+Establishing initial knowledge from the baseline, before processing changes between observations.
+It is separate from routine pair processing and does not represent upstream creation events.
+
 **Model**:
 A model offering identified in ORCA by its model slug, including any variant suffix.
 Once observed, a model remains known even when it has no listed endpoints.

@@ -3,47 +3,12 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { query } from '../../_generated/server'
-import type { MutationCtx } from '../../_generated/server'
-import { ingestionScanAt } from '../ingestion/clock'
-import type { Scan, ScanPair } from '../scan'
-import { changedRows, departedRows } from './changes'
-import { flag, strings, date, metadata } from './fields'
-import { projectEndpoints, projectModel } from './project'
+import { query } from '../../../_generated/server'
+import { clock } from '../../clock'
+import { flag, strings, date, metadata } from '../fields'
 import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
-import type { CurrentEndpointRow } from './table'
 
 const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
-
-/** Insert or replace endpoint rows within the Catalog's mutation. */
-export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promise<void> {
-  for (const row of rows) {
-    const existing = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
-      .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
-      .unique()
-
-    await (existing === null
-      ? ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, row)
-      : ctx.db.replace(V4_CURRENT_ENDPOINTS_TABLE, existing._id, row))
-  }
-}
-
-/** Departed endpoints keep the facts of the scan they were last seen in. */
-export function prepare(pair: ScanPair) {
-  const project = (scan: Scan) =>
-    projectEndpoints(
-      scan,
-      new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)])),
-    )
-
-  const before = project(pair.previous)
-  const after = project(pair.next)
-  return [
-    ...changedRows(before, after),
-    ...departedRows(before, after).map((row) => ({ ...row, unlisted_at: pair.next.scan_at })),
-  ]
-}
 
 // Keep V3's product meanings: malformed optional facts are unknown, not invented defaults.
 const quantity = z.number().nonnegative().nullable().catch(null)
@@ -158,26 +123,24 @@ export const Endpoint = convexToZod(docValidator(V4_CURRENT_ENDPOINTS_TABLE, cur
   .transform(({ metadata_json: facts, ...identity }) => ({ ...identity, ...facts }))
 
 /**
- * Listed endpoints plus those unlisted within 30 days of the ORCA clock.
+ * Listed endpoints plus those unlisted within 30 days of the observation clock.
  * Older last-known rows stay stored and are absent from this window.
  */
 export const grid = query({
   args: {},
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx) => {
-    const scanAt = await ingestionScanAt(ctx)
-
-    if (scanAt === null) {
-      return []
-    }
-
-    const cutoff = new Date(Date.parse(scanAt) - UNLISTED_WINDOW_MS).toISOString()
-
     const listed = await ctx.db
       .query(V4_CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.eq('unlisted_at', undefined))
       .collect()
 
+    const scanAt = await clock(ctx)
+    // Before the clock starts, listed baseline rows need no time window.
+    if (scanAt === null) {
+      return listed.map((row) => Endpoint.parse(row))
+    }
+    const cutoff = new Date(Date.parse(scanAt) - UNLISTED_WINDOW_MS).toISOString()
     const unlisted = await ctx.db
       .query(V4_CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', cutoff))

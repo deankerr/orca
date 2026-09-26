@@ -1,107 +1,63 @@
 # V4
 
-Scan-derived Catalog, independently processed endpoint History, and latest-only current stats.
+Catalog retains cumulative entity knowledge; Pricing and Listings retain observation history;
+current Stats publishes the latest endpoint readings.
 
-## Responsibilities
+## Design invariants
 
-| Component       | Responsibility                                                                                                                                                                         |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scan            | Select and load validated captures as shared observations, independently of ingestion state. Scope to text input/output; discard endpoint `status`.                                    |
-| Catalog         | Cumulative entity knowledge: retain departed entities' last-known facts. Keep metadata with its owning entity and labels [endpoint-local](../../../../docs/orca/provider-identity.md). |
-| Ingestion       | Commit prerequisites (currently Catalog), release a pair, create processor work and schedule initial attempts atomically.                                                              |
-| Pair processors | Pricing and Listings derive output from that pair alone. Different pairs may run and finish out of order; Stats history stays dormant.                                                 |
-| Current stats   | Publish the latest scan's two default-tier readings and its cursor atomically. Older/duplicate publication is ignored.                                                                 |
+- Top-level composition selects inputs and makes fan-out, transaction grouping, failure handling
+  and continuation explicit. Modules own projection and persistence; composition imports their
+  phase files directly.
+- Load each pair once and share the observations across initialization, Catalog, History and Stats.
+  Pass prepared payloads across Convex mutation boundaries. [Objects](../objects/README.md) owns
+  source selection and compressed transfer.
+- Commit Models, Providers, Endpoints, the ingestion record and Pricing/Listings obligations in
+  one transaction. Acceptance advances the shared observation clock in `clock.ts`.
+- Commit each History payload and its work completion together, including empty output. Validate
+  both pair times against the obligation's ingestion. Completed work is idempotent.
+- Await Pricing, Listings and Stats independently after acceptance, then schedule continuation.
+  Failed History attempts remain pending for manual retry. An interrupted routine resumes from
+  the clock on the next cron/manual run.
+- Stats publishes its snapshot and cursor atomically. Newer publications supersede older attempts;
+  failure retains the previous snapshot, and recovery selects the latest ingested observation.
+- History query cutoffs bound observation time. Pending work can leave gaps below that cutoff.
+  Catalog, History and Stats may become visible at different times.
 
-## Commit and failure semantics
+## Observation semantics
 
-- A `v4_scan_ingestions` record means the pair is released. Catalog writes and the record commit
-  together; Catalog failure releases nothing. Duplicate pair commits do not write or schedule twice.
-- Each released pair creates one `v4_processor_work` row per registered processor. Its `pending` →
-  `complete` transition commits with the entire payload, including empty output. Concurrent attempts
-  cannot commit twice. There are no processing claims, leases or automatic processor retries.
-- Pending work remains outstanding even when later pairs complete. Routine ingestion schedules only
-  new work; manual recovery targets a work ID. Ingestion never waits for processor or stats results.
-- Processor dispatch shares one loaded pair across processors. The handoff is scheduled inside the
-  ingestion transaction, so it survives the orchestrating action stopping after commit.
-- Stats is not a pair processor or an ingestion prerequisite. Failure retains the previous snapshot;
-  the grid serves it even when its cursor trails ingestion. A successful snapshot removes absent,
-  null or malformed readings. Later observations supersede missed work; recovery loads only the latest.
-- History queries pin an upper observation cutoff, **not a completeness frontier**. Earlier pending
-  work can coexist with later committed rows; inspect work records for gaps. Bootstrap history stays
-  hidden until the first ingestion completes. Catalog/history/stats tearing is accepted.
-- `scan_at` dates the source observation, not an upstream change. Catalog has no revision history.
-  History uses endpoint UUIDs and period-correct context; `listings.byModel` discovers UUIDs, then
-  `listings.list` supplies their full timelines, including model moves and mutable provider tags.
-- Payloads fit one mutation per responsibility. Log counts before database work and in callers;
-  failed transactions leave both output and completion unchanged.
+- `scan_at` dates ORCA's observation. Baseline rows establish the first retained knowledge.
+- Catalog retains departed entities' last-known facts. The grid includes listed endpoints and
+  endpoints unlisted within 30 days of the shared clock. Listed baseline rows are immediately readable.
+- Keep model/provider metadata with its owning entity and
+  [provider labels endpoint-local](../../../../docs/orca/provider-identity.md).
+- Pricing carries through continuous availability; reappearance supplies a fresh quote. Historical
+  windows need entering prices and listings. The grid omits zero prices; History preserves them.
+- Scan scopes observations to text input/output and discards endpoint `status`. Consumers validate
+  required facts; malformed optional facts may become unknown.
+- Catalog canonicalizes metadata string-array order; pricing override order is preserved.
+- Stats history is dormant.
 
-## Fresh deployments
+## Initialization and recovery
 
-With no ingestion records, the routine action calls the separate bootstrap path once two artifacts
-are available. It inserts the **selected baseline only**, one table mutation at a time: models,
-providers, endpoints, initial prices and initial listings. Then normal ingestion processes the
-first real pair. There is no baseline flag in routine diffs, synthetic ingestion or bootstrap record.
+A fresh timeline initializes from the previous observation of its first selected pair, one table
+mutation at a time, then processes that pair. Partial initialization requires investigation/reset
+before restarting.
 
-Bootstrap is deliberately non-resumable. Partial initialization, including failure before the first
-real ingestion commits, needs investigation/reset; repeated inserts into nonempty tables are refused.
+`start_at` requires a fresh timeline and accepts an ISO date or timezone-qualified timestamp.
+The first capture at or after it becomes the baseline. Omit it to resume from the shared clock.
 
-## Scan interface
-
-- Import loading functions, observation types, entity validators and time assertions from `v4/scan.ts`.
-  Files in `v4/scan/` are implementation details; callers do not handle raw artifacts or extraction.
-- `loadNextPair(ctx, from)` returns the first capture at/after `from` and its immediate successor as
-  a `ScanPair` of `{ previous: Scan, next: Scan }`;
-  `null` selects the earliest baseline, and fewer than two captures returns `null` without loading.
-- `from` accepts an ISO date (UTC midnight) or a timestamp with a timezone, normalized to UTC.
-- `loadPair(ctx, times)` reloads two exact capture times (`ScanPairTimes`) for processor work;
-  `load(ctx, time)` returns one exact `Scan` for current stats. Missing or inconsistent captures fail.
-- Scan owns discovery, loading, source identity validation and interpretation; it has no ingestion-table dependency.
-- Ingestion supplies `clock ?? start_at ?? null`, then records the actual capture times returned.
-  Subsequent requests use the clock; commits enforce continuity with the previous ingestion.
-- Internally, `scan/artifacts.ts` handles stored captures and `scan/extract.ts` purely interprets their
-  entries into entity maps, keeping interpretation independent of I/O.
-- Object discovery and batched loading use the canonical [Objects interface](../objects/README.md);
-  source selection and compressed transport are encapsulated there. Parsing runs in the consumer.
-- A dev/preview `now - N` seed belongs to ingestion setup, outside the Scan interface.
-
-## Operating entry points
-
-Run internal commands from `packages/backend`, selecting the deployment explicitly:
+Run from `packages/backend`, selecting the deployment explicitly:
 
 ```sh
-bunx convex run --deployment dev <function-path> '<args>'
+bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 ```
 
-| Function                                   | Trigger and arguments                                                                                                                |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `v4/scan:selectPair`                       | Read-only action, `{"from":"2026-09-15T12:00:00Z"}` or `{"from":null}`. Inspect the selected pair without loading its contents.      |
-| `v4/ingestion/routine:run`                 | Manual worker, `{start_at?}`. Bootstrap if needed, then release consecutive pairs until caught up.                                   |
-| `v4/ingestion/routine:scheduled`           | Cron at minute 43 UTC each hour, `{}`. Schedule `run` only when `ORCA_V4_INGEST_CRON_ENABLED` is exactly `"true"`.                   |
-| `v4/ingestion/processors:retryWork`        | Manual, `{"work_id":"…"}`. Schedule one attempt for pending work.                                                                    |
-| `v4/stats/current:refreshLatest`           | Scheduled after release or manual, `{}`. Publish the newest released scan's stats.                                                   |
-| `v4/ingestion/progress:getIngestionScanAt` | Read-only, `{}`. Latest completed ingestion time.                                                                                    |
-| `v4/ingestion/progress:listProcessorWork`  | Read-only, `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}`. Inspect work and obtain IDs. |
+| Operation             | Function                                  | Arguments                                                                                   |
+| --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Resume ingestion      | `v4/routine:run`                          | `{}`                                                                                        |
+| Inspect pending work  | `v4/ingestion/progress:listProcessorWork` | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
+| Retry one obligation  | `v4/retry:pricing` / `v4/retry:listings`  | `{"work_id":"…"}`                                                                           |
+| Refresh current Stats | `v4/refreshStats:run`                     | `{}`                                                                                        |
 
-`scheduled` checks the cron flag even when called manually; direct calls to `run` bypass it.
-Disabling the flag stops new cron starts; existing scheduled work and continuation chains proceed.
-`start_at` requires a fresh timeline and selects the first capture at or after that time as the
-baseline; change processing starts with the following capture. Omit it to resume from the clock.
-
-```sh
-bunx convex run --deployment dev v4/ingestion/routine:run \
-  '{"start_at":"2026-09-20"}'
-```
-
-`commitIngestion`, processor `commitStep`, stats `publish` and bootstrap inserts are transaction
-steps, not standalone operator commands.
-
-## Data conventions
-
-- Required facts are validated by their consumer; optional invalid facts may become unknown.
-- Observations select Catalog/history writes; database reads identify Catalog insert/replace targets
-  and enforce completion. Current stats deliberately reconciles every stored row.
-- Typed fields capture dependencies; JSON text preserves extensible metadata. Catalog sorts metadata
-  string arrays to suppress order-only writes; pricing override order is retained.
-- Pricing carries within continuous availability; reappearance supplies a fresh quote. Historical
-  windows need entering prices/listings. Presentation owns units and sampling; the grid omits zero
-  prices while History retains them. Storage equality does not determine event significance.
+`ORCA_V4_INGEST_CRON_ENABLED=true` admits new hourly cron starts. Existing continuation chains
+and manual runs proceed independently of the flag.

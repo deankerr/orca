@@ -2,6 +2,8 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
+import { pairTimes } from '../scan/time'
+
 /** Completed ingestions release their observation pairs to downstream processing. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
 /** Current-stats publication cursor; also accepts existing deployments' inactive processor rows. */
@@ -17,10 +19,7 @@ export const moduleName = v.union(
 export type ModuleName = Infer<typeof moduleName>
 
 /** One completed ingestion, committed atomically with its prerequisites (currently Catalog). */
-export const ingestionsTable = defineTable({
-  from_scan_at: v.string(),
-  scan_at: v.string(),
-})
+export const ingestionsTable = defineTable(pairTimes)
   .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
 

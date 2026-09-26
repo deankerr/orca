@@ -1,16 +1,7 @@
 import { docValidator, paginationOptsValidator, paginationResultValidator } from 'convex/server'
-import { v } from 'convex/values'
 
 import { internalQuery } from '../../_generated/server'
-import { ingestionScanAt } from './clock'
 import { processorName, processorWorkTable, V4_PROCESSOR_WORK_TABLE, workState } from './table'
-
-/** Latest completed ingestion, or null before deployment bootstrap and the first pair. */
-export const getIngestionScanAt = internalQuery({
-  args: {},
-  returns: v.union(v.null(), v.string()),
-  handler: async (ctx) => await ingestionScanAt(ctx),
-})
 
 /** Inspect outstanding or completed work; later successes do not hide earlier failures. */
 export const listProcessorWork = internalQuery({

@@ -1,8 +1,10 @@
-import { ConvexError } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
+import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
 /** Exact capture identities, recorded by ingestion and reused for retries. */
-export type ScanPairTimes = { from_scan_at: string; scan_at: string }
+export const pairTimes = v.object({ from_scan_at: v.string(), scan_at: v.string() })
+export type ScanPairTimes = Infer<typeof pairTimes>
 
 /** Operator inputs accept ISO dates or timestamps with a timezone, normalized for indexed selection. */
 export const scanTimeInput = z

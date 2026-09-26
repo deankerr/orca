@@ -10,6 +10,8 @@ export type Scan = {
   endpoints: Map<string, Endpoint>
 }
 
+export type ScanPair = { previous: Scan; next: Scan }
+
 /** Apply product scope before assembling providers from embedded observations. */
 export function hasTextModalities(model: ScanArtifactEntry['model']): boolean {
   return model.input_modalities.includes('text') && model.output_modalities.includes('text')
