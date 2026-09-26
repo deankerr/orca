@@ -1,15 +1,14 @@
 /** Scan interface: discover and load validated captures as scoped entity observations. */
 import { v } from 'convex/values'
 
-import { internalAction } from '../_generated/server'
-import type { ActionCtx } from '../_generated/server'
-import type { ScanArtifact } from '../scan/artifact'
-import { findPair, loadArtifact, loadPair as loadArtifacts } from './scan/artifacts'
-import { extractScan } from './scan/extract'
-import type { Scan } from './scan/extract'
-import type { ScanPairTimes } from './scan/time'
-
-export type ScanPair = { previous: Scan; next: Scan }
+import { internalAction } from '../../_generated/server'
+import type { ActionCtx } from '../../_generated/server'
+import type { ScanArtifact } from '../../scan/artifact'
+import { findPair, loadArtifact, loadPair as loadArtifacts } from './artifacts'
+import { extractScan } from './extract'
+import type { Scan, ScanPair } from './extract'
+import { pairTimes } from './time'
+import type { ScanPairTimes } from './time'
 
 /** First capture at/after `from` and its successor; null means no complete pair yet. */
 export async function loadNextPair(
@@ -34,15 +33,10 @@ export async function load(ctx: ActionCtx, scanAt: string): Promise<Scan> {
 /** Read-only operator entry point; inspect selected capture times without loading their contents. */
 export const selectPair = internalAction({
   args: { from: v.union(v.string(), v.null()) },
-  returns: v.union(v.null(), v.object({ from_scan_at: v.string(), scan_at: v.string() })),
+  returns: v.union(v.null(), pairTimes),
   handler: async (ctx, { from }) => await findPair(ctx, from),
 })
 
 function extractArtifact(artifact: ScanArtifact): Scan {
   return extractScan(artifact.scan_at, artifact.entries)
 }
-
-export type { Scan } from './scan/extract'
-export type { ScanPairTimes } from './scan/time'
-export { Endpoint, Model, Provider } from './scan/entities'
-export { assertScanAt, assertScanPair } from './scan/time'

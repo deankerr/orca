@@ -1,10 +1,11 @@
 import { z } from 'zod'
 
 import { Pricing } from '../pricing'
-import { Endpoint, Model, Provider } from '../scan'
+import { Endpoint, Model, Provider } from '../scan/entities'
+import { date } from './fields'
 
 /** Facts required by the Catalog model projection. */
-export const CatalogModel = Model.extend({ short_name: z.string(), created_at: z.string() })
+export const CatalogModel = Model.extend({ short_name: z.string(), created_at: date })
 
 /** Facts required by the Catalog provider projection. */
 export const CatalogProvider = Provider.extend({ displayName: z.string() })

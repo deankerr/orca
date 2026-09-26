@@ -3,34 +3,9 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { query } from '../../_generated/server'
-import type { MutationCtx } from '../../_generated/server'
-import type { Scan, ScanPair } from '../scan'
-import { changedRows } from './changes'
-import { text, flag, strings, date, metadata } from './fields'
-import { projectModel } from './project'
+import { query } from '../../../_generated/server'
+import { text, flag, strings, date, metadata } from '../fields'
 import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './table'
-import type { CurrentModelRow } from './table'
-
-/** Insert or replace model rows within the Catalog's mutation. */
-export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<void> {
-  for (const row of rows) {
-    const existing = await ctx.db
-      .query(V4_CURRENT_MODELS_TABLE)
-      .withIndex('by_model_id', (q) => q.eq('model_id', row.model_id))
-      .unique()
-
-    await (existing === null
-      ? ctx.db.insert(V4_CURRENT_MODELS_TABLE, row)
-      : ctx.db.replace(V4_CURRENT_MODELS_TABLE, existing._id, row))
-  }
-}
-
-export function prepare(pair: ScanPair) {
-  const project = (scan: Scan) =>
-    new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)]))
-  return changedRows(project(pair.previous), project(pair.next))
-}
 
 /** Interpret the model facts consumed by overview products. */
 export const Model = convexToZod(docValidator(V4_CURRENT_MODELS_TABLE, currentModelsTable))

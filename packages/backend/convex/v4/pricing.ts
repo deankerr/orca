@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { canonicalJson } from './json'
-import type { Endpoint } from './scan'
+import type { Endpoint } from './scan/entities'
 
 /** Selected pricing shared by Catalog and historical storage. */
 export const pricing = v.object({
