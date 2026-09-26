@@ -6,6 +6,10 @@ const app = defineApp({
   env: {
     /** Storage for newly written artifacts; defaults to Convex. Existing objects retain their stored backend. */
     ORCA_OBJECTS_BACKEND: v.optional(v.union(v.literal('convex'), v.literal('r2'))),
+    /** Canonical object reads use this deployment name; absent/empty reads locally. Writes remain local. */
+    ORCA_OBJECTS_SOURCE_DEPLOYMENT: v.optional(v.string()),
+    /** Shared API key for object-source discovery and compressed batch reads, on source and consumer. */
+    ORCA_OBJECTS_API_KEY: v.optional(v.string()),
     /** R2 access key used to sign object requests; required whenever accessing R2-backed artifacts. */
     ORCA_R2_ACCESS_KEY_ID: v.optional(v.string()),
     /** Secret paired with the R2 access key; required whenever accessing R2-backed artifacts. */

@@ -1,5 +1,5 @@
 import type { QueryCtx } from '../../_generated/server'
-import { assertScanAt } from '../scan/time'
+import { assertScanAt } from '../scan'
 import { V4_CURSORS_TABLE, V4_INGESTIONS_TABLE } from './table'
 import type { ModuleName } from './table'
 

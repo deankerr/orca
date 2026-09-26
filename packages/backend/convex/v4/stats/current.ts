@@ -7,9 +7,8 @@ import { internal } from '../../_generated/api'
 import { internalAction, internalMutation, internalQuery, query } from '../../_generated/server'
 import { findCursor, ingestionScanAt } from '../ingestion/clock'
 import { V4_CURSORS_TABLE, V4_INGESTIONS_TABLE } from '../ingestion/table'
-import { loadEntities } from '../scan'
-import type { ExtractedScan } from '../scan'
-import { assertScanAt } from '../scan/time'
+import { assertScanAt, load } from '../scan'
+import type { Scan } from '../scan'
 import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './table'
 import type { CurrentStatsRow } from './table'
 
@@ -114,7 +113,7 @@ export const refreshLatest = internalAction({
       return null
     }
 
-    const rows = prepare(await loadEntities(ctx, scanAt))
+    const rows = prepare(await load(ctx, scanAt))
 
     console.log('[v4:current-stats] prepared', {
       scan_at: scanAt,
@@ -140,7 +139,7 @@ const SuppliedStats = z.object({
 })
 
 /** Null, malformed and missing readings are all "no reading". */
-function prepare(scan: ExtractedScan): CurrentStatsRow[] {
+function prepare(scan: Scan): CurrentStatsRow[] {
   return [...scan.endpoints.values()].flatMap((endpoint) => {
     const { stats, statsByTier } = SuppliedStats.parse(endpoint)
     const { p50_throughput, p50_latency } = statsByTier?.default ?? stats ?? {}

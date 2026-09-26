@@ -6,7 +6,7 @@ Scan-derived Catalog, independently processed endpoint History, and latest-only 
 
 | Component       | Responsibility                                                                                                                                                                         |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scan            | Resolve upstream structure and identities into shared observations. Reuse `../scan/` capture and `../objects/` storage. Scope to text input/output; discard endpoint `status`.         |
+| Scan            | Select and load validated captures as shared observations, independently of ingestion state. Scope to text input/output; discard endpoint `status`.                                    |
 | Catalog         | Cumulative entity knowledge: retain departed entities' last-known facts. Keep metadata with its owning entity and labels [endpoint-local](../../../../docs/orca/provider-identity.md). |
 | Ingestion       | Commit prerequisites (currently Catalog), release a pair, create processor work and schedule initial attempts atomically.                                                              |
 | Pair processors | Pricing and Listings derive output from that pair alone. Different pairs may run and finish out of order; Stats history stays dormant.                                                 |
@@ -38,12 +38,31 @@ Scan-derived Catalog, independently processed endpoint History, and latest-only 
 ## Fresh deployments
 
 With no ingestion records, the routine action calls the separate bootstrap path once two artifacts
-are available. It inserts the **first artifact only**, one table mutation at a time: models,
+are available. It inserts the **selected baseline only**, one table mutation at a time: models,
 providers, endpoints, initial prices and initial listings. Then normal ingestion processes the
 first real pair. There is no baseline flag in routine diffs, synthetic ingestion or bootstrap record.
 
 Bootstrap is deliberately non-resumable. Partial initialization, including failure before the first
 real ingestion commits, needs investigation/reset; repeated inserts into nonempty tables are refused.
+
+## Scan interface
+
+- Import loading functions, observation types, entity validators and time assertions from `v4/scan.ts`.
+  Files in `v4/scan/` are implementation details; callers do not handle raw artifacts or extraction.
+- `loadNextPair(ctx, from)` returns the first capture at/after `from` and its immediate successor as
+  a `ScanPair` of `{ previous: Scan, next: Scan }`;
+  `null` selects the earliest baseline, and fewer than two captures returns `null` without loading.
+- `from` accepts an ISO date (UTC midnight) or a timestamp with a timezone, normalized to UTC.
+- `loadPair(ctx, times)` reloads two exact capture times (`ScanPairTimes`) for processor work;
+  `load(ctx, time)` returns one exact `Scan` for current stats. Missing or inconsistent captures fail.
+- Scan owns discovery, loading, source identity validation and interpretation; it has no ingestion-table dependency.
+- Ingestion supplies `clock ?? start_at ?? null`, then records the actual capture times returned.
+  Subsequent requests use the clock; commits enforce continuity with the previous ingestion.
+- Internally, `scan/artifacts.ts` handles stored captures and `scan/extract.ts` purely interprets their
+  entries into entity maps, keeping interpretation independent of I/O.
+- Object discovery and batched loading use the canonical [Objects interface](../objects/README.md);
+  source selection and compressed transport are encapsulated there. Parsing runs in the consumer.
+- A dev/preview `now - N` seed belongs to ingestion setup, outside the Scan interface.
 
 ## Operating entry points
 
@@ -55,7 +74,8 @@ bunx convex run --deployment dev <function-path> '<args>'
 
 | Function                                   | Trigger and arguments                                                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `v4/ingestion/routine:run`                 | Explicit/manual worker, `{}`. Automatically bootstrap if needed, then drain new pairs.                                               |
+| `v4/scan:selectPair`                       | Read-only action, `{"from":"2026-09-15T12:00:00Z"}` or `{"from":null}`. Inspect the selected pair without loading its contents.      |
+| `v4/ingestion/routine:run`                 | Manual worker, `{start_at?}`. Bootstrap if needed, then release consecutive pairs until caught up.                                   |
 | `v4/ingestion/routine:scheduled`           | Cron at minute 43 UTC each hour, `{}`. Schedule `run` only when `ORCA_V4_INGEST_CRON_ENABLED` is exactly `"true"`.                   |
 | `v4/ingestion/processors:retryWork`        | Manual, `{"work_id":"…"}`. Schedule one attempt for pending work.                                                                    |
 | `v4/stats/current:refreshLatest`           | Scheduled after release or manual, `{}`. Publish the newest released scan's stats.                                                   |
@@ -64,6 +84,14 @@ bunx convex run --deployment dev <function-path> '<args>'
 
 `scheduled` checks the cron flag even when called manually; direct calls to `run` bypass it.
 Disabling the flag stops new cron starts; existing scheduled work and continuation chains proceed.
+`start_at` requires a fresh timeline and selects the first capture at or after that time as the
+baseline; change processing starts with the following capture. Omit it to resume from the clock.
+
+```sh
+bunx convex run --deployment dev v4/ingestion/routine:run \
+  '{"start_at":"2026-09-20"}'
+```
+
 `commitIngestion`, processor `commitStep`, stats `publish` and bootstrap inserts are transaction
 steps, not standalone operator commands.
 

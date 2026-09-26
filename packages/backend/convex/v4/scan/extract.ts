@@ -3,7 +3,7 @@ import { Endpoint, Model, ProviderBody } from './entities'
 import type { Provider } from './entities'
 
 /** Neutral entity bodies, assembled from one text-scoped scan. */
-export type ExtractedScan = {
+export type Scan = {
   scan_at: string
   models: Map<string, Model>
   providers: Map<string, Provider>
@@ -16,10 +16,10 @@ export function hasTextModalities(model: ScanArtifactEntry['model']): boolean {
 }
 
 /** Assemble entities by identity, preserving source facts for downstream consumers. */
-export function extractScan(scanAt: string, entries: readonly ScanArtifactEntry[]): ExtractedScan {
-  const models: ExtractedScan['models'] = new Map()
-  const providers: ExtractedScan['providers'] = new Map()
-  const endpoints: ExtractedScan['endpoints'] = new Map()
+export function extractScan(scanAt: string, entries: readonly ScanArtifactEntry[]): Scan {
+  const models: Scan['models'] = new Map()
+  const providers: Scan['providers'] = new Map()
+  const endpoints: Scan['endpoints'] = new Map()
 
   for (const entry of entries) {
     // Lyria music models report text input/output because they also return lyrics.

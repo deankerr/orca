@@ -1,4 +1,13 @@
 import { ConvexError } from 'convex/values'
+import { z } from 'zod'
+
+/** Exact capture identities, recorded by ingestion and reused for retries. */
+export type ScanPairTimes = { from_scan_at: string; scan_at: string }
+
+/** Operator inputs accept ISO dates or timestamps with a timezone, normalized for indexed selection. */
+export const scanTimeInput = z
+  .union([z.iso.date(), z.iso.datetime({ offset: true })])
+  .transform((value) => new Date(value).toISOString())
 
 /**
  * Canonical capture time produced by `Date.toISOString()`.

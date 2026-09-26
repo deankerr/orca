@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { query } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
 import { ingestionScanAt } from '../ingestion/clock'
-import type { ExtractedScan, LoadedScanPair } from '../scan'
+import type { Scan, ScanPair } from '../scan'
 import { changedRows, departedRows } from './changes'
 import { flag, strings, date, metadata } from './fields'
 import { projectEndpoints, projectModel } from './project'
@@ -30,8 +30,8 @@ export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promi
 }
 
 /** Departed endpoints keep the facts of the scan they were last seen in. */
-export function prepare(pair: LoadedScanPair) {
-  const project = (scan: ExtractedScan) =>
+export function prepare(pair: ScanPair) {
+  const project = (scan: Scan) =>
     projectEndpoints(
       scan,
       new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)])),
