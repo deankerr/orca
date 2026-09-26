@@ -124,7 +124,6 @@ import type * as v4_history_stats from "../v4/history/stats.js";
 import type * as v4_history_table from "../v4/history/table.js";
 import type * as v4_ingestion_bootstrap from "../v4/ingestion/bootstrap.js";
 import type * as v4_ingestion_clock from "../v4/ingestion/clock.js";
-import type * as v4_ingestion_migrateWork from "../v4/ingestion/migrateWork.js";
 import type * as v4_ingestion_processors from "../v4/ingestion/processors.js";
 import type * as v4_ingestion_progress from "../v4/ingestion/progress.js";
 import type * as v4_ingestion_registry from "../v4/ingestion/registry.js";
@@ -275,7 +274,6 @@ declare const fullApi: ApiFromModules<{
   "v4/history/table": typeof v4_history_table;
   "v4/ingestion/bootstrap": typeof v4_ingestion_bootstrap;
   "v4/ingestion/clock": typeof v4_ingestion_clock;
-  "v4/ingestion/migrateWork": typeof v4_ingestion_migrateWork;
   "v4/ingestion/processors": typeof v4_ingestion_processors;
   "v4/ingestion/progress": typeof v4_ingestion_progress;
   "v4/ingestion/registry": typeof v4_ingestion_registry;

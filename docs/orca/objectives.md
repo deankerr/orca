@@ -1,12 +1,9 @@
 # Objectives
 
-First:
-
-- [ ] Deploy and backfill V4 without product integration.
-
 Remaining objectives, unordered:
 
 - [ ] Integrate Grid and Pricing History with V4.
+- [ ] Add Deployment Data Sync for dev and preview environments.
 - [ ] Develop the Events foundation.
   - [ ] Text/JSON feeds
   - [ ] Alerts in Grid
