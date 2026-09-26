@@ -6,28 +6,11 @@ import { pairTimes } from '../scan/time'
 
 /** Completed ingestions release their observation pairs to downstream processing. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
-/** Current-stats publication cursor; also accepts existing deployments' inactive processor rows. */
-export const V4_CURSORS_TABLE = 'v4_ingestion_cursors' as const
-
-/** Retained for compatibility with existing deployments; only current_stats still advances. */
-export const moduleName = v.union(
-  v.literal('pricing'),
-  v.literal('listings'),
-  v.literal('current_stats'),
-  v.literal('stats'),
-)
-export type ModuleName = Infer<typeof moduleName>
 
 /** One completed ingestion, committed atomically with its prerequisites (currently Catalog). */
 export const ingestionsTable = defineTable(pairTimes)
   .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
-
-/** Only current_stats uses a cursor; pair processors track completion in processorWorkTable. */
-export const cursorsTable = defineTable({
-  module: moduleName,
-  scan_at: v.union(v.null(), v.string()),
-}).index('by_module', ['module'])
 
 /** A declared pair, before Convex system fields. */
 export type IngestionRow = Infer<typeof ingestionsTable.validator>

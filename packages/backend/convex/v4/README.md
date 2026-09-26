@@ -18,7 +18,7 @@ current Stats publishes the latest endpoint readings.
 - Await Pricing, Listings and Stats independently after acceptance, then schedule continuation.
   Failed History attempts remain pending for manual retry. An interrupted routine resumes from
   the clock on the next cron/manual run.
-- Stats publishes its snapshot and cursor atomically. Newer publications supersede older attempts;
+- Stats stores its observation time and readings in one cache document. Newer publications supersede older attempts;
   failure retains the previous snapshot, and recovery selects the latest ingested observation.
 - History query cutoffs bound observation time. Pending work can leave gaps below that cutoff.
   Catalog, History and Stats may become visible at different times.
