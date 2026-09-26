@@ -1,12 +1,11 @@
-import { withoutSystemFields } from 'convex-helpers'
 import { v } from 'convex/values'
-import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
 
 import { internal } from '../../_generated/api'
 import { internalMutation } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
-import { pendingPublication, completePublication } from '../ingestion/publication'
+import { assertReleasedScan } from '../ingestion/release'
+import { assertScanAt } from '../scan/time'
 import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './table'
 import type { CurrentStatsRow } from './table'
 
@@ -29,46 +28,19 @@ export async function process(
 
 /** Publish a complete snapshot and its observation time, or ignore superseded/duplicate work. */
 export const publish = internalMutation({
-  args: { scan_at: v.string(), rows: v.array(currentStatsTable.validator) },
+  args: currentStatsTable.validator.fields,
   returns: v.null(),
   handler: async (ctx, args) => {
     console.log('[v4:current-stats] publish', { scan_at: args.scan_at, incoming: args.rows.length })
-    if (!(await pendingPublication(ctx, 'current_stats', args.scan_at))) {
+    assertScanAt(args.scan_at)
+    const snapshot = await ctx.db.query(V4_CURRENT_STATS_TABLE).unique()
+    if (snapshot !== null && snapshot.scan_at >= args.scan_at) {
       return null
     }
-
-    const stored = await ctx.db.query(V4_CURRENT_STATS_TABLE).collect()
-    const existing = new Map(stored.map((row) => [row.endpoint_id, row]))
-    const inserts = []
-    const replaces = []
-    for (const row of args.rows) {
-      const current = existing.get(row.endpoint_id)
-      existing.delete(row.endpoint_id)
-
-      if (current === undefined) {
-        inserts.push(row)
-      } else if (!isDeepEqual(withoutSystemFields(current), row)) {
-        replaces.push({ id: current._id, row })
-      }
-    }
-
-    console.log('[v4:current-stats] reconcile', {
-      scan_at: args.scan_at,
-      stored: stored.length,
-      inserts: inserts.length,
-      replaces: replaces.length,
-      deletes: existing.size,
-    })
-    for (const row of inserts) {
-      await ctx.db.insert(V4_CURRENT_STATS_TABLE, row)
-    }
-    for (const { id, row } of replaces) {
-      await ctx.db.replace(V4_CURRENT_STATS_TABLE, id, row)
-    }
-    for (const stale of existing.values()) {
-      await ctx.db.delete(V4_CURRENT_STATS_TABLE, stale._id)
-    }
-    await completePublication(ctx, 'current_stats', args.scan_at)
+    await assertReleasedScan(ctx, args.scan_at)
+    await (snapshot === null
+      ? ctx.db.insert(V4_CURRENT_STATS_TABLE, args)
+      : ctx.db.replace(V4_CURRENT_STATS_TABLE, snapshot._id, args))
     return null
   },
 })

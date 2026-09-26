@@ -137,7 +137,6 @@ import type * as v4_history_stats_query from "../v4/history/stats/query.js";
 import type * as v4_history_stats_table from "../v4/history/stats/table.js";
 import type * as v4_ingestion_initialization from "../v4/ingestion/initialization.js";
 import type * as v4_ingestion_progress from "../v4/ingestion/progress.js";
-import type * as v4_ingestion_publication from "../v4/ingestion/publication.js";
 import type * as v4_ingestion_release from "../v4/ingestion/release.js";
 import type * as v4_ingestion_table from "../v4/ingestion/table.js";
 import type * as v4_ingestion_work from "../v4/ingestion/work.js";
@@ -304,7 +303,6 @@ declare const fullApi: ApiFromModules<{
   "v4/history/stats/table": typeof v4_history_stats_table;
   "v4/ingestion/initialization": typeof v4_ingestion_initialization;
   "v4/ingestion/progress": typeof v4_ingestion_progress;
-  "v4/ingestion/publication": typeof v4_ingestion_publication;
   "v4/ingestion/release": typeof v4_ingestion_release;
   "v4/ingestion/table": typeof v4_ingestion_table;
   "v4/ingestion/work": typeof v4_ingestion_work;

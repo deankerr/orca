@@ -1,7 +1,7 @@
 import { ConvexError } from 'convex/values'
 
 import type { Id } from '../../_generated/dataModel'
-import type { MutationCtx } from '../../_generated/server'
+import type { MutationCtx, QueryCtx } from '../../_generated/server'
 import { clock } from '../clock'
 import { assertScanPair } from '../scan/time'
 import type { ScanPairTimes } from '../scan/time'
@@ -46,4 +46,15 @@ export async function createWork(
     scan_at: ingestion.scan_at,
     state: 'pending',
   })
+}
+
+/** Require an accepted observation before publishing derived data. */
+export async function assertReleasedScan(ctx: QueryCtx, scanAt: string): Promise<void> {
+  const ingestion = await ctx.db
+    .query(V4_INGESTIONS_TABLE)
+    .withIndex('by_scan_at', (q) => q.eq('scan_at', scanAt))
+    .unique()
+  if (ingestion === null) {
+    throw new ConvexError({ message: 'Observation has not been released', scan_at: scanAt })
+  }
 }
