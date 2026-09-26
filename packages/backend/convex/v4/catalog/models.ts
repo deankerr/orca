@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { query } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
-import type { ExtractedScan, LoadedScanPair } from '../scan'
+import type { Scan, ScanPair } from '../scan'
 import { changedRows } from './changes'
 import { text, flag, strings, date, metadata } from './fields'
 import { projectModel } from './project'
@@ -26,8 +26,8 @@ export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<
   }
 }
 
-export function prepare(pair: LoadedScanPair) {
-  const project = (scan: ExtractedScan) =>
+export function prepare(pair: ScanPair) {
+  const project = (scan: Scan) =>
     new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)]))
   return changedRows(project(pair.previous), project(pair.next))
 }

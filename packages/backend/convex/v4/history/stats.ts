@@ -9,7 +9,7 @@ import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
 import { V4_PROCESSOR_WORK_TABLE } from '../ingestion/table'
 import { assertOutputScan, completeWork, pendingWork } from '../ingestion/work'
-import type { ExtractedScan, LoadedScanPair } from '../scan'
+import type { Scan, ScanPair } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
 
@@ -62,7 +62,7 @@ export const commitStep = internalMutation({
 
 export async function process(
   ctx: ActionCtx,
-  pair: LoadedScanPair,
+  pair: ScanPair,
   work_id: Id<typeof V4_PROCESSOR_WORK_TABLE>,
 ): Promise<void> {
   const rows = prepare(pair.next)
@@ -77,7 +77,7 @@ export async function process(
 }
 
 /** Retain every supplied observation, including repeated values. */
-function prepare(scan: ExtractedScan) {
+function prepare(scan: Scan) {
   return [...scan.endpoints.values()].flatMap((endpoint) => {
     const { stats, statsByTier } = SuppliedStats.parse(endpoint)
     const samples = { ...statsByTier, default: statsByTier?.default ?? stats }

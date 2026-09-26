@@ -37,7 +37,9 @@ type Env = {
   readonly ORCA_CES_INGEST_ENABLED: "true" | "false" | undefined;
   readonly ORCA_CRAWL_CRON_ENABLED: "true" | "false" | undefined;
   readonly ORCA_INGEST_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_OBJECTS_API_KEY: string | undefined;
   readonly ORCA_OBJECTS_BACKEND: "convex" | "r2" | undefined;
+  readonly ORCA_OBJECTS_SOURCE_DEPLOYMENT: string | undefined;
   readonly ORCA_PUBLIC_URL: string;
   readonly ORCA_PULL_SOURCE_URL: string | undefined;
   readonly ORCA_R2_ACCESS_KEY_ID: string | undefined;

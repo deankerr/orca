@@ -1,9 +1,17 @@
 import { ConvexError, v } from 'convex/values'
 
 import { internalMutation, internalQuery } from '../_generated/server'
+import { findLocalNames, nameSelection } from './local'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 
 const locator = locatorsTable.validator
+
+/** Local discovery step for the canonical object reader. */
+export const namesAtOrAfter = internalQuery({
+  args: nameSelection.fields,
+  returns: v.array(v.string()),
+  handler: findLocalNames,
+})
 
 /**
  * Locator for this identity. Private to `objects`.

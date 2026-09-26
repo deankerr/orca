@@ -20,7 +20,7 @@ import {
   V4_ENDPOINT_LISTINGS_TABLE,
   V4_ENDPOINT_PRICES_TABLE,
 } from '../history/table'
-import type { ExtractedScan } from '../scan'
+import type { Scan } from '../scan'
 import { ingestionScanAt } from './clock'
 
 /**
@@ -28,7 +28,7 @@ import { ingestionScanAt } from './clock'
  * No checkpoints or recovery: a partial bootstrap needs investigation/reset, not automatic retry.
  * The caller waits for two artifacts to exist, but only the first observation seeds these tables.
  */
-export async function bootstrap(ctx: ActionCtx, scan: ExtractedScan) {
+export async function bootstrap(ctx: ActionCtx, scan: Scan) {
   const models = new Map(
     [...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)]),
   )

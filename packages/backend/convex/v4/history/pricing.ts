@@ -10,7 +10,7 @@ import { cappedCutoff } from '../ingestion/clock'
 import { V4_PROCESSOR_WORK_TABLE } from '../ingestion/table'
 import { assertOutputScan, completeWork, pendingWork } from '../ingestion/work'
 import { selectPricing } from '../pricing'
-import type { Endpoint, ExtractedScan, LoadedScanPair } from '../scan'
+import type { Endpoint, Scan, ScanPair } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 
@@ -63,7 +63,7 @@ export const commitStep = internalMutation({
 
 export async function process(
   ctx: ActionCtx,
-  pair: LoadedScanPair,
+  pair: ScanPair,
   work_id: Id<typeof V4_PROCESSOR_WORK_TABLE>,
 ): Promise<void> {
   const rows = prepare(pair)
@@ -77,7 +77,7 @@ export async function process(
   await ctx.runMutation(internal.v4.history.pricing.commitStep, { work_id, rows })
 }
 
-function prepare(pair: LoadedScanPair) {
+function prepare(pair: ScanPair) {
   return [...pair.next.endpoints.values()].flatMap((endpoint) => {
     const before = pair.previous.endpoints.get(endpoint.id)
     const pricing = selectPricing(endpoint.pricing)
@@ -88,7 +88,7 @@ function prepare(pair: LoadedScanPair) {
 }
 
 /** Deployment bootstrap owns the first observation, separately from pair diffs. */
-export function initialRows(scan: ExtractedScan) {
+export function initialRows(scan: Scan) {
   return [...scan.endpoints.values()].map((endpoint: Endpoint) => ({
     endpoint_id: endpoint.id,
     scan_at: scan.scan_at,
