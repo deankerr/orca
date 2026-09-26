@@ -8,7 +8,7 @@ import type { ActionCtx } from '../../_generated/server'
 import { cappedCutoff } from '../ingestion/clock'
 import { V4_PROCESSOR_WORK_TABLE } from '../ingestion/table'
 import { assertOutputScan, completeWork, pendingWork } from '../ingestion/work'
-import type { Endpoint, ExtractedScan, LoadedScanPair } from '../scan'
+import type { Endpoint, Scan, ScanPair } from '../scan'
 import { pageArgs, pageResult, emptyPage } from './pagination'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 import type { EndpointListingRow } from './table'
@@ -86,7 +86,7 @@ export const commitStep = internalMutation({
 
 export async function process(
   ctx: ActionCtx,
-  pair: LoadedScanPair,
+  pair: ScanPair,
   work_id: Id<typeof V4_PROCESSOR_WORK_TABLE>,
 ): Promise<void> {
   const rows = prepare(pair)
@@ -100,7 +100,7 @@ export async function process(
   await ctx.runMutation(internal.v4.history.listings.commitStep, { work_id, rows })
 }
 
-function prepare({ previous, next }: LoadedScanPair) {
+function prepare({ previous, next }: ScanPair) {
   const rows: EndpointListingRow[] = []
   for (const endpoint of next.endpoints.values()) {
     const before = previous.endpoints.get(endpoint.id)
@@ -123,7 +123,7 @@ function prepare({ previous, next }: LoadedScanPair) {
 }
 
 /** Initial availability is seeded once, not inferred by the routine pair processor. */
-export function initialRows(scan: ExtractedScan) {
+export function initialRows(scan: Scan) {
   return [...scan.endpoints.values()].map((endpoint) =>
     listingRow(endpoint, scan.scan_at, 'listed'),
   )

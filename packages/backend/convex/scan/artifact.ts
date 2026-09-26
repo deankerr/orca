@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
-import { load, store } from '../objects'
+import { store, v3Load } from '../objects'
 import { ScanArtifactEntry } from './schema'
 
 const SCAN_ARTIFACT_OBJECT_PATH = 'scans'
@@ -47,11 +47,12 @@ export async function loadScanArtifact(ctx: ActionCtx, id: string): Promise<Scan
 
 /** Load and parse a scan artifact when it exists. */
 export async function findScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact | null> {
-  const text = await load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id })
+  const text = await v3Load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id })
   return text === null ? null : parseScanArtifact(id, text)
 }
 
-function parseScanArtifact(id: string, text: string): ScanArtifact {
+/** Shared artifact parsing, independent of local/remote object retrieval. */
+export function parseScanArtifact(id: string, text: string): ScanArtifact {
   const entries = text
     .split('\n')
     .filter((line) => line.length > 0)

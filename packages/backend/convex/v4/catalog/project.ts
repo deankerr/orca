@@ -2,12 +2,12 @@ import { ConvexError } from 'convex/values'
 
 import { canonicalJson } from '../json'
 import { selectPricing } from '../pricing'
-import type { Endpoint, ExtractedScan, Model, Provider } from '../scan'
+import type { Endpoint, Scan, Model, Provider } from '../scan'
 import { CatalogEndpoint, CatalogModel, CatalogProvider } from './entities'
 import type { CurrentEndpointRow, CurrentModelRow, CurrentProviderRow } from './table'
 
 /** Project endpoint rows using only their required model context. */
-export function projectEndpoints(scan: ExtractedScan, models: Map<string, CurrentModelRow>) {
+export function projectEndpoints(scan: Scan, models: Map<string, CurrentModelRow>) {
   const endpoints = new Map<string, CurrentEndpointRow>()
 
   for (const endpoint of scan.endpoints.values()) {

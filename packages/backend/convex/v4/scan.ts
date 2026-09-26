@@ -1,65 +1,48 @@
-import { ConvexError } from 'convex/values'
+/** Scan interface: discover and load validated captures as scoped entity observations. */
+import { v } from 'convex/values'
 
+import { internalAction } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
-import { artifactName, loadScanArtifact, nextScanAt } from '../scan/artifact'
+import type { ScanArtifact } from '../scan/artifact'
+import { findPair, loadArtifact, loadPair as loadArtifacts } from './scan/artifacts'
 import { extractScan } from './scan/extract'
-import type { ExtractedScan } from './scan/extract'
-import { assertScanAt, assertScanPair } from './scan/time'
+import type { Scan } from './scan/extract'
+import type { ScanPairTimes } from './scan/time'
 
-export type ScanPair = { from_scan_at: string; scan_at: string }
-export type LoadedScanPair = { previous: ExtractedScan; next: ExtractedScan }
+export type ScanPair = { previous: Scan; next: Scan }
 
-/** Find the next pair, using the first two captures when no clock exists. */
-export async function nextPair(
-  ctx: Pick<ActionCtx, 'runQuery'>,
-  clock: string | null,
-): Promise<ScanPair | null> {
-  const from = clock ?? (await nextScanAt(ctx, null))
-
-  if (from === null) {
-    return null
-  }
-
-  const to = await nextScanAt(ctx, from)
-
-  if (to === null) {
-    return null
-  }
-
-  assertScanPair(from, to)
-  return { from_scan_at: from, scan_at: to }
-}
-
-/** Load the observations from both artifacts in a scan pair. */
-export async function loadPair(ctx: ActionCtx, pair: ScanPair): Promise<LoadedScanPair> {
-  const [previous, next] = await Promise.all([
-    loadEntities(ctx, pair.from_scan_at),
-    loadEntities(ctx, pair.scan_at),
-  ])
-  return { previous, next }
-}
-
-/** Load an existing Scan artifact and unwrap its scoped entity observations. */
-export async function loadEntities(ctx: ActionCtx, scanAt: string): Promise<ExtractedScan> {
-  return await loadArtifactEntities(ctx, artifactName(assertScanAt(scanAt)))
-}
-
-/** Artifact discovery uses the shared Scan module's opaque names. */
-export async function loadArtifactEntities(
+/** First capture at/after `from` and its successor; null means no complete pair yet. */
+export async function loadNextPair(
   ctx: ActionCtx,
-  artifactId: string,
-): Promise<ExtractedScan> {
-  const artifact = await loadScanArtifact(ctx, artifactId)
+  from: string | null = null,
+): Promise<ScanPair | null> {
+  const times = await findPair(ctx, from)
+  return times === null ? null : await loadPair(ctx, times)
+}
 
-  if (
-    artifactName(assertScanAt(artifact.scan_at)) !== artifactId ||
-    artifact.entries.some((entry) => entry.scan_at !== artifact.scan_at)
-  ) {
-    throw new ConvexError(`Scan artifact identity does not match ${artifactId}`)
-  }
+/** Reload two exact captures, independently of later captures, for processing or retries. */
+export async function loadPair(ctx: ActionCtx, times: ScanPairTimes): Promise<ScanPair> {
+  const { previous, next } = await loadArtifacts(ctx, times)
+  return { previous: extractArtifact(previous), next: extractArtifact(next) }
+}
 
+/** Load one exact capture. Missing or inconsistent captures fail. */
+export async function load(ctx: ActionCtx, scanAt: string): Promise<Scan> {
+  return extractArtifact(await loadArtifact(ctx, scanAt))
+}
+
+/** Read-only operator entry point; inspect selected capture times without loading their contents. */
+export const selectPair = internalAction({
+  args: { from: v.union(v.string(), v.null()) },
+  returns: v.union(v.null(), v.object({ from_scan_at: v.string(), scan_at: v.string() })),
+  handler: async (ctx, { from }) => await findPair(ctx, from),
+})
+
+function extractArtifact(artifact: ScanArtifact): Scan {
   return extractScan(artifact.scan_at, artifact.entries)
 }
 
-export type { ExtractedScan } from './scan/extract'
+export type { Scan } from './scan/extract'
+export type { ScanPairTimes } from './scan/time'
 export { Endpoint, Model, Provider } from './scan/entities'
+export { assertScanAt, assertScanPair } from './scan/time'

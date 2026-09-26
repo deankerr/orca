@@ -6,8 +6,7 @@ import * as endpoints from '../catalog/endpoints'
 import * as models from '../catalog/models'
 import * as providers from '../catalog/providers'
 import { currentEndpointsTable, currentModelsTable, currentProvidersTable } from '../catalog/table'
-import { loadPair, nextPair } from '../scan'
-import { assertScanPair } from '../scan/time'
+import { assertScanPair, loadNextPair } from '../scan'
 import { bootstrap } from './bootstrap'
 import { ingestionScanAt } from './clock'
 import { activeProcessors } from './registry'
@@ -15,17 +14,22 @@ import { ingestionsTable, V4_INGESTIONS_TABLE, V4_PROCESSOR_WORK_TABLE } from '.
 
 /** Manual or scheduled: release one pair, without waiting for downstream processing. */
 export const run = internalAction({
-  args: {},
+  args: {
+    start_at: v.optional(v.string()),
+  },
   returns: v.null(),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const clock = await ctx.runQuery(internal.v4.ingestion.progress.getIngestionScanAt, {})
-    const pair = await nextPair(ctx, clock)
+    if (clock !== null && args.start_at !== undefined) {
+      throw new ConvexError('start_at requires a fresh V4 timeline; omit it to resume')
+    }
+    const loaded = await loadNextPair(ctx, clock ?? args.start_at ?? null)
 
-    if (pair === null) {
+    if (loaded === null) {
       return null
     }
 
-    const loaded = await loadPair(ctx, pair)
+    const pair = { from_scan_at: loaded.previous.scan_at, scan_at: loaded.next.scan_at }
 
     const catalog = {
       ...pair,
