@@ -1,7 +1,44 @@
 import type { api } from '@orca/backend/convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
+import type { FunctionArgs, FunctionReturnType } from 'convex/server'
 
-export type PricingHistory = FunctionReturnType<typeof api.v3.public.pricingHistory.get>
+type Listings = FunctionReturnType<typeof api.v4.history.listings.query.lens>['rows'][number][]
+type PricingPage = FunctionReturnType<typeof api.v4.history.pricing.query.list>
+type Prices = PricingPage['page'][number][]
+type PricingArgs = FunctionArgs<typeof api.v4.history.pricing.query.list>
+export type PricingHistory = {
+  modelId: string
+  asOf: number
+  endpoints: { id: string; listings: Listings; prices: Prices }[]
+}
+
+/** Select historical members, retaining their full context including later moves away. */
+export function modelEndpoints(rows: Listings, modelId: string) {
+  const ids = new Set(rows.filter((row) => row.model_id === modelId).map((row) => row.endpoint_id))
+  const endpoints = new Map<string, Listings>([...ids].map((id) => [id, []]))
+  for (const row of rows) {
+    endpoints.get(row.endpoint_id)?.push(row)
+  }
+  return [...endpoints].map(([id, listings]) => ({ id, listings }))
+}
+
+/** Endpoint-only retrieval; even an empty partial page must be followed to completion. */
+export async function loadEndpointPrices(
+  query: (args: PricingArgs) => Promise<PricingPage>,
+  endpoint_id: string,
+  cutoff: string,
+) {
+  const rows: Prices = []
+  let cursor: string | null = null
+  for (;;) {
+    const result = await query({ endpoint_id, cutoff, paginationOpts: { cursor, numItems: 500 } })
+    rows.push(...result.page)
+    if (result.isDone) {
+      return rows
+    }
+    cursor = result.continueCursor
+  }
+}
+
 export const DAY = 86_400_000
 export type Sample = [at: number, price: number]
 export type Trace = {
@@ -19,33 +56,43 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
 
   for (const endpoint of pricingHistory.endpoints) {
     let trace: Trace | undefined
-    let listed = false
-    const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row.state]))
+    let context: Listings[number] | undefined
+    let quote: PricingPage['page'][number] | undefined
+    const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row]))
     const prices = new Map(endpoint.prices.map((row) => [Date.parse(row.scan_at), row]))
     const times = [...new Set([...listings.keys(), ...prices.keys()])].toSorted((a, b) => a - b)
 
     for (const at of times) {
+      if (at > pricingHistory.asOf) {
+        break
+      }
       const listing = listings.get(at)
 
       if (listing !== undefined) {
+        context = listing
+        if (listing.state === 'unlisted') {
+          quote = undefined
+        }
         if (trace) {
           trace.end = at
           trace.current = false
           trace = undefined
         }
-
-        listed = listing === 'listed'
       }
 
       const row = prices.get(at)
-
-      if (!listed || !row) {
-        continue
+      if (context?.state === 'listed' && row) {
+        quote = row
       }
 
-      const value = Number(row.meters[meter])
+      const value = Number(quote?.meters[meter])
 
-      if (!Number.isFinite(value) || value <= 0) {
+      if (
+        context?.state !== 'listed' ||
+        context.model_id !== pricingHistory.modelId ||
+        !Number.isFinite(value) ||
+        value <= 0
+      ) {
         if (trace) {
           trace.end = at
           trace.current = false
@@ -58,7 +105,7 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
       if (!trace) {
         trace = {
           id: `${endpoint.id}:${at}`,
-          tag: endpoint.tag,
+          tag: context.provider_tag,
           start: at,
           end: pricingHistory.asOf,
           samples: [],

@@ -7,7 +7,7 @@ import { EndpointsDataGrid } from './endpoints-data-grid'
 export function EndpointsDataGridPage() {
   const endpoints = useEndpoints()
   const stats = useStats()
-  const rows = buildGridEndpoints(endpoints.data ?? [], stats.data ?? [])
+  const rows = buildGridEndpoints(endpoints.data ?? [], stats.data?.rows ?? [])
 
   return <EndpointsDataGrid endpoints={rows} isPending={endpoints.isPending || stats.isPending} />
 }

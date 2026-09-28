@@ -22,6 +22,10 @@ current Stats publishes the latest endpoint readings.
   failure retains the previous snapshot, and recovery selects the latest ingested observation.
 - History query cutoffs bound observation time. Pending work can leave gaps below that cutoff.
   Catalog, History and Stats may become visible at different times.
+- Pricing history stores and queries observations by `endpoint_id` only; it has no knowledge of
+  model membership or grouping endpoints under a model. Preserve per-endpoint pagination for
+  potentially large histories. Consumers use the separate Listings lens to select endpoints and
+  interpret their prices; fetching prices outside a selected model's membership is acceptable.
 
 ## Observation semantics
 
@@ -46,6 +50,10 @@ before restarting.
 `start_at` requires a fresh timeline and accepts an ISO date or timezone-qualified timestamp.
 The first capture at or after it becomes the baseline. Omit it to resume from the shared clock.
 
+Preview deployment `init` schedules this routine with a rolling two-day `start_at` on a fresh
+timeline, or resumes an existing clock. Configure the Objects source deployment and shared API
+key in preview environment defaults; initialization uses the same remote source as dev replay.
+
 Run from `packages/backend`, selecting the deployment explicitly:
 
 ```sh
@@ -61,3 +69,7 @@ bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 
 `ORCA_V4_INGEST_CRON_ENABLED=true` admits new hourly cron starts. Existing continuation chains
 and manual runs proceed independently of the flag.
+
+For a short source-backed demo timeline, follow [V4 development data](../../../../docs/orca/v4-development-data.md).
+The [Pricing History demo notes](../../../../docs/orca/v4-pricing-history.md) describe how consumers
+join listing context and prices, and which product-interface decisions remain open.

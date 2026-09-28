@@ -6,7 +6,7 @@ import { formatPricing } from '@orca/backend/convex/shared/pricing'
 import { useQuery } from '@tanstack/react-query'
 import { ConvexError } from 'convex/values'
 import dynamic from 'next/dynamic'
-import { startTransition, useEffect, useState } from 'react'
+import { Activity, startTransition, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -49,6 +49,7 @@ import { usePricingHistory } from './context'
 import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
 import type { PricingHistory, Trace } from './data'
 import { preloadPricingHistoryPlot } from './preload'
+import { useHistoryData } from './use-history-data'
 
 const Plot = dynamic(
   async () => await import('./plot').then((module) => module.PricingHistoryPlot),
@@ -123,7 +124,7 @@ export function PricingHistoryOverlay() {
 }
 
 function Identity({ modelId }: { modelId: string }) {
-  const { data } = useQuery(convexQuery(api.v3.public.entityOverview.model, { modelId }))
+  const { data } = useQuery(convexQuery(api.v4.catalog.models.query.get, { model_id: modelId }))
   const name = data?.display_name
 
   return (
@@ -146,21 +147,19 @@ function Identity({ modelId }: { modelId: string }) {
 function Loader({ modelId }: { modelId: string }) {
   const { close } = usePricingHistory()
 
-  const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v3.public.pricingHistory.get, { modelId }),
-  )
+  const { data, isPending, error, refetch } = useHistoryData(modelId)
 
-  let body
+  let status: ReactNode = null
 
-  if (isPending) {
-    body = (
+  if (isPending && !error) {
+    status = (
       <output aria-live="polite" className="flex items-center justify-center gap-2 py-8">
         <Spinner />
         Loading pricing history…
       </output>
     )
   } else if (error) {
-    body = (
+    status = (
       <div role="alert" className="flex flex-col items-center justify-center gap-3 py-8">
         <p>
           {error instanceof ConvexError && typeof error.data === 'string'
@@ -178,10 +177,8 @@ function Loader({ modelId }: { modelId: string }) {
         </Button>
       </div>
     )
-  } else if (data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
-    body = <Content pricingHistory={data} />
-  } else {
-    body = (
+  } else if (!data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
+    status = (
       <Empty>
         <EmptyHeader>
           <EmptyTitle>No pricing history available</EmptyTitle>
@@ -196,7 +193,15 @@ function Loader({ modelId }: { modelId: string }) {
     )
   }
 
-  return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{body}</div>
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {status}
+      {/* Preserve chart controls while the next cutoff's prices load. */}
+      <Activity mode={status === null ? 'visible' : 'hidden'}>
+        <Content pricingHistory={data} />
+      </Activity>
+    </div>
+  )
 }
 
 function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
@@ -211,11 +216,10 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const emphasis = activeTag !== null && !hidden.has(activeTag) ? activeTag : null
   const [hoverAt, setHoverAt] = useState<number | null>(null)
 
-  const available = METERS.filter((meter) =>
-    pricingHistory.endpoints.some((endpoint) =>
-      endpoint.prices.some((price) => Number(price.meters[meter.value]) > 0),
-    ),
+  const tracesByMeter = new Map(
+    METERS.map(({ value }) => [value, pricingHistoryTraces(pricingHistory, value)]),
   )
+  const available = METERS.filter(({ value }) => (tracesByMeter.get(value)?.length ?? 0) > 0)
 
   const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
   const meters = available.length > 0 ? available : [meter]
@@ -223,7 +227,9 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   const since = Math.min(
     pricingHistory.asOf,
     ...pricingHistory.endpoints.flatMap((endpoint) =>
-      endpoint.listings.map((row) => Date.parse(row.scan_at)),
+      endpoint.listings
+        .filter((row) => row.model_id === pricingHistory.modelId)
+        .map((row) => Date.parse(row.scan_at)),
     ),
   )
 
@@ -238,15 +244,15 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
         ]
 
   const daily = range[1] - range[0] > 7 * DAY + 1
-  const exact = pricingHistoryTraces(pricingHistory, meter.value)
+  const exact = tracesByMeter.get(meter.value) ?? []
+  const exactScaled = exact.map((trace) => ({
+    ...trace,
+    samples: trace.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
+  }))
 
-  const traces = exact.map((trace) => {
-    const sampled = daily ? dailyTrace(trace, pricingHistory.asOf) : trace
-    return {
-      ...sampled,
-      samples: sampled.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
-    }
-  })
+  const traces = daily
+    ? exactScaled.map((trace) => dailyTrace(trace, pricingHistory.asOf))
+    : exactScaled
 
   const tagSet = new Set<string>()
   for (const trace of traces) {
@@ -332,7 +338,7 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
         at={at}
         asOf={pricingHistory.asOf}
         tags={tags}
-        traces={traces}
+        traces={exactScaled}
         hidden={hidden}
         emphasis={emphasis}
         shownCount={shownCount}

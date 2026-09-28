@@ -28,15 +28,19 @@ project environment defaults are configured.
    bun run --cwd packages/backend convex dev --once
    ```
 
-4. If the task needs populated data:
-
-   ```sh
-   bun run --cwd packages/backend convex run v3/pull:run '{}'
-   ```
-
-5. Only if running the web app, set `NEXT_PUBLIC_CONVEX_URL` in `apps/web/.env.local`
+4. Only if running the web app, set `NEXT_PUBLIC_CONVEX_URL` in `apps/web/.env.local`
    to the new `CONVEX_URL` in this worktree's `packages/backend/.env.local`.
    Copy the main checkout's `NEXT_PUBLIC_POSTHOG_KEY` only if needed.
 
-6. Start only the processes the task needs: `bun run dev:backend`, `bun run dev:web`,
+5. Start only the processes the task needs: `bun run dev:backend`, `bun run dev:web`,
    or `bun run dev` for both.
+
+## Data, when the task needs it
+
+Do not seed data as an initial setup step. First understand the change and what data its
+implementation or verification needs; some tasks need no populated data at all.
+
+When data is needed, follow `docs/orca/v4-development-data.md` and choose the smallest
+source-backed replay window that serves the task. Configure the Objects source and
+authentication, then initialize a fresh timeline with an explicit `start_at`. Resume an
+existing timeline without `start_at`.

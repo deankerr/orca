@@ -5,6 +5,27 @@ import { query } from '../../../_generated/server'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 
+/** Complete context lens; the cutoff bounds observations, not processor completeness. */
+export const lens = query({
+  args: {},
+  returns: v.object({
+    as_of: v.union(v.null(), v.string()),
+    rows: v.array(endpointListingsTable.validator),
+  }),
+  handler: async (ctx) => {
+    const as_of = await cappedCutoff(ctx)
+    if (as_of === null) {
+      return { as_of, rows: [] }
+    }
+    // ponytail: ~6K context rows fit one read; paginate if listings approach transaction limits.
+    const rows = await ctx.db.query(V4_ENDPOINT_LISTINGS_TABLE).collect()
+    return {
+      as_of,
+      rows: rows.filter((row) => row.scan_at <= as_of).map(withoutSystemFields),
+    }
+  },
+})
+
 /** Page an endpoint's full context, including moves between models and provider tags. */
 export const list = query({
   args: { endpoint_id: v.string(), ...pageArgs },
