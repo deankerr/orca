@@ -1,42 +1,13 @@
 import type { api } from '@orca/backend/convex/_generated/api'
-import type { FunctionArgs, FunctionReturnType } from 'convex/server'
+import type { FunctionReturnType } from 'convex/server'
 
-type Listings = FunctionReturnType<typeof api.v4.history.listings.query.lens>['rows'][number][]
-type PricingPage = FunctionReturnType<typeof api.v4.history.pricing.query.list>
+type Listings = FunctionReturnType<typeof api.v4.history.listings.query.forEndpoint>
+type PricingPage = FunctionReturnType<typeof api.v4.history.pricing.query.observe>
 type Prices = PricingPage['page'][number][]
-type PricingArgs = FunctionArgs<typeof api.v4.history.pricing.query.list>
 export type PricingHistory = {
   modelId: string
   asOf: number
   endpoints: { id: string; listings: Listings; prices: Prices }[]
-}
-
-/** Select historical members, retaining their full context including later moves away. */
-export function modelEndpoints(rows: Listings, modelId: string) {
-  const ids = new Set(rows.filter((row) => row.model_id === modelId).map((row) => row.endpoint_id))
-  const endpoints = new Map<string, Listings>([...ids].map((id) => [id, []]))
-  for (const row of rows) {
-    endpoints.get(row.endpoint_id)?.push(row)
-  }
-  return [...endpoints].map(([id, listings]) => ({ id, listings }))
-}
-
-/** Endpoint-only retrieval; even an empty partial page must be followed to completion. */
-export async function loadEndpointPrices(
-  query: (args: PricingArgs) => Promise<PricingPage>,
-  endpoint_id: string,
-  cutoff: string,
-) {
-  const rows: Prices = []
-  let cursor: string | null = null
-  for (;;) {
-    const result = await query({ endpoint_id, cutoff, paginationOpts: { cursor, numItems: 500 } })
-    rows.push(...result.page)
-    if (result.isDone) {
-      return rows
-    }
-    cursor = result.continueCursor
-  }
 }
 
 export const DAY = 86_400_000
@@ -159,7 +130,11 @@ export function dailyTrace(trace: Trace, asOf: number): Trace {
   }
   const latest = trace.samples.at(-1)
 
-  if (trace.current && trace.end === asOf && latest) {
+  if (latest && latest[0] > (samples.at(-1)?.[0] ?? trace.start)) {
+    samples.push(latest)
+  }
+
+  if (trace.current && trace.end === asOf && latest && latest[0] < asOf) {
     samples.push([asOf, latest[1]])
   }
 

@@ -18,7 +18,7 @@ It reads compressed source objects remotely; it does not copy source tables or l
 - Always supply `start_at` on a fresh demo timeline. Omitting it starts from the earliest source
   pair, which can mean replaying the entire archive.
 
-The first verified demo uses `start_at: "2026-09-25"`: roughly 40 hourly captures, with endpoint
+The verified demo uses `start_at: "2026-09-25"`: roughly 40 hourly captures, with endpoint
 removals, reappearance, and contextual listing changes. Dates below are that reproducible example;
 choose a more recent window when needed.
 
@@ -137,12 +137,12 @@ prepend-history operation for an existing timeline.
 ## 5. Connect the product
 
 When running the web app, set `NEXT_PUBLIC_CONVEX_URL` in `apps/web/.env.local` to this dev
-deployment's cloud URL. Grid, Entity Overview, and Pricing History now read V4.
+deployment's cloud URL. Grid, Entity Overview, and Pricing History read V4.
 
-See [Pricing History's demo scope and mapping](v4-pricing-history.md) for the initial examples and
+See [Pricing History](v4-pricing-history.md) for verified examples and
 the client/backend work that remains.
 
-## First verified replay
+## Verified replay
 
 On 2026-09-26 UTC, this procedure populated `reliable-swan-376` from production:
 

@@ -22,6 +22,10 @@ current Stats publishes the latest endpoint readings.
   failure retains the previous snapshot, and recovery selects the latest ingested observation.
 - History query cutoffs bound observation time. Pending work can leave gaps below that cutoff.
   Catalog, History and Stats may become visible at different times.
+- Product history subscriptions read committed rows independently of the shared clock. Listings
+  discovers historical model members and supplies their complete per-endpoint context. Pricing
+  paginates oldest first with reactive row/byte limits. The chart subscribes to its horizon separately;
+  late inserts refresh history without a new cutoff. Reactivity does not imply processor completeness.
 - Pricing history stores and queries observations by `endpoint_id` only; it has no knowledge of
   model membership or grouping endpoints under a model. Preserve per-endpoint pagination for
   potentially large histories. Consumers use the separate Listings lens to select endpoints and

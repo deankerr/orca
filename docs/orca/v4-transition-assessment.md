@@ -4,15 +4,13 @@ Assessed on 2026-09-27 local time (2026-09-26 UTC), against production
 `dependable-husky-550` and checkout `457dbcc25`.
 Production access was read-only. No V3 pull was run.
 
-## Decision
+## Integration outcome
 
-- **Grid:** ready to begin integration; catalog parity and the first post-refactor stats
-  publication are verified.
-- **Entity Overview:** product metadata matches for shared entities; update query arguments and
-  the model creation-date field alongside Grid and Pricing History.
-- **Pricing History:** retained prices look sound, but the chart needs V4-aware listing semantics,
-  historical endpoint discovery, and cutoff-pinned pagination before transition.
-- **Dev data:** the worktree backend is deployed and the follow-up short V4 replay is verified;
+- **Grid:** uses V4 Catalog and Stats queries; catalog parity and stats publication are verified.
+- **Entity Overview:** uses V4 queries and the `or_created_at` field; metadata matches for shared entities.
+- **Pricing History:** uses historical endpoint discovery, complete per-endpoint listings, reactive
+  price pagination, and model-specific traces with a separately subscribed chart horizon.
+- **Dev data:** the worktree backend is deployed and a short V4 replay is verified;
   the procedure and concrete Pricing History examples are documented below.
 
 ## Production deployment and processing
@@ -150,51 +148,40 @@ availability rows are present in V4. The additional rows reflect contextual list
 and one historically associated endpoint. This is a five-model history sample, not a complete
 comparison of every retained price or of discounts/overrides.
 
-#### Concrete chart incompatibility
+#### Historical context requirements
 
-`apps/web/features/pricing-history/data.ts` closes a trace on **every** listing row and starts
-another only when a price row arrives. V4 also emits `listed` rows for a model, provider, or
-tag change during continuous availability, without necessarily emitting another price.
+V4 emits `listed` rows for a model, provider, or tag change during continuous availability,
+without necessarily emitting another price. The chart carries quotes through these changes.
 
 For endpoint `85835306-dba3-4334-87bc-ab9ffa5c9c62` (`openai/gpt-oss-120b`):
 
 - The tag changes from `deepinfra/fp4` to `deepinfra/bf16` at `2026-03-10T20:50:00.361Z`.
 - Its previous quote remains valid; the next price row is `2026-07-01T01:50:00.303Z`.
-- Passing V4 rows through the current trace builder removes that entire interval.
+- The chart retains pricing throughout that interval under the historical `deepinfra/bf16` tag.
 
-This was reproduced by running the existing trace builder against both captured histories and
-asserting that April 1 has a V3 trace but no trace after a direct V4-shaped adapter.
-The transition must carry the quote across a context change while updating the historical tag;
-an actual unlisting still ends availability and requires a fresh quote on reappearance.
+An actual unlisting ends availability and requires a fresh quote on reappearance.
 
 Historical discovery also matters: UUID `17cceeaa-1077-450c-bc3f-a1b0a5e7592d` belonged briefly
 to `inclusionai/ling-3.0-flash` before moving to its `:free` variant. V4's listing-history
 `byModel` query finds it; selecting endpoints solely by their current model does not.
 Its spans must be restricted to the requested model's historical membership.
 
-## Integration work
+## Product integration
 
-1. First post-refactor production cycle and stats snapshot: verified above; keep freshness and
-   pending-work checks in the cutover verification.
-2. Change Grid's data hooks/types to V4 endpoint and stats queries; adapt the stats envelope
-   (`rows`, `as_of`) and retain the existing rule that unlisted endpoints have no current stats.
-   Preserve the independent stats observation time rather than assuming it equals the catalog clock.
-3. Switch both Entity Overview queries and Pricing History's identity query. Arguments become
-   `model_id` / `provider_id`; the model creation field becomes `or_created_at`.
-4. Assemble Pricing History from historical model listings plus each discovered endpoint's full
-   listing/pricing history. Pin one cutoff across all pages; sort observations for trace building.
-   Preserve entering prices/listings if introducing windowed reads, and account for incomplete
-   processor work rather than treating `as_of` as a completeness guarantee.
-5. Cover tag changes without price changes, model moves, true unlisting/reappearance, zero/missing
-   prices, and pagination boundaries in the transition's tests.
+Grid consumes V4 endpoint rows and the Stats envelope (`rows`, `as_of`); unlisted endpoints have
+no current stats. Stats retains its own observation time independently of the Catalog clock.
+Entity Overview and Pricing History's identity query use `model_id` / `provider_id` arguments;
+the model creation field is `or_created_at`.
 
-At the initial assessment, Grid and Pricing History used V3 in the inspected frontend source.
-The subsequent worktree migration switches Grid's endpoint/stats queries and Entity Overview to
-V4. Browser checks verified 1,385 rows, search, price sorting, model/provider panels, and the
-13-endpoint Gone filter with blank stats. The September 28 follow-up also migrates Pricing History:
-one complete-listings query, endpoint-only paginated pricing reads, and feature-local context/quote
-assembly. Browser checks verified the Morph tag change and Prime Intellect availability gap;
-unit checks cover model moves and pagination. See the demo notes for remaining coverage metadata work.
+Pricing History discovers historical endpoint UUIDs, loads complete per-endpoint listings and
+reactive price pages, and assembles model-specific traces through a separately subscribed horizon.
+The horizon bounds observation time without promising processor completeness.
+
+Browser checks verified 1,385 Grid rows, search, price sorting, model/provider panels, and the
+13-endpoint Gone filter with blank stats. Pricing History checks covered the Morph tag change and
+Prime Intellect availability gap. Unit checks cover model moves, quote carry-forward, missing/zero
+meters, sampling boundaries, and reader contracts. See [Pricing History](v4-pricing-history.md)
+for retrieval verification and known limitations.
 Monitor uses the legacy `monitor`, `models`, and `providers` queries. These product changes alone
 do not satisfy the separate V3/legacy removal, Events, deployment sync, or public API objectives.
 
@@ -207,11 +194,11 @@ do not satisfy the separate V3/legacy removal, Events, deployment sync, or publi
 - V3 capture/ingestion flags are false; V4 cron admission is unset and therefore disabled.
 - Source authentication was initially unconfigured. After the environment was configured, remote
   discovery and replay succeeded with production as the dev read source.
-- The follow-up replay begins at `2026-09-25T00:40:04.073Z` and reaches
+- The verified replay begins at `2026-09-25T00:40:04.073Z` and reaches
   `2026-09-26T15:40:04.139Z`: 39 pairs, 78 completed obligations, no pending work, and current Grid
   and Stats parity with production. V3 and local object locators remain empty.
-- This setup used a dev deployment and did not invoke preview initialization. The subsequent
-  `convex/init.ts` migration now schedules V4 with a rolling two-day baseline for fresh previews
+- This setup used a dev deployment and did not invoke preview initialization.
+  `convex/init.ts` schedules V4 with a rolling two-day baseline for fresh previews
   and resumes existing timelines. Broader deployment sync remains unfinished.
 
 Follow [V4 development data](v4-development-data.md) to repeat the setup. The

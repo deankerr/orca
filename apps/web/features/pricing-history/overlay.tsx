@@ -48,8 +48,9 @@ import { providerColor } from './colors'
 import { usePricingHistory } from './context'
 import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
 import type { PricingHistory, Trace } from './data'
+import { HistoryData } from './history-data'
+import type { HistoryDataState } from './history-data'
 import { preloadPricingHistoryPlot } from './preload'
-import { useHistoryData } from './use-history-data'
 
 const Plot = dynamic(
   async () => await import('./plot').then((module) => module.PricingHistoryPlot),
@@ -115,7 +116,9 @@ export function PricingHistoryOverlay() {
         {open ? (
           <>
             <Identity modelId={modelId} />
-            <Loader key={modelId} modelId={modelId} />
+            <HistoryData key={modelId} modelId={modelId}>
+              {(state) => <Loader {...state} />}
+            </HistoryData>
           </>
         ) : null}
       </DialogContent>
@@ -144,10 +147,8 @@ function Identity({ modelId }: { modelId: string }) {
   )
 }
 
-function Loader({ modelId }: { modelId: string }) {
+function Loader({ data, isPending, error, refetch }: HistoryDataState) {
   const { close } = usePricingHistory()
-
-  const { data, isPending, error, refetch } = useHistoryData(modelId)
 
   let status: ReactNode = null
 
@@ -196,7 +197,7 @@ function Loader({ modelId }: { modelId: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {status}
-      {/* Preserve chart controls while the next cutoff's prices load. */}
+      {/* Preserve chart controls while endpoint subscriptions or additional pages load. */}
       <Activity mode={status === null ? 'visible' : 'hidden'}>
         <Content pricingHistory={data} />
       </Activity>

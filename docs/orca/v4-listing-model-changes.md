@@ -86,14 +86,14 @@ at all 19 model transitions.
 
 Listings record endpoint availability and model/provider/tag context only when that context
 changes. They provide the temporal lens through which pricing and stats observations are read.
-The intended interface is a single query supplying the listings needed to construct that lens.
-At the measured size, loading the entire listings dataset is practical; there is no demonstrated
-over-querying problem requiring per-endpoint client requests or windowed listing retrieval.
+The product discovers historical UUIDs with a model-scoped query, then subscribes to each
+endpoint's complete small listing history. The measured global size does not justify returning
+the whole growing table in a single response: Convex arrays have an 8,192-element limit.
 
 The existing `v4/history/listings/query:byModel` filter is not that complete lens: when an endpoint
-moves from A to B, the new row is indexed under B. Reading the complete listing history includes
-the boundary naturally. Group by UUID, order observations, and use each observation until the next
-one to resolve availability and context at a measurement's timestamp.
+moves from A to B, the new row is indexed under B. Discovering UUIDs through A's historical rows
+and reading their complete per-endpoint context includes the boundary naturally. Order observations
+and use each observation until the next one to resolve context at a measurement's timestamp.
 
 Keep these concerns in the small listings layer. Pricing and stats history can remain keyed by
 endpoint UUID and observation time without repeating `model_id` or `provider_tag` in every row
@@ -101,6 +101,6 @@ and associated index. This matters especially for stats: V3 has more than seven 
 The size of measurement history does not imply comparable size or query complexity for listings.
 
 Handle model transitions exactly, but do not let their rarity motivate disproportionate retrieval
-machinery. Revisit listing retrieval size when measured growth warrants it.
+machinery. Model and endpoint listing histories remain tiny compared with measurement history.
 
 See [Pricing History mapping](v4-pricing-history.md) for quote carry-forward and availability rules.

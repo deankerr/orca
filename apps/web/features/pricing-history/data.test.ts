@@ -1,13 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import {
-  DAY,
-  dailyTrace,
-  loadEndpointPrices,
-  modelEndpoints,
-  pricingHistoryTraces,
-  tagPrices,
-} from './data'
+import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
 import type { PricingHistory } from './data'
 
 const iso = (at: number) => new Date(at).toISOString()
@@ -79,6 +72,7 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
     [0, 1],
     [DAY, 1],
     [2 * DAY, 1],
+    [2.25 * DAY, 2],
     [2.5 * DAY, 2],
   ])
 
@@ -87,6 +81,37 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
   expect(
     tagPrices([daily, { ...daily, id: 'two', samples: [[0, 3]] }], 'provider', DAY, trace.end),
   ).toEqual([1, 3])
+})
+
+test('daily sampling retains the last price before tag and model boundaries', () => {
+  const history: PricingHistory = {
+    modelId: 'model',
+    asOf: 10 * DAY,
+    endpoints: [
+      {
+        id: 'one',
+        listings: [
+          listing(0),
+          listing(2.75 * DAY, { provider_tag: 'new' }),
+          listing(4.75 * DAY, { provider_tag: 'new', model_id: 'other' }),
+        ],
+        prices: [
+          price(0, { prompt: '1' }),
+          price(2.5 * DAY, { prompt: '2' }),
+          price(4.5 * DAY, { prompt: '3' }),
+        ],
+      },
+    ],
+  }
+  const exact = pricingHistoryTraces(history, 'prompt')
+  const sampled = exact.map((trace) => dailyTrace(trace, history.asOf))
+
+  expect(sampled[0].samples.at(-1)).toEqual([2.5 * DAY, 2])
+  expect(sampled[1].samples[0]).toEqual([2.75 * DAY, 2])
+  expect(sampled[1].samples.at(-1)).toEqual([4.5 * DAY, 3])
+  expect(tagPrices(sampled, 'provider', 2.7 * DAY, history.asOf)).toEqual([2])
+  expect(tagPrices(sampled, 'new', 4.7 * DAY, history.asOf)).toEqual([3])
+  expect(tagPrices(sampled, 'new', 4.75 * DAY, history.asOf)).toEqual([])
 })
 
 test('a removal or unmetered quote at the latest scan is not a current price', () => {
@@ -118,18 +143,17 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
 })
 
 test('historical membership retains moves away and carries quotes through tag and model changes', () => {
-  const rows = [
-    listing(2 * DAY, { model_id: 'model:free', provider_tag: 'provider/bf16' }),
-    listing(DAY, { provider_tag: 'provider/bf16' }),
-    listing(0),
-    listing(0, { endpoint_id: 'unrelated', model_id: 'other' }),
+  const endpoints = [
+    {
+      id: 'one',
+      listings: [
+        listing(2 * DAY, { model_id: 'model:free', provider_tag: 'provider/bf16' }),
+        listing(DAY, { provider_tag: 'provider/bf16' }),
+        listing(0),
+      ],
+      prices: [price(0, { prompt: '1' })],
+    },
   ]
-  const endpoints = modelEndpoints(rows, 'model').map((endpoint) => ({
-    ...endpoint,
-    prices: [price(0, { prompt: '1' })],
-  }))
-  expect(endpoints).toHaveLength(1)
-  expect(endpoints[0].listings).toHaveLength(3)
   const history = { modelId: 'model', asOf: 3 * DAY, endpoints }
   const traces = pricingHistoryTraces(history, 'prompt')
   expect(traces.map(({ tag, start, end }) => [tag, start, end])).toEqual([
@@ -171,41 +195,4 @@ test('same-price reappearance retains a gap; missing meters replace rather than 
   expect(tagPrices(traces, 'provider', 1.5 * DAY, history.asOf)).toEqual([])
   expect(tagPrices(traces, 'provider', 2 * DAY, history.asOf)).toEqual([1])
   expect(tagPrices(traces, 'new', 4 * DAY, history.asOf)).toEqual([])
-})
-
-test('endpoint prices follow every cursor, including empty partial pages, at one cutoff', async () => {
-  const calls: unknown[] = []
-  const pages = [
-    { page: [price(DAY, { prompt: '2' })], isDone: false, continueCursor: 'second' },
-    { page: [], isDone: false, continueCursor: 'third' },
-    { page: [price(0, { prompt: '1' })], isDone: true, continueCursor: '' },
-  ]
-  const result = await loadEndpointPrices(
-    async (args) => {
-      calls.push(args)
-      return { ...pages[calls.length - 1], as_of: iso(DAY) }
-    },
-    'one',
-    iso(DAY),
-  )
-  expect(result).toEqual([price(DAY, { prompt: '2' }), price(0, { prompt: '1' })])
-  expect(calls).toEqual(
-    [null, 'second', 'third'].map((cursor) => ({
-      endpoint_id: 'one',
-      cutoff: iso(DAY),
-      paginationOpts: { cursor, numItems: 500 },
-    })),
-  )
-  expect(
-    loadEndpointPrices(
-      async ({ paginationOpts }) => {
-        if (paginationOpts.cursor === null) {
-          return { ...pages[0], as_of: iso(DAY) }
-        }
-        throw new Error('failed page')
-      },
-      'one',
-      iso(DAY),
-    ),
-  ).rejects.toThrow('failed page')
 })

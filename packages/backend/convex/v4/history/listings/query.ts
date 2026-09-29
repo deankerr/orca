@@ -5,24 +5,29 @@ import { query } from '../../../_generated/server'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 
-/** Complete context lens; the cutoff bounds observations, not processor completeness. */
-export const lens = query({
-  args: {},
-  returns: v.object({
-    as_of: v.union(v.null(), v.string()),
-    rows: v.array(endpointListingsTable.validator),
-  }),
-  handler: async (ctx) => {
-    const as_of = await cappedCutoff(ctx)
-    if (as_of === null) {
-      return { as_of, rows: [] }
-    }
-    // ponytail: ~6K context rows fit one read; paginate if listings approach transaction limits.
-    const rows = await ctx.db.query(V4_ENDPOINT_LISTINGS_TABLE).collect()
-    return {
-      as_of,
-      rows: rows.filter((row) => row.scan_at <= as_of).map(withoutSystemFields),
-    }
+/** Discover historical members, including endpoints that have since moved to another model. */
+export const endpoints = query({
+  args: { model_id: v.string() },
+  returns: v.array(v.string()),
+  handler: async (ctx, { model_id }) => {
+    const rows = await ctx.db
+      .query(V4_ENDPOINT_LISTINGS_TABLE)
+      .withIndex('by_model_id_and_scan_at', (q) => q.eq('model_id', model_id))
+      .collect()
+    return [...new Set(rows.map((row) => row.endpoint_id))].toSorted()
+  },
+})
+
+/** An endpoint's small, complete context history, reactive to late observations and model moves. */
+export const forEndpoint = query({
+  args: { endpoint_id: v.string() },
+  returns: v.array(endpointListingsTable.validator),
+  handler: async (ctx, { endpoint_id }) => {
+    const rows = await ctx.db
+      .query(V4_ENDPOINT_LISTINGS_TABLE)
+      .withIndex('by_endpoint_id_and_scan_at', (q) => q.eq('endpoint_id', endpoint_id))
+      .collect()
+    return rows.map(withoutSystemFields)
   },
 })
 
