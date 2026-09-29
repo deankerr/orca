@@ -2,7 +2,7 @@ import { entityLogoUrl } from '@orca/backend/convex/shared/entityLogo'
 
 import { cn } from '@/lib/utils'
 
-const LOGO_SERVICE_ORIGIN = 'https://logos.orb.town'
+const LOGO_SERVICE_ORIGIN = process.env.NEXT_PUBLIC_LOGO_SERVICE_ORIGIN ?? 'https://logos.orb.town'
 
 export function EntityAvatar({
   slug,
