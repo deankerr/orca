@@ -3,6 +3,9 @@
 Catalog retains cumulative entity knowledge; Pricing, Listings and Events retain observation history;
 current Stats publishes the latest endpoint readings.
 
+Events is an internal source for [`eventRenderers/`](../../../../docs/events/renderers.md). Renderers
+own consumer-facing interpretation and phrasing; products compose them with retrieval and delivery.
+
 ## Design invariants
 
 - Top-level composition selects inputs and makes fan-out, transaction grouping, failure handling

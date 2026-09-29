@@ -32,10 +32,10 @@ Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage,
 ### Data pipeline
 
 1. **Capture** — scheduled scans preserve upstream observations as durable artifacts in Convex storage or R2.
-2. **Project** — V3 ingestion derives current models, endpoints, and providers plus listing, pricing, and stats series. These power the catalog, entity overview, and pricing history.
-3. **Interpret changes** — a separate change-event pipeline compares scan artifacts and retains entity-change history independently of view ingestion.
+2. **Project** — V4 ingestion derives Catalog, Pricing, Listings, and current Stats. These power the grid, entity overview, and pricing history.
+3. **Interpret changes** — V4 Events retains entity-level changes for accepted scan pairs; event renderers turn that history into structured changes and natural-language items for products.
 
-Migration is ongoing: Monitor, Discord alerts, and the V2 public API still use legacy snapshot-derived tables. See [V3](packages/backend/convex/v3/README.md) and [Change events](packages/backend/convex/changeEvents/README.md) for the current pipeline.
+Migration is ongoing: Monitor, Discord alerts, and the V2 public API still use legacy snapshot-derived tables; V3 queries remain available during the compatibility window. See [V4](packages/backend/convex/v4/README.md) and [Events](docs/events/README.md) for the current pipeline.
 
 ### Stack
 

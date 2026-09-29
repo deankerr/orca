@@ -1,22 +1,29 @@
-# V4 Events
+# Events design
 
-- [Foundation](foundation.md): event meaning and stable addresses.
-- [Projections](projections.md): shared interpretation and globally deferred lifecycle concerns.
-- [Payloads](payloads.md): native change representation and accepted limitations.
-- [Context](context.md): observation-local interpretation and entity ownership.
-- [Selection](selection.md): observed scale, retrieval options, and identity fields for Grid overlay scopes.
-- [Renderers](renderers.md): audience-specific composition and delivery commitments.
-- [Open](open.md): deferred capabilities, possible shapes, and unresolved questions.
+## Decisions
 
-Code: [schema](../../packages/backend/convex/v4/events/table.ts),
-[factory](../../packages/backend/convex/v4/events/prepare.ts),
-[comparison](../../packages/backend/convex/v4/events/compare.ts),
-[queries](../../packages/backend/convex/v4/events/query.ts),
-[ingestion](../../packages/backend/convex/v4/events/ingest.ts).
+- `foundation.md`: observation semantics, stable addresses, and revisable history.
+- `context.md`: entity ownership and historical identity.
+- `field-context.md`: proposed surrounding facts for explaining a change.
+- `payloads.md`: comparison semantics and accepted library limitations.
+- `selection.md`: Grid overlay scope and retrieval tradeoffs.
+- `renderers.md`: shared interpretation and product delivery.
+- `curation.md`: feed selection, telemetry, and capability representation.
+- `pricing.md`: exact prices and independent pricing signals.
+- `feed.md`: HTTP requests and pagination semantics.
 
-## Writing these docs
+## Evidence and examples
 
-- Assume an engineer very familiar with ORCA and Convex.
-- Capture notable decisions, their reasons, accepted limitations, and genuine open questions.
-- State implemented behavior as fact; label future sketches explicitly.
-- Keep topics short, favor bullets, and link to code for field definitions and mechanics.
+- `observations.md`: September 2026 inventory, replay results, and pagination evidence.
+- `event-example.md`: stored event envelope and native change payload.
+- `feed-update-example.md`: a complete illustrative feed item.
+- `feed-lifecycle-example.md`: arrival facts and departure phrasing.
+- `field-changes.md`: field-operation examples.
+
+## Maintaining these notes
+
+- Assume familiarity with ORCA and Convex; retain decisions, reasons, limitations, and analytical observations.
+- Give each fact one home; place specific `❓` questions beside the affected decision.
+- Label proposals and illustrative examples; date measurements and identify their population.
+- Keep files within 50 lines and bullets within 120 characters; use headings and examples instead of paragraphs.
+- Use plain topic names and short module names; omit links and full file paths.

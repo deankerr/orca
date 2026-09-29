@@ -1,13 +1,17 @@
 import { docValidator, paginationOptsValidator, paginationResultValidator } from 'convex/server'
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { internalQuery } from '../../_generated/server'
 import { eventsTable, V4_EVENTS_TABLE } from './table'
+
+/** Captured event facts consumed by renderers, independently of storage system fields. */
+export const event = eventsTable.validator
+export type { EventRow } from './table'
 
 const page = paginationResultValidator(docValidator(V4_EVENTS_TABLE, eventsTable))
 
 /** Event history, newest observation first. */
-export const list = query({
+export const list = internalQuery({
   args: { paginationOpts: paginationOptsValidator },
   returns: page,
   handler: async (ctx, args) =>
@@ -19,7 +23,7 @@ export const list = query({
 })
 
 /** Changes to exactly one model, provider, or endpoint, newest observation first. */
-export const byEntity = query({
+export const byEntity = internalQuery({
   args: {
     entity_kind: v.union(v.literal('model'), v.literal('provider'), v.literal('endpoint')),
     entity_id: v.string(),
@@ -37,7 +41,7 @@ export const byEntity = query({
 })
 
 /** Model and related endpoint events, newest observation first. */
-export const byModel = query({
+export const byModel = internalQuery({
   args: { model_id: v.string(), paginationOpts: paginationOptsValidator },
   returns: page,
   handler: async (ctx, args) =>
@@ -49,7 +53,7 @@ export const byModel = query({
 })
 
 /** Provider and related endpoint events, newest observation first. */
-export const byProvider = query({
+export const byProvider = internalQuery({
   args: { provider_id: v.string(), paginationOpts: paginationOptsValidator },
   returns: page,
   handler: async (ctx, args) =>
