@@ -25,7 +25,21 @@ The generator reads pinned LobeHub packages, selects `*-color.webp` where availa
 
 `OUTPUT_IMAGE_SIZE_PX` in `src/build.ts` controls the generated image size.
 
-Fallback image generation lives in `src/fallback-image.ts` while the placeholder mark is still temporary.
+Fallback image generation lives in `src/fallback-image.ts` and reads `branding/svg/orb-ring-mark.svg`.
+After editing the SVG, regenerate assets and preview with `bunx wrangler dev --port 8787` from this directory.
+
+## Local web preview
+
+The web app defaults to `https://logos.orb.town` in every environment, including development.
+To preview local assets, start the server above and set this in `apps/web/.env.local`:
+
+```dotenv
+NEXT_PUBLIC_LOGO_SERVICE_ORIGIN=http://localhost:8787
+```
+
+Restart the web dev server after changing the override. Remove it to return to the production service.
+This is a full origin (scheme, hostname, and optional port), not just a hostname.
+Convex uses its separate `ENTITY_LOGO_SERVICE_ORIGIN` for Discord embeds, which must remain publicly accessible.
 
 ## Manual Sources
 

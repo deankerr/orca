@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises'
+import nodePath from 'node:path'
+
 import sharp from 'sharp'
 
 import type { AssetGroup } from './contract'
@@ -12,7 +15,7 @@ type FallbackAssetOptions = {
 const FALLBACK_THEME = {
   avatar: {
     background: '#0a0a0a',
-    mark: '#d4d4d4',
+    mark: '#737373',
   },
   dark: {
     background: undefined,
@@ -24,9 +27,21 @@ const FALLBACK_THEME = {
   },
 } satisfies Record<AssetGroup, { background: string | undefined; mark: string }>
 
-// Generate the temporary fallback marks in one place while the final asset is undecided.
+// Read the branding source on each build so artwork tweaks flow into every fallback.
 export async function emitFallbackAsset(args: FallbackAssetOptions): Promise<void> {
-  await sharp(Buffer.from(createFallbackSvg({ group: args.group, sizePx: args.sizePx })))
+  const source = await readFile(
+    nodePath.resolve(import.meta.dir, '../../../branding/svg/orb-ring-mark.svg'),
+    'utf-8',
+  )
+  const theme = FALLBACK_THEME[args.group]
+  const svg = source.replaceAll('#ededed', theme.mark)
+  const image = sharp(Buffer.from(svg), { density: 192 })
+
+  if (theme.background !== undefined) {
+    image.flatten({ background: theme.background })
+  }
+
+  await image
     .resize({
       fit: 'inside',
       height: args.sizePx,
@@ -34,20 +49,4 @@ export async function emitFallbackAsset(args: FallbackAssetOptions): Promise<voi
     })
     .webp({ quality: args.webpQuality })
     .toFile(args.outputPath)
-}
-
-// Keep the placeholder drawing private so replacing it does not touch the build pipeline.
-function createFallbackSvg(args: { group: AssetGroup; sizePx: number }): string {
-  const theme = FALLBACK_THEME[args.group]
-  const background =
-    theme.background === undefined
-      ? ''
-      : `<rect width="128" height="128" fill="${theme.background}"/>`
-
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${args.sizePx}" height="${args.sizePx}" viewBox="0 0 128 128">
-      ${background}
-      <path d="M64 34 94 64 64 94 34 64Z" fill="none" stroke="${theme.mark}" stroke-width="10"/>
-    </svg>
-  `
 }

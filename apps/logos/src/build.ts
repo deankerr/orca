@@ -753,7 +753,7 @@ export function assertValidOutputDimensions(logos: OutputDimensionLogo[]): void 
   }
 }
 
-// The fallback image is isolated because the placeholder art is intentionally temporary.
+// Emit the branded fallback for every public image group.
 async function emitFallback(context: BuildContext): Promise<void> {
   for (const group of ASSET_GROUPS) {
     await emitFallbackAsset({
