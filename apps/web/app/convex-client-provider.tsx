@@ -5,6 +5,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
@@ -51,15 +52,17 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConvexProvider client={convex}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{
-          persister: asyncStoragePersister,
-        }}
-      >
-        {children}
-        {showDevtools && <ReactQueryDevtools />}
-      </PersistQueryClientProvider>
+      <ConvexQueryCacheProvider>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: asyncStoragePersister,
+          }}
+        >
+          {children}
+          {showDevtools && <ReactQueryDevtools />}
+        </PersistQueryClientProvider>
+      </ConvexQueryCacheProvider>
     </ConvexProvider>
   )
 }

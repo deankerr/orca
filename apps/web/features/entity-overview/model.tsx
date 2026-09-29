@@ -10,7 +10,7 @@ import { reasoningLabel, orderEfforts } from './reasoning'
 
 export function ModelOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v3.public.entityOverview.model, { modelId: slug }),
+    convexQuery(api.v4.catalog.models.query.get, { model_id: slug }),
   )
 
   if (!data) {
@@ -36,7 +36,7 @@ export function ModelOverview({ slug }: { slug: string }) {
         <DataDescription value={data.description} />
         <dl>
           <DataValue label="Author" value={data.author_display_name} />
-          <DataDate label="Listed on OpenRouter" value={data.created_at} />
+          <DataDate label="Listed on OpenRouter" value={data.or_created_at} />
           <DataDate label="Knowledge Cutoff" value={data.knowledge_cutoff} />
           <DataValue label="Input" value={data.input_modalities} />
           <DataValue label="Output" value={data.output_modalities} />

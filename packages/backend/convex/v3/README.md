@@ -66,11 +66,11 @@ Scan-derived current views, historical series, and shared inputs for change proc
 
 ## Deployment controls
 
-- Previews bootstrap through init pull; scheduled processes are opt-in.
+- V3 queries, tables, and ingestion remain available for active clients during the V4 rollout.
+- Retirement is a separate release after a compatibility window and review of remaining consumers.
 - Capture runs hourly at :40 with `ORCA_SCAN_ENABLED`; ingestion runs at :42 with `ORCA_INGEST_ENABLED`.
 - New objects use Convex storage by default or R2 with `ORCA_OBJECTS_BACKEND=r2`.
 - Existing objects load through their stored locators.
-- Pull the baseline before enabling capture and ingestion for an independent preview timeline.
 
 ## Design notes
 

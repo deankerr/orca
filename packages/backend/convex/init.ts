@@ -2,14 +2,19 @@ import { v } from 'convex/values'
 
 import { internal } from './_generated/api'
 import { internalMutation } from './_generated/server'
+import { clock } from './v4/clock'
 
-// runs automatically on preview deployments
-
+/** Preview bootstrap: seed two days of V4 history, or resume an existing timeline. */
 const init = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    await ctx.scheduler.runAfter(0, internal.v3.pull.run, {})
+    const scanAt = await clock(ctx)
+    await ctx.scheduler.runAfter(
+      0,
+      internal.v4.routine.run,
+      scanAt === null ? { start_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } : {},
+    )
     return null
   },
 })

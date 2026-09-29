@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 
-import { internalQuery } from '../_generated/server'
+import { internalQuery, query } from '../_generated/server'
 import type { QueryCtx } from '../_generated/server'
 import { V4_INGESTIONS_TABLE } from './ingestion/table'
 
@@ -16,6 +16,13 @@ export async function clock(ctx: QueryCtx): Promise<string | null> {
 
 /** Action/operator access to the same observation clock used by queries and mutations. */
 export const get = internalQuery({
+  args: {},
+  returns: v.union(v.null(), v.string()),
+  handler: clock,
+})
+
+/** Product horizon, subscribed separately so advancing time does not invalidate history pages. */
+export const observe = query({
   args: {},
   returns: v.union(v.null(), v.string()),
   handler: clock,

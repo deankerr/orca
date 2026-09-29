@@ -1,7 +1,15 @@
 import type { api } from '@orca/backend/convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 
-export type PricingHistory = FunctionReturnType<typeof api.v3.public.pricingHistory.get>
+type Listings = FunctionReturnType<typeof api.v4.history.listings.query.forEndpoint>
+type PricingPage = FunctionReturnType<typeof api.v4.history.pricing.query.observe>
+type Prices = PricingPage['page'][number][]
+export type PricingHistory = {
+  modelId: string
+  asOf: number
+  endpoints: { id: string; listings: Listings; prices: Prices }[]
+}
+
 export const DAY = 86_400_000
 export type Sample = [at: number, price: number]
 export type Trace = {
@@ -19,33 +27,43 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
 
   for (const endpoint of pricingHistory.endpoints) {
     let trace: Trace | undefined
-    let listed = false
-    const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row.state]))
+    let context: Listings[number] | undefined
+    let quote: PricingPage['page'][number] | undefined
+    const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row]))
     const prices = new Map(endpoint.prices.map((row) => [Date.parse(row.scan_at), row]))
     const times = [...new Set([...listings.keys(), ...prices.keys()])].toSorted((a, b) => a - b)
 
     for (const at of times) {
+      if (at > pricingHistory.asOf) {
+        break
+      }
       const listing = listings.get(at)
 
       if (listing !== undefined) {
+        context = listing
+        if (listing.state === 'unlisted') {
+          quote = undefined
+        }
         if (trace) {
           trace.end = at
           trace.current = false
           trace = undefined
         }
-
-        listed = listing === 'listed'
       }
 
       const row = prices.get(at)
-
-      if (!listed || !row) {
-        continue
+      if (context?.state === 'listed' && row) {
+        quote = row
       }
 
-      const value = Number(row.meters[meter])
+      const value = Number(quote?.meters[meter])
 
-      if (!Number.isFinite(value) || value <= 0) {
+      if (
+        context?.state !== 'listed' ||
+        context.model_id !== pricingHistory.modelId ||
+        !Number.isFinite(value) ||
+        value <= 0
+      ) {
         if (trace) {
           trace.end = at
           trace.current = false
@@ -58,7 +76,7 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
       if (!trace) {
         trace = {
           id: `${endpoint.id}:${at}`,
-          tag: endpoint.tag,
+          tag: context.provider_tag,
           start: at,
           end: pricingHistory.asOf,
           samples: [],
@@ -112,7 +130,11 @@ export function dailyTrace(trace: Trace, asOf: number): Trace {
   }
   const latest = trace.samples.at(-1)
 
-  if (trace.current && trace.end === asOf && latest) {
+  if (latest && latest[0] > (samples.at(-1)?.[0] ?? trace.start)) {
+    samples.push(latest)
+  }
+
+  if (trace.current && trace.end === asOf && latest && latest[0] < asOf) {
     samples.push([asOf, latest[1]])
   }
 
