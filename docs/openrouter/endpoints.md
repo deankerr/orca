@@ -32,7 +32,6 @@ provider record.
 - `max_prompt_tokens`
 - `max_completion_tokens`
 - `max_tokens_per_image`
-- `capacity_tpm`
 - `limit_rpm`
 - `limit_rpd`
 - `limit_rpm_cf` — 💤

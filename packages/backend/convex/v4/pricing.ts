@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { canonicalJson } from './json'
 import type { Endpoint } from './scan/entities'
 
-/** Selected pricing shared by Catalog and historical storage. */
+/** Storage encoding shared by Catalog and price history. */
 export const pricing = v.object({
   discount: v.number(),
   meters: v.record(v.string(), v.string()),
@@ -28,7 +28,11 @@ export function selectPricing(value: Endpoint['pricing']) {
       (entry): entry is [string, string] => typeof entry[1] === 'string',
     ),
   )
-  return overrides === undefined
-    ? { discount, meters }
-    : { discount, meters, overrides_json: canonicalJson(overrides) }
+  return overrides === undefined ? { discount, meters } : { discount, meters, overrides }
+}
+
+/** Encode arbitrary override keys only when crossing into storage. */
+export function encodePricing(value: ReturnType<typeof selectPricing>) {
+  const { overrides, ...fields } = value
+  return overrides === undefined ? fields : { ...fields, overrides_json: canonicalJson(overrides) }
 }

@@ -63,12 +63,16 @@ export async function completeWork(ctx: MutationCtx, workId: Id<typeof V4_PROCES
 export function assertWorkOutput(
   work: ScanPairTimes,
   input: ScanPairTimes,
-  rows: { scan_at: string }[],
+  rows: { scan_at: string; from_scan_at?: string }[],
 ) {
   if (
     input.from_scan_at !== work.from_scan_at ||
     input.scan_at !== work.scan_at ||
-    rows.some((row) => row.scan_at !== work.scan_at)
+    rows.some(
+      (row) =>
+        row.scan_at !== work.scan_at ||
+        (row.from_scan_at !== undefined && row.from_scan_at !== work.from_scan_at),
+    )
   ) {
     throw new ConvexError('Processor output does not match its ingestion pair')
   }

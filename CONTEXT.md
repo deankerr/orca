@@ -59,3 +59,12 @@ Catalog and current stats are not pair processors.
 **Processor work**:
 One pair processor's obligation for one ingestion. It remains outstanding until its output commits,
 even if later ingestions have completed for that processor.
+
+**Entity event**:
+A normally immutable, self-contained projection of one entity's changes within an ingestion, addressed
+by the observation pair and the entity's identity within its kind. Its content can be regenerated as
+the projection evolves.
+
+**Identity context**:
+The identifying facts accompanying an entity event, including display names and the model, provider,
+and endpoint identities relevant to it.

@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { query } from '../../../_generated/server'
-import { text, flag, strings, date, metadata } from '../fields'
+import { text, flag, strings, date, metadata } from '../../fields'
 import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './table'
 
 /** Interpret the model facts consumed by overview products. */

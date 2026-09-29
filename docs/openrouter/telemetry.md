@@ -1,11 +1,12 @@
 # Endpoint telemetry
 
-OpenRouter endpoint payloads contain volatile performance observations.
+OpenRouter endpoint payloads contain volatile performance and operational observations.
 
 - `stats` Optional. Absence indicates not enough traffic for an observation.
 - `statsByTier` Optional nested stats record for endpoints with tiers like `flex`, `priority` (rare).
   - `statsByTier.default` is equal to `stats` if present.
 - `status` 💤
+- 🧭 ORCA classifies `capacity_tpm` as telemetry.
 
 ## Historical fields
 

@@ -9,6 +9,7 @@ import * as models from './catalog/models/ingest'
 import { currentModelsTable } from './catalog/models/table'
 import * as providers from './catalog/providers/ingest'
 import { currentProvidersTable } from './catalog/providers/table'
+import * as events from './events/ingest'
 import * as listings from './history/listings/ingest'
 import * as pricing from './history/pricing/ingest'
 import { release, createWork } from './ingestion/release'
@@ -18,7 +19,7 @@ import { loadNextPair } from './scan/load'
 import { pairTimes } from './scan/time'
 import * as stats from './stats/ingest'
 
-const acceptedWork = v.object({ pricing: workId, listings: workId })
+const acceptedWork = v.object({ pricing: workId, listings: workId, events: workId })
 
 /** Release consecutive pairs; only Catalog is a prerequisite for accepting each pair. */
 export const run = internalAction({
@@ -83,6 +84,12 @@ export const run = internalAction({
     }
 
     try {
+      await events.process(ctx, pair, work.events)
+    } catch (error: unknown) {
+      console.error('[v4:events] failed; work remains pending', { work_id: work.events, error })
+    }
+
+    try {
       await stats.process(ctx, pair.next.scan_at, pair.next.endpoints.values())
     } catch (error: unknown) {
       console.error('[v4:current-stats] failed; previous publication retained', {
@@ -96,7 +103,7 @@ export const run = internalAction({
   },
 })
 
-/** Accept Catalog and declare every History obligation atomically; the action owns the attempts. */
+/** Accept Catalog and declare processor obligations atomically; the action owns the attempts. */
 export const commitIngestion = internalMutation({
   args: {
     ...pairTimes.fields,
@@ -120,7 +127,8 @@ export const commitIngestion = internalMutation({
 
     const pricingWork = await createWork(ctx, ingestionId, 'pricing')
     const listingsWork = await createWork(ctx, ingestionId, 'listings')
-    return { pricing: pricingWork, listings: listingsWork }
+    const eventsWork = await createWork(ctx, ingestionId, 'events')
+    return { pricing: pricingWork, listings: listingsWork, events: eventsWork }
   },
 })
 

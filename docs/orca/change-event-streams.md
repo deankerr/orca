@@ -1,5 +1,36 @@
 # Change Event Streams
 
+## V4 direction
+
+V4 events are a current, repairable projection of observed changes. The following decisions supersede
+the original CES concept below:
+
+- One base event contains an entity's changes for one ingestion. Pricing has dedicated structure and
+  handling; metadata leaves renderers responsible for deciding which fields to present.
+- Follow existing V4 data conventions, working toward shared normalization across products as concrete
+  needs arise.
+- Describe value changes using the established `json-diff-ts` changeset format.
+- Select historical context through a common field set per event kind. Routine updates need little
+  beyond the entity's identified Catalog fields; appearances and disappearances can carry richer data.
+  Keep additional context metadata-like, allowing selection to evolve without requiring every old
+  event to be rewritten.
+- An observation pair (`from_scan_at`, `scan_at`) and entity identity within its kind address the event
+  independently of its representation. Refining past events is more important than preserving a
+  particular projection or providing an incremental correction history.
+- Build event generation and deliberate regeneration on V4's existing observation-pair loading and
+  processor-work structure. Payload shape and context selection remain refinable projection decisions.
+- Renderers compose ordinary events over a selected span. Grouping by model within an ingestion is one
+  example, rather than a requirement for persisted groups or a user-facing grouping option.
+- Batching, waiting, and event-storm handling belong downstream of base events. Discord publication
+  introduces the irreversible commitment.
+- A JSON feed is the first product for exercising shared selection, composition, and natural-language
+  rendering that can also serve Convex clients and eventual Discord alerts.
+
+## Original CES concept
+
+The remaining sections record the earlier concept behind the V3 stand-in. Its immutable events,
+per-category processing responsibilities, and Discord-first product model are superseded above.
+
 CES provides a framework for producing events, uncoupled from modes of input and output.
 It does not itself answer “What makes a useful event?”: that answer is unbounded in complexity
 and belongs to rules implemented within the framework.

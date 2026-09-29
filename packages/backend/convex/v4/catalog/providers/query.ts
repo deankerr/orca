@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { query } from '../../../_generated/server'
-import { text, strings, metadata } from '../fields'
+import { text, strings, metadata } from '../../fields'
 import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'
 
 const url = z
