@@ -5,7 +5,6 @@ import type { IChange } from 'json-diff-ts'
 
 import { selectEndpoint, selectModel, selectProvider } from '../facts'
 import type { Scan, ScanPair } from '../scan/extract'
-import type { ScanPairTimes } from '../scan/time'
 import { compare } from './compare'
 import type { EventRow } from './table'
 
@@ -13,7 +12,6 @@ import type { EventRow } from './table'
 export function prepare(pair: ScanPair): EventRow[] {
   const previous = project(pair.previous)
   const next = project(pair.next)
-  const times = { from_scan_at: pair.previous.scan_at, scan_at: pair.next.scan_at }
 
   return (
     [
@@ -24,7 +22,7 @@ export function prepare(pair: ScanPair): EventRow[] {
   ).flatMap(([collection, entity_kind]) =>
     compare(previous[collection], next[collection]).map((change) =>
       createRow({
-        ...times,
+        scan_at: pair.next.scan_at,
         observation: change.type === Operation.REMOVE ? previous : next,
         entity_kind,
         change,
@@ -47,17 +45,18 @@ function project(scan: Scan) {
 
 /** Resolve every identity within the selected observation and construct its complete event row. */
 function createRow({
+  scan_at,
   observation,
   entity_kind,
   change,
-  ...times
-}: ScanPairTimes & {
+}: {
+  scan_at: string
   observation: ReturnType<typeof project>
   entity_kind: EventRow['entity_kind']
   change: IChange
 }): EventRow {
   const fields = {
-    ...times,
+    scan_at,
     entity_id: change.key,
     type: change.type,
     change_json: JSON.stringify(change),

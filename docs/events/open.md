@@ -8,13 +8,10 @@
 
 ## Deferred capabilities
 
-| Capability             | Possible starting point                                                                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chronological history  | Index observation time and paginate. The current 100-row inspection feed uses write order, so a late retry can surface old observations at its head.  |
-| Focused selection      | Index kind/ID plus time for entity history, or model/provider IDs already in context for grouped views. Choose combinations from actual reader needs. |
-| Change-based selection | Derive fields such as `has_pricing_change` or selected changed paths when query needs justify them.                                                   |
-| Richer field context   | Capture selected before/after values, such as complete pricing around a changed meter.                                                                |
-| Large pair output      | Stage bounded batches and publish on completion if one pair exceeds the current single-mutation envelope.                                             |
+| Capability                      | Possible starting point                                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Additional selection dimensions | Build on the existing entity/model/provider queries; filter a bounded working set or add indexes when reader needs justify them. |
+| Richer field context            | Capture selected before/after values, such as complete pricing around a changed meter.                                           |
 
 - Regeneration, backfill, and provenance are [globally deferred projection concerns](projections.md#globally-deferred).
 - Transaction rollback and concurrent retry checks can use the shared Convex test harness when it exists.
@@ -27,7 +24,7 @@
 
 ## Open questions
 
-- Which first reader drives selection: exact entity history, a model with its endpoints, or pricing activity?
+- How should the overlay [compose selection scopes](selection.md#overlay-scope-questions) and relate them to the current Grid selection?
 - How should selectors and renderers present the independent signals from normalized prices, `display_pricing`, opaque `pricing_json` values, and pricing-version-only changes?
 - How should renderers present tiny, real price changes at useful token-volume scales while preserving exact values? Text-token rates are expressed per token.
 - Which explanations need complete old/new pricing, or both old and new related display names when an endpoint changes relationships?

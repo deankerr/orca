@@ -64,7 +64,7 @@ test('joint additions and removals carry full values and resolve all identities 
   expect(removed).toHaveLength(3)
   for (const rows of [added, removed]) {
     for (const row of rows) {
-      expect(row.from_scan_at).toBe(from)
+      expect(row).not.toHaveProperty('from_scan_at')
       expect(row.scan_at).toBe(to)
       expect(row.type).toBe(rows === added ? 'ADD' : 'REMOVE')
       expect(JSON.parse(row.change_json)).toMatchObject({ key: row.entity_id, type: row.type })

@@ -5,7 +5,6 @@ import type { Infer } from 'convex/values'
 import { currentEndpointsTable } from '../catalog/endpoints/table'
 import { currentModelsTable } from '../catalog/models/table'
 import { currentProvidersTable } from '../catalog/providers/table'
-import { pairTimes } from '../scan/time'
 
 export const V4_EVENTS_TABLE = 'v4_events' as const
 
@@ -18,7 +17,7 @@ const endpoint = currentEndpointsTable.validator.pick(
 )
 
 const fields = {
-  ...pairTimes.fields,
+  scan_at: v.string(),
   entity_id: v.string(),
   type: v.union(v.literal('ADD'), v.literal('UPDATE'), v.literal('REMOVE')),
   /** One serialized json-diff-ts entity-root node; values may have arbitrary keys. */
@@ -45,5 +44,9 @@ export const eventsTable = defineTable(
     }),
   ),
 )
+  .index('by_scan_at', ['scan_at'])
+  .index('by_entity_kind_and_entity_id_and_scan_at', ['entity_kind', 'entity_id', 'scan_at'])
+  .index('by_model_id_and_scan_at', ['context.model.model_id', 'scan_at'])
+  .index('by_provider_id_and_scan_at', ['context.provider.provider_id', 'scan_at'])
 
 export type EventRow = Infer<typeof eventsTable.validator>

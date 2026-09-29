@@ -58,7 +58,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
     },
   } as unknown as MutationCtx
   const row: EventRow = {
-    ...pair,
+    scan_at: pair.scan_at,
     entity_kind: 'model',
     entity_id: 'author/model',
     type: 'ADD',
@@ -70,7 +70,6 @@ test('event commits bind both pair times, complete empty work, and make retries 
   for (const mismatched of [
     { ...args, from_scan_at: 'wrong', rows: [] },
     { ...args, scan_at: 'wrong', rows: [] },
-    { ...args, rows: [{ ...row, from_scan_at: 'wrong' }] },
     { ...args, rows: [{ ...row, scan_at: 'wrong' }] },
   ]) {
     await rejects(commitHandler(ctx, mismatched), /Processor output does not match/)
