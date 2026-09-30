@@ -6,6 +6,7 @@ const labels: Record<string, string> = {
   'pricing.completion': 'Output price',
   'pricing.input_cache_read': 'Cache-read price',
   'pricing.input_cache_write': 'Cache-write price',
+  'pricing.input_cache_write_1h': 'Cache-write 1h price',
   'pricing.discount': 'Discount',
   short_name: 'Name',
   displayName: 'Name',
@@ -40,16 +41,19 @@ const labels: Record<string, string> = {
   'data_policy.retentionDays': 'Data retention days',
 }
 
-/** Shift fixed-point prices exactly; unfamiliar representations retain their per-token form. */
-function tokenPrice(price: string): string {
+/** Scale fixed-point prices exactly; unfamiliar representations cannot be safely scaled. */
+export function tokenPrice(price: string, places = 6): string | null {
   const decimal = /^(?<whole>\d+)(?:\.(?<fraction>\d+))?$/.exec(price)?.groups
+
   if (decimal === undefined || price.length > 100) {
-    return `$${price} per token`
+    return null
   }
-  const fraction = (decimal.fraction ?? '').padEnd(6, '0')
-  const whole = BigInt(`${decimal.whole}${fraction.slice(0, 6)}`).toLocaleString('en-US')
-  const remainder = fraction.slice(6).replace(/0+$/, '')
-  return `$${whole}${remainder === '' ? '' : `.${remainder}`} per million tokens`
+
+  const fraction = (decimal.fraction ?? '').padEnd(places, '0')
+  const whole = BigInt(`${decimal.whole}${fraction.slice(0, places)}`).toLocaleString('en-US')
+  const remainder = fraction.slice(places).replace(/0+$/, '')
+
+  return `$${whole}${remainder === '' ? '' : `.${remainder}`}`
 }
 
 function value(input: FieldValue, path: string): string {
@@ -73,9 +77,10 @@ function value(input: FieldValue, path: string): string {
       'pricing.completion',
       'pricing.input_cache_read',
       'pricing.input_cache_write',
+      'pricing.input_cache_write_1h',
     ].includes(path)
   ) {
-    return tokenPrice(input)
+    return tokenPrice(input) ?? `$${input}`
   }
   if (Array.isArray(input)) {
     return input.map((item) => JSON.stringify(item)).join(', ') || '[]'

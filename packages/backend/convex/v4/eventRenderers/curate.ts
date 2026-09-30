@@ -61,6 +61,7 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
       'input_modalities',
       'output_modalities',
       'description',
+      'warning_message',
       'author_display_name',
       'hf_slug',
       'knowledge_cutoff',
@@ -69,8 +70,25 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
     reasoning_config: ['is_mandatory_reasoning', 'supported_reasoning_efforts'],
   },
   provider: {
-    ...fields('provider_id', 'displayName', 'headquarters', 'datacenters', 'statusPageUrl'),
-    dataPolicy: ['termsOfServiceURL', 'privacyPolicyURL'],
+    ...fields(
+      'provider_id',
+      'displayName',
+      'headquarters',
+      'datacenters',
+      'statusPageUrl',
+      'hasChatCompletions',
+      'hasCompletions',
+      'byokEnabled',
+    ),
+    dataPolicy: [
+      'termsOfServiceURL',
+      'privacyPolicyURL',
+      'training',
+      'retainsPrompts',
+      'requiresUserIDs',
+      'canPublish',
+      'retentionDays',
+    ],
   },
   endpoint: {
     ...fields(
@@ -101,6 +119,7 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
       'completion',
       'input_cache_read',
       'input_cache_write',
+      'input_cache_write_1h',
       'audio',
       'input_audio_cache',
       'image',

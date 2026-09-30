@@ -67,12 +67,18 @@ Run from `packages/backend`, selecting the deployment explicitly:
 bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 ```
 
-| Operation             | Function                                                     | Arguments                                                                                   |
-| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Resume ingestion      | `v4/routine:run`                                             | `{}`                                                                                        |
-| Inspect pending work  | `v4/ingestion/progress:listProcessorWork`                    | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
-| Retry one obligation  | `v4/retry:pricing` / `v4/retry:listings` / `v4/retry:events` | `{"work_id":"…"}`                                                                           |
-| Refresh current Stats | `v4/refreshStats:run`                                        | `{}`                                                                                        |
+| Operation              | Function                                                     | Arguments                                                                                   |
+| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Resume ingestion       | `v4/routine:run`                                             | `{}`                                                                                        |
+| Inspect pending work   | `v4/ingestion/progress:listProcessorWork`                    | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
+| Retry one obligation   | `v4/retry:pricing` / `v4/retry:listings` / `v4/retry:events` | `{"work_id":"…"}`                                                                           |
+| Refresh current Stats  | `v4/refreshStats:run`                                        | `{}`                                                                                        |
+| Send one Discord event | `v4/discord:send`                                            | `{"event_id":"…"}`                                                                          |
+
+Manual Discord delivery requires `ORCA_DISCORD_WEBHOOK_URL` in the target deployment's environment.
+`v4/discord:sendExamples {}` replays the temporary 25-event dev gallery with one-second gaps.
+The event ID is a stored `v4_events` document ID. Each `send` call makes one request and waits for Discord's
+confirmation; errors surface to the caller. There is no retry or deduplication, so calling twice can post twice.
 
 `ORCA_V4_INGEST_CRON_ENABLED=true` admits new hourly cron starts. Existing continuation chains
 and manual runs proceed independently of the flag.

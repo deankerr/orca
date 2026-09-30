@@ -87,14 +87,12 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   ] satisfies Extract<FeedEvent, { changes: unknown }>['changes']) {
     expect(event.changes).toContainEqual(expected)
   }
-  expect(event.details).toContain(
-    'Input price changed from $0.1 per million tokens to $0.1001 per million tokens.',
-  )
+  expect(event.details).toContain('Input price changed from $0.1 to $0.1001.')
   expect(event.details).toContain('Reasoning support changed from yes to no.')
   expect(event.details).toContain('Supported parameters added: "response_format".')
   expect(event.details).toContain('Supported parameters removed: "temperature".')
-  expect(event.details).toContain('Output price was removed; previously $2 per million tokens.')
-  expect(event.details).toContain('Cache-read price was added: $0 per million tokens.')
+  expect(event.details).toContain('Output price was removed; previously $2.')
+  expect(event.details).toContain('Cache-read price was added: $0.')
   expect(event.details).toContain('Quantization changed from "fp8" to null.')
 })
 
@@ -206,7 +204,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
     type: 'endpoint_added',
     summary: 'Model is now listed on Regional offering (provider/fp8).',
     details: [
-      'Input price: $0.1 per million tokens.',
+      'Input price: $0.1.',
       'Context length: 200.',
       'Maximum completion tokens: 100.',
       'Supported parameters: "tools".',
@@ -230,7 +228,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
     throw new Error('Expected departure')
   }
   expect(removal.summary).toBe('Model is no longer listed on Regional offering (provider/fp8).')
-  expect(removal.details).toContain('Input price when last observed: $0.1 per million tokens.')
+  expect(removal.details).toContain('Input price when last observed: $0.1.')
   expect(removal.details).toContain('Supported parameters when last observed: "tools".')
 })
 
@@ -284,7 +282,7 @@ test('text preserves tiny prices and literal upstream content; malformed events 
     },
   )
   expect(render(row)?.details).toEqual([
-    'Input price changed from $0.01 per million tokens to $0.000000000000001 per million tokens.',
+    'Input price changed from $0.01 to $0.000000000000001.',
     'Provider name changed from "old_name" to "new_`name`".',
   ])
   expect(() => render({ ...row, change_json: '{broken' })).toThrow()

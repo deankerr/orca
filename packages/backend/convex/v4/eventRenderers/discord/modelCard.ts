@@ -1,0 +1,80 @@
+import type { CuratedEvent, FieldValue } from '../curate'
+import { colors, embedCard, componentCard, gridUrl, logoUrl } from './card'
+import type { Card, DiscordUrls } from './card'
+import { code, escape, field } from './display'
+import { factsText, fieldChange, fieldValue, quote } from './fields'
+
+/** Model additions introduce the model; updates and departures use compact cards. */
+export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
+  if (event.entity_kind !== 'model') {
+    return null
+  }
+
+  const { model } = event.context
+  const name = model.display_name
+  const slug = model.model_id
+  const url = gridUrl(slug, urls)
+  const logo = logoUrl(slug, urls)
+
+  if ('after' in event) {
+    const content = [
+      `### ${escape(name)} ✨\n[${escape(slug)}](${url})`,
+      modelDetails(event.after),
+      `-# <t:${Math.floor(Date.parse(event.observed_at) / 1000)}:f>`,
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+
+    return componentCard(content, {
+      color: colors.added,
+      thumbnail: { url: logo, description: `${name} logo` },
+    })
+  }
+
+  const content =
+    'before' in event
+      ? [
+          `**${escape(name)}** · Removed`,
+          'No longer listed on OpenRouter.\nLast known model details:',
+          modelDetails(event.before),
+        ]
+      : [
+          `**${escape(name)}** · Updated`,
+          ...event.changes.map((change) =>
+            fieldChange(change, {
+              prose: change.path === 'description' || change.path === 'warning_message',
+            }),
+          ),
+        ]
+
+  return embedCard(content.filter(Boolean).join('\n\n'), {
+    author: { name: slug, url, iconURL: logo },
+    timestamp: event.observed_at,
+    color: 'before' in event ? colors.removed : colors.updated,
+  })
+}
+
+/** Model facts in display order; all field-specific choices stay beside the card. */
+function modelDetails(facts: Record<string, FieldValue>): string {
+  const inputs = facts.input_modalities
+  const outputs = facts.output_modalities
+  const modalities =
+    Array.isArray(inputs) && Array.isArray(outputs)
+      ? `${fieldValue(inputs)} → ${fieldValue(outputs)}`
+      : factsText(facts, ['input_modalities', 'output_modalities'])
+
+  return [
+    [modalities, facts.supports_reasoning === true ? code('reasoning') : '']
+      .filter(Boolean)
+      .join(' · '),
+    typeof facts.description === 'string' && facts.description.trim() !== ''
+      ? quote(facts.description)
+      : '',
+    factsText(facts, ['knowledge_cutoff']),
+    typeof facts.warning_message === 'string' && facts.warning_message.trim() !== ''
+      ? field('warning_message', quote(facts.warning_message), { layout: 'block' })
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
