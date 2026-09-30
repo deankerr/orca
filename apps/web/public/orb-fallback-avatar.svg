@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Muted avatar fallback; background matches the generated logo-service asset. -->
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#737373" stroke-width="4"/>
+  <ellipse rx="12" ry="4.8" transform="translate(39 24) rotate(-33)" fill="#737373"/>
+</svg>

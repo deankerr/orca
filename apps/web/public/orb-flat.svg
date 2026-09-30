@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- flat tonal orb with eye patch, no gradient -->
+  <circle cx="32" cy="32" r="28" fill="#1f1f1f" stroke="#3a3a3a" stroke-width="1.5"/>
+  <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed"/>
+</svg>
