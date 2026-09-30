@@ -1,17 +1,16 @@
 # V3
 
-Scan-derived current views, historical series, and shared inputs for change processing.
+Scan-derived current views and historical series retained for V3 query compatibility.
 
 ## Modules
 
-| Module         | Responsibility                                                                       |
-| -------------- | ------------------------------------------------------------------------------------ |
-| `scan`         | Capture, artifact identity, discovery, and loading.                                  |
-| `objects`      | Named-object storage and retrieval through Convex storage or R2.                     |
-| `projections`  | Shared validation, text scope, record construction, and structural comparison.       |
-| `views`        | Table-specific adaptation, write planning, application, and exports.                 |
-| `changeEvents` | Retained change event inputs, interpretation, and durable entity-change history.     |
-| `v3`           | Ingestion, ingestion records, pull, provider refresh, and the public Convex queries. |
+| Module        | Responsibility                                                                       |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `scan`        | Capture, artifact identity, discovery, and loading.                                  |
+| `objects`     | Named-object storage and retrieval through Convex storage or R2.                     |
+| `projections` | Shared validation, text scope, record construction, and structural comparison.       |
+| `views`       | Table-specific adaptation, write planning, application, and exports.                 |
+| `v3`          | Ingestion, ingestion records, pull, provider refresh, and the public Convex queries. |
 
 ## Shared projection
 
@@ -31,14 +30,13 @@ Scan-derived current views, historical series, and shared inputs for change proc
 - The action updates views, then records ingestion completion in a separate mutation.
 - Retry-safe view writes allow failures to retry the same source pair before advancing the cursor.
 - The latest ingestion record defines the current scan and its observation time defines the ORCA clock.
-- CES uses temporary per-comparison receipts and a standalone runner independent of view ingestion.
 - Ingestion assumes one runner; backfill, recovery, and pulls require exclusive execution.
 - An ingestion failure stops forward processing until developer intervention.
 - Manual ingestion accepts `once: true` to consume one artifact without scheduling the next step.
 
 ## Raw inspection
 
-- `/admin/changes` browses ingestion pairs and compares explicit artifacts through a public action.
+- `/admin/changes` browses V4 ingestion pairs and compares explicit artifacts through a public action.
 - Inspection uses shared projections independently of ingestion, including arbitrary net comparisons.
 - Optional owner selection returns scoped changes and complete before/after projected records.
 - Comparisons are computed on demand; the ingestion index alone is reactive.
@@ -75,5 +73,5 @@ Scan-derived current views, historical series, and shared inputs for change proc
 ## Design notes
 
 - [Product objectives](../../../../docs/orca/objectives.md)
-- [Change Event Streams](../../../../docs/orca/change-event-streams.md)
+- [V4 Events](../../../../docs/events/README.md)
 - [Raw change stream](../../../../docs/orca/raw-change-stream.md)

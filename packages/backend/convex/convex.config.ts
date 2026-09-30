@@ -39,8 +39,6 @@ const app = defineApp({
     ORCA_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables V4's scheduled entry point; direct run calls and existing continuations bypass it. */
     ORCA_V4_INGEST_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables scheduled change-event ingestion and processing, independently of catalog-view ingestion. */
-    ORCA_CES_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */
     ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables the daily upstream analytics collection workflow. */

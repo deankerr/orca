@@ -4,14 +4,6 @@ import { defineSchema } from 'convex/server'
 import { endpointsTable } from './catalog/endpoints/table'
 import { modelDescriptionsTable, modelsTable } from './catalog/models/table'
 import { providersTable } from './catalog/providers/table'
-import {
-  CHANGE_EVENTS_TABLE,
-  CHANGE_EVENT_INPUTS_TABLE,
-  CHANGE_EVENT_INGESTIONS_TABLE,
-  changeEventsTable,
-  changeEventInputsTable,
-  changeEventIngestionsTable,
-} from './changeEvents/schema'
 import { changesTable } from './changes/table'
 import { subscriptionsTable } from './discord/subscriptions/table'
 import { LOCKS_TABLE, locksTable } from './locks/table'
@@ -22,6 +14,7 @@ import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.t
 import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './v4/catalog/endpoints/table'
 import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './v4/catalog/models/table'
 import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './v4/catalog/providers/table'
+import { V4_EVENTS_TABLE, eventsTable } from './v4/events/table'
 import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './v4/history/listings/table'
 import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './v4/history/pricing/table'
 import { V4_ENDPOINT_STATS_TABLE, endpointStatsTable } from './v4/history/stats/table'
@@ -51,10 +44,6 @@ import {
 
 export default defineSchema(
   {
-    [CHANGE_EVENTS_TABLE]: changeEventsTable,
-    [CHANGE_EVENT_INPUTS_TABLE]: changeEventInputsTable,
-    [CHANGE_EVENT_INGESTIONS_TABLE]: changeEventIngestionsTable,
-
     alerts_discord_subscriptions: subscriptionsTable,
 
     [LOCKS_TABLE]: locksTable,
@@ -80,6 +69,7 @@ export default defineSchema(
 
     [V4_INGESTIONS_TABLE]: ingestionsTable,
     [V4_PROCESSOR_WORK_TABLE]: processorWorkTable,
+    [V4_EVENTS_TABLE]: eventsTable,
     [V4_CURRENT_STATS_TABLE]: currentStatsTable,
     [V4_ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [V4_ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,

@@ -19,6 +19,7 @@ export const V4_PROCESSOR_WORK_TABLE = 'v4_processor_work' as const
 export const processorName = v.union(
   v.literal('pricing'),
   v.literal('listings'),
+  v.literal('events'),
   v.literal('stats'),
 )
 export type ProcessorName = Infer<typeof processorName>

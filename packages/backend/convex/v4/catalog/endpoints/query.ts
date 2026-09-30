@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { query } from '../../../_generated/server'
 import { clock } from '../../clock'
-import { flag, strings, date, metadata } from '../fields'
+import { flag, strings, date, metadata } from '../../fields'
 import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
 
 const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000

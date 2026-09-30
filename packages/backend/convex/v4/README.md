@@ -1,22 +1,25 @@
 # V4
 
-Catalog retains cumulative entity knowledge; Pricing and Listings retain observation history;
+Catalog retains cumulative entity knowledge; Pricing, Listings and Events retain observation history;
 current Stats publishes the latest endpoint readings.
+
+Events is an internal source for [`eventRenderers/`](../../../../docs/events/renderers.md). Renderers
+own consumer-facing interpretation and phrasing; products compose them with retrieval and delivery.
 
 ## Design invariants
 
 - Top-level composition selects inputs and makes fan-out, transaction grouping, failure handling
   and continuation explicit. Modules own projection and persistence; composition imports their
   phase files directly.
-- Load each pair once and share the observations across initialization, Catalog, History and Stats.
+- Load each pair once and share the observations across initialization, Catalog, History, Events and Stats.
   Pass prepared payloads across Convex mutation boundaries. [Objects](../objects/README.md) owns
   source selection and compressed transfer.
-- Commit Models, Providers, Endpoints, the ingestion record and Pricing/Listings obligations in
+- Commit Models, Providers, Endpoints, the ingestion record and Pricing/Listings/Events obligations in
   one transaction. Acceptance advances the shared observation clock in `clock.ts`.
-- Commit each History payload and its work completion together, including empty output. Validate
+- Commit each History/Events payload and its work completion together, including empty output. Validate
   both pair times against the obligation's ingestion. Completed work is idempotent.
-- Await Pricing, Listings and Stats independently after acceptance, then schedule continuation.
-  Failed History attempts remain pending for manual retry. An interrupted routine resumes from
+- Await Pricing, Listings, Events and Stats independently after acceptance, then schedule continuation.
+  Failed History/Events attempts remain pending for manual retry. An interrupted routine resumes from
   the clock on the next cron/manual run.
 - Stats stores its observation time and readings in one cache document. Newer publications supersede older attempts;
   failure retains the previous snapshot, and recovery selects the latest ingested observation.
@@ -64,12 +67,12 @@ Run from `packages/backend`, selecting the deployment explicitly:
 bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 ```
 
-| Operation             | Function                                  | Arguments                                                                                   |
-| --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Resume ingestion      | `v4/routine:run`                          | `{}`                                                                                        |
-| Inspect pending work  | `v4/ingestion/progress:listProcessorWork` | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
-| Retry one obligation  | `v4/retry:pricing` / `v4/retry:listings`  | `{"work_id":"…"}`                                                                           |
-| Refresh current Stats | `v4/refreshStats:run`                     | `{}`                                                                                        |
+| Operation             | Function                                                     | Arguments                                                                                   |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Resume ingestion      | `v4/routine:run`                                             | `{}`                                                                                        |
+| Inspect pending work  | `v4/ingestion/progress:listProcessorWork`                    | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
+| Retry one obligation  | `v4/retry:pricing` / `v4/retry:listings` / `v4/retry:events` | `{"work_id":"…"}`                                                                           |
+| Refresh current Stats | `v4/refreshStats:run`                                        | `{}`                                                                                        |
 
 `ORCA_V4_INGEST_CRON_ENABLED=true` admits new hourly cron starts. Existing continuation chains
 and manual runs proceed independently of the flag.

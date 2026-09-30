@@ -1,11 +1,12 @@
 import { paginationOptsValidator, paginationResultValidator } from 'convex/server'
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 
 import { action, query } from '../_generated/server'
-import { OBJECTS_LOCATORS_TABLE } from '../objects/table'
-import type { ScanComparison, ScanProjection } from '../projections'
-import { prepareComparison } from '../projections/documents'
-import { INITIAL_SCAN_ARTIFACT_ID, V3_SCAN_INGESTIONS_TABLE } from '../v3/ingestions.table'
+import { loadMany } from '../objects'
+import { compareScanProjections, ScanProjection } from '../projections'
+import type { ScanComparison } from '../projections'
+import { V4_INGESTIONS_TABLE } from '../v4/ingestion/table'
+import { artifactName, parseScanArtifact } from './artifact'
 
 type Collection = keyof ScanProjection['catalog']
 type OwnerRecord = ScanProjection['catalog'][Collection][string]
@@ -21,52 +22,31 @@ export type InspectionResult = {
   } | null
 }
 
-/** Browse ingestion pairs; availability means a local locator exists, not that bytes were fetched. */
+/** Browse accepted V4 pairs in observation order; source availability is checked when comparing. */
 export const ingestions = query({
   args: { paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(
     v.object({
-      id: v.id(V3_SCAN_INGESTIONS_TABLE),
-      fromArtifactId: v.union(v.string(), v.null()),
+      id: v.id(V4_INGESTIONS_TABLE),
+      fromArtifactId: v.string(),
       toArtifactId: v.string(),
       scanAt: v.string(),
-      available: v.object({ from: v.boolean(), to: v.boolean() }),
     }),
   ),
   handler: async (ctx, { paginationOpts }) => {
     const result = await ctx.db
-      .query(V3_SCAN_INGESTIONS_TABLE)
+      .query(V4_INGESTIONS_TABLE)
+      .withIndex('by_scan_at')
       .order('desc')
       .paginate(paginationOpts)
-    async function available(name: string) {
-      if (name === INITIAL_SCAN_ARTIFACT_ID) {
-        return true
-      }
-      return (
-        (await ctx.db
-          .query(OBJECTS_LOCATORS_TABLE)
-          .withIndex('by_path_name', (q) => q.eq('path', 'scans').eq('name', name))
-          .unique()) !== null
-      )
-    }
     return {
       ...result,
-      page: await Promise.all(
-        result.page.map(async (row) => {
-          const [from, to] = await Promise.all([
-            available(row.from_artifact_id),
-            available(row.to_artifact_id),
-          ])
-          return {
-            id: row._id,
-            fromArtifactId:
-              row.from_artifact_id === INITIAL_SCAN_ARTIFACT_ID ? null : row.from_artifact_id,
-            toArtifactId: row.to_artifact_id,
-            scanAt: row.scan_at,
-            available: { from, to },
-          }
-        }),
-      ),
+      page: result.page.map((row) => ({
+        id: row._id,
+        fromArtifactId: artifactName(row.from_scan_at),
+        toArtifactId: artifactName(row.scan_at),
+        scanAt: row.scan_at,
+      })),
     }
   },
 })
@@ -86,7 +66,17 @@ export const compare = action({
   // Convex sorts object keys in transit; JSON text preserves the comparison's authored order.
   returns: v.string(),
   handler: async (ctx, { fromArtifactId, toArtifactId, owner }) => {
-    const { previous, next, document } = await prepareComparison(ctx, fromArtifactId, toArtifactId)
+    const names = [toArtifactId, ...(fromArtifactId === null ? [] : [fromArtifactId])]
+    const [nextText, previousText] = await loadMany(
+      ctx,
+      names.map((name) => ({ path: 'scans', name })),
+    )
+    const next = project(toArtifactId, nextText)
+    const previous =
+      fromArtifactId === null
+        ? ScanProjection.parse({ id: 'initial', scan_at: '', entries: [] })
+        : project(fromArtifactId, previousText)
+    const { document } = compareScanProjections(previous, next)
     if (owner === undefined) {
       return JSON.stringify({ document, owner: null } satisfies InspectionResult)
     }
@@ -110,3 +100,10 @@ export const compare = action({
     } satisfies InspectionResult)
   },
 })
+
+function project(id: string, text: string | null | undefined): ScanProjection {
+  if (text === null || text === undefined) {
+    throw new ConvexError(`Scan artifact not found: ${id}`)
+  }
+  return ScanProjection.parse(parseScanArtifact(id, text))
+}

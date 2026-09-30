@@ -1,4 +1,4 @@
-/* eslint-disable typescript/no-unsafe-type-assertion -- Minimal storage double invokes the actual Convex action handler. */
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal storage and query doubles invoke the actual Convex handlers. */
 import { expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 
@@ -6,12 +6,73 @@ import type { ApiFromModules, FunctionArgs, FunctionReturnType } from 'convex/se
 import { gzipSync } from 'fflate'
 import { applyChangeset } from 'json-diff-ts'
 
-import type { ActionCtx } from '../_generated/server'
+import type { ActionCtx, QueryCtx } from '../_generated/server'
 import { ScanProjection } from '../projections'
-import { compare } from './inspection'
+import { compare, ingestions } from './inspection'
 import type { InspectionResult } from './inspection'
 
 type Compare = ApiFromModules<{ inspection: { compare: typeof compare } }>['inspection']['compare']
+type Ingestions = ApiFromModules<{
+  inspection: { ingestions: typeof ingestions }
+}>['inspection']['ingestions']
+
+test('the inspection index maps V4 observation pairs and preserves native pagination', async () => {
+  const paginationOpts = { numItems: 1, cursor: 'start', endCursor: 'end', maximumBytesRead: 1000 }
+  const result = {
+    page: [
+      {
+        _id: 'ingestion',
+        from_scan_at: '2026-09-29T00:00:00.000Z',
+        scan_at: '2026-09-29T01:00:00.000Z',
+      },
+    ],
+    continueCursor: 'continue',
+    isDone: false,
+    splitCursor: 'split',
+    pageStatus: 'SplitRecommended',
+  }
+  const query = {
+    withIndex(name: string) {
+      expect(name).toBe('by_scan_at')
+      return query
+    },
+    order(direction: string) {
+      expect(direction).toBe('desc')
+      return query
+    },
+    paginate: async (options: unknown) => {
+      expect(options).toBe(paginationOpts)
+      return result
+    },
+  }
+  const ctx = {
+    db: {
+      query: (table: string) => {
+        expect(table).toBe('v4_scan_ingestions')
+        return query
+      },
+    },
+  } as unknown as QueryCtx
+  const handler = (
+    ingestions as unknown as {
+      _handler: (
+        ctx: QueryCtx,
+        args: FunctionArgs<Ingestions>,
+      ) => Promise<FunctionReturnType<Ingestions>>
+    }
+  )._handler
+  assert.deepStrictEqual(await handler(ctx, { paginationOpts }), {
+    ...result,
+    page: [
+      {
+        id: 'ingestion',
+        fromArtifactId: 'scan.2026-09-29T00:00:00.000Z.jsonl',
+        toArtifactId: 'scan.2026-09-29T01:00:00.000Z.jsonl',
+        scanAt: '2026-09-29T01:00:00.000Z',
+      },
+    ],
+  })
+})
 
 function artifact(scan_at: string, ids: string[], status: number) {
   return {
@@ -51,7 +112,7 @@ test('compares arbitrary pairs and initial state, with added, removed and unchan
   const sources = new Map([before, after].map((source) => [source.id, source]))
   const ctx = {
     runQuery: (_ref: unknown, { name }: { name: string }) =>
-      sources.has(name) ? { backend: 'convex', storage_id: name } : null,
+      sources.has(name) ? { backend: 'convex', storage_id: name, codec: 'gzip' } : null,
     storage: {
       get: (id: string) => {
         const source = sources.get(id)

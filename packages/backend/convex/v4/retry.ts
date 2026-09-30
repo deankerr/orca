@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from '../_generated/api'
 import { internalAction } from '../_generated/server'
+import * as eventHistory from './events/ingest'
 import * as listingHistory from './history/listings/ingest'
 import * as pricingHistory from './history/pricing/ingest'
 import { workId } from './ingestion/work'
@@ -37,6 +38,23 @@ export const listings = internalAction({
       return null
     }
     await listingHistory.process(ctx, await loadPair(ctx, times), args.work_id)
+    return null
+  },
+})
+
+/** Retry an Events obligation using its exact observation pair. */
+export const events = internalAction({
+  args: { work_id: workId },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const times = await ctx.runQuery(internal.v4.ingestion.work.getWorkInput, {
+      ...args,
+      processor: 'events',
+    })
+    if (times === null) {
+      return null
+    }
+    await eventHistory.process(ctx, await loadPair(ctx, times), args.work_id)
     return null
   },
 })

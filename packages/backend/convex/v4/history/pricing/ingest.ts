@@ -7,7 +7,7 @@ import type { ActionCtx } from '../../../_generated/server'
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { assertWorkOutput, completeWork, pendingWork, workId } from '../../ingestion/work'
 import type { WorkId } from '../../ingestion/work'
-import { selectPricing } from '../../pricing'
+import { encodePricing, selectPricing } from '../../pricing'
 import type { Scan, ScanPair } from '../../scan/extract'
 import { pairTimes } from '../../scan/time'
 import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
@@ -52,8 +52,9 @@ export async function process(ctx: ActionCtx, pair: ScanPair, work_id: WorkId): 
 function prepare(pair: ScanPair) {
   return [...pair.next.endpoints.values()].flatMap((endpoint) => {
     const before = pair.previous.endpoints.get(endpoint.id)
-    const pricing = selectPricing(endpoint.pricing)
-    return before === undefined || !isDeepEqual(selectPricing(before.pricing), pricing)
+    const pricing = encodePricing(selectPricing(endpoint.pricing))
+    return before === undefined ||
+      !isDeepEqual(encodePricing(selectPricing(before.pricing)), pricing)
       ? [{ endpoint_id: endpoint.id, scan_at: pair.next.scan_at, ...pricing }]
       : []
   })
@@ -64,7 +65,7 @@ export function initialRows(scan: Scan) {
   return [...scan.endpoints.values()].map((endpoint) => ({
     endpoint_id: endpoint.id,
     scan_at: scan.scan_at,
-    ...selectPricing(endpoint.pricing),
+    ...encodePricing(selectPricing(endpoint.pricing)),
   }))
 }
 

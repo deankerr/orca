@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** Shared Catalog interpretation: invalid optional facts remain unknown. */
+/** Shared field interpretation: invalid optional facts remain unknown. */
 export const text = z.string().trim().min(1).nullable().catch(null)
 export const flag = z.boolean().nullable().catch(null)
 export const strings = z.array(z.string()).nullable().catch(null)

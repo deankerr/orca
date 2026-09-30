@@ -52,8 +52,8 @@ export function RawChanges() {
   // Keep large, on-demand documents out of the app's persisted query cache.
   // oxlint-disable-next-line react/hook-use-state -- This page owns one immutable query client.
   const [queryClient] = useState(() => new QueryClient())
-  const latest = results.find((row) => row.available.from && row.available.to)
-  const latestFrom = latest === undefined ? null : (latest.fromArtifactId ?? 'initial')
+  const [latest] = results
+  const latestFrom = latest?.fromArtifactId ?? null
   const latestTo = latest?.toArtifactId ?? null
 
   useEffect(() => {
@@ -97,14 +97,13 @@ export function RawChanges() {
   )
 
   const selectedIndex = results.findIndex(
-    (row) =>
-      (row.fromArtifactId ?? 'initial') === selection.from && row.toArtifactId === selection.to,
+    (row) => row.fromArtifactId === selection.from && row.toArtifactId === selection.to,
   )
 
   const older = selectedIndex === -1 ? undefined : results[selectedIndex + 1]
   const newer = selectedIndex < 1 ? undefined : results[selectedIndex - 1]
   function select(row: Ingestion) {
-    void setSelection({ from: row.fromArtifactId ?? 'initial', to: row.toArtifactId })
+    void setSelection({ from: row.fromArtifactId, to: row.toArtifactId })
   }
   const { data } = comparison
 
@@ -171,9 +170,6 @@ export function RawChanges() {
                     <span className="font-mono text-xs">
                       {row.scanAt.replace('T', ' ').replace(/\.\d+Z$/, '')}
                     </span>
-                    {!row.available.from || !row.available.to ? (
-                      <span className="text-xs text-muted-foreground">Artifact unavailable</span>
-                    ) : null}
                   </span>
                 </Button>
               ))}

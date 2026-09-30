@@ -1,11 +1,11 @@
 import { ConvexError } from 'convex/values'
 
+import { selectEndpoint, selectModel, selectProvider } from '../facts'
 import { canonicalJson } from '../json'
-import { selectPricing } from '../pricing'
+import { encodePricing } from '../pricing'
 import type { Endpoint, Model, Provider } from '../scan/entities'
 import type { Scan } from '../scan/extract'
 import type { CurrentEndpointRow } from './endpoints/table'
-import { CatalogEndpoint, CatalogModel, CatalogProvider } from './entities'
 import type { CurrentModelRow } from './models/table'
 import type { CurrentProviderRow } from './providers/table'
 
@@ -35,41 +35,21 @@ export function projectEndpoints(scan: Scan, models: Map<string, CurrentModelRow
 
 /** Project observed model facts at a scan time. */
 export function projectModel(model: Model, scanAt: string): CurrentModelRow {
-  const {
-    id,
-    variant,
-    slug,
-    permaslug,
-    input_modalities,
-    output_modalities,
-    short_name,
-    created_at,
-    ...rest
-  } = CatalogModel.parse(model)
-
+  const { metadata, ...facts } = selectModel(model)
   return {
-    model_id: id,
+    ...facts,
     scan_at: scanAt,
-    slug,
-    permaslug,
-    variant,
-    display_name: short_name,
-    or_created_at: created_at,
-    input_modalities: input_modalities.toSorted(),
-    output_modalities: output_modalities.toSorted(),
-    metadata_json: canonicalJson(rest, { sortStringArrays: true }),
+    metadata_json: canonicalJson(metadata, { sortStringArrays: true }),
   }
 }
 
 /** Project observed provider facts at a scan time. */
 export function projectProvider(provider: Provider, scanAt: string): CurrentProviderRow {
-  const { provider_id, displayName, ...rest } = CatalogProvider.parse(provider)
-
+  const { metadata, ...facts } = selectProvider(provider)
   return {
-    provider_id,
+    ...facts,
     scan_at: scanAt,
-    display_name: displayName,
-    metadata_json: canonicalJson(rest, { sortStringArrays: true }),
+    metadata_json: canonicalJson(metadata, { sortStringArrays: true }),
   }
 }
 
@@ -80,33 +60,17 @@ export function projectEndpoint(args: {
   scan_at: string
   unlisted_at?: string
 }): CurrentEndpointRow {
-  const {
-    id: endpointId,
-    variant,
-    provider_tag: providerTag,
-    model_id,
-    provider_id,
-    stats: _stats,
-    statsByTier: _statsByTier,
-    provider_display_name: providerDisplayName,
-    pricing,
-    ...metadata
-  } = CatalogEndpoint.parse(args.endpoint)
+  const { metadata, pricing, ...facts } = selectEndpoint(args.endpoint)
 
   const row: CurrentEndpointRow = {
-    endpoint_id: endpointId,
-    model_id,
-    provider_id,
-    provider_tag: providerTag,
-    variant,
+    ...facts,
     scan_at: args.scan_at,
     model_display_name: args.model.display_name,
     model_permaslug: args.model.permaslug,
     model_or_created_at: args.model.or_created_at,
     input_modalities: args.model.input_modalities,
     output_modalities: args.model.output_modalities,
-    provider_display_name: providerDisplayName,
-    pricing: selectPricing(pricing),
+    pricing: encodePricing(pricing),
     metadata_json: canonicalJson(metadata, { sortStringArrays: true }),
   }
 

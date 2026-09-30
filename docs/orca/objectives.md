@@ -6,7 +6,7 @@ Remaining objectives, unordered:
   - [x] Grid and Entity Overview.
   - [x] Pricing History.
 - [ ] Add Deployment Data Sync for dev and preview environments.
-- [ ] Develop the Events foundation.
+- [ ] Develop the [Events foundation](../events/README.md).
   - [ ] Text/JSON feeds
   - [ ] Alerts in Grid
   - [ ] Discord alerts

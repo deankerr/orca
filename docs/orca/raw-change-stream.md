@@ -1,7 +1,7 @@
 # Raw change stream
 
-Exploratory tooling using the shared comparisons that will also support
-[Change Event Streams](change-event-streams.md).
+On-demand structural comparisons indexed by V4 ingestions, independent of stored
+[V4 Events](../events/README.md) and their reader-facing curation.
 
 ## Purpose
 
@@ -16,8 +16,8 @@ Exploratory tooling using the shared comparisons that will also support
 
 - Comparisons are computed on demand without persisted results or background preparation.
 - The comparison interface accepts explicit scan artifact identities, independently of ingestion.
-- Ingestion records provide a useful chronological index for stepping through source pairs.
-- Artifact availability determines whether a selected pair can be compared on this deployment.
+- Accepted V4 ingestion pairs provide an observation-ordered index for stepping through sources.
+- Artifacts are read through the configured Objects source, which can be local or another deployment.
 - Selecting the `from` of one ingestion and the `to` of a later ingestion gives a wider-period diff.
 - The browser and agents share preparation; focused output can be shaped by local scripts or `jq`.
 - Purpose-built investigations can produce text, tables, or other views without expanding the browser.
@@ -39,29 +39,29 @@ Exploratory tooling using the shared comparisons that will also support
 
 Paths below are relative to `packages/backend/convex/`.
 
-| Module                     | Available behavior                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------------------- |
-| `scan/artifact.ts`         | Artifact loading and decoding; forward discovery by artifact identity.                      |
-| `scan/inspection.ts`       | Paginated ingestion index and on-demand comparisons for the browser and CLI.                |
-| `objects/`                 | Named-object lookup, compressed storage, and uncompressed retrieval through `/objects`.     |
-| `projections/index.ts`     | Pure projection and comparison, returning source identities, complete records, and changes. |
-| `projections/documents.ts` | Load a source pair and prepare an in-memory comparison.                                     |
-| `v3/ingest.ts`             | Consume comparisons through views, with a reserved changeStreams call site.                 |
+| Module                  | Available behavior                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `scan/artifact.ts`      | Artifact names and decoding.                                                                |
+| `scan/inspection.ts`    | Paginated ingestion index and on-demand comparisons for the browser and CLI.                |
+| `objects/`              | Source-aware named-object reads and compressed transfer.                                    |
+| `projections/index.ts`  | Pure projection and comparison, returning source identities, complete records, and changes. |
+| `v4/ingestion/table.ts` | Accepted observation pairs used as the inspection index.                                    |
 
 The admin browser is available at `/admin/changes`; comparison results are not persisted server-side.
-Current execution constraints are documented in the [V3 README](../../packages/backend/convex/v3/README.md).
+The comparison still uses the broad `projections/` catalog representation; the ingestion index and
+artifact source follow [V4](../../packages/backend/convex/v4/README.md).
 
 ## Interface
 
-- `scan/inspection:ingestions` is a paginated query over ingestion records, newest ingestion first.
-- Each index entry includes both source identities and their local locator availability.
+- `scan/inspection:ingestions` paginates `v4_scan_ingestions` by descending `scan_at`.
+- Each index entry derives its artifact names from the recorded `from_scan_at` and `scan_at`.
 - `scan/inspection:compare` is a public action accepting `fromArtifactId` and `toArtifactId`.
 - A null `fromArtifactId` selects the empty initial catalog; other identities name stored artifacts.
 - The action returns JSON text to preserve key order; callers parse it before inspecting the result.
 - The parsed result contains the shared `document` and a null `owner` for an unfiltered comparison.
 - An optional `owner: { collection, id }` scopes changes and includes complete before/after records.
 - Owner collections are `models`, `providers`, and `endpoints`; absence on either side is null.
-- Missing artifacts fail explicitly, while unchanged owners return context with an empty changeset.
+- Missing artifacts fail explicitly when comparing; local locator absence cannot establish availability on a configured remote source. Unchanged owners return context with an empty changeset.
 - Pair comparisons load the selected sources rather than replaying intervening observations.
 - These interfaces have no authentication requirement.
 
@@ -80,7 +80,7 @@ bunx convex run scan/inspection:compare \
 
 ## Browser
 
-- Opening `/admin/changes` selects the newest available pair in the loaded ingestion index.
+- Opening `/admin/changes` selects the newest pair in the loaded V4 ingestion index.
 - The URL pins the selection through `from`, `to`, `collection`, and `id`, managed by nuqs.
 - `from=initial` represents the empty catalog; explicit pairs work outside the loaded index.
 - Older/newer controls step through loaded ingestions, and the index can load older pages.
