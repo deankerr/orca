@@ -12,7 +12,7 @@ import { serve as serveFeed } from './v4/eventRenderers/http'
 
 const http = httpRouter()
 
-http.route({ path: '/ces/feed', method: 'GET', handler: serveFeed })
+http.route({ path: '/events/feed', method: 'GET', handler: serveFeed })
 
 // Discord bot interactions endpoint
 http.route({
