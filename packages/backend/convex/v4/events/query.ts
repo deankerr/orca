@@ -10,6 +10,13 @@ export type { EventRow } from './table'
 
 const page = paginationResultValidator(docValidator(V4_EVENTS_TABLE, eventsTable))
 
+/** One captured event for manually triggered delivery. */
+export const get = internalQuery({
+  args: { event_id: v.id(V4_EVENTS_TABLE) },
+  returns: v.union(docValidator(V4_EVENTS_TABLE, eventsTable), v.null()),
+  handler: async (ctx, args) => await ctx.db.get(V4_EVENTS_TABLE, args.event_id),
+})
+
 /** Event history, newest observation first. */
 export const list = internalQuery({
   args: { paginationOpts: paginationOptsValidator },

@@ -6,6 +6,7 @@ import { prepare } from './prepare'
 
 const from = '2026-09-28T10:00:00.000Z'
 const to = '2026-09-28T11:00:00.000Z'
+
 const model: Model = {
   id: 'author/model',
   variant: 'standard',
@@ -16,7 +17,9 @@ const model: Model = {
   input_modalities: ['text', 'image'],
   output_modalities: ['text'],
 }
+
 const provider: Provider = { provider_id: 'provider', displayName: 'Example provider' }
+
 const endpoint: Endpoint = {
   id: 'endpoint-uuid',
   model_id: model.id,
@@ -57,6 +60,7 @@ test('joint additions and removals carry full values and resolve all identities 
     providers: new Map(),
     endpoints: new Map(),
   }
+
   const added = prepare({ previous: empty, next: observation(to) })
   const removed = prepare({ previous: observation(from), next: { ...empty, scan_at: to } })
 
@@ -70,6 +74,7 @@ test('joint additions and removals carry full values and resolve all identities 
       expect(JSON.parse(row.change_json)).toMatchObject({ key: row.entity_id, type: row.type })
     }
     const event = rows.find((row) => row.entity_kind === 'endpoint')
+
     expect(event?.context).toEqual({
       model: { model_id: model.id, display_name: 'Example model' },
       provider: { provider_id: provider.provider_id, display_name: 'Example provider' },
@@ -79,6 +84,7 @@ test('joint additions and removals carry full values and resolve all identities 
         provider_display_name: 'Provider endpoint label',
       },
     })
+
     expect(JSON.parse(event?.change_json ?? 'null')).toMatchObject({
       value: {
         pricing: {
@@ -94,14 +100,52 @@ test('joint additions and removals carry full values and resolve all identities 
 
 test('unchanged facts, reordered metadata sets, and endpoint stats produce no events', () => {
   const previous = observation(from)
+
   const next = observation(to, { ...model, input_modalities: ['image', 'text'] }, provider, {
     ...endpoint,
     supported_parameters: ['tools', 'temperature'],
     stats: { throughput: 90 },
   })
+
   const before = structuredClone({ previous, next })
   expect(prepare({ previous, next })).toEqual([])
   expect({ previous, next }).toEqual(before)
+})
+
+test('historical model metadata and record arrivals or departures do not produce events', () => {
+  const historical: Scan = {
+    ...observation(from),
+    providers: new Map(),
+    endpoints: new Map(),
+  }
+
+  const changed: Scan = {
+    ...historical,
+    scan_at: to,
+    models: new Map([[model.id, { ...model, short_name: 'Changed historical name' }]]),
+  }
+
+  expect(prepare({ previous: historical, next: changed })).toEqual([])
+  expect(prepare({ previous: historical, next: { ...changed, models: new Map() } })).toEqual([])
+  expect(prepare({ previous: { ...historical, models: new Map() }, next: changed })).toEqual([])
+})
+
+test('partial departures and endpoint replacements preserve model and provider presence', () => {
+  const replacement = { ...endpoint, id: 'replacement-uuid' }
+  const previous = observation(from)
+  const next = observation(to, model, provider, replacement)
+
+  for (const replacementAlreadyListed of [false, true]) {
+    if (replacementAlreadyListed) {
+      previous.endpoints.set(replacement.id, replacement)
+    }
+
+    const pair = { previous, next }
+    const rows = prepare(pair)
+
+    expect(rows).toHaveLength(replacementAlreadyListed ? 1 : 2)
+    expect(rows.every((row) => row.entity_kind === 'endpoint')).toBe(true)
+  }
 })
 
 test('related renames stay separate; endpoint updates use next context with precise prices and nulls', () => {
@@ -121,11 +165,13 @@ test('related renames stay separate; endpoint updates use next context with prec
     },
     quantization: null,
   })
+
   const rows = prepare({ previous, next })
   expect(rows).toHaveLength(3)
   const event = rows.find((row) => row.entity_kind === 'endpoint')
   expect(event?.context.model.display_name).toBe('Renamed model')
   expect(event?.context.provider.display_name).toBe('Renamed provider')
+
   expect(JSON.parse(event?.change_json ?? 'null')).toEqual({
     key: endpoint.id,
     type: 'UPDATE',
@@ -163,9 +209,11 @@ test('relationship changes use the new model, normalized provider, and endpoint-
       provider_display_name: 'Other endpoint label',
     },
   )
+
   const event = prepare({ previous: observation(from), next }).find(
     (row) => row.entity_kind === 'endpoint',
   )
+
   expect(event?.context).toEqual({
     model: { model_id: 'other/model', display_name: 'Other model' },
     provider: { provider_id: 'other', display_name: 'Other provider' },
@@ -175,6 +223,7 @@ test('relationship changes use the new model, normalized provider, and endpoint-
       provider_display_name: 'Other endpoint label',
     },
   })
+
   expect(JSON.parse(event?.change_json ?? 'null')).toMatchObject({
     key: endpoint.id,
     type: 'UPDATE',
@@ -187,6 +236,7 @@ test('relationship changes use the new model, normalized provider, and endpoint-
   })
 
   next.providers.clear()
+
   expect(() => prepare({ previous: observation(from), next })).toThrow(
     'Event identity is missing from its observation',
   )

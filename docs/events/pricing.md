@@ -2,7 +2,7 @@
 
 - Tiny decimal movements are real changes; comparison and feed values preserve their exact representation.
 - The initial feed applies exact-value selection, including changes between zero and absence.
-- Text input, output, and cache rates are per token; rendered details scale fixed-point values to per million tokens.
+- Text input/output and cache prices scale from per-token rates by 1,000,000, without a unit suffix.
 - Unfamiliar decimal representations retain their original per-token form in text.
 - `discount` is an independent numeric fact already reflected in normalized rates.
 

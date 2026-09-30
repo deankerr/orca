@@ -8,7 +8,7 @@ import type { Scan, ScanPair } from '../scan/extract'
 import { compare } from './compare'
 import type { EventRow } from './table'
 
-/** Pure pair-to-events factory; identity context never participates in comparison. */
+/** Compare endpoint-present entities; historical enrichment happens when events commit. */
 export function prepare(pair: ScanPair): EventRow[] {
   const previous = project(pair.previous)
   const next = project(pair.next)
@@ -32,8 +32,14 @@ export function prepare(pair: ScanPair): EventRow[] {
 }
 
 function project(scan: Scan) {
+  const modelIds = new Set([...scan.endpoints.values()].map((endpoint) => endpoint.model_id))
+
   return {
-    models: Object.fromEntries([...scan.models].map(([id, model]) => [id, selectModel(model)])),
+    models: Object.fromEntries(
+      [...scan.models]
+        .filter(([id]) => modelIds.has(id))
+        .map(([id, model]) => [id, selectModel(model)]),
+    ),
     providers: Object.fromEntries(
       [...scan.providers].map(([id, provider]) => [id, selectProvider(provider)]),
     ),
@@ -61,6 +67,7 @@ function createRow({
     type: change.type,
     change_json: JSON.stringify(change),
   }
+
   if (entity_kind === 'model') {
     return {
       ...fields,
@@ -70,6 +77,7 @@ function createRow({
       },
     }
   }
+
   if (entity_kind === 'provider') {
     return {
       ...fields,
@@ -100,11 +108,13 @@ function createRow({
 
 function required<T>(entities: Record<string, T>, id: string): T {
   const entity = Object.hasOwn(entities, id) ? entities[id] : undefined
+
   if (entity === undefined) {
     throw new ConvexError({
       message: 'Event identity is missing from its observation',
       entity_id: id,
     })
   }
+
   return entity
 }

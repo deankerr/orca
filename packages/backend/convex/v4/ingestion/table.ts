@@ -7,7 +7,7 @@ import { pairTimes } from '../scan/time'
 /** Completed ingestions release their observation pairs to downstream processing. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
 
-/** One completed ingestion, committed atomically with its prerequisites (currently Catalog). */
+/** One completed ingestion, committed atomically with Catalog and Listings. */
 export const ingestionsTable = defineTable(pairTimes)
   .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
@@ -16,21 +16,21 @@ export const ingestionsTable = defineTable(pairTimes)
 export type IngestionRow = Infer<typeof ingestionsTable.validator>
 
 export const V4_PROCESSOR_WORK_TABLE = 'v4_processor_work' as const
-export const processorName = v.union(
-  v.literal('pricing'),
-  v.literal('listings'),
-  v.literal('events'),
-  v.literal('stats'),
-)
+export const processorName = v.union(v.literal('pricing'), v.literal('events'), v.literal('stats'))
 export type ProcessorName = Infer<typeof processorName>
+
+/** Read compatibility only; new work never uses the retired Listings processor. */
+export const storedProcessorName = v.union(processorName, v.literal('listings'))
 export const workState = v.union(v.literal('pending'), v.literal('complete'))
 
 /** One processor's obligation for one ingestion; completion commits with the entire payload. */
 export const processorWorkTable = defineTable({
   ingestion_id: v.id(V4_INGESTIONS_TABLE),
-  processor: processorName,
+  processor: storedProcessorName,
   scan_at: v.string(),
   state: workState,
+  /** Deprecated, ignored; cleanup.stripLegacyWork removes snapshots from older deployments. */
+  previously_known_models: v.optional(v.array(v.string())),
 })
   .index('by_ingestion_id_and_processor', ['ingestion_id', 'processor'])
   .index('by_processor_and_state_and_scan_at', ['processor', 'state', 'scan_at'])

@@ -12,6 +12,10 @@
 - `pricing.md`: exact prices and independent pricing signals.
 - `feed.md`: HTTP requests and pagination semantics.
 
+## Explorations
+
+- `discord.md`: presentation, lifecycle semantics, and pre-alpha live delivery limitations.
+
 ## Evidence and examples
 
 - `observations.md`: September 2026 inventory, replay results, and pagination evidence.

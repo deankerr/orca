@@ -49,12 +49,20 @@ _Avoid_: Provider ID, endpoint ID
 An endpoint's observed availability, associated model and provider, and provider tag at an observation time.
 Models and providers have listed endpoints rather than listing states of their own.
 
+**Arrival / departure**:
+An endpoint becoming listed or unlisted, or a model/provider gaining its first or losing its last listed endpoint.
+These transitions can repeat without changing the entity's identity.
+
+**Previously known**:
+An arriving identity was already known before this observation, including knowledge established at the baseline.
+A historical model record establishes knowledge even when ORCA has never observed endpoints for it.
+
 **Ingestion**:
 An observation pair whose prerequisites have completed, making it available for downstream processing.
 
 **Pair processor**:
-Derives output from one ingestion's observation pair, independently of earlier or later ingestions.
-Catalog and current stats are not pair processors.
+Derives output for one ingestion's observation pair, with any historical context bounded to that observation.
+Catalog, Listings and current stats are not pair processors.
 
 **Processor work**:
 One pair processor's obligation for one ingestion. It remains outstanding until its output commits,

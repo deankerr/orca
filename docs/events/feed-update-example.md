@@ -18,10 +18,7 @@
   },
   "type": "endpoint_updated",
   "summary": "Example model on Regional offering (provider/fp8) has updated endpoint details.",
-  "details": [
-    "Input price changed from $0.1 per million tokens to $0.15 per million tokens.",
-    "Supported parameters added: \"tools\"."
-  ],
+  "details": ["Input price changed from $0.1 to $0.15.", "Supported parameters added: \"tools\"."],
   "changes": [
     {
       "type": "field_updated",
