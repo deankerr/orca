@@ -62,7 +62,8 @@ that an earlier attempt left no partial output.
 bunx convex run --deployment "$DEV_DEPLOYMENT" --inline-query '
   const tables = ["v4_models", "v4_providers", "v4_endpoints",
     "v4_endpoint_pricing_history", "v4_endpoint_listing_history",
-    "v4_scan_ingestions", "v4_processor_work", "v4_current_stats_snapshot"];
+    "v4_scan_ingestions", "v4_processor_work", "v4_current_stats_snapshot",
+    "v4_events", "v4_endpoint_stats"];
   const occupied = [];
   for (const table of tables) {
     if (await ctx.db.query(table).first() !== null) occupied.push(table);
@@ -104,7 +105,7 @@ bunx convex run --deployment "$DEV_DEPLOYMENT" \
   '{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'
 bunx convex run --deployment "$DEV_DEPLOYMENT" \
   v4/ingestion/progress:listProcessorWork \
-  '{"processor":"listings","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'
+  '{"processor":"events","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'
 ```
 
 Pending work for the newest pair and temporarily older Stats are normal while that pair runs.
@@ -126,7 +127,8 @@ bunx convex run --deployment "$DEV_DEPLOYMENT" v4/routine:run '{}'
 ```
 
 Resume advances from the clock; it does not retry older failed History obligations. Retry those
-by ID using `v4/retry:pricing` or `v4/retry:listings` with `{"work_id":"…"}`. Use
+by ID using `v4/retry:pricing` or `v4/retry:events` with `{"work_id":"…"}`. Listings commits
+with Catalog during acceptance and has no separate retry obligation. Use
 `v4/refreshStats:run` with `{}` if current Stats remains behind after processing finishes.
 
 If initialization fails with no clock but occupied V4 tables, inspect the failure before starting

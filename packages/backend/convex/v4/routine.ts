@@ -10,7 +10,9 @@ import { currentModelsTable } from './catalog/models/table'
 import * as providers from './catalog/providers/ingest'
 import { currentProvidersTable } from './catalog/providers/table'
 import * as events from './events/ingest'
+import { modelArrivals } from './events/prepare'
 import * as listings from './history/listings/ingest'
+import { endpointListingsTable } from './history/listings/table'
 import * as pricing from './history/pricing/ingest'
 import { release, createWork } from './ingestion/release'
 import { workId } from './ingestion/work'
@@ -19,18 +21,21 @@ import { loadNextPair } from './scan/load'
 import { pairTimes } from './scan/time'
 import * as stats from './stats/ingest'
 
-const acceptedWork = v.object({ pricing: workId, listings: workId, events: workId })
+const acceptedWork = v.object({ pricing: workId, events: workId })
 
-/** Release consecutive pairs; only Catalog is a prerequisite for accepting each pair. */
+/** Accept consecutive pairs with complete Catalog and Listings before running processors. */
 export const run = internalAction({
   args: { start_at: v.optional(v.string()) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const scanAt = await ctx.runQuery(internal.v4.clock.get, {})
+
     if (scanAt !== null && args.start_at !== undefined) {
       throw new ConvexError('start_at requires a fresh V4 timeline; omit it to resume')
     }
+
     const pair = await loadNextPair(ctx, scanAt ?? args.start_at ?? null)
+
     if (pair === null) {
       if (args.start_at !== undefined) {
         throw new ConvexError({
@@ -38,6 +43,7 @@ export const run = internalAction({
           start_at: args.start_at,
         })
       }
+
       return null
     }
 
@@ -45,12 +51,16 @@ export const run = internalAction({
       models: models.prepare(pair),
       providers: providers.prepare(pair),
       endpoints: endpoints.prepare(pair),
+      listings: listings.prepare(pair),
+      model_arrivals: modelArrivals(pair),
     }
+
     console.log('[v4:ingestion] prepared', {
       scan_at: pair.next.scan_at,
       models: output.models.length,
       providers: output.providers.length,
       endpoints: output.endpoints.length,
+      listings: output.listings.length,
       argumentLength: JSON.stringify(output).length,
     })
 
@@ -66,6 +76,7 @@ export const run = internalAction({
         ...output,
       },
     )
+
     if (work === null) {
       return null
     }
@@ -75,12 +86,6 @@ export const run = internalAction({
       await pricing.process(ctx, pair, work.pricing)
     } catch (error: unknown) {
       console.error('[v4:pricing] failed; work remains pending', { work_id: work.pricing, error })
-    }
-
-    try {
-      await listings.process(ctx, pair, work.listings)
-    } catch (error: unknown) {
-      console.error('[v4:listings] failed; work remains pending', { work_id: work.listings, error })
     }
 
     try {
@@ -103,32 +108,46 @@ export const run = internalAction({
   },
 })
 
-/** Accept Catalog and declare processor obligations atomically; the action owns the attempts. */
+/** Accept Catalog, Listings and event knowledge atomically; the action owns processor attempts. */
 export const commitIngestion = internalMutation({
   args: {
     ...pairTimes.fields,
     models: v.array(currentModelsTable.validator),
     providers: v.array(currentProvidersTable.validator),
     endpoints: v.array(currentEndpointsTable.validator),
+    listings: v.array(endpointListingsTable.validator),
+    model_arrivals: v.array(v.string()),
   },
   returns: v.union(v.null(), acceptedWork),
   handler: async (ctx, args) => {
+    if (args.listings.some((row) => row.scan_at !== args.scan_at)) {
+      throw new ConvexError('Listing output does not match its ingestion')
+    }
+
     const ingestionId = await release(ctx, {
       from_scan_at: args.from_scan_at,
       scan_at: args.scan_at,
     })
+
     if (ingestionId === null) {
       return null
     }
 
+    const knownModels = await events.knownModels(ctx, args.model_arrivals)
+
     await models.write(ctx, args.models)
     await providers.write(ctx, args.providers)
     await endpoints.write(ctx, args.endpoints)
+    await listings.write(ctx, args.listings)
 
-    const pricingWork = await createWork(ctx, ingestionId, 'pricing')
-    const listingsWork = await createWork(ctx, ingestionId, 'listings')
-    const eventsWork = await createWork(ctx, ingestionId, 'events')
-    return { pricing: pricingWork, listings: listingsWork, events: eventsWork }
+    const pricingWork = await createWork(ctx, ingestionId, { processor: 'pricing' })
+
+    const eventsWork = await createWork(ctx, ingestionId, {
+      processor: 'events',
+      previously_known_models: knownModels,
+    })
+
+    return { pricing: pricingWork, events: eventsWork }
   },
 })
 
@@ -140,6 +159,7 @@ export const scheduled = internalMutation({
     if (env.ORCA_V4_INGEST_CRON_ENABLED === 'true') {
       await ctx.scheduler.runAfter(0, internal.v4.routine.run, {})
     }
+
     return null
   },
 })

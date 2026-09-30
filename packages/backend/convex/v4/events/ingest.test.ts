@@ -22,11 +22,13 @@ test('event commits bind both pair times, complete empty work, and make retries 
     from_scan_at: '2026-09-28T10:00:00.000Z',
     scan_at: '2026-09-28T11:00:00.000Z',
   }
+
   const work_id = 'work' as WorkId
   let state = 'pending'
   let processor = 'events'
   let failInsert = false
   const writes: EventRow[] = []
+
   const ctx = {
     db: {
       get: async (table: string) => {
@@ -37,16 +39,20 @@ test('event commits bind both pair times, complete empty work, and make retries 
             scan_at: pair.scan_at,
             state,
             processor,
+            previously_known_models: ['author/model'],
           }
         }
+
         expect(table).toBe('v4_scan_ingestions')
         return pair
       },
       insert: async (table: string, row: EventRow) => {
         expect(table).toBe('v4_events')
+
         if (failInsert) {
           throw new Error('insert failed')
         }
+
         writes.push(row)
         return 'event'
       },
@@ -57,6 +63,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
       },
     },
   } as unknown as MutationCtx
+
   const row: EventRow = {
     scan_at: pair.scan_at,
     entity_kind: 'model',
@@ -65,6 +72,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
     change_json: '{"key":"author/model","type":"ADD","value":{"display_name":"Model"}}',
     context: { model: { model_id: 'author/model', display_name: 'Model' } },
   }
+
   const args = { ...pair, work_id, rows: [row] }
 
   for (const mismatched of [
@@ -86,7 +94,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
   failInsert = false
   await commitHandler(ctx, args)
   await commitHandler(ctx, args)
-  expect(writes).toEqual([row])
+  expect(writes).toEqual([{ ...row, previously_known: true }])
   expect(state).toBe('complete')
 
   state = 'pending'

@@ -4,9 +4,9 @@ import type { Card, DiscordUrls } from './card'
 import { escape } from './display'
 import { fact, fieldChange } from './fields'
 
-/** Providers are observed through endpoints; arrivals are suppressed until first appearance is tracked. */
+/** Providers are discovered once; endpoint presence can disappear and return repeatedly. */
 export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
-  if (event.entity_kind !== 'provider' || 'after' in event) {
+  if (event.entity_kind !== 'provider') {
     return null
   }
 
@@ -18,12 +18,18 @@ export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
   }
 
   const content =
-    'before' in event
-      ? `**${escape(provider.display_name)}** has no more active endpoints.`
-      : [
-          `**${escape(provider.display_name)}** · Updated`,
-          ...changes.map((change) => fieldChange(change)),
-        ].join('\n\n')
+    'after' in event
+      ? event.previously_known === false
+        ? `**${escape(provider.display_name)}** · Provider discovered`
+        : event.previously_known === true
+          ? `**${escape(provider.display_name)}** has listed endpoints again.`
+          : `**${escape(provider.display_name)}** now has listed endpoints.`
+      : 'before' in event
+        ? `**${escape(provider.display_name)}** has no more listed endpoints.`
+        : [
+            `**${escape(provider.display_name)}** · Updated`,
+            ...changes.map((change) => fieldChange(change)),
+          ].join('\n\n')
 
   return embedCard(content, {
     author: {
@@ -32,7 +38,7 @@ export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
       iconURL: logoUrl(provider.provider_id, urls),
     },
     timestamp: event.observed_at,
-    color: 'before' in event ? colors.removed : colors.updated,
+    color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
   })
 }
 

@@ -19,9 +19,11 @@ const context = {
 
 function update(before: unknown, after: unknown): EventRow {
   const [change] = compare({ endpoint: before }, { endpoint: after })
+
   if (change === undefined) {
     throw new Error('Expected a stored event')
   }
+
   return {
     scan_at: '2026-09-29T01:00:00.000Z',
     entity_kind: 'endpoint',
@@ -57,12 +59,15 @@ test('curated updates retain precise values, presence, nulls, and membership whi
       },
     },
   )
+
   const stored = { ...row, _id: 'internal-id', _creationTime: 123 }
   const event = render(stored)
   expect(event?.type).toBe('endpoint_updated')
+
   if (event?.type !== 'endpoint_updated') {
     throw new Error('Expected a curated update')
   }
+
   expect(event.context).toEqual(context)
   expect(event).not.toHaveProperty('_id')
   expect(event).not.toHaveProperty('_creationTime')
@@ -103,6 +108,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
     providers: new Map(),
     endpoints: new Map(),
   }
+
   const present: Scan = {
     scan_at: '2026-09-29T01:00:00.000Z',
     models: new Map([
@@ -161,7 +167,9 @@ test('lifecycle values for all entity kinds use native keys and captured context
       ],
     ]),
   }
+
   const additions = prepare({ previous: empty, next: present }).map(render)
+
   const removals = prepare({
     previous: present,
     next: { ...empty, scan_at: '2026-09-29T02:00:00.000Z' },
@@ -170,6 +178,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
     if (addition === null || !('after' in addition)) {
       throw new Error('Expected arrival')
     }
+
     expect(removals[index]).toMatchObject({
       entity_id: addition.entity_id,
       entity_kind: addition.entity_kind,
@@ -178,8 +187,13 @@ test('lifecycle values for all entity kinds use native keys and captured context
       type: `${addition.entity_kind}_removed`,
       before: addition.after,
     })
+
     expect(removals[index]).not.toHaveProperty('after')
-    expect(removals[index]?.summary).toContain('is no longer listed')
+
+    expect(removals[index]?.summary).toContain(
+      addition.entity_kind === 'endpoint' ? 'is no longer listed' : 'has no more listed endpoints',
+    )
+
     expect(addition.after).not.toHaveProperty('metadata')
   }
   expect(additions[0]).toMatchObject({
@@ -190,12 +204,14 @@ test('lifecycle values for all entity kinds use native keys and captured context
       reasoning_config: { is_mandatory_reasoning: false, supported_reasoning_efforts: ['low'] },
     },
   })
+
   expect(additions[1]).toMatchObject({
     after: {
       displayName: 'Provider',
       dataPolicy: { privacyPolicyURL: 'https://example.com/privacy' },
     },
   })
+
   expect(additions[2]).toEqual({
     observed_at: present.scan_at,
     entity_kind: 'endpoint',
@@ -223,10 +239,13 @@ test('lifecycle values for all entity kinds use native keys and captured context
       data_policy: { training: false, canPublish: null },
     },
   })
+
   const removal = removals.at(2)
+
   if (removal === undefined || removal === null) {
     throw new Error('Expected departure')
   }
+
   expect(removal.summary).toBe('Model is no longer listed on Regional offering (provider/fp8).')
   expect(removal.details).toContain('Input price when last observed: $0.1.')
   expect(removal.details).toContain('Supported parameters when last observed: "tools".')
@@ -236,11 +255,15 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
   const added = render(
     update({ metadata: {} }, { metadata: { data_policy: { training: false, hidden: true } } }),
   )
+
   expect(added).toMatchObject({ changes: [{ path: 'data_policy', after: { training: false } }] })
+
   const removed = render(
     update({ metadata: { data_policy: { training: false, hidden: true } } }, { metadata: {} }),
   )
+
   expect(removed).toMatchObject({ changes: [{ path: 'data_policy', before: { training: false } }] })
+
   expect(
     render(
       update(
@@ -249,10 +272,12 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
       ),
     ),
   ).toMatchObject({ changes: [{ path: 'data_policy.training', before: false, after: null }] })
+
   const ignored = update(
     { metadata: { capacity_tpm: 10, data_policy: { hidden: false } } },
     { metadata: { capacity_tpm: 20, data_policy: { hidden: true }, toString: 'upstream' } },
   )
+
   expect(
     renderPage({
       page: [ignored],
@@ -281,10 +306,12 @@ test('text preserves tiny prices and literal upstream content; malformed events 
       metadata: { provider_display_name: 'new_`name`' },
     },
   )
+
   expect(render(row)?.details).toEqual([
     'Input price changed from $0.01 to $0.000000000000001.',
     'Provider name changed from "old_name" to "new_`name`".',
   ])
+
   expect(() => render({ ...row, change_json: '{broken' })).toThrow()
   expect(() => render({ ...row, change_json: '{}' })).toThrow()
 })

@@ -4,7 +4,7 @@ import type { Card, DiscordUrls } from './card'
 import { code, escape, field } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
-/** Model additions introduce the model; updates and departures use compact cards. */
+/** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
 export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
   if (event.entity_kind !== 'model') {
     return null
@@ -16,9 +16,9 @@ export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
   const url = gridUrl(slug, urls)
   const logo = logoUrl(slug, urls)
 
-  if ('after' in event) {
+  if ('after' in event && event.previously_known === false) {
     const content = [
-      `### ${escape(name)} ✨\n[${escape(slug)}](${url})`,
+      `### ${escape(name)} ✨\n[${escape(slug)}](${url})\nModel discovered.`,
       modelDetails(event.after),
       `-# <t:${Math.floor(Date.parse(event.observed_at) / 1000)}:f>`,
     ]
@@ -32,25 +32,27 @@ export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
   }
 
   const content =
-    'before' in event
-      ? [
-          `**${escape(name)}** · Removed`,
-          'No longer listed on OpenRouter.\nLast known model details:',
-          modelDetails(event.before),
-        ]
-      : [
-          `**${escape(name)}** · Updated`,
-          ...event.changes.map((change) =>
-            fieldChange(change, {
-              prose: change.path === 'description' || change.path === 'warning_message',
-            }),
-          ),
-        ]
+    'after' in event
+      ? [`**${escape(name)}** now has listed endpoints.`, modelDetails(event.after)]
+      : 'before' in event
+        ? [
+            `**${escape(name)}** has no more listed endpoints.`,
+            'Last known model details:',
+            modelDetails(event.before),
+          ]
+        : [
+            `**${escape(name)}** · Updated`,
+            ...event.changes.map((change) =>
+              fieldChange(change, {
+                prose: change.path === 'description' || change.path === 'warning_message',
+              }),
+            ),
+          ]
 
   return embedCard(content.filter(Boolean).join('\n\n'), {
     author: { name: slug, url, iconURL: logo },
     timestamp: event.observed_at,
-    color: 'before' in event ? colors.removed : colors.updated,
+    color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
   })
 }
 
@@ -58,6 +60,7 @@ export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
 function modelDetails(facts: Record<string, FieldValue>): string {
   const inputs = facts.input_modalities
   const outputs = facts.output_modalities
+
   const modalities =
     Array.isArray(inputs) && Array.isArray(outputs)
       ? `${fieldValue(inputs)} → ${fieldValue(outputs)}`

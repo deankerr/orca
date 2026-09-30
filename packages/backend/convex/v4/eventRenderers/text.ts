@@ -60,9 +60,11 @@ function value(input: FieldValue, path: string): string {
   if (input === null) {
     return 'null'
   }
+
   if (typeof input === 'boolean') {
     return input ? 'yes' : 'no'
   }
+
   if (typeof input === 'number') {
     return path === 'pricing.discount'
       ? new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 12 }).format(
@@ -70,6 +72,7 @@ function value(input: FieldValue, path: string): string {
         )
       : new Intl.NumberFormat('en-US', { maximumSignificantDigits: 21 }).format(input)
   }
+
   if (
     typeof input === 'string' &&
     [
@@ -82,25 +85,31 @@ function value(input: FieldValue, path: string): string {
   ) {
     return tokenPrice(input) ?? `$${input}`
   }
+
   if (Array.isArray(input)) {
     return input.map((item) => JSON.stringify(item)).join(', ') || '[]'
   }
+
   return JSON.stringify(input)
 }
 
 function describeChange(change: FieldChange): string[] {
   const name = labels[change.path] ?? change.path
+
   if (change.type === 'field_added') {
     return [`${name} was added: ${value(change.after, change.path)}.`]
   }
+
   if (change.type === 'field_removed') {
     return [`${name} was removed; previously ${value(change.before, change.path)}.`]
   }
+
   if (change.type === 'field_updated') {
     return [
       `${name} changed from ${value(change.before, change.path)} to ${value(change.after, change.path)}.`,
     ]
   }
+
   return [
     ...(change.added.length === 0 ? [] : [`${name} added: ${value(change.added, change.path)}.`]),
     ...(change.removed.length === 0
@@ -114,7 +123,9 @@ export function describe(event: CuratedEvent): string[] {
   if ('changes' in event) {
     return event.changes.flatMap(describeChange)
   }
+
   const facts = 'after' in event ? event.after : event.before
+
   const paths =
     event.entity_kind === 'endpoint'
       ? [
@@ -137,12 +148,14 @@ export function describe(event: CuratedEvent): string[] {
   return paths.flatMap((path) => {
     const [key, child] = path.split('.')
     const parent = facts[key ?? '']
+
     const field =
       child === undefined
         ? parent
         : parent !== null && typeof parent === 'object' && !Array.isArray(parent)
           ? parent[child]
           : undefined
+
     const name = labels[path] ?? path
     return field === undefined
       ? []
@@ -151,22 +164,41 @@ export function describe(event: CuratedEvent): string[] {
 }
 
 export function summarize(row: EventRow): string {
-  const listing = row.type === 'ADD' ? 'is now listed' : 'is no longer listed'
   if (row.entity_kind === 'endpoint') {
     const { model, endpoint } = row.context
     const offering = `${endpoint.provider_display_name} (${endpoint.provider_tag})`
+
+    const listing =
+      row.type === 'REMOVE'
+        ? 'is no longer listed'
+        : row.previously_known === false
+          ? 'has a newly discovered endpoint'
+          : row.previously_known === true
+            ? 'is relisted'
+            : 'is now listed'
+
     return (
       row.type === 'UPDATE'
         ? `${model.display_name} on ${offering} has updated endpoint details.`
         : `${model.display_name} ${listing} on ${offering}.`
     ).replaceAll(/\s+/g, ' ')
   }
+
   const subject =
     row.entity_kind === 'model'
       ? `Model ${row.context.model.display_name} (${row.entity_id})`
       : `Provider ${row.context.provider.display_name} (${row.entity_id})`
-  return `${subject} ${row.type === 'UPDATE' ? 'has updated details' : `${listing} on OpenRouter`}.`.replaceAll(
-    /\s+/g,
-    ' ',
-  )
+
+  const state =
+    row.type === 'UPDATE'
+      ? 'has updated details'
+      : row.type === 'REMOVE'
+        ? 'has no more listed endpoints'
+        : row.previously_known === false
+          ? 'was discovered with listed endpoints'
+          : row.entity_kind === 'provider' && row.previously_known === true
+            ? 'has listed endpoints again'
+            : 'now has listed endpoints'
+
+  return `${subject} ${state}.`.replaceAll(/\s+/g, ' ')
 }

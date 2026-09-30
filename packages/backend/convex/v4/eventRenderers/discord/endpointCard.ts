@@ -14,8 +14,20 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
   const { model, provider, endpoint } = event.context
   const prefix = event.entity_id.slice(0, 6)
   const url = gridUrl(`${model.model_id} ${prefix}`, urls)
-  const state = 'after' in event ? 'Added' : 'before' in event ? 'Removed' : 'Updated'
+
+  const state =
+    'after' in event
+      ? event.previously_known === false
+        ? 'Discovered'
+        : event.previously_known === true
+          ? 'Relisted'
+          : 'Listed'
+      : 'before' in event
+        ? 'Unlisted'
+        : 'Updated'
+
   const heading = `**${escape(endpoint.provider_display_name)}** · ${state}\n[${code(prefix)}](${url})`
+
   const body =
     'changes' in event
       ? endpointChanges(event.changes)
@@ -35,6 +47,7 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
 
 function endpointChanges(changes: FieldChange[]): string[] {
   const prices = changes.filter((change) => change.path.startsWith('pricing.'))
+
   const fields = changes.filter(
     (change) => !change.path.startsWith('pricing.') && change.path !== 'supports_reasoning',
   )

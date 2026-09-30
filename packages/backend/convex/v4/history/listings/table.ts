@@ -15,6 +15,7 @@ export const endpointListingsTable = defineTable({
   state: listingState,
 })
   .index('by_model_id_and_scan_at', ['model_id', 'scan_at'])
+  .index('by_provider_id_and_scan_at', ['provider_id', 'scan_at'])
   .index('by_endpoint_id_and_scan_at', ['endpoint_id', 'scan_at'])
 
 export type EndpointListingRow = Infer<typeof endpointListingsTable.validator>

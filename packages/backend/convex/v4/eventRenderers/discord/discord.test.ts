@@ -29,20 +29,26 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
   const change = valueChange(code('fp8'), code('fp16'))
 
   expect(field('quantization', change)).toBe('`quantization` ~~`fp8`~~ → `fp16`')
+
   expect(
     fieldChange({ type: 'field_updated', path: 'quantization', before: 'fp8', after: 'fp16' }),
   ).toBe(field('quantization', change))
+
   expect(factsText({ quantization: 'fp16' }, ['quantization'])).toBe('`quantization` `fp16`')
+
   expect(
     pricingTable([
       { path: 'pricing.prompt', before: '$1', after: '$0.5', annotation: '▼ 50%' },
       { path: 'pricing.input_cache_read', after: '$0.1', change: 'added', annotation: '' },
     ]),
   ).toBe('`input     ` ~~`  $1`~~ → `$0.5` ▼ 50%\n`cache_read` `$0.1` · new')
+
   expect(field('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
+
   expect(field('parameters', '```diff\n+ tools\n```', { layout: 'block' })).toBe(
     '`parameters`\n```diff\n+ tools\n```',
   )
+
   expect(field('enabled', code('true'), { change: 'added' })).toBe('`enabled` `true` · new')
   expect(field('enabled', code('false'), { change: 'removed' })).toBe('~~`enabled`~~ ~~`false`~~')
   expect(code('long_value', { width: 3 })).toBe('`long_value`')
@@ -83,6 +89,7 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
       model: { model_id: 'qwen/qwen3.6-max-preview', display_name: 'Qwen3.6 Max Preview' },
     },
   }
+
   const text = JSON.stringify(renderDiscord(event, urls))
 
   expect(renderDiscord(event, urls)?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
@@ -216,16 +223,18 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
   }
 })
 
-test('temporary gallery sends 25 events sequentially with one-second gaps and stops on rejection', async () => {
+test('gallery sends selected events sequentially with one-second gaps and stops on rejection', async () => {
   type Handler = (
     ctx: ActionCtx,
-    args: Record<string, never>,
+    args: { event_ids: string[] },
   ) => Promise<{ sent: number; skipped: number }>
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the registered operator action with its query dependency mocked.
   const handler = (sendExamples as unknown as { _handler: Handler })._handler
+  const args = { event_ids: ['first', 'second', 'third'] }
   const events: string[] = []
   const order: string[] = []
+
   const queryContext = {
     runQuery: async (_query: unknown, args: { event_id: string }) => {
       events.push(args.event_id)
@@ -236,11 +245,13 @@ test('temporary gallery sends 25 events sequentially with one-second gaps and st
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Sending only reads the captured event through runQuery.
   const ctx = queryContext as unknown as ActionCtx
+
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
     ORCA_PUBLIC_URL: urls.publicUrl,
     ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
   }
+
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   const originalTimeout = globalThis.setTimeout
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Preserve the timer API while accelerating the gallery's fixed waits in this test.
@@ -248,26 +259,27 @@ test('temporary gallery sends 25 events sequentially with one-second gaps and st
     order.push('pause')
     return originalTimeout(callback, 0)
   }
+
   const pause = spyOn(globalThis, 'setTimeout').mockImplementation(
     Object.assign(immediateTimeout, originalTimeout),
   )
+
   const request = spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
 
   try {
     Object.assign(process.env, settings)
-    expect(await handler(ctx, {})).toEqual({ sent: 25, skipped: 0 })
-    expect(new Set(events).size).toBe(25)
-    expect(events[0]).toBe('rs7ezvw1fp56wx91f5eqxwfxwn8fdtwm')
-    expect(events.at(-1)).toBe('rs74thqa1dws03j03zaspvw5ad8fc3t2')
-    expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 24 }, () => 1000))
+    expect(await handler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
+    expect(events).toEqual(args.event_ids)
+    expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 1000))
+
     expect(order).toEqual(
-      Array.from({ length: 49 }, (_, index) => (index % 2 === 0 ? 'read' : 'pause')),
+      Array.from({ length: 5 }, (_, index) => (index % 2 === 0 ? 'read' : 'pause')),
     )
 
     request.mockResolvedValue(new Response('rate limited', { status: 429 }))
-    await rejects(handler(ctx, {}), /Discord webhook rejected/)
-    expect(request).toHaveBeenCalledTimes(26)
-    expect(pause).toHaveBeenCalledTimes(24)
+    await rejects(handler(ctx, args), /Discord webhook rejected/)
+    expect(request).toHaveBeenCalledTimes(4)
+    expect(pause).toHaveBeenCalledTimes(2)
   } finally {
     request.mockRestore()
     pause.mockRestore()
@@ -436,6 +448,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
         entity_kind: kind,
         entity_id: 'abcdef-123',
         type,
+        ...(type === 'ADD' ? { previously_known: false } : {}),
         scan_at: '2026-09-30T01:00:00Z',
         context,
         change_json: JSON.stringify({
@@ -462,14 +475,22 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
       } else {
         expect(message?.components).toBeUndefined()
         expect(message?.embeds).toHaveLength(1)
+
         expect(message?.embeds?.[0]?.footer?.text).toBe(
           kind === 'endpoint' ? 'provider/fp8' : undefined,
         )
+
         expect(message?.embeds?.[0]?.color).toBe(type === 'ADD' ? 0x22_c5_5e : 0xef_44_44)
       }
 
       expect(content).toContain(
-        type === 'ADD' && kind !== 'endpoint' ? '✨' : type === 'ADD' ? 'Added' : 'Removed',
+        type === 'ADD'
+          ? kind === 'model'
+            ? '✨'
+            : 'Discovered'
+          : kind === 'model'
+            ? 'has no more listed endpoints'
+            : 'Unlisted',
       )
 
       if (kind === 'model') {
@@ -501,6 +522,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
     entity_kind: kind,
     entity_id: 'abcdef-123',
     type: 'ADD',
+    previously_known: false,
     scan_at: '2026-09-30T01:00:00Z',
     context,
     change_json: JSON.stringify({ key: 'abcdef-123', type: 'ADD', value }),
@@ -527,15 +549,19 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(modelText.indexOf('`image, text`')).toBeLessThan(modelText.indexOf('> Built on'))
   const container = model?.components?.[0]
   expect(container?.type).toBe(ComponentType.Container)
+
   if (container?.type !== ComponentType.Container) {
     throw new Error('Expected a container')
   }
+
   expect(container.components).toHaveLength(1)
   const [section] = container.components
   expect(section?.type).toBe(ComponentType.Section)
+
   if (section?.type !== ComponentType.Section) {
     throw new Error('Expected a section')
   }
+
   expect(section.components).toHaveLength(1)
 
   const endpoint = renderDiscord(
@@ -617,12 +643,13 @@ test('prose updates use embeds, preserve warning facts, and reject aggregate ove
   expect(() => renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)).toThrow()
 })
 
-test('provider additions are suppressed and departures only announce endpoint absence', () => {
+test('provider discoveries are announced and departures only announce endpoint absence', () => {
   for (const type of ['ADD', 'REMOVE'] as const) {
     const event: EventRow = {
       entity_kind: 'provider',
       entity_id: 'provider',
       type,
+      ...(type === 'ADD' ? { previously_known: false } : {}),
       scan_at: '2026-09-30T01:00:00Z',
       context: { provider: context.provider },
       change_json: JSON.stringify({
@@ -631,24 +658,52 @@ test('provider additions are suppressed and departures only announce endpoint ab
         value: { metadata: { headquarters: 'Earth', dataPolicy: { training: true } } },
       }),
     }
+
     const message = renderDiscord(event, urls)
 
     if (type === 'ADD') {
-      expect(message).toBeNull()
-      expect(render(event)).toMatchObject({ type: 'provider_added' })
+      expect(message?.embeds?.[0]?.description).toBe('**Provider** · Provider discovered')
+      expect(render(event)).toMatchObject({ type: 'provider_added', previously_known: false })
     } else {
       expect(message?.components).toBeUndefined()
       expect(message?.embeds).toHaveLength(1)
       expect(message?.embeds?.[0]?.footer).toBeUndefined()
+
       expect(message?.embeds?.[0]).toMatchObject({
-        description: '**Provider** has no more active endpoints.',
+        description: '**Provider** has no more listed endpoints.',
         color: 0xef_44_44,
         timestamp: '2026-09-30T01:00:00.000Z',
       })
+
       expect(message?.embeds?.[0]?.author?.icon_url).toContain('/provider.webp')
       expect(JSON.stringify(message)).not.toContain('Earth')
       expect(JSON.stringify(message)).not.toContain('training')
     }
+  }
+})
+
+test('unclassified arrivals use neutral wording instead of claiming discovery or return', () => {
+  for (const entity_kind of ['model', 'provider', 'endpoint'] as const) {
+    const event: EventRow = {
+      entity_kind,
+      entity_id: 'unclassified',
+      type: 'ADD',
+      scan_at: '2026-09-30T01:00:00Z',
+      context,
+      change_json: JSON.stringify({
+        key: 'unclassified',
+        type: 'ADD',
+        value: { metadata: {}, pricing: { meters: {} } },
+      }),
+    }
+
+    const text = JSON.stringify({ discord: renderDiscord(event, urls), feed: render(event) })
+
+    expect(text.toLowerCase()).not.toContain('discovered')
+    expect(text.toLowerCase()).not.toContain('relisted')
+    expect(text).not.toContain('again')
+    expect(text).not.toContain('✨')
+    expect(text).toContain(entity_kind === 'endpoint' ? 'Listed' : 'now has listed endpoints')
   }
 })
 
@@ -659,6 +714,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     training: true,
     retainsPrompts: true,
   }
+
   const providerRow = (before: unknown, after: unknown): EventRow => ({
     ...row({ metadata: before }, { metadata: after }),
     entity_kind: 'provider',
@@ -708,6 +764,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     ),
     urls,
   )
+
   const text = message?.embeds?.[0]?.description ?? ''
 
   expect(message?.components).toBeUndefined()
@@ -751,6 +808,7 @@ test('endpoint prose remains an embed and inline code has no bold wrappers', () 
     },
     urls,
   )
+
   const text = JSON.stringify(model)
 
   expect(text).not.toContain('[orca.orb.town]')
@@ -768,6 +826,7 @@ test('blank scalar and prose values render null without rewriting the captured e
         ...row({ metadata: { warning_message: before } }, { metadata: { warning_message: after } }),
         entity_kind: 'model',
       }
+
       const captured = event.change_json
       const description = renderDiscord(event, urls)?.embeds?.[0]?.description
 
@@ -779,12 +838,14 @@ test('blank scalar and prose values render null without rewriting the captured e
   }
   expect(fieldValue(['tools', 'temperature'])).toBe('`tools, temperature`')
   expect(fieldValue([])).toBe('`[]`')
+
   expect(
     fieldChange(
       { type: 'field_removed', path: 'description', before: 'Old prose.' },
       { prose: true },
     ),
   ).toBe('~~`description`~~\n> ~~Old prose.~~')
+
   expect(
     fieldChange({ type: 'field_added', path: 'description', after: 'New prose.' }, { prose: true }),
   ).toBe('`description` · new\n> New prose.')
@@ -797,6 +858,7 @@ test('endpoint reasoning-only changes are skipped while model reasoning remains 
   )
 
   expect(renderDiscord(event, urls)).toBeNull()
+
   expect(
     renderDiscord({ ...event, entity_kind: 'model' }, urls)?.embeds?.[0]?.description,
   ).toContain('`supports_reasoning` ~~`false`~~ → `true`')
@@ -807,6 +869,7 @@ test('one-hour cache writes survive curation and render without pricing units or
     { pricing: { meters: { input_cache_write_1h: '0.000002' } } },
     { pricing: { meters: { input_cache_write_1h: '0.000004' } } },
   )
+
   const message = renderDiscord(event, urls)
 
   expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h` ~~`$2`~~ → `$4` ▲ 100%')
@@ -824,10 +887,12 @@ test('one-hour cache writes survive curation and render without pricing units or
       },
     }),
   }
+
   const added = renderDiscord(lifecycle, urls)
   expect(added?.embeds?.[0]?.description).toContain('`cache_write_1h` `   $4`')
   expect(added?.embeds?.[0]?.description).toContain('`web_search    ` `$0.01`')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
+
   expect(pricingChanges([{ type: 'field_added', path: 'pricing.prompt', after: '1e-6' }])).toEqual([
     '`input` `$1e-6` · new',
   ])
@@ -865,7 +930,9 @@ test('cards supply prose and duration rules while generic formatters only follow
     before: 'Old.',
     after: 'New.',
   } as const
+
   expect(fieldChange(warning)).toBe('`warning_message` ~~`Old.`~~ → `New.`')
+
   expect(fieldChange(warning, { prose: true })).toBe(
     '`warning_message`\nBefore\n> Old.\n\nAfter\n> New.',
   )
@@ -876,11 +943,14 @@ test('cards supply prose and duration rules while generic formatters only follow
     before: 1,
     after: 2,
   } as const
+
   expect(fieldChange(change)).toBe('`retentionDays` ~~`1`~~ → `2` ▲ 100%')
+
   const event = row(
     { metadata: { data_policy: { retentionDays: 1 } } },
     { metadata: { data_policy: { retentionDays: 2 } } },
   )
+
   expect(renderDiscord(event, urls)?.embeds?.[0]?.description).toContain(
     '`retentionDays` ~~`1 days`~~ → `2 days` ▲ 100%',
   )

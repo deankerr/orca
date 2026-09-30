@@ -10,6 +10,7 @@ export const V4_EVENTS_TABLE = 'v4_events' as const
 
 const model = currentModelsTable.validator.pick('model_id', 'display_name')
 const provider = currentProvidersTable.validator.pick('provider_id', 'display_name')
+
 const endpoint = currentEndpointsTable.validator.pick(
   'endpoint_id',
   'provider_tag',
@@ -20,6 +21,8 @@ const fields = {
   scan_at: v.string(),
   entity_id: v.string(),
   type: v.union(v.literal('ADD'), v.literal('UPDATE'), v.literal('REMOVE')),
+  /** Set on arrivals after historical enrichment; absent on changes and departures. */
+  previously_known: v.optional(v.boolean()),
   /** One serialized json-diff-ts entity-root node; values may have arbitrary keys. */
   change_json: v.string(),
 }

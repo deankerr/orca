@@ -11,6 +11,7 @@ import type { ProcessorName } from './table'
 /** Call in the same transaction as prerequisite writes and work declarations; null means already released. */
 export async function release(ctx: MutationCtx, pair: ScanPairTimes) {
   assertScanPair(pair.from_scan_at, pair.scan_at)
+
   const existing = await ctx.db
     .query(V4_INGESTIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', pair.scan_at))
@@ -20,13 +21,16 @@ export async function release(ctx: MutationCtx, pair: ScanPairTimes) {
     if (existing.from_scan_at !== pair.from_scan_at) {
       throw new ConvexError('Ingestion pair does not match the released input')
     }
+
     return null
   }
 
   const scanAt = await clock(ctx)
+
   if (scanAt !== null && scanAt !== pair.from_scan_at) {
     throw new ConvexError({ message: 'Pair does not follow the observation clock', clock: scanAt })
   }
+
   return await ctx.db.insert(V4_INGESTIONS_TABLE, pair)
 }
 
@@ -34,17 +38,21 @@ export async function release(ctx: MutationCtx, pair: ScanPairTimes) {
 export async function createWork(
   ctx: MutationCtx,
   ingestionId: Id<typeof V4_INGESTIONS_TABLE>,
-  processor: ProcessorName,
+  work:
+    | { processor: 'events'; previously_known_models: string[] }
+    | { processor: Exclude<ProcessorName, 'events'> },
 ) {
   const ingestion = await ctx.db.get(V4_INGESTIONS_TABLE, ingestionId)
+
   if (ingestion === null) {
     throw new ConvexError('Processor input is not released')
   }
+
   return await ctx.db.insert(V4_PROCESSOR_WORK_TABLE, {
     ingestion_id: ingestionId,
-    processor,
     scan_at: ingestion.scan_at,
     state: 'pending',
+    ...work,
   })
 }
 
@@ -54,6 +62,7 @@ export async function assertReleasedScan(ctx: QueryCtx, scanAt: string): Promise
     .query(V4_INGESTIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', scanAt))
     .unique()
+
   if (ingestion === null) {
     throw new ConvexError({ message: 'Observation has not been released', scan_at: scanAt })
   }

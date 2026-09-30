@@ -10,7 +10,7 @@
 
 - Manually send a stored event via `v4/discord:send`, using `ORCA_DISCORD_WEBHOOK_URL`.
 - Delivery is single-attempt with Discord confirmation; repeat calls can duplicate messages.
-- `v4/discord:sendExamples` replays a temporary dev gallery with one-second gaps.
+- `v4/discord:sendExamples` accepts `event_ids` and replays them with one-second gaps; IDs change after resets.
 
 ## Rendering boundaries
 
@@ -22,9 +22,11 @@
 - Zero discount means no discount: transitions to/from zero render as removal/addition, not percentage deltas.
 - Blank text renders as `null`; long prose uses marked excerpts around the changed text.
 
-## Provider semantics
+## Lifecycle semantics
 
-- Providers are observed through active endpoints because there is no stable provider listing source.
-- Removal announces that no active endpoints remain; it does not imply that the provider has shut down.
-- Additions are suppressed until first-ever appearance is tracked, so returning providers are not announced as new.
+- Models and providers are observed through listed endpoints; removal means no listed endpoints remain.
+- Arrivals with `previously_known: false` announce discovery; only model discoveries use introductory cards.
+- Known endpoints are relisted; known providers have listed endpoints again.
+- Known models now have listed endpoints; historical records alone do not establish earlier endpoint presence.
+- Unclassified older arrivals use neutral listing language, without claiming discovery or return.
 - Provider alerts cover identity, locations, status and terms/privacy URLs; other policy metadata is out of scope.

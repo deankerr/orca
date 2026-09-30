@@ -14,17 +14,17 @@ own consumer-facing interpretation and phrasing; products compose them with retr
 - Load each pair once and share the observations across initialization, Catalog, History, Events and Stats.
   Pass prepared payloads across Convex mutation boundaries. [Objects](../objects/README.md) owns
   source selection and compressed transfer.
-- Commit Models, Providers, Endpoints, the ingestion record and Pricing/Listings/Events obligations in
-  one transaction. Acceptance advances the shared observation clock in `clock.ts`.
+- Commit Models, Providers, Endpoints, Listings, the ingestion record and Pricing/Events obligations
+  in one transaction. Acceptance advances the shared observation clock in `clock.ts`.
 - Commit each History/Events payload and its work completion together, including empty output. Validate
   both pair times against the obligation's ingestion. Completed work is idempotent.
-- Await Pricing, Listings, Events and Stats independently after acceptance, then schedule continuation.
+- Await Pricing, Events and Stats independently after acceptance, then schedule continuation.
   Failed History/Events attempts remain pending for manual retry. An interrupted routine resumes from
   the clock on the next cron/manual run.
 - Stats stores its observation time and readings in one cache document. Newer publications supersede older attempts;
   failure retains the previous snapshot, and recovery selects the latest ingested observation.
-- History query cutoffs bound observation time. Pending work can leave gaps below that cutoff.
-  Catalog, History and Stats may become visible at different times.
+- History query cutoffs bound observation time. Listings is complete through acceptance; pending
+  Pricing/Events work can leave gaps below that cutoff. Stats publishes independently.
 - Product history subscriptions read committed rows independently of the shared clock. Listings
   discovers historical model members and supplies their complete per-endpoint context. Pricing
   paginates oldest first with reactive row/byte limits. The chart subscribes to its horizon separately;
@@ -39,6 +39,11 @@ own consumer-facing interpretation and phrasing; products compose them with retr
 - `scan_at` dates ORCA's observation. Baseline rows establish the first retained knowledge.
 - Catalog retains departed entities' last-known facts. The grid includes listed endpoints and
   endpoints unlisted within 30 days of the shared clock. Listed baseline rows are immediately readable.
+- Events observes models through their endpoints, just like providers. Historical model metadata
+  remains in Catalog without generating Events while the model has no endpoints.
+- Every new ADD carries `previously_known`. Earlier Listings establishes endpoint/provider knowledge;
+  models also use Catalog knowledge captured before acceptance and retained on their Events work.
+  Event retries exclude their own and later listing observations; renderers read only stored facts.
 - Keep model/provider metadata with its owning entity and
   [provider labels endpoint-local](../../../../docs/orca/provider-identity.md).
 - Pricing carries through continuous availability; reappearance supplies a fresh quote. Historical
@@ -67,16 +72,16 @@ Run from `packages/backend`, selecting the deployment explicitly:
 bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 ```
 
-| Operation              | Function                                                     | Arguments                                                                                   |
-| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Resume ingestion       | `v4/routine:run`                                             | `{}`                                                                                        |
-| Inspect pending work   | `v4/ingestion/progress:listProcessorWork`                    | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
-| Retry one obligation   | `v4/retry:pricing` / `v4/retry:listings` / `v4/retry:events` | `{"work_id":"…"}`                                                                           |
-| Refresh current Stats  | `v4/refreshStats:run`                                        | `{}`                                                                                        |
-| Send one Discord event | `v4/discord:send`                                            | `{"event_id":"…"}`                                                                          |
+| Operation              | Function                                  | Arguments                                                                                   |
+| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Resume ingestion       | `v4/routine:run`                          | `{}`                                                                                        |
+| Inspect pending work   | `v4/ingestion/progress:listProcessorWork` | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
+| Retry one obligation   | `v4/retry:pricing` / `v4/retry:events`    | `{"work_id":"…"}`                                                                           |
+| Refresh current Stats  | `v4/refreshStats:run`                     | `{}`                                                                                        |
+| Send one Discord event | `v4/discord:send`                         | `{"event_id":"…"}`                                                                          |
 
 Manual Discord delivery requires `ORCA_DISCORD_WEBHOOK_URL` in the target deployment's environment.
-`v4/discord:sendExamples {}` replays the temporary 25-event dev gallery with one-second gaps.
+`v4/discord:sendExamples {"event_ids":["…"]}` replays selected events with one-second gaps.
 The event ID is a stored `v4_events` document ID. Each `send` call makes one request and waits for Discord's
 confirmation; errors surface to the caller. There is no retry or deduplication, so calling twice can post twice.
 
