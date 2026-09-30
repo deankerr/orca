@@ -44,8 +44,8 @@ async function previouslyKnown(ctx: QueryCtx, row: EventRow): Promise<boolean> {
     .withIndex('by_model_id', (q) => q.eq('model_id', row.entity_id))
     .unique()
 
-  // ponytail: metadata updates can erase this evidence; immutable first_scan_at would preserve it.
-  return model !== null && model.scan_at < row.scan_at
+  // ponytail: legacy rows fall back to mutable scan_at until from_scan_at is backfilled.
+  return model !== null && (model.from_scan_at ?? model.scan_at) < row.scan_at
 }
 
 /** Commit this ingestion's events and work completion together, including empty output. */

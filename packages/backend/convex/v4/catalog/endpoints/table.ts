@@ -14,6 +14,8 @@ export const currentEndpointsTable = defineTable({
   provider_tag: v.string(),
   variant: v.string(),
   scan_at: v.string(),
+  /** First retained observation of this identity; absent until legacy rows are backfilled. */
+  from_scan_at: v.optional(v.string()),
   unlisted_at: v.optional(v.string()),
   model_display_name: v.string(),
   model_permaslug: v.string(),

@@ -158,16 +158,15 @@ test('baseline, historical models, discoveries and repeated returns survive dela
     observations(6, allEndpoints, allIds),
   ]
 
-  for (const [table, initial] of [
-    ['v4_models', models.initialRows(baseline)],
-    ['v4_providers', providers.initialRows(baseline)],
-    ['v4_endpoints', endpoints.initialRows(baseline)],
-    ['v4_endpoint_listing_history', listings.initialRows(baseline)],
-  ] as const) {
-    for (const row of initial) {
-      await db.insert(table, row)
-    }
+  // Historical-only model metadata changes as endpoints arrive; first observation must survive.
+  for (const scan of timeline.slice(1)) {
+    scan.models.set('author/vintage', { ...model('author/vintage'), short_name: 'Vintage renamed' })
   }
+
+  await handler(models.initialize)(ctx, { rows: models.initialRows(baseline) })
+  await handler(providers.initialize)(ctx, { rows: providers.initialRows(baseline) })
+  await handler(endpoints.initialize)(ctx, { rows: endpoints.initialRows(baseline) })
+  await handler(listings.initialize)(ctx, { rows: listings.initialRows(baseline) })
 
   const commitEvents = handler(commit)
   const pending: Parameters<typeof commitEvents>[] = []
@@ -298,5 +297,56 @@ test('baseline, historical models, discoveries and repeated returns survive dela
         )
       }
     }
+  }
+
+  for (const [table, idField, identity, firstHour] of [
+    ['v4_models', 'model_id', 'author/baseline', 0],
+    ['v4_models', 'model_id', 'author/vintage', 0],
+    ['v4_models', 'model_id', 'author/new', 1],
+    ['v4_models', 'model_id', 'author/new:free', 4],
+    ['v4_providers', 'provider_id', 'baseline-provider', 0],
+    ['v4_providers', 'provider_id', 'new-provider', 1],
+    ['v4_endpoints', 'endpoint_id', 'baseline', 0],
+    ['v4_endpoints', 'endpoint_id', 'vintage', 1],
+    ['v4_endpoints', 'endpoint_id', 'new', 1],
+  ] as const) {
+    expect(rows(table).find((row) => row[idField] === identity)?.from_scan_at).toBe(
+      timeline[firstHour]?.scan_at,
+    )
+  }
+
+  // Existing rows without a first-observation date stay unknown; incoming rows cannot invent it.
+  const legacy = ['v4_models', 'v4_providers', 'v4_endpoints'].map((table) => {
+    const [row] = rows(table)
+
+    if (row === undefined) {
+      throw new Error('Missing baseline row')
+    }
+
+    Reflect.deleteProperty(row, 'from_scan_at')
+    return row._id
+  })
+
+  const newer = { ...baseline, scan_at: '2026-09-30T07:00:00.000Z' }
+
+  await models.write(
+    ctx,
+    models.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
+  )
+
+  await providers.write(
+    ctx,
+    providers.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
+  )
+
+  await endpoints.write(
+    ctx,
+    endpoints.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
+  )
+
+  for (const [i, table] of ['v4_models', 'v4_providers', 'v4_endpoints'].entries()) {
+    expect(rows(table)[0]?._id).toBe(legacy[i])
+    expect(rows(table)[0]?.scan_at).toBe(newer.scan_at)
+    expect(rows(table)[0]?.from_scan_at).toBeUndefined()
   }
 })

@@ -8,6 +8,8 @@ export const V4_CURRENT_PROVIDERS_TABLE = 'v4_providers' as const
 export const currentProvidersTable = defineTable({
   provider_id: v.string(),
   scan_at: v.string(),
+  /** First retained observation of this identity; absent until legacy rows are backfilled. */
+  from_scan_at: v.optional(v.string()),
   display_name: v.string(),
   metadata_json: v.string(),
 }).index('by_provider_id', ['provider_id'])

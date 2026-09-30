@@ -28,6 +28,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
   let processor = 'events'
   let failInsert = false
   let modelScanAt = pair.from_scan_at
+  let modelFromScanAt: string | undefined
   let earlierListing = false
   const writes: EventRow[] = []
 
@@ -38,7 +39,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
           first: async () => (earlierListing ? {} : null),
           unique: async () => {
             expect(table).toBe('v4_models')
-            return { scan_at: modelScanAt }
+            return { scan_at: modelScanAt, from_scan_at: modelFromScanAt }
           },
         }),
       }),
@@ -122,5 +123,18 @@ test('event commits bind both pair times, complete empty work, and make retries 
       await commitHandler(ctx, args)
       expect(writes.at(-1)?.previously_known).toBe(listedBefore)
     }
+  }
+
+  // Immutable first observation survives later metadata updates and delayed event processing.
+  earlierListing = false
+
+  for (const [fromScanAt, known] of [
+    [pair.from_scan_at, true],
+    [pair.scan_at, false],
+  ] as const) {
+    state = 'pending'
+    modelFromScanAt = fromScanAt
+    await commitHandler(ctx, args)
+    expect(writes.at(-1)?.previously_known).toBe(known)
   }
 })

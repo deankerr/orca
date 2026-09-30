@@ -8,7 +8,7 @@
 - Model/provider presence follows listed endpoints; losing the last endpoint produces REMOVE.
 - Models without endpoints remain known in Catalog; their metadata changes do not produce Events.
 - ADD carries `previously_known`; earlier Listings establishes knowledge for all entity kinds, including baseline listings.
-- Models also count as known when their current Catalog `scan_at` predates the event; exact model IDs retain variant suffixes.
+- Models also use Catalog `from_scan_at`, falling back to `scan_at` until backfilled; model IDs retain variant suffixes.
 - Listings commits with Catalog; Events reads only listing observations earlier than its own `scan_at`.
 - An absent boolean on older events means unclassified, never a discovery claim.
 - The ingestion pair bounds the observed transition; `scan_at` records when ORCA first observed the resulting state.
@@ -25,12 +25,12 @@
 
 ## Known limitation: historical models
 
-A model previously observed only in the model list has no earlier Listings evidence. Its Catalog
+A legacy model without `from_scan_at`, previously observed only in the model list, has no earlier Listings evidence. Its Catalog
 `scan_at` can establish prior knowledge, but a metadata update in the arrival scan or before delayed
 event processing overwrites that evidence. It may then be announced as discovered despite already
 being known. Regeneration can likewise change this classification after Catalog updates.
 
-We accept this rare false discovery rather than retaining model-ID snapshots on every ingestion's
-work record. The path to resolving it is an immutable Catalog `first_scan_at`: preserve the first
-observation when updating model facts and compare it with the event's `scan_at`. Existing models
-would need a history-derived backfill or an explicitly documented baseline before relying on it.
+New Catalog identities and baseline rows now retain immutable `from_scan_at`, so later metadata
+updates cannot erase their first observation. Existing rows remain unset until backfilled; their
+fallback can still produce this rare false discovery. No model-ID snapshots are retained on work.
+See the Catalog first-observation backfill notes for the historical reconstruction plan.

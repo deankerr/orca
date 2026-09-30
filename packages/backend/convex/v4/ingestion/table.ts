@@ -29,7 +29,7 @@ export const processorWorkTable = defineTable({
   processor: storedProcessorName,
   scan_at: v.string(),
   state: workState,
-  /** Deprecated, ignored; cleanup.stripLegacyWork removes snapshots from older deployments. */
+  /** Deprecated and ignored; retained for compatibility with older deployments. */
   previously_known_models: v.optional(v.array(v.string())),
 })
   .index('by_ingestion_id_and_processor', ['ingestion_id', 'processor'])
