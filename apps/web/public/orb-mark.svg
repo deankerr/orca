@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- orb: subtle tonal sphere -->
+  <defs>
+    <radialGradient id="orb" cx="0.38" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#333333"/>
+      <stop offset="1" stop-color="#161616"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#orb)" stroke="#3f3f3f" stroke-width="1.5"/>
+  <!-- white patch: specular highlight / orca eye patch -->
+  <ellipse rx="12.5" ry="5" transform="translate(40 23) rotate(-33)" fill="#ededed"/>
+</svg>
