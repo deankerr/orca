@@ -22,9 +22,15 @@ export async function write(ctx: MutationCtx, rows: CurrentProviderRow[]): Promi
       .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
       .unique()
 
+    // Preserve unknown legacy dates too; a later update cannot establish first observation.
+    const next: CurrentProviderRow = {
+      ...row,
+      from_scan_at: existing === null ? row.scan_at : existing.from_scan_at,
+    }
+
     await (existing === null
-      ? ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, row)
-      : ctx.db.replace(V4_CURRENT_PROVIDERS_TABLE, existing._id, row))
+      ? ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, next)
+      : ctx.db.replace(V4_CURRENT_PROVIDERS_TABLE, existing._id, next))
   }
 }
 
@@ -38,7 +44,7 @@ export const initialize = internalMutation({
   handler: async (ctx, { rows }) => {
     await assertInitialTableEmpty(ctx, V4_CURRENT_PROVIDERS_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, row)
+      await ctx.db.insert(V4_CURRENT_PROVIDERS_TABLE, { ...row, from_scan_at: row.scan_at })
     }
     return null
   },

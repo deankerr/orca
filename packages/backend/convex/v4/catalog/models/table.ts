@@ -8,6 +8,8 @@ export const V4_CURRENT_MODELS_TABLE = 'v4_models' as const
 export const currentModelsTable = defineTable({
   model_id: v.string(),
   scan_at: v.string(),
+  /** First retained observation of this identity; absent until legacy rows are backfilled. */
+  from_scan_at: v.optional(v.string()),
   slug: v.string(),
   permaslug: v.string(),
   variant: v.string(),

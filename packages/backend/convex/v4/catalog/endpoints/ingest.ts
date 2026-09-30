@@ -27,9 +27,15 @@ export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promi
       .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
       .unique()
 
+    // Preserve unknown legacy dates too; a later update cannot establish first observation.
+    const next: CurrentEndpointRow = {
+      ...row,
+      from_scan_at: existing === null ? row.scan_at : existing.from_scan_at,
+    }
+
     await (existing === null
-      ? ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, row)
-      : ctx.db.replace(V4_CURRENT_ENDPOINTS_TABLE, existing._id, row))
+      ? ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, next)
+      : ctx.db.replace(V4_CURRENT_ENDPOINTS_TABLE, existing._id, next))
   }
 }
 
@@ -50,7 +56,7 @@ export const initialize = internalMutation({
   handler: async (ctx, { rows }) => {
     await assertInitialTableEmpty(ctx, V4_CURRENT_ENDPOINTS_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, row)
+      await ctx.db.insert(V4_CURRENT_ENDPOINTS_TABLE, { ...row, from_scan_at: row.scan_at })
     }
     return null
   },

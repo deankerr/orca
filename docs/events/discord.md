@@ -39,6 +39,6 @@
 - Arrivals with `previously_known: false` announce discovery; only model discoveries use introductory cards.
 - Known endpoints are relisted; known providers have listed endpoints again.
 - Known models now have listed endpoints; historical records alone do not establish earlier endpoint presence.
-- A historical model without earlier listings can be announced as discovered if metadata updates erase its Catalog timestamp evidence; see [the known limitation and `first_scan_at` path](foundation.md#known-limitation-historical-models).
+- An unbackfilled historical model without earlier listings can be announced as discovered if metadata updates erase its Catalog timestamp evidence; see [the known limitation and backfill path](foundation.md#known-limitation-historical-models).
 - Unclassified older arrivals use neutral listing language, without claiming discovery or return.
 - Provider alerts cover identity, locations, status and terms/privacy URLs; other policy metadata is out of scope.
