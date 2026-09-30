@@ -20,7 +20,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
     },
   } as unknown as ActionCtx
   const address =
-    'https://example.com/ces/feed?model_id=author%2Fmodel&limit=3&cursor=previous-position'
+    'https://example.com/events/feed?model_id=author%2Fmodel&limit=3&cursor=previous-position'
   const response = await handler(ctx, new Request(address))
   const body: unknown = await response.json()
   const next = address.replace('previous-position', 'next-position')
@@ -32,9 +32,9 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
   expect(response.headers.get('Cache-Control')).toBe('no-store')
   expect(response.headers.get('Content-Type')).toBe('application/json; charset=utf-8')
 
-  const unfiltered = await handler(ctx, new Request('https://example.com/ces/feed'))
+  const unfiltered = await handler(ctx, new Request('https://example.com/events/feed'))
   const page: unknown = await unfiltered.json()
-  expect(page).toEqual({ events: [], next: 'https://example.com/ces/feed?cursor=next-position' })
+  expect(page).toEqual({ events: [], next: 'https://example.com/events/feed?cursor=next-position' })
   isDone = true
   const end = await handler(ctx, new Request(address))
   const last: unknown = await end.json()
@@ -52,7 +52,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
     'page=2',
     'cursor=',
   ]) {
-    const invalid = await handler(ctx, new Request(`https://example.com/ces/feed?${search}`))
+    const invalid = await handler(ctx, new Request(`https://example.com/events/feed?${search}`))
     expect(invalid.status).toBe(400)
   }
   expect(calls).toHaveLength(validCalls)
@@ -68,7 +68,10 @@ test('bad continuation cursors are client errors; unrelated query failures remai
         throw new Error(message)
       },
     } as unknown as ActionCtx
-    const response = await handler(ctx, new Request('https://example.com/ces/feed?cursor=invalid'))
+    const response = await handler(
+      ctx,
+      new Request('https://example.com/events/feed?cursor=invalid'),
+    )
     expect(response.status).toBe(400)
     const body: unknown = await response.json()
     expect(body).toEqual({ error: 'Invalid cursor. Restart from the feed without a cursor.' })
@@ -78,7 +81,7 @@ test('bad continuation cursors are client errors; unrelated query failures remai
       throw new Error('Database unavailable')
     },
   } as unknown as ActionCtx
-  const response = await handler(ctx, new Request('https://example.com/ces/feed?cursor=valid'))
+  const response = await handler(ctx, new Request('https://example.com/events/feed?cursor=valid'))
   expect(response.status).toBe(500)
   const body: unknown = await response.json()
   expect(body).toEqual({ error: 'Unable to read the feed.' })
