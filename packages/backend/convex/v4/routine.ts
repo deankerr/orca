@@ -10,7 +10,6 @@ import { currentModelsTable } from './catalog/models/table'
 import * as providers from './catalog/providers/ingest'
 import { currentProvidersTable } from './catalog/providers/table'
 import * as events from './events/ingest'
-import { modelArrivals } from './events/prepare'
 import * as listings from './history/listings/ingest'
 import { endpointListingsTable } from './history/listings/table'
 import * as pricing from './history/pricing/ingest'
@@ -52,7 +51,6 @@ export const run = internalAction({
       providers: providers.prepare(pair),
       endpoints: endpoints.prepare(pair),
       listings: listings.prepare(pair),
-      model_arrivals: modelArrivals(pair),
     }
 
     console.log('[v4:ingestion] prepared', {
@@ -89,9 +87,17 @@ export const run = internalAction({
     }
 
     try {
-      await events.process(ctx, pair, work.events)
+      const eventIds = await events.process(ctx, pair, work.events)
+
+      if (env.ORCA_DISCORD_PREVIEW_ENABLED === 'true' && eventIds.length > 0) {
+        // Pre-alpha: scheduling is best-effort after commit; retries deliberately do not broadcast.
+        await ctx.scheduler.runAfter(0, internal.v4.discord.broadcast, { event_ids: eventIds })
+      }
     } catch (error: unknown) {
-      console.error('[v4:events] failed; work remains pending', { work_id: work.events, error })
+      console.error('[v4:events] processing or preview scheduling failed', {
+        work_id: work.events,
+        error,
+      })
     }
 
     try {
@@ -108,7 +114,7 @@ export const run = internalAction({
   },
 })
 
-/** Accept Catalog, Listings and event knowledge atomically; the action owns processor attempts. */
+/** Accept Catalog and Listings atomically; the action owns processor attempts. */
 export const commitIngestion = internalMutation({
   args: {
     ...pairTimes.fields,
@@ -116,7 +122,6 @@ export const commitIngestion = internalMutation({
     providers: v.array(currentProvidersTable.validator),
     endpoints: v.array(currentEndpointsTable.validator),
     listings: v.array(endpointListingsTable.validator),
-    model_arrivals: v.array(v.string()),
   },
   returns: v.union(v.null(), acceptedWork),
   handler: async (ctx, args) => {
@@ -133,19 +138,14 @@ export const commitIngestion = internalMutation({
       return null
     }
 
-    const knownModels = await events.knownModels(ctx, args.model_arrivals)
-
     await models.write(ctx, args.models)
     await providers.write(ctx, args.providers)
     await endpoints.write(ctx, args.endpoints)
     await listings.write(ctx, args.listings)
 
-    const pricingWork = await createWork(ctx, ingestionId, { processor: 'pricing' })
+    const pricingWork = await createWork(ctx, ingestionId, 'pricing')
 
-    const eventsWork = await createWork(ctx, ingestionId, {
-      processor: 'events',
-      previously_known_models: knownModels,
-    })
+    const eventsWork = await createWork(ctx, ingestionId, 'events')
 
     return { pricing: pricingWork, events: eventsWork }
   },

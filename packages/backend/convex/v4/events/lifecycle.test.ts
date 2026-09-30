@@ -15,7 +15,7 @@ import { commitIngestion } from '../routine'
 import type { Endpoint, Model, Provider } from '../scan/entities'
 import type { Scan } from '../scan/extract'
 import { commit } from './ingest'
-import { modelArrivals, prepare } from './prepare'
+import { prepare } from './prepare'
 import type { EventRow } from './table'
 
 function handler<Args extends Record<string, unknown>, Result>(
@@ -188,7 +188,6 @@ test('baseline, historical models, discoveries and repeated returns survive dela
       providers: providers.prepare(pair),
       endpoints: endpoints.prepare(pair),
       listings: listings.prepare(pair),
-      model_arrivals: modelArrivals(pair),
     }
 
     if (i === 1) {
@@ -221,7 +220,7 @@ test('baseline, historical models, discoveries and repeated returns survive dela
     pending.push([ctx, { ...args, work_id: work.events, rows: prepare(pair) }])
   }
 
-  // Complete Events newest first: neither current Catalog nor future listings may alter novelty.
+  // Complete Events newest first: future listings must not establish prior knowledge.
   for (const args of pending.toReversed()) {
     await commitEvents(...args)
     await commitEvents(...args)

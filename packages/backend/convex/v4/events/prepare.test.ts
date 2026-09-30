@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 
 import type { Endpoint, Model, Provider } from '../scan/entities'
 import type { Scan } from '../scan/extract'
-import { modelArrivals, prepare } from './prepare'
+import { prepare } from './prepare'
 
 const from = '2026-09-28T10:00:00.000Z'
 const to = '2026-09-28T11:00:00.000Z'
@@ -145,7 +145,6 @@ test('partial departures and endpoint replacements preserve model and provider p
 
     expect(rows).toHaveLength(replacementAlreadyListed ? 1 : 2)
     expect(rows.every((row) => row.entity_kind === 'endpoint')).toBe(true)
-    expect(modelArrivals(pair)).toEqual([])
   }
 })
 

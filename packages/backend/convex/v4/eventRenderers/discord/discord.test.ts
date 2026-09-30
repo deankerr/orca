@@ -4,7 +4,7 @@ import { rejects } from 'node:assert/strict'
 import { ComponentType } from 'discord-api-types/v10'
 
 import type { ActionCtx } from '../../../_generated/server'
-import { send, sendExamples } from '../../discord'
+import { broadcast, send, sendExamples } from '../../discord'
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/query'
 import { render } from '../render'
@@ -186,7 +186,12 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
     expect(request.mock.calls[0]?.[1]?.method).toBe('POST')
     const body = request.mock.calls[0]?.[1]?.body
     const payload: unknown = typeof body === 'string' ? JSON.parse(body) : null
-    expect(payload).toMatchObject({ allowed_mentions: { parse: [] } })
+
+    expect(payload).toMatchObject({
+      allowed_mentions: { parse: [] },
+      content: '-# pre-alpha · event: test-event',
+    })
+
     expect(payload).not.toHaveProperty('username')
     expect(payload).not.toHaveProperty('avatar_url')
 
@@ -204,13 +209,38 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
     const richTarget = request.mock.calls[1]?.[0]
     expect(richTarget instanceof URL && richTarget.searchParams.has('with_components')).toBe(false)
 
+    // Model discoveries use Components V2: debug text is a sibling, not part of the card.
+    const modelEvent: EventRow = {
+      ...current,
+      entity_kind: 'model',
+      context: { model: context.model },
+      previously_known: false,
+    }
+
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Component delivery uses the same single-query action dependency.
+    const componentCtx = { runQuery: async () => modelEvent } as unknown as ActionCtx
+    await handler(componentCtx, { event_id: 'component-event' })
+    const componentBody = request.mock.calls[2]?.[1]?.body
+
+    const componentPayload: unknown =
+      typeof componentBody === 'string' ? JSON.parse(componentBody) : null
+
+    expect(componentPayload).not.toHaveProperty('content')
+
+    expect(componentPayload).toMatchObject({
+      components: [
+        { type: ComponentType.Container },
+        { type: ComponentType.TextDisplay, content: '-# pre-alpha · event: component-event' },
+      ],
+    })
+
     request.mockResolvedValue(new Response('rate limited', { status: 429 }))
     await rejects(handler(ctx, { event_id: 'test-event' }), /Discord webhook rejected/)
-    expect(request).toHaveBeenCalledTimes(3)
+    expect(request).toHaveBeenCalledTimes(4)
 
     delete process.env.ORCA_DISCORD_WEBHOOK_URL
     await rejects(handler(ctx, { event_id: 'test-event' }), /Set ORCA_DISCORD_WEBHOOK_URL/)
-    expect(request).toHaveBeenCalledTimes(3)
+    expect(request).toHaveBeenCalledTimes(4)
   } finally {
     request.mockRestore()
     for (const [key, old] of Object.entries(previous)) {
@@ -231,6 +261,8 @@ test('gallery sends selected events sequentially with one-second gaps and stops 
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the registered operator action with its query dependency mocked.
   const handler = (sendExamples as unknown as { _handler: Handler })._handler
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the live entry point using the same batch context.
+  const liveHandler = (broadcast as unknown as { _handler: Handler })._handler
   const args = { event_ids: ['first', 'second', 'third'] }
   const events: string[] = []
   const order: string[] = []
@@ -248,6 +280,7 @@ test('gallery sends selected events sequentially with one-second gaps and stops 
 
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
+    ORCA_DISCORD_PREVIEW_ENABLED: 'false',
     ORCA_PUBLIC_URL: urls.publicUrl,
     ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
   }
@@ -268,7 +301,10 @@ test('gallery sends selected events sequentially with one-second gaps and stops 
 
   try {
     Object.assign(process.env, settings)
-    expect(await handler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
+    expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
+    expect(request).not.toHaveBeenCalled()
+    process.env.ORCA_DISCORD_PREVIEW_ENABLED = 'true'
+    expect(await liveHandler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
     expect(events).toEqual(args.event_ids)
     expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 1000))
 

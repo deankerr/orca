@@ -14,7 +14,7 @@
 
 ## Explorations
 
-- `discord.md`: presentation boundaries, provider semantics, and manual delivery.
+- `discord.md`: presentation, lifecycle semantics, and pre-alpha live delivery limitations.
 
 ## Evidence and examples
 

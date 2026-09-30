@@ -1,4 +1,5 @@
 import { ConvexError, v } from 'convex/values'
+import { ComponentType } from 'discord-api-types/v10'
 
 import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
@@ -13,28 +14,48 @@ export const send = internalAction({
   handler: async (ctx, { event_id }) => await sendEvent(ctx, event_id),
 })
 
-/** Replay selected examples in order, pausing one second between requests. */
+const batchArgs = { event_ids: v.array(v.id('v4_events')) }
+const batchCounts = v.object({ sent: v.number(), skipped: v.number() })
+
+/** Operator replay; explicitly sending examples bypasses the live-preview switch. */
 export const sendExamples = internalAction({
-  args: { event_ids: v.array(v.id('v4_events')) },
-  returns: v.object({ sent: v.number(), skipped: v.number() }),
+  args: batchArgs,
+  returns: batchCounts,
+  handler: async (ctx, { event_ids }) => await sendBatch(ctx, event_ids),
+})
+
+/** Pre-alpha, one attempt per scan: no delivery ledger, retries, or cross-batch ordering. */
+export const broadcast = internalAction({
+  args: batchArgs,
+  returns: batchCounts,
   handler: async (ctx, { event_ids }) => {
-    const counts = { sent: 0, skipped: 0 }
-
-    for (const [index, event_id] of event_ids.entries()) {
-      if (index > 0) {
-        // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is a fixed pause in a temporary operator action.
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 1000)
-        })
-      }
-
-      const result = await sendEvent(ctx, event_id)
-      counts[result] += 1
+    if (env.ORCA_DISCORD_PREVIEW_ENABLED !== 'true') {
+      return { sent: 0, skipped: 0 }
     }
 
-    return counts
+    return await sendBatch(ctx, event_ids)
   },
 })
+
+async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
+  const counts = { sent: 0, skipped: 0 }
+
+  // ponytail: fixed pacing and stop-on-error for the preview; durable delivery is explicitly deferred.
+  // A 429, render error, or action timeout abandons the remainder; later scans run independently.
+  for (const [index, eventId] of eventIds.entries()) {
+    if (index > 0) {
+      // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing for the pre-alpha preview.
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 1000)
+      })
+    }
+
+    const result = await sendEvent(ctx, eventId)
+    counts[result] += 1
+  }
+
+  return counts
+}
 
 async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'sent' | 'skipped'> {
   const webhook = env.ORCA_DISCORD_WEBHOOK_URL
@@ -58,6 +79,15 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     return 'skipped'
   }
 
+  const debug = `-# pre-alpha · event: ${event_id}`
+
+  if (message.components === undefined) {
+    message.content = debug
+  } else {
+    // Components V2 disables message content; keep this sibling outside the card in the same message.
+    message.components.push({ type: ComponentType.TextDisplay, content: debug })
+  }
+
   const url = new URL(webhook)
   url.searchParams.set('wait', 'true')
 
@@ -75,6 +105,7 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     throw new ConvexError({
       message: 'Discord webhook rejected the event.',
       status: response.status,
+      event_id,
     })
   }
 

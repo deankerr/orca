@@ -35,6 +35,7 @@ type Env = {
   readonly DISCORD_PUBLIC_KEY: string | undefined;
   readonly ENTITY_LOGO_SERVICE_ORIGIN: string;
   readonly ORCA_CRAWL_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_DISCORD_PREVIEW_ENABLED: "true" | "false" | undefined;
   readonly ORCA_DISCORD_WEBHOOK_URL: string | undefined;
   readonly ORCA_INGEST_ENABLED: "true" | "false" | undefined;
   readonly ORCA_OBJECTS_API_KEY: string | undefined;

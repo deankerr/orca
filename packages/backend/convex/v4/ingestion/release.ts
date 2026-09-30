@@ -38,9 +38,7 @@ export async function release(ctx: MutationCtx, pair: ScanPairTimes) {
 export async function createWork(
   ctx: MutationCtx,
   ingestionId: Id<typeof V4_INGESTIONS_TABLE>,
-  work:
-    | { processor: 'events'; previously_known_models: string[] }
-    | { processor: Exclude<ProcessorName, 'events'> },
+  processor: ProcessorName,
 ) {
   const ingestion = await ctx.db.get(V4_INGESTIONS_TABLE, ingestionId)
 
@@ -52,7 +50,7 @@ export async function createWork(
     ingestion_id: ingestionId,
     scan_at: ingestion.scan_at,
     state: 'pending',
-    ...work,
+    processor,
   })
 }
 

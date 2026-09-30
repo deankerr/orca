@@ -112,6 +112,7 @@ import type * as v4_catalog_project from "../v4/catalog/project.js";
 import type * as v4_catalog_providers_ingest from "../v4/catalog/providers/ingest.js";
 import type * as v4_catalog_providers_query from "../v4/catalog/providers/query.js";
 import type * as v4_catalog_providers_table from "../v4/catalog/providers/table.js";
+import type * as v4_cleanup from "../v4/cleanup.js";
 import type * as v4_clock from "../v4/clock.js";
 import type * as v4_discord from "../v4/discord.js";
 import type * as v4_eventRenderers_curate from "../v4/eventRenderers/curate.js";
@@ -287,6 +288,7 @@ declare const fullApi: ApiFromModules<{
   "v4/catalog/providers/ingest": typeof v4_catalog_providers_ingest;
   "v4/catalog/providers/query": typeof v4_catalog_providers_query;
   "v4/catalog/providers/table": typeof v4_catalog_providers_table;
+  "v4/cleanup": typeof v4_cleanup;
   "v4/clock": typeof v4_clock;
   "v4/discord": typeof v4_discord;
   "v4/eventRenderers/curate": typeof v4_eventRenderers_curate;

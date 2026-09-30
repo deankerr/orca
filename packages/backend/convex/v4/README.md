@@ -41,8 +41,10 @@ own consumer-facing interpretation and phrasing; products compose them with retr
   endpoints unlisted within 30 days of the shared clock. Listed baseline rows are immediately readable.
 - Events observes models through their endpoints, just like providers. Historical model metadata
   remains in Catalog without generating Events while the model has no endpoints.
-- Every new ADD carries `previously_known`. Earlier Listings establishes endpoint/provider knowledge;
-  models also use Catalog knowledge captured before acceptance and retained on their Events work.
+- Every new ADD carries `previously_known`. Earlier Listings establishes knowledge for all entities;
+  models also use a current Catalog `scan_at` earlier than the event. Metadata updates can erase
+  that evidence for historical models without earlier listings; an immutable `first_scan_at` is
+  the planned remedy. See [the known limitation](../../../../docs/events/foundation.md#known-limitation-historical-models).
   Event retries exclude their own and later listing observations; renderers read only stored facts.
 - Keep model/provider metadata with its owning entity and
   [provider labels endpoint-local](../../../../docs/orca/provider-identity.md).
@@ -80,10 +82,16 @@ bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 | Refresh current Stats  | `v4/refreshStats:run`                     | `{}`                                                                                        |
 | Send one Discord event | `v4/discord:send`                         | `{"event_id":"…"}`                                                                          |
 
-Manual Discord delivery requires `ORCA_DISCORD_WEBHOOK_URL` in the target deployment's environment.
+Discord delivery requires `ORCA_DISCORD_WEBHOOK_URL` in the target deployment's environment.
 `v4/discord:sendExamples {"event_ids":["…"]}` replays selected events with one-second gaps.
 The event ID is a stored `v4_events` document ID. Each `send` call makes one request and waits for Discord's
 confirmation; errors surface to the caller. There is no retry or deduplication, so calling twice can post twice.
+
+`ORCA_DISCORD_PREVIEW_ENABLED=true` schedules fresh routine event batches for the private pre-alpha
+channel, with one-second gaps. Manual retries do not broadcast. There are deliberately no delivery
+guarantees, backfill, or cross-batch ordering. Leave it disabled while catching up or cleaning history.
+See [Discord preview rollout](../../../../docs/orca/v4-discord-preview.md) for accepted limitations,
+merge timing, and the one-off `v4/cleanup:stripLegacyWork` and `v4/cleanup:deleteEvents` processes.
 
 `ORCA_V4_INGEST_CRON_ENABLED=true` admits new hourly cron starts. Existing continuation chains
 and manual runs proceed independently of the flag.

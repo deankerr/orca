@@ -21,8 +21,10 @@ const app = defineApp({
 
     /** Legacy production bot credential; intentionally defaults to an empty string in dev and previews. */
     DISCORD_BOT_TOKEN: v.string(),
-    /** Destination for manually triggered V4 event notifications; absent disables sending. */
+    /** Private preview channel webhook for V4 event notifications. */
     ORCA_DISCORD_WEBHOOK_URL: v.optional(v.string()),
+    /** Pre-alpha live broadcasts only; absent/false disables scheduling and queued batch starts. */
+    ORCA_DISCORD_PREVIEW_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Web app URL used to construct endpoint-grid links in Discord messages. */
     ORCA_PUBLIC_URL: v.string(),
     /** Source Convex cloud URL; absent/empty skips catalog seeding but fails explicit named-artifact pulls. */

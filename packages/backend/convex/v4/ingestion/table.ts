@@ -18,15 +18,18 @@ export type IngestionRow = Infer<typeof ingestionsTable.validator>
 export const V4_PROCESSOR_WORK_TABLE = 'v4_processor_work' as const
 export const processorName = v.union(v.literal('pricing'), v.literal('events'), v.literal('stats'))
 export type ProcessorName = Infer<typeof processorName>
+
+/** Read compatibility only; new work never uses the retired Listings processor. */
+export const storedProcessorName = v.union(processorName, v.literal('listings'))
 export const workState = v.union(v.literal('pending'), v.literal('complete'))
 
 /** One processor's obligation for one ingestion; completion commits with the entire payload. */
 export const processorWorkTable = defineTable({
   ingestion_id: v.id(V4_INGESTIONS_TABLE),
-  processor: processorName,
+  processor: storedProcessorName,
   scan_at: v.string(),
   state: workState,
-  /** Events only: arriving models already known before this ingestion updated Catalog. */
+  /** Deprecated, ignored; cleanup.stripLegacyWork removes snapshots from older deployments. */
   previously_known_models: v.optional(v.array(v.string())),
 })
   .index('by_ingestion_id_and_processor', ['ingestion_id', 'processor'])

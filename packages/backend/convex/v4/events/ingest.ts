@@ -1,6 +1,7 @@
-import { ConvexError, v } from 'convex/values'
+import { v } from 'convex/values'
 
 import { internal } from '../../_generated/api'
+import type { Id } from '../../_generated/dataModel'
 import { internalMutation } from '../../_generated/server'
 import type { ActionCtx, QueryCtx } from '../../_generated/server'
 import { V4_CURRENT_MODELS_TABLE } from '../catalog/models/table'
@@ -13,26 +14,8 @@ import { prepare } from './prepare'
 import { eventsTable, V4_EVENTS_TABLE } from './table'
 import type { EventRow } from './table'
 
-/** Capture historical model knowledge before acceptance replaces current Catalog rows. */
-export async function knownModels(ctx: QueryCtx, modelIds: string[]): Promise<string[]> {
-  const known: string[] = []
-
-  for (const id of modelIds) {
-    const model = await ctx.db
-      .query(V4_CURRENT_MODELS_TABLE)
-      .withIndex('by_model_id', (q) => q.eq('model_id', id))
-      .unique()
-
-    if (model !== null) {
-      known.push(id)
-    }
-  }
-
-  return known
-}
-
 /** Listings has committed through this event; exclude its own and every later observation. */
-async function previouslyListed(ctx: QueryCtx, row: EventRow): Promise<boolean> {
+async function previouslyKnown(ctx: QueryCtx, row: EventRow): Promise<boolean> {
   const listings = ctx.db.query(V4_ENDPOINT_LISTINGS_TABLE)
 
   const earlier =
@@ -48,52 +31,67 @@ async function previouslyListed(ctx: QueryCtx, row: EventRow): Promise<boolean> 
             q.eq('model_id', row.entity_id).lt('scan_at', row.scan_at),
           )
 
-  return (await earlier.first()) !== null
+  if ((await earlier.first()) !== null) {
+    return true
+  }
+
+  if (row.entity_kind !== 'model') {
+    return false
+  }
+
+  const model = await ctx.db
+    .query(V4_CURRENT_MODELS_TABLE)
+    .withIndex('by_model_id', (q) => q.eq('model_id', row.entity_id))
+    .unique()
+
+  // ponytail: metadata updates can erase this evidence; immutable first_scan_at would preserve it.
+  return model !== null && model.scan_at < row.scan_at
 }
 
 /** Commit this ingestion's events and work completion together, including empty output. */
 export const commit = internalMutation({
   args: { work_id: workId, ...pairTimes.fields, rows: v.array(eventsTable.validator) },
-  returns: v.null(),
+  returns: v.array(v.id(V4_EVENTS_TABLE)),
   handler: async (ctx, args) => {
     const work = await pendingWork(ctx, args.work_id, 'events')
 
     if (work === null) {
-      return null
+      return []
     }
 
     assertWorkOutput(work, args, args.rows)
 
-    if (work.previously_known_models === undefined) {
-      throw new ConvexError('Event work is missing model knowledge captured at acceptance')
-    }
-
-    const known = new Set(work.previously_known_models)
+    const eventIds: Id<typeof V4_EVENTS_TABLE>[] = []
 
     for (const row of args.rows) {
-      // Classification belongs to this occurrence, never to the mutable current Catalog.
+      // Classify this occurrence rather than trusting a caller-supplied flag.
       const { previously_known: _untrusted, ...change } = row
 
-      await ctx.db.insert(
+      const eventId = await ctx.db.insert(
         V4_EVENTS_TABLE,
         row.type === 'ADD'
           ? {
               ...change,
-              previously_known:
-                (row.entity_kind === 'model' && known.has(row.entity_id)) ||
-                (await previouslyListed(ctx, row)),
+              previously_known: await previouslyKnown(ctx, row),
             }
           : change,
       )
+
+      eventIds.push(eventId)
     }
+
     await completeWork(ctx, args.work_id)
     console.log('[v4:events] commit', { work_id: args.work_id, inserts: args.rows.length })
-    return null
+    return eventIds
   },
 })
 
 /** Routine ingestion and recovery use the same supplied observation pair. */
-export async function process(ctx: ActionCtx, pair: ScanPair, work_id: WorkId): Promise<void> {
+export async function process(
+  ctx: ActionCtx,
+  pair: ScanPair,
+  work_id: WorkId,
+): Promise<Id<typeof V4_EVENTS_TABLE>[]> {
   const rows = prepare(pair)
 
   console.log('[v4:events] prepared', {
@@ -102,7 +100,7 @@ export async function process(ctx: ActionCtx, pair: ScanPair, work_id: WorkId): 
     argumentLength: JSON.stringify(rows).length,
   })
 
-  await ctx.runMutation(internal.v4.events.ingest.commit, {
+  return await ctx.runMutation(internal.v4.events.ingest.commit, {
     work_id,
     from_scan_at: pair.previous.scan_at,
     scan_at: pair.next.scan_at,

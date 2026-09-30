@@ -32,7 +32,7 @@ export function prepare(pair: ScanPair): EventRow[] {
 }
 
 function project(scan: Scan) {
-  const modelIds = listedModels(scan)
+  const modelIds = new Set([...scan.endpoints.values()].map((endpoint) => endpoint.model_id))
 
   return {
     models: Object.fromEntries(
@@ -47,17 +47,6 @@ function project(scan: Scan) {
       [...scan.endpoints].map(([id, endpoint]) => [id, selectEndpoint(endpoint)]),
     ),
   }
-}
-
-/** Model arrivals follow endpoint presence, independently of upstream catalog membership. */
-export function modelArrivals({ previous, next }: ScanPair): string[] {
-  const before = listedModels(previous)
-
-  return [...listedModels(next)].filter((id) => !before.has(id))
-}
-
-function listedModels(scan: Scan): Set<string> {
-  return new Set([...scan.endpoints.values()].map((endpoint) => endpoint.model_id))
 }
 
 /** Resolve every identity within the selected observation and construct its complete event row. */

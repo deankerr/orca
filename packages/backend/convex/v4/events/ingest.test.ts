@@ -13,7 +13,7 @@ const commitHandler = (
     _handler: (
       ctx: MutationCtx,
       args: ScanPairTimes & { work_id: WorkId; rows: EventRow[] },
-    ) => Promise<null>
+    ) => Promise<string[]>
   }
 )._handler
 
@@ -27,10 +27,21 @@ test('event commits bind both pair times, complete empty work, and make retries 
   let state = 'pending'
   let processor = 'events'
   let failInsert = false
+  let modelScanAt = pair.from_scan_at
+  let earlierListing = false
   const writes: EventRow[] = []
 
   const ctx = {
     db: {
+      query: (table: string) => ({
+        withIndex: () => ({
+          first: async () => (earlierListing ? {} : null),
+          unique: async () => {
+            expect(table).toBe('v4_models')
+            return { scan_at: modelScanAt }
+          },
+        }),
+      }),
       get: async (table: string) => {
         if (table === 'v4_processor_work') {
           return {
@@ -39,7 +50,6 @@ test('event commits bind both pair times, complete empty work, and make retries 
             scan_at: pair.scan_at,
             state,
             processor,
-            previously_known_models: ['author/model'],
           }
         }
 
@@ -92,8 +102,8 @@ test('event commits bind both pair times, complete empty work, and make retries 
   await rejects(commitHandler(ctx, args), /insert failed/)
   expect(state).toBe('pending')
   failInsert = false
-  await commitHandler(ctx, args)
-  await commitHandler(ctx, args)
+  expect(await commitHandler(ctx, args)).toEqual(['event'])
+  expect(await commitHandler(ctx, args)).toEqual([])
   expect(writes).toEqual([{ ...row, previously_known: true }])
   expect(state).toBe('complete')
 
@@ -101,4 +111,16 @@ test('event commits bind both pair times, complete empty work, and make retries 
   await commitHandler(ctx, { ...args, rows: [] })
   expect(state).toBe('complete')
   expect(writes).toHaveLength(1)
+
+  // Same-scan or later metadata updates erase Catalog's evidence of historical-only knowledge.
+  for (const scanAt of [pair.scan_at, '2026-09-28T12:00:00.000Z']) {
+    modelScanAt = scanAt
+
+    for (const listedBefore of [false, true]) {
+      state = 'pending'
+      earlierListing = listedBefore
+      await commitHandler(ctx, args)
+      expect(writes.at(-1)?.previously_known).toBe(listedBefore)
+    }
+  }
 })
