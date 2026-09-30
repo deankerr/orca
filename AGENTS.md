@@ -4,6 +4,9 @@
 
 ## Development
 
+- When dependencies are missing, run `bun install --frozen-lockfile` from the repository root. This needs no backend setup.
+- Sessions may share a checkout, including the main repository. Reuse its existing environment and running processes; a new session does not imply a fresh worktree. Do not run setup checks on every session start.
+- Use `orca-worktree-setup` when the task establishes that a fresh worktree needs its own backend or running app.
 - Use `bun run fix` for all validation and formatting. Not `tsc`.
 - Lint suppression requires an explanation: default to `// oxlint-disable-next-line rule -- Reason.`, or ordinary comments above.
 
