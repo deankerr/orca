@@ -66,9 +66,13 @@ export function componentCard(
   return { flags: MessageFlags.IsComponentsV2, components: [container.toJSON()] }
 }
 
-export function gridUrl(query: string, urls: DiscordUrls): string {
+export function gridUrl(query: string, urls: DiscordUrls, uuid?: string): string {
   const url = new URL(urls.publicUrl)
   url.searchParams.set('q', query)
+
+  if (uuid !== undefined) {
+    url.searchParams.set('uuid', uuid)
+  }
 
   return url.href
 }
