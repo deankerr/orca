@@ -387,7 +387,9 @@ test('Discord pricing cells align without rounding money; identity and mentions 
   expect(embed?.footer?.icon_url).toContain('/provider.webp')
   expect(embed?.footer?.text).toBe('provider/fp8')
   expect(description).not.toContain('provider/fp8')
-  expect(embed?.author?.url).toContain('q=author%2Fmodel+abcdef')
+  const endpointUrl = `${urls.publicUrl}/?q=author%2Fmodel&uuid=abcdef`
+  expect(embed?.author?.url).toBe(endpointUrl)
+  expect(description).toContain(`[\`abcdef\`](${endpointUrl})`)
   expect(embed?.timestamp).toBe('2026-09-30T01:00:00.000Z')
   expect(message?.allowed_mentions).toEqual({ parse: [] })
 

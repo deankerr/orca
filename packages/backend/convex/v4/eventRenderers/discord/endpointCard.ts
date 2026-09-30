@@ -13,7 +13,7 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
 
   const { model, provider, endpoint } = event.context
   const prefix = event.entity_id.slice(0, 6)
-  const url = gridUrl(`${model.model_id} ${prefix}`, urls)
+  const url = gridUrl(model.model_id, urls, prefix)
 
   const state =
     'after' in event
