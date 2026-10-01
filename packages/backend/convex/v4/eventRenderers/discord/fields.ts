@@ -1,4 +1,5 @@
 import type { FieldChange, FieldValue } from '../curate'
+import { fact } from '../facts'
 import { formatNumber, relativeChange } from '../numbers'
 import { code, dot, field, valueChange } from './display'
 
@@ -124,6 +125,7 @@ export function factsText(
 
 export function fieldValue(value: FieldValue, { suffix = '' }: { suffix?: string } = {}): string {
   const input = normalizeValue(value)
+
   if (input === null || typeof input === 'boolean') {
     return code(String(input))
   }
@@ -166,17 +168,6 @@ function excerpt(text: string, start = 0, limit = 800): string {
   const clipped = start > 0 || text.length > end
 
   return `${start > 0 ? '… ' : ''}${text.slice(start, end)}${text.length > end ? '…' : ''}${clipped ? ' [excerpt]' : ''}`
-}
-
-export function fact(facts: Record<string, FieldValue>, path: string): FieldValue | undefined {
-  const [key = '', child] = path.split('.')
-  const parent = facts[key]
-
-  return child === undefined
-    ? parent
-    : parent !== null && typeof parent === 'object' && !Array.isArray(parent)
-      ? parent[child]
-      : undefined
 }
 
 /** Numeric interpretation is shared; Discord owns symbols and favorable direction. */

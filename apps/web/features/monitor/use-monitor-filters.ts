@@ -1,24 +1,40 @@
-import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
+import type { MonitorScope } from '@orca/backend/convex/v4/monitor'
 import { parseAsString, useQueryStates } from 'nuqs'
 
 export function useMonitorFilters() {
   const [params, setParams] = useQueryStates(
     {
-      model: parseAsString,
-      provider: parseAsString,
+      model: parseAsString.withDefault(''),
+      provider: parseAsString.withDefault(''),
+      endpoint: parseAsString.withDefault(''),
     },
     { history: 'push', shallow: true },
   )
 
+  const scope: MonitorScope = params.endpoint
+    ? { kind: 'endpoint', endpoint_id: params.endpoint }
+    : params.model && params.provider
+      ? { kind: 'pair', model_id: params.model, provider_id: params.provider }
+      : params.model
+        ? { kind: 'model', model_id: params.model }
+        : params.provider
+          ? { kind: 'provider', provider_id: params.provider }
+          : { kind: 'all' }
+
   return {
-    modelSlug: params.model ?? '',
-    providerSlug: params.provider ?? '',
-    setModelSlug: (slug: string) => {
-      void setParams({ model: slug === '' ? null : slug })
+    scope,
+    modelId: params.model ?? '',
+    providerId: params.provider ?? '',
+    endpointId: params.endpoint ?? '',
+    setModelId: (id: string) => {
+      void setParams({ model: id || null, endpoint: null })
     },
-    setProviderSlug: (slug: string) => {
-      void setParams({ provider: slug === '' ? null : baseProviderSlug(slug) })
+    setProviderId: (id: string) => {
+      void setParams({ provider: id || null, endpoint: null })
     },
-    hasActiveFilters: params.model !== null || params.provider !== null,
+    setEndpointId: (id: string) => {
+      void setParams({ endpoint: id || null, model: null, provider: null })
+    },
+    hasActiveFilters: scope.kind !== 'all',
   }
 }

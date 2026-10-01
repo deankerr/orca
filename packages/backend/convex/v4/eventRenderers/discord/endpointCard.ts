@@ -50,9 +50,7 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
 function endpointChanges(changes: FieldChange[]): string[] {
   const prices = changes.filter((change) => change.path.startsWith('pricing.'))
 
-  const fields = changes.filter(
-    (change) => !change.path.startsWith('pricing.') && change.path !== 'supports_reasoning',
-  )
+  const fields = changes.filter((change) => !change.path.startsWith('pricing.'))
 
   const groups = [
     { label: 'Pricing', rows: pricingChanges(prices) },

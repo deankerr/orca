@@ -1,20 +1,8 @@
 import type { FieldChange, FieldValue } from '../curate'
 import { formatPercent, formatPrice } from '../numbers'
+import { priceMeters as meters } from '../pricing'
 import { code, field, valueChange } from './display'
 import { delta, fieldChange, fieldName, fieldValue } from './fields'
-
-const meters: Record<string, { label: string; places: number }> = {
-  'pricing.prompt': { label: 'input', places: 6 },
-  'pricing.completion': { label: 'output', places: 6 },
-  'pricing.input_cache_read': { label: 'cache_read', places: 6 },
-  'pricing.input_cache_write': { label: 'cache_write', places: 6 },
-  'pricing.input_cache_write_1h': { label: 'cache_write_1h', places: 6 },
-  'pricing.audio': { label: 'audio_input', places: 6 },
-  'pricing.input_audio_cache': { label: 'audio_cache', places: 6 },
-  'pricing.image': { label: 'image_input', places: 3 },
-  'pricing.image_output': { label: 'image_output', places: 3 },
-  'pricing.web_search': { label: 'web_search', places: 0 },
-}
 
 export const priceLabel = (path: string): string => meters[path]?.label ?? fieldName(path)
 
@@ -161,7 +149,7 @@ function priceValue(path: string, input: FieldValue): string | null {
 
   const meter = meters[path]
 
-  return meter !== undefined && typeof input === 'string' ? formatPrice(input, meter.places) : null
+  return meter !== undefined && typeof input === 'string' ? formatPrice(input, meter.scale) : null
 }
 
 function priceDelta(before: FieldValue, after: FieldValue, path: string): string {

@@ -1,14 +1,9 @@
 'use client'
 
-import type {
-  EndpointChange,
-  EntityChange,
-  ModelChange,
-  ProviderChange,
-} from '@orca/backend/convex/changes'
-import { formatPricingFields } from '@orca/backend/convex/shared/pricing'
-import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
-import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, PlusCircleIcon } from 'lucide-react'
+import type { CuratedEvent, FieldValue } from '@orca/backend/convex/v4/eventRenderers/curate'
+import { fact } from '@orca/backend/convex/v4/eventRenderers/facts'
+import { priceMeters } from '@orca/backend/convex/v4/eventRenderers/pricing'
+import { InfoIcon, PlusCircleIcon } from 'lucide-react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import {
@@ -23,288 +18,210 @@ import { cn } from '@/lib/utils'
 
 import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
+import { fieldLabel, formatChangeUnit, formatChangeValue } from './field-format'
+
+export function lifecycleLabel(event: CuratedEvent): string {
+  const kind = event.entity_kind
+
+  if ('changes' in event) {
+    return `${kind} updated`
+  }
+
+  if ('before' in event) {
+    return kind === 'endpoint' ? 'endpoint unlisted' : `${kind} has no more listed endpoints`
+  }
+
+  if (event.previously_known === false) {
+    return `${kind} discovered`
+  }
+
+  if (kind === 'endpoint') {
+    return event.previously_known === true ? 'endpoint relisted' : 'endpoint listed'
+  }
+
+  return kind === 'provider' && event.previously_known === true
+    ? 'provider has listed endpoints again'
+    : `${kind} now has listed endpoints`
+}
+
+export function EntityEventCard({
+  event,
+  onEndpointSelect,
+}: {
+  event: CuratedEvent
+  onEndpointSelect: (id: string) => void
+}) {
+  const removed = 'before' in event
+  const endpoint = event.entity_kind === 'endpoint' ? event.context.endpoint : null
+
+  return (
+    <div className="rounded-none border bg-card/50">
+      <div className="grid auto-cols-fr grid-flow-col items-center border-b border-border/50 [&>div]:flex [&>div]:px-3 [&>div]:py-1.5 [&>div]:not-first:justify-end">
+        {event.entity_kind !== 'provider' && (
+          <div>
+            <EventIdentity
+              type="model"
+              id={event.context.model.model_id}
+              name={event.context.model.display_name}
+              unlisted={event.entity_kind === 'model' && removed}
+            />
+          </div>
+        )}
+        {event.entity_kind !== 'model' && (
+          <div className={cn(endpoint && 'border-l border-border/50 bg-card')}>
+            <EventIdentity
+              type="provider"
+              id={event.context.provider.provider_id}
+              name={endpoint?.provider_display_name ?? event.context.provider.display_name}
+              label={endpoint?.provider_tag}
+              unlisted={event.entity_kind === 'provider' && removed}
+              className={cn(endpoint && 'flex-row-reverse text-right')}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-2.5">
+        <Badge variant={removed ? 'destructive' : 'secondary'}>
+          {'after' in event ? <PlusCircleIcon /> : <InfoIcon />}
+          {lifecycleLabel(event)}
+        </Badge>
+        {endpoint && (
+          <button
+            type="button"
+            className="cursor-pointer font-mono text-xs text-muted-foreground underline-offset-4 hover:underline"
+            title={`View endpoint history: ${endpoint.endpoint_id}`}
+            aria-label={`View endpoint history: ${endpoint.endpoint_id}`}
+            onClick={() => {
+              onEndpointSelect(endpoint.endpoint_id)
+            }}
+          >
+            {endpoint.endpoint_id.slice(0, 6)}
+          </button>
+        )}
+      </div>
+
+      {'changes' in event ? (
+        <div className="px-6 pb-2.5">
+          <FieldChangeList fields={event.changes} />
+        </div>
+      ) : event.entity_kind === 'model' ? (
+        <div className="space-y-2.5 px-6 pb-2.5">
+          {removed && <p className="text-xs text-muted-foreground">When last observed:</p>}
+          <ModelFacts facts={'after' in event ? event.after : event.before} />
+        </div>
+      ) : event.entity_kind === 'endpoint' && 'after' in event ? (
+        <div className="px-6 pb-2.5">
+          <FactList
+            facts={event.after}
+            paths={[
+              'context_length',
+              'max_completion_tokens',
+              'quantization',
+              ...Object.keys(priceMeters),
+              'pricing.discount',
+              'data_policy.training',
+              'data_policy.retainsPrompts',
+              'data_policy.retentionDays',
+            ]}
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 function EventIdentity({
-  slug,
+  type,
+  id,
   name,
-  isAvailable = true,
+  label = id,
+  unlisted = false,
   className,
 }: {
-  slug: string
-  name?: string
-  isAvailable?: boolean
+  type: 'model' | 'provider'
+  id: string
+  name: string
+  label?: string
+  unlisted?: boolean
   className?: string
 }) {
   return (
-    <EntityIdentity
-      data-unavailable={!isAvailable || undefined}
-      className={cn(
-        'data-unavailable:[&_[data-slot=entity-avatar]]:brightness-50 data-unavailable:[&_[data-slot=entity-identity-name]]:text-muted-foreground data-unavailable:[&_[data-slot=entity-identity-slug]]:line-through',
-        className,
-      )}
-    >
-      <EntityAvatar slug={slug} />
-      <EntityIdentityContent>
-        <EntityIdentityName>{name}</EntityIdentityName>
-        <EntityIdentitySlug>{slug}</EntityIdentitySlug>
-      </EntityIdentityContent>
-    </EntityIdentity>
-  )
-}
-
-// -- Public API
-
-export function EntityEventCard({ change }: { change: EntityChange }) {
-  if (change.entity_type === 'model') {
-    return <ModelEventCard change={change} />
-  }
-  if (change.entity_type === 'endpoint') {
-    return <EndpointEventCard change={change} />
-  }
-  return <ProviderEventCard change={change} />
-}
-
-function EventCard({ children, className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div className={cn('rounded-none border bg-card/50', className)} {...props}>
-      {children}
-    </div>
-  )
-}
-
-function EventCardBody({ className, children, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div className={cn('px-6 py-2.5 empty:hidden', className)} {...props}>
-      {children}
-    </div>
-  )
-}
-
-function EventCardHeader({ children, className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      className={cn(
-        'grid auto-cols-fr grid-flow-col items-center border-border/50 not-only:border-b [&>div]:flex [&>div]:px-3 [&>div]:py-1.5 [&>div]:not-first:justify-end',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  )
-}
-
-// -- Provider events
-
-function ProviderEventCard({ change }: { change: ProviderChange }) {
-  const { provider, event } = change
-
-  return (
-    <EventCard>
-      <EventCardHeader>
-        <div>
-          <EntityOverviewTrigger type="provider" slug={provider.slug}>
-            <EventIdentity
-              slug={provider.slug}
-              name={provider.name}
-              isAvailable={event.kind !== 'entity_unavailable'}
-            />
-          </EntityOverviewTrigger>
-        </div>
-
-        {event.kind === 'entity_available' && (
-          <div>
-            <Badge>
-              <CheckCircle2Icon />
-              provider available
-            </Badge>
-          </div>
+    <EntityOverviewTrigger type={type} slug={id}>
+      <EntityIdentity
+        data-unavailable={unlisted || undefined}
+        className={cn(
+          'data-unavailable:[&_[data-slot=entity-avatar]]:brightness-50 data-unavailable:[&_[data-slot=entity-identity-name]]:text-muted-foreground data-unavailable:[&_[data-slot=entity-identity-slug]]:line-through',
+          className,
         )}
-
-        {event.kind === 'entity_unavailable' && (
-          <div>
-            <Badge variant="destructive">
-              <AlertTriangleIcon />
-              provider unavailable
-            </Badge>
-          </div>
-        )}
-      </EventCardHeader>
-
-      {event.kind === 'entity_updated' && (
-        <EventCardBody>
-          <FieldChangeList fields={event.fields} />
-        </EventCardBody>
-      )}
-    </EventCard>
+      >
+        <EntityAvatar slug={id} />
+        <EntityIdentityContent>
+          <EntityIdentityName>{name}</EntityIdentityName>
+          <EntityIdentitySlug>{label}</EntityIdentitySlug>
+        </EntityIdentityContent>
+      </EntityIdentity>
+    </EntityOverviewTrigger>
   )
 }
 
-// -- Model events
-
-function ModelEventCard({ change }: { change: ModelChange }) {
-  const { model, event } = change
-  const hasDescription = model.description !== undefined && model.description !== ''
-  const description = model.description ?? ''
-
+function ModelFacts({ facts }: { facts: Record<string, FieldValue> }) {
   return (
-    <EventCard>
-      <EventCardHeader>
-        <div>
-          <EntityOverviewTrigger type="model" slug={model.slug}>
-            <EventIdentity
-              slug={model.slug}
-              name={model.name}
-              isAvailable={event.kind !== 'entity_unavailable'}
-            />
-          </EntityOverviewTrigger>
-        </div>
-
-        {event.kind === 'entity_available' && (
-          <div>
-            <Badge>
-              <PlusCircleIcon />
-              model available
-            </Badge>
+    <>
+      {typeof facts.description === 'string' && facts.description !== '' && (
+        <p className="text-xs whitespace-pre-line text-muted-foreground">
+          <InlineMarkdown text={facts.description} />
+        </p>
+      )}
+      <FieldItemSet>
+        <FieldItem label="modalities">
+          <div className="flex flex-wrap items-center gap-1.5 py-0.5">
+            {Array.isArray(facts.input_modalities) &&
+              facts.input_modalities.map((item) => (
+                <Badge key={`in:${item}`} variant="secondary">
+                  {item}
+                </Badge>
+              ))}
+            <span className="text-muted-foreground">→</span>
+            {Array.isArray(facts.output_modalities) &&
+              facts.output_modalities.map((item) => (
+                <Badge key={`out:${item}`} variant="secondary">
+                  {item}
+                </Badge>
+              ))}
+            {facts.supports_reasoning === true && <Badge variant="secondary">reasoning</Badge>}
           </div>
-        )}
-
-        {event.kind === 'entity_unavailable' && (
-          <div>
-            <Badge variant="destructive">
-              <AlertTriangleIcon />
-              model unavailable
-            </Badge>
-          </div>
-        )}
-      </EventCardHeader>
-
-      {event.kind === 'entity_available' && hasDescription && (
-        <EventCardBody>
-          <p className="text-xs whitespace-pre-line text-muted-foreground">
-            <InlineMarkdown text={description} />
-          </p>
-        </EventCardBody>
+        </FieldItem>
+      </FieldItemSet>
+      <FactList facts={facts} paths={['knowledge_cutoff']} />
+      {typeof facts.warning_message === 'string' && facts.warning_message !== '' && (
+        <p className="text-xs whitespace-pre-line text-muted-foreground">
+          <InlineMarkdown text={facts.warning_message} />
+        </p>
       )}
-
-      {event.kind === 'entity_available' && model.input_modalities && (
-        <EventCardBody>
-          <FieldItemSet>
-            <FieldItem label="modalities">
-              <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-                {model.input_modalities.map((m) => (
-                  <Badge key={`in-${m}`} variant="secondary">
-                    {m}
-                  </Badge>
-                ))}
-                <span className="text-muted-foreground">→</span>
-                {model.output_modalities?.map((m) => (
-                  <Badge key={`out-${m}`} variant="secondary">
-                    {m}
-                  </Badge>
-                ))}
-                {model.reasoning === true && <Badge variant="secondary">reasoning</Badge>}
-              </div>
-            </FieldItem>
-          </FieldItemSet>
-        </EventCardBody>
-      )}
-
-      {event.kind === 'entity_updated' && (
-        <EventCardBody>
-          <FieldChangeList fields={event.fields} />
-        </EventCardBody>
-      )}
-    </EventCard>
+    </>
   )
 }
 
-// -- Endpoint events
-
-function EndpointEventCard({ change }: { change: EndpointChange }) {
-  const { model, provider, endpoint, event } = change
-  const hasContextLength = endpoint.context_length !== undefined && endpoint.context_length !== null
-  const hasPricing = endpoint.pricing !== undefined
-
-  return (
-    <EventCard>
-      <EventCardHeader>
-        <div>
-          <EntityOverviewTrigger type="model" slug={model.slug}>
-            <EventIdentity slug={model.slug} name={model.name} />
-          </EntityOverviewTrigger>
-        </div>
-
-        <div className="border-l border-border/50 bg-card">
-          <EntityOverviewTrigger type="provider" slug={baseProviderSlug(provider.slug)}>
-            <EventIdentity
-              className="flex-row-reverse text-right"
-              slug={provider.slug}
-              name={provider.name}
-              isAvailable={event.kind !== 'entity_unavailable'}
-            />
-          </EntityOverviewTrigger>
-        </div>
-      </EventCardHeader>
-
-      {event.kind === 'entity_available' && (
-        <EventCardBody>
-          <Badge variant="secondary">
-            <PlusCircleIcon />
-            endpoint available
-          </Badge>
-        </EventCardBody>
-      )}
-
-      {event.kind === 'entity_available' && (hasContextLength || hasPricing) && (
-        <EventCardBody className="pt-0">
-          <NewEndpointFields endpoint={endpoint} />
-        </EventCardBody>
-      )}
-
-      {event.kind === 'entity_unavailable' && (
-        <EventCardBody>
-          <Badge variant="secondary">
-            <InfoIcon />
-            endpoint unavailable
-          </Badge>
-        </EventCardBody>
-      )}
-
-      {event.kind === 'entity_updated' && (
-        <EventCardBody>
-          <FieldChangeList fields={event.fields} />
-        </EventCardBody>
-      )}
-    </EventCard>
-  )
-}
-
-function NewEndpointFields({ endpoint }: { endpoint: EndpointChange['endpoint'] }) {
-  const pricing = endpoint.pricing ? formatPricingFields(endpoint.pricing) : []
-  const contextLength = endpoint.context_length
-  const maxOutput = endpoint.max_output
-  const hasContextLength = contextLength !== undefined && contextLength !== null
-  const hasMaxOutput = maxOutput !== undefined && maxOutput !== null
-
-  if (!hasContextLength && pricing.length === 0) {
-    return null
-  }
-
+function FactList({ facts, paths }: { facts: Record<string, FieldValue>; paths: string[] }) {
   return (
     <FieldItemSet>
-      {hasContextLength && <FieldItem label="context">{contextLength.toLocaleString()}</FieldItem>}
-      {hasMaxOutput && <FieldItem label="max_output">{maxOutput.toLocaleString()}</FieldItem>}
-      {pricing.map((p) => (
-        <FieldItem key={p.field} label={p.field}>
-          {p.value}
-          {p.unit && (
-            <span className="ml-1">
-              <FieldUnit>{p.unit}</FieldUnit>
-            </span>
-          )}
-        </FieldItem>
-      ))}
+      {paths.map((path) => {
+        const value = fact(facts, path)
+
+        if (value === undefined || (path === 'pricing.discount' && value === 0)) {
+          return null
+        }
+
+        const unit = formatChangeUnit(path, value)
+
+        return (
+          <FieldItem key={path} label={fieldLabel(path)}>
+            {formatChangeValue(value, path)}
+            {unit && <FieldUnit>{unit}</FieldUnit>}
+          </FieldItem>
+        )
+      })}
     </FieldItemSet>
   )
 }
