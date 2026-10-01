@@ -14,4 +14,5 @@ Remaining objectives, unordered:
 - [x] Remove the V3 backend code and query contracts.
 - [ ] Delete retired V3 production tables after deployment verification.
 - [ ] Port the public API to the V4 data source.
-- [ ] Remove the legacy backend.
+- [x] Move Monitor to V4 Events.
+- [ ] Remove the legacy backend after the V4 Monitor has been deployed to production.

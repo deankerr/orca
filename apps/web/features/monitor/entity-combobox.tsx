@@ -1,11 +1,9 @@
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
-import { useControllableState } from '@radix-ui/react-use-controllable-state'
 import { compareItems, rankings, rankItem } from '@tanstack/match-sorter-utils'
-import { useQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { usePaginatedQuery } from 'convex-helpers/react/cache'
 import { CheckIcon } from 'lucide-react'
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import {
@@ -22,23 +20,21 @@ import { cn } from '@/lib/utils'
 
 type EntityItem = {
   name: string
-  slug: string
+  id: string
 }
 
 type EntityComboboxProps = {
-  value?: string
-  defaultValue?: string
-  onValueChange?: (value: string) => void
+  value: string
+  onValueChange: (value: string) => void
   placeholder?: string
   searchPlaceholder: string
   emptyMessage: string
   items?: EntityItem[]
   isPending: boolean
-} & React.ComponentProps<typeof Button>
+} & Omit<React.ComponentProps<typeof Button>, 'value' | 'defaultValue'>
 
 function EntityCombobox({
-  value: valueProp,
-  defaultValue,
+  value,
   onValueChange,
   placeholder,
   searchPlaceholder,
@@ -48,53 +44,34 @@ function EntityCombobox({
   className,
   ...props
 }: EntityComboboxProps) {
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? '',
-    onChange: onValueChange,
-  })
-
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const listboxId = useId()
 
-  const dedupedItems = useMemo(() => {
+  const filtered = useMemo(() => {
     if (items === undefined) {
       return undefined
     }
 
-    const seenSlugs = new Set<string>()
-    return items.filter((item) => {
-      if (seenSlugs.has(item.slug)) {
-        return false
-      }
-      seenSlugs.add(item.slug)
-      return true
-    })
-  }, [items])
-
-  const filtered = useMemo(() => {
-    if (dedupedItems === undefined) {
-      return undefined
-    }
-
     let nextItems = search
-      ? dedupedItems
+      ? items
           .map((item) => {
-            const slugRank = rankItem(item.slug, search, { threshold: rankings.CONTAINS })
+            const idRank = rankItem(item.id, search, { threshold: rankings.CONTAINS })
             const nameRank = rankItem(item.name, search, { threshold: rankings.CONTAINS })
-            const bestRank = slugRank.rank >= nameRank.rank ? slugRank : nameRank
+            const bestRank = idRank.rank >= nameRank.rank ? idRank : nameRank
             return { item, rank: bestRank }
           })
           .filter((rankedItem) => rankedItem.rank.passed)
           .toSorted((a, b) => compareItems(a.rank, b.rank))
           .map((rankedItem) => rankedItem.item)
-      : dedupedItems
+      : items
 
     if (value) {
-      const selectedIndex = nextItems.findIndex((item) => item.slug === value)
+      const selectedIndex = nextItems.findIndex((item) => item.id === value)
+
       if (selectedIndex > 0) {
         const selectedItem = nextItems[selectedIndex]
+
         nextItems = [
           selectedItem,
           ...nextItems.slice(0, selectedIndex),
@@ -104,13 +81,13 @@ function EntityCombobox({
     }
 
     return nextItems
-  }, [dedupedItems, search, value])
+  }, [items, search, value])
 
-  const selected = dedupedItems?.find((item) => item.slug === value)
+  const selected = items?.find((item) => item.id === value)
   const hasFilteredItems = (filtered?.length ?? 0) > 0
 
   const handleSelect = (item: EntityItem) => {
-    setValue(item.slug === value ? '' : item.slug)
+    onValueChange(item.id === value ? '' : item.id)
     setOpen(false)
     setSearch('')
   }
@@ -126,11 +103,7 @@ function EntityCombobox({
 
     if (hasFilteredItems) {
       return (
-        <VirtualizedEntityList
-          items={filtered ?? []}
-          selectedSlug={value}
-          onSelect={handleSelect}
-        />
+        <VirtualizedEntityList items={filtered ?? []} selectedId={value} onSelect={handleSelect} />
       )
     }
 
@@ -152,11 +125,11 @@ function EntityCombobox({
         }
       >
         {selected ? (
-          <FilterIdentity name={selected.name} slug={selected.slug} />
+          <FilterIdentity name={selected.name} id={selected.id} />
         ) : value && isPending ? (
           <FilterIdentitySkeleton />
         ) : (
-          <span className="w-full text-muted-foreground">{placeholder}</span>
+          <span className="w-full truncate text-muted-foreground">{value || placeholder}</span>
         )}
       </PopoverTrigger>
 
@@ -183,13 +156,24 @@ function EntityCombobox({
   )
 }
 
+function useEntityChoices(query: typeof api.v4.monitor.models) {
+  const result = usePaginatedQuery(query, {}, { initialNumItems: 1000 })
+  const { status, loadMore } = result
+
+  useEffect(() => {
+    if (status === 'CanLoadMore') {
+      loadMore(1000)
+    }
+  }, [status, loadMore])
+
+  return result
+}
+
 export function ModelCombobox({
   placeholder = 'Filter by model...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { data: models, isPending } = useQuery(
-    convexQuery(api.models.list, { requireTextOutput: true }),
-  )
+  const { results: models, status } = useEntityChoices(api.v4.monitor.models)
 
   return (
     <EntityCombobox
@@ -198,7 +182,7 @@ export function ModelCombobox({
       searchPlaceholder="Search models..."
       emptyMessage="No models found."
       items={models}
-      isPending={isPending}
+      isPending={status === 'LoadingFirstPage'}
     />
   )
 }
@@ -207,7 +191,7 @@ export function ProviderCombobox({
   placeholder = 'Filter by provider...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { data: providers, isPending } = useQuery(convexQuery(api.providers.list, {}))
+  const { results: providers, status } = useEntityChoices(api.v4.monitor.providers)
 
   return (
     <EntityCombobox
@@ -216,18 +200,18 @@ export function ProviderCombobox({
       searchPlaceholder="Search providers..."
       emptyMessage="No providers found."
       items={providers}
-      isPending={isPending}
+      isPending={status === 'LoadingFirstPage'}
     />
   )
 }
 
-function FilterIdentity({ name, slug }: { name?: string; slug: string }) {
+function FilterIdentity({ name, id }: { name?: string; id: string }) {
   return (
     <EntityIdentity className="flex-1">
-      <EntityAvatar slug={slug} />
+      <EntityAvatar slug={id} />
       <EntityIdentityContent>
         <EntityIdentityName>{name}</EntityIdentityName>
-        <EntityIdentitySlug>{slug}</EntityIdentitySlug>
+        <EntityIdentitySlug>{id}</EntityIdentitySlug>
       </EntityIdentityContent>
     </EntityIdentity>
   )
@@ -247,16 +231,16 @@ function FilterIdentitySkeleton() {
 
 function VirtualizedEntityList({
   items,
-  selectedSlug,
+  selectedId,
   onSelect,
 }: {
   items: EntityItem[]
-  selectedSlug?: string
+  selectedId?: string
   onSelect: (item: EntityItem) => void
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  // oxlint-disable-next-line react-hooks-js/incompatible-library
+  // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual owns mutable measurement state.
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => viewportRef.current,
@@ -269,11 +253,11 @@ function VirtualizedEntityList({
       <div className="relative py-1" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const item = items[virtualRow.index]
-          const isSelected = item.slug === selectedSlug
+          const isSelected = item.id === selectedId
 
           return (
             <button
-              key={item.slug}
+              key={item.id}
               type="button"
               className={cn(
                 'absolute right-0 left-0 mx-1 flex cursor-pointer items-center justify-between rounded-xs px-2 text-left hover:bg-accent/70',
@@ -286,7 +270,7 @@ function VirtualizedEntityList({
                 onSelect(item)
               }}
             >
-              <FilterIdentity name={item.name} slug={item.slug} />
+              <FilterIdentity name={item.name} id={item.id} />
               {isSelected && <CheckIcon className="size-4 shrink-0 text-primary" />}
             </button>
           )

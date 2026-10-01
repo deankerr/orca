@@ -4,6 +4,9 @@
 - Keeping experimental renderers together lets the feed, Grid, and Discord reuse interpretation as it develops.
 - `render(event)` and `renderPage(page)` interpret captured facts independently of current Catalog state.
 - JSON combines structured changes with plain-text `summary` and `details`; products choose markup and navigation.
+- `selectEvent` shares Discord/Monitor event eligibility and field selection after curation and pricing filtering.
+- Provider URL selection and endpoint reasoning exclusion live there; renderers consume the selected changes.
+- Monitor uses native reactive pagination, with model/provider activity scoped to captured relationships.
 - Medium-specific renderers may customize field labels and value presentation while sharing the projection schema.
 - Presentation rules do not rewrite captured IChange operations or shared curated changes.
 - Discord entity cards own field-specific rules; `discord/fields` supplies generic display and `discord/pricing` prices.

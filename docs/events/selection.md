@@ -4,6 +4,16 @@
 - A model/provider pair can have several endpoints; discover offerings through the Grid or Catalog, then use their IDs.
 - Model/provider events are rare enough that endpoint-only activity indexes currently offer little benefit.
 
+## Monitor
+
+- Monitor consumes the same selected events as Discord, retaining its existing cards and virtualized timeline.
+- Global, model, provider, model/provider intersection, and exact-endpoint scopes use native pagination.
+- Model/provider activity includes the entity and its endpoints; their intersection includes only endpoint events.
+- Selection uses captured relationships, including last relationships for departures, independently of current Catalog.
+- Retained Catalog identities populate paginated choices; models require observed endpoint history and exclude `openrouter/*`, while departed entities remain selectable.
+- Curation and compound filtering can return empty pages; the viewport continues requesting until filled or exhausted.
+- Observation-time headings are presentation only; pages can split observations and rows use stable event addresses.
+
 ## Planned overlay
 
 - An entity-focused successor to Monitor can combine a shared recent event pool with focused historical queries.

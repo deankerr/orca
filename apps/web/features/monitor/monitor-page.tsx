@@ -6,7 +6,7 @@ import { useCallback } from 'react'
 import { PageLoading } from '@/components/app-layout/pages'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-import { flattenMonitorFeed, MonitorFeedRowItem } from './crawl-batch'
+import { flattenMonitorFeed, MonitorFeedRowItem } from './feed-rows'
 import { FilterBar } from './filter-bar'
 import { useInfiniteScroll } from './use-infinite-scroll'
 import { useMonitor } from './use-monitor'
@@ -14,21 +14,23 @@ import { useMonitorFilters } from './use-monitor-filters'
 
 export function MonitorPage() {
   const filters = useMonitorFilters()
-  const monitor = useMonitor(filters.modelSlug, filters.providerSlug)
+  const monitor = useMonitor(filters.scope)
 
   const viewportRef = useInfiniteScroll(monitor.loadMore, {
-    hasMore: monitor.hasMore,
+    status: monitor.status,
   })
-  const feedRows = flattenMonitorFeed(monitor.batches)
 
-  // oxlint-disable-next-line react-hooks-js/incompatible-library
+  const feedRows = flattenMonitorFeed(monitor.events)
+
+  // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual owns mutable measurement state.
   const virtualizer = useVirtualizer({
     count: feedRows.length,
     getScrollElement: () => viewportRef.current,
-    estimateSize: (index) => (feedRows[index]?.kind === 'batch-header' ? 44 : 160),
+    estimateSize: (index) => (feedRows[index]?.kind === 'header' ? 44 : 160),
     overscan: 8,
     getItemKey: useCallback((index: number) => feedRows[index]?.key ?? index, [feedRows]),
   })
+
   const virtualRows = virtualizer.getVirtualItems()
   const totalSize = virtualizer.getTotalSize()
 
@@ -42,6 +44,7 @@ export function MonitorPage() {
             <div className="relative w-full" style={{ height: totalSize }}>
               {virtualRows.map((virtualRow) => {
                 const row = feedRows[virtualRow.index]
+
                 if (row === undefined) {
                   return null
                 }
@@ -54,7 +57,7 @@ export function MonitorPage() {
                     className="absolute top-0 left-0 w-full"
                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                   >
-                    <MonitorFeedRowItem row={row} />
+                    <MonitorFeedRowItem row={row} onEndpointSelect={filters.setEndpointId} />
                   </div>
                 )
               })}
@@ -69,7 +72,7 @@ export function MonitorPage() {
           </>
         ) : (
           <div className="mx-auto w-full max-w-2xl px-3 pt-6 pb-12">
-            {monitor.isLoading ? (
+            {monitor.isLoading || monitor.hasMore ? (
               <PageLoading />
             ) : (
               <p className="py-8 text-center text-sm text-muted-foreground">

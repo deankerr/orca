@@ -1,38 +1,16 @@
 'use client'
 
-import type { FieldChange } from '@orca/backend/convex/changes'
-import { computeDelta, fmtValue, splitPath } from '@orca/backend/convex/shared/formatters'
-import {
-  computePricingDelta,
-  formatPricing,
-  pricingKeyFromPath,
-  pricingUnit,
-} from '@orca/backend/convex/shared/pricing'
+import { splitPath } from '@orca/backend/convex/shared/formatters'
 import { truncate } from '@orca/backend/convex/shared/utils'
+import type { FieldChange } from '@orca/backend/convex/v4/eventRenderers/curate'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'
 
+import { fieldLabel, formatChangeValue, formatChangeUnit, formatChangeDelta } from './field-format'
+
 const TRUNCATE_LENGTH = 800
 const LONG_STRING_LENGTH = 30
-
-function formatChangeValue(value: unknown, path: string): string {
-  const key = pricingKeyFromPath(path)
-  if (key !== null && typeof value === 'number') {
-    return formatPricing(key, value)?.value ?? fmtValue(value)
-  }
-  return fmtValue(value)
-}
-
-function formatChangeUnit(path: string): string {
-  const key = pricingKeyFromPath(path)
-  return key === null ? '' : pricingUnit(key)
-}
-
-function formatChangeDelta(before: unknown, after: unknown, path: string) {
-  const key = pricingKeyFromPath(path)
-  return key === null ? computeDelta(before, after) : computePricingDelta(key, before, after)
-}
 
 // -- Label colors
 
@@ -102,17 +80,18 @@ function FieldUpdatedItem({
   field,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { kind: 'field_updated' }>
+  field: Extract<FieldChange, { type: 'field_updated' }>
 }) {
   const isLong =
-    (typeof field.before === 'string' && field.before.length > LONG_STRING_LENGTH) ||
-    (typeof field.after === 'string' && field.after.length > LONG_STRING_LENGTH)
+    !field.path.startsWith('pricing.') &&
+    ((typeof field.before === 'string' && field.before.length > LONG_STRING_LENGTH) ||
+      (typeof field.after === 'string' && field.after.length > LONG_STRING_LENGTH))
 
   if (isLong) {
-    const before = truncate(String(field.before), TRUNCATE_LENGTH)
-    const after = truncate(String(field.after), TRUNCATE_LENGTH)
+    const before = truncate(formatChangeValue(field.before, field.path), TRUNCATE_LENGTH)
+    const after = truncate(formatChangeValue(field.after, field.path), TRUNCATE_LENGTH)
     return (
-      <div data-change-id={field.change_id}>
+      <div data-field={field.path}>
         <FieldLabel>{fieldKey}</FieldLabel>
         <div className="mt-0.5 space-y-0.5 border-l-2 border-border-solid pl-2 font-sans">
           <p className="whitespace-pre-line text-muted-foreground line-through">
@@ -129,11 +108,11 @@ function FieldUpdatedItem({
   const before = formatChangeValue(field.before, field.path)
   const after = formatChangeValue(field.after, field.path)
   const delta = formatChangeDelta(field.before, field.after, field.path)
-  const unit = formatChangeUnit(field.path)
+  const unit = formatChangeUnit(field.path, field.before, field.after)
   const hasUnit = unit !== ''
 
   return (
-    <div className="flex flex-wrap items-center gap-x-1.5" data-change-id={field.change_id}>
+    <div className="flex flex-wrap items-center gap-x-1.5" data-field={field.path}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <span className={cn(label, 'line-through')}>{before}</span>
       <span className={labelDimmer}>→</span>
@@ -144,72 +123,51 @@ function FieldUpdatedItem({
   )
 }
 
-function FieldAddedItem({
+function FieldPresenceItem({
   fieldKey,
   field,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { kind: 'field_added' }>
+  field: Extract<FieldChange, { type: 'field_added' | 'field_removed' }>
 }) {
-  const isLong = typeof field.value === 'string' && field.value.length > 80
+  const removed = field.type === 'field_removed'
+  const input = removed ? field.before : field.after
+  const value = formatChangeValue(input, field.path)
 
-  if (isLong) {
-    return (
-      <div data-change-id={field.change_id}>
-        <DiffSymbol className="text-positive-soft-foreground">+ </DiffSymbol>
-        <FieldLabel>{fieldKey}</FieldLabel>
-        <p className="mt-0.5 border-l-2 border-border-solid pl-2 font-sans whitespace-pre-line text-muted-foreground">
-          <InlineMarkdown text={truncate(String(field.value), TRUNCATE_LENGTH)} />
-        </p>
-      </div>
-    )
-  }
+  const isLong =
+    !field.path.startsWith('pricing.') && typeof input === 'string' && input.length > 80
 
-  const value = formatChangeValue(field.value, field.path)
-  const unit = formatChangeUnit(field.path)
-  const hasUnit = unit !== ''
+  const color = removed ? 'text-negative-soft-foreground' : 'text-positive-soft-foreground'
+  const unit = formatChangeUnit(field.path, input)
 
   return (
-    <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
-      <DiffSymbol className="text-positive-soft-foreground">+</DiffSymbol>
+    <div
+      className={cn(!isLong && 'flex flex-wrap items-baseline gap-x-1.5')}
+      data-field={field.path}
+    >
+      <DiffSymbol className={color}>{removed ? '-' : '+'}</DiffSymbol>
       <FieldLabel>{fieldKey}</FieldLabel>
-      <span className="text-foreground">{value}</span>
-      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
-    </div>
-  )
-}
-
-function FieldRemovedItem({
-  fieldKey,
-  field,
-}: {
-  fieldKey: string
-  field: Extract<FieldChange, { kind: 'field_removed' }>
-}) {
-  const isLong = typeof field.value === 'string' && field.value.length > 80
-
-  if (isLong) {
-    return (
-      <div data-change-id={field.change_id}>
-        <DiffSymbol className="text-negative-soft-foreground">- </DiffSymbol>
-        <FieldLabel>{fieldKey}</FieldLabel>
-        <p className="mt-0.5 border-l-2 border-border-solid pl-2 font-sans whitespace-pre-line text-muted-foreground line-through">
-          <InlineMarkdown text={truncate(String(field.value), TRUNCATE_LENGTH)} />
+      {isLong ? (
+        <p
+          className={cn(
+            'mt-0.5 border-l-2 border-border-solid pl-2 font-sans whitespace-pre-line text-muted-foreground',
+            removed && 'line-through',
+          )}
+        >
+          <InlineMarkdown text={truncate(value, TRUNCATE_LENGTH)} />
         </p>
-      </div>
-    )
-  }
-
-  const value = formatChangeValue(field.value, field.path)
-  const unit = formatChangeUnit(field.path)
-  const hasUnit = unit !== ''
-
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-1.5" data-change-id={field.change_id}>
-      <DiffSymbol className="text-negative-soft-foreground">-</DiffSymbol>
-      <FieldLabel>{fieldKey}</FieldLabel>
-      <span className="text-negative-soft-foreground line-through">{value}</span>
-      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
+      ) : (
+        <>
+          <span
+            className={cn(
+              removed ? 'text-negative-soft-foreground line-through' : 'text-foreground',
+            )}
+          >
+            {value}
+          </span>
+          {unit && <FieldUnit>{unit}</FieldUnit>}
+        </>
+      )}
     </div>
   )
 }
@@ -219,26 +177,26 @@ function FieldSetUpdatedItem({
   field,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { kind: 'set_updated' }>
+  field: Extract<FieldChange, { type: 'set_updated' }>
 }) {
-  const added = field.items.filter((i) => i.status === 'added')
-  const removed = field.items.filter((i) => i.status === 'removed')
+  const { added, removed } = field
+
   if (added.length === 0 && removed.length === 0) {
     return null
   }
 
   return (
-    <div data-change-id={field.change_id}>
+    <div data-field={field.path}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <div className="mt-0.5 space-y-px pl-2">
         {removed.map((item) => (
-          <div key={item.value} className="text-negative-soft-foreground">
-            - {item.value}
+          <div key={item} className="text-negative-soft-foreground">
+            - {item}
           </div>
         ))}
         {added.map((item) => (
-          <div key={item.value} className="text-positive-soft-foreground">
-            + {item.value}
+          <div key={item} className="text-positive-soft-foreground">
+            + {item}
           </div>
         ))}
       </div>
@@ -249,17 +207,16 @@ function FieldSetUpdatedItem({
 // -- Change item router
 
 function ChangeItem({ field }: { field: FieldChange }) {
-  const { key } = splitPath(field.path)
+  const key = fieldLabel(field.path)
 
-  if (field.kind === 'set_updated') {
+  if (field.type === 'set_updated') {
     return <FieldSetUpdatedItem fieldKey={key} field={field} />
   }
-  if (field.kind === 'field_added') {
-    return <FieldAddedItem fieldKey={key} field={field} />
+
+  if (field.type === 'field_added' || field.type === 'field_removed') {
+    return <FieldPresenceItem fieldKey={key} field={field} />
   }
-  if (field.kind === 'field_removed') {
-    return <FieldRemovedItem fieldKey={key} field={field} />
-  }
+
   return <FieldUpdatedItem fieldKey={key} field={field} />
 }
 
@@ -279,7 +236,7 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
       {topLevel.length > 0 && (
         <FieldCategory>
           {topLevel.map((f) => (
-            <ChangeItem key={f.change_id} field={f} />
+            <ChangeItem key={f.path} field={f} />
           ))}
         </FieldCategory>
       )}
@@ -287,7 +244,7 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
       {categories.map(([category, items]) => (
         <FieldCategory key={category} name={category}>
           {items.map((f) => (
-            <ChangeItem key={f.change_id} field={f} />
+            <ChangeItem key={f.path} field={f} />
           ))}
         </FieldCategory>
       ))}
@@ -297,9 +254,9 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
 
 // -- Delta badge
 
-function DeltaBadge({ delta }: { delta: { pct: number; isUp: boolean; isGood: boolean } }) {
+function DeltaBadge({ delta }: { delta: { percent: string; isUp: boolean; isGood: boolean } }) {
   const arrow = delta.isUp ? '\u25B2' : '\u25BC'
-  const pct = `${Math.abs(delta.pct).toFixed(1)}%`
+  const pct = delta.percent
   const color = delta.isGood ? 'text-positive-soft-foreground' : 'text-negative-soft-foreground'
 
   return (
