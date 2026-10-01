@@ -6,7 +6,7 @@ import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/query'
 import { curate } from '../curate'
 import { render } from '../render'
-import { code, escape, field, valueChange } from './display'
+import { code, escape, field, lifecycleMarker, valueChange } from './display'
 import { delta, fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
 import { renderDiscord } from './index'
 import { priceLabel, pricingChanges, pricingTable } from './pricing'
@@ -47,15 +47,20 @@ test('update headings are sentences for every entity', () => {
       'model',
       { supports_reasoning: false },
       { supports_reasoning: true },
-      'Model **Model** updated.',
+      'Δ Model **Model** updated.',
     ],
     [
       'endpoint',
       { quantization: 'fp8' },
       { quantization: 'fp16' },
-      '**Regional offering** endpoint updated.',
+      'Δ **Regional offering** endpoint updated.',
     ],
-    ['provider', { displayName: 'Old' }, { displayName: 'New' }, 'Provider **Provider** updated.'],
+    [
+      'provider',
+      { displayName: 'Old' },
+      { displayName: 'New' },
+      'Δ Provider **Provider** updated.',
+    ],
   ] as const) {
     const event: EventRow = {
       ...row({ metadata: before }, { metadata: after }),
@@ -90,6 +95,7 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   expect(description).toContain('`input:     ` `≈ $0.142` 🔺')
   expect(description).toContain('`cache_read:` ` $0.0171` → ` $0.0162` ▼ 5%')
   expect(description).not.toContain('~~')
+  expect(description).not.toContain('◇')
   expect(description).not.toContain('0.016156')
   expect(event.change_json).toBe(captured)
   expect(render(event)).toMatchObject({
@@ -116,16 +122,16 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
       { path: 'pricing.prompt', before: '$1', after: '$0.5', annotation: '▼ 50%' },
       { path: 'pricing.input_cache_read', after: '$0.1', change: 'added', annotation: '' },
     ]),
-  ).toBe('`input:     ` `  $1` → `$0.5` ▼ 50%\n`cache_read:` `$0.1` • new')
+  ).toBe('`input:       ` `  $1` → `$0.5` ▼ 50%\n+ `cache_read:` `$0.1`')
 
   expect(field('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
 
-  expect(field('parameters', '```diff\n+ tools\n```', { layout: 'block' })).toBe(
-    '`parameters`\n```diff\n+ tools\n```',
-  )
+  expect(field('parameters', '+ `tools`', { layout: 'block' })).toBe('`parameters`\n+ `tools`')
 
-  expect(field('enabled', code('true'), { change: 'added' })).toBe('`enabled:` `true` • new')
-  expect(field('enabled', code('false'), { change: 'removed' })).toBe('~~`enabled:`~~ ~~`false`~~')
+  expect(field('enabled', code('true'), { change: 'added' })).toBe('+ `enabled:` `true`')
+  expect(field('enabled', code('false'), { change: 'removed' })).toBe(
+    '− ~~`enabled:`~~ ~~`false`~~',
+  )
   expect(code('long_value', { width: 3 })).toBe('`long_value`')
   expect(code('a`b')).toBe('a\\`b')
 })
@@ -170,7 +176,7 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
   expect(renderDiscord(event, urls)?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
   expect(text).not.toContain('reasoning_config')
   expect(text).toContain('`is_mandatory_reasoning:`')
-  expect(text).toContain('`warning_message`')
+  expect(text).toContain('⚠ `warning_message`')
 })
 
 test('pricing uses separate value spans without reserving blank old-value columns', () => {
@@ -182,7 +188,7 @@ test('pricing uses separate value spans without reserving blank old-value column
   expect(lines).toEqual([
     '`input:     ` `  $0.453` → `  $0.452` ▼',
     '`cache_read:` `≈ $0.123` ▼',
-    '`discount:  ` `     24%` • new',
+    '+ `discount:` `     24%`',
   ])
   expect(lines.every((line) => !line.includes('~~'))).toBe(true)
   expect(lines.map((line) => line.split('`')[3]?.length)).toEqual([8, 8, 8])
@@ -298,8 +304,8 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   expect(description).toContain('🔺 100%')
   expect(description).not.toContain('Infinity')
   expect(description).not.toContain('supports_reasoning')
-  expect(embed?.author?.icon_url).toContain('/author.webp')
-  expect(embed?.footer?.icon_url).toContain('/provider.webp')
+  expect(embed?.author?.icon_url).toContain('/v1/avatar/author.webp')
+  expect(embed?.footer?.icon_url).toContain('/v1/avatar/provider.webp')
   expect(embed?.footer?.text).toBe('provider/fp8')
   expect(description).not.toContain('provider/fp8')
   const endpointUrl = `${urls.publicUrl}/?q=author%2Fmodel&uuid=abcdef`
@@ -320,8 +326,8 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
 
 test('Discord presents zero discount transitions as added/removed without rewriting event facts', () => {
   for (const [before, after, expected] of [
-    [0, 0.08, '`discount:` `8%` • new'],
-    [0.08, 0, '~~`discount:`~~ ~~`8%`~~'],
+    [0, 0.08, '+ `discount:` `8%`'],
+    [0.08, 0, '− ~~`discount:`~~ ~~`8%`~~'],
     [0.08, 0.12, '`discount:` ` 8%` → `12%`'],
   ] as const) {
     const event = row({ pricing: { discount: before } }, { pricing: { discount: after } })
@@ -373,10 +379,13 @@ test('Discord presents zero discount transitions as added/removed without rewrit
       urls,
     )?.embeds?.[0]?.description ?? ''
 
-  const table = combined.split('\n\n')[1]?.split('\n') ?? []
+  expect(combined).toContain('◇ **Pricing**')
+  expect(combined).toContain('◇ **Details**')
+
+  const table = combined.split('\n\n')[1]?.split('\n').slice(1) ?? []
 
   expect(table).toHaveLength(3)
-  expect(table[2]).toBe('~~`discount:  `~~ ~~`   8%`~~')
+  expect(table[2]).toBe('− ~~`discount:`~~ ~~`   8%`~~')
 })
 
 test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', () => {
@@ -390,10 +399,10 @@ test('Discord preserves absence, nulls and set changes, escapes markup, and skip
 
   const text = message?.embeds?.[0]?.description
 
-  expect(text).toContain('```diff\n+ **tools**\n- seed\n```')
+  expect(text).toContain('`supported_parameters`\n+ `**tools**`\n− ~~`seed`~~')
   expect(text).toContain('`fp8` → `null`')
-  expect(text).toContain('`limit_rpm:` `0` • new')
-  expect(text).toContain('~~`is_disabled:`~~ ~~`false`~~')
+  expect(text).toContain('+ `limit_rpm:` `0`')
+  expect(text).toContain('− ~~`is_disabled:`~~ ~~`false`~~')
 
   expect(
     renderDiscord(row({ metadata: { capacity_tpm: 1 } }, { metadata: { capacity_tpm: 2 } }), urls),
@@ -449,7 +458,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
             : '**Regional offering** endpoint discovered.'
           : kind === 'model'
             ? 'has no more listed endpoints'
-            : '**Regional offering** endpoint unlisted.',
+            : '− **Regional offering** endpoint unlisted.',
       )
 
       if (kind === 'model') {
@@ -460,7 +469,9 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
         expect(message?.embeds?.[0]?.description).not.toContain('abcdef')
 
         if (type === 'REMOVE') {
-          expect(message?.embeds?.[0]?.description).toBe('**Regional offering** endpoint unlisted.')
+          expect(message?.embeds?.[0]?.description).toBe(
+            '− **Regional offering** endpoint unlisted.',
+          )
         }
       }
     }
@@ -558,8 +569,8 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(endpointText).toContain('4,096')
   expect(endpointText).toContain('$0.001')
   expect(endpointText).toContain('$0.000001')
-  expect(endpointText).toContain('/author.webp')
-  expect(endpointText).toContain('/provider.webp')
+  expect(endpointText).toContain('/v1/avatar/author.webp')
+  expect(endpointText).toContain('/v1/avatar/provider.webp')
   expect(endpointText).not.toContain('discount')
   expect(endpointText).not.toContain('supports_reasoning')
   expect(endpointText).not.toContain('supported_parameters')
@@ -632,7 +643,7 @@ test('provider discoveries are announced and departures only announce endpoint a
     const message = renderDiscord(event, urls)
 
     if (type === 'ADD') {
-      expect(message?.embeds?.[0]?.description).toBe('Provider **Provider** discovered.')
+      expect(message?.embeds?.[0]?.description).toBe('✨ Provider **Provider** discovered.')
       expect(render(event)).toMatchObject({ type: 'provider_added', previously_known: false })
     } else {
       expect(message?.components).toBeUndefined()
@@ -640,12 +651,12 @@ test('provider discoveries are announced and departures only announce endpoint a
       expect(message?.embeds?.[0]?.footer).toBeUndefined()
 
       expect(message?.embeds?.[0]).toMatchObject({
-        description: 'Provider **Provider** has no more listed endpoints.',
+        description: '− Provider **Provider** has no more listed endpoints.',
         color: 0xef_44_44,
         timestamp: '2026-09-30T01:00:00.000Z',
       })
 
-      expect(message?.embeds?.[0]?.author?.icon_url).toContain('/provider.webp')
+      expect(message?.embeds?.[0]?.author?.icon_url).toContain('/v1/avatar/provider.webp')
       expect(JSON.stringify(message)).not.toContain('Earth')
       expect(JSON.stringify(message)).not.toContain('training')
     }
@@ -814,11 +825,11 @@ test('blank scalar and prose values render null without rewriting the captured e
       { type: 'field_removed', path: 'description', before: 'Old prose.' },
       { prose: true },
     ),
-  ).toBe('~~`description`~~\n> ~~Old prose.~~')
+  ).toBe('− ~~`description`~~\n> ~~Old prose.~~')
 
   expect(
     fieldChange({ type: 'field_added', path: 'description', after: 'New prose.' }, { prose: true }),
-  ).toBe('`description` • new\n> New prose.')
+  ).toBe('+ `description`\n> New prose.')
 })
 
 test('endpoint reasoning-only changes are skipped while model reasoning remains visible', () => {
@@ -876,7 +887,7 @@ test('one-hour cache writes survive curation and render without pricing units or
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
 
   expect(pricingChanges([{ type: 'field_added', path: 'pricing.prompt', after: '1e-6' }])).toEqual([
-    '`input:` `$1.00` • new',
+    '+ `input:` `$1.00`',
   ])
 
   for (const payload of [message, added]) {
@@ -889,8 +900,8 @@ test('one-hour cache writes survive curation and render without pricing units or
 test('web search is a pricing row across updates, additions, and removals without token scaling', () => {
   for (const [before, after, expected] of [
     [{ web_search: '0.001' }, { web_search: '0.002' }, '`web_search:` `$0.001` → `$0.002` 🔺 100%'],
-    [{}, { web_search: '0.001' }, '`web_search:` `$0.001` • new'],
-    [{ web_search: '0.001' }, {}, '~~`web_search:`~~ ~~`$0.001`~~'],
+    [{}, { web_search: '0.001' }, '+ `web_search:` `$0.001`'],
+    [{ web_search: '0.001' }, {}, '− ~~`web_search:`~~ ~~`$0.001`~~'],
   ] as const) {
     const event = row({ pricing: { meters: before } }, { pricing: { meters: after } })
     const text = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
@@ -939,5 +950,48 @@ test('cards supply prose and duration rules while generic formatters only follow
         { type: 'field_updated', path: 'pricing.prompt', before: '0.000001', after },
       ]),
     ).toEqual(['`input:` `$1.00` → `null`'])
+  }
+})
+
+test('lifecycle markers distinguish arrivals, returns, departures, and routine updates', () => {
+  for (const kind of ['model', 'provider', 'endpoint']) {
+    expect(lifecycleMarker({ type: `${kind}_added`, previously_known: false })).toBe('✨ ')
+    expect(lifecycleMarker({ type: `${kind}_added`, previously_known: true })).toBe('↺ ')
+    expect(lifecycleMarker({ type: `${kind}_added` })).toBe('+ ')
+    expect(lifecycleMarker({ type: `${kind}_removed` })).toBe('− ')
+    expect(lifecycleMarker({ type: `${kind}_updated` })).toBe('Δ ')
+  }
+})
+
+test('array changes use compact rows and escape embedded Markdown instead of fenced blocks', () => {
+  const text = fieldChange({
+    type: 'set_updated',
+    path: 'supported_parameters',
+    added: ['tools', '`**literal**'],
+    removed: ['seed'],
+  })
+
+  expect(text).toContain('+ `tools`')
+  expect(text).toContain('− ~~`seed`~~')
+  expect(text).not.toContain('```')
+  expect(text).toContain(code('`**literal**'))
+})
+
+test('pricing label widths include external addition and removal markers', () => {
+  for (const change of ['added', 'removed'] as const) {
+    const lines = pricingTable([
+      { path: 'pricing.prompt', before: '$1', after: '$2', annotation: '' },
+      { path: 'pricing.input_cache_read', after: '$1', annotation: '', change },
+      { path: 'pricing.discount', after: '10%', annotation: '', change },
+    ]).split('\n')
+
+    const widths = lines.map((line) => {
+      const label = line.split('`')[1] ?? ''
+
+      return label.length + (line.startsWith('+ ') || line.startsWith('− ') ? 2 : 0)
+    })
+
+    expect(new Set(widths).size).toBe(1)
+    expect(lines[1]).toStartWith(change === 'added' ? '+ `cache_read:`' : '− ~~`cache_read:`~~')
   }
 })

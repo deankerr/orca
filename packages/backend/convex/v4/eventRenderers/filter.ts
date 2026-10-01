@@ -2,8 +2,8 @@ import type { CuratedEvent, FieldChange } from './curate'
 import { compareNumbers, relativeChangeAtLeast } from './numbers'
 
 /**
- * Coarse notification policy: a pricing update needs at least one eligible meter
- * moving by 2% or more. Discount is already reflected in the meter prices.
+ * Coarse notification policy: suppress discount adjustments of at most 2 percentage
+ * points first, then require at least one eligible meter moving by 2% or more.
  * A malformed meter is ineligible, not a reason to let a 0.1% update through.
  * No eligible meters means no pricing notification; lifecycle and non-pricing
  * events remain outside this rule.
@@ -17,6 +17,17 @@ export function shouldRender(event: CuratedEvent): boolean {
   }
 
   const pricing = event.changes.filter((change) => change.path.split('.')[0] === 'pricing')
+  const discount = pricing.find((change) => change.path === 'pricing.discount')
+
+  if (
+    discount?.type === 'field_updated' &&
+    typeof discount.before === 'number' &&
+    typeof discount.after === 'number' &&
+    // Discounts are fractions; tolerate floating-point subtraction at the inclusive boundary.
+    Math.abs(discount.after - discount.before) <= 0.02 + Number.EPSILON
+  ) {
+    return false
+  }
 
   return pricing.length === 0 || pricing.some(significantMeterChange)
 }

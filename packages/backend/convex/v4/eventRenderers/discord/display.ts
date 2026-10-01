@@ -19,9 +19,9 @@ export function field(
   })
   const heading = change === 'removed' ? strike(key) : key
   const value = change === 'removed' ? strike(children) : children
-  const marker = change === 'added' ? `${dot}new` : ''
+  const marker = change === 'added' ? '+ ' : change === 'removed' ? '− ' : ''
 
-  return layout === 'block' ? `${heading}${marker}\n${value}` : `${heading} ${value}${marker}`
+  return layout === 'block' ? `${marker}${heading}\n${value}` : `${marker}${heading} ${value}`
 }
 
 /** Keep quote markers outside strikethrough so removed prose retains its block layout. */
@@ -61,3 +61,16 @@ export function code(
 
 /** Escape inline Markdown, leaving ordinary punctuation such as slug hyphens untouched. */
 export const escape = (text: string): string => text.replaceAll(/[\\`*_~|<>[\]]/g, '\\$&')
+
+/** Each event kind has a marker; arrivals distinguish discoveries and returns. */
+export function lifecycleMarker(event: { type: string; previously_known?: boolean }): string {
+  if (event.type.endsWith('_removed')) {
+    return '− '
+  }
+
+  if (event.type.endsWith('_added')) {
+    return event.previously_known === false ? '✨ ' : event.previously_known === true ? '↺ ' : '+ '
+  }
+
+  return 'Δ '
+}

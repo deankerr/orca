@@ -78,5 +78,5 @@ export function gridUrl(query: string, urls: DiscordUrls, uuid?: string): string
 }
 
 export function logoUrl(slug: string, urls: DiscordUrls): string {
-  return entityLogoUrl({ origin: urls.logoOrigin, slug, variant: 'dark' })
+  return entityLogoUrl({ origin: urls.logoOrigin, slug, variant: 'avatar' })
 }

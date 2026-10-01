@@ -1,7 +1,7 @@
 import type { CuratedEvent, FieldChange, FieldValue } from '../curate'
 import { colors, embedCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { escape } from './display'
+import { escape, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldName, fieldValue } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
@@ -26,7 +26,7 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
         ? 'unlisted'
         : 'updated'
 
-  const heading = `**${escape(endpoint.provider_display_name)}** endpoint ${state}.`
+  const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint ${state}.`
 
   const body =
     'changes' in event
@@ -54,12 +54,29 @@ function endpointChanges(changes: FieldChange[]): string[] {
     (change) => !change.path.startsWith('pricing.') && change.path !== 'supports_reasoning',
   )
 
-  return [
-    ...pricingChanges(prices),
-    ...fields.map((change) =>
-      fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue }),
-    ),
-  ]
+  const groups = [
+    { label: 'Pricing', rows: pricingChanges(prices) },
+    ...['Limits', 'Data policy', 'Details'].map((label) => ({
+      label,
+      rows: fields
+        .filter((change) => {
+          const group = change.path.startsWith('data_policy.')
+            ? 'Data policy'
+            : /^(?:context_length|max_|limit_)/.test(change.path)
+              ? 'Limits'
+              : 'Details'
+
+          return group === label
+        })
+        .map((change) =>
+          fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue }),
+        ),
+    })),
+  ].filter((group) => group.rows.length > 0)
+
+  return groups.map(({ label, rows }) =>
+    groups.length > 1 ? `◇ **${label}**\n${rows.join('\n')}` : rows.join('\n\n'),
+  )
 }
 
 function endpointDetails(facts: Record<string, FieldValue>): string[] {

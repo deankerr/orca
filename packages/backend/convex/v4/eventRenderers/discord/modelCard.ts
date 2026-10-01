@@ -1,7 +1,7 @@
 import type { CuratedEvent, FieldValue } from '../curate'
 import { colors, embedCard, componentCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { code, dot, escape, field } from './display'
+import { code, dot, escape, field, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
 /** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
@@ -42,14 +42,15 @@ export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
           ]
         : [
             `Model **${escape(name)}** updated.`,
-            ...event.changes.map((change) =>
-              fieldChange(change, {
-                prose: change.path === 'description' || change.path === 'warning_message',
-              }),
+            ...event.changes.map(
+              (change) =>
+                `${change.path === 'warning_message' ? '⚠ ' : ''}${fieldChange(change, {
+                  prose: change.path === 'description' || change.path === 'warning_message',
+                })}`,
             ),
           ]
 
-  return embedCard(content.filter(Boolean).join('\n\n'), {
+  return embedCard(lifecycleMarker(event) + content.filter(Boolean).join('\n\n'), {
     author: { name: slug, url, iconURL: logo },
     timestamp: event.observed_at,
     color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
@@ -75,7 +76,7 @@ function modelDetails(facts: Record<string, FieldValue>): string {
       : '',
     factsText(facts, ['knowledge_cutoff']),
     typeof facts.warning_message === 'string' && facts.warning_message.trim() !== ''
-      ? field('warning_message', quote(facts.warning_message), { layout: 'block' })
+      ? `⚠ ${field('warning_message', quote(facts.warning_message), { layout: 'block' })}`
       : '',
   ]
     .filter(Boolean)
