@@ -26,6 +26,3 @@ before consumers can use them; project defaults and preview initialization are c
   using `ctx.meta.getDeploymentMetadata()`.
 - Source errors propagate without falling back to local objects. Keep the source fixed while V4
   has a populated timeline or outstanding processor work.
-
-`v3Load` retains local-only reads for the shared V3 Scan loader and legacy `/objects` HTTP endpoint.
-V3's existing locator queries and pull configuration remain independent of canonical source routing.

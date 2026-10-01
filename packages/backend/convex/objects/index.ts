@@ -138,11 +138,6 @@ export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): 
   return names
 }
 
-/** Temporary V3 compatibility: read local objects even when canonical reads use another deployment. */
-export async function v3Load(ctx: ActionCtx, args: ObjectIdentity): Promise<string | null> {
-  return decode(await readLocal(ctx, { path: args.path, name: args.name }))
-}
-
 async function readSource(
   ctx: ActionCtx,
 ): Promise<{ client: ConvexHttpClient; apiKey: string } | null> {
