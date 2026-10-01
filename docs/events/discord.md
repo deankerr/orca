@@ -4,7 +4,7 @@
 
 - One webhook target; the legacy bot approach will not return.
 - Pre-alpha production demo in a private ORCA channel, intended to evaluate the live rendering UX.
-- One event becomes one notification; batching, storm filtering and durable delivery are deferred.
+- One event becomes one notification after the [coarse pricing filter](pricing.md#coarse-renderer-filter); grouping, broader storm filtering and durable delivery are deferred.
 
 ## Delivery and accepted limitations
 
@@ -12,13 +12,14 @@
 - The scheduled action rechecks the switch on entry; already-running batches continue if it is later disabled.
 - Enable only once ingestion is caught up. Disable before replaying old scans; no age filter is applied.
 - Manual retries never broadcast. A completed or empty event commit supplies no IDs to send.
-- One webhook target, `ORCA_DISCORD_WEBHOOK_URL`; one-second gaps within each scan's batch.
+- One webhook target, `ORCA_DISCORD_WEBHOOK_URL`; two-second gaps within each scan's batch.
 - No correctness or delivery guarantees: no outbox, delivery ledger, retry, deduplication or backfill.
 - A scheduling failure after event commit loses that broadcast; event storage and subsequent ingestion proceed.
 - Render failures, oversized cards, HTTP errors (including 429), or action timeout abandon the remaining batch.
 - Batches can overlap and interleave; no global ordering or rate coordination is promised.
-- `send` and `sendExamples` are explicit operator tools, bypass the preview switch, and can duplicate messages.
+- `send`, `sendExamples`, and `sendLatest` are explicit operator tools, bypass the preview switch, and can duplicate messages.
 - `sendExamples` accepts `event_ids`. Deleting and regenerating events changes their IDs.
+- `sendLatest` defaults to 10 renderable events, accepts `limit` from 1–50, scans at most 500 recent events, and sends selected cards oldest first.
 - Each message includes `pre-alpha` and the event ID outside the card, in the same message.
 - Embed cards use message content; component cards use a sibling Text Display. Mentions remain disabled.
 - Operational steps and cleanup commands live in the V4 Discord preview rollout notes.

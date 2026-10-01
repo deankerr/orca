@@ -1,5 +1,6 @@
 import type { EventRow } from '../events/query'
 import type { CuratedEvent, FieldChange, FieldValue } from './curate'
+import { formatNumber, formatPercent, formatPrice, relativeChange } from './numbers'
 
 const labels: Record<string, string> = {
   'pricing.prompt': 'Input price',
@@ -41,20 +42,13 @@ const labels: Record<string, string> = {
   'data_policy.retentionDays': 'Data retention days',
 }
 
-/** Scale fixed-point prices exactly; unfamiliar representations cannot be safely scaled. */
-export function tokenPrice(price: string, places = 6): string | null {
-  const decimal = /^(?<whole>\d+)(?:\.(?<fraction>\d+))?$/.exec(price)?.groups
-
-  if (decimal === undefined || price.length > 100) {
-    return null
-  }
-
-  const fraction = (decimal.fraction ?? '').padEnd(places, '0')
-  const whole = BigInt(`${decimal.whole}${fraction.slice(0, places)}`).toLocaleString('en-US')
-  const remainder = fraction.slice(places).replace(/0+$/, '')
-
-  return `$${whole}${remainder === '' ? '' : `.${remainder}`}`
-}
+const tokenPrices = new Set([
+  'pricing.prompt',
+  'pricing.completion',
+  'pricing.input_cache_read',
+  'pricing.input_cache_write',
+  'pricing.input_cache_write_1h',
+])
 
 function value(input: FieldValue, path: string): string {
   if (input === null) {
@@ -66,24 +60,13 @@ function value(input: FieldValue, path: string): string {
   }
 
   if (typeof input === 'number') {
-    return path === 'pricing.discount'
-      ? new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 12 }).format(
-          input,
-        )
-      : new Intl.NumberFormat('en-US', { maximumSignificantDigits: 21 }).format(input)
+    return (
+      (path === 'pricing.discount' ? formatPercent(input) : formatNumber(input)) ?? String(input)
+    )
   }
 
-  if (
-    typeof input === 'string' &&
-    [
-      'pricing.prompt',
-      'pricing.completion',
-      'pricing.input_cache_read',
-      'pricing.input_cache_write',
-      'pricing.input_cache_write_1h',
-    ].includes(path)
-  ) {
-    return tokenPrice(input) ?? `$${input}`
+  if (typeof input === 'string' && tokenPrices.has(path)) {
+    return formatPrice(input, 6) ?? `$${input}`
   }
 
   if (Array.isArray(input)) {
@@ -105,9 +88,26 @@ function describeChange(change: FieldChange): string[] {
   }
 
   if (change.type === 'field_updated') {
-    return [
-      `${name} changed from ${value(change.before, change.path)} to ${value(change.after, change.path)}.`,
-    ]
+    const before = value(change.before, change.path)
+    const after = value(change.after, change.path)
+
+    if (
+      before === after &&
+      ((typeof change.before === 'number' && typeof change.after === 'number') ||
+        (tokenPrices.has(change.path) &&
+          typeof change.before === 'string' &&
+          typeof change.after === 'string'))
+    ) {
+      const delta = relativeChange(change.before, change.after)
+
+      if (delta !== null) {
+        return [
+          `${name} is approximately ${after} (${delta.isUp ? 'increased' : 'decreased'} by ${delta.percent}).`,
+        ]
+      }
+    }
+
+    return [`${name} changed from ${before} to ${after}.`]
   }
 
   return [

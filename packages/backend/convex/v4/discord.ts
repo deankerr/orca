@@ -1,11 +1,13 @@
+import type { PaginationResult } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 import { ComponentType } from 'discord-api-types/v10'
 
 import { internal } from '../_generated/api'
-import type { Id } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 import { env, internalAction } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
 import { renderDiscord } from './eventRenderers/discord'
+import { dot } from './eventRenderers/discord/display'
 
 /** Operator-only, single-attempt delivery. Repeating the call posts the event again. */
 export const send = internalAction({
@@ -22,6 +24,59 @@ export const sendExamples = internalAction({
   args: batchArgs,
   returns: batchCounts,
   handler: async (ctx, { event_ids }) => await sendBatch(ctx, event_ids),
+})
+
+/** Replay the latest renderable events, oldest first, without enabling live delivery. */
+export const sendLatest = internalAction({
+  args: { limit: v.optional(v.number()) },
+  returns: batchCounts,
+  handler: async (ctx, { limit = 10 }) => {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+      throw new ConvexError('limit must be an integer between 1 and 50.')
+    }
+
+    const ids: Id<'v4_events'>[] = []
+    let cursor: string | null = null
+    let skipped = 0
+
+    // ponytail: inspect at most 500 recent events; return fewer examples when
+    // this window is mostly filtered. Historical replay can grow separately.
+    for (let pageIndex = 0; pageIndex < 5; pageIndex += 1) {
+      const page: PaginationResult<Doc<'v4_events'>> = await ctx.runQuery(
+        internal.v4.events.query.list,
+        {
+          paginationOpts: { cursor, numItems: 100 },
+        },
+      )
+
+      for (const event of page.page) {
+        const message = renderDiscord(event, {
+          publicUrl: env.ORCA_PUBLIC_URL,
+          logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
+        })
+
+        if (message === null) {
+          skipped += 1
+        } else {
+          ids.push(event._id)
+        }
+
+        if (ids.length === limit) {
+          break
+        }
+      }
+
+      if (ids.length === limit || page.isDone) {
+        break
+      }
+
+      cursor = page.continueCursor
+    }
+
+    const counts = await sendBatch(ctx, ids.toReversed())
+
+    return { sent: counts.sent, skipped: skipped + counts.skipped }
+  },
 })
 
 /** Pre-alpha, one attempt per scan: no delivery ledger, retries, or cross-batch ordering. */
@@ -46,7 +101,7 @@ async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
     if (index > 0) {
       // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing for the pre-alpha preview.
       await new Promise<void>((resolve) => {
-        setTimeout(resolve, 1000)
+        setTimeout(resolve, 2000)
       })
     }
 
@@ -79,7 +134,7 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     return 'skipped'
   }
 
-  const debug = `-# pre-alpha · event: ${event_id}`
+  const debug = `-# pre-alpha${dot}event: ${event_id}`
 
   if (message.components === undefined) {
     message.content = debug

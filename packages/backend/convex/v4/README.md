@@ -76,21 +76,32 @@ Run from `packages/backend`, selecting the deployment explicitly:
 bunx convex run --deployment dev v4/routine:run '{"start_at":"2026-09-20"}'
 ```
 
-| Operation              | Function                                  | Arguments                                                                                   |
-| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Resume ingestion       | `v4/routine:run`                          | `{}`                                                                                        |
-| Inspect pending work   | `v4/ingestion/progress:listProcessorWork` | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
-| Retry one obligation   | `v4/retry:pricing` / `v4/retry:events`    | `{"work_id":"…"}`                                                                           |
-| Refresh current Stats  | `v4/refreshStats:run`                     | `{}`                                                                                        |
-| Send one Discord event | `v4/discord:send`                         | `{"event_id":"…"}`                                                                          |
+| Operation                   | Function                                  | Arguments                                                                                   |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Resume ingestion            | `v4/routine:run`                          | `{}`                                                                                        |
+| Inspect pending work        | `v4/ingestion/progress:listProcessorWork` | `{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}` |
+| Retry one obligation        | `v4/retry:pricing` / `v4/retry:events`    | `{"work_id":"…"}`                                                                           |
+| Refresh current Stats       | `v4/refreshStats:run`                     | `{}`                                                                                        |
+| Send one Discord event      | `v4/discord:send`                         | `{"event_id":"…"}`                                                                          |
+| Replay latest Discord cards | `v4/discord:sendLatest`                   | `{}` (latest 10), or `{"limit":15}`                                                         |
 
 Discord delivery requires `ORCA_DISCORD_WEBHOOK_URL` in the target deployment's environment.
-`v4/discord:sendExamples {"event_ids":["…"]}` replays selected events with one-second gaps.
+`v4/discord:sendExamples {"event_ids":["…"]}` replays selected events with two-second gaps.
+For self-serve demos, `v4/discord:sendLatest {}` sends the latest 10 renderable events, oldest first.
+Use `{"limit":15}` to choose another count (1–50). It applies the current renderer filter and
+inspects at most the newest 500 captured events, so it can return fewer cards. The result reports
+`sent` and `skipped`; skipped events are those rejected by the renderer while selecting examples.
+Run it in the Convex dashboard or from `packages/backend` with an explicit deployment:
+
+```sh
+bunx convex run --deployment fantastic-mosquito-881 v4/discord:sendLatest '{}'
+```
+
 The event ID is a stored `v4_events` document ID. Each `send` call makes one request and waits for Discord's
 confirmation; errors surface to the caller. There is no retry or deduplication, so calling twice can post twice.
 
 `ORCA_DISCORD_PREVIEW_ENABLED=true` schedules fresh routine event batches for the private pre-alpha
-channel, with one-second gaps. Manual retries do not broadcast. There are deliberately no delivery
+channel, with two-second gaps. Manual retries do not broadcast. There are deliberately no delivery
 guarantees, backfill, or cross-batch ordering. Leave it disabled while catching up or cleaning history.
 See [Discord preview rollout](../../../../docs/orca/v4-discord-preview.md) for accepted limitations,
 rollout status and live preview controls.

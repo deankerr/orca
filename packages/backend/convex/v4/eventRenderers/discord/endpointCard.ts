@@ -1,8 +1,8 @@
 import type { CuratedEvent, FieldChange, FieldValue } from '../curate'
 import { colors, embedCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { code, escape, field } from './display'
-import { fact, factsText, fieldChange, fieldValue } from './fields'
+import { escape } from './display'
+import { factsText, fieldChange, fieldName, fieldValue } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
 /** Endpoint identity, field selection, and lifecycle facts belong to this card alone. */
@@ -18,27 +18,29 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
   const state =
     'after' in event
       ? event.previously_known === false
-        ? 'Discovered'
+        ? 'discovered'
         : event.previously_known === true
-          ? 'Relisted'
-          : 'Listed'
+          ? 'relisted'
+          : 'listed'
       : 'before' in event
-        ? 'Unlisted'
-        : 'Updated'
+        ? 'unlisted'
+        : 'updated'
 
-  const heading = `**${escape(endpoint.provider_display_name)}** · ${state}\n[${code(prefix)}](${url})`
+  const heading = `**${escape(endpoint.provider_display_name)}** endpoint ${state}.`
 
   const body =
     'changes' in event
       ? endpointChanges(event.changes)
-      : endpointDetails('after' in event ? event.after : event.before, 'before' in event)
+      : 'after' in event
+        ? endpointDetails(event.after)
+        : []
 
   if ('changes' in event && body.length === 0) {
     return null
   }
 
   return embedCard([heading, ...body].filter(Boolean).join('\n\n'), {
-    author: { name: model.model_id, url, iconURL: logoUrl(model.model_id, urls) },
+    author: { name: `${model.model_id} [${prefix}]`, url, iconURL: logoUrl(model.model_id, urls) },
     timestamp: event.observed_at,
     color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
     footer: { text: endpoint.provider_tag, iconURL: logoUrl(provider.provider_id, urls) },
@@ -54,26 +56,28 @@ function endpointChanges(changes: FieldChange[]): string[] {
 
   return [
     ...pricingChanges(prices),
-    ...fields.map((change) => fieldChange(change, { formatValue: endpointValue })),
+    ...fields.map((change) =>
+      fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue }),
+    ),
   ]
 }
 
-function endpointDetails(facts: Record<string, FieldValue>, removed: boolean): string[] {
-  const parameters = fact(facts, 'supported_parameters')
-
+function endpointDetails(facts: Record<string, FieldValue>): string[] {
   return [
-    removed ? 'Last known endpoint details:' : '',
-    factsText(facts, ['context_length', 'max_completion_tokens', 'quantization']),
+    factsText(facts, ['context_length', 'max_completion_tokens', 'quantization'], {
+      label: endpointLabel,
+    }),
     pricingFacts(facts),
-    Array.isArray(parameters) && parameters.length > 0
-      ? field('supported_parameters', fieldValue(parameters), { layout: 'block' })
-      : '',
     factsText(
       facts,
       ['data_policy.training', 'data_policy.retainsPrompts', 'data_policy.retentionDays'],
-      endpointValue,
+      { formatValue: endpointValue },
     ),
   ].filter(Boolean)
+}
+
+function endpointLabel(path: string): string {
+  return path === 'max_completion_tokens' ? 'max_output' : fieldName(path)
 }
 
 function endpointValue(value: FieldValue, path: string): string {

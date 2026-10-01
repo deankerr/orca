@@ -1,3 +1,5 @@
+export const dot = ' • '
+
 /** Wrap preformatted children in a consistent field row or block; labels are plain text. */
 export function field(
   label: string,
@@ -12,10 +14,12 @@ export function field(
     change?: 'added' | 'removed'
   } = {},
 ): string {
-  const key = code(label, { width })
+  const key = code(layout === 'inline' ? `${label}:` : label, {
+    width: width + (layout === 'inline' ? 1 : 0),
+  })
   const heading = change === 'removed' ? strike(key) : key
   const value = change === 'removed' ? strike(children) : children
-  const marker = change === 'added' ? ' · new' : ''
+  const marker = change === 'added' ? `${dot}new` : ''
 
   return layout === 'block' ? `${heading}${marker}\n${value}` : `${heading} ${value}${marker}`
 }
@@ -28,15 +32,19 @@ function strike(children: string): string {
     .join('\n')
 }
 
-/** Values arrive formatted; changed old values are struck, while single values stand alone. */
+/** Values arrive formatted; arrows indicate updates, and only removed fields are struck. */
 export function valueChange(
   before: string | undefined,
   after: string | undefined,
   { annotation = '' }: { annotation?: string } = {},
 ): string {
-  const values = [before === undefined || after === undefined ? before : strike(before), after]
-    .filter((value) => value !== undefined)
-    .join(' → ')
+  // Rounded prices or fractional fields can coincide: show ≈0.142 ▲,
+  // rather than a misleading 0.142 → 0.142 or an arbitrarily long decimal tail.
+  if (before !== undefined && before === after) {
+    return `≈${after}${annotation === '' ? '' : ` ${annotation}`}`
+  }
+
+  const values = [before, after].filter((value) => value !== undefined).join(' → ')
 
   return `${values}${annotation === '' ? '' : ` ${annotation}`}`
 }
