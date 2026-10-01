@@ -10,7 +10,6 @@ import { LOCKS_TABLE, locksTable } from './locks/table'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { publicApiV2CacheTable } from './public_api/v2/table'
 import { archivesTable } from './snapshots/archives/table'
-import { V3_SCAN_INGESTIONS_TABLE, scanIngestionsTable } from './v3/ingestions.table'
 import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './v4/catalog/endpoints/table'
 import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './v4/catalog/models/table'
 import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './v4/catalog/providers/table'
@@ -25,22 +24,6 @@ import {
   processorWorkTable,
 } from './v4/ingestion/table'
 import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './v4/stats/table'
-import {
-  V3_ENDPOINTS_VIEW_TABLE,
-  V3_MODELS_VIEW_TABLE,
-  V3_PROVIDERS_VIEW_TABLE,
-  endpointsViewTable,
-  modelsViewTable,
-  providersViewTable,
-} from './views/entities.table'
-import {
-  V3_ENDPOINTS_LISTING_SERIES_TABLE,
-  V3_ENDPOINTS_PRICING_SERIES_TABLE,
-  V3_ENDPOINTS_STATS_SERIES_TABLE,
-  endpointsListingTable,
-  endpointsPricingTable,
-  endpointsStatsTable,
-} from './views/series.table'
 
 export default defineSchema(
   {
@@ -58,14 +41,6 @@ export default defineSchema(
     public_api_v2_cache: publicApiV2CacheTable,
 
     snapshot_crawl_archives: archivesTable,
-
-    [V3_ENDPOINTS_VIEW_TABLE]: endpointsViewTable,
-    [V3_MODELS_VIEW_TABLE]: modelsViewTable,
-    [V3_PROVIDERS_VIEW_TABLE]: providersViewTable,
-    [V3_ENDPOINTS_LISTING_SERIES_TABLE]: endpointsListingTable,
-    [V3_ENDPOINTS_PRICING_SERIES_TABLE]: endpointsPricingTable,
-    [V3_ENDPOINTS_STATS_SERIES_TABLE]: endpointsStatsTable,
-    [V3_SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
 
     [V4_INGESTIONS_TABLE]: ingestionsTable,
     [V4_PROCESSOR_WORK_TABLE]: processorWorkTable,

@@ -2,7 +2,6 @@ import { httpRouter } from 'convex/server'
 
 import { env, httpAction } from './_generated/server'
 import { handleInteraction } from './discord/interactions'
-import { serve as serveObject } from './objects/http'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,
@@ -42,12 +41,6 @@ http.route({
       publicKey,
     })
   }),
-})
-
-http.route({
-  path: '/objects',
-  method: 'GET',
-  handler: serveObject,
 })
 
 // Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.

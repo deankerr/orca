@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
 
-import { planViewWrites } from '../views/writes'
 import { compareScanProjections, ScanProjection } from './index'
 
 function endpoint(id: string, displayName: string) {
@@ -52,17 +51,6 @@ test('provider selection and endpoint names are resolved before comparison, incl
   expect(after.catalog.endpoints).toEqual(before.catalog.endpoints)
   const comparison = compareScanProjections(before, after)
   expect(comparison.document.changes.map(({ key }) => key)).toEqual(['providers'])
-  expect(planViewWrites(comparison)).toEqual([
-    {
-      table: 'providers',
-      row: {
-        provider_id: 'google',
-        display_name: 'Google Vertex (US)',
-        metadata: { baseUrl: 'https://regional.example' },
-        scan_at: after.scan_at,
-      },
-    },
-  ])
 })
 
 test('non-text entries contribute no records or readings and do not affect provider selection', () => {

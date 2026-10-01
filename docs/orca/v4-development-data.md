@@ -43,7 +43,6 @@ Required deployment environment (also configure these as project defaults for pr
 | Dev/preview            | `ORCA_OBJECTS_SOURCE_DEPLOYMENT` | `dependable-husky-550` (a name, not a URL) |
 | Dev/preview and source | `ORCA_OBJECTS_API_KEY`           | The same nonempty shared key               |
 | Dev/preview            | `ORCA_SCAN_ENABLED`              | `false`                                    |
-| Dev/preview            | `ORCA_INGEST_ENABLED`            | `false`                                    |
 | Dev/preview            | `ORCA_V4_INGEST_CRON_ENABLED`    | Unset or `false` for manual refresh        |
 
 The source must have `objects/remote` deployed and access to its stored artifacts. Dev needs no

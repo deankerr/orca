@@ -11,9 +11,7 @@ Remaining objectives, unordered:
   - [ ] Alerts in Grid
   - [ ] Discord alerts
 - [ ] Develop comprehensive Convex testing.
-- [ ] Remove the V3 backend.
-  - Keep V3 query contracts, backing tables, and ingestion available during the V4 rollout.
-  - Retire them in a separate release after a compatibility window and review of old-client traffic
-    and remaining consumers.
+- [x] Remove the V3 backend code and query contracts.
+- [ ] Delete retired V3 production tables after deployment verification.
 - [ ] Port the public API to the V4 data source.
 - [ ] Remove the legacy backend.

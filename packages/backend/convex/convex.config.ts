@@ -27,8 +27,6 @@ const app = defineApp({
     ORCA_DISCORD_PREVIEW_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Web app URL used to construct endpoint-grid links in Discord messages. */
     ORCA_PUBLIC_URL: v.string(),
-    /** Source Convex cloud URL; absent/empty skips catalog seeding but fails explicit named-artifact pulls. */
-    ORCA_PULL_SOURCE_URL: v.optional(v.string()),
     /** Deployed logo-service origin for publicly reachable icons in Discord messages. */
     ENTITY_LOGO_SERVICE_ORIGIN: v.string(),
     /** Legacy Discord application ID required when registering slash commands. */
@@ -39,8 +37,6 @@ const app = defineApp({
     // These controls enable their entry points only for 'true'; absent/false disables them.
     /** Enables the hourly legacy snapshot crawl and its downstream materialization. */
     ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables scheduled scan ingestion into catalog views and historical series, independently of capture. */
-    ORCA_INGEST_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables V4's scheduled entry point; direct run calls and existing continuations bypass it. */
     ORCA_V4_INGEST_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */

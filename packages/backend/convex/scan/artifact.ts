@@ -1,9 +1,7 @@
-import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
-import { internal } from '../_generated/api'
 import type { ActionCtx } from '../_generated/server'
-import { store, v3Load } from '../objects'
+import { store } from '../objects'
 import { ScanArtifactEntry } from './schema'
 
 const SCAN_ARTIFACT_OBJECT_PATH = 'scans'
@@ -36,21 +34,6 @@ export async function storeScanArtifact(ctx: ActionCtx, artifact: ScanArtifact):
   })
 }
 
-/** Load and parse a required scan artifact. */
-export async function loadScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact> {
-  const artifact = await findScanArtifact(ctx, id)
-  if (artifact === null) {
-    throw new ConvexError(`Scan artifact not found: ${id}`)
-  }
-  return artifact
-}
-
-/** Load and parse a scan artifact when it exists. */
-export async function findScanArtifact(ctx: ActionCtx, id: string): Promise<ScanArtifact | null> {
-  const text = await v3Load(ctx, { path: SCAN_ARTIFACT_OBJECT_PATH, name: id })
-  return text === null ? null : parseScanArtifact(id, text)
-}
-
 /** Shared artifact parsing, independent of local/remote object retrieval. */
 export function parseScanArtifact(id: string, text: string): ScanArtifact {
   const entries = text
@@ -65,35 +48,7 @@ export function parseScanArtifact(id: string, text: string): ScanArtifact {
   }
 }
 
-/** Return the first scan artifact ID ordered after `afterId`. */
-export async function nextScanArtifactId(
-  ctx: Pick<ActionCtx, 'runQuery'>,
-  afterId: string,
-): Promise<string | null> {
-  return await ctx.runQuery(internal.objects.locators.nextName, {
-    path: SCAN_ARTIFACT_OBJECT_PATH,
-    afterName: afterId,
-  })
-}
-
 /** Object name of the artifact captured at a scan time. */
 export function artifactName(scanAt: string): string {
   return `scan.${scanAt}.jsonl`
-}
-
-/** Discover the next capture time without loading artifact contents. */
-export async function nextScanAt(
-  ctx: Pick<ActionCtx, 'runQuery'>,
-  after: string | null,
-): Promise<string | null> {
-  const id = await nextScanArtifactId(ctx, after === null ? '' : artifactName(after))
-  if (id === null) {
-    return null
-  }
-
-  const scanAt = /^scan\.(?<scanAt>.+)\.jsonl$/.exec(id)?.groups?.scanAt
-  if (scanAt === undefined) {
-    throw new ConvexError({ message: 'Invalid scan artifact name', id })
-  }
-  return scanAt
 }
