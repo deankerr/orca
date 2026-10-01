@@ -128,7 +128,10 @@ export function pricingTable(rows: PriceRow[]): string {
       : row,
   )
 
-  const labelWidth = Math.max(...rows.map((row) => priceLabel(row.path).length))
+  // Include the external marker in the row width, then subtract it from code-span padding.
+  const labelWidth = Math.max(
+    ...rows.map((row) => priceLabel(row.path).length + (row.change === undefined ? 0 : 2)),
+  )
 
   const valueWidth = Math.max(
     ...displayRows.flatMap((row) => [row.before?.length ?? 0, row.after?.length ?? 0]),
@@ -145,7 +148,7 @@ export function pricingTable(rows: PriceRow[]): string {
       return field(
         priceLabel(row.path),
         valueChange(cell(row.before), cell(row.after), { annotation: row.annotation }),
-        { width: labelWidth, change: row.change },
+        { width: labelWidth - (row.change === undefined ? 0 : 2), change: row.change },
       )
     })
     .join('\n')

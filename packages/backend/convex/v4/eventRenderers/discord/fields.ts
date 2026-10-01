@@ -24,15 +24,12 @@ export function fieldChange(
   const name = label
 
   if (change.type === 'set_updated') {
-    const literal = (text: string) =>
-      text.replaceAll('`', '\\u0060').replaceAll('\n', '\\n').replaceAll('\r', '\\r')
-
     const lines = [
-      ...change.added.map((item) => `+ ${literal(item)}`),
-      ...change.removed.map((item) => `- ${literal(item)}`),
+      ...change.added.map((item) => `+ ${code(item)}`),
+      ...change.removed.map((item) => `− ~~${code(item)}~~`),
     ]
 
-    return field(name, `\`\`\`diff\n${lines.join('\n')}\n\`\`\``, { layout: 'block' })
+    return field(name, lines.join('\n'), { layout: 'block' })
   }
 
   const format = (input: FieldValue) => formatValue(input, change.path)

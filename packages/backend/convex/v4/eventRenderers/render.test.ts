@@ -103,6 +103,32 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
   expect(renderDiscord(metadataOnly, urls)).not.toBeNull()
 })
 
+test('discount micro-adjustments suppress notifications before the relative price threshold', () => {
+  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+
+  for (const [before, after, priceBefore, priceAfter, visible] of [
+    [0.82, 0.828, '0.238', '0.227', false],
+    [0.883, 0.895, '0.198', '0.177', false],
+    [0.8, 0.82, '1', '0.5', false],
+    [0.82, 0.8, '0.5', '1', false],
+    [0, 0.02, '1', '0.5', false],
+    [0.02, 0, '0.5', '1', false],
+    [0.8, 0.820001, '1', '0.5', true],
+    [0.820001, 0.8, '0.5', '1', true],
+    [0.8, 0.83, '1', '1.001', false],
+    [0.8, 0.8, '1', '0.5', true],
+  ] as const) {
+    const row = update(
+      { pricing: { discount: before, meters: { prompt: priceBefore } } },
+      { pricing: { discount: after, meters: { prompt: priceAfter } } },
+    )
+
+    expect(render(row) !== null).toBe(visible)
+    expect(renderDiscord(row, urls) !== null).toBe(visible)
+    expect(curate(row)).not.toBeNull()
+  }
+})
+
 test('curated updates retain precise values, presence, nulls, and membership while selecting native fields', () => {
   const row = update(
     {

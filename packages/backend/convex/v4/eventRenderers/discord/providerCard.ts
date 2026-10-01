@@ -1,7 +1,7 @@
 import type { CuratedEvent, FieldChange } from '../curate'
 import { colors, embedCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { escape } from './display'
+import { escape, lifecycleMarker } from './display'
 import { fact, fieldChange } from './fields'
 
 /** Providers are discovered once; endpoint presence can disappear and return repeatedly. */
@@ -31,7 +31,7 @@ export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
             ...changes.map((change) => fieldChange(change)),
           ].join('\n\n')
 
-  return embedCard(content, {
+  return embedCard(lifecycleMarker(event) + content, {
     author: {
       name: provider.provider_id,
       url: gridUrl(provider.provider_id, urls),
