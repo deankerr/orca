@@ -4,7 +4,7 @@
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
 - `v4/` owns current ingestion and product data, sharing `objects/` and `scan/`.
-- `projections/` supports raw-change inspection and change-document scripts.
+- `projections/` supports the local change-document script.
 - V4 architecture, conventions and operating commands live in `convex/v4/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
 - Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
 - Treat `convex/public_api/` as sealed until a late, explicitly developer-guided compatibility session; legacy field semantics must not shape the contemporary V4 model.

@@ -66,7 +66,6 @@ import type * as public_api_v2_table from "../public_api/v2/table.js";
 import type * as public_api_v2_transform from "../public_api/v2/transform.js";
 import type * as scan_action from "../scan/action.js";
 import type * as scan_artifact from "../scan/artifact.js";
-import type * as scan_inspection from "../scan/inspection.js";
 import type * as scan_scan from "../scan/scan.js";
 import type * as shared_entityLogo from "../shared/entityLogo.js";
 import type * as shared_formatters from "../shared/formatters.js";
@@ -224,7 +223,6 @@ declare const fullApi: ApiFromModules<{
   "public_api/v2/transform": typeof public_api_v2_transform;
   "scan/action": typeof scan_action;
   "scan/artifact": typeof scan_artifact;
-  "scan/inspection": typeof scan_inspection;
   "scan/scan": typeof scan_scan;
   "shared/entityLogo": typeof shared_entityLogo;
   "shared/formatters": typeof shared_formatters;
