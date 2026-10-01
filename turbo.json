@@ -4,7 +4,12 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": ["POSTHOG_API_KEY", "POSTHOG_PROJECT_ID", "VERCEL_ENV"],
+      "env": [
+        "POSTHOG_API_KEY",
+        "POSTHOG_PROJECT_ID",
+        "VERCEL_ENV",
+        "NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA"
+      ],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
