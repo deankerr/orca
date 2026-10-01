@@ -293,7 +293,7 @@ test('baseline, historical models, discoveries and repeated returns survive dela
         expect(card).not.toContain('✨')
       } else {
         expect(card).toContain(
-          event.entity_kind === 'endpoint' ? 'Relisted' : 'listed endpoints again',
+          event.entity_kind === 'endpoint' ? 'endpoint relisted.' : 'listed endpoints again',
         )
       }
     }

@@ -20,14 +20,14 @@ export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
   const content =
     'after' in event
       ? event.previously_known === false
-        ? `**${escape(provider.display_name)}** · Provider discovered`
+        ? `Provider **${escape(provider.display_name)}** discovered.`
         : event.previously_known === true
-          ? `**${escape(provider.display_name)}** has listed endpoints again.`
-          : `**${escape(provider.display_name)}** now has listed endpoints.`
+          ? `Provider **${escape(provider.display_name)}** has listed endpoints again.`
+          : `Provider **${escape(provider.display_name)}** now has listed endpoints.`
       : 'before' in event
-        ? `**${escape(provider.display_name)}** has no more listed endpoints.`
+        ? `Provider **${escape(provider.display_name)}** has no more listed endpoints.`
         : [
-            `**${escape(provider.display_name)}** · Updated`,
+            `Provider **${escape(provider.display_name)}** updated.`,
             ...changes.map((change) => fieldChange(change)),
           ].join('\n\n')
 

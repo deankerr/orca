@@ -1,6 +1,6 @@
-import { computeDelta } from '../../../shared/formatters'
 import type { FieldChange, FieldValue } from '../curate'
-import { code, field, valueChange } from './display'
+import { formatNumber, relativeChange } from '../numbers'
+import { code, dot, field, valueChange } from './display'
 
 /** Raw path presentation; callers own any field-specific labels and value formatting. */
 export const fieldName = (path: string): string => path.split('.').at(-1) ?? path
@@ -76,7 +76,11 @@ export function fieldChange(
   return field(
     name,
     valueChange(format(change.before), format(change.after), {
-      annotation: annotation ?? delta(change.before, change.after),
+      annotation:
+        annotation ??
+        (typeof change.before === 'number' && typeof change.after === 'number'
+          ? delta(change.before, change.after)
+          : ''),
     }),
   )
 }
@@ -105,7 +109,10 @@ function changedExcerptStart(before: string, after: string): number {
 export function factsText(
   facts: Record<string, FieldValue>,
   paths: string[],
-  formatValue: ValueFormatter = (value) => fieldValue(value),
+  {
+    formatValue = (value) => fieldValue(value),
+    label = fieldName,
+  }: { formatValue?: ValueFormatter; label?: (path: string) => string } = {},
 ): string {
   return paths
     .flatMap((path) => {
@@ -113,9 +120,9 @@ export function factsText(
 
       return input === undefined || input === null || (Array.isArray(input) && input.length === 0)
         ? []
-        : [field(fieldName(path), formatValue(input, path))]
+        : [field(label(path), formatValue(input, path))]
     })
-    .join(' · ')
+    .join(dot)
 }
 
 export function fieldValue(value: FieldValue, { suffix = '' }: { suffix?: string } = {}): string {
@@ -125,7 +132,7 @@ export function fieldValue(value: FieldValue, { suffix = '' }: { suffix?: string
   }
 
   if (typeof input === 'number') {
-    const formatted = input.toLocaleString('en-US', { maximumSignificantDigits: 21 })
+    const formatted = formatNumber(input) ?? String(input)
 
     return code(`${formatted}${suffix}`)
   }
@@ -175,11 +182,28 @@ export function fact(facts: Record<string, FieldValue>, path: string): FieldValu
       : undefined
 }
 
-/** Numeric deltas are generic; callers convert money strings when the field requires it. */
-export function delta(before: FieldValue, after: FieldValue): string {
-  const change = computeDelta(before, after)
+/** Numeric interpretation is shared; Discord owns symbols and favorable direction. */
+export function delta(
+  before: FieldValue,
+  after: FieldValue,
+  { lowerIsBetter = false }: { lowerIsBetter?: boolean } = {},
+): string {
+  if (
+    (typeof before !== 'number' && typeof before !== 'string') ||
+    (typeof after !== 'number' && typeof after !== 'string')
+  ) {
+    return ''
+  }
 
-  return change === null || !Number.isFinite(change.pct) || change.pct === 0
-    ? ''
-    : `${change.isUp ? '▲' : '▼'} ${Math.abs(change.pct).toLocaleString('en-US', { maximumFractionDigits: 1 })}%`
+  // Round the original ratio once: 8.49% → 8%, 18.6% → 19%. Keep only the
+  // pointer below 0.5%, rather than claiming a real change was 0%.
+  const change = relativeChange(before, after, { fractionDigits: 0 })
+
+  if (change === null) {
+    return ''
+  }
+
+  const symbol = change.isUp ? (lowerIsBetter ? '🔺' : '▲') : lowerIsBetter ? '▼' : '🔻'
+
+  return change.percent === '' ? symbol : `${symbol} ${change.percent}`
 }

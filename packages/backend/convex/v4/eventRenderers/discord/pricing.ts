@@ -1,9 +1,9 @@
 import type { FieldChange, FieldValue } from '../curate'
-import { tokenPrice } from '../text'
+import { formatPercent, formatPrice } from '../numbers'
 import { code, field, valueChange } from './display'
 import { delta, fieldChange, fieldName, fieldValue } from './fields'
 
-export const meters: Record<string, { label: string; places: number }> = {
+const meters: Record<string, { label: string; places: number }> = {
   'pricing.prompt': { label: 'input', places: 6 },
   'pricing.completion': { label: 'output', places: 6 },
   'pricing.input_cache_read': { label: 'cache_read', places: 6 },
@@ -77,7 +77,7 @@ function pricingValue(value: FieldValue, path: string): string {
 }
 
 /** A null row leaves unfamiliar/non-price values to the ordinary field renderer. */
-export function pricingChange(change: FieldChange): PriceRow | null {
+function pricingChange(change: FieldChange): PriceRow | null {
   if (change.type === 'set_updated') {
     return null
   }
@@ -111,7 +111,7 @@ export function pricingChange(change: FieldChange): PriceRow | null {
   }
 }
 
-export type PriceRow = {
+type PriceRow = {
   path: string
   before?: string
   after?: string
@@ -120,13 +120,21 @@ export type PriceRow = {
 }
 
 export function pricingTable(rows: PriceRow[]): string {
+  // Collapse before measuring/padding: `≈ $0.684` must occupy the same value
+  // column as `$2.50`, rather than an outside ≈ shifting the code span right.
+  const displayRows = rows.map((row) =>
+    row.before !== undefined && row.before === row.after
+      ? { ...row, before: undefined, after: `≈ ${row.after}` }
+      : row,
+  )
+
   const labelWidth = Math.max(...rows.map((row) => priceLabel(row.path).length))
 
   const valueWidth = Math.max(
-    ...rows.flatMap((row) => [row.before?.length ?? 0, row.after?.length ?? 0]),
+    ...displayRows.flatMap((row) => [row.before?.length ?? 0, row.after?.length ?? 0]),
   )
 
-  return rows
+  return displayRows
     .toSorted(
       (a, b) => Number(a.path === 'pricing.discount') - Number(b.path === 'pricing.discount'),
     )
@@ -143,17 +151,21 @@ export function pricingTable(rows: PriceRow[]): string {
     .join('\n')
 }
 
-export function priceValue(path: string, input: FieldValue): string | null {
+function priceValue(path: string, input: FieldValue): string | null {
   if (path === 'pricing.discount' && typeof input === 'number') {
-    return input.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 12 })
+    return formatPercent(input)
   }
 
   const meter = meters[path]
 
-  return meter !== undefined && typeof input === 'string' ? tokenPrice(input, meter.places) : null
+  return meter !== undefined && typeof input === 'string' ? formatPrice(input, meter.places) : null
 }
 
 function priceDelta(before: FieldValue, after: FieldValue, path: string): string {
+  if (path === 'pricing.discount') {
+    return ''
+  }
+
   if (meters[path] === undefined) {
     return delta(before, after)
   }
@@ -163,6 +175,6 @@ function priceDelta(before: FieldValue, after: FieldValue, path: string): string
     before.trim() !== '' &&
     typeof after === 'string' &&
     after.trim() !== ''
-    ? delta(Number(before), Number(after))
+    ? delta(before, after, { lowerIsBetter: true })
     : ''
 }

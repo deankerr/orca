@@ -1,7 +1,7 @@
 import type { CuratedEvent, FieldValue } from '../curate'
 import { colors, embedCard, componentCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { code, escape, field } from './display'
+import { code, dot, escape, field } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
 /** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
@@ -33,15 +33,15 @@ export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
 
   const content =
     'after' in event
-      ? [`**${escape(name)}** now has listed endpoints.`, modelDetails(event.after)]
+      ? [`Model **${escape(name)}** now has listed endpoints.`, modelDetails(event.after)]
       : 'before' in event
         ? [
-            `**${escape(name)}** has no more listed endpoints.`,
+            `Model **${escape(name)}** has no more listed endpoints.`,
             'Last known model details:',
             modelDetails(event.before),
           ]
         : [
-            `**${escape(name)}** · Updated`,
+            `Model **${escape(name)}** updated.`,
             ...event.changes.map((change) =>
               fieldChange(change, {
                 prose: change.path === 'description' || change.path === 'warning_message',
@@ -69,7 +69,7 @@ function modelDetails(facts: Record<string, FieldValue>): string {
   return [
     [modalities, facts.supports_reasoning === true ? code('reasoning') : '']
       .filter(Boolean)
-      .join(' · '),
+      .join(dot),
     typeof facts.description === 'string' && facts.description.trim() !== ''
       ? quote(facts.description)
       : '',

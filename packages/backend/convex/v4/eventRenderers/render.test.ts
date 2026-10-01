@@ -4,6 +4,8 @@ import { compare } from '../events/compare'
 import { prepare } from '../events/prepare'
 import type { EventRow } from '../events/query'
 import type { Scan } from '../scan/extract'
+import { curate } from './curate'
+import { renderDiscord } from './discord'
 import { render, renderPage } from './render'
 import type { FeedEvent } from './render'
 
@@ -33,6 +35,73 @@ function update(before: unknown, after: unknown): EventRow {
     change_json: JSON.stringify(change),
   }
 }
+
+test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', () => {
+  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+
+  for (const [before, after, visible] of [
+    [{ prompt: '1' }, { prompt: '1.01999999999999999999' }, false],
+    [{ prompt: '1' }, { prompt: '1.02' }, true],
+    [{ prompt: '1' }, { prompt: '0.98' }, true],
+    [{ prompt: '1e-400' }, { prompt: '1.019e-400' }, false],
+    [{ prompt: '1e-400' }, { prompt: '1.02e-400' }, true],
+    [{ prompt: '1', completion: '1' }, { prompt: '1.001', completion: '1.5' }, true],
+    [{ prompt: '1', completion: '1' }, { prompt: '1.001', completion: 'invalid' }, false],
+    [{ prompt: '1', completion: '1' }, { prompt: '1.5', completion: 'invalid' }, true],
+    [{ prompt: '1' }, { prompt: null }, false],
+    [{ prompt: 'invalid' }, { prompt: '1' }, false],
+    [{ prompt: '1' }, { prompt: '' }, false],
+    [{ prompt: '1' }, { prompt: 'Infinity' }, false],
+    [{ prompt: '1' }, { prompt: '-1' }, false],
+    [{}, { prompt: 'invalid' }, false],
+    [{ prompt: 'invalid' }, {}, false],
+    [{}, { prompt: '1' }, true],
+    [{ prompt: '1' }, {}, true],
+    [{ prompt: '0' }, { prompt: '1' }, true],
+    [{ prompt: '1' }, { prompt: '0' }, true],
+    [{}, { prompt: '0' }, false],
+    [{ prompt: '0' }, {}, false],
+  ] as const) {
+    const row = update({ pricing: { meters: before } }, { pricing: { meters: after } })
+    const captured = row.change_json
+
+    expect(render(row) !== null).toBe(visible)
+    expect(renderDiscord(row, urls) !== null).toBe(visible)
+    expect(curate(row)).not.toBeNull()
+    expect(row.change_json).toBe(captured)
+  }
+
+  const micro = update(
+    { pricing: { discount: 0.1, meters: { prompt: '1' } }, metadata: { context_length: 100 } },
+    { pricing: { discount: 0.11, meters: { prompt: '1.001' } }, metadata: { context_length: 200 } },
+  )
+  expect(render(micro)).toBeNull()
+  expect(renderDiscord(micro, urls)).toBeNull()
+  const captured = curate(micro)
+
+  expect(captured?.type === 'endpoint_updated' ? captured.changes : []).toContainEqual({
+    type: 'field_updated',
+    path: 'context_length',
+    before: 100,
+    after: 200,
+  })
+  expect(renderPage({ page: [micro], isDone: false, continueCursor: 'next' })).toEqual({
+    page: [],
+    isDone: false,
+    continueCursor: 'next',
+  })
+
+  const discountOnly = update({ pricing: { discount: 0 } }, { pricing: { discount: 0.1 } })
+  expect(render(discountOnly)).toBeNull()
+  expect(renderDiscord(discountOnly, urls)).toBeNull()
+
+  const metadataOnly = update(
+    { metadata: { context_length: 100 } },
+    { metadata: { context_length: 200 } },
+  )
+  expect(render(metadataOnly)).not.toBeNull()
+  expect(renderDiscord(metadataOnly, urls)).not.toBeNull()
+})
 
 test('curated updates retain precise values, presence, nulls, and membership while selecting native fields', () => {
   const row = update(
@@ -92,12 +161,12 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   ] satisfies Extract<FeedEvent, { changes: unknown }>['changes']) {
     expect(event.changes).toContainEqual(expected)
   }
-  expect(event.details).toContain('Input price changed from $0.1 to $0.1001.')
+  expect(event.details).toContain('Input price is approximately $0.10 (increased by 0.1%).')
   expect(event.details).toContain('Reasoning support changed from yes to no.')
   expect(event.details).toContain('Supported parameters added: "response_format".')
   expect(event.details).toContain('Supported parameters removed: "temperature".')
-  expect(event.details).toContain('Output price was removed; previously $2.')
-  expect(event.details).toContain('Cache-read price was added: $0.')
+  expect(event.details).toContain('Output price was removed; previously $2.00.')
+  expect(event.details).toContain('Cache-read price was added: $0.00.')
   expect(event.details).toContain('Quantization changed from "fp8" to null.')
 })
 
@@ -220,7 +289,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
     type: 'endpoint_added',
     summary: 'Model is now listed on Regional offering (provider/fp8).',
     details: [
-      'Input price: $0.1.',
+      'Input price: $0.10.',
       'Context length: 200.',
       'Maximum completion tokens: 100.',
       'Supported parameters: "tools".',
@@ -247,7 +316,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
   }
 
   expect(removal.summary).toBe('Model is no longer listed on Regional offering (provider/fp8).')
-  expect(removal.details).toContain('Input price when last observed: $0.1.')
+  expect(removal.details).toContain('Input price when last observed: $0.10.')
   expect(removal.details).toContain('Supported parameters when last observed: "tools".')
 })
 

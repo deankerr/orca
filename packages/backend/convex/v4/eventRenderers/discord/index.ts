@@ -1,5 +1,6 @@
 import type { EventRow } from '../../events/query'
 import { curate } from '../curate'
+import { shouldRender } from '../filter'
 import type { Card, DiscordUrls } from './card'
 import { endpointCard } from './endpointCard'
 import { modelCard } from './modelCard'
@@ -9,7 +10,7 @@ import { providerCard } from './providerCard'
 export function renderDiscord(row: EventRow, urls: DiscordUrls): Card | null {
   const event = curate(row)
 
-  if (event === null) {
+  if (event === null || !shouldRender(event)) {
     return null
   }
 

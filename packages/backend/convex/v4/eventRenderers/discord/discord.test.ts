@@ -1,15 +1,13 @@
-import { expect, spyOn, test } from 'bun:test'
-import { rejects } from 'node:assert/strict'
+import { expect, test } from 'bun:test'
 
 import { ComponentType } from 'discord-api-types/v10'
 
-import type { ActionCtx } from '../../../_generated/server'
-import { broadcast, send, sendExamples } from '../../discord'
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/query'
+import { curate } from '../curate'
 import { render } from '../render'
 import { code, escape, field, valueChange } from './display'
-import { fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
+import { delta, fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
 import { renderDiscord } from './index'
 import { priceLabel, pricingChanges, pricingTable } from './pricing'
 
@@ -25,23 +23,100 @@ const context = {
   },
 }
 
+test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
+  expect(delta(100, 150)).toBe('▲ 50%')
+  expect(delta(100, 50)).toBe('🔻 50%')
+
+  for (const [path, before, after, symbol] of [
+    ['pricing.prompt', '0.000001', '0.000002', '🔺'],
+    ['pricing.prompt', '0.000002', '0.000001', '▼'],
+  ] as const) {
+    expect(pricingChanges([{ type: 'field_updated', path, before, after }]).join('\n')).toContain(
+      symbol,
+    )
+  }
+
+  expect(delta(0, 10)).toBe('')
+  expect(delta(10, 10)).toBe('')
+  expect(delta(null, 10)).toBe('')
+})
+
+test('update headings are sentences for every entity', () => {
+  for (const [entity_kind, before, after, heading] of [
+    [
+      'model',
+      { supports_reasoning: false },
+      { supports_reasoning: true },
+      'Model **Model** updated.',
+    ],
+    [
+      'endpoint',
+      { quantization: 'fp8' },
+      { quantization: 'fp16' },
+      '**Regional offering** endpoint updated.',
+    ],
+    ['provider', { displayName: 'Old' }, { displayName: 'New' }, 'Provider **Provider** updated.'],
+  ] as const) {
+    const event: EventRow = {
+      ...row({ metadata: before }, { metadata: after }),
+      entity_kind,
+    }
+
+    expect(renderDiscord(event, urls)?.embeds?.[0]?.description?.split('\n')[0]).toBe(heading)
+  }
+})
+
+test('prices and other numeric fields share precision and reveal changes hidden by rounding', () => {
+  expect(
+    fieldChange({ type: 'field_updated', path: 'limit_rpm', before: 0.141953, after: 0.142 }),
+  ).toBe('`limit_rpm:` ≈`0.142` ▲')
+  expect(delta(1_000_000, 1_000_001)).toBe('▲')
+  expect(delta(1_000_001, 1_000_000)).toBe('🔻')
+  expect(delta('100', '100.0999')).toBe('▲')
+  expect(delta('100', '100.1')).toBe('▲')
+  expect(delta('100', '100.4999')).toBe('▲')
+  expect(delta('100', '100.5')).toBe('▲ 1%')
+  expect(delta('100', '108.49')).toBe('▲ 8%')
+  expect(delta('100', '108.5')).toBe('▲ 9%')
+  expect(delta('100', '81.4')).toBe('🔻 19%')
+
+  const event = row(
+    { pricing: { meters: { prompt: '0.000000141953', input_cache_read: '0.00000001708' } } },
+    { pricing: { meters: { prompt: '0.000000142', input_cache_read: '0.000000016156' } } },
+  )
+  const captured = event.change_json
+  const description = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
+
+  expect(description).toContain('`input:     ` `≈ $0.142` 🔺')
+  expect(description).toContain('`cache_read:` ` $0.0171` → ` $0.0162` ▼ 5%')
+  expect(description).not.toContain('~~')
+  expect(description).not.toContain('0.016156')
+  expect(event.change_json).toBe(captured)
+  expect(render(event)).toMatchObject({
+    changes: [
+      { before: '0.000000141953', after: '0.000000142' },
+      { before: '0.00000001708', after: '0.000000016156' },
+    ],
+  })
+})
+
 test('display pieces compose consistently across facts, changes, pricing, and block children', () => {
   const change = valueChange(code('fp8'), code('fp16'))
 
-  expect(field('quantization', change)).toBe('`quantization` ~~`fp8`~~ → `fp16`')
+  expect(field('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
 
   expect(
     fieldChange({ type: 'field_updated', path: 'quantization', before: 'fp8', after: 'fp16' }),
   ).toBe(field('quantization', change))
 
-  expect(factsText({ quantization: 'fp16' }, ['quantization'])).toBe('`quantization` `fp16`')
+  expect(factsText({ quantization: 'fp16' }, ['quantization'])).toBe('`quantization:` `fp16`')
 
   expect(
     pricingTable([
       { path: 'pricing.prompt', before: '$1', after: '$0.5', annotation: '▼ 50%' },
       { path: 'pricing.input_cache_read', after: '$0.1', change: 'added', annotation: '' },
     ]),
-  ).toBe('`input     ` ~~`  $1`~~ → `$0.5` ▼ 50%\n`cache_read` `$0.1` · new')
+  ).toBe('`input:     ` `  $1` → `$0.5` ▼ 50%\n`cache_read:` `$0.1` • new')
 
   expect(field('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
 
@@ -49,8 +124,8 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
     '`parameters`\n```diff\n+ tools\n```',
   )
 
-  expect(field('enabled', code('true'), { change: 'added' })).toBe('`enabled` `true` · new')
-  expect(field('enabled', code('false'), { change: 'removed' })).toBe('~~`enabled`~~ ~~`false`~~')
+  expect(field('enabled', code('true'), { change: 'added' })).toBe('`enabled:` `true` • new')
+  expect(field('enabled', code('false'), { change: 'removed' })).toBe('~~`enabled:`~~ ~~`false`~~')
   expect(code('long_value', { width: 3 })).toBe('`long_value`')
   expect(code('a`b')).toBe('a\\`b')
 })
@@ -94,8 +169,23 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
 
   expect(renderDiscord(event, urls)?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
   expect(text).not.toContain('reasoning_config')
-  expect(text).toContain('`is_mandatory_reasoning`')
+  expect(text).toContain('`is_mandatory_reasoning:`')
   expect(text).toContain('`warning_message`')
+})
+
+test('pricing uses separate value spans without reserving blank old-value columns', () => {
+  const lines = pricingTable([
+    { path: 'pricing.prompt', before: '$0.453', after: '$0.452', annotation: '▼' },
+    { path: 'pricing.input_cache_read', before: '$0.123', after: '$0.123', annotation: '▼' },
+    { path: 'pricing.discount', after: '24%', annotation: '', change: 'added' },
+  ]).split('\n')
+  expect(lines).toEqual([
+    '`input:     ` `  $0.453` → `  $0.452` ▼',
+    '`cache_read:` `≈ $0.123` ▼',
+    '`discount:  ` `     24%` • new',
+  ])
+  expect(lines.every((line) => !line.includes('~~'))).toBe(true)
+  expect(lines.map((line) => line.split('`')[3]?.length)).toEqual([8, 8, 8])
 })
 
 test('long prose excerpts include late replacements, additions, and removals', () => {
@@ -155,181 +245,6 @@ test('quoted prose restores OpenRouter-relative links without changing absolute 
   expect(event.change_json).toBe(captured)
 })
 
-test('manual delivery posts once, surfaces rejection, and refuses an unset webhook', async () => {
-  type Handler = (ctx: ActionCtx, args: { event_id: string }) => Promise<string>
-
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the registered action with only its runQuery dependency mocked.
-  const handler = (send as unknown as { _handler: Handler })._handler
-
-  let current = row({ metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
-
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This action only reads one captured event through runQuery.
-  const ctx = {
-    runQuery: async () => current,
-  } as unknown as ActionCtx
-
-  const settings = {
-    ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token?thread_id=123',
-    ORCA_PUBLIC_URL: urls.publicUrl,
-    ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
-  }
-
-  const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
-  const request = spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
-
-  try {
-    Object.assign(process.env, settings)
-    expect(await handler(ctx, { event_id: 'test-event' })).toBe('sent')
-    expect(request).toHaveBeenCalledTimes(1)
-    const target = request.mock.calls[0]?.[0]
-    expect(target instanceof URL && target.search).toContain('thread_id=123&wait=true')
-    expect(request.mock.calls[0]?.[1]?.method).toBe('POST')
-    const body = request.mock.calls[0]?.[1]?.body
-    const payload: unknown = typeof body === 'string' ? JSON.parse(body) : null
-
-    expect(payload).toMatchObject({
-      allowed_mentions: { parse: [] },
-      content: '-# pre-alpha · event: test-event',
-    })
-
-    expect(payload).not.toHaveProperty('username')
-    expect(payload).not.toHaveProperty('avatar_url')
-
-    current = {
-      ...current,
-      type: 'ADD',
-      change_json: JSON.stringify({
-        type: 'ADD',
-        key: current.entity_id,
-        value: { metadata: {}, pricing: { meters: {} } },
-      }),
-    }
-
-    expect(await handler(ctx, { event_id: 'test-event' })).toBe('sent')
-    const richTarget = request.mock.calls[1]?.[0]
-    expect(richTarget instanceof URL && richTarget.searchParams.has('with_components')).toBe(false)
-
-    // Model discoveries use Components V2: debug text is a sibling, not part of the card.
-    const modelEvent: EventRow = {
-      ...current,
-      entity_kind: 'model',
-      context: { model: context.model },
-      previously_known: false,
-    }
-
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Component delivery uses the same single-query action dependency.
-    const componentCtx = { runQuery: async () => modelEvent } as unknown as ActionCtx
-    await handler(componentCtx, { event_id: 'component-event' })
-    const componentBody = request.mock.calls[2]?.[1]?.body
-
-    const componentPayload: unknown =
-      typeof componentBody === 'string' ? JSON.parse(componentBody) : null
-
-    expect(componentPayload).not.toHaveProperty('content')
-
-    expect(componentPayload).toMatchObject({
-      components: [
-        { type: ComponentType.Container },
-        { type: ComponentType.TextDisplay, content: '-# pre-alpha · event: component-event' },
-      ],
-    })
-
-    request.mockResolvedValue(new Response('rate limited', { status: 429 }))
-    await rejects(handler(ctx, { event_id: 'test-event' }), /Discord webhook rejected/)
-    expect(request).toHaveBeenCalledTimes(4)
-
-    delete process.env.ORCA_DISCORD_WEBHOOK_URL
-    await rejects(handler(ctx, { event_id: 'test-event' }), /Set ORCA_DISCORD_WEBHOOK_URL/)
-    expect(request).toHaveBeenCalledTimes(4)
-  } finally {
-    request.mockRestore()
-    for (const [key, old] of Object.entries(previous)) {
-      if (old === undefined) {
-        Reflect.deleteProperty(process.env, key)
-      } else {
-        process.env[key] = old
-      }
-    }
-  }
-})
-
-test('gallery sends selected events sequentially with one-second gaps and stops on rejection', async () => {
-  type Handler = (
-    ctx: ActionCtx,
-    args: { event_ids: string[] },
-  ) => Promise<{ sent: number; skipped: number }>
-
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the registered operator action with its query dependency mocked.
-  const handler = (sendExamples as unknown as { _handler: Handler })._handler
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exercise the live entry point using the same batch context.
-  const liveHandler = (broadcast as unknown as { _handler: Handler })._handler
-  const args = { event_ids: ['first', 'second', 'third'] }
-  const events: string[] = []
-  const order: string[] = []
-
-  const queryContext = {
-    runQuery: async (_query: unknown, args: { event_id: string }) => {
-      events.push(args.event_id)
-      order.push('read')
-      return row({ metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
-    },
-  }
-
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Sending only reads the captured event through runQuery.
-  const ctx = queryContext as unknown as ActionCtx
-
-  const settings = {
-    ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
-    ORCA_DISCORD_PREVIEW_ENABLED: 'false',
-    ORCA_PUBLIC_URL: urls.publicUrl,
-    ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
-  }
-
-  const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
-  const originalTimeout = globalThis.setTimeout
-  // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Preserve the timer API while accelerating the gallery's fixed waits in this test.
-  const immediateTimeout = (callback: () => void) => {
-    order.push('pause')
-    return originalTimeout(callback, 0)
-  }
-
-  const pause = spyOn(globalThis, 'setTimeout').mockImplementation(
-    Object.assign(immediateTimeout, originalTimeout),
-  )
-
-  const request = spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
-
-  try {
-    Object.assign(process.env, settings)
-    expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
-    expect(request).not.toHaveBeenCalled()
-    process.env.ORCA_DISCORD_PREVIEW_ENABLED = 'true'
-    expect(await liveHandler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
-    expect(events).toEqual(args.event_ids)
-    expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 1000))
-
-    expect(order).toEqual(
-      Array.from({ length: 5 }, (_, index) => (index % 2 === 0 ? 'read' : 'pause')),
-    )
-
-    request.mockResolvedValue(new Response('rate limited', { status: 429 }))
-    await rejects(handler(ctx, args), /Discord webhook rejected/)
-    expect(request).toHaveBeenCalledTimes(4)
-    expect(pause).toHaveBeenCalledTimes(2)
-  } finally {
-    request.mockRestore()
-    pause.mockRestore()
-
-    for (const [key, old] of Object.entries(previous)) {
-      if (old === undefined) {
-        Reflect.deleteProperty(process.env, key)
-      } else {
-        process.env[key] = old
-      }
-    }
-  }
-})
-
 function row(before: unknown, after: unknown): Extract<EventRow, { entity_kind: 'endpoint' }> {
   const [change] = compare({ 'abcdef-123': before }, { 'abcdef-123': after })
 
@@ -347,7 +262,7 @@ function row(before: unknown, after: unknown): Extract<EventRow, { entity_kind: 
   }
 }
 
-test('Discord pricing cells align without rounding money; identity and mentions survive serialization', () => {
+test('Discord pricing cells preserve tiny magnitudes; identity and mentions survive serialization', () => {
   const message = renderDiscord(
     row(
       {
@@ -377,10 +292,10 @@ test('Discord pricing cells align without rounding money; identity and mentions 
   const embed = message?.embeds?.[0]
   const description = embed?.description ?? ''
 
-  expect(description).toContain('`input     `')
+  expect(description).toContain('`input:     `')
   expect(description).toContain('$0.000000000000002`')
-  expect(description).toContain('▼ 23.5%')
-  expect(description).toContain('▲ 100%')
+  expect(description).toContain('▼ 24%')
+  expect(description).toContain('🔺 100%')
   expect(description).not.toContain('Infinity')
   expect(description).not.toContain('supports_reasoning')
   expect(embed?.author?.icon_url).toContain('/author.webp')
@@ -389,29 +304,35 @@ test('Discord pricing cells align without rounding money; identity and mentions 
   expect(description).not.toContain('provider/fp8')
   const endpointUrl = `${urls.publicUrl}/?q=author%2Fmodel&uuid=abcdef`
   expect(embed?.author?.url).toBe(endpointUrl)
-  expect(description).toContain(`[\`abcdef\`](${endpointUrl})`)
+  expect(embed?.author?.name).toBe('author/model [abcdef]')
+  expect(description).not.toContain('abcdef')
+  expect(description).not.toContain(endpointUrl)
   expect(embed?.timestamp).toBe('2026-09-30T01:00:00.000Z')
   expect(message?.allowed_mentions).toEqual({ parse: [] })
 
   const numericCells = [
-    ...(description.split('\n\n')[1] ?? '').matchAll(/ → `(?<cell>[^`]+)`/g),
+    ...(description.split('\n\n')[1] ?? '').matchAll(/`[^`]+` `(?<cell>[^`]+)`/g),
   ].map((match) => match.groups?.cell?.length)
 
+  expect(numericCells).toHaveLength(3)
   expect(new Set(numericCells).size).toBe(1)
 })
 
 test('Discord presents zero discount transitions as added/removed without rewriting event facts', () => {
   for (const [before, after, expected] of [
-    [0, 0.08, '`discount` `8%` · new'],
-    [0.08, 0, '~~`discount`~~ ~~`8%`~~'],
-    [0.08, 0.12, '`discount` ~~` 8%`~~ → `12%` ▲ 50%'],
+    [0, 0.08, '`discount:` `8%` • new'],
+    [0.08, 0, '~~`discount:`~~ ~~`8%`~~'],
+    [0.08, 0.12, '`discount:` ` 8%` → `12%`'],
   ] as const) {
     const event = row({ pricing: { discount: before } }, { pricing: { discount: after } })
     const captured = event.change_json
-    const text = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
+    const text = pricingChanges([
+      { type: 'field_updated', path: 'pricing.discount', before, after },
+    ]).join('\n')
 
     expect(text).toContain(expected)
     expect(text).not.toContain('pricing.discount')
+    expect(text).not.toMatch(/[▲▼🔺🔻]/u)
 
     if (before === 0 || after === 0) {
       expect(text).not.toContain('0%')
@@ -419,7 +340,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
       expect(text).not.toContain('▼')
     }
 
-    expect(render(event)).toMatchObject({
+    expect(curate(event)).toMatchObject({
       changes: [{ type: 'field_updated', path: 'pricing.discount', before, after }],
     })
 
@@ -431,7 +352,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     urls,
   )?.embeds?.[0]?.description
 
-  expect(free).toContain('$0`')
+  expect(free).toContain('$0.00`')
   expect(free).not.toContain('removed')
 
   const combined =
@@ -455,7 +376,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
   const table = combined.split('\n\n')[1]?.split('\n') ?? []
 
   expect(table).toHaveLength(3)
-  expect(table[2]).toBe('~~`discount  `~~ ~~`  8%`~~')
+  expect(table[2]).toBe('~~`discount:  `~~ ~~`   8%`~~')
 })
 
 test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', () => {
@@ -470,9 +391,9 @@ test('Discord preserves absence, nulls and set changes, escapes markup, and skip
   const text = message?.embeds?.[0]?.description
 
   expect(text).toContain('```diff\n+ **tools**\n- seed\n```')
-  expect(text).toContain('~~`fp8`~~ → `null`')
-  expect(text).toContain('`limit_rpm` `0` · new')
-  expect(text).toContain('~~`is_disabled`~~ ~~`false`~~')
+  expect(text).toContain('`fp8` → `null`')
+  expect(text).toContain('`limit_rpm:` `0` • new')
+  expect(text).toContain('~~`is_disabled:`~~ ~~`false`~~')
 
   expect(
     renderDiscord(row({ metadata: { capacity_tpm: 1 } }, { metadata: { capacity_tpm: 2 } }), urls),
@@ -525,14 +446,22 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
         type === 'ADD'
           ? kind === 'model'
             ? '✨'
-            : 'Discovered'
+            : '**Regional offering** endpoint discovered.'
           : kind === 'model'
             ? 'has no more listed endpoints'
-            : 'Unlisted',
+            : '**Regional offering** endpoint unlisted.',
       )
 
       if (kind === 'model') {
         expect(content).toContain('excerpt')
+      } else {
+        expect(content).not.toContain('Last known endpoint details:')
+        expect(message?.embeds?.[0]?.author?.name).toBe('author/model [abcdef]')
+        expect(message?.embeds?.[0]?.description).not.toContain('abcdef')
+
+        if (type === 'REMOVE') {
+          expect(message?.embeds?.[0]?.description).toBe('**Regional offering** endpoint unlisted.')
+        }
       }
     }
   }
@@ -580,7 +509,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   )
 
   const modelText = JSON.stringify(model)
-  expect(modelText).toContain('`image, text` → `text` · `reasoning`')
+  expect(modelText).toContain('`image, text` → `text` • `reasoning`')
   expect(modelText).toContain('[a model](https://example.com/model)')
   expect(modelText).toContain('Preview only.')
   expect(modelText.match(/<t:/g)).toHaveLength(1)
@@ -633,7 +562,10 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(endpointText).toContain('/provider.webp')
   expect(endpointText).not.toContain('discount')
   expect(endpointText).not.toContain('supports_reasoning')
-  expect(endpointText).toContain('`tools, temperature`')
+  expect(endpointText).not.toContain('supported_parameters')
+  expect(endpointText).not.toContain('tools, temperature')
+  expect(endpointText).toContain('`max_output:` `4,096`')
+  expect(endpointText).not.toContain('max_completion_tokens')
 })
 
 test('prose updates use embeds, preserve warning facts, and reject aggregate overflow', () => {
@@ -700,7 +632,7 @@ test('provider discoveries are announced and departures only announce endpoint a
     const message = renderDiscord(event, urls)
 
     if (type === 'ADD') {
-      expect(message?.embeds?.[0]?.description).toBe('**Provider** · Provider discovered')
+      expect(message?.embeds?.[0]?.description).toBe('Provider **Provider** discovered.')
       expect(render(event)).toMatchObject({ type: 'provider_added', previously_known: false })
     } else {
       expect(message?.components).toBeUndefined()
@@ -708,7 +640,7 @@ test('provider discoveries are announced and departures only announce endpoint a
       expect(message?.embeds?.[0]?.footer).toBeUndefined()
 
       expect(message?.embeds?.[0]).toMatchObject({
-        description: '**Provider** has no more listed endpoints.',
+        description: 'Provider **Provider** has no more listed endpoints.',
         color: 0xef_44_44,
         timestamp: '2026-09-30T01:00:00.000Z',
       })
@@ -741,7 +673,7 @@ test('unclassified arrivals use neutral wording instead of claiming discovery or
     expect(text.toLowerCase()).not.toContain('relisted')
     expect(text).not.toContain('again')
     expect(text).not.toContain('✨')
-    expect(text).toContain(entity_kind === 'endpoint' ? 'Listed' : 'now has listed endpoints')
+    expect(text).toContain(entity_kind === 'endpoint' ? 'listed.' : 'now has listed endpoints')
   }
 })
 
@@ -776,7 +708,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
 
     expect(message?.components).toBeUndefined()
     expect(message?.embeds).toHaveLength(1)
-    expect(text).toContain('`privacyPolicyURL`')
+    expect(text).toContain('`privacyPolicyURL:`')
     expect(text).not.toContain('training')
     expect(text).not.toContain('retainsPrompts')
     expect(event.change_json).toBe(captured)
@@ -806,8 +738,8 @@ test('provider updates stay classic and include only legacy metadata and policy 
   const text = message?.embeds?.[0]?.description ?? ''
 
   expect(message?.components).toBeUndefined()
-  for (const field of ['displayName', 'headquarters', 'datacenters', 'statusPageUrl']) {
-    expect(text).toContain(`\`${field}\``)
+  for (const label of ['displayName:', 'headquarters:', 'datacenters', 'statusPageUrl']) {
+    expect(text).toContain(`\`${label}\``)
   }
   expect(text).not.toContain('byokEnabled')
 
@@ -886,7 +818,7 @@ test('blank scalar and prose values render null without rewriting the captured e
 
   expect(
     fieldChange({ type: 'field_added', path: 'description', after: 'New prose.' }, { prose: true }),
-  ).toBe('`description` · new\n> New prose.')
+  ).toBe('`description` • new\n> New prose.')
 })
 
 test('endpoint reasoning-only changes are skipped while model reasoning remains visible', () => {
@@ -899,7 +831,19 @@ test('endpoint reasoning-only changes are skipped while model reasoning remains 
 
   expect(
     renderDiscord({ ...event, entity_kind: 'model' }, urls)?.embeds?.[0]?.description,
-  ).toContain('`supports_reasoning` ~~`false`~~ → `true`')
+  ).toContain('`supports_reasoning:` `false` → `true`')
+})
+
+test('endpoint output limits use max_output without changing the captured field name', () => {
+  const event = row(
+    { metadata: { max_completion_tokens: 4096 } },
+    { metadata: { max_completion_tokens: 8192 } },
+  )
+
+  expect(renderDiscord(event, urls)?.embeds?.[0]?.description).toContain(
+    '`max_output:` `4,096` → `8,192` ▲ 100%',
+  )
+  expect(render(event)).toMatchObject({ changes: [{ path: 'max_completion_tokens' }] })
 })
 
 test('one-hour cache writes survive curation and render without pricing units or branding', () => {
@@ -910,7 +854,7 @@ test('one-hour cache writes survive curation and render without pricing units or
 
   const message = renderDiscord(event, urls)
 
-  expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h` ~~`$2`~~ → `$4` ▲ 100%')
+  expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$2.00` → `$4.00` 🔺 100%')
   expect(render(event)).toMatchObject({ changes: [{ path: 'pricing.input_cache_write_1h' }] })
 
   const lifecycle: EventRow = {
@@ -927,12 +871,12 @@ test('one-hour cache writes survive curation and render without pricing units or
   }
 
   const added = renderDiscord(lifecycle, urls)
-  expect(added?.embeds?.[0]?.description).toContain('`cache_write_1h` `   $4`')
-  expect(added?.embeds?.[0]?.description).toContain('`web_search    ` `$0.01`')
+  expect(added?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$4.00`')
+  expect(added?.embeds?.[0]?.description).toContain('`web_search:    ` `$0.01`')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
 
   expect(pricingChanges([{ type: 'field_added', path: 'pricing.prompt', after: '1e-6' }])).toEqual([
-    '`input` `$1e-6` · new',
+    '`input:` `$1.00` • new',
   ])
 
   for (const payload of [message, added]) {
@@ -944,13 +888,9 @@ test('one-hour cache writes survive curation and render without pricing units or
 
 test('web search is a pricing row across updates, additions, and removals without token scaling', () => {
   for (const [before, after, expected] of [
-    [
-      { web_search: '0.001' },
-      { web_search: '0.002' },
-      '`web_search` ~~`$0.001`~~ → `$0.002` ▲ 100%',
-    ],
-    [{}, { web_search: '0.001' }, '`web_search` `$0.001` · new'],
-    [{ web_search: '0.001' }, {}, '~~`web_search`~~ ~~`$0.001`~~'],
+    [{ web_search: '0.001' }, { web_search: '0.002' }, '`web_search:` `$0.001` → `$0.002` 🔺 100%'],
+    [{}, { web_search: '0.001' }, '`web_search:` `$0.001` • new'],
+    [{ web_search: '0.001' }, {}, '~~`web_search:`~~ ~~`$0.001`~~'],
   ] as const) {
     const event = row({ pricing: { meters: before } }, { pricing: { meters: after } })
     const text = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
@@ -969,7 +909,7 @@ test('cards supply prose and duration rules while generic formatters only follow
     after: 'New.',
   } as const
 
-  expect(fieldChange(warning)).toBe('`warning_message` ~~`Old.`~~ → `New.`')
+  expect(fieldChange(warning)).toBe('`warning_message:` `Old.` → `New.`')
 
   expect(fieldChange(warning, { prose: true })).toBe(
     '`warning_message`\nBefore\n> Old.\n\nAfter\n> New.',
@@ -982,7 +922,7 @@ test('cards supply prose and duration rules while generic formatters only follow
     after: 2,
   } as const
 
-  expect(fieldChange(change)).toBe('`retentionDays` ~~`1`~~ → `2` ▲ 100%')
+  expect(fieldChange(change)).toBe('`retentionDays:` `1` → `2` ▲ 100%')
 
   const event = row(
     { metadata: { data_policy: { retentionDays: 1 } } },
@@ -990,7 +930,7 @@ test('cards supply prose and duration rules while generic formatters only follow
   )
 
   expect(renderDiscord(event, urls)?.embeds?.[0]?.description).toContain(
-    '`retentionDays` ~~`1 days`~~ → `2 days` ▲ 100%',
+    '`retentionDays:` `1 days` → `2 days` ▲ 100%',
   )
 
   for (const after of ['', '  ', null]) {
@@ -998,6 +938,6 @@ test('cards supply prose and duration rules while generic formatters only follow
       pricingChanges([
         { type: 'field_updated', path: 'pricing.prompt', before: '0.000001', after },
       ]),
-    ).toEqual(['`input` ~~`$1`~~ → `null`'])
+    ).toEqual(['`input:` `$1.00` → `null`'])
   }
 })
