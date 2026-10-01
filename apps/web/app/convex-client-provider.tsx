@@ -57,6 +57,8 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
           client={queryClient}
           persistOptions={{
             persister: asyncStoragePersister,
+            // Discard queries from older builds before hydration starts Convex subscriptions.
+            buster: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development',
           }}
         >
           {children}
