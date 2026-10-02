@@ -12,7 +12,21 @@ export function forFeed(row: EventRow): EntityAlert | null {
 }
 
 function prepare(row: EventRow): EntityAlert | null {
-  const alert = curate(row)
+  let alert: EntityAlert | null
+
+  try {
+    alert = curate(row)
+  } catch (error) {
+    console.error('[v4:alerts] could not prepare event', {
+      event_id: '_id' in row ? row._id : undefined,
+      entity_kind: row.entity_kind,
+      entity_id: row.entity_id,
+      scan_at: row.scan_at,
+      error,
+    })
+
+    return null
+  }
 
   return alert !== null && isEligible(alert) ? alert : null
 }

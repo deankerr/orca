@@ -1,10 +1,12 @@
 import { diff } from 'json-diff-ts'
 
+import type { JsonValue } from '../json'
+
 /** Discover string arrays in both observations, including fields first seen upstream. */
-export function compare(previous: unknown, next: unknown) {
+export function compare(previous: JsonValue, next: JsonValue) {
   const embeddedObjKeys = new Map<string, string>()
 
-  function visit(value: unknown, path: string) {
+  function visit(value: JsonValue, path: string) {
     if (Array.isArray(value)) {
       // ponytail: $value ignores duplicate counts; revisit only if multiplicity becomes meaningful.
       const stringArray = value.every((item) => typeof item === 'string')

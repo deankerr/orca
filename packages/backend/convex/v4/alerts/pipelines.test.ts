@@ -1,12 +1,13 @@
-import { expect, test } from 'bun:test'
+import { expect, spyOn, test } from 'bun:test'
 
 import { compare } from '../events/compare'
 import { prepare } from '../events/prepare'
 import type { EventRow } from '../events/query'
 import { renderPage } from '../feed'
+import type { JsonValue } from '../json'
 import type { Scan } from '../scan/extract'
 import { curate } from './curate'
-import { forDiscord, forFeed } from './pipelines'
+import { forDiscord, forFeed, forMonitor } from './pipelines'
 import { renderDiscordBatch } from './renderers/discord'
 import type { DiscordUrls } from './renderers/discord/card'
 import { render as renderPrepared } from './renderers/json'
@@ -22,8 +23,8 @@ const context = {
   },
 }
 
-function update(before: unknown, after: unknown): EventRow {
-  const [change] = compare({ endpoint: before }, { endpoint: after })
+function update(before: JsonValue, after: JsonValue, id = 'endpoint'): EventRow {
+  const [change] = compare({ [id]: before }, { [id]: after })
 
   if (change === undefined) {
     throw new Error('Expected a stored event')
@@ -32,9 +33,9 @@ function update(before: unknown, after: unknown): EventRow {
   return {
     scan_at: '2026-09-29T01:00:00.000Z',
     entity_kind: 'endpoint',
-    entity_id: 'endpoint',
+    entity_id: id,
     type: 'UPDATE',
-    context,
+    context: { ...context, endpoint: { ...context.endpoint, endpoint_id: id } },
     change_json: JSON.stringify(change),
   }
 }
@@ -410,24 +411,13 @@ test('text preserves tiny prices and literal upstream content; malformed events 
     'Provider name changed from "old_name" to "new_`name`".',
   ])
 
-  expect(() => render({ ...row, change_json: '{broken' })).toThrow()
-  expect(() => render({ ...row, change_json: '{}' })).toThrow()
+  expect(() => curate({ ...row, change_json: '{broken' })).toThrow()
+  expect(() => curate({ ...row, change_json: '{}' })).toThrow()
 })
 
 test('invalid event envelopes and incomplete selected changes cannot disappear during rendering', () => {
   const row = update({ metadata: { context_length: 100 } }, { metadata: { context_length: 200 } })
   for (const payload of [
-    {
-      key: 'another-endpoint',
-      type: 'UPDATE',
-      changes: [
-        {
-          key: 'metadata',
-          type: 'UPDATE',
-          changes: [{ key: 'context_length', type: 'UPDATE', oldValue: 100, value: 200 }],
-        },
-      ],
-    },
     { key: 'endpoint', type: 'REMOVE', value: {} },
     { key: 'endpoint', type: 'UPDATE' },
     { key: 'endpoint', type: 'UPDATE', changes: [{ key: 'metadata', type: 'UPDATE' }] },
@@ -450,8 +440,133 @@ test('invalid event envelopes and incomplete selected changes cannot disappear d
       ],
     },
   ]) {
-    expect(() => render({ ...row, change_json: JSON.stringify(payload) })).toThrow()
+    expect(() => curate({ ...row, change_json: JSON.stringify(payload) })).toThrow()
   }
+})
+
+test('the stored row supplies root identity and operation without reconciling duplicate payload fields', () => {
+  const row = update({ metadata: { context_length: 100 } }, { metadata: { context_length: 200 } })
+  const payload = {
+    key: 'unused-copy',
+    type: 'unused-copy',
+    changes: [
+      {
+        key: 'metadata',
+        type: 'UPDATE',
+        changes: [{ key: 'context_length', type: 'UPDATE', oldValue: 100, value: 200 }],
+      },
+    ],
+  }
+
+  expect(curate({ ...row, change_json: JSON.stringify(payload) })).toEqual(curate(row))
+})
+
+test('failed events are logged and omitted before batching; healthy events keep their residual changes', () => {
+  const before = { metadata: { supported_parameters: ['tools', 'audio'], context_length: 100 } }
+  const after = { metadata: { supported_parameters: ['tools'], context_length: 100 } }
+  const good = Array.from({ length: 5 }, (_, index) => ({
+    ...update(
+      before,
+      index === 0 ? { metadata: { ...after.metadata, context_length: 200 } } : after,
+      `endpoint-${index}`,
+    ),
+    _id: `event-${index}`,
+  }))
+  const unsupported = {
+    ...update(
+      before,
+      { metadata: { supported_parameters: [{ name: 'tools' }], context_length: 300 } },
+      'bad-endpoint',
+    ),
+    _id: 'unsupported-event',
+  }
+  const malformed = { ...unsupported, _id: 'malformed-event', change_json: '{broken' }
+  const missingValue = {
+    ...unsupported,
+    _id: 'missing-value-event',
+    change_json: JSON.stringify({
+      changes: [
+        {
+          key: 'metadata',
+          type: 'UPDATE',
+          changes: [{ key: 'context_length', type: 'UPDATE', oldValue: 100 }],
+        },
+      ],
+    }),
+  }
+  const bad = [unsupported, malformed, missingValue]
+  const log = spyOn(console, 'error').mockImplementation(() => {})
+
+  try {
+    const input = [...good.slice(0, 1), ...bad, ...good.slice(1)]
+    const original = JSON.stringify(input)
+    const result = forDiscord(input)
+
+    expect(result.skipped).toBe(3)
+    expect(result.alerts.map((alert) => alert.type)).toEqual(['batch', 'event'])
+    expect(result.alerts[0]).toMatchObject({
+      type: 'batch',
+      change: { path: 'supported_parameters' },
+    })
+    expect(
+      result.alerts[0]?.type === 'batch'
+        ? result.alerts[0].members.map((member) => member.event_id)
+        : [],
+    ).toEqual(good.map((row) => row._id))
+    expect(result.alerts[1]).toMatchObject({
+      event_id: 'event-0',
+      event: { changes: [{ path: 'context_length', after: 200 }] },
+    })
+    expect(JSON.stringify(input)).toBe(original)
+    expect(log).toHaveBeenCalledTimes(3)
+    for (const [index, row] of bad.entries()) {
+      expect(log).toHaveBeenNthCalledWith(
+        index + 1,
+        '[v4:alerts] could not prepare event',
+        expect.objectContaining({
+          event_id: row._id,
+          entity_id: row.entity_id,
+          scan_at: row.scan_at,
+        }),
+      )
+    }
+    expect(() => curate(unsupported)).toThrow('supported_parameters')
+    expect(() => curate(missingValue)).toThrow('context_length')
+
+    // A failed fifth entity cannot make four healthy entities eligible for a batch.
+    expect(
+      forDiscord([...good.slice(0, 4), unsupported]).alerts.every(
+        (alert) => alert.type === 'event',
+      ),
+    ).toBe(true)
+
+    expect(forMonitor(unsupported)).toBeNull()
+    expect(forFeed(unsupported)).toBeNull()
+    const page = {
+      page: input,
+      isDone: false,
+      continueCursor: 'next',
+      splitCursor: 'split',
+      pageStatus: 'SplitRequired' as const,
+    }
+    expect(renderPage(page)).toEqual({
+      ...page,
+      page: good.map(render).filter((event) => event !== null),
+    })
+  } finally {
+    log.mockRestore()
+  }
+})
+
+test('unselected external objects and indexed arrays remain valid captured data', () => {
+  const row = update(
+    { metadata: { context_length: 100, new_field: [{ nested: [1, 2] }] } },
+    { metadata: { context_length: 200, new_field: [{ nested: [3], extra: { value: true } }] } },
+  )
+  const alert = curate(row)
+
+  expect(alert).toMatchObject({ changes: [{ path: 'context_length', before: 100, after: 200 }] })
+  expect(alert?.type === 'endpoint_updated' ? alert.changes : []).toHaveLength(1)
 })
 
 function render(row: EventRow) {

@@ -2,6 +2,7 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { compare } from '../events/compare'
 import type { EventRow } from '../events/query'
+import type { JsonValue } from '../json'
 import { batchAlerts } from './batch'
 import type { Alert, IndividualAlert } from './batch'
 import type { EntityAlert, FieldChange } from './curate'
@@ -240,8 +241,8 @@ const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.or
 
 function stored(
   index: number,
-  before: unknown,
-  after: unknown,
+  before: JsonValue,
+  after: JsonValue,
   kind: 'endpoint' | 'provider' = 'endpoint',
 ): EventRow & { _id: string } {
   const entity_id = `entity-${index}`

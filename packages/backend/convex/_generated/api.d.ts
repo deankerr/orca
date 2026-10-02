@@ -121,6 +121,7 @@ import type * as v4_clock from "../v4/clock.js";
 import type * as v4_discord from "../v4/discord.js";
 import type * as v4_eventRenderers_feed from "../v4/eventRenderers/feed.js";
 import type * as v4_events_compare from "../v4/events/compare.js";
+import type * as v4_events_decode from "../v4/events/decode.js";
 import type * as v4_events_ingest from "../v4/events/ingest.js";
 import type * as v4_events_prepare from "../v4/events/prepare.js";
 import type * as v4_events_query from "../v4/events/query.js";
@@ -286,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   "v4/discord": typeof v4_discord;
   "v4/eventRenderers/feed": typeof v4_eventRenderers_feed;
   "v4/events/compare": typeof v4_events_compare;
+  "v4/events/decode": typeof v4_events_decode;
   "v4/events/ingest": typeof v4_events_ingest;
   "v4/events/prepare": typeof v4_events_prepare;
   "v4/events/query": typeof v4_events_query;

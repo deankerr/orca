@@ -1,4 +1,7 @@
 import { isPlainObject } from 'remeda'
+import type { z } from 'zod'
+
+export type JsonValue = z.infer<ReturnType<typeof z.json>>
 
 /** Stable keys; Catalog also normalizes string arrays like V3 metadata, while pricing keeps order. */
 export function canonicalJson(value: unknown, { sortStringArrays = false } = {}): string {

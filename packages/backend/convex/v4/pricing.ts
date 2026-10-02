@@ -19,8 +19,15 @@ export const Pricing = z
   })
   .catchall(z.json())
 
+/** Interpreted pricing carried by entity snapshots, before storage encoding. */
+export const PricingSnapshot = z.object({
+  discount: Pricing.shape.discount,
+  meters: z.record(z.string(), z.string()),
+  overrides: Pricing.shape.overrides,
+})
+
 /** Select decimal meters and preserve complete overrides; discount is already reflected in rates. */
-export function selectPricing(value: Endpoint['pricing']) {
+export function selectPricing(value: Endpoint['pricing']): z.infer<typeof PricingSnapshot> {
   const { discount, overrides, display_pricing: _display, ...source } = Pricing.parse(value)
 
   const meters = Object.fromEntries(
