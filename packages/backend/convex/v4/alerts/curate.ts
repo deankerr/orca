@@ -1,11 +1,14 @@
 import { withoutSystemFields } from 'convex-helpers'
-import { ConvexError, v } from 'convex/values'
+import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
 
+import { decode } from '../events/decode'
+import type { CapturedChange, Snapshot } from '../events/decode'
 import { event } from '../events/query'
 import type { EventRow } from '../events/query'
+import type { JsonValue } from '../json'
 
 const atom = v.union(v.null(), v.string(), v.number(), v.boolean(), v.array(v.string()))
 const value = v.union(atom, v.record(v.string(), atom))
@@ -133,19 +136,10 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
 }
 
 const Atom = z.union([z.null(), z.string(), z.number(), z.boolean(), z.array(z.string())])
-const ObjectValue = z.record(z.string(), z.json())
-const Change = z.object({
-  key: z.string(),
-  type: z.enum(['ADD', 'REMOVE', 'UPDATE']),
-  value: z.json().optional(),
-  oldValue: z.json().optional(),
-  embeddedKey: z.string().optional(),
-  get changes() {
-    return z.array(Change).optional()
-  },
+const StringSet = z.object({
+  embeddedKey: z.literal('$value'),
+  changes: z.array(z.object({ type: z.enum(['ADD', 'REMOVE']), value: z.string() })),
 })
-type Change = z.infer<typeof Change>
-const ContainerChange = Change.extend({ type: z.literal('UPDATE'), changes: z.array(Change) })
 
 function nativePath(kind: EventRow['entity_kind'], path: string[]): string[] {
   if (path[0] === 'metadata') {
@@ -175,14 +169,25 @@ function nativePath(kind: EventRow['entity_kind'], path: string[]): string[] {
   return path
 }
 
-function selectValue(input: unknown, selection: true | readonly string[]): Infer<typeof value> {
+function selectValue(
+  input: JsonValue | undefined,
+  selection: true | readonly string[],
+  path: string,
+): FieldValue {
   if (selection === true || input === null || typeof input !== 'object' || Array.isArray(input)) {
-    return Atom.parse(input)
+    return Atom.parse(input, { error: () => `Unsupported alert value at ${path}` })
   }
-  const source = ObjectValue.parse(input)
+
   return Object.fromEntries(
     selection.flatMap((key) =>
-      Object.hasOwn(source, key) ? [[key, Atom.parse(source[key])]] : [],
+      Object.hasOwn(input, key)
+        ? [
+            [
+              key,
+              Atom.parse(input[key], { error: () => `Unsupported alert value at ${path}.${key}` }),
+            ],
+          ]
+        : [],
     ),
   )
 }
@@ -207,20 +212,10 @@ function fieldSelection(kind: EventRow['entity_kind'], path: string[]) {
 
 function selectedChanges(
   kind: EventRow['entity_kind'],
-  node: Change,
-  parent: string[],
+  node: CapturedChange,
+  sourcePath: string[],
 ): FieldChange[] {
-  const sourcePath = [...parent, node.key]
   const path = nativePath(kind, sourcePath)
-  // Metadata and meters are guaranteed containers in the stored entity projection.
-  if (
-    path.length === 0 ||
-    (sourcePath[0] === 'pricing' && sourcePath[1] === 'meters' && sourcePath.length === 2)
-  ) {
-    return ContainerChange.parse(node).changes.flatMap((child) =>
-      selectedChanges(kind, child, sourcePath),
-    )
-  }
   const selection = fieldSelection(kind, path)
   if (selection === undefined) {
     return []
@@ -228,102 +223,90 @@ function selectedChanges(
 
   if (node.changes !== undefined) {
     if (selection !== true) {
-      return node.changes.flatMap((nested) => selectedChanges(kind, nested, sourcePath))
+      // ponytail: indexed arrays in selected object groups silently lose their numeric children.
+      // Reject those shapes if they occur upstream; see docs/events/renderers.md.
+      return node.changes.flatMap((nested) =>
+        selectedChanges(kind, nested, [...sourcePath, nested.key]),
+      )
     }
-    if (
-      node.embeddedKey !== '$value' ||
-      node.changes.some((item) => item.type !== 'ADD' && item.type !== 'REMOVE')
-    ) {
-      throw new ConvexError({
-        message: 'Selected event field has an unsupported change shape',
-        path: path.join('.'),
-      })
-    }
+    const set = StringSet.parse(node, {
+      error: () => `Unsupported array change at ${path.join('.')}`,
+    })
+
     return [
       {
         type: 'set_updated',
         path: path.join('.'),
-        added: node.changes
-          .filter((item) => item.type === 'ADD')
-          .map((item) => z.string().parse(item.value)),
-        removed: node.changes
-          .filter((item) => item.type === 'REMOVE')
-          .map((item) => z.string().parse(item.value)),
+        added: set.changes.filter((item) => item.type === 'ADD').map((item) => item.value),
+        removed: set.changes.filter((item) => item.type === 'REMOVE').map((item) => item.value),
       },
     ]
   }
 
-  const before =
-    node.type === 'ADD'
-      ? undefined
-      : selectValue(node.type === 'REMOVE' ? node.value : node.oldValue, selection)
-  const after = node.type === 'REMOVE' ? undefined : selectValue(node.value, selection)
-  if (isDeepEqual(before, after)) {
-    return []
-  }
   const field = path.join('.')
-  if (after === undefined) {
-    if (before === undefined) {
-      return []
-    }
-    return [{ type: 'field_removed', path: field, before }]
+
+  if (node.type === 'ADD') {
+    return [{ type: 'field_added', path: field, after: selectValue(node.value, selection, field) }]
   }
-  return before === undefined
-    ? [{ type: 'field_added', path: field, after }]
-    : [{ type: 'field_updated', path: field, before, after }]
+
+  if (node.type === 'REMOVE') {
+    return [
+      { type: 'field_removed', path: field, before: selectValue(node.value, selection, field) },
+    ]
+  }
+
+  const before = selectValue(node.oldValue, selection, field)
+  const after = selectValue(node.value, selection, field)
+
+  return isDeepEqual(before, after) ? [] : [{ type: 'field_updated', path: field, before, after }]
 }
 
-function entityValue(
-  kind: EventRow['entity_kind'],
-  input: unknown,
-): Record<string, Infer<typeof value>> {
-  const source = ObjectValue.parse(input)
-  const native: Record<string, unknown> = { ...ObjectValue.parse(source.metadata), ...source }
+function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
+  const source: Record<string, JsonValue> = snapshot.value
+  const native: Record<string, JsonValue> = { ...snapshot.value.metadata, ...source }
+
   for (const [key, field] of Object.entries(source)) {
-    const [name] = nativePath(kind, [key])
+    const [name] = nativePath(snapshot.entity_kind, [key])
+
     if (name !== undefined) {
       native[name] = field
     }
   }
-  if (kind === 'endpoint') {
-    const pricing = ObjectValue.parse(source.pricing)
-    native.pricing = { ...pricing, ...ObjectValue.parse(pricing.meters) }
+
+  if (snapshot.entity_kind === 'endpoint') {
+    const { discount, meters } = snapshot.value.pricing
+    native.pricing = { discount, ...meters }
   }
+
   return Object.fromEntries(
-    Object.entries(selections[kind]).flatMap(([key, selection]) =>
-      Object.hasOwn(native, key) ? [[key, selectValue(native[key], selection)]] : [],
+    Object.entries(selections[snapshot.entity_kind]).flatMap(([key, selection]) =>
+      Object.hasOwn(native, key) ? [[key, selectValue(native[key], selection, key)]] : [],
     ),
   )
 }
 
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */
 export function curate(row: EventRow): EntityAlert | null {
-  const { change_json, type, scan_at, ...subject } = withoutSystemFields(row)
+  const { change_json: _json, type: _type, scan_at, ...subject } = withoutSystemFields(row)
   const identity = { ...subject, observed_at: scan_at }
-  const change = Change.parse(JSON.parse(change_json))
-  if (change.key !== row.entity_id || change.type !== type) {
-    throw new ConvexError({
-      message: 'Event payload does not match its stored identity and operation',
-      entity_id: row.entity_id,
-      type,
-    })
-  }
-  if (type === 'ADD') {
+  const event = decode(row)
+
+  if (event.type === 'ADD') {
     return {
       ...identity,
       type: `${row.entity_kind}_added`,
-      after: entityValue(row.entity_kind, change.value),
+      after: entityValue(event.after),
     }
   }
-  if (type === 'REMOVE') {
+  if (event.type === 'REMOVE') {
     return {
       ...identity,
       type: `${row.entity_kind}_removed`,
-      before: entityValue(row.entity_kind, change.value),
+      before: entityValue(event.before),
     }
   }
-  const changes = ContainerChange.parse(change).changes.flatMap((child) =>
-    selectedChanges(row.entity_kind, child, []),
+  const changes = event.changes.flatMap(({ path, change }) =>
+    selectedChanges(row.entity_kind, change, path),
   )
   return changes.length === 0 ? null : { ...identity, type: `${row.entity_kind}_updated`, changes }
 }

@@ -1,4 +1,5 @@
-import type { EntityAlert, FieldChange } from './curate'
+import type { JsonValue } from '../json'
+import type { EntityAlert, FieldChange, FieldValue } from './curate'
 
 export type IndividualAlert = { type: 'event'; event_id: string; event: EntityAlert }
 export type BatchAlert = { type: 'batch'; change: FieldChange; members: IndividualAlert[] }
@@ -7,7 +8,7 @@ export type Alert = IndividualAlert | BatchAlert
 const BATCH_THRESHOLD = 5
 
 /** Compare object keys and string-set membership independently of upstream ordering. */
-function canonical(value: unknown): unknown {
+function canonical(value: FieldChange | FieldValue): JsonValue {
   if (Array.isArray(value)) {
     return value.toSorted((a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0))
   }

@@ -20,13 +20,14 @@
 - No correctness or delivery guarantees: no outbox, delivery ledger, retry, deduplication or backfill.
 - A scheduling failure after event commit loses that broadcast; event storage and subsequent ingestion proceed.
 - Oversized text is truncated with `console.error`; batch pages retain every source ID and endpoint UUID prefix.
+- Event decoding or interpretation failures log and skip that event before batching.
 - Other render failures, HTTP errors (including 429), or action timeout abandon the remaining batch.
 - Batches can overlap and interleave; no global ordering or rate coordination is promised.
 - `send`, `sendExamples`, and `sendLatest` are explicit operator tools, bypass the preview switch, and can duplicate messages.
 - `sendExamples` accepts `event_ids`. Deleting and regenerating events changes their IDs.
 - `sendLatest` defaults to 10 renderable events, accepts `limit` from 1–50, scans at most 500 recent events, and sends selected cards oldest first.
 - Each message includes `pre-alpha` and its source event ID(s) outside the card, in the same message.
-- Batch tools group selected events; `sent` counts messages, `skipped` counts filtered events, not extracted items.
+- Batch tools group selected events; `sent` counts messages, `skipped` counts filtered or failed events, not extracted items.
 - Embed cards use message content; component cards use a sibling Text Display. Mentions remain disabled.
 - Operational steps and cleanup commands live in the V4 Discord preview rollout notes.
 

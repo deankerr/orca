@@ -7,6 +7,8 @@ import type { ActionCtx } from '../_generated/server'
 import { broadcast, send, sendExamples, sendLatest } from './discord'
 import { compare } from './events/compare'
 import type { EventRow } from './events/query'
+import { selectModel, selectEndpoint } from './facts'
+import type { JsonValue } from './json'
 
 const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
 
@@ -64,7 +66,16 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
       change_json: JSON.stringify({
         type: 'ADD',
         key: current.entity_id,
-        value: { metadata: {}, pricing: { meters: {} } },
+        value: selectEndpoint({
+          id: current.entity_id,
+          model_id: context.model.model_id,
+          model_variant_slug: context.model.model_id,
+          provider_id: context.provider.provider_id,
+          provider_tag: context.endpoint.provider_tag,
+          provider_display_name: context.endpoint.provider_display_name,
+          variant: 'standard',
+          pricing: { discount: 0 },
+        }),
       }),
     }
 
@@ -78,6 +89,20 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
       entity_kind: 'model',
       context: { model: context.model },
       previously_known: false,
+      change_json: JSON.stringify({
+        key: current.entity_id,
+        type: 'ADD',
+        value: selectModel({
+          id: current.entity_id,
+          slug: 'author/model',
+          permaslug: 'author/model',
+          variant: 'standard',
+          short_name: 'Model',
+          created_at: current.scan_at,
+          input_modalities: ['text'],
+          output_modalities: ['text'],
+        }),
+      }),
     }
 
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Component delivery uses the same single-query action dependency.
@@ -314,8 +339,8 @@ test('latest replay fills its default count across filtered pages, respects limi
 })
 
 function row(
-  before: unknown,
-  after: unknown,
+  before: JsonValue,
+  after: JsonValue,
   entity_id = 'abcdef-123',
 ): Extract<EventRow, { entity_kind: 'endpoint' }> {
   const [change] = compare({ [entity_id]: before }, { [entity_id]: after })

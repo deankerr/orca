@@ -4,6 +4,8 @@ import { ComponentType } from 'discord-api-types/v10'
 
 import { compare } from '../../../events/compare'
 import type { EventRow } from '../../../events/query'
+import { selectModel, selectProvider, selectEndpoint } from '../../../facts'
+import type { JsonValue } from '../../../json'
 import { curate } from '../../curate'
 import { forDiscord, forFeed } from '../../pipelines'
 import { renderDiscordBatch } from '../../renderers/discord'
@@ -24,6 +26,30 @@ const context = {
     provider_tag: 'provider/fp8',
     provider_display_name: 'Regional offering',
   },
+}
+
+const snapshots = {
+  model: selectModel({
+    id: 'abcdef-123',
+    variant: 'standard',
+    slug: 'author/model',
+    permaslug: 'author/model',
+    short_name: 'Model',
+    created_at: '2026-09-30T01:00:00Z',
+    input_modalities: ['text'],
+    output_modalities: ['text'],
+  }),
+  provider: selectProvider({ provider_id: 'provider', displayName: 'Provider' }),
+  endpoint: selectEndpoint({
+    id: 'abcdef-123',
+    model_id: 'author/model',
+    model_variant_slug: 'author/model',
+    provider_id: 'provider',
+    provider_tag: 'provider/fp8',
+    provider_display_name: 'Regional offering',
+    variant: 'standard',
+    pricing: { discount: 0 },
+  }),
 }
 
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
@@ -254,7 +280,7 @@ test('quoted prose restores OpenRouter-relative links without changing absolute 
   expect(event.change_json).toBe(captured)
 })
 
-function row(before: unknown, after: unknown): Extract<EventRow, { entity_kind: 'endpoint' }> {
+function row(before: JsonValue, after: JsonValue): Extract<EventRow, { entity_kind: 'endpoint' }> {
   const [change] = compare({ 'abcdef-123': before }, { 'abcdef-123': after })
 
   if (change === undefined) {
@@ -426,7 +452,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
           type,
           key: 'abcdef-123',
           value: {
-            pricing: { meters: {} },
+            ...snapshots[kind],
             metadata: {
               description: 'x'.repeat(1000),
               headquarters: 'Earth',
@@ -500,14 +526,21 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
 })
 
 test('entity templates use captured model and endpoint facts with one timestamp and safe links', () => {
-  const lifecycle = (kind: EventRow['entity_kind'], value: unknown): EventRow => ({
+  const lifecycle = (
+    kind: EventRow['entity_kind'],
+    value: Record<string, JsonValue>,
+  ): EventRow => ({
     entity_kind: kind,
     entity_id: 'abcdef-123',
     type: 'ADD',
     previously_known: false,
     scan_at: '2026-09-30T01:00:00Z',
     context,
-    change_json: JSON.stringify({ key: 'abcdef-123', type: 'ADD', value }),
+    change_json: JSON.stringify({
+      key: 'abcdef-123',
+      type: 'ADD',
+      value: { ...snapshots[kind], ...value },
+    }),
   })
 
   const model = renderDiscord(
@@ -643,7 +676,10 @@ test('provider discoveries are announced and departures only announce endpoint a
       change_json: JSON.stringify({
         type,
         key: 'provider',
-        value: { metadata: { headquarters: 'Earth', dataPolicy: { training: true } } },
+        value: {
+          ...snapshots.provider,
+          metadata: { headquarters: 'Earth', dataPolicy: { training: true } },
+        },
       }),
     }
 
@@ -681,7 +717,7 @@ test('unclassified arrivals use neutral wording instead of claiming discovery or
       change_json: JSON.stringify({
         key: 'unclassified',
         type: 'ADD',
-        value: { metadata: {}, pricing: { meters: {} } },
+        value: snapshots[entity_kind],
       }),
     }
 
@@ -703,7 +739,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     retainsPrompts: true,
   }
 
-  const providerRow = (before: unknown, after: unknown): EventRow => ({
+  const providerRow = (before: JsonValue, after: JsonValue): EventRow => ({
     ...row({ metadata: before }, { metadata: after }),
     entity_kind: 'provider',
   })
@@ -882,8 +918,8 @@ test('one-hour cache writes survive curation and render without pricing units or
       type: 'ADD',
       key: event.entity_id,
       value: {
-        metadata: {},
-        pricing: { meters: { input_cache_write_1h: '0.000004', web_search: '0.01' } },
+        ...snapshots.endpoint,
+        pricing: { discount: 0, meters: { input_cache_write_1h: '0.000004', web_search: '0.01' } },
       },
     }),
   }

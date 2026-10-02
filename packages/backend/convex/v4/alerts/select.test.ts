@@ -2,10 +2,11 @@ import { expect, test } from 'bun:test'
 
 import { compare } from '../events/compare'
 import type { EventRow } from '../events/query'
+import type { JsonValue } from '../json'
 import { curate } from './curate'
 import { forMonitor } from './pipelines'
 
-function update(kind: 'provider' | 'endpoint', before: unknown, after: unknown): EventRow {
+function update(kind: 'provider' | 'endpoint', before: JsonValue, after: JsonValue): EventRow {
   const [change] = compare({ entity: before }, { entity: after })
 
   const identity = {
