@@ -5,11 +5,11 @@ import {
   TextDisplayBuilder,
   ThumbnailBuilder,
 } from '@discordjs/builders'
-import { ConvexError } from 'convex/values'
 import { MessageFlags } from 'discord-api-types/v10'
 import type { RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
 import { entityLogoUrl } from '../../../shared/entityLogo'
+import { truncate } from '../../../shared/utils'
 
 export type Card = RESTPostAPIWebhookWithTokenJSONBody
 export type DiscordUrls = { publicUrl: string; logoOrigin: string }
@@ -26,20 +26,33 @@ export function embedCard(
     footer?: { text: string; iconURL: string }
   },
 ): Card {
+  const author = {
+    ...options.author,
+    name: truncateContent(options.author.name, 256, 'embed.author'),
+  }
+  const footer =
+    options.footer === undefined
+      ? undefined
+      : {
+          ...options.footer,
+          text: truncateContent(options.footer.text, 2048, 'embed.footer'),
+        }
+  const descriptionLimit = Math.min(4096, 6000 - author.name.length - (footer?.text.length ?? 0))
+
   const embed = new EmbedBuilder()
     .setColor(options.color)
-    .setAuthor(options.author)
+    .setAuthor(author)
     .setTimestamp(new Date(options.timestamp))
-    .setDescription(content)
+    .setDescription(truncateContent(content, descriptionLimit, 'embed.description'))
 
-  if (options.footer !== undefined) {
-    embed.setFooter(options.footer)
+  if (footer !== undefined) {
+    embed.setFooter(footer)
   }
 
   return { embeds: [embed.toJSON()] }
 }
 
-/** One text section and thumbnail; enforce the complete card's text budget before serialization. */
+/** One text section and thumbnail; reserve space for the delivery source-ID annotation. */
 export function componentCard(
   content: string,
   options: {
@@ -47,17 +60,16 @@ export function componentCard(
     thumbnail: { url: string; description: string }
   },
 ): Card {
-  // ponytail: one event per message; split oversized events when full large-event delivery is needed.
-  if (content.length > 4000) {
-    throw new ConvexError('Discord event exceeds the single-message text limit.')
-  }
-
   const section = new SectionBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(truncateContent(content, 3900, 'component.content')),
+    )
     .setThumbnailAccessory(
       new ThumbnailBuilder()
         .setURL(options.thumbnail.url)
-        .setDescription(options.thumbnail.description),
+        .setDescription(
+          truncateContent(options.thumbnail.description, 1024, 'component.thumbnail'),
+        ),
     )
   const container = new ContainerBuilder()
     .setAccentColor(options.color)
@@ -79,4 +91,13 @@ export function gridUrl(query: string, urls: DiscordUrls, uuid?: string): string
 
 export function logoUrl(slug: string, urls: DiscordUrls): string {
   return entityLogoUrl({ origin: urls.logoOrigin, slug, variant: 'avatar' })
+}
+
+/** Size is a presentation constraint, not a reason to lose an alert. */
+export function truncateContent(content: string, limit: number, field: string): string {
+  if (content.length > limit) {
+    console.error('[v4:discord] truncated card content', { field, length: content.length, limit })
+  }
+
+  return truncate(content, limit)
 }

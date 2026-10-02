@@ -6,7 +6,8 @@ import { internal } from '../_generated/api'
 import type { Doc, Id } from '../_generated/dataModel'
 import { env, internalAction } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
-import { renderDiscord } from './eventRenderers/discord'
+import { renderDiscord, renderDiscordBatch } from './eventRenderers/discord'
+import type { Card } from './eventRenderers/discord/card'
 import { dot } from './eventRenderers/discord/display'
 
 /** Operator-only, single-attempt delivery. Repeating the call posts the event again. */
@@ -93,32 +94,41 @@ export const broadcast = internalAction({
 })
 
 async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
-  const counts = { sent: 0, skipped: 0 }
+  const rows: Doc<'v4_events'>[] = []
 
-  // ponytail: fixed pacing and stop-on-error for the preview; durable delivery is explicitly deferred.
-  // A 429, render error, or action timeout abandons the remainder; later scans run independently.
-  for (const [index, eventId] of eventIds.entries()) {
-    if (index > 0) {
+  for (const event_id of new Set(eventIds)) {
+    const row = await ctx.runQuery(internal.v4.events.query.get, { event_id })
+
+    if (row === null) {
+      throw new ConvexError({ message: 'Event not found.', event_id })
+    }
+
+    rows.push({ ...row, _id: event_id })
+  }
+
+  const { notifications, skipped } = renderDiscordBatch(rows, {
+    publicUrl: env.ORCA_PUBLIC_URL,
+    logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
+  })
+  let sent = 0
+
+  for (const { message, event_ids } of notifications) {
+    if (sent > 0) {
       // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing for the pre-alpha preview.
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 2000)
       })
     }
 
-    const result = await sendEvent(ctx, eventId)
-    counts[result] += 1
+    // ponytail: fixed pacing and stop-on-error; durable delivery remains deferred.
+    await postMessage(message, event_ids)
+    sent += 1
   }
 
-  return counts
+  return { sent, skipped }
 }
 
 async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'sent' | 'skipped'> {
-  const webhook = env.ORCA_DISCORD_WEBHOOK_URL
-
-  if (webhook === undefined || webhook === '') {
-    throw new ConvexError('Set ORCA_DISCORD_WEBHOOK_URL before sending Discord events.')
-  }
-
   const event = await ctx.runQuery(internal.v4.events.query.get, { event_id })
 
   if (event === null) {
@@ -134,7 +144,18 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     return 'skipped'
   }
 
-  const debug = `-# pre-alpha${dot}event: ${event_id}`
+  await postMessage(message, [event_id])
+  return 'sent'
+}
+
+async function postMessage(message: Card, event_ids: string[]): Promise<void> {
+  const webhook = env.ORCA_DISCORD_WEBHOOK_URL
+
+  if (webhook === undefined || webhook === '') {
+    throw new ConvexError('Set ORCA_DISCORD_WEBHOOK_URL before sending Discord events.')
+  }
+
+  const debug = `-# pre-alpha${dot}${event_ids.length === 1 ? 'event' : 'events'}: ${event_ids.join(', ')}`
 
   if (message.components === undefined) {
     message.content = debug
@@ -160,9 +181,7 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     throw new ConvexError({
       message: 'Discord webhook rejected the event.',
       status: response.status,
-      event_id,
+      event_ids,
     })
   }
-
-  return 'sent'
 }

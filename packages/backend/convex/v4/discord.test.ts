@@ -129,12 +129,22 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
   const args = { event_ids: ['first', 'second', 'third'] }
   const events: string[] = []
   const order: string[] = []
+  let grouped = false
 
   const queryContext = {
     runQuery: async (_query: unknown, args: { event_id: string }) => {
       events.push(args.event_id)
       order.push('read')
-      return row({ metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
+      return row(
+        { metadata: { is_disabled: false, max_completion_tokens: 100 } },
+        {
+          metadata: {
+            is_disabled: true,
+            max_completion_tokens: grouped && args.event_id === 'first' ? 200 : 100,
+          },
+        },
+        grouped ? args.event_id : undefined,
+      )
     },
   }
 
@@ -171,14 +181,24 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
     expect(events).toEqual(args.event_ids)
     expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 2000))
 
-    expect(order).toEqual(
-      Array.from({ length: 5 }, (_, index) => (index % 2 === 0 ? 'read' : 'pause')),
-    )
+    expect(order).toEqual(['read', 'read', 'read', 'pause', 'pause'])
+
+    grouped = true
+    expect(await liveHandler(ctx, { event_ids: [...args.event_ids, 'fourth', 'fifth'] })).toEqual({
+      sent: 2,
+      skipped: 0,
+    })
+    const batchBody = request.mock.calls[3]?.[1]?.body
+    const remainderBody = request.mock.calls[4]?.[1]?.body
+    expect(batchBody).toContain('5 endpoints updated')
+    expect(batchBody).toContain('fifth, first, fourth, second, third')
+    expect(remainderBody).toContain('max_output')
+    expect(remainderBody).not.toContain('is_disabled')
 
     request.mockResolvedValue(new Response('rate limited', { status: 429 }))
     await rejects(handler(ctx, args), /Discord webhook rejected/)
-    expect(request).toHaveBeenCalledTimes(4)
-    expect(pause).toHaveBeenCalledTimes(2)
+    expect(request).toHaveBeenCalledTimes(6)
+    expect(pause).toHaveBeenCalledTimes(3)
   } finally {
     request.mockRestore()
     pause.mockRestore()
@@ -293,8 +313,12 @@ test('latest replay fills its default count across filtered pages, respects limi
   }
 })
 
-function row(before: unknown, after: unknown): Extract<EventRow, { entity_kind: 'endpoint' }> {
-  const [change] = compare({ 'abcdef-123': before }, { 'abcdef-123': after })
+function row(
+  before: unknown,
+  after: unknown,
+  entity_id = 'abcdef-123',
+): Extract<EventRow, { entity_kind: 'endpoint' }> {
+  const [change] = compare({ [entity_id]: before }, { [entity_id]: after })
 
   if (change === undefined) {
     throw new Error('Expected an event')
@@ -302,7 +326,7 @@ function row(before: unknown, after: unknown): Extract<EventRow, { entity_kind: 
 
   return {
     entity_kind: 'endpoint',
-    entity_id: 'abcdef-123',
+    entity_id,
     type: 'UPDATE',
     scan_at: '2026-09-30T01:00:00Z',
     context,

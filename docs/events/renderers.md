@@ -10,12 +10,16 @@
 - Medium-specific renderers may customize field labels and value presentation while sharing the projection schema.
 - Presentation rules do not rewrite captured IChange operations or shared curated changes.
 - Discord entity cards own field-specific rules; `discord/fields` supplies generic display and `discord/pricing` prices.
-- Cards consume one captured event; model introductions and related endpoint additions remain separate events.
+- Entity cards consume one curated event; Discord batch cards collect one identical field change across entities.
+- Batch fingerprints normalize object keys and string-set order; different operations and values stay separate.
+- Model introductions and related endpoint additions remain separate events.
 - Reading each event as a sentence exposes ambiguity in the structured shape and helps refine it.
 - Lifecycle text describes an offering and selected useful facts; departure details use "when last observed".
 
 ## Composition and delivery
 
-- Products own model-level grouping, waiting, batching, and handling bursts of activity.
+- `groupEvents` composes selected events into single-field batches and remainders; it contains no Discord markup.
+- `renderDiscordBatch` owns selection, composition and card rendering; delivery owns reads, pacing and posting.
+- Batching is currently Discord-only; Monitor pages can split scans and must not determine batch membership.
 - Discord scope, preview experiments, and delivery proposals live in `discord.md`.
 - Delivery makes a permanent commitment: recipients retain sent messages while projected history can evolve.
