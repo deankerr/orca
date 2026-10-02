@@ -2,9 +2,9 @@ import { v } from 'convex/values'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import { internal } from '../../_generated/api'
-import { internalAction, internalQuery } from '../../_generated/server'
+import { internalAction } from '../../_generated/server'
 import { store } from '../../objects'
+import { TopAppsTargets } from './targets'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
@@ -18,35 +18,16 @@ const DataRecord = z
   .object({ data: z.record(z.string(), z.unknown()) })
   .transform((value) => value.data)
 
-const ModelTarget = v.object({
-  slug: v.string(),
-  version_slug: v.string(),
-  variant: v.string(),
-})
-
-export const listTargets = internalQuery({
-  args: {},
-  returns: v.array(ModelTarget),
-  handler: async (ctx) => {
-    const models = await ctx.db.query('or_views_models').collect()
-
-    return models
-      .filter((model) => model.unavailable_at === undefined)
-      .map((model) => ({
-        slug: model.slug,
-        version_slug: model.version_slug,
-        variant: model.variant,
-      }))
-  },
-})
-
 export const run = internalAction({
   args: {
     timestamp: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const targets = await ctx.runQuery(internal.workflows.topApps.process.listTargets, {})
+    const targets = await orFetch('/api/v1/models', {
+      params: { output_modalities: 'all' },
+      schema: TopAppsTargets,
+    })
 
     const models: Array<{
       slug: string
