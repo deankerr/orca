@@ -3,10 +3,10 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { query } from '../_generated/server'
+import { entityAlert } from './alerts/curate'
+import { forMonitor } from './alerts/pipelines'
 import { V4_CURRENT_MODELS_TABLE } from './catalog/models/table'
 import { V4_CURRENT_PROVIDERS_TABLE } from './catalog/providers/table'
-import { curatedEvent } from './eventRenderers/curate'
-import { selectEvent } from './eventRenderers/select'
 import { V4_EVENTS_TABLE } from './events/table'
 import { V4_ENDPOINT_LISTINGS_TABLE } from './history/listings/table'
 
@@ -22,7 +22,7 @@ export type MonitorScope = Infer<typeof scope>
 /** Historical activity, selected using the relationships captured with each event. */
 export const feed = query({
   args: { scope, paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(curatedEvent),
+  returns: paginationResultValidator(entityAlert),
   handler: async (ctx, { scope: selected, paginationOpts }) => {
     const events = ctx.db.query(V4_EVENTS_TABLE)
 
@@ -56,7 +56,7 @@ export const feed = query({
           return []
         }
 
-        const event = selectEvent(row)
+        const event = forMonitor(row)
         return event === null ? [] : [event]
       }),
     }

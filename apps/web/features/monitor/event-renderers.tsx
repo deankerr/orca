@@ -1,8 +1,8 @@
 'use client'
 
-import type { CuratedEvent, FieldValue } from '@orca/backend/convex/v4/eventRenderers/curate'
-import { fact } from '@orca/backend/convex/v4/eventRenderers/facts'
-import { priceMeters } from '@orca/backend/convex/v4/eventRenderers/pricing'
+import type { EntityAlert, FieldValue } from '@orca/backend/convex/v4/alerts/curate'
+import { fact } from '@orca/backend/convex/v4/alerts/facts'
+import { priceMeters } from '@orca/backend/convex/v4/alerts/renderers/pricing'
 import { InfoIcon, PlusCircleIcon } from 'lucide-react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -20,7 +20,7 @@ import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
 import { fieldLabel, formatChangeUnit, formatChangeValue } from './field-format'
 
-export function lifecycleLabel(event: CuratedEvent): string {
+export function lifecycleLabel(event: EntityAlert): string {
   const kind = event.entity_kind
 
   if ('changes' in event) {
@@ -48,7 +48,7 @@ export function EntityEventCard({
   event,
   onEndpointSelect,
 }: {
-  event: CuratedEvent
+  event: EntityAlert
   onEndpointSelect: (id: string) => void
 }) {
   const removed = 'before' in event

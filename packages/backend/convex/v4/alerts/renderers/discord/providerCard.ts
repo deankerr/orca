@@ -1,21 +1,16 @@
-import type { CuratedEvent } from '../curate'
+import type { EntityAlert } from '../../curate'
 import { colors, embedCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { escape, lifecycleMarker } from './display'
 import { fieldChange } from './fields'
 
 /** Providers are discovered once; endpoint presence can disappear and return repeatedly. */
-export function providerCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
-  if (event.entity_kind !== 'provider') {
-    return null
-  }
-
+export function providerCard(
+  event: Extract<EntityAlert, { entity_kind: 'provider' }>,
+  urls: DiscordUrls,
+): Card {
   const { provider } = event.context
   const changes = 'changes' in event ? event.changes : []
-
-  if ('changes' in event && changes.length === 0) {
-    return null
-  }
 
   const content =
     'after' in event

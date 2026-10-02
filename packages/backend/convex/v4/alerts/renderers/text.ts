@@ -1,6 +1,5 @@
-import type { EventRow } from '../events/query'
-import type { CuratedEvent, FieldChange, FieldValue } from './curate'
-import { formatNumber, formatPercent, formatPrice, relativeChange } from './numbers'
+import type { EntityAlert, FieldChange, FieldValue } from '../curate'
+import { formatNumber, formatPercent, formatPrice, relativeChange } from '../numbers'
 
 const labels: Record<string, string> = {
   'pricing.prompt': 'Input price',
@@ -119,7 +118,7 @@ function describeChange(change: FieldChange): string[] {
 }
 
 /** Plain-text items remain independent of a product's markup, grouping, and navigation. */
-export function describe(event: CuratedEvent): string[] {
+export function describe(event: EntityAlert): string[] {
   if ('changes' in event) {
     return event.changes.flatMap(describeChange)
   }
@@ -163,13 +162,13 @@ export function describe(event: CuratedEvent): string[] {
   })
 }
 
-export function summarize(row: EventRow): string {
+export function summarize(row: EntityAlert): string {
   if (row.entity_kind === 'endpoint') {
     const { model, endpoint } = row.context
     const offering = `${endpoint.provider_display_name} (${endpoint.provider_tag})`
 
     const listing =
-      row.type === 'REMOVE'
+      'before' in row
         ? 'is no longer listed'
         : row.previously_known === false
           ? 'has a newly discovered endpoint'
@@ -178,7 +177,7 @@ export function summarize(row: EventRow): string {
             : 'is now listed'
 
     return (
-      row.type === 'UPDATE'
+      'changes' in row
         ? `${model.display_name} on ${offering} has updated endpoint details.`
         : `${model.display_name} ${listing} on ${offering}.`
     ).replaceAll(/\s+/g, ' ')
@@ -190,9 +189,9 @@ export function summarize(row: EventRow): string {
       : `Provider ${row.context.provider.display_name} (${row.entity_id})`
 
   const state =
-    row.type === 'UPDATE'
+    'changes' in row
       ? 'has updated details'
-      : row.type === 'REMOVE'
+      : 'before' in row
         ? 'has no more listed endpoints'
         : row.previously_known === false
           ? 'was discovered with listed endpoints'

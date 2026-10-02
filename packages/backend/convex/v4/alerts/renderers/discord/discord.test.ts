@@ -2,14 +2,16 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { ComponentType } from 'discord-api-types/v10'
 
-import { compare } from '../../events/compare'
-import type { EventRow } from '../../events/query'
-import { curate } from '../curate'
-import { render } from '../render'
+import { compare } from '../../../events/compare'
+import type { EventRow } from '../../../events/query'
+import { curate } from '../../curate'
+import { forDiscord, forFeed } from '../../pipelines'
+import { renderDiscordBatch } from '../../renderers/discord'
+import type { DiscordUrls } from '../../renderers/discord/card'
+import { render as renderPrepared } from '../../renderers/json'
 import { embedCard, componentCard } from './card'
 import { code, escape, field, lifecycleMarker, valueChange } from './display'
 import { delta, fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
-import { renderDiscord } from './index'
 import { priceLabel, pricingChanges, pricingTable } from './pricing'
 
 const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
@@ -1051,3 +1053,15 @@ test('oversized card text logs and respects individual and total Discord limits'
     errors.mockRestore()
   }
 })
+
+function render(row: EventRow) {
+  const alert = forFeed(row)
+
+  return alert === null ? null : renderPrepared(alert)
+}
+
+function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = forDiscord([{ ...row, _id: 'test-event' }])
+
+  return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}

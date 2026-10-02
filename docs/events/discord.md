@@ -33,8 +33,9 @@
 ## Rendering boundaries
 
 - Discord presentation can specialize shared curated facts without changing captured events or `IChange` semantics.
-- Entity cards own entity and field-specific decisions; only `pricing.ts` shares field knowledge across cards.
-- Shared display helpers remain domain-agnostic. Keep medium-specific interpretation inside the Discord renderer.
+- The Alerts pipeline owns eligibility, field selection and batching; cards consume prepared alerts.
+- Entity cards own field layout and lifecycle presentation; `pricing.ts` shares price display across cards.
+- Shared display helpers remain domain-agnostic. Keep Discord markup inside the Discord renderer.
 - Padded inline code gives bounded fields such as pricing a tabular layout; arbitrary long keys need other layouts.
 - Pricing meters have different scales; a shared unit caption would be misleading.
 - Zero discount means no discount: transitions to/from zero render as removal/addition, not percentage deltas.

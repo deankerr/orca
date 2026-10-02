@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test'
 import { compare } from '../events/compare'
 import type { EventRow } from '../events/query'
 import { curate } from './curate'
-import { selectEvent } from './select'
+import { forMonitor } from './pipelines'
 
 function update(kind: 'provider' | 'endpoint', before: unknown, after: unknown): EventRow {
   const [change] = compare({ entity: before }, { entity: after })
@@ -45,7 +45,7 @@ test('shared selection retains Discord field policy without rewriting captured o
     },
   )
 
-  expect(selectEvent(provider)).toMatchObject({
+  expect(forMonitor(provider)).toMatchObject({
     changes: [
       {
         type: 'field_added',
@@ -65,7 +65,7 @@ test('shared selection retains Discord field policy without rewriting captured o
   })
 
   expect(
-    selectEvent(
+    forMonitor(
       update(
         'provider',
         { metadata: { dataPolicy: { training: true } } },
@@ -75,7 +75,7 @@ test('shared selection retains Discord field policy without rewriting captured o
   ).toBeNull()
 
   expect(
-    selectEvent(
+    forMonitor(
       update(
         'endpoint',
         { metadata: { supports_reasoning: false } },
@@ -85,7 +85,7 @@ test('shared selection retains Discord field policy without rewriting captured o
   ).toBeNull()
 
   expect(
-    selectEvent(
+    forMonitor(
       update(
         'endpoint',
         { metadata: { supports_reasoning: false, context_length: 100 } },

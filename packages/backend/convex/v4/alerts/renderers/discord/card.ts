@@ -8,8 +8,8 @@ import {
 import { MessageFlags } from 'discord-api-types/v10'
 import type { RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
-import { entityLogoUrl } from '../../../shared/entityLogo'
-import { truncate } from '../../../shared/utils'
+import { entityLogoUrl } from '../../../../shared/entityLogo'
+import { truncate } from '../../../../shared/utils'
 
 export type Card = RESTPostAPIWebhookWithTokenJSONBody
 export type DiscordUrls = { publicUrl: string; logoOrigin: string }

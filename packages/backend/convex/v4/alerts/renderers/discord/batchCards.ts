@@ -1,5 +1,5 @@
-import type { CuratedEvent } from '../curate'
-import type { BatchBucket } from '../group'
+import type { BatchAlert } from '../../batch'
+import type { EntityAlert } from '../../curate'
 import { colors, truncateContent } from './card'
 import type { Card } from './card'
 import { code, dot } from './display'
@@ -9,7 +9,7 @@ import { pricingChanges } from './pricing'
 
 export type Notification = { message: Card; event_ids: string[] }
 
-function identity(event: CuratedEvent): string {
+function identity(event: EntityAlert): string {
   if (event.entity_kind === 'model') {
     return code(truncateContent(event.context.model.model_id, 500, 'batch.model_id'))
   }
@@ -22,7 +22,7 @@ function identity(event: CuratedEvent): string {
 }
 
 /** One shared field per card; page identities without dropping affected entities or source IDs. */
-export function batchCards(batch: BatchBucket): Notification[] {
+export function batchCards(batch: BatchAlert): Notification[] {
   const [first] = batch.members
 
   if (first === undefined) {

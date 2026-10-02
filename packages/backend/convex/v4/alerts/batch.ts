@@ -1,8 +1,8 @@
-import type { CuratedEvent, FieldChange } from './curate'
+import type { EntityAlert, FieldChange } from './curate'
 
-export type EventBucket = { type: 'event'; event_id: string; event: CuratedEvent }
-export type BatchBucket = { type: 'batch'; change: FieldChange; members: EventBucket[] }
-export type Bucket = EventBucket | BatchBucket
+export type IndividualAlert = { type: 'event'; event_id: string; event: EntityAlert }
+export type BatchAlert = { type: 'batch'; change: FieldChange; members: IndividualAlert[] }
+export type Alert = IndividualAlert | BatchAlert
 
 const BATCH_THRESHOLD = 5
 
@@ -24,10 +24,10 @@ function canonical(value: unknown): unknown {
 }
 
 /** Extract repeated field items; retain the remaining event and its source identity. */
-export function groupEvents(events: EventBucket[]): Bucket[] {
+export function batchAlerts(events: IndividualAlert[]): Alert[] {
   const groups = new Map<
     string,
-    { batch: BatchBucket; occurrences: [EventBucket, number][]; entities: Set<string> }
+    { batch: BatchAlert; occurrences: [IndividualAlert, number][]; entities: Set<string> }
   >()
 
   for (const bucket of events) {
@@ -59,20 +59,20 @@ export function groupEvents(events: EventBucket[]): Bucket[] {
     }
   }
 
-  const extracted = new Map<EventBucket, Map<number, BatchBucket>>()
+  const extracted = new Map<IndividualAlert, Map<number, BatchAlert>>()
 
   for (const { batch, occurrences } of groups.values()) {
     if (batch.members.length >= BATCH_THRESHOLD) {
       for (const [bucket, index] of occurrences) {
-        const items = extracted.get(bucket) ?? new Map<number, BatchBucket>()
+        const items = extracted.get(bucket) ?? new Map<number, BatchAlert>()
         items.set(index, batch)
         extracted.set(bucket, items)
       }
     }
   }
 
-  const result: Bucket[] = []
-  const emitted = new Set<BatchBucket>()
+  const result: Alert[] = []
+  const emitted = new Set<BatchAlert>()
 
   for (const bucket of events) {
     const { event } = bucket

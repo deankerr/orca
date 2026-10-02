@@ -21,7 +21,7 @@ const fieldChange = v.union(
   }),
 )
 
-export const curatedEvent = v.union(
+export const entityAlert = v.union(
   ...event.members.flatMap((member) => {
     const kind = member.fields.entity_kind.value
     const identity = member.omit('change_json', 'type', 'scan_at').extend({
@@ -40,7 +40,7 @@ export const curatedEvent = v.union(
     ]
   }),
 )
-export type CuratedEvent = Infer<typeof curatedEvent>
+export type EntityAlert = Infer<typeof entityAlert>
 export type FieldChange = Infer<typeof fieldChange>
 export type FieldValue = Infer<typeof value>
 type Selection = Record<string, true | readonly string[]>
@@ -297,7 +297,7 @@ function entityValue(
 }
 
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */
-export function curate(row: EventRow): CuratedEvent | null {
+export function curate(row: EventRow): EntityAlert | null {
   const { change_json, type, scan_at, ...subject } = withoutSystemFields(row)
   const identity = { ...subject, observed_at: scan_at }
   const change = Change.parse(JSON.parse(change_json))

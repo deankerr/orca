@@ -1,9 +1,9 @@
 import type { PaginationResult } from 'convex/server'
 import { z } from 'zod'
 
-import { api } from '../../_generated/api'
-import { httpAction } from '../../_generated/server'
-import type { FeedEvent } from './render'
+import { api } from '../_generated/api'
+import { httpAction } from '../_generated/server'
+import type { FeedEvent } from './alerts/renderers/json'
 
 const parameters = z
   .strictObject({
@@ -38,20 +38,20 @@ export const serve = httpAction(async (ctx, request) => {
   let result: PaginationResult<FeedEvent>
   try {
     if (args.entity_kind !== undefined && args.entity_id !== undefined) {
-      result = await ctx.runQuery(api.v4.eventRenderers.feed.byEntity, {
+      result = await ctx.runQuery(api.v4.feed.byEntity, {
         entity_kind: args.entity_kind,
         entity_id: args.entity_id,
         paginationOpts,
       })
     } else if (args.model_id !== undefined) {
-      result = await ctx.runQuery(api.v4.eventRenderers.feed.byModel, {
+      result = await ctx.runQuery(api.v4.feed.byModel, {
         model_id: args.model_id,
         paginationOpts,
       })
     } else if (args.provider_id === undefined) {
-      result = await ctx.runQuery(api.v4.eventRenderers.feed.list, { paginationOpts })
+      result = await ctx.runQuery(api.v4.feed.list, { paginationOpts })
     } else {
-      result = await ctx.runQuery(api.v4.eventRenderers.feed.byProvider, {
+      result = await ctx.runQuery(api.v4.feed.byProvider, {
         provider_id: args.provider_id,
         paginationOpts,
       })

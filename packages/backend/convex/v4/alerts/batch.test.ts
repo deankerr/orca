@@ -2,11 +2,12 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { compare } from '../events/compare'
 import type { EventRow } from '../events/query'
-import type { CuratedEvent, FieldChange } from './curate'
-import { renderDiscordBatch } from './discord'
-import { batchCards } from './discord/batchCards'
-import { groupEvents } from './group'
-import type { Bucket, EventBucket } from './group'
+import { batchAlerts } from './batch'
+import type { Alert, IndividualAlert } from './batch'
+import type { EntityAlert, FieldChange } from './curate'
+import { forDiscord, forFeed, forMonitor } from './pipelines'
+import { renderDiscordBatch } from './renderers/discord'
+import { batchCards } from './renderers/discord/batchCards'
 
 const shared: FieldChange = {
   type: 'set_updated',
@@ -21,7 +22,7 @@ const unique: FieldChange = {
   after: 131_072,
 }
 
-function bucket(index: number, changes: FieldChange[] = [shared]): EventBucket {
+function bucket(index: number, changes: FieldChange[] = [shared]): IndividualAlert {
   const entity_id = `abcdef${index}-endpoint`
 
   return {
@@ -46,7 +47,7 @@ function bucket(index: number, changes: FieldChange[] = [shared]): EventBucket {
   }
 }
 
-function occurrences(buckets: Bucket[]): number {
+function occurrences(buckets: Alert[]): number {
   return buckets.reduce<number>(
     (count, item) =>
       count +
@@ -69,24 +70,24 @@ test('extracts each shared item independently, keeps unique fields, and drops on
     ]),
   )
   const before = JSON.stringify(input)
-  const result = groupEvents(input)
+  const result = batchAlerts(input)
 
   expect(result.map((item) => item.type)).toEqual(['batch', 'batch', 'event'])
   expect(result[2]).toEqual(bucket(0, [unique]))
   expect(occurrences(result)).toBe(11)
   expect(JSON.stringify(input)).toBe(before)
-  expect(groupEvents(input.slice(0, 4))).toEqual(input.slice(0, 4))
-  expect(groupEvents(Array.from({ length: 5 }, () => bucket(0)))).toHaveLength(5)
+  expect(batchAlerts(input.slice(0, 4))).toEqual(input.slice(0, 4))
+  expect(batchAlerts(Array.from({ length: 5 }, () => bucket(0)))).toHaveLength(5)
 })
 
 test('keeps scans, kinds, operations, values, and lifecycle events separate', () => {
   const input = Array.from({ length: 4 }, (_, i) => bucket(i))
   const base = bucket(4)
-  const otherScan: EventBucket = {
+  const otherScan: IndividualAlert = {
     ...base,
     event: { ...base.event, observed_at: '2026-10-01T18:40:00Z' },
   }
-  const provider: EventBucket = {
+  const provider: IndividualAlert = {
     ...base,
     event: {
       type: 'provider_updated',
@@ -97,7 +98,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
       changes: [shared],
     },
   }
-  const arrival: EventBucket = {
+  const arrival: IndividualAlert = {
     ...provider,
     event: {
       type: 'provider_added',
@@ -116,7 +117,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
     bucket(5, [{ ...shared, removed: ['image'] }]),
   ]
 
-  expect(groupEvents(all)).toEqual(all)
+  expect(batchAlerts(all)).toEqual(all)
 
   const numeric = Array.from({ length: 4 }, (_, i) =>
     bucket(i, [{ type: 'field_updated', path: 'context_length', before: 1, after: 2 }]),
@@ -128,7 +129,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   ]
 
   expect(
-    groupEvents([...numeric, ...distinct.map((change, i) => bucket(i + 4, [change]))]),
+    batchAlerts([...numeric, ...distinct.map((change, i) => bucket(i + 4, [change]))]),
   ).toHaveLength(7)
 })
 
@@ -146,7 +147,7 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
     ]),
   )
 
-  expect(groupEvents(records)).toHaveLength(1)
+  expect(batchAlerts(records)).toHaveLength(1)
 
   const rows = Array.from({ length: 5 }, (_, i) =>
     stored(
@@ -155,7 +156,8 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
       { pricing: { meters: { prompt: '2', completion: i === 0 ? '1.001' : '1' } } },
     ),
   )
-  const { notifications, skipped } = renderDiscordBatch(rows, urls)
+  const { alerts, skipped } = forDiscord(rows)
+  const notifications = renderDiscordBatch(alerts, urls)
 
   expect(skipped).toBe(0)
   expect(notifications).toHaveLength(2)
@@ -165,7 +167,7 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
 })
 
 test('batch cards identify all three entity types and page long lists without losing identities', () => {
-  const model: CuratedEvent = {
+  const model: EntityAlert = {
     type: 'model_updated',
     entity_kind: 'model',
     entity_id: 'author/model',
@@ -173,7 +175,7 @@ test('batch cards identify all three entity types and page long lists without lo
     context: { model: { model_id: 'author/model', display_name: 'Model' } },
     changes: [],
   }
-  const provider: CuratedEvent = {
+  const provider: EntityAlert = {
     type: 'provider_updated',
     entity_kind: 'provider',
     entity_id: 'provider',
@@ -182,7 +184,7 @@ test('batch cards identify all three entity types and page long lists without lo
     changes: [],
   }
 
-  const cases: [CuratedEvent, FieldChange, string[]][] = [
+  const cases: [EntityAlert, FieldChange, string[]][] = [
     [model, { ...shared, path: 'input_modalities' }, ['author/model', 'image', 'audio']],
     [
       provider,
@@ -289,7 +291,8 @@ test('provider URL batches pass shared selection and retain individual changes',
       'provider',
     ),
   )
-  const { notifications, skipped } = renderDiscordBatch(rows, urls)
+  const { alerts, skipped } = forDiscord(rows)
+  const notifications = renderDiscordBatch(alerts, urls)
   const [batch, remainder] = notifications
 
   expect(skipped).toBe(0)
@@ -301,6 +304,21 @@ test('provider URL batches pass shared selection and retain individual changes',
   expect(JSON.stringify(remainder?.message)).toContain('headquarters')
   expect(JSON.stringify(remainder?.message)).not.toContain('privacyPolicyURL')
   expect(JSON.stringify(notifications)).not.toContain('training')
+
+  // Monitor keeps individual changes; Feed also keeps its broader field selection.
+  const monitor = rows.map(forMonitor)
+  const feed = rows.map(forFeed)
+
+  expect(monitor).toHaveLength(5)
+  expect(monitor.every((alert) => alert?.type === 'provider_updated')).toBe(true)
+  const [first] = monitor
+
+  expect(
+    first?.type === 'provider_updated' ? first.changes.map((change) => change.path) : [],
+  ).toEqual(['headquarters', 'dataPolicy.privacyPolicyURL'])
+  expect(JSON.stringify(monitor)).not.toContain('training')
+  expect(feed.every((alert) => alert?.type === 'provider_updated')).toBe(true)
+  expect(JSON.stringify(feed)).toContain('training')
 })
 
 test('oversized batch details and identity fields truncate without losing members or UUID prefixes', () => {

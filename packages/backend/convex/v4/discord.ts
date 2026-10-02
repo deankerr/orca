@@ -6,9 +6,10 @@ import { internal } from '../_generated/api'
 import type { Doc, Id } from '../_generated/dataModel'
 import { env, internalAction } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
-import { renderDiscord, renderDiscordBatch } from './eventRenderers/discord'
-import type { Card } from './eventRenderers/discord/card'
-import { dot } from './eventRenderers/discord/display'
+import { forDiscord } from './alerts/pipelines'
+import { renderDiscordBatch } from './alerts/renderers/discord'
+import type { Card } from './alerts/renderers/discord/card'
+import { dot } from './alerts/renderers/discord/display'
 
 /** Operator-only, single-attempt delivery. Repeating the call posts the event again. */
 export const send = internalAction({
@@ -51,12 +52,9 @@ export const sendLatest = internalAction({
       )
 
       for (const event of page.page) {
-        const message = renderDiscord(event, {
-          publicUrl: env.ORCA_PUBLIC_URL,
-          logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
-        })
+        const { alerts } = forDiscord([event])
 
-        if (message === null) {
+        if (alerts.length === 0) {
           skipped += 1
         } else {
           ids.push(event._id)
@@ -106,7 +104,8 @@ async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
     rows.push({ ...row, _id: event_id })
   }
 
-  const { notifications, skipped } = renderDiscordBatch(rows, {
+  const { alerts, skipped } = forDiscord(rows)
+  const notifications = renderDiscordBatch(alerts, {
     publicUrl: env.ORCA_PUBLIC_URL,
     logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
   })
@@ -135,16 +134,17 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     throw new ConvexError({ message: 'Event not found.', event_id })
   }
 
-  const message = renderDiscord(event, {
+  const { alerts } = forDiscord([{ ...event, _id: event_id }])
+  const [notification] = renderDiscordBatch(alerts, {
     publicUrl: env.ORCA_PUBLIC_URL,
     logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
   })
 
-  if (message === null) {
+  if (notification === undefined) {
     return 'skipped'
   }
 
-  await postMessage(message, [event_id])
+  await postMessage(notification.message, notification.event_ids)
   return 'sent'
 }
 
