@@ -1,12 +1,12 @@
 /* oxlint-disable typescript/no-unsafe-type-assertion -- Snapshot tests need only the mocked Objects retrieval seam. */
-import { expect, spyOn, test } from 'bun:test'
+import { spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import type { ActionCtx } from '../../_generated/server'
 import * as objects from '../../objects'
 import { buildSnapshot } from './snapshot'
 
-test('snapshot rejects missing, mismatched and invalid source data before publication', async () => {
+test('snapshot rejects missing, mismatched, invalid and empty source data before publication', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
   const scanId = `scan.${scanAt}.jsonl`
   const entry = {
@@ -35,8 +35,10 @@ test('snapshot rejects missing, mismatched and invalid source data before public
       }),
     )
     await rejects(buildSnapshot(ctx, scanId))
-    source.mockResolvedValue(JSON.stringify(entry))
-    expect(await buildSnapshot(ctx, scanId)).toEqual({ updated_at: scanAt, models: [] })
+    for (const endpoints of [null, []]) {
+      source.mockResolvedValue(JSON.stringify({ ...entry, endpoints }))
+      await rejects(buildSnapshot(ctx, scanId), /Public API scan has no usable endpoints/)
+    }
   } finally {
     source.mockRestore()
   }

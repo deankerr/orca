@@ -47,8 +47,15 @@ export async function buildSnapshot(ctx: ActionCtx, scanId: string): Promise<Orc
     throw new ConvexError(`Public API scan identity mismatch: ${scanId}`)
   }
 
-  return OrcaPublicApiV2Schema.parse({
+  const snapshot = OrcaPublicApiV2Schema.parse({
     updated_at: artifact.scan_at,
     models: transformScanToV2Models(artifact.entries),
   })
+
+  // An empty upstream result must not erase the last usable public snapshot.
+  if (snapshot.models.length === 0) {
+    throw new ConvexError(`Public API scan has no usable endpoints: ${scanId}`)
+  }
+
+  return snapshot
 }
