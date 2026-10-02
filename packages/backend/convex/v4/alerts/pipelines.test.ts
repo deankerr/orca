@@ -3,11 +3,14 @@ import { expect, test } from 'bun:test'
 import { compare } from '../events/compare'
 import { prepare } from '../events/prepare'
 import type { EventRow } from '../events/query'
+import { renderPage } from '../feed'
 import type { Scan } from '../scan/extract'
 import { curate } from './curate'
-import { renderDiscord } from './discord'
-import { render, renderPage } from './render'
-import type { FeedEvent } from './render'
+import { forDiscord, forFeed } from './pipelines'
+import { renderDiscordBatch } from './renderers/discord'
+import type { DiscordUrls } from './renderers/discord/card'
+import { render as renderPrepared } from './renderers/json'
+import type { FeedEvent } from './renderers/json'
 
 const context = {
   model: { model_id: 'author/model', display_name: 'Model' },
@@ -450,3 +453,15 @@ test('invalid event envelopes and incomplete selected changes cannot disappear d
     expect(() => render({ ...row, change_json: JSON.stringify(payload) })).toThrow()
   }
 })
+
+function render(row: EventRow) {
+  const alert = forFeed(row)
+
+  return alert === null ? null : renderPrepared(alert)
+}
+
+function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = forDiscord([{ ...row, _id: 'test-event' }])
+
+  return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}

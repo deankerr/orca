@@ -2,7 +2,7 @@
 
 import { splitPath } from '@orca/backend/convex/shared/formatters'
 import { truncate } from '@orca/backend/convex/shared/utils'
-import type { FieldChange } from '@orca/backend/convex/v4/eventRenderers/curate'
+import type { FieldChange } from '@orca/backend/convex/v4/alerts/curate'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'

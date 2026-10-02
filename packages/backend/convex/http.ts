@@ -7,7 +7,7 @@ import {
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
 import { isNonEmptyString } from './shared/utils'
-import { serve as serveFeed } from './v4/eventRenderers/http'
+import { serve as serveFeed } from './v4/feedHttp'
 
 const http = httpRouter()
 

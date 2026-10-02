@@ -5,11 +5,13 @@ import { rejects } from 'node:assert/strict'
 import type { RegisteredMutation } from 'convex/server'
 
 import type { MutationCtx } from '../../_generated/server'
+import { forDiscord, forFeed } from '../alerts/pipelines'
+import { renderDiscordBatch } from '../alerts/renderers/discord'
+import type { DiscordUrls } from '../alerts/renderers/discord/card'
+import { render as renderPrepared } from '../alerts/renderers/json'
 import * as endpoints from '../catalog/endpoints/ingest'
 import * as models from '../catalog/models/ingest'
 import * as providers from '../catalog/providers/ingest'
-import { renderDiscord } from '../eventRenderers/discord'
-import { render } from '../eventRenderers/render'
 import * as listings from '../history/listings/ingest'
 import { commitIngestion } from '../routine'
 import type { Endpoint, Model, Provider } from '../scan/entities'
@@ -350,3 +352,15 @@ test('baseline, historical models, discoveries and repeated returns survive dela
     expect(rows(table)[0]?.from_scan_at).toBeUndefined()
   }
 })
+
+function render(row: EventRow) {
+  const alert = forFeed(row)
+
+  return alert === null ? null : renderPrepared(alert)
+}
+
+function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = forDiscord([{ ...row, _id: 'test-event' }])
+
+  return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}

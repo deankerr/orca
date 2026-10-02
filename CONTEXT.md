@@ -76,3 +76,14 @@ the projection evolves.
 **Identity context**:
 The identifying facts accompanying an entity event, including display names and the model, provider,
 and endpoint identities relevant to it.
+
+**Field change**:
+An addition, removal or update to one entity field, including changes to a string set's membership.
+
+**Alert**:
+Content prepared from entity events for a consumer, before presentation as a message, card or feed entry.
+Consumers can apply different field selection, filtering and batching policies to the same events.
+
+**Batch alert**:
+One identical field change shared by multiple entities at the same observation, together with their
+identities and source events. Other field changes remain in individual alerts.

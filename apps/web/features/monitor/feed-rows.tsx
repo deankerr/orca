@@ -1,15 +1,15 @@
 'use client'
 
-import type { CuratedEvent } from '@orca/backend/convex/v4/eventRenderers/curate'
+import type { EntityAlert } from '@orca/backend/convex/v4/alerts/curate'
 import { formatDistanceToNow } from 'date-fns'
 
 import { EntityEventCard } from './event-renderers'
 
 type MonitorFeedRow =
   | { kind: 'header'; key: string; observedAt: string }
-  | { kind: 'event'; key: string; event: CuratedEvent }
+  | { kind: 'event'; key: string; event: EntityAlert }
 
-export function flattenMonitorFeed(events: CuratedEvent[]): MonitorFeedRow[] {
+export function flattenMonitorFeed(events: EntityAlert[]): MonitorFeedRow[] {
   const rows: MonitorFeedRow[] = []
   let previousTime: string | undefined
 

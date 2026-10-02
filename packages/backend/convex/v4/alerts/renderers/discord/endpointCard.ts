@@ -1,16 +1,15 @@
-import type { CuratedEvent, FieldChange, FieldValue } from '../curate'
+import type { EntityAlert, FieldChange, FieldValue } from '../../curate'
 import { colors, embedCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { escape, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldName, fieldValue } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
-/** Endpoint identity, field selection, and lifecycle facts belong to this card alone. */
-export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
-  if (event.entity_kind !== 'endpoint') {
-    return null
-  }
-
+/** Endpoint identity, field layout, and lifecycle presentation belong to this card. */
+export function endpointCard(
+  event: Extract<EntityAlert, { entity_kind: 'endpoint' }>,
+  urls: DiscordUrls,
+): Card {
   const { model, provider, endpoint } = event.context
   const prefix = event.entity_id.slice(0, 6)
   const url = gridUrl(model.model_id, urls, prefix)
@@ -34,10 +33,6 @@ export function endpointCard(event: CuratedEvent, urls: DiscordUrls): Card | nul
       : 'after' in event
         ? endpointDetails(event.after)
         : []
-
-  if ('changes' in event && body.length === 0) {
-    return null
-  }
 
   return embedCard([heading, ...body].filter(Boolean).join('\n\n'), {
     author: { name: `${model.model_id} [${prefix}]`, url, iconURL: logoUrl(model.model_id, urls) },

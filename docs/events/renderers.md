@@ -1,25 +1,29 @@
-# Renderers
+# Alerts and renderers
 
-- `v4/events` supplies captured facts; `v4/eventRenderers` owns shared curation and phrasing for consumers.
-- Keeping experimental renderers together lets the feed, Grid, and Discord reuse interpretation as it develops.
-- `render(event)` and `renderPage(page)` interpret captured facts independently of current Catalog state.
-- JSON combines structured changes with plain-text `summary` and `details`; products choose markup and navigation.
-- `selectEvent` shares Discord/Monitor event eligibility and field selection after curation and pricing filtering.
-- Provider URL selection and endpoint reasoning exclusion live there; renderers consume the selected changes.
-- Monitor uses native reactive pagination, with model/provider activity scoped to captured relationships.
-- Medium-specific renderers may customize field labels and value presentation while sharing the projection schema.
-- Presentation rules do not rewrite captured IChange operations or shared curated changes.
-- Discord entity cards own field-specific rules; `discord/fields` supplies generic display and `discord/pricing` prices.
-- Entity cards consume one curated event; Discord batch cards collect one identical field change across entities.
-- Batch fingerprints normalize object keys and string-set order; different operations and values stay separate.
-- Model introductions and related endpoint additions remain separate events.
-- Reading each event as a sentence exposes ambiguity in the structured shape and helps refine it.
-- Lifecycle text describes an offering and selected useful facts; departure details use "when last observed".
+- `v4/events` captures and stores entity events; `v4/alerts` prepares consumer-specific content from those facts.
+- Alerts are presentation-independent; messages, cards and feed entries are rendered outputs.
+- Pure steps compose through ordinary function calls in `alerts/pipelines.ts`; there is no pipeline framework.
+- `curate` interprets stored changes using upstream field names, independently of current Catalog state.
+- `isEligible` applies the existing coarse pricing policy; `select` applies Discord/Monitor field selection.
+- `forDiscord` curates, filters, selects and batches; eligibility is checked before extracting repeated fields.
+- `forMonitor` curates, filters and selects each event independently, without batching.
+- `forFeed` curates and filters, retaining its broader field set and existing JSON contract.
+- `batchAlerts` extracts identical field items into batches, retains other fields and drops empty updates.
+- Each batch contains one field change and the affected identities and source event IDs.
+- Fingerprints normalize object keys and string-set order within one observation and entity kind.
+- `alerts/numbers.ts` shares exact decimal comparisons and formatting between policies and renderers.
 
-## Composition and delivery
+## Presentation and delivery
 
-- `groupEvents` composes selected events into single-field batches and remainders; it contains no Discord markup.
-- `renderDiscordBatch` owns selection, composition and card rendering; delivery owns reads, pacing and posting.
-- Batching is currently Discord-only; Monitor pages can split scans and must not determine batch membership.
-- Discord scope, preview experiments, and delivery proposals live in `discord.md`.
-- Delivery makes a permanent commitment: recipients retain sent messages while projected history can evolve.
+- Renderers accept prepared alerts; they never repeat curation, eligibility, field selection or batching.
+- `renderers/json.ts` adds plain-text summaries and details to individual alerts.
+- Discord entity cards own field layout and lifecycle presentation; batch cards paginate affected identities.
+- Shared display helpers supply Discord markup; `discord/pricing.ts` supplies price presentation.
+- Monitor's React components consume prepared entity alerts; its pipeline intentionally omits batching.
+- `v4/feed.ts` and `v4/monitor.ts` own queries and pagination; filtering preserves native continuation cursors.
+- `v4/feedHttp.ts` owns HTTP parameters and continuation URLs; the public HTTP routes stay unchanged.
+- `v4/eventRenderers/feed.ts` preserves the old public Convex query paths as compatibility exports.
+- `v4/discord.ts` owns retrieval, pacing and posting; its named pipeline remains pure.
+- Renderers truncate oversized display text and emit `console.error` diagnostics; source alerts remain unchanged.
+- Discord delivery policy and accepted limitations live in `discord.md`.
+- Delivery makes a permanent commitment: recipients retain messages while projected history can evolve.

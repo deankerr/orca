@@ -1,15 +1,14 @@
-import type { CuratedEvent, FieldValue } from '../curate'
+import type { EntityAlert, FieldValue } from '../../curate'
 import { colors, embedCard, componentCard, gridUrl, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape, field, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
 /** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
-export function modelCard(event: CuratedEvent, urls: DiscordUrls): Card | null {
-  if (event.entity_kind !== 'model') {
-    return null
-  }
-
+export function modelCard(
+  event: Extract<EntityAlert, { entity_kind: 'model' }>,
+  urls: DiscordUrls,
+): Card {
   const { model } = event.context
   const name = model.display_name
   const slug = model.model_id

@@ -1,4 +1,4 @@
-import type { CuratedEvent, FieldChange } from './curate'
+import type { EntityAlert, FieldChange } from './curate'
 import { compareNumbers, relativeChangeAtLeast } from './numbers'
 
 /**
@@ -11,7 +11,7 @@ import { compareNumbers, relativeChangeAtLeast } from './numbers'
  * ponytail: suppress the whole event, including any coincident metadata edits.
  * Revisit field-level filtering when missing those edits warrants the complexity.
  */
-export function shouldRender(event: CuratedEvent): boolean {
+export function isEligible(event: EntityAlert): boolean {
   if (event.type !== 'endpoint_updated') {
     return true
   }

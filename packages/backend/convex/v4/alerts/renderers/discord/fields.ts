@@ -1,6 +1,6 @@
-import type { FieldChange, FieldValue } from '../curate'
-import { fact } from '../facts'
-import { formatNumber, relativeChange } from '../numbers'
+import type { FieldChange, FieldValue } from '../../curate'
+import { fact } from '../../facts'
+import { formatNumber, relativeChange } from '../../numbers'
 import { code, dot, field, valueChange } from './display'
 
 /** Raw path presentation; callers own any field-specific labels and value formatting. */

@@ -5,7 +5,7 @@ import { deepEqual, equal } from 'node:assert/strict'
 import type { PaginationOptions, PaginationResult } from 'convex/server'
 
 import type { QueryCtx } from '../_generated/server'
-import type { CuratedEvent } from './eventRenderers/curate'
+import type { EntityAlert } from './alerts/curate'
 import { compare } from './events/compare'
 import type { EventRow } from './events/query'
 import { feed, models } from './monitor'
@@ -16,7 +16,7 @@ const handler = (
     _handler: (
       ctx: QueryCtx,
       args: { scope: MonitorScope; paginationOpts: PaginationOptions },
-    ) => Promise<PaginationResult<CuratedEvent>>
+    ) => Promise<PaginationResult<EntityAlert>>
   }
 )._handler
 

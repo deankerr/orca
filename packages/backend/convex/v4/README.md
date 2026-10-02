@@ -3,8 +3,8 @@
 Catalog retains cumulative entity knowledge; Pricing, Listings and Events retain observation history;
 current Stats publishes the latest endpoint readings.
 
-Events is an internal source for [`eventRenderers/`](../../../../docs/events/renderers.md). Renderers
-own consumer-facing interpretation and phrasing; products compose them with retrieval and delivery.
+Events is an internal source for [`alerts/`](../../../../docs/events/renderers.md). Alerts prepares
+consumer-specific content through pure pipelines; renderers supply presentation. Products own retrieval and delivery.
 
 ## Design invariants
 

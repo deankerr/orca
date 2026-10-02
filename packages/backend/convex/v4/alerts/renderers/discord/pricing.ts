@@ -1,5 +1,5 @@
-import type { FieldChange, FieldValue } from '../curate'
-import { formatPercent, formatPrice } from '../numbers'
+import type { FieldChange, FieldValue } from '../../curate'
+import { formatPercent, formatPrice } from '../../numbers'
 import { priceMeters as meters } from '../pricing'
 import { code, field, valueChange } from './display'
 import { delta, fieldChange, fieldName, fieldValue } from './fields'
