@@ -30,11 +30,7 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
-  readonly DISCORD_APPLICATION_ID: string | undefined;
-  readonly DISCORD_BOT_TOKEN: string;
-  readonly DISCORD_PUBLIC_KEY: string | undefined;
   readonly ENTITY_LOGO_SERVICE_ORIGIN: string;
-  readonly ORCA_CRAWL_CRON_ENABLED: "true" | "false" | undefined;
   readonly ORCA_DISCORD_PREVIEW_ENABLED: "true" | "false" | undefined;
   readonly ORCA_DISCORD_WEBHOOK_URL: string | undefined;
   readonly ORCA_OBJECTS_API_KEY: string | undefined;

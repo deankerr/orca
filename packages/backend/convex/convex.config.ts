@@ -19,8 +19,6 @@ const app = defineApp({
     /** R2 bucket for artifact reads and writes; required whenever accessing R2-backed artifacts. */
     ORCA_R2_BUCKET: v.optional(v.string()),
 
-    /** Legacy production bot credential; intentionally defaults to an empty string in dev and previews. */
-    DISCORD_BOT_TOKEN: v.string(),
     /** Private preview channel webhook for V4 event notifications. */
     ORCA_DISCORD_WEBHOOK_URL: v.optional(v.string()),
     /** Pre-alpha live broadcasts only; absent/false disables scheduling and queued batch starts. */
@@ -29,14 +27,8 @@ const app = defineApp({
     ORCA_PUBLIC_URL: v.string(),
     /** Deployed logo-service origin for publicly reachable icons in Discord messages. */
     ENTITY_LOGO_SERVICE_ORIGIN: v.string(),
-    /** Legacy Discord application ID required when registering slash commands. */
-    DISCORD_APPLICATION_ID: v.optional(v.string()),
-    /** Ed25519 key for verifying Discord interactions; an absent or empty key rejects requests. */
-    DISCORD_PUBLIC_KEY: v.optional(v.string()),
 
     // These controls enable their entry points only for 'true'; absent/false disables them.
-    /** Enables the hourly legacy snapshot crawl and its downstream materialization. */
-    ORCA_CRAWL_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables V4's scheduled entry point; direct run calls and existing continuations bypass it. */
     ORCA_V4_INGEST_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */

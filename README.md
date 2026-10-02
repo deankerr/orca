@@ -14,7 +14,7 @@ That history powers a few things:
 - **Monitor** — a change feed showing field-level diffs between snapshots, surfacing model, endpoint, and provider activity that is otherwise invisible. (`apps/web/features/monitor/`)
 - **Entity Overview** — a sheet with model or provider details, opened from the grid and Monitor. (`apps/web/features/entity-overview/`)
 - **Pricing History** — a per-model overlay of provider prices over time. (`apps/web/features/pricing-history/`)
-- **Discord alerts (legacy)** — production-only subscriptions to model id patterns. This integration is deprecated and is not provisioned for development or previews. (`packages/backend/convex/alerts/`, `packages/backend/convex/discord/`)
+- **Discord preview** — V4 events rendered to a single webhook target. (`packages/backend/convex/v4/discord.ts`)
 - **Public API** — an HTTP endpoint exposing the curated model/endpoint data. See [Public API](#public-api) below.
 
 It's aimed at people who work with OpenRouter and LLMs directly — the kind of user who reads context lengths, quantization, and reasoning-token support closely and copies model slugs straight into their code. The presentation favors technical precision over simplification.
@@ -23,11 +23,11 @@ It's aimed at people who work with OpenRouter and LLMs directly — the kind of 
 
 Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage, scheduling, scan ingestion, change tracking, and the public API.
 
-| Workspace          | Role                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `apps/logos`       | Cloudflare Worker serving generated provider and model logo assets                          |
-| `apps/web`         | Next.js 16 / React 19 frontend — data grid, monitor, overviews, pricing history, API docs   |
-| `packages/backend` | Convex backend — schema, crons, snapshot pipeline, change tracking, Discord bot, public API |
+| Workspace          | Role                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `apps/logos`       | Cloudflare Worker serving generated provider and model logo assets                           |
+| `apps/web`         | Next.js 16 / React 19 frontend — data grid, monitor, overviews, pricing history, API docs    |
+| `packages/backend` | Convex backend — schema, crons, scan ingestion, change tracking, Discord webhook, public API |
 
 ### Data pipeline
 
@@ -35,7 +35,7 @@ Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage,
 2. **Project** — V4 ingestion derives Catalog, Pricing, Listings, and current Stats. These power the grid, entity overview, and pricing history.
 3. **Interpret changes** — V4 Events retains entity-level changes for accepted scan pairs; event renderers turn that history into structured changes and natural-language items for products.
 
-Migration is ongoing: Monitor, Discord alerts, and the V2 public API still use legacy snapshot-derived tables; V3 queries remain available during the compatibility window. See [V4](packages/backend/convex/v4/README.md) and [Events](docs/events/README.md) for the current pipeline.
+Monitor and Discord use V4 Events. The frozen V2 public API independently consumes immutable scans through Objects. Analytics and top-apps collection remain independent workflows.
 
 ### Stack
 
@@ -49,7 +49,7 @@ A preview HTTP API exposing curated model and endpoint data as JSON:
 GET https://orca.orb.town/api/preview/v2/models
 ```
 
-The web route rewrites to the cached Convex HTTP action (`packages/backend/convex/public_api/v2/`). It's an explicit preview — the response shape may change. The `/api` page on the site documents the current response.
+The web route rewrites to the cached Convex HTTP action (`packages/backend/convex/public_api/v2/`). Its V2 response contract is frozen for compatibility. The `/api` page on the site documents the current response.
 
 ## Development
 

@@ -3,12 +3,7 @@ import path from 'node:path'
 import { Glob } from 'bun'
 import { z } from 'zod'
 
-/**
- * Mirrors the producer contract in
- * packages/backend/convex/snapshots/bundles/format.ts.
- *
- * Keep the definitions aligned until the format has a permanent shared-package home.
- */
+/** Retained reader contract for historical model-endpoints-v1 archive files. */
 export const ModelEndpointsV1Schema = z.object({
   bundle_format: z.literal('model-endpoints-v1'),
   crawl_at: z.iso.datetime(),

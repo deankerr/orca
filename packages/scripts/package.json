@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "bundle-analysis": "bun run bundle-analysis/index.ts",
-    "change-document": "bun run change-document/index.ts",
     "json-profile": "bun run json-profile/index.ts"
   },
   "dependencies": {

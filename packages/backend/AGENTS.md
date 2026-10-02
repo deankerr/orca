@@ -4,11 +4,10 @@
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
 - `v4/` owns current ingestion and product data, sharing `objects/` and `scan/`.
-- `projections/` supports the local change-document script.
 - V4 architecture, conventions and operating commands live in `convex/v4/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
 - Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
 - `convex/public_api/` independently maintains a frozen external contract; follow its local instructions. Its compatibility semantics must not shape V4.
-- other module dirs are "legacy"
+- `workflows/` independently collects analytics and top-apps data through Objects.
 
 ### Concepts
 
@@ -17,7 +16,9 @@
 - These processes are independent, and a failure in one never impacts the other.
 - Upstream schemas change without warning, which may pause generation of views until manually unblocked.
 
-### Legacy `snapshot_crawl_archives` data
+### Retained legacy production data
+
+- Legacy code and table schemas are removed. Keep production tables and archive blobs until a separate deletion decision; schema removal is not data cleanup.
 
 - `crawl_id` Timestamp string identifying a snapshot (sortable, parseable to Date). Uniquely identifies archive bundles.
 - All non-model/endpoints data in early bundles (apps, analytics etc.) has been copied into cold storage.

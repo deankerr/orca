@@ -1,49 +1,16 @@
 import { httpRouter } from 'convex/server'
 
-import { env, httpAction } from './_generated/server'
-import { handleInteraction } from './discord/interactions'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
-import { isNonEmptyString } from './shared/utils'
 import { serve as serveFeed } from './v4/feedHttp'
 
 const http = httpRouter()
 
 http.route({ path: '/events/feed', method: 'GET', handler: serveFeed })
 
-// Discord bot interactions endpoint
-http.route({
-  path: '/discord/interactions',
-  method: 'POST',
-  handler: httpAction(async (ctx, req) => {
-    const publicKey = env.DISCORD_PUBLIC_KEY
-
-    if (!isNonEmptyString(publicKey)) {
-      console.error('[discord:interactions] DISCORD_PUBLIC_KEY not configured')
-      return new Response('Server configuration error', { status: 500 })
-    }
-
-    const signature = req.headers.get('X-Signature-Ed25519')
-    const timestamp = req.headers.get('X-Signature-Timestamp')
-
-    if (!isNonEmptyString(signature) || !isNonEmptyString(timestamp)) {
-      return new Response('Missing signature headers', { status: 401 })
-    }
-
-    const body = await req.text()
-
-    return await handleInteraction(ctx, {
-      body,
-      signature,
-      timestamp,
-      publicKey,
-    })
-  }),
-})
-
-// Rebuilds the v2 payload from catalog views on every request. See public_api/v2/http.ts.
+// Rebuilds the v2 payload from scans on every request. See public_api/v2/http.ts.
 http.route({
   path: '/public-api-preview/v2',
   method: 'GET',
