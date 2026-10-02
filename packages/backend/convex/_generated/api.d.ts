@@ -101,6 +101,7 @@ import type * as v4_catalog_providers_table from "../v4/catalog/providers/table.
 import type * as v4_clock from "../v4/clock.js";
 import type * as v4_discord from "../v4/discord.js";
 import type * as v4_eventRenderers_curate from "../v4/eventRenderers/curate.js";
+import type * as v4_eventRenderers_discord_batchCards from "../v4/eventRenderers/discord/batchCards.js";
 import type * as v4_eventRenderers_discord_card from "../v4/eventRenderers/discord/card.js";
 import type * as v4_eventRenderers_discord_display from "../v4/eventRenderers/discord/display.js";
 import type * as v4_eventRenderers_discord_endpointCard from "../v4/eventRenderers/discord/endpointCard.js";
@@ -112,6 +113,7 @@ import type * as v4_eventRenderers_discord_providerCard from "../v4/eventRendere
 import type * as v4_eventRenderers_facts from "../v4/eventRenderers/facts.js";
 import type * as v4_eventRenderers_feed from "../v4/eventRenderers/feed.js";
 import type * as v4_eventRenderers_filter from "../v4/eventRenderers/filter.js";
+import type * as v4_eventRenderers_group from "../v4/eventRenderers/group.js";
 import type * as v4_eventRenderers_http from "../v4/eventRenderers/http.js";
 import type * as v4_eventRenderers_numbers from "../v4/eventRenderers/numbers.js";
 import type * as v4_eventRenderers_pricing from "../v4/eventRenderers/pricing.js";
@@ -262,6 +264,7 @@ declare const fullApi: ApiFromModules<{
   "v4/clock": typeof v4_clock;
   "v4/discord": typeof v4_discord;
   "v4/eventRenderers/curate": typeof v4_eventRenderers_curate;
+  "v4/eventRenderers/discord/batchCards": typeof v4_eventRenderers_discord_batchCards;
   "v4/eventRenderers/discord/card": typeof v4_eventRenderers_discord_card;
   "v4/eventRenderers/discord/display": typeof v4_eventRenderers_discord_display;
   "v4/eventRenderers/discord/endpointCard": typeof v4_eventRenderers_discord_endpointCard;
@@ -273,6 +276,7 @@ declare const fullApi: ApiFromModules<{
   "v4/eventRenderers/facts": typeof v4_eventRenderers_facts;
   "v4/eventRenderers/feed": typeof v4_eventRenderers_feed;
   "v4/eventRenderers/filter": typeof v4_eventRenderers_filter;
+  "v4/eventRenderers/group": typeof v4_eventRenderers_group;
   "v4/eventRenderers/http": typeof v4_eventRenderers_http;
   "v4/eventRenderers/numbers": typeof v4_eventRenderers_numbers;
   "v4/eventRenderers/pricing": typeof v4_eventRenderers_pricing;

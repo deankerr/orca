@@ -66,15 +66,18 @@ function endpointChanges(changes: FieldChange[]): string[] {
 
           return group === label
         })
-        .map((change) =>
-          fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue }),
-        ),
+        .map(endpointFieldChange),
     })),
   ].filter((group) => group.rows.length > 0)
 
   return groups.map(({ label, rows }) =>
     groups.length > 1 ? `◇ **${label}**\n${rows.join('\n')}` : rows.join('\n\n'),
   )
+}
+
+/** Keep endpoint labels and units consistent across individual and batch cards. */
+export function endpointFieldChange(change: FieldChange): string {
+  return fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue })
 }
 
 function endpointDetails(facts: Record<string, FieldValue>): string[] {

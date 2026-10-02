@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, spyOn, test } from 'bun:test'
 
 import { ComponentType } from 'discord-api-types/v10'
 
@@ -6,6 +6,7 @@ import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/query'
 import { curate } from '../curate'
 import { render } from '../render'
+import { embedCard, componentCard } from './card'
 import { code, escape, field, lifecycleMarker, valueChange } from './display'
 import { delta, fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
 import { renderDiscord } from './index'
@@ -409,7 +410,7 @@ test('Discord preserves absence, nulls and set changes, escapes markup, and skip
   ).toBeNull()
 })
 
-test('Discord lifecycle embeds use captured facts and oversized updates fail before delivery', () => {
+test('Discord lifecycle embeds use captured facts and oversized updates truncate', () => {
   for (const kind of ['model', 'endpoint'] as const) {
     for (const type of ['ADD', 'REMOVE'] as const) {
       const event = {
@@ -477,22 +478,23 @@ test('Discord lifecycle embeds use captured facts and oversized updates fail bef
     }
   }
 
-  expect(() =>
-    renderDiscord(
-      row(
-        { metadata: { supported_parameters: [] } },
-        {
-          metadata: {
-            supported_parameters: Array.from(
-              { length: 20 },
-              (_, index) => `${index}${'x'.repeat(500)}`,
-            ),
-          },
+  const oversized = renderDiscord(
+    row(
+      { metadata: { supported_parameters: [] } },
+      {
+        metadata: {
+          supported_parameters: Array.from(
+            { length: 20 },
+            (_, index) => `${index}${'x'.repeat(500)}`,
+          ),
         },
-      ),
-      urls,
+      },
     ),
-  ).toThrow()
+    urls,
+  )
+
+  expect(oversized?.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096)
+  expect(oversized?.embeds?.[0]?.description).toEndWith('...')
 })
 
 test('entity templates use captured model and endpoint facts with one timestamp and safe links', () => {
@@ -579,7 +581,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(endpointText).not.toContain('max_completion_tokens')
 })
 
-test('prose updates use embeds, preserve warning facts, and reject aggregate overflow', () => {
+test('prose updates use embeds, preserve warning facts, and truncate aggregate overflow', () => {
   const event: EventRow = {
     ...row(
       { metadata: { description: 'Old.', warning_message: null } },
@@ -621,7 +623,10 @@ test('prose updates use embeds, preserve warning facts, and reject aggregate ove
     },
   }
 
-  expect(() => renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)).toThrow()
+  const oversized = renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)
+
+  expect(oversized?.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096)
+  expect(oversized?.embeds?.[0]?.description).toEndWith('...')
 })
 
 test('provider discoveries are announced and departures only announce endpoint absence', () => {
@@ -993,5 +998,56 @@ test('pricing label widths include external addition and removal markers', () =>
 
     expect(new Set(widths).size).toBe(1)
     expect(lines[1]).toStartWith(change === 'added' ? '+ `cache_read:`' : '− ~~`cache_read:`~~')
+  }
+})
+
+test('oversized card text logs and respects individual and total Discord limits', () => {
+  const errors = spyOn(console, 'error').mockImplementation(() => {})
+
+  try {
+    const message = embedCard('x'.repeat(10_000), {
+      author: { name: 'a'.repeat(1000), url: urls.publicUrl, iconURL: urls.logoOrigin },
+      footer: { text: 'f'.repeat(3000), iconURL: urls.logoOrigin },
+      timestamp: '2026-10-01T00:00:00Z',
+      color: 0,
+    })
+    const embed = message.embeds?.[0]
+
+    expect(embed?.author?.name).toHaveLength(256)
+    expect(embed?.footer?.text).toHaveLength(2048)
+    expect(
+      (embed?.author?.name.length ?? 0) +
+        (embed?.footer?.text.length ?? 0) +
+        (embed?.description?.length ?? 0),
+    ).toBe(6000)
+    expect(embed?.description).toEndWith('...')
+
+    const component = componentCard('x'.repeat(10_000), {
+      color: 0,
+      thumbnail: { url: urls.logoOrigin, description: 'a'.repeat(2000) },
+    })
+
+    const container = component.components?.[0]
+
+    if (container?.type !== ComponentType.Container) {
+      throw new Error('Expected a container')
+    }
+
+    const [section] = container.components
+
+    if (section?.type !== ComponentType.Section) {
+      throw new Error('Expected a section')
+    }
+
+    expect(section.components[0]?.content).toHaveLength(3900)
+    expect(
+      section.accessory.type === ComponentType.Thumbnail ? section.accessory.description : null,
+    ).toHaveLength(1024)
+    expect(errors).toHaveBeenCalledTimes(5)
+    expect(
+      errors.mock.calls.every(([message]) => message === '[v4:discord] truncated card content'),
+    ).toBe(true)
+  } finally {
+    errors.mockRestore()
   }
 })
