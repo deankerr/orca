@@ -68,7 +68,7 @@ const choice = v.object({ id: v.string(), name: v.string() })
 /** Only models with observed endpoints; history keeps departed models selectable. */
 export const models = query({
   args: { paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(choice),
+  returns: paginationResultValidator(choice.extend({ permaslug: v.string(), variant: v.string() })),
   handler: async (ctx, { paginationOpts }) => {
     const result = await ctx.db
       .query(V4_CURRENT_MODELS_TABLE)
@@ -86,7 +86,14 @@ export const models = query({
           .withIndex('by_model_id_and_scan_at', (q) => q.eq('model_id', row.model_id))
           .first()
 
-        return endpoint === null ? null : { id: row.model_id, name: row.display_name }
+        return endpoint === null
+          ? null
+          : {
+              id: row.model_id,
+              name: row.display_name,
+              permaslug: row.permaslug,
+              variant: row.variant,
+            }
       }),
     )
 

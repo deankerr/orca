@@ -1,9 +1,8 @@
 import { api } from '@orca/backend/convex/_generated/api'
 import { compareItems, rankings, rankItem } from '@tanstack/match-sorter-utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { usePaginatedQuery } from 'convex-helpers/react/cache'
 import { CheckIcon } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import {
@@ -17,6 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+
+import { useEntityChoices } from './use-entity-choices'
 
 type EntityItem = {
   name: string
@@ -156,24 +157,11 @@ function EntityCombobox({
   )
 }
 
-function useEntityChoices(query: typeof api.v4.monitor.models) {
-  const result = usePaginatedQuery(query, {}, { initialNumItems: 1000 })
-  const { status, loadMore } = result
-
-  useEffect(() => {
-    if (status === 'CanLoadMore') {
-      loadMore(1000)
-    }
-  }, [status, loadMore])
-
-  return result
-}
-
 export function ModelCombobox({
   placeholder = 'Filter by model...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { results: models, status } = useEntityChoices(api.v4.monitor.models)
+  const { results: models, status } = useEntityChoices(api.v4.monitor.models, {})
 
   return (
     <EntityCombobox
@@ -191,7 +179,7 @@ export function ProviderCombobox({
   placeholder = 'Filter by provider...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { results: providers, status } = useEntityChoices(api.v4.monitor.providers)
+  const { results: providers, status } = useEntityChoices(api.v4.monitor.providers, {})
 
   return (
     <EntityCombobox

@@ -151,7 +151,12 @@ test('Monitor routes activity scopes by captured identity and preserves native p
 
 test('Monitor model choices require endpoint history and exclude OpenRouter virtual models', async () => {
   const rows = ['01-ai/yi', 'openrouter/auto', 'author/current', 'author/departed'].map(
-    (model_id) => ({ model_id, display_name: model_id }),
+    (model_id) => ({
+      model_id,
+      display_name: model_id,
+      permaslug: `${model_id}-version`,
+      variant: 'standard',
+    }),
   )
 
   const checked: string[] = []
@@ -199,7 +204,12 @@ test('Monitor model choices require endpoint history and exclude OpenRouter virt
 
   deepEqual(result, {
     ...page,
-    page: rows.slice(2).map((row) => ({ id: row.model_id, name: row.display_name })),
+    page: rows.slice(2).map((row) => ({
+      id: row.model_id,
+      name: row.display_name,
+      permaslug: row.permaslug,
+      variant: row.variant,
+    })),
   })
 
   deepEqual(checked, ['01-ai/yi', 'author/current', 'author/departed'])
