@@ -34,6 +34,6 @@ ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRo
 
 - `apps/web/features/pricing-history/` Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
 
-- `packages/backend/convex/alerts/` Users can subscribe to model id patterns, providing a personalized version of Monitor via Discord. No frontend component.
+- `packages/backend/convex/v4/alerts/` Curates V4 events for Monitor, feeds and the Discord webhook preview.
 
 - `packages/backend/convex/public_api/v2/` Public HTTP API providing programmatic access to ORCA's curated data.

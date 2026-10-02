@@ -28,21 +28,6 @@ export default defineConfig({
         'unicorn/no-useless-undefined': 'off',
       },
     },
-    {
-      // legacy snapshots workflows
-      files: ['packages/backend/convex/snapshots/**/*.{ts,tsx}'],
-      rules: {
-        'typescript/no-explicit-any': 'off',
-        'typescript/no-non-null-assertion': 'off',
-        'typescript/no-unsafe-argument': 'off',
-        'typescript/no-unsafe-assignment': 'off',
-        'typescript/no-unsafe-member-access': 'off',
-        'typescript/no-unsafe-type-assertion': 'off',
-        'typescript/prefer-nullish-coalescing': 'off',
-        'typescript/strict-boolean-expressions': 'off',
-        'unicorn/no-array-sort': 'off',
-      },
-    },
   ],
   rules: {
     // standard ultracite overrides

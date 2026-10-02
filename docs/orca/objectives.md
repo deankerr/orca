@@ -5,14 +5,15 @@ Remaining objectives, unordered:
 - [x] Integrate Grid and Pricing History with V4.
   - [x] Grid and Entity Overview.
   - [x] Pricing History.
-- [ ] Add Deployment Data Sync for dev and preview environments.
-- [ ] Develop the [Events foundation](../events/README.md).
-  - [ ] Text/JSON feeds
+- [x] Add Deployment Data Sync for dev and preview environments.
+- [x] Develop the [Events foundation](../events/README.md).
+  - [x] Text/JSON feeds
   - [ ] Alerts in Grid
-  - [ ] Discord alerts
+  - [x] Discord alerts
 - [ ] Develop comprehensive Convex testing.
 - [x] Remove the V3 backend code and query contracts.
 - [ ] Delete retired V3 production tables after deployment verification.
-- [ ] Port the public API to the V4 data source.
+- [x] Decouple the frozen public API from legacy tables using immutable scans.
 - [x] Move Monitor to V4 Events.
-- [ ] Remove the legacy backend after the V4 Monitor has been deployed to production.
+- [x] Remove the legacy backend after the V4 Monitor has been deployed to production.
+- [ ] Delete retained legacy production tables and archive blobs after an explicit retention decision.
