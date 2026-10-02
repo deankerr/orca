@@ -1,15 +1,13 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
-import { useQuery } from '@tanstack/react-query'
 import {
   BracesIcon,
   ChartNoAxesColumnIncreasingIcon,
   DatabaseIcon,
   SearchXIcon,
 } from 'lucide-react'
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useState } from 'react'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -18,18 +16,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useEntityChoices } from '@/features/monitor/use-entity-choices'
 import { cn, getConvexHttpUrl } from '@/lib/utils'
 
 import { ExternalLink } from './external-link'
 
 type EntityKind = 'models' | 'providers'
-type Availability = 'all' | 'available' | 'unavailable'
 
 type ResourceEntity = {
   id: string
   name: string
   slug: string
-  isAvailable: boolean
   href?: string
 }
 
@@ -37,7 +34,7 @@ const QUICK_LINKS = [
   {
     label: 'Models frontend',
     description: 'OpenRouter model catalogue',
-    href: 'https://openrouter.ai/api/frontend/models',
+    href: 'https://openrouter.ai/api/frontend/v1/catalog/models',
     icon: BracesIcon,
   },
   {
@@ -49,7 +46,7 @@ const QUICK_LINKS = [
   {
     label: 'Analytics finder',
     description: 'Endpoint analytics lookup',
-    href: 'https://openrouter.ai/api/frontend/models/find?',
+    href: 'https://openrouter.ai/api/frontend/v1/models/find',
     icon: ChartNoAxesColumnIncreasingIcon,
   },
   {
@@ -61,61 +58,31 @@ const QUICK_LINKS = [
 ] as const
 
 export default function Page() {
-  const { data: models } = useQuery({
-    ...convexQuery(api.models.list, {}),
-    throwOnError: true,
-  })
-  const { data: providers } = useQuery({
-    ...convexQuery(api.providers.list, {}),
-    throwOnError: true,
-  })
+  const modelChoices = useEntityChoices(api.v4.monitor.models, {})
+  const providerChoices = useEntityChoices(api.v4.monitor.providers, {})
+  const models = modelChoices.status === 'LoadingFirstPage' ? undefined : modelChoices.results
+  const providers =
+    providerChoices.status === 'LoadingFirstPage' ? undefined : providerChoices.results
   const [entityKind, setEntityKind] = useState<EntityKind>('models')
-  const [availability, setAvailability] = useState<Availability>('all')
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
 
-  const entities = useMemo<ResourceEntity[] | undefined>(() => {
-    if (entityKind === 'models') {
-      return models
-        ?.map((model) => ({
-          id: model._id,
-          name: model.name,
-          slug: model.slug,
-          isAvailable: model.unavailable_at === undefined,
-          href: `https://openrouter.ai/api/frontend/stats/endpoint?permaslug=${model.version_slug}&variant=${model.variant}`,
+  const entities: ResourceEntity[] | undefined = (
+    entityKind === 'models'
+      ? models?.map((model) => ({
+          ...model,
+          slug: model.id,
+          href: `https://openrouter.ai/api/frontend/v1/stats/endpoint?${new URLSearchParams({ permaslug: model.permaslug, variant: model.variant })}`,
         }))
-        .toSorted((a, b) => a.name.localeCompare(b.name))
-    }
-
-    return providers
-      ?.map((provider) => ({
-        id: provider._id,
-        name: provider.name,
-        slug: provider.slug,
-        isAvailable: provider.unavailable_at === undefined,
-      }))
-      .toSorted((a, b) => a.name.localeCompare(b.name))
-  }, [entityKind, models, providers])
+      : providers?.map((provider) => ({ ...provider, slug: provider.id }))
+  )?.toSorted((a, b) => a.name.localeCompare(b.name))
 
   const normalizedQuery = deferredQuery.trim().toLocaleLowerCase()
-  const filteredEntities = useMemo(
-    () =>
-      entities?.filter((entity) => {
-        const matchesAvailability =
-          availability === 'all' ||
-          (availability === 'available' && entity.isAvailable) ||
-          (availability === 'unavailable' && !entity.isAvailable)
-        const matchesQuery =
-          normalizedQuery === '' ||
-          entity.name.toLocaleLowerCase().includes(normalizedQuery) ||
-          entity.slug.toLocaleLowerCase().includes(normalizedQuery)
-
-        return matchesAvailability && matchesQuery
-      }),
-    [availability, entities, normalizedQuery],
+  const filteredEntities = entities?.filter(
+    (entity) =>
+      entity.name.toLocaleLowerCase().includes(normalizedQuery) ||
+      entity.slug.toLocaleLowerCase().includes(normalizedQuery),
   )
-
-  const unavailableCount = entities?.filter((entity) => !entity.isAvailable).length ?? 0
 
   return (
     <PageContainer className="py-4">
@@ -220,32 +187,6 @@ export default function Page() {
                   aria-label={`Search ${entityKind}`}
                   className="sm:max-w-72"
                 />
-                <div className="flex gap-1 rounded-lg bg-muted p-[3px]" aria-label="Availability">
-                  {(['all', 'available', 'unavailable'] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-pressed={availability === value}
-                      onClick={() => {
-                        setAvailability(value)
-                      }}
-                      className={cn(
-                        'h-6 flex-1 capitalize sm:flex-none',
-                        availability === value &&
-                          'bg-background text-foreground shadow-sm hover:bg-background',
-                      )}
-                    >
-                      {value}
-                      {value === 'unavailable' && unavailableCount > 0 ? (
-                        <span className="font-mono text-[0.625rem] text-muted-foreground">
-                          {unavailableCount}
-                        </span>
-                      ) : null}
-                    </Button>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -295,9 +236,7 @@ function LogoAtlas({ entities }: { entities: ResourceEntity[] | undefined }) {
         <SearchXIcon className="size-5 text-muted-foreground" />
         <div>
           <p className="text-xs font-medium">No matching logos</p>
-          <p className="text-[0.625rem] text-muted-foreground">
-            Try another search or availability filter.
-          </p>
+          <p className="text-[0.625rem] text-muted-foreground">Try another search.</p>
         </div>
       </div>
     )
@@ -317,7 +256,6 @@ function LogoAtlas({ entities }: { entities: ResourceEntity[] | undefined }) {
 function LogoTile({ entity }: { entity: ResourceEntity }) {
   const tileClassName = cn(
     'group/tile relative flex size-14 items-center justify-center rounded-lg bg-card ring-1 ring-foreground/10 transition-[box-shadow,transform,background-color] hover:z-10 hover:bg-muted/50 hover:ring-foreground/25 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.96]',
-    !entity.isAvailable && 'opacity-45 grayscale hover:opacity-80 hover:grayscale-0',
   )
 
   const tile =
@@ -330,12 +268,10 @@ function LogoTile({ entity }: { entity: ResourceEntity }) {
         className={tileClassName}
       >
         <EntityAvatar slug={entity.slug} className="size-9 border-0 bg-transparent" />
-        {entity.isAvailable ? null : <AvailabilityDot />}
       </a>
     ) : (
       <button type="button" aria-label={entity.name} className={tileClassName}>
         <EntityAvatar slug={entity.slug} className="size-9 border-0 bg-transparent" />
-        {entity.isAvailable ? null : <AvailabilityDot />}
       </button>
     )
 
@@ -348,19 +284,9 @@ function LogoTile({ entity }: { entity: ResourceEntity }) {
           {entity.slug}
         </span>
         <span className="mt-1 block text-[0.5625rem] font-medium tracking-wide uppercase opacity-60">
-          {entity.isAvailable ? 'Available' : 'Unavailable'}
-          {entity.href === undefined ? '' : ' · Open stats'}
+          {entity.href === undefined ? '' : 'Open stats'}
         </span>
       </TooltipContent>
     </Tooltip>
-  )
-}
-
-function AvailabilityDot() {
-  return (
-    <span
-      aria-hidden="true"
-      className="absolute right-1.5 bottom-1.5 size-1.5 rounded-full bg-muted-foreground ring-2 ring-card"
-    />
   )
 }
