@@ -1,3 +1,4 @@
+/** Frozen published V2 contract. Preserve names, defaults and quirks; do not align with product schemas. */
 import { z } from 'zod'
 
 const DataPolicyOutputSchema = z.object({

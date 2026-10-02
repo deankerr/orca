@@ -7,7 +7,7 @@
 - `projections/` supports the local change-document script.
 - V4 architecture, conventions and operating commands live in `convex/v4/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
 - Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
-- Treat `convex/public_api/` as sealed until a late, explicitly developer-guided compatibility session; legacy field semantics must not shape the contemporary V4 model.
+- `convex/public_api/` independently maintains a frozen external contract; follow its local instructions. Its compatibility semantics must not shape V4.
 - other module dirs are "legacy"
 
 ### Concepts

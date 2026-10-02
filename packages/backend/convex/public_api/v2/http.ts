@@ -1,19 +1,26 @@
+import { ConvexError } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
 import { httpAction } from '../../_generated/server'
+import { buildSnapshot, latestScanId } from './snapshot'
 
 const allowOrigin = { 'Access-Control-Allow-Origin': '*' } as const
 
 /**
  * GET /public-api-preview/v2
  *
- * Rebuilds the v2 payload from catalog views on every request. Used as the
- * always-fresh path and by the Next rewrite until traffic switches to
- * `/public-api-preview/v2-cached`.
+ * Uncached diagnostic path. The public Next rewrite serves `/public-api-preview/v2-cached`.
  */
 export const serve = httpAction(async (ctx) => {
-  const result = await ctx.runQuery(internal.public_api.v2.queries.get)
+  const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
+  const scanId = await latestScanId(ctx, cached?.scan_id)
+
+  if (scanId === null) {
+    throw new ConvexError('Public API requires a stored scan')
+  }
+
+  const result = await buildSnapshot(ctx, scanId)
   return Response.json(result, {
     headers: allowOrigin,
   })
@@ -22,8 +29,7 @@ export const serve = httpAction(async (ctx) => {
 /**
  * GET /public-api-preview/v2-cached
  *
- * Serves the prebuilt gzipped payload written by `v2/cache.refresh` after
- * snapshot materialize. This path never rebuilds the response.
+ * Serves the prebuilt gzipped payload written by the independent five-minute refresh cron. This path never rebuilds the response.
  *
  * After the first refresh, a missing pointer or blob is a broken invariant.
  * Those cases are logged and returned as 500 — not 404 — so we do not leak
