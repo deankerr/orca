@@ -1,15 +1,29 @@
 # Discord alerts
 
-The private ORCA channel is a pre-alpha production demo for evaluating live alert presentation.
-It uses one webhook target and has no correctness or delivery guarantees.
+Discord alerts are a production product, delivered to one webhook target. Delivery is best-effort,
+with the failure behavior described below.
+
+## Environment variables
+
+Convex project defaults already configure Discord for dev and preview deployments; no manual setup
+is needed. All dev and preview webhooks point to the same private development channel. Only production
+has the production webhook URL, so development alerts stay out of the production channel.
+
+| Variable                      | Purpose and defaults                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ORCA_DISCORD_ALERTS_ENABLED` | Enables automatic scheduling and queued batch starts only for the exact string `true`. The project default is `false`; individual deployments can override it. Production is enabled. |
+| `ORCA_DISCORD_WEBHOOK_URL`    | Destination for live and manual alerts. Defaults to the shared private dev channel; production overrides it with the production channel webhook.                                      |
+| `ORCA_PUBLIC_URL`             | Web app base URL for links in cards, supplied by project defaults.                                                                                                                    |
+| `ENTITY_LOGO_SERVICE_ORIGIN`  | Public logo-service origin for card images, supplied by project defaults.                                                                                                             |
+
+The alert switch is independent of scan capture and scheduled ingestion. Manual delivery bypasses
+it and can still post when it is unset or `false`.
 
 ## Live controls
 
-1. Configure `ORCA_DISCORD_WEBHOOK_URL`, `ORCA_PUBLIC_URL`, and `ENTITY_LOGO_SERVICE_ORIGIN`
-   for the target deployment and channel.
-2. Catch up ingestion with broadcasting disabled. There is no automatic age cutoff.
-3. Enable `ORCA_DISCORD_PREVIEW_ENABLED=true` on production only. Keep it unset/false in dev and preview deployments.
-4. Disable the flag before historical replay. Queued batches check it on entry; running batches finish or fail independently.
+Disable `ORCA_DISCORD_ALERTS_ENABLED` before historical replay or ingestion catch-up; there is no
+automatic age cutoff. Queued batches check the switch on entry; running batches finish or fail
+independently. Re-enable it when ingestion is current.
 
 Fresh routine event commits schedule one single-attempt batch. Manual processor retries never
 broadcast. Completed or empty commits provide no IDs to send. A scheduling failure after event
@@ -22,7 +36,7 @@ establish an event-processing failure.
 
 ## Manual delivery
 
-Run from `packages/backend` with an explicit deployment. These tools bypass the preview switch
+Run from `packages/backend` with an explicit deployment. These tools bypass the live broadcast switch
 and can duplicate messages:
 
 | Function                               | Arguments                                               |
@@ -33,8 +47,8 @@ and can duplicate messages:
 
 `sendLatest` examines at most 500 recent events and sends selected cards oldest first, so it can
 return fewer than requested. Batch tools group selected events; `sent` counts messages and
-`skipped` counts filtered or failed events. Messages include `pre-alpha` and source event IDs
-outside the cards. Regenerating stored events can change their document IDs.
+`skipped` counts filtered or failed events. Messages contain only alert cards; source event IDs remain
+in webhook error diagnostics. Regenerating stored events can change their document IDs.
 
 ## Presentation policy
 

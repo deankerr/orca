@@ -1,6 +1,5 @@
 import type { PaginationResult } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
-import { ComponentType } from 'discord-api-types/v10'
 
 import { internal } from '../../_generated/api'
 import type { Doc, Id } from '../../_generated/dataModel'
@@ -8,7 +7,6 @@ import { env, internalAction } from '../../_generated/server'
 import type { ActionCtx } from '../../_generated/server'
 import { prepareBatch } from './prepare'
 import type { Card } from './renderers/card'
-import { dot } from './renderers/display'
 import { renderDiscordBatch } from './renderers/index'
 
 /** Operator-only, single-attempt delivery. Repeating the call posts the event again. */
@@ -21,7 +19,7 @@ export const send = internalAction({
 const batchArgs = { event_ids: v.array(v.id('v4_events')) }
 const batchCounts = v.object({ sent: v.number(), skipped: v.number() })
 
-/** Operator replay; explicitly sending examples bypasses the live-preview switch. */
+/** Operator replay; explicitly sending examples bypasses the live broadcast switch. */
 export const sendExamples = internalAction({
   args: batchArgs,
   returns: batchCounts,
@@ -78,12 +76,12 @@ export const sendLatest = internalAction({
   },
 })
 
-/** Pre-alpha, one attempt per scan: no delivery ledger, retries, or cross-batch ordering. */
+/** One attempt per scan: no delivery ledger, retries, or cross-batch ordering. */
 export const broadcast = internalAction({
   args: batchArgs,
   returns: batchCounts,
   handler: async (ctx, { event_ids }) => {
-    if (env.ORCA_DISCORD_PREVIEW_ENABLED !== 'true') {
+    if (env.ORCA_DISCORD_ALERTS_ENABLED !== 'true') {
       return { sent: 0, skipped: 0 }
     }
 
@@ -113,7 +111,7 @@ async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
 
   for (const { message, event_ids } of notifications) {
     if (sent > 0) {
-      // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing for the pre-alpha preview.
+      // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing between Discord messages.
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 2000)
       })
@@ -153,15 +151,6 @@ async function postMessage(message: Card, event_ids: string[]): Promise<void> {
 
   if (webhook === undefined || webhook === '') {
     throw new ConvexError('Set ORCA_DISCORD_WEBHOOK_URL before sending Discord events.')
-  }
-
-  const debug = `-# pre-alpha${dot}${event_ids.length === 1 ? 'event' : 'events'}: ${event_ids.join(', ')}`
-
-  if (message.components === undefined) {
-    message.content = debug
-  } else {
-    // Components V2 disables message content; keep this sibling outside the card in the same message.
-    message.components.push({ type: ComponentType.TextDisplay, content: debug })
   }
 
   const url = new URL(webhook)

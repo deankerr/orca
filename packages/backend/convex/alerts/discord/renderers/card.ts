@@ -51,7 +51,7 @@ export function embedCard(
   return { embeds: [embed.toJSON()] }
 }
 
-/** One text section and thumbnail; reserve space for the delivery source-ID annotation. */
+/** One text section and thumbnail, with content bounded to fit a single message. */
 export function componentCard(
   content: string,
   options: {

@@ -54,9 +54,11 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
 
     expect(payload).toMatchObject({
       allowed_mentions: { parse: [] },
-      content: '-# pre-alpha • event: test-event',
     })
 
+    expect(payload).not.toHaveProperty('content')
+    expect(body).not.toContain('test-event')
+    expect(body).not.toContain('pre-alpha')
     expect(payload).not.toHaveProperty('username')
     expect(payload).not.toHaveProperty('avatar_url')
 
@@ -83,7 +85,7 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
     const richTarget = request.mock.calls[1]?.[0]
     expect(richTarget instanceof URL && richTarget.searchParams.has('with_components')).toBe(false)
 
-    // Model discoveries use Components V2: debug text is a sibling, not part of the card.
+    // Model discoveries use Components V2 with only the introductory card.
     const modelEvent: EventRow = {
       ...current,
       entity_kind: 'model',
@@ -116,12 +118,12 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
     expect(componentPayload).not.toHaveProperty('content')
 
     expect(componentPayload).toMatchObject({
-      components: [
-        { type: ComponentType.Container },
-        { type: ComponentType.TextDisplay, content: '-# pre-alpha • event: component-event' },
-      ],
+      components: [{ type: ComponentType.Container }],
     })
 
+    expect(componentPayload).toHaveProperty('components.length', 1)
+    expect(componentBody).not.toContain('component-event')
+    expect(componentBody).not.toContain('pre-alpha')
     request.mockResolvedValue(new Response('rate limited', { status: 429 }))
     await rejects(handler(ctx, { event_id: 'test-event' }), /Discord webhook rejected/)
     expect(request).toHaveBeenCalledTimes(4)
@@ -178,7 +180,7 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
 
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
-    ORCA_DISCORD_PREVIEW_ENABLED: 'false',
+    ORCA_DISCORD_ALERTS_ENABLED: 'false',
     ORCA_PUBLIC_URL: urls.publicUrl,
     ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
   }
@@ -201,7 +203,13 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
     Object.assign(process.env, settings)
     expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
     expect(request).not.toHaveBeenCalled()
-    process.env.ORCA_DISCORD_PREVIEW_ENABLED = 'true'
+
+    delete process.env.ORCA_DISCORD_ALERTS_ENABLED
+    expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
+    expect(events).toEqual([])
+    expect(request).not.toHaveBeenCalled()
+
+    process.env.ORCA_DISCORD_ALERTS_ENABLED = 'true'
     expect(await liveHandler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
     expect(events).toEqual(args.event_ids)
     expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 2000))
@@ -216,7 +224,9 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
     const batchBody = request.mock.calls[3]?.[1]?.body
     const remainderBody = request.mock.calls[4]?.[1]?.body
     expect(batchBody).toContain('5 endpoints updated')
-    expect(batchBody).toContain('fifth, first, fourth, second, third')
+    expect(batchBody).not.toContain('pre-alpha')
+    const batchPayload: unknown = typeof batchBody === 'string' ? JSON.parse(batchBody) : null
+    expect(batchPayload).not.toHaveProperty('content')
     expect(remainderBody).toContain('max_output')
     expect(remainderBody).not.toContain('is_disabled')
 
@@ -255,6 +265,7 @@ test('latest replay fills its default count across filtered pages, respects limi
   let events = Array.from({ length: 112 }, (_, index) => ({
     ...(index < 101 ? hidden : visible),
     _id: `event-${index}`,
+    scan_at: new Date(Date.UTC(2026, 8, 30, 0, index)).toISOString(),
   }))
   let pages = 0
 
@@ -283,7 +294,7 @@ test('latest replay fills its default count across filtered pages, respects limi
   const ctx = queryContext as unknown as ActionCtx
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
-    ORCA_DISCORD_PREVIEW_ENABLED: 'false',
+    ORCA_DISCORD_ALERTS_ENABLED: 'false',
     ORCA_PUBLIC_URL: urls.publicUrl,
     ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
   }
@@ -304,10 +315,15 @@ test('latest replay fills its default count across filtered pages, respects limi
       request.mock.calls.map((call) => {
         const body = call[1]?.body
 
-        return typeof body === 'string' ? /event-\d+/.exec(body)?.[0] : undefined
+        return typeof body === 'string' ? /2026-09-30T[\d:.]+Z/.exec(body)?.[0] : undefined
       }),
-    ).toEqual(Array.from({ length: 10 }, (_, index) => `event-${110 - index}`))
-    expect(process.env.ORCA_DISCORD_PREVIEW_ENABLED).toBe('false')
+    ).toEqual(
+      events
+        .slice(101, 111)
+        .toReversed()
+        .map((event) => event.scan_at),
+    )
+    expect(process.env.ORCA_DISCORD_ALERTS_ENABLED).toBe('false')
 
     expect(await handler(ctx, { limit: 2 })).toEqual({ sent: 2, skipped: 101 })
     events = events.slice(101, 104)
