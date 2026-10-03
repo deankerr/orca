@@ -7,7 +7,7 @@
  */
 import { validate } from 'convex-helpers/validators'
 import { ConvexHttpClient } from 'convex/browser'
-import { ConvexError, v } from 'convex/values'
+import { ConvexError } from 'convex/values'
 import { gzipSync } from 'fflate'
 
 import { api, internal } from '../_generated/api'
@@ -15,7 +15,7 @@ import { env } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
 import { backendFor } from './backend'
 import { byteStoreFor } from './bytes'
-import { assertReadCount, decode, readLocal, storedBatch } from './local'
+import { assertReadCount, decode, readLocal, storedBatch, validateNames } from './local'
 import type { NameSelection } from './local'
 import type { Locator } from './table'
 
@@ -127,19 +127,7 @@ export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): 
           ...selection,
         })
 
-  if (!validate(v.array(v.string()), names) || names.length > selection.limit) {
-    throw new ConvexError('Object source returned invalid names')
-  }
-  for (const [index, name] of names.entries()) {
-    const previous = names[index - 1]
-    const outOfOrder =
-      previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
-
-    if (name < selection.atOrAfter || outOfOrder) {
-      throw new ConvexError('Object source returned names outside the requested order/range')
-    }
-  }
-  return names
+  return validateNames(names, selection)
 }
 
 async function readSource(

@@ -112,8 +112,8 @@
     "packages/scripts": {
       "name": "@orca/scripts",
       "dependencies": {
+        "@orca/backend": "workspace:*",
         "commander": "^15.0.0",
-        "json-diff-ts": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -121,6 +121,7 @@
         "@oxc-project/types": "0.149.0",
         "@swaggerexpert/jsonpath": "^4.0.4",
         "@types/bun": "catalog:",
+        "convex": "catalog:",
         "oxc-parser": "0.149.0",
         "typescript": "catalog:",
       },

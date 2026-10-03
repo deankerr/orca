@@ -1,11 +1,11 @@
 import { ConvexError } from 'convex/values'
-import { z } from 'zod'
 
 import type { ActionCtx } from '../_generated/server'
 import * as objects from '../objects'
 import { ScanEntry } from './collected'
 import type { RawScan } from './collected'
 import { extract } from './extract'
+import { parseScan } from './parse'
 import type { ScanPair } from './schema'
 import { scanTime } from './time'
 import type { ScanTimes } from './time'
@@ -26,7 +26,7 @@ export async function store(ctx: ActionCtx, scan: RawScan): Promise<void> {
 
 /** Full collected entries for the frozen public API; ordinary consumers load extracted scan pairs. */
 export async function loadRaw(ctx: ActionCtx, scanAt: string): Promise<RawScan> {
-  return parse(scanAt, await objects.load(ctx, identity(scanAt)))
+  return parseScan(scanAt, await objects.load(ctx, identity(scanAt)))
 }
 
 /** Load an exact pair in one object read, including when retrying historical work. */
@@ -41,8 +41,8 @@ export async function loadPair(
   const [previous, next] = await objects.loadMany(ctx, [identity(fromScanAt), identity(scanAt)])
 
   return {
-    previous: extract(parse(fromScanAt, previous ?? null)),
-    next: extract(parse(scanAt, next ?? null)),
+    previous: extract(parseScan(fromScanAt, previous ?? null)),
+    next: extract(parseScan(scanAt, next ?? null)),
   }
 }
 
@@ -101,29 +101,4 @@ async function timesAtOrAfter(ctx: ActionCtx, from: string | null, limit: number
 
     return scanTime.parse(time)
   })
-}
-
-function parse(scanAt: string, text: string | null): RawScan {
-  if (text === null) {
-    throw new ConvexError(`Scan not found: ${scanAt}`)
-  }
-
-  const entries = ScanEntry.extend({ scan_at: z.string() })
-    .array()
-    .nonempty()
-    .parse(
-      text
-        .split('\n')
-        .filter((line) => line.length > 0)
-        .map((line): unknown => JSON.parse(line)),
-    )
-
-  if (entries.some((entry) => entry.scan_at !== scanAt)) {
-    throw new ConvexError(`Scan identity does not match ${scanAt}`)
-  }
-
-  return {
-    scan_at: scanAt,
-    entries: entries.map(({ scan_at: _scanAt, ...entry }) => entry),
-  }
 }
