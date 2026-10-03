@@ -1,41 +1,18 @@
 # ORCA (OpenRouter Capability Analysis)
 
-@docs/orca/objectives.md
-
 ## Development
 
 - When dependencies are missing, run `bun install --frozen-lockfile` from the repository root. This needs no backend setup.
-- Sessions may share a checkout, including the main repository. Reuse its existing environment and running processes; a new session does not imply a fresh worktree. Do not run setup checks on every session start.
 - Use `orca-worktree-setup` when the task establishes that a fresh worktree needs its own backend or running app.
 - Use `bun run fix` for all validation and formatting. Not `tsc`.
-- Lint suppression requires an explanation: default to `// oxlint-disable-next-line rule -- Reason.`, or ordinary comments above.
+- Lint suppression requires an explanation: default to `// oxlint-disable-next-line rule -- Reason.`.
 
-## Overview
+## Product and documentation
 
-ORCA aggregates, analyzes, and visualizes AI model and provider data from OpenRouter. The system maintains a historical database that updates regularly, enabling users to discover models, track changes over time, and make data-driven selection decisions.
+ORCA serves technical OpenRouter users who value rapid endpoint comparison, precise terminology,
+and dense data. See [README](README.md) for products and setup, and [CONTEXT](CONTEXT.md) for domain language.
 
-- `apps/web`: Next.js frontend
-- `packages/backend`: Convex
-- `apps/logos`: Asset service
-- "MEPs" = Models, Endpoints, Providers
-
-## Target Users
-
-- Highly technical users who work with OpenRouter and LLMs professionally:
-- Deep understanding of AI model concepts (context lengths, quantization, reasoning tokens)
-- Want rapid and comprehensive endpoint comparisons
-- Value technical precision and dense data over simplified summaries
-
-## Products
-
-- `apps/web/features/endpoints-data-grid/` Primary browsing interface - comprehensive, filterable data grid for comparing endpoints.
-
-- `apps/web/features/monitor/` Change tracking feed showing field-level diffs between snapshots, revealing activity otherwise impossible to observe.
-
-- `apps/web/features/pricing-history/` Per-model overlay of provider prices over time. Opened from Entity Overview or `?pricing-history=<modelId>`.
-
-- `packages/backend/convex/events/` Produces and stores entity events from ingestion.
-
-- `packages/backend/convex/alerts/` Product-led Monitor, Feed and Discord outputs with shared alert preparation.
-
-- `packages/backend/convex/public_api/v2/` Public HTTP API providing programmatic access to ORCA's curated data.
+- `docs/openrouter/` records upstream observations and external-system knowledge.
+- `docs/orca/` records our interpretation, product policies, invariants, and operational knowledge.
+- Keep documentation focused on what code cannot explain: reasons, constraints, surprising behavior, and external context.
+- Give each fact one home. Link to it instead of repeating module inventories or implementation walkthroughs.

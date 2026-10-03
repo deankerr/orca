@@ -44,7 +44,7 @@ async function previouslyKnown(ctx: QueryCtx, row: EventRow): Promise<boolean> {
     .withIndex('by_model_id', (q) => q.eq('model_id', row.entity_id))
     .unique()
 
-  // ponytail: legacy rows fall back to mutable scan_at until from_scan_at is backfilled.
+  // ponytail: missing first-observation evidence falls back to mutable scan_at.
   return model !== null && (model.from_scan_at ?? model.scan_at) < row.scan_at
 }
 

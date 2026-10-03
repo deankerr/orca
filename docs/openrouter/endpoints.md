@@ -14,6 +14,10 @@ payload. Fields that have no established semantics are intentionally left withou
 - `variant`
 - `created_at`
 
+An endpoint UUID can retain its identity across model, provider, and tag changes. See the
+[September 2026 identity observations](appendix/endpoint-identity-changes.md) for dated evidence,
+including moves between standard and `:free` model variants.
+
 ## Provider relationship
 
 ⚠️ These are endpoint properties. They are not reliable denormalized attributes of the embedded

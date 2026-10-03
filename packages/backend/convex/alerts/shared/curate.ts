@@ -224,7 +224,7 @@ function selectedChanges(
   if (node.changes !== undefined) {
     if (selection !== true) {
       // ponytail: indexed arrays in selected object groups silently lose their numeric children.
-      // Reject those shapes if they occur upstream; see docs/events/renderers.md.
+      // Reject those shapes if they occur upstream; see docs/orca/events.md.
       return node.changes.flatMap((nested) =>
         selectedChanges(kind, nested, [...sourcePath, nested.key]),
       )

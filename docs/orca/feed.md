@@ -1,6 +1,5 @@
 # Experimental feed
 
-- Available on the task's dev deployment; intended for unadvertised production use while its shape develops.
 - Native paginated queries also support experiments and reactive clients.
 - Feed uses the shared Monitor/Discord alert content, without batching; its output format remains experimental.
 
@@ -34,4 +33,6 @@ GET /events/feed?limit=20&cursor=<opaque_cursor>
 - Native seek cursors preserve position as new head events arrive and distinguish events sharing an observation time.
 - Restart at the head to read new activity.
 - Late processing inserts events at their observation time; a completed traversal can precede older events arriving.
-- ❓ Should polling expose processor completion so clients can revisit windows affected by late events?
+- The feed does not expose processor completion; polling from the head alone cannot guarantee discovery of late events.
+
+See [Events](events.md) for historical identity and selection semantics.

@@ -1,163 +1,59 @@
-# Pricing
+# Pricing policy
 
-How ORCA names, displays, and treats endpoint prices. Upstream OpenRouter representations
-(`pricing`, `pricing_json`, `display_pricing`, …) are documented in `docs/openrouter/pricing.md`.
-This note is the product policy those observations get projected into.
+[OpenRouter pricing](../openrouter/pricing.md) records upstream representations and observations.
+This document records how ORCA interprets and presents them.
 
-There is no one display form. Grid, Monitor, Discord, Entity Overview, and Pricing History have
-different space and density. They should share _meaning_ — which keys are prices, what they
-measure, what is dead — not a single formatting function. Multiple formatters exist because we
-tried to enforce one.
+## Observed rates
 
-## Surfaces
+ORCA retains the decimal meter strings OpenRouter presents, with discount and conditional
+overrides alongside them. Tiny movements are real observations; display rounding must not
+change the captured facts or turn small nonzero prices into zero.
 
-Public:
+- Presented rates already include `discount`. Never apply it a second time.
+- A quote is complete: an absent meter is unknown/unmetered, not a request to carry its previous value.
+- Zero and absence do not establish that an endpoint is free or supports a feature.
+- Retain zero in stored history; the Grid omits zero prices and Pricing History omits them from positive-rate traces.
+- Preserve conditional overrides with their observation. Today's Catalog cannot explain a historical quote.
 
-- Endpoints data grid
-- Monitor
-- Entity Overview
-- Pricing History
-- Discord embeds (the squeeze: mobile-width embed fields)
+Schedule changes can move presented rates without changing authored pricing. ORCA stores those
+movements without choosing a canonical base band or parsing `pricing_json`. Prompt-length
+overrides describe a different condition and must not be treated as schedules. Capturing a quote
+does not require every product to announce it as a price change.
 
-Discord is where long keys fail first. Policy has to survive that width, not just a desktop table.
+## Presentation
 
-## Why we rename
+Products share price meaning, units, and supported meters; they need not share one formatter.
+The Grid, Monitor, Entity Overview, Pricing History, and Discord have different density constraints.
 
-OpenRouter's pricing keys are inconsistent and often ambiguous (`prompt` / `completion`,
-`input_cache_read` with no modality, `image` vs `image_output`, `internal_reasoning`, `request`).
-Ingest already maps those into catalog storage (`text_input`, `cache_read`, …). Projection then
-retouches a subset so the keys themselves can be shown.
+- Use `$` for USD. Avoid repeating currency names on each rate.
+- Text, audio, and cache token rates scale by 1,000,000 (`MTOK`). Image token rates scale by 1,000 (`KTOK`).
+- Image rates are per token, not per image. A shared unit caption across all meters is misleading.
+- Unit captions may be omitted where the scale is understood, especially in compact Discord cards.
+- Use Input/Output or IN/OUT when helpful. Do not reserve paired slots for every modality; most would be empty.
+- Product names such as `text_input` and `cache_read` are presentation vocabulary, not stored meter names.
+- `discount` is a percentage adjustment, never a currency meter. Zero means no adjustment.
+- `web_search` is a per-search service charge, unaffected by discount. Prefer showing it with the native-search capability.
 
-The intent was to render property keys to users, tying the UI to ORCA's schema. That only works
-when keys are short enough to sit next to each other. `text_input` / `text_output` are fine.
-Adding a `text_` prefix on cache keys (`text_cache_read`) made them stick out next to those —
-especially in Discord — so surfaces started stripping it ad-hoc. Text is implied: the product
-keys are `cache_read` / `cache_write`.
+`priceMeters.ts` is authoritative for supported meter units and scaling; each product selects
+its labels and meters. Do not duplicate the complete mapping here.
 
-OpenRouter later moved their own display labels from "Prompt" → "Input" and "Completion" →
-"Output", _after_ we had already done that. Commonly understood terms keep moving. Align on what
-users say now, not on a frozen upstream label, and not on the longest schema-faithful key.
+## Deliberately omitted meters
 
-Shorthand is allowed and useful: `IN: $x.xx` / `OUT: $x.xx`, optionally with a modality icon
-(text, image, …). Do not assume IN/OUT _pairs_ are the usual shape of an endpoint. They aren't.
+Do not display or surface these fields:
 
-## Currency and units
+- misleading: `internal_reasoning`
+- obsolete: `request`, `variable_pricings`
 
-OpenRouter only quotes USD. Inference prices are compared in USD everywhere. Product UI never
-spells out `USD` — `$` is the currency. Do not store or render per-key strings like
-"USD per million tokens".
+## Alert eligibility
 
-| Kind                                               | Scale       | Unit when shown | When omitted                                                     |
-| -------------------------------------------------- | ----------- | --------------- | ---------------------------------------------------------------- |
-| Text-like token rates (`text_*`, `audio_*`, cache) | × 1,000,000 | `MTOK`          | Default. Most users read these as per million tokens.            |
-| Image token rates (`image_input`, `image_output`)  | × 1,000     | `KTOK`          | Tight layouts (Discord).                                         |
-| `web_search`                                       | × 1         | per web search  | Treat as a capability annotation, not a column of market prices. |
-| `discount`                                         | × 100       | `%`             | Render as e.g. `20% off`. Not a currency.                        |
+Monitor, Feed, and Discord use shared eligibility. An endpoint pricing update must contain an
+eligible meter movement of at least 2%, measured before rounding. A valid transition between
+zero/absence and a positive rate also qualifies. Invalid, negative, or non-string values do not.
+Discount alone does not qualify because presented rates already reflect it.
 
-`MTOK` / `KTOK` come off first under space pressure. `$` stays.
+This coarse rule suppresses the whole event, including coincident non-pricing changes.
+Lifecycle events and updates without pricing changes are outside the rule; captured events
+remain intact. Opaque pricing, presentation-only changes, and revision-only changes are not
+currently selected as standalone alert signals.
 
-## Prevalence
-
-Design for the common keys, and for absence.
-
-- `text_input` / `text_output` — usual pair when text is priced.
-- `cache_read` — common.
-- `cache_write` — mainly Claude and Gemini. Most endpoints do not charge it.
-- `image_input` — very common.
-- `image_output` — extremely uncommon.
-- `audio_input` / `audio_cache_read` — rare; MTOK like the other token rates.
-- `web_search` — uncommon; see below.
-- `discount` — already baked into the other rates when present.
-
-A layout that reserves paired IN/OUT slots for every modality will be mostly empty.
-
-## Field policy
-
-Catalog storage names stay as stored. Projection / UI names are the product vocabulary. Historical
-rows keep obsolete keys in the schema; UI simply stops treating them as prices.
-
-### Shown as prices
-
-| Storage             | Product key        | Unit | Notes                                                                                                |
-| ------------------- | ------------------ | ---- | ---------------------------------------------------------------------------------------------------- |
-| `text_input`        | `text_input`       | MTOK |                                                                                                      |
-| `text_output`       | `text_output`      | MTOK |                                                                                                      |
-| `cache_read`        | `cache_read`       | MTOK | Text is implied. Common.                                                                             |
-| `cache_write`       | `cache_write`      | MTOK | Text is implied. Rare; Claude and Gemini.                                                            |
-| `image_input`       | `image_input`      | KTOK | Per thousand _tokens_, not per image. Common.                                                        |
-| `image_output`      | `image_output`     | KTOK | Same unit. Extremely uncommon.                                                                       |
-| `audio_input`       | `audio_input`      | MTOK | Rare.                                                                                                |
-| `audio_cache_input` | `audio_cache_read` | MTOK | Rare. Storage keeps `audio_cache_input`; the product name corrects a long-running write/read mix-up. |
-
-Surfaces may print the product key or IN/OUT shorthand. They should not invent a third name for
-the same rate.
-
-### `discount`
-
-The one non-currency pricing field. Already applied to the other rates — do not compute a
-discounted price from it. `discount` never applies to `web_search`. Render as a percentage off
-(`20% off`), not as `$`.
-
-### `web_search`
-
-Not a market rate like the others, and may be set by OpenRouter rather than the provider.
-
-- Discount does not apply.
-- Almost never changes.
-- Uncommon. Gemini and GPT native search; some Anthropic-hosted Claude (not Vertex or Bedrock);
-  Grok at `$0.005` vs the more common `$0.01`.
-- Unit: per web search.
-- Prefer attaching it to the `native_web_search` capability, not listing it with token prices.
-
-### Present in data, not in UI
-
-**`request`** (sometimes projected as `per_request`). Obsolete. Absent from live data for some
-time. Historical records exist, so the catalog schema keeps the field. Drop it from UI and from
-any display-oriented projection.
-
-**`internal_reasoning`** (sometimes projected as `reasoning_output`). Still present, exclusively
-on Gemini, always the exact same value as `text_output`, and not an extra charge or dimension. It
-reads as an OpenRouter internal leaking through. Drop it from UI. Do not show it as a reasoning
-premium.
-
-### `variable_pricings`
-
-Upstream deprecated this in favor of a per-provider model that is much more complex. We have not
-started on that problem. Our `variable_pricings` field will not be reused — it is schema/db
-legacy. Drop it from UI if anything still surfaces it.
-
-## Presented rates and `overrides`
-
-Named meter fields on a pricing sample (`prompt`, `completion`, cache, …) are the rates OpenRouter
-was presenting at observation time. They already include `discount`. They are not a canonical
-list price ORCA computed.
-
-When OpenRouter exposes conditional pricing, the sample stores `overrides` next to those meters.
-Two shapes appear:
-
-- Prompt-length rows carry `min_prompt_tokens`. Presented meters are the default
-  (below-threshold) band. They do not twitch on a clock.
-- Schedule rows carry `utc_start` / `utc_end` and/or `utc_days`. Presented meters are the band
-  that was active at scan time. They change when the window flips even if authored pricing did
-  not. A weekend-only row may have `utc_days` and no start/end.
-
-As of 2026-08, schedule-shaped `overrides` are a handful of endpoints (DeepSeek official, DeepSeek
-on Alibaba, Tencent). Prompt-length `overrides` are common (on the order of a hundred endpoints).
-Do not treat the two the same.
-
-There is no natural “base” band to store instead. Majority-time, longest window, peak, and
-off-peak disagree across those schedule endpoints. Ingest does not pick one, does not parse
-`pricing_json` to find one, and does not suppress schedule samples. A new pricing row is an
-observation that presented rates moved — including discount battles and schedule band flips.
-
-A new row is not a user-facing “price changed” event. Grid, Pricing History, Monitor, and Discord decide
-whether that movement is worth showing. Use `overrides` on the sample for schedule / viewer-now
-display. Do not join the current endpoint view for that: `pricing_version_id` lives only on
-current metadata, so it is not a historical signal on the pricing series.
-
-## What this is not
-
-- A requirement that every surface call the same `formatPricing`.
-- A requirement that every catalog key appear in the grid, Pricing History, or Discord.
-- A schema or data migration. Storage keeps what we ingested; product policy decides what is a
-  price today.
+See [Pricing History](pricing-history.md) for interpreting quotes across membership and availability changes.

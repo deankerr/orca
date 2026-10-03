@@ -1,4 +1,0 @@
-[mcp_servers.convex]
-command = "bun"
-args = ["run", "--cwd", "packages/backend", "convex", "mcp", "start"]
-enabled = true
