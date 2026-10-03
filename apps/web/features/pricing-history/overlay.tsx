@@ -2,7 +2,8 @@
 
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/convex/_generated/api'
-import { formatPricing } from '@orca/backend/convex/shared/pricing'
+import { formatPrice } from '@orca/backend/convex/numbers'
+import { priceMeters } from '@orca/backend/convex/priceMeters'
 import { useQuery } from '@tanstack/react-query'
 import { ConvexError } from 'convex/values'
 import dynamic from 'next/dynamic'
@@ -64,17 +65,24 @@ const Plot = dynamic(
   },
 )
 
-const METERS = [
-  { value: 'prompt', label: 'Input', scale: 1e6, unit: '$/MTOK' },
-  { value: 'completion', label: 'Output', scale: 1e6, unit: '$/MTOK' },
-  { value: 'input_cache_read', label: 'Cache read', scale: 1e6, unit: '$/MTOK' },
-  { value: 'input_cache_write', label: 'Cache write', scale: 1e6, unit: '$/MTOK' },
-  { value: 'input_cache_write_1h', label: 'Cache write · 1h', scale: 1e6, unit: '$/MTOK' },
-  { value: 'audio', label: 'Audio input', scale: 1e6, unit: '$/MTOK' },
-  { value: 'input_audio_cache', label: 'Audio cache', scale: 1e6, unit: '$/MTOK' },
-  { value: 'image', label: 'Image input', scale: 1000, unit: '$/KTOK' },
-  { value: 'image_output', label: 'Image output', scale: 1000, unit: '$/KTOK' },
-]
+const METERS = (
+  [
+    { value: 'prompt', label: 'Input' },
+    { value: 'completion', label: 'Output' },
+    { value: 'input_cache_read', label: 'Cache read' },
+    { value: 'input_cache_write', label: 'Cache write' },
+    { value: 'input_cache_write_1h', label: 'Cache write · 1h' },
+    { value: 'audio', label: 'Audio input' },
+    { value: 'input_audio_cache', label: 'Audio cache' },
+    { value: 'image', label: 'Image input' },
+    { value: 'image_output', label: 'Image output' },
+  ] satisfies { value: keyof typeof priceMeters; label: string }[]
+).map(({ value, label }) => ({
+  value,
+  label,
+  scale: 10 ** priceMeters[value].scale,
+  unit: `$/${priceMeters[value].unit}`,
+}))
 type Meter = (typeof METERS)[number]
 const dateLabel = (at: number) =>
   new Date(at).toLocaleString(undefined, {
@@ -86,7 +94,7 @@ const dateLabel = (at: number) =>
     timeZoneName: 'short',
   })
 
-const priceLabel = (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—'
+const priceLabel = (price: number) => formatPrice(price) ?? '—'
 
 const quotedPrice = (prices: number[]) =>
   prices.length === 0
@@ -127,7 +135,7 @@ export function PricingHistoryOverlay() {
 }
 
 function Identity({ modelId }: { modelId: string }) {
-  const { data } = useQuery(convexQuery(api.v4.catalog.models.query.get, { model_id: modelId }))
+  const { data } = useQuery(convexQuery(api.catalog.models.query.get, { model_id: modelId }))
   const name = data?.display_name
 
   return (

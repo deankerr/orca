@@ -5,31 +5,54 @@ import type { RegisteredMutation } from 'convex/server'
 
 import type { Doc, Id } from '../../_generated/dataModel'
 import type { ActionCtx, MutationCtx } from '../../_generated/server'
-import * as objects from '../../objects'
-import { replaceIfNewer } from './cache'
-import { latestScanId } from './snapshot'
+import * as scans from '../../scan'
+import { refresh, replaceIfNewer } from './cache'
+import * as snapshot from './snapshot'
 
-test('scan discovery handles empty storage, legacy caches, unchanged scans and multiple pages', async () => {
-  const names = Array.from(
-    { length: 205 },
-    (_, index) => `scan.${String(index).padStart(3, '0')}.jsonl`,
-  )
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) =>
-    names.filter((name) => name >= args.atOrAfter).slice(0, args.limit),
-  )
+test('refresh rebuilds missing or invalid scan_at keys and skips a valid unchanged key', async () => {
+  const scanAt = '2026-10-02T10:40:04.272Z'
+  const discovery = spyOn(scans, 'latest').mockResolvedValue(scanAt)
+  const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
+    updated_at: scanAt,
+    models: [],
+  })
+  const logs = spyOn(console, 'log').mockImplementation(() => {})
+  let cachedScanAt: string | undefined
+  const replacements: unknown[] = []
+  const ctx = {
+    runQuery: async () => ({ scan_at: cachedScanAt, scan_id: 'ignored' }),
+    runMutation: async (_ref: unknown, args: unknown) => {
+      replacements.push(args)
+      return null
+    },
+    storage: { store: async () => 'new-blob' },
+  } as unknown as ActionCtx
+  const handler = (
+    refresh as unknown as {
+      _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<null>
+    }
+  )._handler
 
   try {
-    const ctx = {} as ActionCtx
-    expect(await latestScanId(ctx)).toBe(names.at(-1) ?? null)
-    expect(discovery).toHaveBeenCalledTimes(3)
-    discovery.mockClear()
-    expect(await latestScanId(ctx, names.at(-1))).toBe(names.at(-1) ?? null)
-    expect(discovery).toHaveBeenCalledTimes(1)
-    expect(await latestScanId(ctx, names[200])).toBe(names.at(-1) ?? null)
-    discovery.mockResolvedValue([])
-    expect(await latestScanId(ctx)).toBeNull()
+    for (const key of [undefined, 'invalid', '2026-02-30T00:00:00.000Z', scanAt]) {
+      cachedScanAt = key
+      replacements.length = 0
+      build.mockClear()
+      await handler(ctx, {})
+
+      expect(discovery).toHaveBeenLastCalledWith(ctx, key === scanAt ? scanAt : null)
+      expect(build).toHaveBeenCalledTimes(key === scanAt ? 0 : 1)
+      expect(replacements).toHaveLength(key === scanAt ? 0 : 1)
+
+      if (key !== scanAt) {
+        expect(replacements[0]).toMatchObject({ scan_at: scanAt, storage_id: 'new-blob' })
+        expect(replacements[0]).not.toHaveProperty('scan_id')
+      }
+    }
   } finally {
     discovery.mockRestore()
+    build.mockRestore()
+    logs.mockRestore()
   }
 })
 
@@ -42,6 +65,7 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
     content_type: 'application/json',
     storage_id: oldBlob,
     size: 1,
+    scan_id: 'scan.2099-01-01T00:00:00.000Z.jsonl',
   }
   let writes = 0
   const ctx = {
@@ -60,23 +84,23 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
     content_type: 'application/json',
     storage_id: newBlob,
     size: 2,
-    scan_id: 'scan.2026-10-02T10:40:04.272Z.jsonl',
+    scan_at: '2026-10-02T10:40:04.272Z',
   }
 
-  expect(await handler(ctx, args)).toBe(oldBlob)
-  expect(writes).toBe(2)
+  for (const scanAt of [undefined, 'invalid', '2026-02-30T00:00:00.000Z', '2026-10-02T10:40:04Z']) {
+    existing.scan_at = scanAt
+    writes = 0
+    expect(await handler(ctx, args)).toBe(oldBlob)
+    expect(writes).toBe(2)
+  }
 
-  existing.scan_id = args.scan_id
+  existing.scan_at = args.scan_at
   writes = 0
   expect(await handler(ctx, args)).toBe(newBlob)
-  expect(await handler(ctx, { ...args, scan_id: 'scan.2026-10-02T09:40:04.272Z.jsonl' })).toBe(
-    newBlob,
-  )
+  expect(await handler(ctx, { ...args, scan_at: '2026-10-02T09:40:04.272Z' })).toBe(newBlob)
   expect(writes).toBe(0)
 
-  expect(await handler(ctx, { ...args, scan_id: 'scan.2026-10-02T11:40:04.272Z.jsonl' })).toBe(
-    oldBlob,
-  )
+  expect(await handler(ctx, { ...args, scan_at: '2026-10-02T11:40:04.272Z' })).toBe(oldBlob)
   expect(writes).toBe(2)
 
   existing = null

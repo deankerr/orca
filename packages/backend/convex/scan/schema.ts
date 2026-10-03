@@ -1,31 +1,42 @@
-import * as R from 'remeda'
 import { z } from 'zod'
 
-/** Model fields required to identify and project a scan entry. */
-export const IdentifiedModel = z.looseObject({
-  slug: z.string(),
-  permaslug: z.string(),
-  input_modalities: z.array(z.string()),
-  output_modalities: z.array(z.string()),
-})
-
-/** Endpoint fields required to identify and project a scan entry. */
-export const IdentifiedEndpoint = z
-  .looseObject({
+/** Loaded model with an assembled identity; other source fields remain unnormalized JSON. */
+export const ScannedModel = z
+  .object({
     id: z.string(),
-    model_variant_slug: z.string(),
     variant: z.string(),
+    slug: z.string(),
+    permaslug: z.string(),
+    input_modalities: z.array(z.string()),
+    output_modalities: z.array(z.string()),
   })
-  .transform((endpoint) => R.omit(endpoint, ['model']))
+  .catchall(z.json())
 
-/** One validated model and its endpoints in a scan artifact. */
-export const ScanArtifactEntry = z.object({
-  scan_at: z.string(),
-  model_id: z.string(),
-  variant: z.string(),
-  model: IdentifiedModel,
-  endpoints: z.array(IdentifiedEndpoint).nullable(),
-})
+/** Loaded provider with an assembled identity, retaining its other source fields. */
+export const ScannedProvider = z.object({ provider_id: z.string() }).catchall(z.json())
 
-/** Parsed scan artifact entry. */
-export type ScanArtifactEntry = z.infer<typeof ScanArtifactEntry>
+/** Loaded endpoint with explicit relationships; other source fields remain available to consumers. */
+export const ScannedEndpoint = z
+  .object({
+    id: z.string(),
+    variant: z.string(),
+    model_id: z.string(),
+    provider_id: z.string(),
+    provider_tag: z.string(),
+    model_variant_slug: z.string(),
+  })
+  .catchall(z.json())
+
+export type ScannedModel = z.infer<typeof ScannedModel>
+export type ScannedProvider = z.infer<typeof ScannedProvider>
+export type ScannedEndpoint = z.infer<typeof ScannedEndpoint>
+
+/** Models, providers and endpoints from one collection, within ORCA's product scope. */
+export type Scan = {
+  scan_at: string
+  models: Map<string, ScannedModel>
+  providers: Map<string, ScannedProvider>
+  endpoints: Map<string, ScannedEndpoint>
+}
+
+export type ScanPair = { previous: Scan; next: Scan }

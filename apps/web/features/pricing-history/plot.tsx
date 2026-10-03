@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPricing } from '@orca/backend/convex/shared/pricing'
+import { formatPrice } from '@orca/backend/convex/numbers'
 import { LineChart } from 'echarts/charts'
 import { AxisPointerComponent, DataZoomComponent, GridComponent } from 'echarts/components'
 import { init, use as register } from 'echarts/core'
@@ -206,7 +206,7 @@ export function PricingHistoryPlot({
           max: maximum > 0 ? niceCeiling(maximum * 1.08) : 1,
           axisLabel: {
             color: '#a1a1aa',
-            formatter: (price: number) => formatPricing('text_input', price / 1e6)?.value ?? '—',
+            formatter: (price: number) => formatPrice(price) ?? '—',
           },
           splitLine: { lineStyle: { color: '#27272a' } },
         },

@@ -1,18 +1,34 @@
 # packages/backend
 
-- `shared/` runtime code used by both the convex backend and web app.
+- Shared pure modules may live at the `convex/` root and be imported by both the backend and web app.
 - `convex/init.ts` default export function is executed by Convex for preview environments immediately after deployment.
 - Preserving byte-level fidelity, object key order, and array order of upstream data is never a priority of ORCA.
-- `v4/` owns current ingestion and product data, sharing `objects/` and `scan/`.
-- V4 architecture, conventions and operating commands live in `convex/v4/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
+- `convex/catalog/`, `convex/history/` and `convex/ingestion/` own current knowledge, observation history and ingestion bookkeeping.
+- `events/` owns producing and storing base entity events; `alerts/` owns their consumption.
+- Backend architecture, conventions and operating commands live in `convex/README.md`; `../../docs/orca/objectives.md` is the overall todo list.
 - Provider identity and endpoint-local fields follow `../../docs/orca/provider-identity.md`; endpoint labels come from endpoint `provider_display_name`, and model/provider metadata belongs to normalized entities.
-- `convex/public_api/` independently maintains a frozen external contract; follow its local instructions. Its compatibility semantics must not shape V4.
-- `workflows/` independently collects analytics and top-apps data through Objects.
+- `convex/public_api/` independently maintains a frozen external contract; follow its local instructions. Its compatibility semantics must not shape other products.
+- `collectors/` independently collects scans, analytics and top-apps data.
+- `scan/` owns collection storage, discovery and concealed extraction through Objects. Consumers receive `Scan` or `ScanPair`; only the public API compatibility adapter loads raw entries.
+
+### Module ownership
+
+- Root composition (`routine.ts`, `initialize.ts`, `retry.ts`) coordinates domains; `clock.ts` supplies their shared observation horizon.
+- Root `entities.ts` owns ORCA's `Model`, `Endpoint`, `Provider` and `Pricing` schemas and normalization; Events uses those schemas for captured lifecycle payloads.
+- `scan/collected.ts` describes stored source entries; `scan/schema.ts` describes the `ScannedModel`, `ScannedEndpoint` and `ScannedProvider` values returned to consumers. Normalization input validators stay private.
+- Root `priceMeters.ts` owns meter units and scaling; products choose their own labels, ordering and supported meters.
+- Separate input/ingestion modules from output/product modules. The stored record format is their seam.
+- Input modules retain facts; output modules interpret metadata for their products. Browser code consumes product fields.
+- Group output code by product, including its queries, rendering, delivery and any product-owned storage.
+- Keep genuinely reused implementation within the relevant domain: `alerts/shared/` serves the alert products.
+- Products may compose shared behavior differently; do not introduce a generic pipeline or product registry.
+- Events and Alerts establish this pattern first. Other areas can adopt it when they change.
+- Alert ownership, policies and limitations live in `../../docs/events/renderers.md`.
 
 ### Concepts
 
-- ORCA periodically collects and stores ordered snapshots of upstream API data.
-- ORCA regenerates views from snapshot data.
+- ORCA periodically collects and stores upstream scan entries.
+- ORCA builds product data from scans.
 - These processes are independent, and a failure in one never impacts the other.
 - Upstream schemas change without warning, which may pause generation of views until manually unblocked.
 

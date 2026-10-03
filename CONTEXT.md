@@ -7,12 +7,26 @@ ORCA observes OpenRouter models, endpoints and providers over time.
 **MEPs**:
 Models, endpoints and providers: the three entity kinds observed by ORCA.
 
+**Scan**:
+OpenRouter models, endpoints and providers collected at one capture time, within ORCA's product scope.
+The time is assigned when collection finishes; upstream requests may observe different instants.
+_Avoid_: Observations (as a name for the whole collection)
+
+**Collector**:
+A process that fetches upstream data and preserves each collection independently of ingestion.
+
+**Scan pair**:
+Two scans ordered as previous and next, used to identify changes between their collection times.
+
+**Scan times**:
+The capture times identifying a scan pair, independently of whether its contents are loaded or ingested.
+
 **Entity observation**:
 The facts known about one entity at a scan time, including its identity and relationships.
 An observation dates ORCA's knowledge rather than the upstream change itself.
 
 **Baseline**:
-The observation at which a deployment's retained knowledge begins. Facts present in it were already
+The scan at which a deployment's retained knowledge begins. Facts present in it were already
 true when observed; it does not establish when they first became true upstream.
 
 **Initialization**:
@@ -58,10 +72,11 @@ An arriving identity was already known before this observation, including knowle
 A historical model record establishes knowledge even when ORCA has never observed endpoints for it.
 
 **Ingestion**:
-An observation pair whose prerequisites have completed, making it available for downstream processing.
+Acceptance of a scan pair after Catalog, Listings and current stats have committed together.
+Its recorded acceptance releases downstream processor work; that work may still be pending.
 
 **Pair processor**:
-Derives output for one ingestion's observation pair, with any historical context bounded to that observation.
+Derives output for one ingestion's scan pair, with any historical context bounded to that observation.
 Catalog, Listings and current stats are not pair processors.
 
 **Processor work**:
@@ -70,7 +85,7 @@ even if later ingestions have completed for that processor.
 
 **Entity event**:
 A normally immutable, self-contained projection of one entity's changes within an ingestion, addressed
-by the observation pair and the entity's identity within its kind. Its content can be regenerated as
+by the scan pair and the entity's identity within its kind. Its content can be regenerated as
 the projection evolves.
 
 **Identity context**:

@@ -1,10 +1,10 @@
 import { httpRouter } from 'convex/server'
 
+import { serve as serveFeed } from './alerts/feed/http'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,
 } from './public_api/v2/http'
-import { serve as serveFeed } from './v4/feedHttp'
 
 const http = httpRouter()
 

@@ -1,7 +1,7 @@
 # V4 development data
 
 Populate a fresh dev deployment by replaying a short window of production scans through V4.
-The destination builds its own Catalog, Pricing, Listings, processor work, and current Stats.
+The destination builds its own Catalog (including current stats), Pricing, Listings, and processor work.
 It reads compressed source objects remotely; it does not copy source tables or local object locators.
 
 ## Choose a small baseline
@@ -45,7 +45,7 @@ Required deployment environment (also configure these as project defaults for pr
 | Dev/preview            | `ORCA_SCAN_ENABLED`              | `false`                                    |
 | Dev/preview            | `ORCA_V4_INGEST_CRON_ENABLED`    | Unset or `false` for manual refresh        |
 
-The source must have `objects/remote` deployed and access to its stored artifacts. Dev needs no
+The source must have `objects/remote` deployed and access to its stored objects. Dev needs no
 R2 credentials: the source reads its storage and returns compressed bytes. Keep the configured
 source fixed once a timeline exists, including while retrying outstanding work.
 
@@ -73,21 +73,10 @@ bunx convex run --deployment "$DEV_DEPLOYMENT" --inline-query '
 
 For an already initialized timeline, use the resume step instead.
 
-## 2. Check discovery before writing
+## 2. Initialize and let continuation finish
 
 ```sh
-bunx convex run --deployment "$DEV_DEPLOYMENT" v4/scan/load:selectPair \
-  '{"from":"2026-09-25"}'
-```
-
-This read-only action exercises source selection, authentication, and discovery. It should return
-the baseline's `from_scan_at` and its successor's `scan_at`. `null` means there is no complete
-pair in that range. It does not yet exercise object download, decompression, or projection.
-
-## 3. Initialize and let continuation finish
-
-```sh
-bunx convex run --deployment "$DEV_DEPLOYMENT" v4/routine:run \
+bunx convex run --deployment "$DEV_DEPLOYMENT" routine:run \
   '{"start_at":"2026-09-25"}'
 ```
 
@@ -98,44 +87,43 @@ Manual runs and already-scheduled continuations work with V4 cron admission disa
 Inspect the shared clock and pending work:
 
 ```sh
-bunx convex run --deployment "$DEV_DEPLOYMENT" v4/clock:get '{}'
+bunx convex run --deployment "$DEV_DEPLOYMENT" clock:get '{}'
 bunx convex run --deployment "$DEV_DEPLOYMENT" \
-  v4/ingestion/progress:listProcessorWork \
+  ingestion/progress:listProcessorWork \
   '{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'
 bunx convex run --deployment "$DEV_DEPLOYMENT" \
-  v4/ingestion/progress:listProcessorWork \
+  ingestion/progress:listProcessorWork \
   '{"processor":"events","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'
 ```
 
-Pending work for the newest pair and temporarily older Stats are normal while that pair runs.
+Pricing and Events work may remain pending for the newest accepted pair. Current stats commit
+with acceptance and share the ingestion clock; pending processor work does not explain older stats.
 Once settled, verify:
 
-- `selectPair` with `from` set to the returned clock yields `null`: no later pair is available.
 - Both pending-work queries return empty pages.
-- `v4/stats/query:grid` has nonempty `rows` and `as_of` equal to the clock.
-- `v4/catalog/endpoints/query:grid` returns the expected current endpoints.
+- `catalog/stats/query:grid` has nonempty `rows` and `as_of` equal to the clock.
+- `catalog/endpoints/query:grid` returns the expected current endpoints.
 
 Use `convex logs --deployment "$DEV_DEPLOYMENT" --success` to inspect a stalled or failed run.
 
-## 4. Resume or recover
+## 3. Resume or recover
 
 Refresh the same timeline without `start_at`:
 
 ```sh
-bunx convex run --deployment "$DEV_DEPLOYMENT" v4/routine:run '{}'
+bunx convex run --deployment "$DEV_DEPLOYMENT" routine:run '{}'
 ```
 
 Resume advances from the clock; it does not retry older failed History obligations. Retry those
-by ID using `v4/retry:pricing` or `v4/retry:events` with `{"work_id":"…"}`. Listings commits
-with Catalog during acceptance and has no separate retry obligation. Use
-`v4/refreshStats:run` with `{}` if current Stats remains behind after processing finishes.
+by ID using `retry:pricing` or `retry:events` with `{"work_id":"…"}`. Listings and current Stats commit
+with Catalog during acceptance and have no separate retry obligation.
 
 If initialization fails with no clock but occupied V4 tables, inspect the failure before starting
 again; initialization is not resumable. A replacement disposable dev deployment is the simplest
 way to choose a different baseline or restart a partial initialization. There is no supported
 prepend-history operation for an existing timeline.
 
-## 5. Connect the product
+## 4. Connect the product
 
 When running the web app, set `NEXT_PUBLIC_CONVEX_URL` in `apps/web/.env.local` to this dev
 deployment's cloud URL. Grid, Entity Overview, and Pricing History read V4.

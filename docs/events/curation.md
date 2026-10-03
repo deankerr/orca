@@ -1,6 +1,6 @@
 # Curation
 
-- The first feed roughly follows Grid endpoint facts and model/provider overview fields.
+- The shared alert selection follows Grid endpoint facts and model/provider overview fields.
 - Paths preserve upstream names; aliases and display fallbacks belong to product presentation.
 - Absence, null, false, and zero remain distinct values; a value becoming null is still an update.
 - Valid changes outside the selection disappear; malformed selected changes fail visibly.
@@ -9,7 +9,7 @@
 ## Telemetry
 
 - Raw Events excludes `stats`, `statsByTier`, and `status`; `capacity_tpm` still produces metadata changes.
-- The curated feed excludes endpoint telemetry to keep its activity useful for model/provider comparison.
+- Shared alert preparation excludes endpoint telemetry to keep model/provider activity useful.
 - ❓ Should `capacity_tpm` remain in raw Events, or follow the other excluded telemetry fields?
 
 ## Capabilities

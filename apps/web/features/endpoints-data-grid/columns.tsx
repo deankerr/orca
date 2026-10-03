@@ -1,4 +1,4 @@
-import { formatPricing } from '@orca/backend/convex/shared/pricing'
+import { formatPrice } from '@orca/backend/convex/numbers'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -86,7 +86,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ getValue }) => {
       const inputPrice = getValue<number | undefined>()
       if (inputPrice !== undefined) {
-        return formatPricing('text_input', inputPrice)?.value
+        return formatPrice(inputPrice, 6)
       }
       return <EmptyCell />
     },
@@ -106,7 +106,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ getValue }) => {
       const outputPrice = getValue<number | undefined>()
       if (outputPrice !== undefined) {
-        return formatPricing('text_output', outputPrice)?.value
+        return formatPrice(outputPrice, 6)
       }
       return <EmptyCell />
     },
@@ -126,7 +126,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ getValue }) => {
       const cacheReadPrice = getValue<number | undefined>()
       if (cacheReadPrice !== undefined) {
-        return formatPricing('cache_read', cacheReadPrice)?.value
+        return formatPrice(cacheReadPrice, 6)
       }
       return <EmptyCell />
     },
@@ -146,7 +146,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     cell: ({ getValue }) => {
       const cacheWritePrice = getValue<number | undefined>()
       if (cacheWritePrice !== undefined) {
-        return formatPricing('cache_write', cacheWritePrice)?.value
+        return formatPrice(cacheWritePrice, 6)
       }
       return <EmptyCell />
     },

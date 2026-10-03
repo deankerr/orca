@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 
 import { internal } from './_generated/api'
 import { internalMutation } from './_generated/server'
-import { clock } from './v4/clock'
+import { clock } from './clock'
 
 /** Preview bootstrap: seed two days of V4 history, or resume an existing timeline. */
 const init = internalMutation({
@@ -12,7 +12,7 @@ const init = internalMutation({
     const scanAt = await clock(ctx)
     await ctx.scheduler.runAfter(
       0,
-      internal.v4.routine.run,
+      internal.routine.run,
       scanAt === null ? { start_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } : {},
     )
     return null

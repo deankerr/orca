@@ -6,7 +6,7 @@ endpoint membership, availability, tags, and quotes over time using the separate
 
 ## Module responsibilities
 
-- **Pricing history backend (`v4/history/pricing/`):** stores and retrieves pricing observations
+- **Pricing history backend (`history/pricing/`):** stores and retrieves pricing observations
   by `endpoint_id`. It has no knowledge of model membership or of multiple endpoints being
   grouped under a model. Its live query accepts an endpoint UUID and pagination options;
   it does not discover endpoints, join listings, or filter prices by model membership.
@@ -72,8 +72,8 @@ Inspect either example from `packages/backend`:
 
 ```sh
 ARGS='{"endpoint_id":"fc1cac03-9834-4ed8-8dfe-2dfb8543b690","cutoff":"2026-09-26T15:40:04.139Z","paginationOpts":{"numItems":100,"cursor":null}}'
-bunx convex run --deployment reliable-swan-376 v4/history/listings/query:list "$ARGS"
-bunx convex run --deployment reliable-swan-376 v4/history/pricing/query:list "$ARGS"
+bunx convex run --deployment reliable-swan-376 history/listings/query:list "$ARGS"
+bunx convex run --deployment reliable-swan-376 history/pricing/query:list "$ARGS"
 ```
 
 Change `endpoint_id` for the second case. These short histories each fit one page; a client must
@@ -103,11 +103,11 @@ several endpoints may share it. See [provider identity](provider-identity.md) an
 
 ## Loading flow
 
-1. Subscribe to `v4/history/listings/query:endpoints` for the model's historical UUIDs.
+1. Subscribe to `history/listings/query:endpoints` for the model's historical UUIDs.
 2. For each UUID, subscribe to `listings/query:forEndpoint` and `pricing/query:observe` in parallel.
    Listings are small enough for a complete per-endpoint response. Prices paginate oldest first,
    initially targeting 1,000 rows per page; all loaded pages remain reactive.
-3. Subscribe separately to `v4/clock:observe` for the chart horizon. History reads do not depend
+3. Subscribe separately to `clock:observe` for the chart horizon. History reads do not depend
    on this moving clock, and neither their arguments nor cache identities contain its value.
 4. After all endpoints' pages have loaded, assemble context and quotes chronologically and
    present the selected model's spans through that horizon.

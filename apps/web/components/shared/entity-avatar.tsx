@@ -1,4 +1,4 @@
-import { entityLogoUrl } from '@orca/backend/convex/shared/entityLogo'
+import { entityLogoUrl } from '@orca/backend/convex/entityLogo'
 
 import { cn } from '@/lib/utils'
 

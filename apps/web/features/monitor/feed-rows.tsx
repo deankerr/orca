@@ -1,6 +1,6 @@
 'use client'
 
-import type { EntityAlert } from '@orca/backend/convex/v4/alerts/curate'
+import type { EntityAlert } from '@orca/backend/convex/alerts/shared/curate'
 import { formatDistanceToNow } from 'date-fns'
 
 import { EntityEventCard } from './event-renderers'
