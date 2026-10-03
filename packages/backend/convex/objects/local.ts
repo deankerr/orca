@@ -14,6 +14,7 @@ export const nameSelection = v.object({
   path: v.string(),
   atOrAfter: v.string(),
   limit: v.number(),
+  order: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
 })
 export type NameSelection = Infer<typeof nameSelection>
 
@@ -33,6 +34,7 @@ export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promis
   const rows = await ctx.db
     .query(OBJECTS_LOCATORS_TABLE)
     .withIndex('by_path_name', (q) => q.eq('path', args.path).gte('name', args.atOrAfter))
+    .order(args.order ?? 'asc')
     .take(args.limit)
   return rows.map((row) => row.name)
 }

@@ -19,3 +19,7 @@ see [development data](../../../../docs/orca/development-data.md).
 - Batch results preserve requested identity order, including missing entries.
 
 The source returns stored compressed bytes without recompression; decoding belongs to the consumer.
+
+Discovery defaults to ascending names. `order: 'desc'` reverses the order before applying the limit;
+`atOrAfter` remains an inclusive lower bound in either direction. An empty bound and limit of one
+select the greatest name. Deploy the source's optional-order support before consumers request it.
