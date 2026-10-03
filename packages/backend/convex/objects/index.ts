@@ -115,7 +115,7 @@ export async function loadMany(
   return stored.map(decode)
 }
 
-/** Ordered names in one namespace, with an inclusive lower bound; empty string starts at the first. */
+/** Names at/after an inclusive lower bound, ascending by default. Descending returns greatest names first. */
 export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): Promise<string[]> {
   assertReadCount(selection.limit)
   const source = await readSource(ctx)
@@ -131,7 +131,11 @@ export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): 
     throw new ConvexError('Object source returned invalid names')
   }
   for (const [index, name] of names.entries()) {
-    if (name < selection.atOrAfter || (index > 0 && name <= names[index - 1])) {
+    const previous = names[index - 1]
+    const outOfOrder =
+      previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
+
+    if (name < selection.atOrAfter || outOfOrder) {
       throw new ConvexError('Object source returned names outside the requested order/range')
     }
   }
