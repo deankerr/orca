@@ -11,10 +11,10 @@ import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
 
 const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
-// Keep V3's product meanings: malformed optional facts are unknown, not invented defaults.
+// Malformed optional facts are unknown, not invented defaults.
 const quantity = z.number().nonnegative().nullable().catch(null)
 
-// V3's grid treats zero prices as absent; stored pricing and history still preserve zero.
+// The grid treats zero prices as absent; stored pricing and history still preserve zero.
 const price = z
   .string()
   .trim()

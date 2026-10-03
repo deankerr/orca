@@ -27,6 +27,6 @@ export function compare(previous: JsonValue, next: JsonValue) {
 
   visit(previous, '')
   visit(next, '')
-  // Keep scalar/null transitions as UPDATEs; accepted library limits are in docs/events/payloads.md.
+  // Keep scalar/null transitions as UPDATEs; accepted library limits are in docs/orca/events.md.
   return diff(previous, next, { embeddedObjKeys, treatTypeChangeAsReplace: false })
 }

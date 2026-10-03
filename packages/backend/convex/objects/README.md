@@ -1,28 +1,21 @@
 # Objects
 
-Named, insert-only objects with one deployment-wide read source.
+Named, insert-only source objects with one deployment-wide read source. Consumers receive logical
+text; Objects owns storage locators, UTF-8, gzip, and transport.
 
-- `load(ctx, identity)` returns logical text or `null` for a missing identity.
-- `loadMany(ctx, identities)` loads 1–100 exact identities in input order, retaining missing entries
-  as `null`; an existing locator whose blob is missing fails the request.
-- `namesAtOrAfter(ctx, { path, atOrAfter, limit })` returns up to 1–100 ordered names in that path,
-  including the lower bound; an empty lower bound starts with the first name.
-- `store` writes locally using `ORCA_OBJECTS_BACKEND`; deletion also targets local objects.
-- The object interface owns UTF-8, gzip, storage locators and transport. Consumers receive text.
+## Source constraints
 
-## Deployment source
+`ORCA_OBJECTS_SOURCE_DEPLOYMENT` redirects reads and discovery to a deployment name, not a URL.
+Absent/empty reads locally. Source and consumer must share a nonempty `ORCA_OBJECTS_API_KEY`.
+Project defaults already configure the source and matching key for new dev and preview deployments;
+see [development data](../../../../docs/orca/development-data.md).
 
-Set `ORCA_OBJECTS_SOURCE_DEPLOYMENT=dependable-husky-550` on a consuming deployment to redirect
-canonical reads and discovery. Leave it absent/empty on the source to read locally.
-Set the same `ORCA_OBJECTS_API_KEY` on both deployments. The source must have these functions deployed
-before consumers can use them; project defaults and preview initialization are configured separately.
+- Reads and discovery use the configured source; writes and deletion always target local objects.
+- Keep the source fixed while a timeline exists or processor work is outstanding.
+- Remote serving reads local storage directly, so requests remain one hop even if the server has a source override.
+- Selecting the current deployment as its own source is rejected.
+- Source/authentication failures propagate without silently falling back to local objects.
+- Missing identities return null; an existing locator with a missing blob is an error.
+- Batch results preserve requested identity order, including missing entries.
 
-- `objects/remote:namesAtOrAfter` is an authenticated public query over local committed locators.
-- `objects/remote:loadMany` is an authenticated public action returning the original gzip bytes in
-  parallel, preserving batch order. Convex serializes `v.bytes()` through its binary value encoding.
-- The consumer decodes after receipt; the source neither decompresses nor recompresses blobs.
-- Remote serving calls private local readers, making every request one hop even if the serving
-  deployment has its own source override. A source equal to the current deployment name is rejected
-  using `ctx.meta.getDeploymentMetadata()`.
-- Source errors propagate without falling back to local objects. Keep the source fixed while V4
-  has a populated timeline or outstanding processor work.
+The source returns stored compressed bytes without recompression; decoding belongs to the consumer.

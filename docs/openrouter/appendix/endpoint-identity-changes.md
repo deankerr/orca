@@ -1,4 +1,4 @@
-# Endpoint model changes: production observations
+# Endpoint identity changes: September 2026 observations
 
 ## Finding
 
@@ -13,8 +13,7 @@ membership never changes.
 
 ## Scope and method
 
-Read-only inspection of production `dependable-husky-550` during the September 2026 V4 transition
-assessment:
+Read-only inspection of retained production listing history on 2026-09-26:
 
 | Measurement                                         | Result |
 | --------------------------------------------------- | -----: |
@@ -81,26 +80,3 @@ Dates are UTC observation dates. Each row represents a distinct endpoint UUID.
 The LongCat, Tongyi DeepResearch, and Qianfan OCR transitions followed an unlisted observation.
 The other 16 transitions were between listed observations. Provider ID and tag stayed unchanged
 at all 19 model transitions.
-
-## Implication: listings are the shared context lens
-
-Listings record endpoint availability and model/provider/tag context only when that context
-changes. They provide the temporal lens through which pricing and stats observations are read.
-The product discovers historical UUIDs with a model-scoped query, then subscribes to each
-endpoint's complete small listing history. The measured global size does not justify returning
-the whole growing table in a single response: Convex arrays have an 8,192-element limit.
-
-The existing `v4/history/listings/query:byModel` filter is not that complete lens: when an endpoint
-moves from A to B, the new row is indexed under B. Discovering UUIDs through A's historical rows
-and reading their complete per-endpoint context includes the boundary naturally. Order observations
-and use each observation until the next one to resolve context at a measurement's timestamp.
-
-Keep these concerns in the small listings layer. Pricing and stats history can remain keyed by
-endpoint UUID and observation time without repeating `model_id` or `provider_tag` in every row
-and associated index. This matters especially for stats: V3 has more than seven million rows.
-The size of measurement history does not imply comparable size or query complexity for listings.
-
-Handle model transitions exactly, but do not let their rarity motivate disproportionate retrieval
-machinery. Model and endpoint listing histories remain tiny compared with measurement history.
-
-See [Pricing History mapping](v4-pricing-history.md) for quote carry-forward and availability rules.

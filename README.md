@@ -29,18 +29,13 @@ Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage,
 | `apps/web`         | Next.js 16 / React 19 frontend — data grid, monitor, overviews, pricing history, API docs    |
 | `packages/backend` | Convex backend — schema, crons, scan ingestion, change tracking, Discord webhook, public API |
 
-### Data pipeline
+## Documentation
 
-1. **Capture** — scheduled scans preserve upstream observations as durable artifacts in Convex storage or R2.
-2. **Project** — V4 ingestion derives Catalog (including current stats), Pricing, and Listings. These power the grid, entity overview, and pricing history.
-3. **Capture changes** — Events retains entity-level changes for accepted scan pairs.
-4. **Prepare outputs** — Alerts reads and interprets those records with shared preparation and product-owned Monitor, Feed and Discord modules.
-
-Events owns the stored record format and ingestion; Alerts owns reading, metadata interpretation and output. The frozen V2 public API independently consumes immutable scans through Objects. Scan, analytics and top-apps collectors independently preserve upstream data.
-
-### Stack
-
-TypeScript throughout. Next.js 16, React 19, Tailwind CSS 4, TanStack Query/Table/Virtual, ECharts, nuqs. Convex for the backend and database. Remeda for data transforms, Zod for validation at boundaries. Tooling is Bun + Turborepo, with the [OXC](https://oxc.rs) toolchain (oxlint + oxfmt) in place of an ESLint/tsc stack.
+- [Domain vocabulary](CONTEXT.md): identity, observations, listings, and ingestion.
+- [Development data](docs/orca/development-data.md): populate a dev deployment and connect the web app.
+- [Provider identity](docs/orca/provider-identity.md), [pricing policy](docs/orca/pricing.md), and [Pricing History](docs/orca/pricing-history.md).
+- [Events and alerts](docs/orca/events.md), [Feed contract](docs/orca/feed.md), and [Discord operations](docs/orca/discord.md).
+- [OpenRouter catalog](docs/openrouter/catalog.md) and [pricing](docs/openrouter/pricing.md): upstream research, separate from ORCA policy.
 
 ## Public API
 

@@ -58,15 +58,5 @@ These are interpretations, not an authoritative upstream taxonomy. New observati
 to reinterpret the data as a whole. A configuration/organization/variant hierarchy would encode more
 certainty than the evidence supports and is not needed for the current products.
 
-## Implementation references
-
-[`bundle-analysis/schemas/endpoint.ts`](../../packages/scripts/bundle-analysis/schemas/endpoint.ts)
-models the endpoint-local fields separately from `provider_info`. Its omission of an explicit
-`provider_slug` declaration does not change that field's endpoint ownership.
-
-V3's projection reads an endpoint label from `provider_info.displayName`; this is a known source-field
-mistake, not precedent to preserve. V4 copies the endpoint-local label and stores only endpoint-owned
-metadata on Catalog endpoints; see [Backend observation semantics](../../packages/backend/convex/README.md#observation-semantics).
-
 [OpenRouter provider observations](../openrouter/providers.md) supplies empirical background.
 Observed agreements between fields are not identity guarantees and do not override this policy.

@@ -29,6 +29,11 @@ An observation dates ORCA's knowledge rather than the upstream change itself.
 The scan at which a deployment's retained knowledge begins. Facts present in it were already
 true when observed; it does not establish when they first became true upstream.
 
+**First observation**:
+Catalog `from_scan_at` dates the first retained observation of that exact identity; `scan_at`
+dates its current facts. First observation is not upstream creation, the current listing period,
+or an ingestion pair's predecessor. Updates preserve it; an absent value means it is unknown.
+
 **Initialization**:
 Establishing initial knowledge from the baseline, before processing changes between observations.
 It is separate from routine pair processing and does not represent upstream creation events.

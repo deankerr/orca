@@ -43,7 +43,7 @@ reuse an already-configured checkout and its running processes, including in the
 Do not seed data as an initial setup step. First understand the change and what data its
 implementation or verification needs; some tasks need no populated data at all.
 
-When data is needed, follow `docs/orca/v4-development-data.md` and choose the smallest
+When data is needed, follow `docs/orca/development-data.md` and choose the smallest
 source-backed replay window that serves the task. Two recent captures suffice for the grid.
 Initialize a fresh timeline with an explicit `start_at`; resume an existing timeline without it.
 

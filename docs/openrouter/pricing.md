@@ -191,20 +191,8 @@ the state actually present in each observation.
   population listed at each historical time rather than today's survivors to measure historical
   prevalence.
 
-## Reasoning meters
+## Reasoning meter
 
-`pricing.internal_reasoning` is a distinct rate on some endpoints. Native reasoning tokens can be a
-subset of native completion tokens rather than an additional token count.
-
-- When completion and reasoning rates differ, calculate a non-double-counted cost as:
-
-  ```text
-  (native completion tokens - native reasoning tokens) * completion rate
-  + native reasoning tokens * internal_reasoning rate
-  ```
-
-- If no distinct reasoning rate exists, all native completion tokens, including the reasoning
-  subset, use the completion rate.
-- Some offerings expose a separate internal-research meter whose provider counters are absent from
-  generic generation exports.
-- ⚠️ Missing provider-specific counters cannot be inferred from normalized token totals.
+As of 2026-10-04, the working inventory has one vintage model endpoint that genuinely uses
+`internal_reasoning` and around 100 Gemini endpoints where the field is misleading. ORCA
+[omits this meter from product pricing](../orca/pricing.md#deliberately-omitted-meters) for now.
