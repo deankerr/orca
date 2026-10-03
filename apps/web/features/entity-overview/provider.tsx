@@ -9,7 +9,7 @@ import { OverviewHeader, OverviewActions, OverviewStatus } from './layout'
 
 export function ProviderOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v4.catalog.providers.query.get, { provider_id: slug }),
+    convexQuery(api.catalog.providers.query.get, { provider_id: slug }),
   )
 
   if (!data) {

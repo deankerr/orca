@@ -33,7 +33,7 @@ test('preview init schedules a short V4 baseline, then resumes without resetting
   const before = Date.now() - 2 * 86_400_000
   await handler(ctx, {})
   const after = Date.now() - 2 * 86_400_000
-  expect(calls[0]).toMatchObject({ delay: 0, name: 'v4/routine:run' })
+  expect(calls[0]).toMatchObject({ delay: 0, name: 'routine:run' })
   const start = Date.parse(calls[0].args.start_at ?? '')
   expect(start).toBeGreaterThanOrEqual(before)
   expect(start).toBeLessThanOrEqual(after)
@@ -41,5 +41,5 @@ test('preview init schedules a short V4 baseline, then resumes without resetting
   latest = { scan_at: '2026-09-26T15:40:04.139Z' }
   await handler(ctx, {})
   expect(calls).toHaveLength(2)
-  expect(calls[1]).toEqual({ delay: 0, name: 'v4/routine:run', args: {} })
+  expect(calls[1]).toEqual({ delay: 0, name: 'routine:run', args: {} })
 })

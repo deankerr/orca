@@ -59,7 +59,7 @@ at its first scheduled admission at 15:43 UTC.
 
 ### Stats publication at the initial capture
 
-`v4/stats/query:grid` returned `{ as_of: null, rows: [] }`; the new
+`v4/catalog/stats/query:grid` returned `{ as_of: null, rows: [] }`; the new
 `v4_current_stats_snapshot` table was empty. The retired `v4_current_stats` table still contained
 1,210 readings, matching V3 values exactly for the shared endpoints. V3 had 1,212 readings;
 the two additional readings belong to the deliberately excluded Lyria endpoints.
@@ -213,7 +213,7 @@ Run from the repository root with the deployment explicit:
 bun run --cwd packages/backend convex function-spec --deployment dependable-husky-550
 bun run --cwd packages/backend convex insights --deployment dependable-husky-550 --details --json
 bun run --cwd packages/backend convex run --deployment dependable-husky-550 v4/clock:get '{}'
-bun run --cwd packages/backend convex run --deployment dependable-husky-550 v4/stats/query:grid '{}'
+bun run --cwd packages/backend convex run --deployment dependable-husky-550 v4/catalog/stats/query:grid '{}'
 bun run --cwd packages/backend convex run --deployment dependable-husky-550 \
   v4/ingestion/progress:listProcessorWork \
   '{"processor":"pricing","state":"pending","paginationOpts":{"numItems":100,"cursor":null}}'

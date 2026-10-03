@@ -58,8 +58,8 @@ const QUICK_LINKS = [
 ] as const
 
 export default function Page() {
-  const modelChoices = useEntityChoices(api.v4.monitor.models, {})
-  const providerChoices = useEntityChoices(api.v4.monitor.providers, {})
+  const modelChoices = useEntityChoices(api.alerts.monitor.query.models, {})
+  const providerChoices = useEntityChoices(api.alerts.monitor.query.providers, {})
   const models = modelChoices.status === 'LoadingFirstPage' ? undefined : modelChoices.results
   const providers =
     providerChoices.status === 'LoadingFirstPage' ? undefined : providerChoices.results

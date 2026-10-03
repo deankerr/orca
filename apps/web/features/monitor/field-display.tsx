@@ -1,8 +1,6 @@
 'use client'
 
-import { splitPath } from '@orca/backend/convex/shared/formatters'
-import { truncate } from '@orca/backend/convex/shared/utils'
-import type { FieldChange } from '@orca/backend/convex/v4/alerts/curate'
+import type { FieldChange } from '@orca/backend/convex/alerts/shared/curate'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'
@@ -11,6 +9,14 @@ import { fieldLabel, formatChangeValue, formatChangeUnit, formatChangeDelta } fr
 
 const TRUNCATE_LENGTH = 800
 const LONG_STRING_LENGTH = 30
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text
+  }
+
+  return `${text.slice(0, maxLength - 3)}...`
+}
 
 // -- Label colors
 
@@ -227,7 +233,12 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
     return null
   }
 
-  const grouped = Map.groupBy(fields, (f) => splitPath(f.path).category)
+  const grouped = Map.groupBy(fields, ({ path }) => {
+    const dotIndex = path.indexOf('.')
+
+    return dotIndex === -1 ? null : path.slice(0, dotIndex)
+  })
+
   const topLevel = grouped.get(null) ?? []
   const categories = [...grouped.entries()].filter(([cat]) => cat !== null)
 

@@ -13,13 +13,12 @@ Model arrival classification prefers `from_scan_at` when present, while retainin
 evidence and the existing Catalog `scan_at` fallback for unbackfilled models. The fallback's documented
 historical-model limitation remains until those rows are backfilled. Stored events are not rewritten.
 
-## One-off backfill
+## Completed one-off backfill
 
-No production backfill has been run. Deploy the optional fields and the preserving routine writer
-before applying the backfill. The runner uses the earliest retained ingestion's `from_scan_at` as
-its baseline and loads that artifact with the same scoped extraction as routine ingestion.
+The one-off backfill is complete and its runner has been removed. It used the earliest retained
+ingestion's `from_scan_at` as its baseline, with the same scoped scan extraction as routine ingestion.
 
-Dates are selected as follows:
+Dates were selected as follows:
 
 - **Endpoints:** earliest `by_endpoint_id_and_scan_at` Listings record.
 - **Providers:** earliest `by_provider_id_and_scan_at` Listings record.
@@ -61,32 +60,3 @@ loss of all endpoints, and present in the listed scan. The scanner assigns the b
 
 These are exact-ID observations, not the earlier discovery of their free variants. The small
 mapping is deliberately specific to the audited history; other unresolved IDs remain unset.
-
-### Operation
-
-From `packages/backend`, first deploy the code to the intended deployment. Run a dry run (the default):
-
-```sh
-bunx convex run --deployment <deployment-name> v4/catalog/backfill:run '{}'
-```
-
-The result reports the baseline and, per table, examined rows, existing dates, valid candidates by
-source, patched rows, and unresolved/invalid records. Candidates before the deployment baseline or
-after their Catalog row's `scan_at` are invalid and remain untouched. Review all issues before applying.
-`v4/catalog/backfill:batch` also returns individual proposed dates for a supplied page.
-
-After reviewing the dry run, apply explicitly:
-
-```sh
-bunx convex run --deployment <deployment-name> v4/catalog/backfill:run '{"apply":true}'
-```
-
-The action drives bounded 50-row transactions and returns totals for the entire run. It only patches
-missing `from_scan_at` values. Each transaction reads the current row before patching; concurrent
-routine ingestion preserves the value through Convex transaction retries. No events, work, current
-facts, observation clocks or Discord deliveries are changed.
-
-If interrupted, restart the same command: populated values are preserved. Run another dry run after
-applying; expect no remaining valid candidates, only existing dates and reviewed unresolved/invalid
-records. Compare examined row counts before and after, accounting for live ingestion. Keep the field
-optional. A timeout can leave completed batches applied; it does not roll them back.

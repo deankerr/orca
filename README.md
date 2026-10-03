@@ -14,7 +14,7 @@ That history powers a few things:
 - **Monitor** — a change feed showing field-level diffs between snapshots, surfacing model, endpoint, and provider activity that is otherwise invisible. (`apps/web/features/monitor/`)
 - **Entity Overview** — a sheet with model or provider details, opened from the grid and Monitor. (`apps/web/features/entity-overview/`)
 - **Pricing History** — a per-model overlay of provider prices over time. (`apps/web/features/pricing-history/`)
-- **Discord preview** — V4 events rendered to a single webhook target. (`packages/backend/convex/v4/discord.ts`)
+- **Discord preview** — entity events rendered to a single webhook target. (`packages/backend/convex/alerts/discord/`)
 - **Public API** — an HTTP endpoint exposing the curated model/endpoint data. See [Public API](#public-api) below.
 
 It's aimed at people who work with OpenRouter and LLMs directly — the kind of user who reads context lengths, quantization, and reasoning-token support closely and copies model slugs straight into their code. The presentation favors technical precision over simplification.
@@ -32,10 +32,11 @@ Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage,
 ### Data pipeline
 
 1. **Capture** — scheduled scans preserve upstream observations as durable artifacts in Convex storage or R2.
-2. **Project** — V4 ingestion derives Catalog, Pricing, Listings, and current Stats. These power the grid, entity overview, and pricing history.
-3. **Interpret changes** — V4 Events retains entity-level changes for accepted scan pairs; event renderers turn that history into structured changes and natural-language items for products.
+2. **Project** — V4 ingestion derives Catalog (including current stats), Pricing, and Listings. These power the grid, entity overview, and pricing history.
+3. **Capture changes** — Events retains entity-level changes for accepted scan pairs.
+4. **Prepare outputs** — Alerts reads and interprets those records with shared preparation and product-owned Monitor, Feed and Discord modules.
 
-Monitor and Discord use V4 Events. The frozen V2 public API independently consumes immutable scans through Objects. Analytics and top-apps collection remain independent workflows.
+Events owns the stored record format and ingestion; Alerts owns reading, metadata interpretation and output. The frozen V2 public API independently consumes immutable scans through Objects. Scan, analytics and top-apps collectors independently preserve upstream data.
 
 ### Stack
 

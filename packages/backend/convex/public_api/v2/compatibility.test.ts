@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { ScanArtifactEntry } from '../../scan/schema'
+import { ScanEntry } from '../../scan/collected'
 import { transformScanToV2Models } from './compatibility'
 import { OrcaPublicApiV2Schema } from './schema'
 
@@ -27,8 +27,7 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
     stats: { p50_latency: 0, p50_throughput: 42 },
     pricing: { prompt: '0', completion: '0.000002', input_audio_cache: '0.000001', request: '2' },
   }
-  const entry = ScanArtifactEntry.parse({
-    scan_at: scanAt,
+  const entry = ScanEntry.parse({
     model_id: 'author/model:beta',
     variant: 'beta',
     model: {
@@ -102,7 +101,7 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
       ],
     },
   ])
-  entry.endpoints = ScanArtifactEntry.parse({
+  entry.endpoints = ScanEntry.parse({
     ...entry,
     endpoints: [{ ...endpoint, stats: { p50_latency: null, p50_throughput: 42 } }],
   }).endpoints

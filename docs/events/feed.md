@@ -2,6 +2,7 @@
 
 - Available on the task's dev deployment; intended for unadvertised production use while its shape develops.
 - Native paginated queries also support experiments and reactive clients.
+- Feed uses the shared Monitor/Discord alert content, without batching; its output format remains experimental.
 
 ## HTTP requests
 

@@ -4,7 +4,7 @@
 
 - One webhook target; the legacy bot approach will not return.
 - Pre-alpha production demo in a private ORCA channel, intended to evaluate the live rendering UX.
-- Apply the [coarse pricing filter](pricing.md#coarse-renderer-filter) and Discord field selection before grouping.
+- Apply the [coarse pricing filter](pricing.md#coarse-renderer-filter) and shared default field selection before grouping.
 - Within each scan and entity kind, identical field changes on five or more entities become one batch bucket.
 - Each batch bucket owns one field change; original events retain remaining fields, and empty updates disappear.
 - Batch cards list affected identities and source IDs, splitting long identity lists across messages.
@@ -34,7 +34,7 @@
 ## Rendering boundaries
 
 - Discord presentation can specialize shared curated facts without changing captured events or `IChange` semantics.
-- The Alerts pipeline owns eligibility, field selection and batching; cards consume prepared alerts.
+- Discord composes shared eligibility, field selection and batching; cards consume prepared alerts.
 - Entity cards own field layout and lifecycle presentation; `pricing.ts` shares price display across cards.
 - Shared display helpers remain domain-agnostic. Keep Discord markup inside the Discord renderer.
 - Padded inline code gives bounded fields such as pricing a tabular layout; arbitrary long keys need other layouts.

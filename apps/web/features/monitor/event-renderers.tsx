@@ -1,8 +1,8 @@
 'use client'
 
-import type { EntityAlert, FieldValue } from '@orca/backend/convex/v4/alerts/curate'
-import { fact } from '@orca/backend/convex/v4/alerts/facts'
-import { priceMeters } from '@orca/backend/convex/v4/alerts/renderers/pricing'
+import type { EntityAlert, FieldValue } from '@orca/backend/convex/alerts/shared/curate'
+import { fact } from '@orca/backend/convex/alerts/shared/facts'
+import { priceMeters } from '@orca/backend/convex/alerts/shared/pricing'
 import { InfoIcon, PlusCircleIcon } from 'lucide-react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'

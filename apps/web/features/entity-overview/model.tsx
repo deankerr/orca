@@ -10,7 +10,7 @@ import { reasoningLabel, orderEfforts } from './reasoning'
 
 export function ModelOverview({ slug }: { slug: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.v4.catalog.models.query.get, { model_id: slug }),
+    convexQuery(api.catalog.models.query.get, { model_id: slug }),
   )
 
   if (!data) {

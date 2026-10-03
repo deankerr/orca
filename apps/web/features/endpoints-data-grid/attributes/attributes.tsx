@@ -1,4 +1,4 @@
-import { formatPricing } from '@orca/backend/convex/shared/pricing'
+import { formatPrice } from '@orca/backend/convex/numbers'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
@@ -59,14 +59,6 @@ function defineAttributes<T extends AttributeDefinitions>(definitions: T): T {
 
 function hasValue<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined
-}
-
-function formatAttributePrice(field: Parameters<typeof formatPricing>[0], value: number): string {
-  const formatted = formatPricing(field, value)
-  if (!formatted) {
-    return String(value)
-  }
-  return formatted.unit ? `${formatted.value}/${formatted.unit}` : formatted.value
 }
 
 function formatAttributeDateTime(timestamp: string): string {
@@ -201,10 +193,7 @@ export const attributes = defineAttributes({
       if (hasValue(webSearchPrice)) {
         items.push({
           label: 'Per Request',
-          value: `$${webSearchPrice.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 4,
-          })}`,
+          value: formatPrice(webSearchPrice) ?? String(webSearchPrice),
         })
       }
 
@@ -436,7 +425,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageInputPrice)) {
         items.push({
           label: 'Input',
-          value: formatAttributePrice('image_input', imageInputPrice),
+          value: `${formatPrice(imageInputPrice, 3) ?? String(imageInputPrice)}/KTOK`,
         })
       }
 
@@ -461,7 +450,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageOutputPrice)) {
         items.push({
           label: 'Output',
-          value: formatAttributePrice('image_output', imageOutputPrice),
+          value: `${formatPrice(imageOutputPrice, 3) ?? String(imageOutputPrice)}/KTOK`,
         })
       }
 
@@ -509,14 +498,14 @@ export const attributes = defineAttributes({
       if (hasValue(audioInputPrice)) {
         items.push({
           label: 'Input',
-          value: formatAttributePrice('audio_input', audioInputPrice),
+          value: `${formatPrice(audioInputPrice, 6) ?? String(audioInputPrice)}/MTOK`,
         })
       }
 
       if (hasValue(audioCacheReadPrice)) {
         items.push({
           label: 'Cache',
-          value: formatAttributePrice('audio_cache_read', audioCacheReadPrice),
+          value: `${formatPrice(audioCacheReadPrice, 6) ?? String(audioCacheReadPrice)}/MTOK`,
         })
       }
 

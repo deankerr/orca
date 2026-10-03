@@ -4,19 +4,19 @@ import { v } from 'convex/values'
 /** Deployment environment contract; project defaults supply values for new dev and preview deployments. */
 const app = defineApp({
   env: {
-    /** Storage for newly written artifacts; defaults to Convex. Existing objects retain their stored backend. */
+    /** Storage for newly written objects; defaults to Convex. Existing objects retain their stored backend. */
     ORCA_OBJECTS_BACKEND: v.optional(v.union(v.literal('convex'), v.literal('r2'))),
     /** Canonical object reads use this deployment name; absent/empty reads locally. Writes remain local. */
     ORCA_OBJECTS_SOURCE_DEPLOYMENT: v.optional(v.string()),
     /** Shared API key for object-source discovery and compressed batch reads, on source and consumer. */
     ORCA_OBJECTS_API_KEY: v.optional(v.string()),
-    /** R2 access key used to sign object requests; required whenever accessing R2-backed artifacts. */
+    /** R2 access key used to sign object requests; required whenever accessing R2-backed objects. */
     ORCA_R2_ACCESS_KEY_ID: v.optional(v.string()),
-    /** Secret paired with the R2 access key; required whenever accessing R2-backed artifacts. */
+    /** Secret paired with the R2 access key; required whenever accessing R2-backed objects. */
     ORCA_R2_SECRET_ACCESS_KEY: v.optional(v.string()),
-    /** Cloudflare account owning the R2 bucket; required whenever accessing R2-backed artifacts. */
+    /** Cloudflare account owning the R2 bucket; required whenever accessing R2-backed objects. */
     ORCA_R2_ACCOUNT_ID: v.optional(v.string()),
-    /** R2 bucket for artifact reads and writes; required whenever accessing R2-backed artifacts. */
+    /** R2 bucket for object reads and writes; required whenever accessing R2-backed objects. */
     ORCA_R2_BUCKET: v.optional(v.string()),
 
     /** Private preview channel webhook for V4 event notifications. */
@@ -33,9 +33,9 @@ const app = defineApp({
     ORCA_V4_INGEST_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */
     ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables the daily upstream analytics collection workflow. */
+    /** Enables the daily upstream analytics collector. */
     ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables the daily upstream top-apps collection workflow. */
+    /** Enables the daily upstream top-apps collector. */
     ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
   },
 })

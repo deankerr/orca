@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { ScanArtifactEntry } from '../../scan/schema'
+import type { ScanEntry } from '../../scan/collected'
 import type { OrcaPublicApiV2Endpoint, OrcaPublicApiV2Model } from './schema'
 
 const optionalNumber = z.number().nullish()
@@ -55,7 +55,7 @@ const Model = z.object({
  * Model short_name already includes its variant suffix. provider_info.displayName, zero prices
  * as null, and the misnamed audio_cache_write field deliberately preserve the published contract.
  */
-export function transformScanToV2Models(entries: ScanArtifactEntry[]): OrcaPublicApiV2Model[] {
+export function transformScanToV2Models(entries: ScanEntry[]): OrcaPublicApiV2Model[] {
   const output = new Map<string, OrcaPublicApiV2Model>()
 
   for (const entry of entries) {

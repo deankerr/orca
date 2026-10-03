@@ -31,14 +31,12 @@ export function HistoryData({
 }) {
   const [attempt, setAttempt] = useState(0)
   const [prices, setPrices] = useState<Record<string, PriceSubscription | Error>>({})
-  const clock = useQuery(convexQuery(api.v4.clock.observe, {}))
-  const members = useQuery(
-    convexQuery(api.v4.history.listings.query.endpoints, { model_id: modelId }),
-  )
+  const clock = useQuery(convexQuery(api.clock.observe, {}))
+  const members = useQuery(convexQuery(api.history.listings.query.endpoints, { model_id: modelId }))
   const ids = members.data ?? []
   const listings = useQueries({
     queries: ids.map((endpoint_id) =>
-      convexQuery(api.v4.history.listings.query.forEndpoint, { endpoint_id }),
+      convexQuery(api.history.listings.query.forEndpoint, { endpoint_id }),
     ),
   })
   const updatePrices = useCallback((id: string, result: PriceSubscription | Error) => {
@@ -105,7 +103,7 @@ type PriceSubscriptionProps = {
 /** Cached pagination keeps endpoint pages subscribed across brief overlay visits. */
 function EndpointPrices({ endpointId, onResult }: PriceSubscriptionProps) {
   const { results, status, loadMore } = usePaginatedQuery(
-    api.v4.history.pricing.query.observe,
+    api.history.pricing.query.observe,
     { endpoint_id: endpointId },
     { initialNumItems: PAGE_SIZE },
   )

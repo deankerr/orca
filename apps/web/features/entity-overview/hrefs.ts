@@ -1,5 +1,3 @@
-import { baseProviderSlug } from '@orca/backend/convex/shared/utils'
-
 import { href, pickParams, toSearchParams } from '@/lib/href'
 
 const MONITOR_QUERY_KEYS = ['model', 'provider'] as const
@@ -16,7 +14,7 @@ export function buildMonitorHref({
   slug: string
 }): string {
   const key = type === 'model' ? 'model' : 'provider'
-  const value = type === 'provider' ? baseProviderSlug(slug) : slug
+  const value = type === 'provider' ? slug.replace(/\/.*$/, '') : slug
 
   if (pathname === '/monitor') {
     const next = pickParams(toSearchParams(searchParams), MONITOR_QUERY_KEYS)

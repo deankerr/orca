@@ -4,7 +4,9 @@ import { gzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
 import { internalAction, internalMutation, internalQuery } from '../../_generated/server'
-import { buildSnapshot, latestScanId } from './snapshot'
+import { latest } from '../../scan'
+import { scanTime } from '../../scan/time'
+import { buildSnapshot } from './snapshot'
 import { publicApiV2CacheTable } from './table'
 
 export const get = internalQuery({
@@ -19,14 +21,15 @@ export const get = internalQuery({
  */
 export const replaceIfNewer = internalMutation({
   args: {
-    ...publicApiV2CacheTable.validator.fields,
-    scan_id: v.string(),
+    ...publicApiV2CacheTable.validator.omit('scan_id').fields,
+    scan_at: v.string(),
   },
   returns: v.union(v.null(), v.id('_storage')),
   handler: async (ctx, args) => {
     const existing = await ctx.db.query('public_api_v2_cache').order('desc').first()
+    const existingScanAt = scanTime.safeParse(existing?.scan_at).data
 
-    if (existing?.scan_id !== undefined && existing.scan_id >= args.scan_id) {
+    if (existingScanAt !== undefined && existingScanAt >= args.scan_at) {
       return args.storage_id
     }
 
@@ -41,24 +44,25 @@ export const replaceIfNewer = internalMutation({
   },
 })
 
-/** Independent cron: an absent scan_id intentionally refreshes legacy cache rows once. */
+/** A missing or invalid cache time triggers a fresh build. */
 export const refresh = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx): Promise<null> => {
     const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
-    const scanId = await latestScanId(ctx, cached?.scan_id)
+    const cachedScanAt = scanTime.safeParse(cached?.scan_at).data ?? null
+    const scanAt = await latest(ctx, cachedScanAt)
 
-    if (scanId === null || scanId === cached?.scan_id) {
+    if (scanAt === null || scanAt === cachedScanAt) {
       return null
     }
 
-    const result = await buildSnapshot(ctx, scanId)
+    const result = await buildSnapshot(ctx, scanAt)
     const encoded = new TextEncoder().encode(JSON.stringify(result))
     const compressed = gzipSync(encoded)
     const storage_id = await ctx.storage.store(new Blob([new Uint8Array(compressed)]))
     const unusedStorageId = await ctx.runMutation(internal.public_api.v2.cache.replaceIfNewer, {
-      scan_id: scanId,
+      scan_at: scanAt,
       content_type: 'application/json',
       storage_id,
       size: compressed.byteLength,
@@ -76,7 +80,7 @@ export const refresh = internalAction({
     }
 
     console.log('[public_api:v2:refresh]', {
-      scan_id: scanId,
+      scan_at: scanAt,
       size: compressed.byteLength,
       raw: encoded.byteLength,
     })
