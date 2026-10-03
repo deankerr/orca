@@ -48,7 +48,7 @@ test('routine validates and normalizes operator start_at before selecting scans'
   }
 })
 
-test('only successful fresh routine events schedule the enabled preview; retries never broadcast', async () => {
+test('only successful fresh routine events schedule enabled Discord broadcasts; retries never broadcast', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -64,7 +64,7 @@ test('only successful fresh routine events schedule the enabled preview; retries
   const nextPair = spyOn(load, 'loadNextPair').mockResolvedValue(pair)
   const exactPair = spyOn(load, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
-  const oldEnabled = process.env.ORCA_DISCORD_PREVIEW_ENABLED
+  const oldEnabled = process.env.ORCA_DISCORD_ALERTS_ENABLED
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
@@ -126,7 +126,7 @@ test('only successful fresh routine events schedule the enabled preview; retries
       'duplicate',
     ]) {
       calls.length = 0
-      process.env.ORCA_DISCORD_PREVIEW_ENABLED = mode === 'disabled' ? 'false' : 'true'
+      process.env.ORCA_DISCORD_ALERTS_ENABLED = mode === 'disabled' ? 'false' : 'true'
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
       failSchedule = mode === 'schedule-error'
@@ -157,9 +157,9 @@ test('only successful fresh routine events schedule the enabled preview; retries
     errors.mockRestore()
 
     if (oldEnabled === undefined) {
-      delete process.env.ORCA_DISCORD_PREVIEW_ENABLED
+      delete process.env.ORCA_DISCORD_ALERTS_ENABLED
     } else {
-      process.env.ORCA_DISCORD_PREVIEW_ENABLED = oldEnabled
+      process.env.ORCA_DISCORD_ALERTS_ENABLED = oldEnabled
     }
   }
 })

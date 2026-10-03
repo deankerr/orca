@@ -54,7 +54,7 @@ export function batchCards(batch: BatchAlert): Notification[] {
   let page = { description: heading, event_ids: [] as string[] }
 
   for (const { line, event_id } of members) {
-    // Leave room for Discord's description limit and the source IDs in message content.
+    // Bound each card's description and affected-entity count.
     if (page.description.length + line.length > 4000 || page.event_ids.length === 40) {
       pages.push(page)
       page = { description: heading, event_ids: [] }

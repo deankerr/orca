@@ -101,14 +101,14 @@ export const run = internalAction({
     try {
       const eventIds = await events.process(ctx, pair, work.events)
 
-      if (env.ORCA_DISCORD_PREVIEW_ENABLED === 'true' && eventIds.length > 0) {
-        // Pre-alpha: scheduling is best-effort after commit; retries deliberately do not broadcast.
+      if (env.ORCA_DISCORD_ALERTS_ENABLED === 'true' && eventIds.length > 0) {
+        // Scheduling is best-effort after commit; retries deliberately do not broadcast.
         await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.broadcast, {
           event_ids: eventIds,
         })
       }
     } catch (error: unknown) {
-      console.error('[events] processing or preview scheduling failed', {
+      console.error('[events] processing or Discord scheduling failed', {
         work_id: work.events,
         error,
       })

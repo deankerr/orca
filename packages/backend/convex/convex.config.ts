@@ -19,10 +19,10 @@ const app = defineApp({
     /** R2 bucket for object reads and writes; required whenever accessing R2-backed objects. */
     ORCA_R2_BUCKET: v.optional(v.string()),
 
-    /** Private preview channel webhook for V4 event notifications. */
+    /** Webhook target for Discord alerts; required for live and manual delivery. */
     ORCA_DISCORD_WEBHOOK_URL: v.optional(v.string()),
-    /** Pre-alpha live broadcasts only; absent/false disables scheduling and queued batch starts. */
-    ORCA_DISCORD_PREVIEW_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    /** Live broadcasts only; absent/false disables scheduling and queued batch starts. Manual sends bypass it. */
+    ORCA_DISCORD_ALERTS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     /** Web app URL used to construct endpoint-grid links in Discord messages. */
     ORCA_PUBLIC_URL: v.string(),
     /** Deployed logo-service origin for publicly reachable icons in Discord messages. */
