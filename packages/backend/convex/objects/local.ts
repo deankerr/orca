@@ -1,3 +1,4 @@
+import { validate } from 'convex-helpers/validators'
 /** Local read implementation shared by the canonical reader and the one-hop source endpoints. */
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
@@ -37,6 +38,25 @@ export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promis
     .order(args.order ?? 'asc')
     .take(args.limit)
   return rows.map((row) => row.name)
+}
+
+/** Check discovery responses at both the deployment and standalone reader interfaces. */
+export function validateNames(names: unknown, selection: NameSelection): string[] {
+  if (!validate(v.array(v.string()), names) || names.length > selection.limit) {
+    throw new ConvexError('Object source returned invalid names')
+  }
+
+  for (const [index, name] of names.entries()) {
+    const previous = names[index - 1]
+    const outOfOrder =
+      previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
+
+    if (name < selection.atOrAfter || outOfOrder) {
+      throw new ConvexError('Object source returned names outside the requested order/range')
+    }
+  }
+
+  return names
 }
 
 /** Read the original compressed bytes, using only this deployment's committed locator. */

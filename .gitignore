@@ -16,3 +16,6 @@ next-env.d.ts
 
 data/**/*.json*
 data/**/*.md
+
+scan-profile.*.html
+scan-profile.*.json

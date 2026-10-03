@@ -1,0 +1,304 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  color: #202824;
+  background: #f5f6f3;
+  font-size: 14px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 40px 32px;
+}
+header {
+  margin-block-end: 32px;
+}
+.eyebrow {
+  color: #356b52;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+h1 {
+  margin-block: 14px;
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.source {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.source span {
+  padding-inline: 8px;
+  color: #657069;
+}
+.scope,
+.hint,
+#counts,
+footer {
+  color: #59655e;
+}
+.scope {
+  font-size: 13px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  padding-block: 20px;
+}
+label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.search {
+  flex: 1;
+  min-width: 240px;
+}
+input,
+select,
+button {
+  min-height: 40px;
+  border: 1px solid #aeb9b0;
+  border-radius: 5px;
+  padding: 8px 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+input {
+  width: 100%;
+  min-width: 0;
+}
+button {
+  cursor: pointer;
+  font-size: 13px;
+}
+button:hover {
+  background: #e7eee7;
+}
+:focus-visible {
+  outline: 2px solid #27764f;
+  outline-offset: 3px;
+}
+#counts {
+  font-size: 12px;
+  margin-block: 12px 20px;
+}
+.columns,
+.field > summary {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 150px 84px 84px 84px;
+  align-items: baseline;
+  gap: 16px;
+  padding: 13px 16px;
+}
+.columns {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #59655e;
+}
+.columns span:nth-child(n + 3) {
+  text-align: end;
+}
+.field {
+  border-block-start: 1px solid #dce1da;
+  background: #fff;
+}
+.field:last-child {
+  border-block-end: 1px solid #dce1da;
+}
+.field > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.field > summary::-webkit-details-marker {
+  display: none;
+}
+.field > summary:hover {
+  background: #edf2eb;
+}
+.field[open] > summary {
+  background: #e7eee5;
+}
+.path {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.path::before {
+  content: '+ ';
+  color: #356b52;
+  font-family: system-ui, sans-serif;
+}
+.field[open] .path::before {
+  content: '− ';
+}
+.types {
+  font-size: 12px;
+  color: #59655e;
+  overflow-wrap: anywhere;
+}
+.stat {
+  text-align: end;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.mobile-label {
+  display: none;
+}
+.detail {
+  padding: 8px 24px 28px;
+  max-width: 1000px;
+}
+.hint {
+  font-size: 12px;
+  line-height: 1.6;
+}
+h3 {
+  margin-block: 24px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+h3 small {
+  margin-inline-start: 8px;
+  color: #59655e;
+  font-weight: 400;
+}
+.numeric {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 48px;
+  margin-block: 24px;
+}
+.numeric div {
+  display: grid;
+  gap: 6px;
+}
+.numeric span {
+  font-size: 11px;
+  color: #59655e;
+}
+.numeric strong {
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.frequency-list {
+  display: grid;
+  gap: 12px;
+}
+.frequency {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 120px;
+  gap: 16px;
+  align-items: center;
+}
+.frequency code,
+.example code {
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.frequency > span {
+  text-align: end;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.frequency small {
+  display: inline-block;
+  min-width: 52px;
+  color: #59655e;
+}
+meter {
+  width: 100%;
+  height: 8px;
+}
+meter::-webkit-meter-bar {
+  background: #e5ebe2;
+  border: none;
+  border-radius: 2px;
+}
+meter::-webkit-meter-optimum-value {
+  background: #548768;
+}
+.example {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
+  gap: 24px;
+  margin-block: 12px;
+}
+.example code:first-child {
+  color: #356b52;
+}
+.key-sets > summary {
+  cursor: pointer;
+  padding-block: 8px;
+}
+footer {
+  max-width: 1000px;
+  margin-block-start: 32px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+#empty {
+  padding: 24px;
+  background: #fff;
+}
+@media (max-width: 760px) {
+  main {
+    padding: 24px 16px;
+  }
+  .toolbar > label {
+    flex: 1 1 100%;
+  }
+  .search {
+    min-width: 0;
+  }
+  .columns {
+    display: none;
+  }
+  .field > summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+  .path,
+  .types {
+    grid-column: 1 / -1;
+  }
+  .stat {
+    text-align: start;
+  }
+  .mobile-label {
+    display: block;
+    margin-block-end: 4px;
+    color: #59655e;
+    font-size: 10px;
+  }
+  .detail {
+    padding-inline: 16px;
+  }
+  .frequency {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: 8px;
+  }
+  meter {
+    grid-column: 1 / -1;
+  }
+  .example {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
