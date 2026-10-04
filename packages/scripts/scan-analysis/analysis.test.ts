@@ -6,10 +6,61 @@ import { ConvexHttpClient } from 'convex/browser'
 import { convexToJson } from 'convex/values'
 
 import { createObjectReader } from '../../backend/convex/objects/client'
+import { ScanEntry } from '../../backend/convex/scan/collected'
 import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/profile'
 import { loadScan } from '../../backend/convex/scan_analysis/source'
 import { sampleScan } from './fixtures'
 import { renderHtml } from './html'
+
+test('collected reports retain endpoints without usable provider bodies and preserve filter meaning', () => {
+  const scan = sampleScan()
+  const [first] = scan.entries
+  const endpoint = first?.endpoints?.[0]
+
+  if (first === undefined || endpoint === undefined) {
+    throw new Error('Fixture requires a model and endpoint')
+  }
+
+  const { provider_info: _providerInfo, ...withoutProvider } = endpoint
+  const bodies = [null, {}, { slug: 42 }, 'unknown']
+  const endpoints = [
+    withoutProvider,
+    ...bodies.map((provider_info, index) => ({
+      ...endpoint,
+      id: `unattributed-${index}`,
+      provider_info,
+    })),
+    { ...endpoint, id: 'attributed' },
+  ]
+
+  // These observations satisfy stored-scan validation, even when provider attribution is unavailable.
+  scan.entries = [ScanEntry.parse({ ...first, endpoints })]
+
+  const report = profileScan(scan, 'example-source', { scope: 'collected' })
+  expect(report.endpoints.profile.record_count).toBe(6)
+  expect(report.providers.profile.record_count).toBe(1)
+
+  const info = profileRows(report.endpoints.profile).find(
+    ({ value }) => value.path === '$[*]["provider_info"]',
+  )
+  expect(info?.none).toBe(1)
+  expect(info?.value.types).toMatchObject([
+    { count: 1, type: 'null' },
+    { count: 1, type: 'string' },
+    { count: 3, type: 'object' },
+  ])
+
+  const model = profileScan(scan, 'example-source', { model: first.model_id, scope: 'collected' })
+  expect(model.endpoints.profile.record_count).toBe(6)
+
+  const provider = profileScan(scan, 'example-source', {
+    provider: 'provider-0',
+    scope: 'collected',
+  })
+  expect(provider.endpoints.profile.record_count).toBe(1)
+  expect(provider.models.profile.record_count).toBe(1)
+  expect(provider.providers.profile.record_count).toBe(1)
+})
 
 test('scan views pin provenance and select detail without changing the full report', () => {
   const report = profileScan(sampleScan(), 'example-source', { scope: 'orca' })

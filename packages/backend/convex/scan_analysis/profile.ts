@@ -28,7 +28,7 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
   const models = new Map<string, JsonRecord>()
   const endpoints = new Map<string, JsonRecord>()
   const providers = new Map<string, JsonRecord>()
-  const relationships = new Map<string, { model: string; provider: string }>()
+  const relationships = new Map<string, { model: string; provider?: string }>()
 
   for (const entry of scan.entries) {
     if (extracted !== null && !extracted.models.has(entry.model_id)) {
@@ -59,10 +59,18 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
       const scopedEndpoint = extracted?.endpoints.get(endpoint.id)
 
       if (scopedEndpoint === undefined) {
-        const { slug, ...provider } = providerBody.parse(endpoint.provider_info)
-        providers.set(slug, { ...provider, provider_id: slug })
+        const observedProvider = providerBody.safeParse(endpoint.provider_info)
+
+        if (observedProvider.success) {
+          const { slug, ...provider } = observedProvider.data
+          providers.set(slug, { ...provider, provider_id: slug })
+        }
+
         endpoints.set(endpoint.id, jsonRecord.parse(endpoint))
-        relationships.set(endpoint.id, { model: entry.model_id, provider: slug })
+        relationships.set(endpoint.id, {
+          model: entry.model_id,
+          provider: observedProvider.success ? observedProvider.data.slug : undefined,
+        })
       } else {
         endpoints.set(endpoint.id, scopedEndpoint)
         relationships.set(endpoint.id, {

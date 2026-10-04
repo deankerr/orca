@@ -30,6 +30,9 @@ Latest selection requires the source to support descending Objects discovery. It
 and downloads one complete scan; exact-time selection skips discovery. Model/provider filters run
 after download. Authentication, missing scans and invalid data fail without creating a report.
 
+Default filenames include a unique invocation ID so separate selections keep separate reports.
+An explicit `--output` replaces that path only after a complete temporary file has been written.
+
 ## Populations and interpretation
 
 - `--scope orca` (default) reuses ORCA's current scan extraction, including product scope and
@@ -37,6 +40,9 @@ after download. Authentication, missing scans and invalid data fail without crea
   collected models. Both describe collected artifacts, not untouched upstream responses.
 - Models are counted by model identity, endpoints by UUID, providers once by provider identity.
   Repeated embedded provider bodies use the last collected body, matching ORCA assembly.
+- Collected scope keeps endpoints with missing or malformed `provider_info` so those observations
+  remain inspectable. Only provider bodies with a string `slug` contribute provider identities;
+  unattributed endpoints remain in model selections but cannot match a provider filter.
 - `--model` and `--provider` match exact identities. A provider filter selects models with matching
   endpoints; a model filter selects its related providers. Unfiltered models include those with
   no endpoints. Duplicate model/endpoint identities fail rather than silently changing counts.

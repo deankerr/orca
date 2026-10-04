@@ -1,5 +1,3 @@
-import path from 'node:path'
-
 import { Command, InvalidArgumentError, Option } from 'commander'
 
 import { createObjectReader } from '../../backend/convex/objects/client'
@@ -7,6 +5,7 @@ import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/
 import type { Selection, ScanViewOptions } from '../../backend/convex/scan_analysis/profile'
 import { loadScan } from '../../backend/convex/scan_analysis/source'
 import { renderHtml } from './html'
+import { writeReport } from './output'
 
 interface Options extends Selection, Omit<ScanViewOptions, 'valueLimit'> {
   format: 'html' | 'json'
@@ -62,7 +61,10 @@ const program = new Command()
     parseValueLimit,
     5,
   )
-  .option('-o, --output <path>', 'report path; defaults to scan-profile.<time>.<format>')
+  .option(
+    '-o, --output <path>',
+    'report path; defaults to scan-profile.<time>.<unique-id>.<format>',
+  )
   .showHelpAfterError()
   .action(async (requested: string, options: Options) => {
     const reader = createObjectReader(options.source, process.env.ORCA_OBJECTS_API_KEY ?? '')
@@ -78,7 +80,6 @@ const program = new Command()
     }
 
     const report = profileScan(scan, options.source, selection)
-    const output = path.resolve(options.output ?? `scan-profile.${scan.scan_at}.${options.format}`)
     const view: ScanViewOptions = {
       paths: options.paths,
       population: options.population,
@@ -90,7 +91,12 @@ const program = new Command()
         ? await renderHtml(report)
         : `${JSON.stringify(viewScanReport(report, view), null, 2)}\n`
 
-    await Bun.write(output, contents)
+    const output = await writeReport(contents, {
+      format: options.format,
+      output: options.output,
+      scanAt: scan.scan_at,
+    })
+
     console.error(`Wrote ${output}`)
 
     console.error(
