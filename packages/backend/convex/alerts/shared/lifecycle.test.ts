@@ -15,7 +15,7 @@ import type { EventRow } from '../../events/table'
 import * as listings from '../../history/listings/ingest'
 import { commitIngestion } from '../../routine'
 import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '../../scan'
-import { prepareBatch } from '../discord/prepare'
+import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'
 import type { DiscordUrls } from '../discord/renderers/card'
 import { renderDiscordBatch } from '../discord/renderers/index'
 import { render as renderPrepared } from '../feed/render'
@@ -288,7 +288,7 @@ test('baseline, historical models, discoveries and repeated returns survive dela
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
   for (const event of events) {
     const feed = render(event)
-    const card = JSON.stringify(renderDiscord(event, urls))
+    const card = JSON.stringify(await renderDiscord(event, urls))
 
     if (event.type === 'ADD') {
       expect(feed?.previously_known).toBe(event.previously_known)
@@ -364,8 +364,12 @@ function render(row: EventRow) {
   return alert === null ? null : renderPrepared(alert)
 }
 
-function renderDiscord(row: EventRow, urls: DiscordUrls) {
-  const { alerts } = prepareBatch([{ ...row, _id: 'test-event' }])
+async function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = await prepareBatch([{ ...row, _id: 'test-event' }])
 
   return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}
+
+async function prepareBatch(rows: (EventRow & { _id: string })[]) {
+  return await prepareDiscordBatch(rows, async (candidates) => candidates.map(() => false))
 }

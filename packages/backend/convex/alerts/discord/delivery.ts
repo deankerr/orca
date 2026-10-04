@@ -50,7 +50,7 @@ export const sendLatest = internalAction({
       )
 
       for (const event of page.page) {
-        const { alerts } = prepareBatch([event])
+        const { alerts } = await prepareForDelivery(ctx, [event])
 
         if (alerts.length === 0) {
           skipped += 1
@@ -102,7 +102,7 @@ async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
     rows.push({ ...row, _id: event_id })
   }
 
-  const { alerts, skipped } = prepareBatch(rows)
+  const { alerts, skipped } = await prepareForDelivery(ctx, rows)
   const notifications = renderDiscordBatch(alerts, {
     publicUrl: env.ORCA_PUBLIC_URL,
     logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
@@ -132,7 +132,7 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
     throw new ConvexError({ message: 'Event not found.', event_id })
   }
 
-  const { alerts } = prepareBatch([{ ...event, _id: event_id }])
+  const { alerts } = await prepareForDelivery(ctx, [{ ...event, _id: event_id }])
   const [notification] = renderDiscordBatch(alerts, {
     publicUrl: env.ORCA_PUBLIC_URL,
     logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
@@ -144,6 +144,18 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
 
   await postMessage(notification.message, notification.event_ids)
   return 'sent'
+}
+
+/** Resolve frequency in one query per prepared batch, after shared eligibility. */
+async function prepareForDelivery(
+  ctx: ActionCtx,
+  rows: Doc<'v4_events'>[],
+): ReturnType<typeof prepareBatch> {
+  return await prepareBatch(
+    rows,
+    async (candidates) =>
+      await ctx.runQuery(internal.alerts.discord.frequency.check, { candidates }),
+  )
 }
 
 async function postMessage(message: Card, event_ids: string[]): Promise<void> {

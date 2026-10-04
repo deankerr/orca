@@ -9,7 +9,7 @@ import type { JsonValue } from '../../../json'
 import { render as renderPrepared } from '../../feed/render'
 import { curate } from '../../shared/curate'
 import { prepare as prepareAlert } from '../../shared/prepare'
-import { prepareBatch } from '../prepare'
+import { prepareBatch as prepareDiscordBatch } from '../prepare'
 import type { DiscordUrls } from './card'
 import { embedCard, componentCard } from './card'
 import { code, escape, field, lifecycleMarker, valueChange } from './display'
@@ -71,7 +71,7 @@ test('delta symbols distinguish favorable changes from unfavorable changes like 
   expect(delta(null, 10)).toBe('')
 })
 
-test('update headings are sentences for every entity', () => {
+test('update headings are sentences for every entity', async () => {
   for (const [entity_kind, before, after, heading] of [
     [
       'model',
@@ -97,11 +97,13 @@ test('update headings are sentences for every entity', () => {
       entity_kind,
     }
 
-    expect(renderDiscord(event, urls)?.embeds?.[0]?.description?.split('\n')[0]).toBe(heading)
+    const card = await renderDiscord(event, urls)
+
+    expect(card?.embeds?.[0]?.description?.split('\n')[0]).toBe(heading)
   }
 })
 
-test('prices and other numeric fields share precision and reveal changes hidden by rounding', () => {
+test('prices and other numeric fields share precision and reveal changes hidden by rounding', async () => {
   expect(
     fieldChange({ type: 'field_updated', path: 'limit_rpm', before: 0.141953, after: 0.142 }),
   ).toBe('`limit_rpm:` ≈`0.142` ▲')
@@ -120,7 +122,8 @@ test('prices and other numeric fields share precision and reveal changes hidden 
     { pricing: { meters: { prompt: '0.000000142', input_cache_read: '0.000000016156' } } },
   )
   const captured = event.change_json
-  const description = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
+  const card = await renderDiscord(event, urls)
+  const description = card?.embeds?.[0]?.description ?? ''
 
   expect(description).toContain('`input:     ` `≈ $0.142` 🔺')
   expect(description).toContain('`cache_read:` ` $0.0171` → ` $0.0162` ▼ 5%')
@@ -166,7 +169,7 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
   expect(code('a`b')).toBe('a\\`b')
 })
 
-test('Discord keeps slug punctuation and renders raw final keys with lowercase pricing labels', () => {
+test('Discord keeps slug punctuation and renders raw final keys with lowercase pricing labels', async () => {
   expect(escape('qwen/qwen3.6-max-preview')).toBe('qwen/qwen3.6-max-preview')
   expect(escape('**literal**')).toBe('\\*\\*literal\\*\\*')
 
@@ -201,9 +204,11 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
     },
   }
 
-  const text = JSON.stringify(renderDiscord(event, urls))
+  const text = JSON.stringify(await renderDiscord(event, urls))
 
-  expect(renderDiscord(event, urls)?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
+  const card = await renderDiscord(event, urls)
+
+  expect(card?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
   expect(text).not.toContain('reasoning_config')
   expect(text).toContain('`is_mandatory_reasoning:`')
   expect(text).toContain('⚠ `warning_message`')
@@ -261,7 +266,7 @@ test('long prose excerpts include late replacements, additions, and removals', (
   ).toBe('`description`\nBefore\n> Old.\n\nAfter\n> New.')
 })
 
-test('quoted prose restores OpenRouter-relative links without changing absolute destinations', () => {
+test('quoted prose restores OpenRouter-relative links without changing absolute destinations', async () => {
   const description =
     'Try [Qwen](/qwen/qwen3.8-max-0902).\nSee [routing](/docs/routing#cost) or [source](https://example.com/page).'
 
@@ -271,7 +276,7 @@ test('quoted prose restores OpenRouter-relative links without changing absolute 
   }
 
   const captured = event.change_json
-  const text = JSON.stringify(renderDiscord(event, urls))
+  const text = JSON.stringify(await renderDiscord(event, urls))
 
   expect(text).toContain('[Qwen](https://openrouter.ai/qwen/qwen3.8-max-0902)')
   expect(text).toContain('[routing](https://openrouter.ai/docs/routing#cost)')
@@ -298,8 +303,8 @@ function row(before: JsonValue, after: JsonValue): Extract<EventRow, { entity_ki
   }
 }
 
-test('Discord pricing cells preserve tiny magnitudes; identity and mentions survive serialization', () => {
-  const message = renderDiscord(
+test('Discord pricing cells preserve tiny magnitudes; identity and mentions survive serialization', async () => {
+  const message = await renderDiscord(
     row(
       {
         pricing: {
@@ -354,7 +359,7 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   expect(new Set(numericCells).size).toBe(1)
 })
 
-test('Discord presents zero discount transitions as added/removed without rewriting event facts', () => {
+test('Discord presents zero discount transitions as added/removed without rewriting event facts', async () => {
   for (const [before, after, expected] of [
     [0, 0.08, '+ `discount:` `8%`'],
     [0.08, 0, '− ~~`discount:`~~ ~~`8%`~~'],
@@ -383,31 +388,32 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     expect(event.change_json).toBe(captured)
   }
 
-  const free = renderDiscord(
+  const freeCard = await renderDiscord(
     row({ pricing: { meters: { prompt: '0.000001' } } }, { pricing: { meters: { prompt: '0' } } }),
     urls,
-  )?.embeds?.[0]?.description
+  )
+  const free = freeCard?.embeds?.[0]?.description
 
   expect(free).toContain('$0.00`')
   expect(free).not.toContain('removed')
 
-  const combined =
-    renderDiscord(
-      row(
-        {
-          pricing: {
-            discount: 0.08,
-            meters: { prompt: '0.000001', input_cache_read: '0.0000002' },
-          },
-          metadata: { is_disabled: false },
+  const combinedCard = await renderDiscord(
+    row(
+      {
+        pricing: {
+          discount: 0.08,
+          meters: { prompt: '0.000001', input_cache_read: '0.0000002' },
         },
-        {
-          pricing: { discount: 0, meters: { prompt: '0.000002', input_cache_read: '0.0000001' } },
-          metadata: { is_disabled: true },
-        },
-      ),
-      urls,
-    )?.embeds?.[0]?.description ?? ''
+        metadata: { is_disabled: false },
+      },
+      {
+        pricing: { discount: 0, meters: { prompt: '0.000002', input_cache_read: '0.0000001' } },
+        metadata: { is_disabled: true },
+      },
+    ),
+    urls,
+  )
+  const combined = combinedCard?.embeds?.[0]?.description ?? ''
 
   expect(combined).toContain('◇ **Pricing**')
   expect(combined).toContain('◇ **Details**')
@@ -418,8 +424,8 @@ test('Discord presents zero discount transitions as added/removed without rewrit
   expect(table[2]).toBe('− ~~`discount:`~~ ~~`   8%`~~')
 })
 
-test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', () => {
-  const message = renderDiscord(
+test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', async () => {
+  const message = await renderDiscord(
     row(
       { metadata: { supported_parameters: ['seed'], quantization: 'fp8', is_disabled: false } },
       { metadata: { supported_parameters: ['**tools**'], quantization: null, limit_rpm: 0 } },
@@ -435,11 +441,14 @@ test('Discord preserves absence, nulls and set changes, escapes markup, and skip
   expect(text).toContain('− ~~`is_disabled:`~~ ~~`false`~~')
 
   expect(
-    renderDiscord(row({ metadata: { capacity_tpm: 1 } }, { metadata: { capacity_tpm: 2 } }), urls),
+    await renderDiscord(
+      row({ metadata: { capacity_tpm: 1 } }, { metadata: { capacity_tpm: 2 } }),
+      urls,
+    ),
   ).toBeNull()
 })
 
-test('Discord lifecycle embeds use captured facts and oversized updates truncate', () => {
+test('Discord lifecycle embeds use captured facts and oversized updates truncate', async () => {
   for (const kind of ['model', 'endpoint'] as const) {
     for (const type of ['ADD', 'REMOVE'] as const) {
       const event = {
@@ -463,7 +472,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
         }),
       }
 
-      const message = renderDiscord(event, urls)
+      const message = await renderDiscord(event, urls)
 
       const content = JSON.stringify(message)
 
@@ -507,7 +516,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
     }
   }
 
-  const oversized = renderDiscord(
+  const oversized = await renderDiscord(
     row(
       { metadata: { supported_parameters: [] } },
       {
@@ -526,7 +535,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
   expect(oversized?.embeds?.[0]?.description).toEndWith('...')
 })
 
-test('entity templates use captured model and endpoint facts with one timestamp and safe links', () => {
+test('entity templates use captured model and endpoint facts with one timestamp and safe links', async () => {
   const lifecycle = (
     kind: EventRow['entity_kind'],
     value: Record<string, JsonValue>,
@@ -544,7 +553,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
     }),
   })
 
-  const model = renderDiscord(
+  const model = await renderDiscord(
     lifecycle('model', {
       input_modalities: ['image', 'text'],
       output_modalities: ['text'],
@@ -580,7 +589,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
 
   expect(section.components).toHaveLength(1)
 
-  const endpoint = renderDiscord(
+  const endpoint = await renderDiscord(
     lifecycle('endpoint', {
       metadata: {
         context_length: 128_000,
@@ -617,7 +626,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(endpointText).not.toContain('max_completion_tokens')
 })
 
-test('prose updates use embeds, preserve warning facts, and truncate aggregate overflow', () => {
+test('prose updates use embeds, preserve warning facts, and truncate aggregate overflow', async () => {
   const event: EventRow = {
     ...row(
       { metadata: { description: 'Old.', warning_message: null } },
@@ -626,7 +635,7 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
     entity_kind: 'model',
   }
 
-  const message = renderDiscord(event, urls)
+  const message = await renderDiscord(event, urls)
   const text = JSON.stringify(message)
 
   expect(message?.components).toBeUndefined()
@@ -659,13 +668,13 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
     },
   }
 
-  const oversized = renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)
+  const oversized = await renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)
 
   expect(oversized?.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096)
   expect(oversized?.embeds?.[0]?.description).toEndWith('...')
 })
 
-test('provider discoveries are announced and departures only announce endpoint absence', () => {
+test('provider discoveries are announced and departures only announce endpoint absence', async () => {
   for (const type of ['ADD', 'REMOVE'] as const) {
     const event: EventRow = {
       entity_kind: 'provider',
@@ -684,7 +693,7 @@ test('provider discoveries are announced and departures only announce endpoint a
       }),
     }
 
-    const message = renderDiscord(event, urls)
+    const message = await renderDiscord(event, urls)
 
     if (type === 'ADD') {
       expect(message?.embeds?.[0]?.description).toBe('✨ Provider **Provider** discovered.')
@@ -707,7 +716,7 @@ test('provider discoveries are announced and departures only announce endpoint a
   }
 })
 
-test('unclassified arrivals use neutral wording instead of claiming discovery or return', () => {
+test('unclassified arrivals use neutral wording instead of claiming discovery or return', async () => {
   for (const entity_kind of ['model', 'provider', 'endpoint'] as const) {
     const event: EventRow = {
       entity_kind,
@@ -722,7 +731,7 @@ test('unclassified arrivals use neutral wording instead of claiming discovery or
       }),
     }
 
-    const text = JSON.stringify({ discord: renderDiscord(event, urls), feed: render(event) })
+    const text = JSON.stringify({ discord: await renderDiscord(event, urls), feed: render(event) })
 
     expect(text.toLowerCase()).not.toContain('discovered')
     expect(text.toLowerCase()).not.toContain('relisted')
@@ -732,7 +741,7 @@ test('unclassified arrivals use neutral wording instead of claiming discovery or
   }
 })
 
-test('provider updates stay classic and include only legacy metadata and policy URLs', () => {
+test('provider updates stay classic and include only legacy metadata and policy URLs', async () => {
   const policy = {
     termsOfServiceURL: 'https://example.com/terms',
     privacyPolicyURL: 'https://example.com/privacy',
@@ -758,7 +767,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
   ]) {
     const event = providerRow(before, after)
     const captured = event.change_json
-    const message = renderDiscord(event, urls)
+    const message = await renderDiscord(event, urls)
     const text = message?.embeds?.[0]?.description ?? ''
 
     expect(message?.components).toBeUndefined()
@@ -770,7 +779,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     expect(JSON.stringify(render(event))).not.toContain('training')
   }
 
-  const message = renderDiscord(
+  const message = await renderDiscord(
     providerRow(
       {
         displayName: 'Old',
@@ -807,12 +816,12 @@ test('provider updates stay classic and include only legacy metadata and policy 
     [{}, { dataPolicy: { training: true } }],
     [{ dataPolicy: { training: true } }, {}],
   ]) {
-    expect(renderDiscord(providerRow(before, after), urls)).toBeNull()
+    expect(await renderDiscord(providerRow(before, after), urls)).toBeNull()
   }
 })
 
-test('endpoint prose remains an embed and inline code has no bold wrappers', () => {
-  const endpoint = renderDiscord(
+test('endpoint prose remains an embed and inline code has no bold wrappers', async () => {
+  const endpoint = await renderDiscord(
     row(
       { metadata: { provider_tag: 'old', quantization: 'fp8' } },
       { metadata: { provider_tag: 'tag'.repeat(50), quantization: 'fp16' } },
@@ -826,7 +835,7 @@ test('endpoint prose remains an embed and inline code has no bold wrappers', () 
   expect(endpoint?.embeds?.[0]?.description).not.toContain('**`')
   expect(endpoint?.embeds?.[0]?.footer?.text).toBe('provider/fp8')
 
-  const model = renderDiscord(
+  const model = await renderDiscord(
     {
       ...row({ metadata: { description: 'Old.' } }, { metadata: { description: 'New.' } }),
       entity_kind: 'model',
@@ -841,7 +850,7 @@ test('endpoint prose remains an embed and inline code has no bold wrappers', () 
   expect(model?.embeds?.[0]?.timestamp).toBe('2026-09-30T01:00:00.000Z')
 })
 
-test('blank scalar and prose values render null without rewriting the captured event', () => {
+test('blank scalar and prose values render null without rewriting the captured event', async () => {
   for (const blank of ['', '  \n\t']) {
     for (const [before, after] of [
       ['Warning.', blank],
@@ -853,7 +862,8 @@ test('blank scalar and prose values render null without rewriting the captured e
       }
 
       const captured = event.change_json
-      const description = renderDiscord(event, urls)?.embeds?.[0]?.description
+      const card = await renderDiscord(event, urls)
+      const description = card?.embeds?.[0]?.description
 
       expect(description).toContain(before === blank ? 'Before\n`null`' : 'After\n`null`')
       expect(event.change_json).toBe(captured)
@@ -876,38 +886,38 @@ test('blank scalar and prose values render null without rewriting the captured e
   ).toBe('+ `description`\n> New prose.')
 })
 
-test('endpoint reasoning-only changes are skipped while model reasoning remains visible', () => {
+test('endpoint reasoning-only changes are skipped while model reasoning remains visible', async () => {
   const event = row(
     { metadata: { supports_reasoning: false } },
     { metadata: { supports_reasoning: true } },
   )
 
-  expect(renderDiscord(event, urls)).toBeNull()
+  expect(await renderDiscord(event, urls)).toBeNull()
 
-  expect(
-    renderDiscord({ ...event, entity_kind: 'model' }, urls)?.embeds?.[0]?.description,
-  ).toContain('`supports_reasoning:` `false` → `true`')
+  const card = await renderDiscord({ ...event, entity_kind: 'model' }, urls)
+
+  expect(card?.embeds?.[0]?.description).toContain('`supports_reasoning:` `false` → `true`')
 })
 
-test('endpoint output limits use max_output without changing the captured field name', () => {
+test('endpoint output limits use max_output without changing the captured field name', async () => {
   const event = row(
     { metadata: { max_completion_tokens: 4096 } },
     { metadata: { max_completion_tokens: 8192 } },
   )
 
-  expect(renderDiscord(event, urls)?.embeds?.[0]?.description).toContain(
-    '`max_output:` `4,096` → `8,192` ▲ 100%',
-  )
+  const card = await renderDiscord(event, urls)
+
+  expect(card?.embeds?.[0]?.description).toContain('`max_output:` `4,096` → `8,192` ▲ 100%')
   expect(render(event)).toMatchObject({ changes: [{ path: 'max_completion_tokens' }] })
 })
 
-test('one-hour cache writes survive curation and render without pricing units or branding', () => {
+test('one-hour cache writes survive curation and render without pricing units or branding', async () => {
   const event = row(
     { pricing: { meters: { input_cache_write_1h: '0.000002' } } },
     { pricing: { meters: { input_cache_write_1h: '0.000004' } } },
   )
 
-  const message = renderDiscord(event, urls)
+  const message = await renderDiscord(event, urls)
 
   expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$2.00` → `$4.00` 🔺 100%')
   expect(render(event)).toMatchObject({ changes: [{ path: 'pricing.input_cache_write_1h' }] })
@@ -925,7 +935,7 @@ test('one-hour cache writes survive curation and render without pricing units or
     }),
   }
 
-  const added = renderDiscord(lifecycle, urls)
+  const added = await renderDiscord(lifecycle, urls)
   expect(added?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$4.00`')
   expect(added?.embeds?.[0]?.description).toContain('`web_search:    ` `$0.01`')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
@@ -941,14 +951,15 @@ test('one-hour cache writes survive curation and render without pricing units or
   }
 })
 
-test('web search is a pricing row across updates, additions, and removals without token scaling', () => {
+test('web search is a pricing row across updates, additions, and removals without token scaling', async () => {
   for (const [before, after, expected] of [
     [{ web_search: '0.001' }, { web_search: '0.002' }, '`web_search:` `$0.001` → `$0.002` 🔺 100%'],
     [{}, { web_search: '0.001' }, '+ `web_search:` `$0.001`'],
     [{ web_search: '0.001' }, {}, '− ~~`web_search:`~~ ~~`$0.001`~~'],
   ] as const) {
     const event = row({ pricing: { meters: before } }, { pricing: { meters: after } })
-    const text = renderDiscord(event, urls)?.embeds?.[0]?.description ?? ''
+    const card = await renderDiscord(event, urls)
+    const text = card?.embeds?.[0]?.description ?? ''
 
     expect(text).toContain(expected)
     expect(text).not.toContain('per ')
@@ -956,7 +967,7 @@ test('web search is a pricing row across updates, additions, and removals withou
   }
 })
 
-test('cards supply prose and duration rules while generic formatters only follow options', () => {
+test('cards supply prose and duration rules while generic formatters only follow options', async () => {
   const warning = {
     type: 'field_updated',
     path: 'warning_message',
@@ -984,9 +995,9 @@ test('cards supply prose and duration rules while generic formatters only follow
     { metadata: { data_policy: { retentionDays: 2 } } },
   )
 
-  expect(renderDiscord(event, urls)?.embeds?.[0]?.description).toContain(
-    '`retentionDays:` `1 days` → `2 days` ▲ 100%',
-  )
+  const card = await renderDiscord(event, urls)
+
+  expect(card?.embeds?.[0]?.description).toContain('`retentionDays:` `1 days` → `2 days` ▲ 100%')
 
   for (const after of ['', '  ', null]) {
     expect(
@@ -1097,8 +1108,12 @@ function render(row: EventRow) {
   return alert === null ? null : renderPrepared(alert)
 }
 
-function renderDiscord(row: EventRow, urls: DiscordUrls) {
-  const { alerts } = prepareBatch([{ ...row, _id: 'test-event' }])
+async function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = await prepareBatch([{ ...row, _id: 'test-event' }])
 
   return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}
+
+async function prepareBatch(rows: (EventRow & { _id: string })[]) {
+  return await prepareDiscordBatch(rows, async (candidates) => candidates.map(() => false))
 }

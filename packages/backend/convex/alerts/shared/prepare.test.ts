@@ -6,7 +6,7 @@ import { prepare } from '../../events/prepare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import type { Scan } from '../../scan'
-import { prepareBatch } from '../discord/prepare'
+import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'
 import type { DiscordUrls } from '../discord/renderers/card'
 import { renderDiscordBatch } from '../discord/renderers/index'
 import { renderPage } from '../feed/query'
@@ -46,7 +46,7 @@ function update(
   }
 }
 
-test('scheduled pricing suppresses unchanged overrides regardless of the price or discount movement', () => {
+test('scheduled pricing suppresses unchanged overrides regardless of the price or discount movement', async () => {
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
   const overrides = [{ utc_days: ['saturday', 'sunday'], prompt: '0.000001' }]
   const before = { discount: 0, meters: { prompt: '0.000001' }, overrides }
@@ -58,7 +58,7 @@ test('scheduled pricing suppresses unchanged overrides regardless of the price o
   expect(curate(row)).not.toBeNull()
   expect(prepareAlert(row)).toBeNull()
   expect(render(row)).toBeNull()
-  expect(renderDiscord(row, urls)).toBeNull()
+  expect(await renderDiscord(row, urls)).toBeNull()
   expect(row.change_json).toBe(captured)
 
   // Old projections have no schedule evidence; do not infer it from today's Catalog.
@@ -74,7 +74,7 @@ test('scheduled pricing suppresses unchanged overrides regardless of the price o
   expect(prepareAlert(metadataOnly)).toMatchObject({ changes: [{ path: 'context_length' }] })
 })
 
-test('schedule changes announce an opaque change, including introduction and removal without meter movement', () => {
+test('schedule changes announce an opaque change, including introduction and removal without meter movement', async () => {
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
   const schedule = [{ utc_days: ['saturday'], prompt: '0.000001' }]
   const changed = [{ utc_days: ['sunday'], prompt: '0.000001', extension: { future: true } }]
@@ -109,7 +109,7 @@ test('schedule changes announce an opaque change, including introduction and rem
       'Price schedule changed.',
       'Context length changed from 100 to 200.',
     ])
-    expect(JSON.stringify(renderDiscord(row, urls))).toContain('Price schedule changed.')
+    expect(JSON.stringify(await renderDiscord(row, urls))).toContain('Price schedule changed.')
     expect(row.change_json).toBe(captured)
   }
 
@@ -158,7 +158,7 @@ test('schedule detection accepts open UTC conditions and keeps unknown context d
   expect(prepareAlert({ ...legacy, pricing_is_scheduled: true })).not.toBeNull()
 })
 
-test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', () => {
+test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', async () => {
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
 
   for (const [before, after, visible] of [
@@ -188,7 +188,7 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     const captured = row.change_json
 
     expect(render(row) !== null).toBe(visible)
-    expect(renderDiscord(row, urls) !== null).toBe(visible)
+    expect((await renderDiscord(row, urls)) !== null).toBe(visible)
     expect(curate(row)).not.toBeNull()
     expect(row.change_json).toBe(captured)
   }
@@ -198,7 +198,7 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     { pricing: { discount: 0.11, meters: { prompt: '1.001' } }, metadata: { context_length: 200 } },
   )
   expect(render(micro)).toBeNull()
-  expect(renderDiscord(micro, urls)).toBeNull()
+  expect(await renderDiscord(micro, urls)).toBeNull()
   const captured = curate(micro)
 
   expect(captured?.type === 'endpoint_updated' ? captured.changes : []).toContainEqual({
@@ -215,17 +215,17 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
 
   const discountOnly = update({ pricing: { discount: 0 } }, { pricing: { discount: 0.1 } })
   expect(render(discountOnly)).toBeNull()
-  expect(renderDiscord(discountOnly, urls)).toBeNull()
+  expect(await renderDiscord(discountOnly, urls)).toBeNull()
 
   const metadataOnly = update(
     { metadata: { context_length: 100 } },
     { metadata: { context_length: 200 } },
   )
   expect(render(metadataOnly)).not.toBeNull()
-  expect(renderDiscord(metadataOnly, urls)).not.toBeNull()
+  expect(await renderDiscord(metadataOnly, urls)).not.toBeNull()
 })
 
-test('discount micro-adjustments suppress notifications before the relative price threshold', () => {
+test('discount micro-adjustments suppress notifications before the relative price threshold', async () => {
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
 
   for (const [before, after, priceBefore, priceAfter, visible] of [
@@ -246,7 +246,7 @@ test('discount micro-adjustments suppress notifications before the relative pric
     )
 
     expect(render(row) !== null).toBe(visible)
-    expect(renderDiscord(row, urls) !== null).toBe(visible)
+    expect((await renderDiscord(row, urls)) !== null).toBe(visible)
     expect(curate(row)).not.toBeNull()
   }
 })
@@ -317,7 +317,7 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   expect(event.details).toContain('Quantization changed from "fp8" to null.')
 })
 
-test('lifecycle values for all entity kinds use native keys and captured context', () => {
+test('lifecycle values for all entity kinds use native keys and captured context', async () => {
   const empty: Scan = {
     scan_at: '2026-09-29T00:00:00.000Z',
     models: new Map(),
@@ -490,7 +490,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
   expect(render(arrival)?.details).toContain('Price schedule detected.')
   expect(
     JSON.stringify(
-      renderDiscord(arrival, {
+      await renderDiscord(arrival, {
         publicUrl: 'https://orca.orb.town',
         logoOrigin: 'https://logos.orb.town',
       }),
@@ -609,7 +609,7 @@ test('the stored row supplies root identity and operation without reconciling du
   expect(curate({ ...row, change_json: JSON.stringify(payload) })).toEqual(curate(row))
 })
 
-test('failed events are logged and omitted before batching; healthy events keep their residual changes', () => {
+test('failed events are logged and omitted before batching; healthy events keep their residual changes', async () => {
   const before = { metadata: { supported_parameters: ['tools', 'audio'], context_length: 100 } }
   const after = { metadata: { supported_parameters: ['tools'], context_length: 100 } }
   const good = Array.from({ length: 5 }, (_, index) => ({
@@ -648,7 +648,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
   try {
     const input = [...good.slice(0, 1), ...bad, ...good.slice(1)]
     const original = JSON.stringify(input)
-    const result = prepareBatch(input)
+    const result = await prepareBatch(input)
 
     expect(result.skipped).toBe(3)
     expect(result.alerts.map((alert) => alert.type)).toEqual(['batch', 'event'])
@@ -682,11 +682,9 @@ test('failed events are logged and omitted before batching; healthy events keep 
     expect(() => curate(missingValue)).toThrow('context_length')
 
     // A failed fifth entity cannot make four healthy entities eligible for a batch.
-    expect(
-      prepareBatch([...good.slice(0, 4), unsupported]).alerts.every(
-        (alert) => alert.type === 'event',
-      ),
-    ).toBe(true)
+    const four = await prepareBatch([...good.slice(0, 4), unsupported])
+
+    expect(four.alerts.every((alert) => alert.type === 'event')).toBe(true)
 
     expect(prepareAlert(unsupported)).toBeNull()
     expect(prepareAlert(unsupported)).toBeNull()
@@ -723,8 +721,12 @@ function render(row: EventRow) {
   return alert === null ? null : renderPrepared(alert)
 }
 
-function renderDiscord(row: EventRow, urls: DiscordUrls) {
-  const { alerts } = prepareBatch([{ ...row, _id: 'test-event' }])
+async function renderDiscord(row: EventRow, urls: DiscordUrls) {
+  const { alerts } = await prepareBatch([{ ...row, _id: 'test-event' }])
 
   return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+}
+
+async function prepareBatch(rows: (EventRow & { _id: string })[]) {
+  return await prepareDiscordBatch(rows, async (candidates) => candidates.map(() => false))
 }
