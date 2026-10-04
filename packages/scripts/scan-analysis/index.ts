@@ -1,17 +1,32 @@
 import path from 'node:path'
 
-import { Command, Option } from 'commander'
+import { Command, InvalidArgumentError, Option } from 'commander'
 
 import { createObjectReader } from '../../backend/convex/objects/client'
+import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/profile'
+import type { Selection, ScanViewOptions } from '../../backend/convex/scan_analysis/profile'
+import { loadScan } from '../../backend/convex/scan_analysis/source'
 import { renderHtml } from './html'
-import { profileScan } from './profile'
-import type { Selection } from './profile'
-import { loadScan } from './source'
 
-interface Options extends Selection {
+interface Options extends Selection, Omit<ScanViewOptions, 'valueLimit'> {
   format: 'html' | 'json'
   output?: string
   source: string
+  valueLimit: number | 'all'
+}
+
+function parseValueLimit(value: string): number | 'all' {
+  if (value === 'all') {
+    return 'all'
+  }
+
+  const limit = Number(value)
+
+  if (!Number.isSafeInteger(limit) || limit < 0 || value.trim() === '') {
+    throw new InvalidArgumentError('Expected a nonnegative integer or all')
+  }
+
+  return limit
 }
 
 const program = new Command()
@@ -33,6 +48,20 @@ const program = new Command()
   )
   .option('--model <id>', 'select an exact model identity and its endpoints/providers')
   .option('--provider <id>', 'select an exact provider identity and its models/endpoints')
+  .addOption(
+    new Option('--population <name>', 'JSON view population').choices([
+      'models',
+      'endpoints',
+      'providers',
+    ]),
+  )
+  .option('--paths <paths...>', 'JSON view: exact field JSONPaths')
+  .option(
+    '--value-limit <count|all>',
+    'JSON view: entries per distribution; all includes long strings',
+    parseValueLimit,
+    5,
+  )
   .option('-o, --output <path>', 'report path; defaults to scan-profile.<time>.<format>')
   .showHelpAfterError()
   .action(async (requested: string, options: Options) => {
@@ -50,9 +79,16 @@ const program = new Command()
 
     const report = profileScan(scan, options.source, selection)
     const output = path.resolve(options.output ?? `scan-profile.${scan.scan_at}.${options.format}`)
+    const view: ScanViewOptions = {
+      paths: options.paths,
+      population: options.population,
+      valueLimit: options.valueLimit === 'all' ? null : options.valueLimit,
+    }
 
     const contents =
-      options.format === 'html' ? await renderHtml(report) : `${JSON.stringify(report, null, 2)}\n`
+      options.format === 'html'
+        ? await renderHtml(report)
+        : `${JSON.stringify(viewScanReport(report, view), null, 2)}\n`
 
     await Bun.write(output, contents)
     console.error(`Wrote ${output}`)

@@ -12,13 +12,18 @@ Objects interface.
 # Latest scan, HTML by default
 bun run --cwd packages/scripts scan-analysis
 
-# An exact capture time; JSON output for agents
+# An exact capture time; compact JSON view for agents
 bun run --cwd packages/scripts scan-analysis -- \
   2026-10-03T00:00:00.000Z --format json --output /tmp/scan-profile.json
 
 # Inspect one model in the collected population
 bun run --cwd packages/scripts scan-analysis -- \
   --scope collected --model author/model --output /tmp/model-profile.html
+
+# Full value detail for a field, retaining the same scan timestamp for follow-up work
+bun run --cwd packages/scripts scan-analysis -- \
+  2026-10-03T00:00:00.000Z --format json --population endpoints \
+  --value-limit all --paths '$[*]["quantization"]' --output /tmp/quantization.json
 ```
 
 Latest selection requires the source to support descending Objects discovery. It reads one name
@@ -36,7 +41,7 @@ after download. Authentication, missing scans and invalid data fail without crea
   endpoints; a model filter selects its related providers. Unfiltered models include those with
   no endpoints. Duplicate model/endpoint identities fail rather than silently changing counts.
 - Field presence/null percentages use the containing population. Array-item rows count occurrences,
-  not entities supporting a capability. See [JSON profile](../json-profile/README.md).
+  not entities supporting a capability. See [JSON profile](../../json-profile/README.md).
 - Numeric summaries use weighted nearest-rank quantiles of JSON numbers. Numeric strings, including
   pricing meters, are not coerced. These are distributions of observed field values, not aggregate
   request latency/throughput percentiles or interpreted price comparisons.
@@ -46,6 +51,32 @@ after download. Authentication, missing scans and invalid data fail without crea
 The HTML viewer searches field paths, sorts by absence or distinct values, and expands distributions
 on demand. It shows the 50 most frequent values per branch; JSON export retains every value.
 Exported reports include observed data and can be large when fields have many unique values.
+
+CLI JSON output uses the generic profiler's flat view: five entries per distribution by default,
+with explicit omitted counts. `--population`, `--paths` and `--value-limit` refine that view after
+the full profile has been computed. These view options apply to JSON output; HTML retains full
+detail for interactive exploration. The JSON view omits entity examples; those remain in the
+full report and HTML export.
+
+## Run inside a deployment
+
+The internal action `scan_analysis/index:profile` uses the same full profiler and view as the CLI.
+It loads one scan through the deployment's configured Objects source, without saving scans or
+reports. No API key is supplied in action arguments. Access uses Convex's administrative tooling.
+
+```sh
+# Once this action has been deployed through the normal release process:
+bunx convex run --prod scan_analysis/index:profile '{}'
+
+# Drill into the exact capture time returned by the first call:
+bunx convex run --prod scan_analysis/index:profile \
+  '{"scanAt":"2026-10-03T00:00:00.000Z","population":"endpoints","paths":["$[*][\"quantization\"]"],"valueLimit":null}'
+```
+
+Run these commands from `packages/backend`. Arguments also accept the same `scope`, `model` and
+`provider` selection as the local CLI. Omitted `scanAt` selects the latest scan. Pin the returned
+timestamp for follow-up calls so observations remain comparable. The reported source deployment
+is the Objects source, which may differ from the deployment executing the action.
 
 For an ad hoc analysis, compose `createObjectReader`, `loadScan` and ordinary TypeScript functions.
 Keep additional statistics specific to the question. Date-range pooling and historical comparisons

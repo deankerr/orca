@@ -81,6 +81,7 @@ import type * as json from "../json.js";
 import type * as numbers from "../numbers.js";
 import type * as objects_backend from "../objects/backend.js";
 import type * as objects_bytes from "../objects/bytes.js";
+import type * as objects_client from "../objects/client.js";
 import type * as objects_index from "../objects/index.js";
 import type * as objects_local from "../objects/local.js";
 import type * as objects_locators from "../objects/locators.js";
@@ -99,7 +100,11 @@ import type * as routine from "../routine.js";
 import type * as scan_collected from "../scan/collected.js";
 import type * as scan_extract from "../scan/extract.js";
 import type * as scan_index from "../scan/index.js";
+import type * as scan_parse from "../scan/parse.js";
 import type * as scan_time from "../scan/time.js";
+import type * as scan_analysis_index from "../scan_analysis/index.js";
+import type * as scan_analysis_profile from "../scan_analysis/profile.js";
+import type * as scan_analysis_source from "../scan_analysis/source.js";
 
 import type {
   ApiFromModules,
@@ -181,6 +186,7 @@ declare const fullApi: ApiFromModules<{
   numbers: typeof numbers;
   "objects/backend": typeof objects_backend;
   "objects/bytes": typeof objects_bytes;
+  "objects/client": typeof objects_client;
   "objects/index": typeof objects_index;
   "objects/local": typeof objects_local;
   "objects/locators": typeof objects_locators;
@@ -199,7 +205,11 @@ declare const fullApi: ApiFromModules<{
   "scan/collected": typeof scan_collected;
   "scan/extract": typeof scan_extract;
   "scan/index": typeof scan_index;
+  "scan/parse": typeof scan_parse;
   "scan/time": typeof scan_time;
+  "scan_analysis/index": typeof scan_analysis_index;
+  "scan_analysis/profile": typeof scan_analysis_profile;
+  "scan_analysis/source": typeof scan_analysis_source;
 }>;
 
 /**

@@ -1,8 +1,10 @@
 /// <reference lib="dom" />
 
-import type { ValueProfile } from '../json-profile/library/profile'
-import type { Population, ScanReport } from './profile'
-import { distinctValues, escapeHtml, numericSummary, profileRows } from './summary'
+import type { ValueProfile } from '@orca/json-profile'
+import { distinctValues, numericSummary, profileRows } from '@orca/json-profile'
+
+import type { Population, ScanReport } from '../../backend/convex/scan_analysis/profile'
+import { escapeHtml } from './summary'
 
 const payload = document.querySelector('#report')
 const population = document.querySelector<HTMLSelectElement>('#population')

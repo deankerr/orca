@@ -1,9 +1,9 @@
+import type { JsonProfile, JsonRecord, JsonValue, ViewOptions } from '@orca/json-profile'
+import { profileJsonRecords, viewProfile } from '@orca/json-profile'
 import { z } from 'zod'
 
-import type { RawScan } from '../../backend/convex/scan/collected'
-import { extract } from '../../backend/convex/scan/extract'
-import type { JsonProfile, JsonRecord, JsonValue } from '../json-profile/library/profile'
-import { profileJsonRecords } from '../json-profile/library/profile'
+import type { RawScan } from '../scan/collected'
+import { extract } from '../scan/extract'
 
 export type Selection = { model?: string; provider?: string; scope: 'orca' | 'collected' }
 export type Population = {
@@ -39,9 +39,16 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
       throw new Error(`Duplicate model identity: ${entry.model_id}`)
     }
 
+    const model = extracted?.models.get(entry.model_id)
+
     models.set(
       entry.model_id,
-      jsonRecord.parse({ ...entry.model, id: entry.model_id, variant: entry.variant }),
+      model ??
+        jsonRecord.parse({
+          ...entry.model,
+          id: entry.model_id,
+          variant: entry.variant,
+        }),
     )
 
     for (const endpoint of entry.endpoints ?? []) {
@@ -49,10 +56,20 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
         throw new Error(`Duplicate endpoint identity: ${endpoint.id}`)
       }
 
-      const { slug, ...provider } = providerBody.parse(endpoint.provider_info)
-      providers.set(slug, { ...provider, provider_id: slug })
-      endpoints.set(endpoint.id, jsonRecord.parse(endpoint))
-      relationships.set(endpoint.id, { model: entry.model_id, provider: slug })
+      const scopedEndpoint = extracted?.endpoints.get(endpoint.id)
+
+      if (scopedEndpoint === undefined) {
+        const { slug, ...provider } = providerBody.parse(endpoint.provider_info)
+        providers.set(slug, { ...provider, provider_id: slug })
+        endpoints.set(endpoint.id, jsonRecord.parse(endpoint))
+        relationships.set(endpoint.id, { model: entry.model_id, provider: slug })
+      } else {
+        endpoints.set(endpoint.id, scopedEndpoint)
+        relationships.set(endpoint.id, {
+          model: entry.model_id,
+          provider: scopedEndpoint.provider_id,
+        })
+      }
     }
   }
 
@@ -90,6 +107,27 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
     source: { deployment, scan_at: scan.scan_at },
   }
 }
+
+export type PopulationName = 'models' | 'endpoints' | 'providers'
+export type ScanViewOptions = ViewOptions & { population?: PopulationName }
+
+/** Refine the same full report for agents; selection never changes how profiling is performed. */
+export function viewScanReport(report: ScanReport, options: ScanViewOptions = {}) {
+  const populations: PopulationName[] =
+    options.population === undefined ? ['models', 'endpoints', 'providers'] : [options.population]
+
+  return {
+    report_format: 'orca-scan-profile-view-v1' as const,
+    source: report.source,
+    selection: report.selection,
+    populations: populations.map((name) => ({
+      name,
+      ...viewProfile(report[name].profile, options),
+    })),
+  }
+}
+
+export type ScanReportView = ReturnType<typeof viewScanReport>
 
 function profilePopulation(entries: [string, JsonRecord][]): Population {
   const ordered = entries.toSorted(([left], [right]) => (left < right ? -1 : Number(left > right)))

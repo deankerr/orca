@@ -7,13 +7,12 @@
   },
   "dependencies": {
     "@orca/backend": "workspace:*",
-    "commander": "^15.0.0",
-    "zod": "catalog:"
+    "@orca/json-profile": "workspace:*",
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
     "@oxc-project/types": "0.149.0",
-    "@swaggerexpert/jsonpath": "^4.0.4",
     "@types/bun": "catalog:",
     "convex": "catalog:",
     "oxc-parser": "0.149.0",

@@ -1,4 +1,4 @@
-import type { ScanReport } from './profile'
+import type { ScanReport } from '../../backend/convex/scan_analysis/profile'
 import { escapeHtml } from './summary'
 
 /** Bundle only the local viewer; the saved report has no network or runtime dependencies. */

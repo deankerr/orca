@@ -1,12 +1,15 @@
-import type { createObjectReader } from '../../backend/convex/objects/client'
-import { parseScan } from '../../backend/convex/scan/parse'
-import { scanTime } from '../../backend/convex/scan/time'
+import type { ObjectIdentity } from '../objects'
+import type { NameSelection } from '../objects/local'
+import { parseScan } from '../scan/parse'
+import { scanTime } from '../scan/time'
+
+export interface ScanReader {
+  load: (identity: ObjectIdentity) => Promise<string | null>
+  namesAtOrAfter: (selection: NameSelection) => Promise<string[]>
+}
 
 /** Select before downloading; only the requested scan's contents enter memory. */
-export async function loadScan(
-  reader: ReturnType<typeof createObjectReader>,
-  requested = 'latest',
-) {
+export async function loadScan(reader: ScanReader, requested = 'latest') {
   let scanAt = requested
 
   if (requested === 'latest') {

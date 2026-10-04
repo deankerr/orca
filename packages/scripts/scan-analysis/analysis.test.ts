@@ -1,15 +1,38 @@
 import { expect, spyOn, test } from 'bun:test'
-import { rejects } from 'node:assert/strict'
+import { deepStrictEqual, rejects } from 'node:assert/strict'
 
+import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { ConvexHttpClient } from 'convex/browser'
+import { convexToJson } from 'convex/values'
 
 import { createObjectReader } from '../../backend/convex/objects/client'
-import { profileJsonRecords } from '../json-profile/library/profile'
+import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/profile'
+import { loadScan } from '../../backend/convex/scan_analysis/source'
 import { sampleScan } from './fixtures'
 import { renderHtml } from './html'
-import { profileScan } from './profile'
-import { loadScan } from './source'
-import { distinctValues, numericSummary, profileRows } from './summary'
+
+test('scan views pin provenance and select detail without changing the full report', () => {
+  const report = profileScan(sampleScan(), 'example-source', { scope: 'orca' })
+  const before = JSON.stringify(report)
+  const view = viewScanReport(report, {
+    paths: ['$[*]["quantization"]'],
+    population: 'endpoints',
+    valueLimit: null,
+  })
+
+  expect(view.source).toEqual({ deployment: 'example-source', scan_at: sampleScan().scan_at })
+  expect(view.populations).toHaveLength(1)
+  expect(view.populations[0]?.record_count).toBe(6)
+  expect(view.populations[0]?.fields).toHaveLength(1)
+  expect(view.populations[0]?.fields[0]?.types).toMatchObject([
+    { count: 2, type: 'null' },
+    { count: 4, type: 'string', values: { complete: true, entries: [{ count: 4, value: 'fp8' }] } },
+  ])
+
+  // Paths are values, not object keys beginning with "$", so the view crosses Convex transport.
+  deepStrictEqual(convexToJson(view), view)
+  expect(JSON.stringify(report)).toBe(before)
+})
 
 test('profiles the same ORCA scope and identities, with explicit collected and filtered populations', () => {
   const scan = sampleScan()
