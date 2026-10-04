@@ -1,3 +1,6 @@
+import type { z } from 'zod'
+
+import type { Pricing } from '../../entities'
 import { priceMeters as meters } from '../../priceMeters'
 
 /** Alert paths and labels use the shared meter units and decimal scaling. */
@@ -12,4 +15,11 @@ export const priceMeters: Record<string, { label: string; scale: number; unit: s
   'pricing.image': { label: 'image_input', ...meters.image },
   'pricing.image_output': { label: 'image_output', ...meters.image_output },
   'pricing.web_search': { label: 'web_search', ...meters.web_search },
+}
+
+/** Detect schedule evidence without interpreting or constraining upstream conditions. */
+export function isScheduledPricing(pricing: z.infer<typeof Pricing>): boolean {
+  return (
+    pricing.overrides?.some((row) => Object.keys(row).some((key) => key.startsWith('utc'))) ?? false
+  )
 }

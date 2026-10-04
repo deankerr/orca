@@ -125,6 +125,9 @@ export function EntityEventCard({
               'data_policy.retentionDays',
             ]}
           />
+          {fact(event.after, 'pricing.is_scheduled') === true && (
+            <p className="mt-1.5 font-mono text-xs">Price schedule detected.</p>
+          )}
         </div>
       ) : null}
     </div>

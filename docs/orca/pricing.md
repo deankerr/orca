@@ -46,14 +46,39 @@ Do not display or surface these fields:
 
 ## Alert eligibility
 
-Monitor, Feed, and Discord use shared eligibility. An endpoint pricing update must contain an
-eligible meter movement of at least 2%, measured before rounding. A valid transition between
-zero/absence and a positive rate also qualifies. Invalid, negative, or non-string values do not.
-Discount alone does not qualify because presented rates already reflect it.
+Monitor, Feed, and Discord use shared eligibility. Any `pricing.overrides` row with a key
+starting with `utc` establishes that a schedule is present. This deliberately accepts upstream
+extensions without parsing conditions, matching rate bands, or choosing an active band.
+
+For pricing scheduled on either side of an event, unchanged overrides suppress the pricing
+update. Changed overrides produce “Price schedule changed”, including schedule introduction
+or removal, even when the presented rates do not move. Current-band meter deltas are omitted
+from that alert. Endpoint arrivals with a schedule include “Price schedule detected”.
+
+Endpoint pricing updates retain complete normalized before/after quotes in `context.pricing`,
+using the same storage encoding as Catalog and Pricing History. This supplies unchanged overrides
+that the diff omits, without historical joins or a persisted schedule classification. Alert
+preparation derives schedule presence from these observed quotes each time it runs.
+
+The context is optional in the stored schema for older events. New pricing updates always include
+both quotes, even when neither has overrides; lifecycle snapshots already contain full pricing,
+and unrelated updates do not duplicate it. Missing context means unknown, not unscheduled: older
+updates retain the previous eligibility behavior until regenerated. Consumers must handle absence
+and must never infer historical schedules from today's Catalog. Captured changes and price history
+remain intact.
+
+The earlier preview's stored `pricing_is_scheduled` field is accepted only for schema compatibility.
+New events omit it; alert preparation discards any legacy value and derives its own classification.
+
+Other endpoint pricing updates first suppress numeric discount adjustments of at most two
+percentage points, then require an eligible meter movement of at least 2%, measured before
+rounding. A valid transition between zero/absence and a positive rate also qualifies. Invalid,
+negative, or non-string values do not. Discount alone does not qualify because presented rates
+already reflect it. Long-context overrides alone do not establish a schedule.
 
 This coarse rule suppresses the whole event, including coincident non-pricing changes.
 Lifecycle events and updates without pricing changes are outside the rule; captured events
-remain intact. Opaque pricing, presentation-only changes, and revision-only changes are not
-currently selected as standalone alert signals.
+remain intact. Other opaque pricing, presentation-only changes, and revision-only changes are
+not selected as standalone alert signals.
 
 See [Pricing History](pricing-history.md) for interpreting quotes across membership and availability changes.

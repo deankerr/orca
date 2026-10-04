@@ -2,11 +2,11 @@ import { compareNumbers, relativeChangeAtLeast } from '../../numbers'
 import type { EntityAlert, FieldChange } from './curate'
 
 /**
- * Coarse notification policy: suppress discount adjustments of at most 2 percentage
- * points first, then require at least one eligible meter moving by 2% or more.
+ * Scheduled pricing only announces override changes. Other pricing suppresses discount
+ * adjustments of at most 2 percentage points, then requires a meter moving by 2% or more.
  * A malformed meter is ineligible, not a reason to let a 0.1% update through.
- * No eligible meters means no pricing notification; lifecycle and non-pricing
- * events remain outside this rule.
+ * Without a schedule change or eligible meter, there is no pricing notification.
+ * Lifecycle and non-pricing events remain outside this rule.
  *
  * ponytail: suppress the whole event, including any coincident metadata edits.
  * Revisit field-level filtering when missing those edits warrants the complexity.
@@ -17,6 +17,11 @@ export function isEligible(event: EntityAlert): boolean {
   }
 
   const pricing = event.changes.filter((change) => change.path.split('.')[0] === 'pricing')
+
+  if (pricing.length > 0 && event.pricing_is_scheduled === true) {
+    return pricing.some((change) => change.path === 'pricing.overrides')
+  }
+
   const discount = pricing.find((change) => change.path === 'pricing.discount')
 
   if (
@@ -36,6 +41,7 @@ function significantMeterChange(change: FieldChange): boolean {
   if (
     change.path === 'pricing' ||
     change.path === 'pricing.discount' ||
+    change.type === 'field_changed' ||
     change.type === 'set_updated'
   ) {
     return false

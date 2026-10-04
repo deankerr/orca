@@ -215,6 +215,10 @@ function FieldSetUpdatedItem({
 function ChangeItem({ field }: { field: FieldChange }) {
   const key = fieldLabel(field.path)
 
+  if (field.type === 'field_changed') {
+    return <div data-field={field.path}>{key} changed.</div>
+  }
+
   if (field.type === 'set_updated') {
     return <FieldSetUpdatedItem fieldKey={key} field={field} />
   }

@@ -10,6 +10,7 @@ const labels: Record<string, string> = {
   'pricing.input_cache_write': 'Cache-write price',
   'pricing.input_cache_write_1h': 'Cache-write 1h price',
   'pricing.discount': 'Discount',
+  'pricing.overrides': 'Price schedule',
   short_name: 'Name',
   displayName: 'Name',
   provider_display_name: 'Provider name',
@@ -74,6 +75,10 @@ function value(input: FieldValue, path: string): string {
 function describeChange(change: FieldChange): string[] {
   const name = labels[change.path] ?? change.path
 
+  if (change.type === 'field_changed') {
+    return [`${name} changed.`]
+  }
+
   if (change.type === 'field_added') {
     return [`${name} was added: ${value(change.after, change.path)}.`]
   }
@@ -126,6 +131,7 @@ export function describe(event: EntityAlert): string[] {
       ? [
           'pricing.prompt',
           'pricing.completion',
+          'pricing.is_scheduled',
           'context_length',
           'max_completion_tokens',
           'quantization',
@@ -142,6 +148,10 @@ export function describe(event: EntityAlert): string[] {
         : ['headquarters', 'datacenters', 'statusPageUrl']
   return paths.flatMap((path) => {
     const field = fact(facts, path)
+
+    if (path === 'pricing.is_scheduled') {
+      return field === true ? ['Price schedule detected.'] : []
+    }
 
     const name = labels[path] ?? path
     return field === undefined

@@ -9,7 +9,13 @@ export function select(event: EntityAlert): EntityAlert | null {
   }
 
   if (event.type === 'endpoint_updated') {
-    const changes = event.changes.filter((change) => change.path !== 'supports_reasoning')
+    const changes = event.changes.filter(
+      (change) =>
+        change.path !== 'supports_reasoning' &&
+        (event.pricing_is_scheduled !== true ||
+          !change.path.startsWith('pricing.') ||
+          change.path === 'pricing.overrides'),
+    )
     return changes.length === 0 ? null : { ...event, changes }
   }
 
@@ -33,7 +39,11 @@ function providerChanges(changes: FieldChange[]): FieldChange[] {
       return [change]
     }
 
-    if (change.path !== 'dataPolicy' || change.type === 'set_updated') {
+    if (
+      change.path !== 'dataPolicy' ||
+      change.type === 'set_updated' ||
+      change.type === 'field_changed'
+    ) {
       return []
     }
 

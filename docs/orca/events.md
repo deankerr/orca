@@ -38,8 +38,10 @@ String arrays compare as sets, ignoring order. Accepted `json-diff-ts` limitatio
 - Arrays directly nested in arrays retain positional behavior; supported entity shapes avoid this case.
 - In version 4.10.4, `applyChangeset` skips UPDATEs to null. Rendering reads retained diff nodes directly.
 
-Lifecycle events carry complete projected facts. Updates retain changed facts, not complete
-surrounding before/after state; explanations must not fill those gaps from today's Catalog.
+Lifecycle events carry complete projected facts. Updates retain changed facts, with complete
+before/after pricing context on new endpoint pricing updates. That context is optional for older
+records; see [pricing eligibility](pricing.md#alert-eligibility) for consumer behavior. Other
+unchanged surrounding state is absent; explanations must not fill those gaps from today's Catalog.
 
 ## Alert policy
 

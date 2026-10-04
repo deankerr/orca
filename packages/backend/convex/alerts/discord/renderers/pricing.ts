@@ -8,7 +8,7 @@ import { delta, fieldChange, fieldName, fieldValue } from './fields'
 export const priceLabel = (path: string): string => meters[path]?.label ?? fieldName(path)
 
 export function pricingFacts(facts: Record<string, FieldValue>): string {
-  return pricingTable(
+  const prices = pricingTable(
     [...Object.keys(meters), 'pricing.discount'].flatMap((path) => {
       const input = fact(facts, path)
 
@@ -19,6 +19,10 @@ export function pricingFacts(facts: Record<string, FieldValue>): string {
         : [{ path, after, annotation: '' }]
     }),
   )
+
+  return [prices, fact(facts, 'pricing.is_scheduled') === true ? 'Price schedule detected.' : '']
+    .filter(Boolean)
+    .join('\n')
 }
 
 /** Pricing owns grouping, aliases, unit scaling, and fallback presentation for its fields. */
@@ -27,6 +31,11 @@ export function pricingChanges(changes: FieldChange[]): string[] {
   const fallback: string[] = []
 
   for (const change of changes) {
+    if (change.type === 'field_changed' && change.path === 'pricing.overrides') {
+      fallback.push('Price schedule changed.')
+      continue
+    }
+
     const row = pricingChange(change)
 
     if (row === null) {
@@ -62,7 +71,7 @@ function pricingValue(value: FieldValue, path: string): string {
 
 /** A null row leaves unfamiliar/non-price values to the ordinary field renderer. */
 function pricingChange(change: FieldChange): PriceRow | null {
-  if (change.type === 'set_updated') {
+  if (change.type === 'set_updated' || change.type === 'field_changed') {
     return null
   }
 

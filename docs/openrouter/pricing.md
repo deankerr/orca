@@ -103,22 +103,42 @@ The normalized rates and headline values in `display_pricing` already include th
 - Provider discount battles produce frequent, fine-grained changes to this field.
 - OpenRouter also uses the field for rare, large, fixed-duration site promotions.
 - ⚠️ Tiny discount movements in provider discount battles are real pricing events, not float noise.
+- 📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, two Phala endpoints repeated
+  daily discount cycles (0/30% and 0/34%) while their source pricing and revision stayed fixed.
+  Direct inspection of their raw payloads found no exposed schedule definition; a recursive
+  search across all 3,380 Phala observations (20 endpoint UUIDs) found no schedule indicators.
+- ⚠️ Periodic discount movements do not establish that an endpoint exposes schedule metadata.
 
 ## `pricing.overrides`
 
 `pricing.overrides` is an array of conditional rate rows. The key is absent when no conditional
-pricing is exposed.
+pricing is exposed. It is part of the public endpoint API's `pricing` structure, not only the
+frontend bundle. Rows have no schedule discriminator and remain open to additional conditions.
 
-- 🧭 Detect schedule pricing when any object in the array has a property beginning with `utc_`.
 - Prompt-length rows contain `min_prompt_tokens` and rates above that threshold.
 - The normalized `pricing.*` fields present the active schedule band or the default prompt-length
   band.
-- 📊 `overrides` appeared on 109 of 1,080 text-input-and-output endpoints (10.1%) in the 2026-08-24
-  bundle.
-- 🧭 Beyond detecting the type of override in use, the content values should not be interpreted.
+- 📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, 213 endpoint UUIDs exposed
+  overrides: 206 with prompt-length conditions and seven with schedules. No mixed schedule/context
+  arrays appeared in that corpus; this does not constrain future representations.
 - Schedules vary and do not provide a universal base price or default band.
-- 🧭 Exclude scheduled pricing observations from pricing-change counts; movement through an
-  existing schedule is not repricing.
+
+The scheduled rows in that corpus used three condition shapes:
+
+| Conditions                         | Observed use                                              |
+| ---------------------------------- | --------------------------------------------------------- |
+| `utc_start`, `utc_end`             | Daily clock windows on Alibaba and Tencent                |
+| `utc_days`                         | Whole-day weekend rates on DeepSeek, without clock fields |
+| `utc_days`, `utc_start`, `utc_end` | Weekday clock windows on DeepSeek                         |
+
+- Clocks were integer HHMM values, including `utc_end: 0` for a window ending at midnight.
+- `utc_days` contained lowercase weekday names. Requiring both clock fields misses whole-day rows.
+- Several rows can repeat the same rates; a condition row is not necessarily a distinct price band.
+- Observed schedule rates covered `prompt`, `completion`, and `input_cache_read`; context rows
+  also varied in cache-write and audio meter coverage. These are observations, not a closed schema.
+
+ORCA's [schedule detection and alert policy](../orca/pricing.md#alert-eligibility) uses a derived
+boolean and override equality. Rendering schedule conditions is a separate concern.
 
 ## `display_pricing`
 
@@ -129,6 +149,9 @@ a view for presentation, not an authored-pricing source.
 - `display_pricing[].tiers` is distinct from the endpoint's `tiers` object.
 - The object is exposed at the endpoint root and copied under `pricing`.
 - 🔄 Presentation data can change with normalized rates or independently of them.
+- Schedule rows expose `scheduleWindows`; DeepSeek also exposed `scheduleExceptions` with numeric
+  day/clock fields in the 2026-09-26 through 2026-10-03 captures. This differs from named `utc_days`
+  in overrides; the exception semantics were not established by the inspection.
 
 ## `pricing_version_id`
 
@@ -170,6 +193,11 @@ moved and does not infer that one changed field explains another.
 - `pricing.discount` can change while `pricing_json` and `pricing_version_id` remain stable.
 - The active normalized rates of an existing schedule can change while `pricing.overrides`,
   `pricing_json`, and `pricing_version_id` remain stable.
+- A complete `display_pricing` array includes active headline prices, so its movement does not
+  establish that a schedule definition changed.
+- 📊 Tencent HY4 Preview acquired overrides at the 2026-09-30T10:40:04.109Z capture while its
+  current input, output, and cache-read rates stayed unchanged. Schedule introduction is independent
+  of current-rate movement.
 - `pricing_version_id` can change while `pricing_json`, normalized `pricing`, `display_pricing`, and
   `tiers` remain stable.
 - `display_pricing` can change independently of normalized rates and authored-pricing signals.
