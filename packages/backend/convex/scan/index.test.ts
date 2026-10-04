@@ -4,14 +4,19 @@
 import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
+import { ConvexHttpClient } from 'convex/browser'
+
 import type { ActionCtx } from '../_generated/server'
 import * as objects from '../objects'
-import { latest, loadRaw, loadPair, loadNextPair, store } from './index'
-import { scanTime } from './time'
+import { createObjectReader } from '../objects/client'
+import { reader, store } from './index'
+import { createScanReader, scanAtFromReference } from './objects'
 
-test('scan storage round-trips the existing JSONL format and rejects inconsistent contents', async () => {
+test('scan storage round-trips collected entries and loads exact pairs in one batch', async () => {
   const ctx = {} as ActionCtx
+  const scans = reader(ctx)
   const scan_at = '2026-10-02T10:40:04.272Z'
+
   const entry = {
     model_id: 'author/model',
     variant: 'standard',
@@ -23,67 +28,56 @@ test('scan storage round-trips the existing JSONL format and rejects inconsisten
     },
     endpoints: null,
   }
+
   const scan = { scan_at, entries: [entry] }
   const saved = spyOn(objects, 'store').mockResolvedValue()
-  const source = spyOn(objects, 'load').mockResolvedValue(null)
   const batch = spyOn(objects, 'loadMany').mockResolvedValue([])
 
   try {
-    Object.defineProperty(entry, 'scan_at', { value: 'wrong' })
     await store(ctx, scan)
 
     const text = `${JSON.stringify({ ...entry, scan_at })}\n`
+
     expect(saved).toHaveBeenCalledWith(ctx, {
       path: 'scans',
       name: `scan.${scan_at}.jsonl`,
       text,
     })
 
-    source.mockResolvedValue(text)
-    expect(await loadRaw(ctx, scan_at)).toEqual(scan)
+    batch.mockResolvedValue([text])
+    expect(await scans.loadRaw(scan_at)).toEqual(scan)
 
     const nextAt = '2026-10-02T11:40:04.272Z'
     batch.mockResolvedValue([text, text.replaceAll(scan_at, nextAt)])
-    expect(await loadPair(ctx, { from_scan_at: scan_at, scan_at: nextAt })).toEqual({
+
+    expect(await scans.loadPair({ from_scan_at: scan_at, scan_at: nextAt })).toEqual({
       previous: { scan_at, models: new Map(), providers: new Map(), endpoints: new Map() },
       next: { scan_at: nextAt, models: new Map(), providers: new Map(), endpoints: new Map() },
     })
+
     expect(batch).toHaveBeenCalledWith(ctx, [
       { path: 'scans', name: `scan.${scan_at}.jsonl` },
       { path: 'scans', name: `scan.${nextAt}.jsonl` },
     ])
 
-    await rejects(loadPair(ctx, { from_scan_at: scan_at, scan_at }), /must move forward/)
-    await rejects(loadPair(ctx, { from_scan_at: nextAt, scan_at }), /must move forward/)
-
-    for (const invalid of [
-      null,
-      '',
-      'not json',
-      '{}',
-      JSON.stringify(entry),
-      text.replaceAll(scan_at, 'wrong'),
-      text.replaceAll(scan_at, nextAt),
-      text + text.replaceAll(scan_at, nextAt),
-    ]) {
-      source.mockResolvedValue(invalid)
-      await rejects(loadRaw(ctx, scan_at))
-    }
+    await rejects(scans.loadPair({ from_scan_at: scan_at, scan_at }), /must move forward/)
+    await rejects(scans.loadPair({ from_scan_at: nextAt, scan_at }), /must move forward/)
 
     batch.mockResolvedValue([text, null])
-    await rejects(loadPair(ctx, { from_scan_at: scan_at, scan_at: nextAt }), /Scan not found/)
+    await rejects(scans.loadPair({ from_scan_at: scan_at, scan_at: nextAt }), /Scan not found/)
     await rejects(store(ctx, { ...scan, entries: [] }))
     expect(saved).toHaveBeenCalledTimes(1)
   } finally {
     saved.mockRestore()
-    source.mockRestore()
     batch.mockRestore()
   }
 })
 
 test('loading the next pair discovers scans, scopes text models and derives entity identities', async () => {
   const ctx = {} as ActionCtx
+  const scans = reader(ctx)
   const times = ['2026-10-01T00:00:00.000Z', '2026-10-02T00:00:00.000Z', '2026-10-03T00:00:00.000Z']
+
   const entry = (id: string, output = 'text') => ({
     model_id: id,
     variant: 'free',
@@ -104,6 +98,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
       },
     ],
   })
+
   const stored = new Map(
     times.map((scan_at, index) => [
       `scan.${scan_at}.jsonl`,
@@ -117,16 +112,18 @@ test('loading the next pair discovers scans, scopes text models and derives enti
         .join('\n'),
     ]),
   )
+
   const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) =>
     [...stored.keys()].filter((name) => name >= args.atOrAfter).slice(0, args.limit),
   )
+
   const batch = spyOn(objects, 'loadMany').mockImplementation(async (_, identities) =>
     identities.map(({ name }) => stored.get(name) ?? null),
   )
 
   try {
-    const first = await loadNextPair(ctx)
-    const following = await loadNextPair(ctx, '2026-10-01T12:00:00.000Z')
+    const first = await scans.loadNextPair()
+    const following = await scans.loadNextPair('2026-10-01T12:00:00.000Z')
 
     expect(first?.previous.scan_at).toBe(times[0])
     expect(first?.next.scan_at).toBe(times[1])
@@ -139,9 +136,11 @@ test('loading the next pair discovers scans, scopes text models and derives enti
       expect(scan).toBeDefined()
       expect([...(scan?.models.keys() ?? [])]).toEqual([id, 'author/unlisted'])
       expect(scan?.models.get(id)).toEqual({ ...entry(id).model, id, variant: 'free' })
+
       expect([...(scan?.providers.values() ?? [])]).toEqual([
         { provider_id: 'provider', name: 'Provider' },
       ])
+
       expect([...(scan?.endpoints.values() ?? [])]).toEqual([
         {
           id: `${id}-endpoint`,
@@ -152,6 +151,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
           provider_tag: 'provider/region',
         },
       ])
+
       expect(scan).not.toHaveProperty('entries')
     }
   } finally {
@@ -160,52 +160,142 @@ test('loading the next pair discovers scans, scopes text models and derives enti
   }
 })
 
-test('discovery exposes canonical times across empty storage and multiple pages', async () => {
+test('discovery finds the newest capture in one read and keeps inclusive pair selection', async () => {
   const ctx = {} as ActionCtx
+  const scans = reader(ctx)
+
   const times = Array.from({ length: 205 }, (_, index) =>
     new Date(Date.UTC(2026, 0, 1, index)).toISOString(),
   )
+
   const names = times.map((at) => `scan.${at}.jsonl`)
+
   const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
     expect(args.path).toBe('scans')
-    return names.filter((name) => name >= args.atOrAfter).slice(0, args.limit)
+    const selected = names.filter((name) => name >= args.atOrAfter)
+    return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
   })
 
   try {
-    expect(await latest(ctx)).toBe(times.at(-1) ?? null)
-    expect(discovery).toHaveBeenCalledTimes(3)
-    discovery.mockClear()
-    expect(await latest(ctx, times.at(-1))).toBe(times.at(-1) ?? null)
+    expect(await scans.latest()).toBe(times.at(-1) ?? null)
     expect(discovery).toHaveBeenCalledTimes(1)
-    expect(await latest(ctx, times[200])).toBe(times.at(-1) ?? null)
-    expect(await loadNextPair(ctx, times[204])).toBeNull()
+
+    expect(discovery).toHaveBeenLastCalledWith(ctx, {
+      path: 'scans',
+      atOrAfter: '',
+      limit: 1,
+      order: 'desc',
+    })
+
+    discovery.mockClear()
+    expect(await scans.latest(times.at(-1))).toBe(times.at(-1) ?? null)
+    expect(discovery).toHaveBeenCalledTimes(1)
+    expect(await scans.latest(times[200])).toBe(times.at(-1) ?? null)
+    expect(await scans.loadNextPair(times[204])).toBeNull()
 
     discovery.mockResolvedValue([])
-    expect(await latest(ctx)).toBeNull()
-    expect(await loadNextPair(ctx)).toBeNull()
+    expect(await scans.latest()).toBeNull()
+    expect(await scans.latest(times[204])).toBe(times[204] ?? null)
+    expect(await scans.loadNextPair()).toBeNull()
 
     for (const name of ['bad-name', 'scan.bad-time.jsonl', 'scan.2026-02-30T00:00:00.000Z.jsonl']) {
       discovery.mockResolvedValue([name])
-      await rejects(latest(ctx))
-      await rejects(loadNextPair(ctx))
+      await rejects(scans.latest())
+      await rejects(scans.loadNextPair())
     }
   } finally {
     discovery.mockRestore()
   }
 })
 
-test('scan identity is canonical UTC', () => {
+test('external scan references parse ISO times and filenames into capture times', () => {
   const time = '2026-10-03T00:00:00.000Z'
-  expect(scanTime.parse(time)).toBe(time)
+  expect(scanAtFromReference(time)).toBe(time)
+  expect(scanAtFromReference(`scan.${time}.jsonl`)).toBe(time)
+  expect(scanAtFromReference('2026-10-03T00:00:00Z')).toBe(time)
+  expect(scanAtFromReference('2026-10-03T10:00:00+10:00')).toBe(time)
 
   for (const invalid of [
-    undefined,
     '',
     '2026-10-03',
-    '2026-10-03T00:00:00Z',
     '2026-02-30T00:00:00.000Z',
-    '2026-10-03T10:00:00.000+10:00',
+    'scan.bad-time.jsonl',
+    'scan.invalid',
   ]) {
-    expect(scanTime.safeParse(invalid).success).toBe(false)
+    expect(() => scanAtFromReference(invalid)).toThrow()
+  }
+})
+
+test('selects and decompresses one source object, with exact-time reads bypassing discovery', async () => {
+  const scan = {
+    scan_at: '2026-10-03T00:00:00.000Z',
+    entries: [
+      {
+        model_id: 'author/model',
+        variant: 'standard',
+        model: {
+          slug: 'author/model',
+          permaslug: 'author/model-v1',
+          input_modalities: ['text'],
+          output_modalities: ['image'],
+        },
+        endpoints: null,
+      },
+    ],
+  }
+
+  const text = scan.entries
+    .map((entry) => JSON.stringify({ ...entry, scan_at: scan.scan_at }))
+    .join('\n')
+
+  const name = `scan.${scan.scan_at}.jsonl`
+  const query = spyOn(ConvexHttpClient.prototype, 'query').mockResolvedValue([name])
+
+  const action = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
+    { bytes: Bun.gzipSync(text).buffer, codec: 'gzip' },
+  ])
+
+  const scans = createScanReader(createObjectReader('example-source', 'not-a-real-key'))
+
+  try {
+    expect(await scans.loadRaw()).toEqual(scan)
+
+    expect(query.mock.calls[0]?.[1]).toEqual({
+      apiKey: 'not-a-real-key',
+      atOrAfter: '',
+      limit: 1,
+      order: 'desc',
+      path: 'scans',
+    })
+
+    expect(action.mock.calls[0]?.[1]).toEqual({
+      apiKey: 'not-a-real-key',
+      objects: [{ name, path: 'scans' }],
+    })
+
+    expect(await scans.loadRaw(scan.scan_at)).toEqual(scan)
+    expect(await scans.loadRaw(name)).toEqual(scan)
+    expect(query).toHaveBeenCalledTimes(1)
+    action.mockResolvedValue([null])
+    await rejects(scans.loadRaw(scan.scan_at), /Scan not found/)
+    action.mockResolvedValue([])
+    await rejects(scans.loadRaw(scan.scan_at), /invalid batch/)
+
+    query.mockResolvedValue([])
+
+    await rejects(scans.loadRaw(), {
+      data: 'No stored scans',
+      name: 'ConvexError',
+    })
+
+    query.mockResolvedValue(['not-a-scan'])
+
+    await rejects(scans.loadRaw(), {
+      data: { message: 'Invalid scan object name', name: 'not-a-scan' },
+      name: 'ConvexError',
+    })
+  } finally {
+    query.mockRestore()
+    action.mockRestore()
   }
 })

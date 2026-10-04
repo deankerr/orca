@@ -1,4 +1,3 @@
-import * as R from 'remeda'
 import { z } from 'zod'
 
 /** Model fields required to identify and project a scan entry. */
@@ -16,19 +15,17 @@ export const IdentifiedEndpoint = z
     model_variant_slug: z.string(),
     variant: z.string(),
   })
-  .transform((endpoint) => R.omit(endpoint, ['model']))
+  .transform(({ model: _model, ...endpoint }) => endpoint)
 
 /** One model and its endpoints collected from OpenRouter. */
-export const ScanEntry = z.object({
-  model_id: z.string(),
-  variant: z.string(),
-  model: IdentifiedModel,
-  endpoints: z.array(IdentifiedEndpoint).nullable(),
-})
+export type ScanEntry = {
+  model_id: string
+  variant: string
+  model: z.infer<typeof IdentifiedModel>
+  endpoints: z.infer<typeof IdentifiedEndpoint>[] | null
+}
 
-export type ScanEntry = z.infer<typeof ScanEntry>
-
-/** Collected entries before scan extraction; retained for the public API compatibility adapter. */
+/** Capture assembled from parsed OpenRouter responses; scan_at comes from Date.toISOString(). */
 export type RawScan = {
   scan_at: string
   entries: ScanEntry[]

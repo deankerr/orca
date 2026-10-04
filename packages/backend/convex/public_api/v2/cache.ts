@@ -4,8 +4,7 @@ import { gzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
 import { internalAction, internalMutation, internalQuery } from '../../_generated/server'
-import { latest } from '../../scan'
-import { scanTime } from '../../scan/time'
+import { reader } from '../../scan'
 import { buildSnapshot } from './snapshot'
 import { publicApiV2CacheTable } from './table'
 
@@ -27,7 +26,7 @@ export const replaceIfNewer = internalMutation({
   returns: v.union(v.null(), v.id('_storage')),
   handler: async (ctx, args) => {
     const existing = await ctx.db.query('public_api_v2_cache').order('desc').first()
-    const existingScanAt = scanTime.safeParse(existing?.scan_at).data
+    const existingScanAt = existing?.scan_at
 
     if (existingScanAt !== undefined && existingScanAt >= args.scan_at) {
       return args.storage_id
@@ -44,14 +43,14 @@ export const replaceIfNewer = internalMutation({
   },
 })
 
-/** A missing or invalid cache time triggers a fresh build. */
+/** A legacy cache without a capture time triggers a fresh build. */
 export const refresh = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx): Promise<null> => {
     const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
-    const cachedScanAt = scanTime.safeParse(cached?.scan_at).data ?? null
-    const scanAt = await latest(ctx, cachedScanAt)
+    const cachedScanAt = cached?.scan_at ?? null
+    const scanAt = await reader(ctx).latest(cachedScanAt)
 
     if (scanAt === null || scanAt === cachedScanAt) {
       return null
@@ -61,6 +60,7 @@ export const refresh = internalAction({
     const encoded = new TextEncoder().encode(JSON.stringify(result))
     const compressed = gzipSync(encoded)
     const storage_id = await ctx.storage.store(new Blob([new Uint8Array(compressed)]))
+
     const unusedStorageId = await ctx.runMutation(internal.public_api.v2.cache.replaceIfNewer, {
       scan_at: scanAt,
       content_type: 'application/json',

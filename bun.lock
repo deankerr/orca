@@ -89,6 +89,7 @@
       "name": "@orca/backend",
       "dependencies": {
         "@discordjs/builders": "^1.14.1",
+        "@orca/json-profile": "workspace:*",
         "aws4fetch": "^1.0.20",
         "convex": "catalog:",
         "convex-helpers": "catalog:",
@@ -109,18 +110,27 @@
     "packages/config": {
       "name": "@orca/config",
     },
+    "packages/json-profile": {
+      "name": "@orca/json-profile",
+      "devDependencies": {
+        "@orca/config": "workspace:*",
+        "@swaggerexpert/jsonpath": "^4.0.4",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/scripts": {
       "name": "@orca/scripts",
       "dependencies": {
+        "@orca/backend": "workspace:*",
+        "@orca/json-profile": "workspace:*",
         "commander": "^15.0.0",
-        "json-diff-ts": "catalog:",
-        "zod": "catalog:",
       },
       "devDependencies": {
         "@orca/config": "workspace:*",
         "@oxc-project/types": "0.149.0",
-        "@swaggerexpert/jsonpath": "^4.0.4",
         "@types/bun": "catalog:",
+        "convex": "catalog:",
         "oxc-parser": "0.149.0",
         "typescript": "catalog:",
       },
@@ -421,6 +431,8 @@
     "@orca/backend": ["@orca/backend@workspace:packages/backend"],
 
     "@orca/config": ["@orca/config@workspace:packages/config"],
+
+    "@orca/json-profile": ["@orca/json-profile@workspace:packages/json-profile"],
 
     "@orca/logos": ["@orca/logos@workspace:apps/logos"],
 

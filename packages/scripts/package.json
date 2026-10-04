@@ -3,19 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bundle-analysis": "bun run bundle-analysis/index.ts",
-    "json-profile": "bun run json-profile/index.ts"
+    "scan-analysis": "bun run scan-analysis/index.ts"
   },
   "dependencies": {
-    "commander": "^15.0.0",
-    "json-diff-ts": "catalog:",
-    "zod": "catalog:"
+    "@orca/backend": "workspace:*",
+    "@orca/json-profile": "workspace:*",
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
     "@oxc-project/types": "0.149.0",
-    "@swaggerexpert/jsonpath": "^4.0.4",
     "@types/bun": "catalog:",
+    "convex": "catalog:",
     "oxc-parser": "0.149.0",
     "typescript": "catalog:"
   }

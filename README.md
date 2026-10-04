@@ -49,6 +49,9 @@ The web route rewrites to the cached Convex HTTP action (`packages/backend/conve
 
 ## Development
 
+For local exploration of stored scans, use [Scan analysis](packages/scripts/scan-analysis/README.md)
+to generate a standalone HTML or JSON profile.
+
 Requires [Bun](https://bun.sh), Node.js 24+, and a global [Portless](https://github.com/vercel-labs/portless) installation. The backend runs on [Convex](https://convex.dev).
 
 ```bash

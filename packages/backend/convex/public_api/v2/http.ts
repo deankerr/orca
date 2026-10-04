@@ -3,8 +3,7 @@ import { gunzipSync } from 'fflate'
 
 import { internal } from '../../_generated/api'
 import { httpAction } from '../../_generated/server'
-import { latest } from '../../scan'
-import { scanTime } from '../../scan/time'
+import { reader } from '../../scan'
 import { buildSnapshot } from './snapshot'
 
 const allowOrigin = { 'Access-Control-Allow-Origin': '*' } as const
@@ -16,7 +15,7 @@ const allowOrigin = { 'Access-Control-Allow-Origin': '*' } as const
  */
 export const serve = httpAction(async (ctx) => {
   const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
-  const scanAt = await latest(ctx, scanTime.safeParse(cached?.scan_at).data ?? null)
+  const scanAt = await reader(ctx).latest(cached?.scan_at ?? null)
 
   if (scanAt === null) {
     throw new ConvexError('Public API requires a stored scan')

@@ -20,7 +20,7 @@ import { release, createWork } from './ingestion/release'
 import { ingestionsTable } from './ingestion/table'
 import { workId } from './ingestion/work'
 import { initialize } from './initialize'
-import { loadNextPair } from './scan'
+import { reader } from './scan'
 
 const acceptedWork = v.object({ pricing: workId, events: workId })
 
@@ -43,7 +43,7 @@ export const run = internalAction({
             .transform((value) => new Date(value).toISOString())
             .parse(args.start_at)
 
-    const pair = await loadNextPair(ctx, from)
+    const pair = await reader(ctx).loadNextPair(from)
 
     if (pair === null) {
       if (args.start_at !== undefined) {

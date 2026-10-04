@@ -1,11 +1,12 @@
 import { expect, test } from 'bun:test'
 
-import { ScanEntry } from '../../scan/collected'
+import type { ScanEntry } from '../../scan/collected'
 import { transformScanToV2Models } from './compatibility'
 import { OrcaPublicApiV2Schema } from './schema'
 
 test('complete scans preserve V2 coverage and legacy field meanings', () => {
   const scanAt = '2026-10-01T00:00:00.000Z'
+
   const endpoint = {
     id: 'endpoint',
     variant: 'beta',
@@ -27,7 +28,8 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
     stats: { p50_latency: 0, p50_throughput: 42 },
     pricing: { prompt: '0', completion: '0.000002', input_audio_cache: '0.000001', request: '2' },
   }
-  const entry = ScanEntry.parse({
+
+  const entry: ScanEntry = {
     model_id: 'author/model:beta',
     variant: 'beta',
     model: {
@@ -41,8 +43,10 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
       output_modalities: ['image'],
     },
     endpoints: [endpoint, { ...endpoint, id: 'disabled', is_disabled: true }],
-  })
+  }
+
   const models = transformScanToV2Models([entry])
+
   expect(OrcaPublicApiV2Schema.parse({ updated_at: scanAt, models }).models).toEqual([
     {
       id: 'author/model:beta',
@@ -101,10 +105,8 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
       ],
     },
   ])
-  entry.endpoints = ScanEntry.parse({
-    ...entry,
-    endpoints: [{ ...endpoint, stats: { p50_latency: null, p50_throughput: 42 } }],
-  }).endpoints
+
+  entry.endpoints = [{ ...endpoint, stats: { p50_latency: null, p50_throughput: 42 } }]
   expect(transformScanToV2Models([entry])[0].providers[0].stats_last_30m).toBeNull()
   entry.endpoints = null
   expect(transformScanToV2Models([entry])).toEqual([])

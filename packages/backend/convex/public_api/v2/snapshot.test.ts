@@ -6,8 +6,9 @@ import type { ActionCtx } from '../../_generated/server'
 import * as objects from '../../objects'
 import { buildSnapshot } from './snapshot'
 
-test('snapshot rejects missing, mismatched, invalid and empty source data before publication', async () => {
+test('snapshot rejects missing data, unusable endpoint fields and empty snapshots before publication', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
+
   const entry = {
     scan_at: scanAt,
     model_id: 'author/model',
@@ -20,22 +21,23 @@ test('snapshot rejects missing, mismatched, invalid and empty source data before
     },
     endpoints: null,
   }
-  const source = spyOn(objects, 'load').mockResolvedValue(null)
+
+  const source = spyOn(objects, 'loadMany').mockResolvedValue([null])
   const ctx = {} as ActionCtx
 
   try {
     await rejects(buildSnapshot(ctx, scanAt), /Scan not found/)
-    source.mockResolvedValue(JSON.stringify({ ...entry, scan_at: '2026-10-02T09:40:04.272Z' }))
-    await rejects(buildSnapshot(ctx, scanAt), /Scan identity does not match/)
-    source.mockResolvedValue(
+
+    source.mockResolvedValue([
       JSON.stringify({
         ...entry,
         endpoints: [{ id: 'endpoint', variant: 'standard', model_variant_slug: 'author/model' }],
       }),
-    )
+    ])
+
     await rejects(buildSnapshot(ctx, scanAt))
     for (const endpoints of [null, []]) {
-      source.mockResolvedValue(JSON.stringify({ ...entry, endpoints }))
+      source.mockResolvedValue([JSON.stringify({ ...entry, endpoints })])
       await rejects(buildSnapshot(ctx, scanAt), /Public API scan has no usable endpoints/)
     }
   } finally {

@@ -22,14 +22,16 @@ function handler<Args extends Record<string, unknown>, Result>(
 }
 
 test('routine validates and normalizes operator start_at before selecting scans', async () => {
-  const nextPair = spyOn(load, 'loadNextPair').mockResolvedValue(null)
+  const scans = load.reader({} as ActionCtx)
+  const source = spyOn(load, 'reader').mockReturnValue(scans)
+  const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(null)
   let scanAt: string | null = null
   const ctx = { runQuery: async () => scanAt } as unknown as ActionCtx
 
   try {
     for (const start_at of ['2026-10-03', '2026-10-03T10:00:00+10:00']) {
       await rejects(handler(run)(ctx, { start_at }), /Baseline requires two captures/)
-      expect(nextPair).toHaveBeenLastCalledWith(ctx, '2026-10-03T00:00:00.000Z')
+      expect(nextPair).toHaveBeenLastCalledWith('2026-10-03T00:00:00.000Z')
     }
 
     nextPair.mockClear()
@@ -42,8 +44,9 @@ test('routine validates and normalizes operator start_at before selecting scans'
 
     scanAt = '2026-10-03T00:00:00.000Z'
     expect(await handler(run)(ctx, {})).toBeNull()
-    expect(nextPair).toHaveBeenLastCalledWith(ctx, scanAt)
+    expect(nextPair).toHaveBeenLastCalledWith(scanAt)
   } finally {
+    source.mockRestore()
     nextPair.mockRestore()
   }
 })
@@ -61,8 +64,10 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
     next: scan('2026-09-28T01:00:00.000Z'),
   }
 
-  const nextPair = spyOn(load, 'loadNextPair').mockResolvedValue(pair)
-  const exactPair = spyOn(load, 'loadPair').mockResolvedValue(pair)
+  const scans = load.reader({} as ActionCtx)
+  const source = spyOn(load, 'reader').mockReturnValue(scans)
+  const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(pair)
+  const exactPair = spyOn(scans, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
   const oldEnabled = process.env.ORCA_DISCORD_ALERTS_ENABLED
   const calls: string[] = []
@@ -152,6 +157,7 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
     await handler(retryEvents)(ctx, { work_id: 'event-work' as WorkId })
     expect(calls).toEqual(['events/ingest:commit'])
   } finally {
+    source.mockRestore()
     nextPair.mockRestore()
     exactPair.mockRestore()
     errors.mockRestore()
@@ -168,9 +174,11 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
   const release = spyOn(acceptance, 'release').mockResolvedValue(
     'ingestion' as Id<'v4_scan_ingestions'>,
   )
+
   const createWork = spyOn(acceptance, 'createWork').mockResolvedValue(
     'work' as Id<'v4_processor_work'>,
   )
+
   const args = {
     from_scan_at: '2026-10-03T00:00:00.000Z',
     scan_at: '2026-10-03T01:00:00.000Z',
@@ -180,9 +188,11 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
     listings: [],
     stats: stats.prepare([{ id: 'endpoint', stats: { p50_throughput: 42 } }]),
   }
+
   let existing: { _id: string } | null = null
   let fail = false
   const writes: unknown[] = []
+
   const write = async (...values: unknown[]) => {
     if (fail) {
       throw new Error('Snapshot write failed')
@@ -190,6 +200,7 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
 
     writes.push(values)
   }
+
   const ctx = {
     db: {
       query: (table: string) => {
@@ -200,6 +211,7 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
       replace: write,
     },
   } as unknown as MutationCtx
+
   const invoke = <Args extends Record<string, unknown>, Result>(
     fn: RegisteredMutation<'internal', Args, Result>,
   ) => (fn as unknown as { _handler: (ctx: MutationCtx, args: Args) => Promise<Result> })._handler
@@ -209,6 +221,7 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
       scan_at: args.scan_at,
       rows: [{ endpoint_id: 'endpoint', p50_throughput: 42 }],
     }
+
     await invoke(commitIngestion)(ctx, args)
     expect(writes).toEqual([['v4_current_stats_snapshot', snapshot]])
 

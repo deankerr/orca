@@ -1,0 +1,12 @@
+{
+  "name": "@orca/json-profile",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@swaggerexpert/jsonpath": "^4.0.4",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
