@@ -1,9 +1,9 @@
 import { Command, InvalidArgumentError, Option } from 'commander'
 
 import { createObjectReader } from '../../backend/convex/objects/client'
+import { createScanReader, scanAtFromReference } from '../../backend/convex/scan/objects'
 import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/profile'
 import type { Selection, ScanViewOptions } from '../../backend/convex/scan_analysis/profile'
-import { loadScan } from '../../backend/convex/scan_analysis/source'
 import { renderHtml } from './html'
 import { writeReport } from './output'
 
@@ -31,7 +31,7 @@ function parseValueLimit(value: string): number | 'all' {
 const program = new Command()
   .name('scan-analysis')
   .description('Fetch one stored scan into memory and explore its fields and values')
-  .argument('[scan-at]', 'canonical UTC capture time, or latest', 'latest')
+  .argument('[scan]', 'ISO capture time, scan object name, or latest', 'latest')
   .addOption(
     new Option('--source <deployment>', 'object source deployment name')
       .env('ORCA_OBJECTS_SOURCE_DEPLOYMENT')
@@ -67,8 +67,14 @@ const program = new Command()
   )
   .showHelpAfterError()
   .action(async (requested: string, options: Options) => {
-    const reader = createObjectReader(options.source, process.env.ORCA_OBJECTS_API_KEY ?? '')
-    const scan = await loadScan(reader, requested)
+    const reader = createScanReader(
+      createObjectReader(options.source, process.env.ORCA_OBJECTS_API_KEY ?? ''),
+    )
+
+    const scan = await reader.loadRaw(
+      requested === 'latest' ? undefined : scanAtFromReference(requested),
+    )
+
     const selection: Selection = { scope: options.scope }
 
     if (options.model !== undefined) {
@@ -79,7 +85,8 @@ const program = new Command()
       selection.provider = options.provider
     }
 
-    const report = profileScan(scan, options.source, selection)
+    const report = profileScan(scan, selection)
+
     const view: ScanViewOptions = {
       paths: options.paths,
       population: options.population,

@@ -1,5 +1,4 @@
 import type { RawScan } from '../../backend/convex/scan/collected'
-import { ScanEntry } from '../../backend/convex/scan/collected'
 
 /** Synthetic data for report verification; never presented as a real source observation. */
 export function sampleScan(): RawScan {
@@ -43,7 +42,7 @@ export function sampleScan(): RawScan {
   }))
 
   return {
-    entries: ScanEntry.array().parse([
+    entries: [
       ...entries,
       {
         endpoints: null,
@@ -56,7 +55,7 @@ export function sampleScan(): RawScan {
         model_id: 'example/unlisted',
         variant: 'standard',
       },
-    ]),
+    ],
     scan_at: '2026-10-03T00:00:00.000Z',
   }
 }

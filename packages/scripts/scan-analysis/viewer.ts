@@ -182,7 +182,7 @@ document.querySelector('#export')?.addEventListener('click', () => {
 
   const link = document.createElement('a')
   link.href = url
-  link.download = `scan-profile.${report.source.scan_at}.json`
+  link.download = `scan-profile.${report.scan_at}.json`
   link.click()
 
   setTimeout(() => {

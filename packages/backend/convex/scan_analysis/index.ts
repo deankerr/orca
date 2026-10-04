@@ -1,10 +1,10 @@
 import { v } from 'convex/values'
 
-import { env, internalAction } from '../_generated/server'
-import * as objects from '../objects'
+import { internalAction } from '../_generated/server'
+import { reader } from '../scan'
+import { scanAtFromReference } from '../scan/objects'
 import { profileScan, viewScanReport } from './profile'
 import type { ScanReportView, Selection } from './profile'
-import { loadScan } from './source'
 
 /** Analyze one stored scan without persisting source data or reports. */
 export const profile = internalAction({
@@ -25,15 +25,10 @@ export const profile = internalAction({
     ctx,
     { scanAt, scope = 'orca', model, provider, ...view },
   ): Promise<ScanReportView> => {
-    const scan = await loadScan(
-      {
-        load: async (identity) => await objects.load(ctx, identity),
-        namesAtOrAfter: async (selection) => await objects.namesAtOrAfter(ctx, selection),
-      },
-      scanAt,
+    const scan = await reader(ctx).loadRaw(
+      scanAt === undefined || scanAt === 'latest' ? undefined : scanAtFromReference(scanAt),
     )
 
-    const { name } = await ctx.meta.getDeploymentMetadata()
     const selection: Selection = { scope }
 
     if (model !== undefined) {
@@ -44,12 +39,7 @@ export const profile = internalAction({
       selection.provider = provider
     }
 
-    const source = env.ORCA_OBJECTS_SOURCE_DEPLOYMENT
-    const report = profileScan(
-      scan,
-      source === undefined || source === '' ? name : source,
-      selection,
-    )
+    const report = profileScan(scan, selection)
 
     return viewScanReport(report, view)
   },

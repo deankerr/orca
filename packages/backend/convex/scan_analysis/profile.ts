@@ -17,14 +17,14 @@ export type ScanReport = {
   providers: Population
   report_format: 'orca-scan-profile-v1'
   selection: Selection
-  source: { deployment: string; scan_at: string }
+  scan_at: string
 }
 
 const jsonRecord = z.record(z.string(), z.json())
 const providerBody = z.object({ slug: z.string() }).catchall(z.json())
 
 /** Profile one explicitly scoped population, retaining a few identities beside primitive examples. */
-export function profileScan(scan: RawScan, deployment: string, selection: Selection): ScanReport {
+export function profileScan(scan: RawScan, selection: Selection): ScanReport {
   const extracted = selection.scope === 'orca' ? extract(scan) : null
   const models = new Map<string, JsonRecord>()
   const endpoints = new Map<string, JsonRecord>()
@@ -68,12 +68,14 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
         }
 
         endpoints.set(endpoint.id, jsonRecord.parse(endpoint))
+
         relationships.set(endpoint.id, {
           model: entry.model_id,
           provider: observedProvider.success ? observedProvider.data.slug : undefined,
         })
       } else {
         endpoints.set(endpoint.id, scopedEndpoint)
+
         relationships.set(endpoint.id, {
           model: entry.model_id,
           provider: scopedEndpoint.provider_id,
@@ -113,7 +115,7 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
     providers: profilePopulation(selectedProviders),
     report_format: 'orca-scan-profile-v1',
     selection,
-    source: { deployment, scan_at: scan.scan_at },
+    scan_at: scan.scan_at,
   }
 }
 
@@ -127,7 +129,7 @@ export function viewScanReport(report: ScanReport, options: ScanViewOptions = {}
 
   return {
     report_format: 'orca-scan-profile-view-v1' as const,
-    source: report.source,
+    scan_at: report.scan_at,
     selection: report.selection,
     populations: populations.map((name) => ({
       name,

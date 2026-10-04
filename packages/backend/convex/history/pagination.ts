@@ -4,16 +4,14 @@ import type { Validator, Value } from 'convex/values'
 
 import type { QueryCtx } from '../_generated/server'
 import { clock } from '../clock'
-import { scanTime } from '../scan/time'
+import { IsoDateTime } from '../isodatetime'
 
 /** All History reads retain native pagination options and pin an observation cutoff. */
 export const pageArgs = { cutoff: v.optional(v.string()), paginationOpts: paginationOptsValidator }
 
 /** The shared clock bounds observation time, not processor completeness. */
 export async function cappedCutoff(ctx: QueryCtx, requested?: string): Promise<string | null> {
-  if (requested !== undefined) {
-    scanTime.parse(requested)
-  }
+  const cutoff = requested === undefined ? undefined : IsoDateTime.parse(requested)
 
   const scanAt = await clock(ctx)
 
@@ -21,7 +19,7 @@ export async function cappedCutoff(ctx: QueryCtx, requested?: string): Promise<s
     return null
   }
 
-  return requested !== undefined && requested < scanAt ? requested : scanAt
+  return cutoff !== undefined && cutoff < scanAt ? cutoff : scanAt
 }
 
 export function pageResult<T extends Validator<Value, 'required', string>>(item: T) {

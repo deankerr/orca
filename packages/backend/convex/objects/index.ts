@@ -5,17 +5,16 @@
  * UTF-8, gzip, local/remote reads, the storage backend and locators stay inside
  * the module. Writes always use local storage, configured in `backend.ts`.
  */
-import { validate } from 'convex-helpers/validators'
-import { ConvexHttpClient } from 'convex/browser'
 import { ConvexError } from 'convex/values'
 import { gzipSync } from 'fflate'
 
-import { api, internal } from '../_generated/api'
+import { internal } from '../_generated/api'
 import { env } from '../_generated/server'
 import type { ActionCtx } from '../_generated/server'
 import { backendFor } from './backend'
 import { byteStoreFor } from './bytes'
-import { assertReadCount, decode, readLocal, storedBatch, validateNames } from './local'
+import { createObjectReader } from './client'
+import { assertReadCount, decode, readLocal } from './local'
 import type { NameSelection } from './local'
 import type { Locator } from './table'
 
@@ -26,6 +25,12 @@ export type ObjectIdentity = {
 
   /** Object name within `path`. Not parsed and not a storage locator. */
   name: string
+}
+
+/** Logical read interface shared by deployment and standalone consumers. */
+export interface ObjectReader {
+  loadMany: (identities: ObjectIdentity[]) => Promise<(string | null)[]>
+  namesAtOrAfter: (selection: NameSelection) => Promise<string[]>
 }
 
 /**
@@ -104,49 +109,35 @@ export async function loadMany(
 ): Promise<(string | null)[]> {
   assertReadCount(objects.length)
   const source = await readSource(ctx)
-  const stored: unknown =
-    source === null
-      ? await Promise.all(objects.map(async (identity) => await readLocal(ctx, identity)))
-      : await source.client.action(api.objects.remote.loadMany, { apiKey: source.apiKey, objects })
 
-  if (!validate(storedBatch, stored) || stored.length !== objects.length) {
-    throw new ConvexError('Object source returned an invalid batch')
+  if (source !== null) {
+    return await source.loadMany(objects)
   }
-  return stored.map(decode)
+
+  return await Promise.all(objects.map(async (identity) => decode(await readLocal(ctx, identity))))
 }
 
 /** Names at/after an inclusive lower bound, ascending by default. Descending returns greatest names first. */
 export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): Promise<string[]> {
   assertReadCount(selection.limit)
   const source = await readSource(ctx)
-  const names: unknown =
-    source === null
-      ? await ctx.runQuery(internal.objects.locators.namesAtOrAfter, selection)
-      : await source.client.query(api.objects.remote.namesAtOrAfter, {
-          apiKey: source.apiKey,
-          ...selection,
-        })
-
-  return validateNames(names, selection)
+  return source === null
+    ? await ctx.runQuery(internal.objects.locators.namesAtOrAfter, selection)
+    : await source.namesAtOrAfter(selection)
 }
 
-async function readSource(
-  ctx: ActionCtx,
-): Promise<{ client: ConvexHttpClient; apiKey: string } | null> {
+async function readSource(ctx: ActionCtx): Promise<ObjectReader | null> {
   const source = env.ORCA_OBJECTS_SOURCE_DEPLOYMENT
+
   if (source === undefined || source === '') {
     return null
   }
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(source)) {
-    throw new ConvexError('ORCA_OBJECTS_SOURCE_DEPLOYMENT must be a deployment name, not a URL')
-  }
+
   const { name } = await ctx.meta.getDeploymentMetadata()
+
   if (source === name) {
     throw new ConvexError('Object source cannot be this deployment')
   }
-  const apiKey = env.ORCA_OBJECTS_API_KEY
-  if (apiKey === undefined || apiKey === '') {
-    throw new ConvexError('ORCA_OBJECTS_API_KEY is required for remote object reads')
-  }
-  return { client: new ConvexHttpClient(`https://${source}.convex.cloud`), apiKey }
+
+  return createObjectReader(source, env.ORCA_OBJECTS_API_KEY ?? '')
 }

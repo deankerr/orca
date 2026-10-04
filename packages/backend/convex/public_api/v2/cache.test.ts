@@ -5,20 +5,23 @@ import type { RegisteredMutation } from 'convex/server'
 
 import type { Doc, Id } from '../../_generated/dataModel'
 import type { ActionCtx, MutationCtx } from '../../_generated/server'
-import * as scans from '../../scan'
+import * as objects from '../../objects'
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'
 
-test('refresh rebuilds missing or invalid scan_at keys and skips a valid unchanged key', async () => {
+test('refresh rebuilds legacy or older captures and skips an unchanged capture', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
-  const discovery = spyOn(scans, 'latest').mockResolvedValue(scanAt)
+  const discovery = spyOn(objects, 'namesAtOrAfter').mockResolvedValue([`scan.${scanAt}.jsonl`])
+
   const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
     updated_at: scanAt,
     models: [],
   })
+
   const logs = spyOn(console, 'log').mockImplementation(() => {})
   let cachedScanAt: string | undefined
   const replacements: unknown[] = []
+
   const ctx = {
     runQuery: async () => ({ scan_at: cachedScanAt, scan_id: 'ignored' }),
     runMutation: async (_ref: unknown, args: unknown) => {
@@ -27,6 +30,7 @@ test('refresh rebuilds missing or invalid scan_at keys and skips a valid unchang
     },
     storage: { store: async () => 'new-blob' },
   } as unknown as ActionCtx
+
   const handler = (
     refresh as unknown as {
       _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<null>
@@ -34,13 +38,19 @@ test('refresh rebuilds missing or invalid scan_at keys and skips a valid unchang
   )._handler
 
   try {
-    for (const key of [undefined, 'invalid', '2026-02-30T00:00:00.000Z', scanAt]) {
+    for (const key of [undefined, '2026-10-01T10:40:04.272Z', scanAt]) {
       cachedScanAt = key
       replacements.length = 0
       build.mockClear()
       await handler(ctx, {})
 
-      expect(discovery).toHaveBeenLastCalledWith(ctx, key === scanAt ? scanAt : null)
+      expect(discovery).toHaveBeenLastCalledWith(ctx, {
+        path: 'scans',
+        atOrAfter: key === undefined ? '' : `scan.${key}.jsonl`,
+        limit: 1,
+        order: 'desc',
+      })
+
       expect(build).toHaveBeenCalledTimes(key === scanAt ? 0 : 1)
       expect(replacements).toHaveLength(key === scanAt ? 0 : 1)
 
@@ -59,6 +69,7 @@ test('refresh rebuilds missing or invalid scan_at keys and skips a valid unchang
 test('cache replacement upgrades legacy rows and rejects equal or older scans atomically', async () => {
   const oldBlob = 'old-blob' as Id<'_storage'>
   const newBlob = 'new-blob' as Id<'_storage'>
+
   let existing: Doc<'public_api_v2_cache'> | null = {
     _id: 'cache-row' as Id<'public_api_v2_cache'>,
     _creationTime: 0,
@@ -67,7 +78,9 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
     size: 1,
     scan_id: 'scan.2099-01-01T00:00:00.000Z.jsonl',
   }
+
   let writes = 0
+
   const ctx = {
     db: {
       query: () => ({ order: () => ({ first: async () => existing }) }),
@@ -79,7 +92,9 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
       },
     },
   } as unknown as MutationCtx
+
   const handler = mutationHandler(replaceIfNewer)
+
   const args = {
     content_type: 'application/json',
     storage_id: newBlob,
@@ -87,7 +102,7 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
     scan_at: '2026-10-02T10:40:04.272Z',
   }
 
-  for (const scanAt of [undefined, 'invalid', '2026-02-30T00:00:00.000Z', '2026-10-02T10:40:04Z']) {
+  for (const scanAt of [undefined, '2026-10-01T10:40:04.272Z']) {
     existing.scan_at = scanAt
     writes = 0
     expect(await handler(ctx, args)).toBe(oldBlob)

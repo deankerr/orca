@@ -4,10 +4,13 @@ import type { Infer } from 'convex/values'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 import { internalQuery } from '../_generated/server'
-import { scanTimes } from '../scan/time'
-import type { ScanTimes } from '../scan/time'
 import type { IngestionRow, ProcessorName } from './table'
-import { processorName, V4_INGESTIONS_TABLE, V4_PROCESSOR_WORK_TABLE } from './table'
+import {
+  ingestionsTable,
+  processorName,
+  V4_INGESTIONS_TABLE,
+  V4_PROCESSOR_WORK_TABLE,
+} from './table'
 
 export const workId = v.id(V4_PROCESSOR_WORK_TABLE)
 export type WorkId = Infer<typeof workId>
@@ -15,12 +18,14 @@ export type WorkId = Infer<typeof workId>
 /** Resolve an outstanding obligation to exact input times; loading belongs to composition. */
 export const getWorkInput = internalQuery({
   args: { work_id: v.id(V4_PROCESSOR_WORK_TABLE), processor: processorName },
-  returns: v.union(v.null(), scanTimes),
+  returns: v.union(v.null(), ingestionsTable.validator),
   handler: async (ctx, args) => {
     const work = await pendingWork(ctx, args.work_id, args.processor)
+
     if (work === null) {
       return null
     }
+
     return { from_scan_at: work.from_scan_at, scan_at: work.scan_at }
   },
 })
@@ -56,7 +61,11 @@ export async function completeWork(ctx: MutationCtx, workId: Id<typeof V4_PROCES
 }
 
 /** Bind even empty output to the exact pair recorded by the obligation. */
-export function assertWorkOutput(work: ScanTimes, input: ScanTimes, rows: { scan_at: string }[]) {
+export function assertWorkOutput(
+  work: IngestionRow,
+  input: IngestionRow,
+  rows: { scan_at: string }[],
+) {
   if (
     input.from_scan_at !== work.from_scan_at ||
     input.scan_at !== work.scan_at ||

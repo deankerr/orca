@@ -81,9 +81,10 @@ bunx convex run --prod scan_analysis/index:profile \
 
 Run these commands from `packages/backend`. Arguments also accept the same `scope`, `model` and
 `provider` selection as the local CLI. Omitted `scanAt` selects the latest scan. Pin the returned
-timestamp for follow-up calls so observations remain comparable. The reported source deployment
-is the Objects source, which may differ from the deployment executing the action.
+timestamp for follow-up calls so observations remain comparable. Capture times and scan object
+names identify the same stored scan; both are accepted by the CLI and action.
 
-For an ad hoc analysis, compose `createObjectReader`, `loadScan` and ordinary TypeScript functions.
+For an ad hoc analysis, bind `createScanReader` to `createObjectReader` and compose ordinary TypeScript
+functions with `reader.loadRaw()`.
 Keep additional statistics specific to the question. Date-range pooling and historical comparisons
 are intentionally deferred.

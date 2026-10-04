@@ -3,12 +3,11 @@ import { ConvexError } from 'convex/values'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 import { clock } from '../clock'
-import type { ScanTimes } from '../scan'
-import type { ProcessorName } from './table'
+import type { IngestionRow, ProcessorName } from './table'
 import { V4_INGESTIONS_TABLE, V4_PROCESSOR_WORK_TABLE } from './table'
 
 /** Call in the same transaction as prerequisite writes and work declarations; null means already released. */
-export async function release(ctx: MutationCtx, pair: ScanTimes) {
+export async function release(ctx: MutationCtx, pair: IngestionRow) {
   if (pair.scan_at <= pair.from_scan_at) {
     throw new ConvexError('Scan pair must move forward in canonical time')
   }

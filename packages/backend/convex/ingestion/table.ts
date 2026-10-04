@@ -2,13 +2,11 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { scanTimes } from '../scan/time'
-
 /** Accepted ingestions release their scan pairs to downstream processing. */
 export const V4_INGESTIONS_TABLE = 'v4_scan_ingestions' as const
 
 /** One accepted scan pair, committed atomically with Catalog, Listings and current stats. */
-export const ingestionsTable = defineTable(scanTimes)
+export const ingestionsTable = defineTable({ from_scan_at: v.string(), scan_at: v.string() })
   .index('by_from_scan_at', ['from_scan_at'])
   .index('by_scan_at', ['scan_at'])
 

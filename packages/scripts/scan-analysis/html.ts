@@ -26,7 +26,7 @@ export async function renderHtml(report: ScanReport): Promise<string> {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scan profile · ${escapeHtml(report.source.scan_at)}</title>
+<title>Scan profile · ${escapeHtml(report.scan_at)}</title>
 <style>${styles}</style>
 </head>
 <body>
@@ -34,7 +34,7 @@ export async function renderHtml(report: ScanReport): Promise<string> {
   <header>
     <p class="eyebrow">ORCA / Scan analysis</p>
     <h1>Scan profile</h1>
-    <p class="source"><time>${escapeHtml(report.source.scan_at)}</time> <span>·</span> ${escapeHtml(report.source.deployment)}</p>
+    <p class="source"><time>${escapeHtml(report.scan_at)}</time></p>
     <p class="scope">${scope}${filters ? ` · ${escapeHtml(filters)}` : ''}</p>
   </header>
   <section aria-label="Explore fields">
