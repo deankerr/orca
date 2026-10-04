@@ -81,4 +81,8 @@ Lifecycle events and updates without pricing changes are outside the rule; captu
 remain intact. Other opaque pricing, presentation-only changes, and revision-only changes are
 not selected as standalone alert signals.
 
+Discord additionally applies a [pricing-frequency policy](discord.md#frequent-pricing-changes)
+using recent quote history. This is a delivery preference; it does not discard captured events
+or apply to Monitor and Feed.
+
 See [Pricing History](pricing-history.md) for interpreting quotes across membership and availability changes.

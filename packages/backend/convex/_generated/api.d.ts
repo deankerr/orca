@@ -9,6 +9,7 @@
  */
 
 import type * as alerts_discord_delivery from "../alerts/discord/delivery.js";
+import type * as alerts_discord_frequency from "../alerts/discord/frequency.js";
 import type * as alerts_discord_prepare from "../alerts/discord/prepare.js";
 import type * as alerts_discord_renderers_batchCards from "../alerts/discord/renderers/batchCards.js";
 import type * as alerts_discord_renderers_card from "../alerts/discord/renderers/card.js";
@@ -113,6 +114,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "alerts/discord/delivery": typeof alerts_discord_delivery;
+  "alerts/discord/frequency": typeof alerts_discord_frequency;
   "alerts/discord/prepare": typeof alerts_discord_prepare;
   "alerts/discord/renderers/batchCards": typeof alerts_discord_renderers_batchCards;
   "alerts/discord/renderers/card": typeof alerts_discord_renderers_card;

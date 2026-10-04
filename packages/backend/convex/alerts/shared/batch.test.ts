@@ -4,7 +4,7 @@ import { deepEqual } from 'node:assert/strict'
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
-import { prepareBatch } from '../discord/prepare'
+import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'
 import { batchCards } from '../discord/renderers/batchCards'
 import { renderDiscordBatch } from '../discord/renderers/index'
 import { renderPage } from '../feed/query'
@@ -137,7 +137,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   ).toHaveLength(7)
 })
 
-test('normalizes record keys and preserves eligibility when rendering a remainder', () => {
+test('normalizes record keys and preserves eligibility when rendering a remainder', async () => {
   const records = Array.from({ length: 5 }, (_, i) =>
     bucket(i, [
       {
@@ -160,7 +160,7 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
       { pricing: { meters: { prompt: '2', completion: i === 0 ? '1.001' : '1' } } },
     ),
   )
-  const { alerts, skipped } = prepareBatch(rows)
+  const { alerts, skipped } = await prepareBatch(rows)
   const notifications = renderDiscordBatch(alerts, urls)
 
   expect(skipped).toBe(0)
@@ -276,7 +276,7 @@ function stored(
       }
 }
 
-test('provider URL batches pass shared selection and retain individual changes', () => {
+test('provider URL batches pass shared selection and retain individual changes', async () => {
   const rows = Array.from({ length: 5 }, (_, i) =>
     stored(
       i,
@@ -295,7 +295,7 @@ test('provider URL batches pass shared selection and retain individual changes',
       'provider',
     ),
   )
-  const { alerts, skipped } = prepareBatch(rows)
+  const { alerts, skipped } = await prepareBatch(rows)
   const notifications = renderDiscordBatch(alerts, urls)
   const [batch, remainder] = notifications
 
@@ -366,3 +366,7 @@ test('oversized batch details and identity fields truncate without losing member
     errors.mockRestore()
   }
 })
+
+async function prepareBatch(rows: (EventRow & { _id: string })[]) {
+  return await prepareDiscordBatch(rows, async (candidates) => candidates.map(() => false))
+}
