@@ -1,5 +1,6 @@
 import type { JsonProfile, JsonRecord, JsonValue, ViewOptions } from '@orca/json-profile'
 import { profileJsonRecords, viewProfile } from '@orca/json-profile'
+import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
 import type { RawScan } from '../scan/collected'
@@ -36,7 +37,7 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
     }
 
     if (models.has(entry.model_id)) {
-      throw new Error(`Duplicate model identity: ${entry.model_id}`)
+      throw new ConvexError({ message: 'Duplicate model identity', model_id: entry.model_id })
     }
 
     const model = extracted?.models.get(entry.model_id)
@@ -53,7 +54,7 @@ export function profileScan(scan: RawScan, deployment: string, selection: Select
 
     for (const endpoint of entry.endpoints ?? []) {
       if (endpoints.has(endpoint.id)) {
-        throw new Error(`Duplicate endpoint identity: ${endpoint.id}`)
+        throw new ConvexError({ message: 'Duplicate endpoint identity', endpoint_id: endpoint.id })
       }
 
       const scopedEndpoint = extracted?.endpoints.get(endpoint.id)

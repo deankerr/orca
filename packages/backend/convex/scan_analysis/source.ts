@@ -1,3 +1,5 @@
+import { ConvexError } from 'convex/values'
+
 import type { ObjectIdentity } from '../objects'
 import type { NameSelection } from '../objects/local'
 import { parseScan } from '../scan/parse'
@@ -24,11 +26,11 @@ export async function loadScan(reader: ScanReader, requested = 'latest') {
       name === undefined ? undefined : /^scan\.(?<time>.+)\.jsonl$/.exec(name)?.groups?.time
 
     if (name === undefined) {
-      throw new Error('The source has no stored scans.')
+      throw new ConvexError({ message: 'The source has no stored scans.', path: 'scans' })
     }
 
     if (matchedTime === undefined) {
-      throw new Error(`Invalid scan object name: ${name}`)
+      throw new ConvexError({ message: 'Invalid scan object name', name })
     }
 
     scanAt = matchedTime

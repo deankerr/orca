@@ -1,5 +1,5 @@
 import { expect, spyOn, test } from 'bun:test'
-import { deepStrictEqual, rejects } from 'node:assert/strict'
+import { deepStrictEqual, rejects, throws } from 'node:assert/strict'
 
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { ConvexHttpClient } from 'convex/browser'
@@ -136,9 +136,32 @@ test('profiles the same ORCA scope and identities, with explicit collected and f
     throw new Error('Fixture requires a model.')
   }
 
-  expect(() =>
-    profileScan({ ...scan, entries: [first, first] }, 'example-source', { scope: 'orca' }),
-  ).toThrow('Duplicate model identity')
+  throws(
+    () => profileScan({ ...scan, entries: [first, first] }, 'example-source', { scope: 'orca' }),
+    {
+      data: { message: 'Duplicate model identity', model_id: first.model_id },
+      name: 'ConvexError',
+    },
+  )
+
+  const [endpoint] = first.endpoints ?? []
+
+  if (endpoint === undefined) {
+    throw new Error('Fixture requires an endpoint.')
+  }
+
+  throws(
+    () =>
+      profileScan(
+        { ...scan, entries: [{ ...first, endpoints: [endpoint, endpoint] }] },
+        'example-source',
+        { scope: 'orca' },
+      ),
+    {
+      data: { endpoint_id: endpoint.id, message: 'Duplicate endpoint identity' },
+      name: 'ConvexError',
+    },
+  )
 
   const imageEndpoint = scan.entries.find((entry) => entry.model_id === 'example/image-model')
     ?.endpoints?.[0]
@@ -226,7 +249,15 @@ test('selects and decompresses one source object, with exact-time reads bypassin
 
     await rejects(loadScan(reader, scan.scan_at), /identity does not match/)
     query.mockResolvedValue([])
-    await rejects(loadScan(reader), /no stored scans/)
+    await rejects(loadScan(reader), {
+      data: { message: 'The source has no stored scans.', path: 'scans' },
+      name: 'ConvexError',
+    })
+    query.mockResolvedValue(['not-a-scan'])
+    await rejects(loadScan(reader), {
+      data: { message: 'Invalid scan object name', name: 'not-a-scan' },
+      name: 'ConvexError',
+    })
     await rejects(loadScan(reader, '2026-10-03'))
   } finally {
     query.mockRestore()
