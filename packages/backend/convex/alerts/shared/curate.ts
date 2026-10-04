@@ -9,10 +9,13 @@ import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import { decode } from './decode'
 import type { CapturedChange, Snapshot } from './decode'
+import { isScheduledPricing } from './pricing'
 
 const atom = v.union(v.null(), v.string(), v.number(), v.boolean(), v.array(v.string()))
 const value = v.union(atom, v.record(v.string(), atom))
 const fieldChange = v.union(
+  // Opaque changes are announced without projecting their arbitrary values into alerts.
+  v.object({ type: v.literal('field_changed'), path: v.string() }),
   v.object({ type: v.literal('field_updated'), path: v.string(), before: value, after: value }),
   v.object({ type: v.literal('field_added'), path: v.string(), after: value }),
   v.object({ type: v.literal('field_removed'), path: v.string(), before: value }),
@@ -27,11 +30,16 @@ const fieldChange = v.union(
 export const entityAlert = v.union(
   ...eventsTable.validator.members.flatMap((member) => {
     const kind = member.fields.entity_kind.value
-    const identity = member.omit('change_json', 'type', 'scan_at').extend({
+    const identity = member.omit('change_json', 'type', 'scan_at', 'pricing_is_scheduled').extend({
       observed_at: v.string(),
     })
     return [
-      identity.extend({ type: v.literal(`${kind}_updated`), changes: v.array(fieldChange) }),
+      identity.extend({
+        type: v.literal(`${kind}_updated`),
+        changes: v.array(fieldChange),
+        /** Derived during alert preparation, never persisted on the event. */
+        pricing_is_scheduled: v.optional(v.boolean()),
+      }),
       identity.extend({
         type: v.literal(`${kind}_added`),
         after: v.record(v.string(), value),
@@ -129,6 +137,7 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
       'image_output',
       'web_search',
       'discount',
+      'is_scheduled',
     ],
     features: ['supports_implicit_caching', 'supports_native_web_search'],
     data_policy: ['training', 'canPublish', 'requiresUserIDs', 'retainsPrompts', 'retentionDays'],
@@ -275,7 +284,11 @@ function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
 
   if (snapshot.entity_kind === 'endpoint') {
     const { discount, meters } = snapshot.value.pricing
-    native.pricing = { discount, ...meters }
+    native.pricing = {
+      discount,
+      ...meters,
+      ...(isScheduledPricing(snapshot.value.pricing) ? { is_scheduled: true } : {}),
+    }
   }
 
   return Object.fromEntries(
@@ -287,7 +300,13 @@ function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
 
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */
 export function curate(row: EventRow): EntityAlert | null {
-  const { change_json: _json, type: _type, scan_at, ...subject } = withoutSystemFields(row)
+  const {
+    change_json: _json,
+    type: _type,
+    pricing_is_scheduled: _legacySchedule,
+    scan_at,
+    ...subject
+  } = withoutSystemFields(row)
   const identity = { ...subject, observed_at: scan_at }
   const event = decode(row)
 
@@ -305,8 +324,31 @@ export function curate(row: EventRow): EntityAlert | null {
       before: entityValue(event.before),
     }
   }
-  const changes = event.changes.flatMap(({ path, change }) =>
-    selectedChanges(row.entity_kind, change, path),
-  )
-  return changes.length === 0 ? null : { ...identity, type: `${row.entity_kind}_updated`, changes }
+  const scheduled =
+    event.pricing === undefined
+      ? undefined
+      : isScheduledPricing(event.pricing.before) || isScheduledPricing(event.pricing.after)
+
+  const changes = event.changes.flatMap<FieldChange>(({ path, change }) => {
+    if (
+      row.entity_kind === 'endpoint' &&
+      scheduled === true &&
+      path[0] === 'pricing' &&
+      path[1] === 'overrides'
+    ) {
+      // Override row order has been stable upstream. A reorder intentionally counts as
+      // a coarse schedule change; we do not interpret condition equivalence.
+      return [{ type: 'field_changed', path: 'pricing.overrides' }]
+    }
+
+    return selectedChanges(row.entity_kind, change, path)
+  })
+  return changes.length === 0
+    ? null
+    : {
+        ...identity,
+        type: `${row.entity_kind}_updated`,
+        changes,
+        ...(scheduled === undefined ? {} : { pricing_is_scheduled: scheduled }),
+      }
 }

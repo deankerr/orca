@@ -24,6 +24,10 @@ export function fieldChange(
 ): string {
   const name = label
 
+  if (change.type === 'field_changed') {
+    return field(name, 'changed')
+  }
+
   if (change.type === 'set_updated') {
     const lines = [
       ...change.added.map((item) => `+ ${code(item)}`),

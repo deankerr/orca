@@ -5,6 +5,7 @@ import type { Infer } from 'convex/values'
 import { currentEndpointsTable } from '../catalog/endpoints/table'
 import { currentModelsTable } from '../catalog/models/table'
 import { currentProvidersTable } from '../catalog/providers/table'
+import { pricing } from '../entities'
 
 export const V4_EVENTS_TABLE = 'v4_events' as const
 
@@ -23,6 +24,8 @@ const fields = {
   type: v.union(v.literal('ADD'), v.literal('UPDATE'), v.literal('REMOVE')),
   /** Set on arrivals after historical enrichment; absent on changes and departures. */
   previously_known: v.optional(v.boolean()),
+  /** Legacy preview compatibility only; new events never write it and alerts ignore it. */
+  pricing_is_scheduled: v.optional(v.boolean()),
   /** One serialized json-diff-ts entity-root node; values may have arbitrary keys. */
   change_json: v.string(),
 }
@@ -43,7 +46,13 @@ export const eventsTable = defineTable(
     v.object({
       ...fields,
       entity_kind: v.literal('endpoint'),
-      context: v.object({ model, provider, endpoint }),
+      context: v.object({
+        model,
+        provider,
+        endpoint,
+        /** Complete observed quotes on pricing updates; absent on older events and other changes. */
+        pricing: v.optional(v.object({ before: pricing, after: pricing })),
+      }),
     }),
   ),
 )

@@ -1,7 +1,9 @@
 import { ConvexError } from 'convex/values'
+import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
-import { Endpoint, Model, Provider } from '../../entities'
+import { Endpoint, Model, Pricing, Provider } from '../../entities'
+import type { pricing } from '../../entities'
 import type { EventRow } from '../../events/table'
 
 const CapturedChange = z.object({
@@ -32,14 +34,31 @@ type Field = { path: string[]; change: CapturedChange }
 type DecodedEvent =
   | { type: 'ADD'; after: Snapshot }
   | { type: 'REMOVE'; before: Snapshot }
-  | { type: 'UPDATE'; changes: Field[] }
+  | {
+      type: 'UPDATE'
+      changes: Field[]
+      pricing?: { before: z.infer<typeof Pricing>; after: z.infer<typeof Pricing> }
+    }
 
 /** Decode once; the row supplies the authoritative root operation and identity. */
 export function decode(row: EventRow): DecodedEvent {
   const payload: unknown = JSON.parse(row.change_json)
 
   if (row.type === 'UPDATE') {
-    return { type: 'UPDATE', changes: fields(Update.parse(payload).changes) }
+    const pricing = row.entity_kind === 'endpoint' ? row.context.pricing : undefined
+
+    return {
+      type: 'UPDATE',
+      changes: fields(Update.parse(payload).changes),
+      ...(pricing === undefined
+        ? {}
+        : {
+            pricing: {
+              before: decodePricing(pricing.before),
+              after: decodePricing(pricing.after),
+            },
+          }),
+    }
   }
 
   const snapshot: Snapshot =
@@ -72,4 +91,13 @@ function fields(changes: CapturedChange[], parent: string[] = []): Field[] {
 
     return fields(change.changes, path)
   })
+}
+
+/** Decode the same stored quote representation used by Catalog and Pricing History. */
+function decodePricing(quote: Infer<typeof pricing>) {
+  const { overrides_json, ...prices } = quote
+
+  const overrides: unknown = overrides_json === undefined ? undefined : JSON.parse(overrides_json)
+
+  return Pricing.parse({ ...prices, ...(overrides === undefined ? {} : { overrides }) })
 }

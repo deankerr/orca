@@ -3,7 +3,7 @@ import { ConvexError } from 'convex/values'
 import { Operation } from 'json-diff-ts'
 import type { IChange } from 'json-diff-ts'
 
-import { normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
+import { encodePricing, normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
 import type { Scan, ScanPair } from '../scan'
 import { compare } from './compare'
 import type { EventRow } from './table'
@@ -24,6 +24,7 @@ export function prepare(pair: ScanPair): EventRow[] {
       createRow({
         scan_at: pair.next.scan_at,
         observation: change.type === Operation.REMOVE ? previous : next,
+        previous,
         entity_kind,
         change,
       }),
@@ -53,11 +54,13 @@ function project(scan: Scan) {
 function createRow({
   scan_at,
   observation,
+  previous,
   entity_kind,
   change,
 }: {
   scan_at: string
   observation: ReturnType<typeof project>
+  previous: ReturnType<typeof project>
   entity_kind: EventRow['entity_kind']
   change: IChange
 }): EventRow {
@@ -96,6 +99,15 @@ function createRow({
     ...fields,
     entity_kind,
     context: {
+      ...(change.type === Operation.UPDATE &&
+      change.changes?.some((field) => field.key === 'pricing') === true
+        ? {
+            pricing: {
+              before: encodePricing(required(previous.endpoints, change.key).pricing),
+              after: encodePricing(endpoint.pricing),
+            },
+          }
+        : {}),
       model: pick(required(observation.models, endpoint.model_id), ['model_id', 'display_name']),
       provider: pick(required(observation.providers, endpoint.provider_id), [
         'provider_id',

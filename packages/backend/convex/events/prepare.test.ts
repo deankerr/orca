@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 
+import type { JsonValue } from '../json'
 import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '../scan'
 import { prepare } from './prepare'
 
@@ -52,6 +53,80 @@ function observation(
   }
 }
 
+test('pricing updates retain complete observed quotes without classifying schedules', () => {
+  const cases: Record<string, JsonValue>[][] = [
+    [{ utc_days: ['saturday', 'sunday'], prompt: '0.000001' }],
+    [{ utc_future_condition: { arbitrary: true }, $extension: { 原名: '例' } }],
+    [{ min_prompt_tokens: 200_000, prompt: '0.000001' }],
+    [],
+  ]
+
+  for (const overrides of cases) {
+    const before = {
+      ...endpoint,
+      pricing: { discount: 0, prompt: '0.000002', overrides: structuredClone(overrides) },
+    }
+    const next = { ...before, pricing: { ...before.pricing, prompt: '0.000004' } }
+    const pair = {
+      previous: observation(from, model, provider, before),
+      next: observation(to, model, provider, next),
+    }
+    const input = structuredClone(pair)
+    const rows = prepare(pair)
+    const [row] = rows
+
+    if (row?.entity_kind !== 'endpoint' || row.context.pricing === undefined) {
+      throw new Error('Expected pricing update context')
+    }
+
+    expect(rows).toHaveLength(1)
+    expect(row.context.pricing.before).toMatchObject({
+      discount: 0,
+      meters: { prompt: '0.000002' },
+    })
+    expect(row.context.pricing.after).toMatchObject({ discount: 0, meters: { prompt: '0.000004' } })
+    expect(JSON.parse(row.context.pricing.before.overrides_json ?? 'null')).toEqual(overrides)
+    expect(JSON.parse(row.context.pricing.after.overrides_json ?? 'null')).toEqual(overrides)
+    expect(row).not.toHaveProperty('pricing_is_scheduled')
+    expect(row.change_json).not.toContain('overrides')
+    expect(pair).toEqual(input)
+
+    const [removedSchedule] = prepare({
+      previous: observation(from, model, provider, before),
+      next: observation(to, model, provider, {
+        ...before,
+        pricing: { discount: 0, prompt: '0.000002' },
+      }),
+    })
+
+    if (removedSchedule?.entity_kind !== 'endpoint') {
+      throw new Error('Expected override removal event')
+    }
+
+    expect(removedSchedule.context.pricing?.before).toHaveProperty('overrides_json')
+    expect(removedSchedule.context.pricing?.after).not.toHaveProperty('overrides_json')
+  }
+})
+
+test('updates outside pricing do not duplicate pricing context', () => {
+  const rows = prepare({
+    previous: observation(from),
+    next: observation(
+      to,
+      { ...model, short_name: 'Renamed' },
+      { ...provider, displayName: 'Renamed provider' },
+      { ...endpoint, quantization: 'fp8' },
+    ),
+  })
+
+  expect(rows).toHaveLength(3)
+
+  for (const row of rows) {
+    expect(row.context).not.toHaveProperty('pricing')
+    expect(row).not.toHaveProperty('pricing_is_scheduled')
+  }
+})
+
 test('joint additions and removals carry full values and resolve all identities on the present side', () => {
   const empty: Scan = {
     scan_at: from,
@@ -68,6 +143,7 @@ test('joint additions and removals carry full values and resolve all identities 
   for (const rows of [added, removed]) {
     for (const row of rows) {
       expect(row).not.toHaveProperty('from_scan_at')
+      expect(row.context).not.toHaveProperty('pricing')
       expect(row.scan_at).toBe(to)
       expect(row.type).toBe(rows === added ? 'ADD' : 'REMOVE')
       expect(JSON.parse(row.change_json)).toMatchObject({ key: row.entity_id, type: row.type })

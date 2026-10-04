@@ -1,5 +1,6 @@
 import { expect, spyOn, test } from 'bun:test'
 
+import { encodePricing } from '../../entities'
 import { compare } from '../../events/compare'
 import { prepare } from '../../events/prepare'
 import type { EventRow } from '../../events/table'
@@ -24,7 +25,11 @@ const context = {
   },
 }
 
-function update(before: JsonValue, after: JsonValue, id = 'endpoint'): EventRow {
+function update(
+  before: JsonValue,
+  after: JsonValue,
+  id = 'endpoint',
+): Extract<EventRow, { entity_kind: 'endpoint' }> {
   const [change] = compare({ [id]: before }, { [id]: after })
 
   if (change === undefined) {
@@ -40,6 +45,118 @@ function update(before: JsonValue, after: JsonValue, id = 'endpoint'): EventRow 
     change_json: JSON.stringify(change),
   }
 }
+
+test('scheduled pricing suppresses unchanged overrides regardless of the price or discount movement', () => {
+  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+  const overrides = [{ utc_days: ['saturday', 'sunday'], prompt: '0.000001' }]
+  const before = { discount: 0, meters: { prompt: '0.000001' }, overrides }
+  const after = { discount: 0.5, meters: { prompt: '0.0001' }, overrides }
+  const row = update({ pricing: before }, { pricing: after })
+  row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+  const captured = row.change_json
+
+  expect(curate(row)).not.toBeNull()
+  expect(prepareAlert(row)).toBeNull()
+  expect(render(row)).toBeNull()
+  expect(renderDiscord(row, urls)).toBeNull()
+  expect(row.change_json).toBe(captured)
+
+  // Old projections have no schedule evidence; do not infer it from today's Catalog.
+  const { pricing: _pricing, ...legacyContext } = row.context
+  const legacy = { ...row, context: legacyContext }
+  expect(prepareAlert(legacy)).not.toBeNull()
+
+  const metadataOnly = update(
+    { metadata: { context_length: 100 } },
+    { metadata: { context_length: 200 } },
+  )
+
+  expect(prepareAlert(metadataOnly)).toMatchObject({ changes: [{ path: 'context_length' }] })
+})
+
+test('schedule changes announce an opaque change, including introduction and removal without meter movement', () => {
+  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+  const schedule = [{ utc_days: ['saturday'], prompt: '0.000001' }]
+  const changed = [{ utc_days: ['sunday'], prompt: '0.000001', extension: { future: true } }]
+  const base = { discount: 0, meters: { prompt: '0.000001' } }
+
+  for (const [before, after] of [
+    [base, { ...base, overrides: schedule }],
+    [{ ...base, overrides: schedule }, base],
+    [
+      { ...base, overrides: schedule },
+      { ...base, overrides: changed },
+    ],
+    [
+      { ...base, overrides: schedule },
+      { ...base, discount: 0.01, meters: { prompt: '0.000001001' }, overrides: changed },
+    ],
+  ]) {
+    const row = update(
+      { pricing: before, metadata: { context_length: 100 } },
+      { pricing: after, metadata: { context_length: 200 } },
+    )
+    row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+    const captured = row.change_json
+
+    expect(prepareAlert(row)).toMatchObject({
+      changes: [
+        { type: 'field_changed', path: 'pricing.overrides' },
+        { type: 'field_updated', path: 'context_length', before: 100, after: 200 },
+      ],
+    })
+    expect(render(row)?.details).toEqual([
+      'Price schedule changed.',
+      'Context length changed from 100 to 200.',
+    ])
+    expect(JSON.stringify(renderDiscord(row, urls))).toContain('Price schedule changed.')
+    expect(row.change_json).toBe(captured)
+  }
+
+  const contextPrice = update(
+    { pricing: { ...base, overrides: [{ min_prompt_tokens: 100, prompt: '0.000002' }] } },
+    { pricing: { ...base, overrides: [{ min_prompt_tokens: 200, prompt: '0.000002' }] } },
+  )
+
+  expect(prepareAlert(contextPrice)).toBeNull()
+})
+
+test('schedule detection accepts open UTC conditions and keeps unknown context distinct from no schedule', () => {
+  const cases: [Record<string, JsonValue>[], boolean][] = [
+    [[{ utc_start: 0, utc_end: 1400 }], true],
+    [[{ utc_days: ['saturday'] }], true],
+    [[{ utc_future_condition: { arbitrary: true }, $extension: { 原名: '例' } }], true],
+    [[{ utcExtension: null }], true],
+    [[{ min_prompt_tokens: 200_000 }], false],
+    [[], false],
+  ]
+
+  for (const [overrides, scheduled] of cases) {
+    const before = { discount: 0, meters: { prompt: '1' }, overrides }
+    const after = { ...before, meters: { prompt: '2' } }
+    const row = update({ pricing: before }, { pricing: after })
+    row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+
+    expect(curate(row)).toMatchObject({ pricing_is_scheduled: scheduled })
+    expect(prepareAlert(row) === null).toBe(scheduled)
+    expect(row).not.toHaveProperty('pricing_is_scheduled')
+    expect(curate({ ...row, pricing_is_scheduled: !scheduled })).toMatchObject({
+      pricing_is_scheduled: scheduled,
+    })
+  }
+
+  const legacy = update(
+    { pricing: { meters: { prompt: '1' } } },
+    { pricing: { meters: { prompt: '2' } } },
+  )
+
+  expect(curate(legacy)).not.toHaveProperty('pricing_is_scheduled')
+  expect(prepareAlert(legacy)).not.toBeNull()
+  expect(curate({ ...legacy, pricing_is_scheduled: true })).not.toHaveProperty(
+    'pricing_is_scheduled',
+  )
+  expect(prepareAlert({ ...legacy, pricing_is_scheduled: true })).not.toBeNull()
+})
 
 test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', () => {
   const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
@@ -348,6 +465,37 @@ test('lifecycle values for all entity kinds use native keys and captured context
   expect(removal.summary).toBe('Model is no longer listed on Regional offering (provider/fp8).')
   expect(removal.details).toContain('Input price when last observed: $0.10.')
   expect(removal.details).toContain('Supported parameters when last observed: "tools".')
+
+  const scheduled = structuredClone(present)
+
+  for (const endpoint of scheduled.endpoints.values()) {
+    endpoint.pricing = {
+      discount: 0,
+      prompt: '0.0000001',
+      overrides: [{ utc_future_condition: { arbitrary: true } }],
+    }
+  }
+
+  const arrival = prepare({ previous: empty, next: scheduled }).find(
+    (row) => row.entity_kind === 'endpoint',
+  )
+
+  if (arrival === undefined) {
+    throw new Error('Expected scheduled endpoint arrival')
+  }
+
+  expect(arrival).not.toHaveProperty('pricing_is_scheduled')
+  expect(arrival.context).not.toHaveProperty('pricing')
+  expect(render(arrival)).toMatchObject({ after: { pricing: { is_scheduled: true } } })
+  expect(render(arrival)?.details).toContain('Price schedule detected.')
+  expect(
+    JSON.stringify(
+      renderDiscord(arrival, {
+        publicUrl: 'https://orca.orb.town',
+        logoOrigin: 'https://logos.orb.town',
+      }),
+    ),
+  ).toContain('Price schedule detected.')
 })
 
 test('nested fields are curated on addition/removal and empty pages retain native pagination metadata', () => {
