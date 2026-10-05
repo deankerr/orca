@@ -6,13 +6,20 @@ import { EntityOverviewSheet } from '@/features/entity-overview/sheet'
 import { PricingHistoryProvider } from '@/features/pricing-history/context'
 import { PricingHistoryOverlay } from '@/features/pricing-history/overlay'
 
+import { AccountMenu } from './account-menu'
 import { AppHeader } from './app-header'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <EntityOverviewProvider>
       <div className="isolate flex h-dvh flex-col overflow-hidden">
-        <AppHeader />
+        <AppHeader
+          accountMenu={
+            <Suspense fallback={null}>
+              <AccountMenu />
+            </Suspense>
+          }
+        />
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</main>
       </div>
       <EntityOverviewSheet />

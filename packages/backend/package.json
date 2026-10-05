@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "convex dev"
+    "dev": "PORTLESS_URL=$(portless get orca) convex dev"
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",

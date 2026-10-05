@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { ReactNode } from 'react'
 
 import {
   NavigationMenu,
@@ -16,7 +17,7 @@ const navigationLinks = [
   { href: '/api', label: 'API' },
 ]
 
-export function AppHeader() {
+export function AppHeader({ accountMenu }: { accountMenu: ReactNode }) {
   const pathname = usePathname()
   return (
     <header className="shrink-0 border-b px-4 md:px-6">
@@ -49,6 +50,7 @@ export function AppHeader() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
+        {accountMenu}
       </div>
     </header>
   )

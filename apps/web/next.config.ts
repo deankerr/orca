@@ -5,8 +5,20 @@ import type { NextConfig } from 'next'
 import { getConvexHttpUrl } from './lib/utils'
 
 const localDevOrigin = process.env.LOCAL_DEV_ORIGIN
+const portlessUrl = process.env.PORTLESS_URL
+
+// Preview credentials are shared, but the callback must return to this branch's web app.
+const workosRedirectUri =
+  (portlessUrl !== undefined && portlessUrl !== '' ? `${portlessUrl}/callback` : undefined) ??
+  process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ??
+  (process.env.VERCEL_ENV === 'preview'
+    ? `https://${process.env.VERCEL_BRANCH_URL}/callback`
+    : process.env.VERCEL_ENV === 'production'
+      ? 'https://orca.orb.town/callback'
+      : 'https://orca.localhost/callback')
 
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: workosRedirectUri },
   // empty strings are ignored
   allowedDevOrigins: [localDevOrigin ?? ''],
   // This is required to support PostHog trailing slash API requests

@@ -31,6 +31,7 @@ type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
   readonly ENTITY_LOGO_SERVICE_ORIGIN: string;
+  readonly ORCA_ADMIN_USER_ID: string | undefined;
   readonly ORCA_DISCORD_ALERTS_ENABLED: "true" | "false" | undefined;
   readonly ORCA_DISCORD_WEBHOOK_URL: string | undefined;
   readonly ORCA_OBJECTS_API_KEY: string | undefined;

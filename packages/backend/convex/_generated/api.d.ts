@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as alerts_discord_delivery from "../alerts/discord/delivery.js";
 import type * as alerts_discord_frequency from "../alerts/discord/frequency.js";
 import type * as alerts_discord_prepare from "../alerts/discord/prepare.js";
@@ -113,6 +114,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   "alerts/discord/delivery": typeof alerts_discord_delivery;
   "alerts/discord/frequency": typeof alerts_discord_frequency;
   "alerts/discord/prepare": typeof alerts_discord_prepare;
