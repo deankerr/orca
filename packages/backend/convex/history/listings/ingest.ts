@@ -4,13 +4,13 @@ import { internalMutation } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import type { ScannedEndpoint, Scan, ScanPair } from '../../scan'
-import { V4_ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
+import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 import type { EndpointListingRow } from './table'
 
 /** Commit listing transitions inside the Catalog acceptance transaction. */
 export async function write(ctx: MutationCtx, rows: EndpointListingRow[]): Promise<void> {
   for (const row of rows) {
-    await ctx.db.insert(V4_ENDPOINT_LISTINGS_TABLE, row)
+    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, row)
   }
 }
 
@@ -47,9 +47,9 @@ export const initialize = internalMutation({
   args: { rows: v.array(endpointListingsTable.validator) },
   returns: v.null(),
   handler: async (ctx, { rows }) => {
-    await assertInitialTableEmpty(ctx, V4_ENDPOINT_LISTINGS_TABLE)
+    await assertInitialTableEmpty(ctx, ENDPOINT_LISTINGS_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(V4_ENDPOINT_LISTINGS_TABLE, row)
+      await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, row)
     }
     return null
   },

@@ -10,15 +10,18 @@ overrides alongside them. Tiny movements are real observations; display rounding
 change the captured facts or turn small nonzero prices into zero.
 
 - Presented rates already include `discount`. Never apply it a second time.
-- A quote is complete: an absent meter is unknown/unmetered, not a request to carry its previous value.
 - Zero and absence do not establish that an endpoint is free or supports a feature.
-- Retain zero in stored history; the Grid omits zero prices and Pricing History omits them from positive-rate traces.
+- Retain zero in stored history; products omit it from displayed rates.
 - Preserve conditional overrides with their observation. Today's Catalog cannot explain a historical quote.
 
 Schedule changes can move presented rates without changing authored pricing. ORCA stores those
 movements without choosing a canonical base band or parsing `pricing_json`. Prompt-length
 overrides describe a different condition and must not be treated as schedules. Capturing a quote
 does not require every product to announce it as a price change.
+
+Compare rate, discount, override, revision, tier, and authored-pricing observations
+independently; simultaneous changes do not establish causation. Preserve opaque
+`pricing_json` and `tiers` values without interpreting their internal rules.
 
 ## Presentation
 
@@ -55,20 +58,9 @@ update. Changed overrides produce “Price schedule changed”, including schedu
 or removal, even when the presented rates do not move. Current-band meter deltas are omitted
 from that alert. Endpoint arrivals with a schedule include “Price schedule detected”.
 
-Endpoint pricing updates retain complete normalized before/after quotes in `context.pricing`,
-using the same storage encoding as Catalog and Pricing History. This supplies unchanged overrides
-that the diff omits, without historical joins or a persisted schedule classification. Alert
-preparation derives schedule presence from these observed quotes each time it runs.
-
-The context is optional in the stored schema for older events. New pricing updates always include
-both quotes, even when neither has overrides; lifecycle snapshots already contain full pricing,
-and unrelated updates do not duplicate it. Missing context means unknown, not unscheduled: older
-updates retain the previous eligibility behavior until regenerated. Consumers must handle absence
-and must never infer historical schedules from today's Catalog. Captured changes and price history
-remain intact.
-
-The earlier preview's stored `pricing_is_scheduled` field is accepted only for schema compatibility.
-New events omit it; alert preparation discards any legacy value and derives its own classification.
+Schedule classification uses the event's observed before/after quotes. Older events
+without quote context retain the numeric eligibility rule below; today's Catalog
+cannot supply their historical schedule.
 
 Other endpoint pricing updates first suppress numeric discount adjustments of at most two
 percentage points, then require an eligible meter movement of at least 2%, measured before

@@ -7,7 +7,7 @@ import { query } from '../../_generated/server'
 import { clock } from '../../clock'
 import { flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
-import { V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
+import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
 
 const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -115,7 +115,7 @@ const EndpointMetadata = z
   }))
 
 /** Endpoint product fields from typed Catalog values and endpoint-owned nested metadata. */
-export const Endpoint = convexToZod(docValidator(V4_CURRENT_ENDPOINTS_TABLE, currentEndpointsTable))
+export const Endpoint = convexToZod(docValidator(CURRENT_ENDPOINTS_TABLE, currentEndpointsTable))
   .extend({
     model_or_created_at: isoDate,
     pricing: EndpointPricing,
@@ -132,7 +132,7 @@ export const grid = query({
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx) => {
     const listed = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.eq('unlisted_at', undefined))
       .collect()
 
@@ -143,7 +143,7 @@ export const grid = query({
     }
     const cutoff = new Date(Date.parse(scanAt) - UNLISTED_WINDOW_MS).toISOString()
     const unlisted = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', cutoff))
       .collect()
 
@@ -157,7 +157,7 @@ export const get = query({
   returns: v.union(v.null(), zodOutputToConvex(Endpoint)),
   handler: async (ctx, args) => {
     const row = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', args.endpoint_id))
       .unique()
     return row === null ? null : Endpoint.parse(row)
@@ -170,7 +170,7 @@ export const byModel = query({
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx, args) => {
     const rows = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_model_id', (q) => q.eq('model_id', args.model_id))
       .collect()
     return rows.map((row) => Endpoint.parse(row))
@@ -183,7 +183,7 @@ export const byProviderModel = query({
   returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx, args) => {
     const rows = await ctx.db
-      .query(V4_CURRENT_ENDPOINTS_TABLE)
+      .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_provider_id_and_model_id', (q) =>
         q.eq('provider_id', args.provider_id).eq('model_id', args.model_id),
       )

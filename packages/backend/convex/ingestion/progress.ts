@@ -1,12 +1,7 @@
 import { docValidator, paginationOptsValidator, paginationResultValidator } from 'convex/server'
 
 import { internalQuery } from '../_generated/server'
-import {
-  storedProcessorName,
-  processorWorkTable,
-  V4_PROCESSOR_WORK_TABLE,
-  workState,
-} from './table'
+import { storedProcessorName, processorWorkTable, PROCESSOR_WORK_TABLE, workState } from './table'
 
 /** Inspect outstanding or completed work; later successes do not hide earlier failures. */
 export const listProcessorWork = internalQuery({
@@ -15,10 +10,10 @@ export const listProcessorWork = internalQuery({
     state: workState,
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(docValidator(V4_PROCESSOR_WORK_TABLE, processorWorkTable)),
+  returns: paginationResultValidator(docValidator(PROCESSOR_WORK_TABLE, processorWorkTable)),
   handler: async (ctx, args) =>
     await ctx.db
-      .query(V4_PROCESSOR_WORK_TABLE)
+      .query(PROCESSOR_WORK_TABLE)
       .withIndex('by_processor_and_state_and_scan_at', (q) =>
         q.eq('processor', args.processor).eq('state', args.state),
       )

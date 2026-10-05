@@ -62,14 +62,14 @@ test('keeps the locator on storage failure and safely retries missing files', as
 })
 
 test('R2 failure preserves the locator; missing R2 bytes allow deletion to finish', async () => {
-  const key = process.env.ORCA_R2_ACCESS_KEY_ID
-  const secret = process.env.ORCA_R2_SECRET_ACCESS_KEY
-  const account = process.env.ORCA_R2_ACCOUNT_ID
-  const bucket = process.env.ORCA_R2_BUCKET
-  process.env.ORCA_R2_ACCESS_KEY_ID = 'test'
-  process.env.ORCA_R2_SECRET_ACCESS_KEY = 'test'
-  process.env.ORCA_R2_ACCOUNT_ID = 'test'
-  process.env.ORCA_R2_BUCKET = 'test'
+  const key = process.env.ORCA_OBJECTS_R2_ACCESS_KEY_ID
+  const secret = process.env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY
+  const account = process.env.ORCA_OBJECTS_R2_ACCOUNT_ID
+  const bucket = process.env.ORCA_OBJECTS_R2_BUCKET
+  process.env.ORCA_OBJECTS_R2_ACCESS_KEY_ID = 'test'
+  process.env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY = 'test'
+  process.env.ORCA_OBJECTS_R2_ACCOUNT_ID = 'test'
+  process.env.ORCA_OBJECTS_R2_BUCKET = 'test'
 
   const request = spyOn(AwsClient.prototype, 'fetch').mockResolvedValue(
     new Response(null, { status: 403 }),
@@ -100,27 +100,27 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
     request.mockRestore()
 
     if (account === undefined) {
-      delete process.env.ORCA_R2_ACCOUNT_ID
+      delete process.env.ORCA_OBJECTS_R2_ACCOUNT_ID
     } else {
-      process.env.ORCA_R2_ACCOUNT_ID = account
+      process.env.ORCA_OBJECTS_R2_ACCOUNT_ID = account
     }
 
     if (bucket === undefined) {
-      delete process.env.ORCA_R2_BUCKET
+      delete process.env.ORCA_OBJECTS_R2_BUCKET
     } else {
-      process.env.ORCA_R2_BUCKET = bucket
+      process.env.ORCA_OBJECTS_R2_BUCKET = bucket
     }
 
     if (key === undefined) {
-      delete process.env.ORCA_R2_ACCESS_KEY_ID
+      delete process.env.ORCA_OBJECTS_R2_ACCESS_KEY_ID
     } else {
-      process.env.ORCA_R2_ACCESS_KEY_ID = key
+      process.env.ORCA_OBJECTS_R2_ACCESS_KEY_ID = key
     }
 
     if (secret === undefined) {
-      delete process.env.ORCA_R2_SECRET_ACCESS_KEY
+      delete process.env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY
     } else {
-      process.env.ORCA_R2_SECRET_ACCESS_KEY = secret
+      process.env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY = secret
     }
   }
 })

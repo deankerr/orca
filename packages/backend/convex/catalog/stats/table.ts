@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 /** Singleton cache of the latest published endpoint stats. */
-export const V4_CURRENT_STATS_TABLE = 'v4_current_stats_snapshot' as const
+export const CURRENT_STATS_TABLE = 'v4_current_stats_snapshot' as const
 
 /** An endpoint's current default-tier readings; endpoints with no reading have no row. */
 export const currentStatsRow = v.object({

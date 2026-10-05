@@ -2,7 +2,7 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-export const V4_ENDPOINT_LISTINGS_TABLE = 'v4_endpoint_listing_history' as const
+export const ENDPOINT_LISTINGS_TABLE = 'v4_endpoint_listing_history' as const
 export const listingState = v.union(v.literal('listed'), v.literal('unlisted'))
 
 /** One endpoint's availability, associations and addressable tag at a context change. */

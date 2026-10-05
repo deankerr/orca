@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { query } from '../../_generated/server'
 import { textOrNull, stringsOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
-import { V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'
+import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'
 
 const url = z
   .url({ protocol: /^https?$/ })
@@ -14,7 +14,7 @@ const url = z
   .catch(null)
 
 /** Interpret provider-owned overview facts. */
-export const Provider = convexToZod(docValidator(V4_CURRENT_PROVIDERS_TABLE, currentProvidersTable))
+export const Provider = convexToZod(docValidator(CURRENT_PROVIDERS_TABLE, currentProvidersTable))
   .extend({
     metadata_json: JsonObjectFromString.pipe(
       z.object({
@@ -43,7 +43,7 @@ export const get = query({
   returns: v.union(v.null(), zodOutputToConvex(Provider)),
   handler: async (ctx, args) => {
     const row = await ctx.db
-      .query(V4_CURRENT_PROVIDERS_TABLE)
+      .query(CURRENT_PROVIDERS_TABLE)
       .withIndex('by_provider_id', (q) => q.eq('provider_id', args.provider_id))
       .unique()
     return row === null ? null : Provider.parse(row)

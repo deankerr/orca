@@ -4,7 +4,7 @@ import { internal } from './_generated/api'
 import { internalMutation } from './_generated/server'
 import { clock } from './clock'
 
-/** Preview bootstrap: seed two days of V4 history, or resume an existing timeline. */
+/** Preview bootstrap: seed two days of history, or resume an existing timeline. */
 const init = internalMutation({
   args: {},
   returns: v.null(),
@@ -12,7 +12,7 @@ const init = internalMutation({
     const scanAt = await clock(ctx)
     await ctx.scheduler.runAfter(
       0,
-      internal.routine.run,
+      internal.ingest.run,
       scanAt === null ? { start_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } : {},
     )
     return null

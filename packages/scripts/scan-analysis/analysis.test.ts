@@ -41,7 +41,7 @@ test('collected reports retain endpoints without usable provider bodies and pres
     ({ value }) => value.path === '$[*]["provider_info"]',
   )
 
-  expect(info?.none).toBe(1)
+  expect(info?.missing).toBe(1)
 
   expect(info?.value.types).toMatchObject([
     { count: 1, type: 'null' },
@@ -186,7 +186,7 @@ test('numeric summaries weight frequencies and keep nested absence, array occurr
   const rows = profileRows(profile)
   const score = rows.find(({ value }) => value.path.endsWith('["score"]'))
   const price = rows.find(({ value }) => value.path.endsWith('["price"]'))
-  expect(score?.none).toBe(1)
+  expect(score?.missing).toBe(1)
   expect(score?.value.population).toBe(4)
 
   expect(score === undefined ? null : numericSummary(score.value)).toEqual({

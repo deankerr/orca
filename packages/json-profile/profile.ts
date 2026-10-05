@@ -7,7 +7,7 @@ export type JsonRecord = Record<string, JsonValue>
 export type JsonType = 'array' | 'boolean' | 'null' | 'number' | 'object' | 'string'
 
 export interface JsonProfile {
-  profile_format: 'json-record-profile-v1'
+  profile_format: 'json-record-profile-v2'
   record_count: number
   root: ValueProfile
 }
@@ -20,7 +20,7 @@ export interface ValueProfile {
 
 export interface FieldProfile extends ValueProfile {
   name: string
-  none: number
+  missing: number
 }
 
 export type JsonTypeProfile = ArrayProfile | NullProfile | ObjectProfile | PrimitiveProfile
@@ -102,7 +102,7 @@ export function profileJsonRecords(records: readonly JsonRecord[]): JsonProfile 
   }
 
   return {
-    profile_format: 'json-record-profile-v1',
+    profile_format: 'json-record-profile-v2',
     record_count: records.length,
     root: finalizeValue(root, records.length),
   }
@@ -256,7 +256,7 @@ function finalizeField(name: string, field: MutableValueProfile, population: num
     name,
     path: field.path,
     population,
-    none: population - field.occurrences,
+    missing: population - field.occurrences,
     types: finalizeTypes(field),
   }
 }

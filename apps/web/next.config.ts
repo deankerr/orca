@@ -4,7 +4,7 @@ import type { NextConfig } from 'next'
 
 import { getConvexHttpUrl } from './lib/utils'
 
-const localDevOrigin = process.env.LOCAL_DEV_ORIGIN
+const localDevOrigin = process.env.ORCA_DEV_ORIGIN
 const portlessUrl = process.env.PORTLESS_URL
 
 // Preview credentials are shared, but the callback must return to this branch's web app.

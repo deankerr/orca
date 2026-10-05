@@ -4,7 +4,7 @@ import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 import { clock } from '../clock'
 import type { IngestionRow, ProcessorName } from './table'
-import { V4_INGESTIONS_TABLE, V4_PROCESSOR_WORK_TABLE } from './table'
+import { INGESTIONS_TABLE, PROCESSOR_WORK_TABLE } from './table'
 
 /** Call in the same transaction as prerequisite writes and work declarations; null means already released. */
 export async function release(ctx: MutationCtx, pair: IngestionRow) {
@@ -13,7 +13,7 @@ export async function release(ctx: MutationCtx, pair: IngestionRow) {
   }
 
   const existing = await ctx.db
-    .query(V4_INGESTIONS_TABLE)
+    .query(INGESTIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', pair.scan_at))
     .unique()
 
@@ -31,22 +31,22 @@ export async function release(ctx: MutationCtx, pair: IngestionRow) {
     throw new ConvexError({ message: 'Pair does not follow the observation clock', clock: scanAt })
   }
 
-  return await ctx.db.insert(V4_INGESTIONS_TABLE, pair)
+  return await ctx.db.insert(INGESTIONS_TABLE, pair)
 }
 
 /** The caller explicitly chooses which obligations accompany a newly released pair. */
 export async function createWork(
   ctx: MutationCtx,
-  ingestionId: Id<typeof V4_INGESTIONS_TABLE>,
+  ingestionId: Id<typeof INGESTIONS_TABLE>,
   processor: ProcessorName,
 ) {
-  const ingestion = await ctx.db.get(V4_INGESTIONS_TABLE, ingestionId)
+  const ingestion = await ctx.db.get(INGESTIONS_TABLE, ingestionId)
 
   if (ingestion === null) {
     throw new ConvexError('Processor input is not released')
   }
 
-  return await ctx.db.insert(V4_PROCESSOR_WORK_TABLE, {
+  return await ctx.db.insert(PROCESSOR_WORK_TABLE, {
     ingestion_id: ingestionId,
     scan_at: ingestion.scan_at,
     state: 'pending',

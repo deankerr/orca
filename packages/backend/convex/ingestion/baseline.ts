@@ -1,21 +1,21 @@
-import { internal } from './_generated/api'
-import type { ActionCtx } from './_generated/server'
-import * as endpoints from './catalog/endpoints/ingest'
-import * as models from './catalog/models/ingest'
-import * as providers from './catalog/providers/ingest'
-import * as listings from './history/listings/ingest'
-import * as pricing from './history/pricing/ingest'
-import type { Scan } from './scan'
+import { internal } from '../_generated/api'
+import type { ActionCtx } from '../_generated/server'
+import * as endpoints from '../catalog/endpoints/ingest'
+import * as models from '../catalog/models/ingest'
+import * as providers from '../catalog/providers/ingest'
+import * as listings from '../history/listings/ingest'
+import * as pricing from '../history/pricing/ingest'
+import type { Scan } from '../scan'
 
 /** One-time composition before the first real ingestion; partial failure requires investigation/reset. */
-export async function initialize(ctx: ActionCtx, baseline: Scan) {
+export async function initializeBaseline(ctx: ActionCtx, baseline: Scan) {
   const modelRows = models.initialRows(baseline)
   const providerRows = providers.initialRows(baseline)
   const endpointRows = endpoints.initialRows(baseline)
   const priceRows = pricing.initialRows(baseline)
   const listingRows = listings.initialRows(baseline)
 
-  console.log('[v4:initialize] prepared', {
+  console.log('[initializeBaseline] prepared', {
     scan_at: baseline.scan_at,
     models: modelRows.length,
     providers: providerRows.length,

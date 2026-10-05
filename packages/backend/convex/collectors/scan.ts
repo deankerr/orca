@@ -4,7 +4,8 @@ import * as R from 'remeda'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import { env, internalAction } from '../_generated/server'
+import { internal } from '../_generated/api'
+import { env, internalAction, internalMutation } from '../_generated/server'
 import { store } from '../scan'
 import { IdentifiedEndpoint, IdentifiedModel } from '../scan/collected'
 
@@ -21,12 +22,21 @@ export const run = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    if (env.ORCA_SCAN_ENABLED !== 'true') {
-      return null
-    }
-
     const entries = await collect()
     await store(ctx, { scan_at: new Date().toISOString(), entries })
+
+    return null
+  },
+})
+
+/** Admit scheduled captures; manual runs remain available. */
+export const scheduled = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    if (env.ORCA_SCAN_CRON_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.collectors.scan.run, {})
+    }
 
     return null
   },

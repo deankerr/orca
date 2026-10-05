@@ -6,10 +6,10 @@ import { z } from 'zod'
 import { query } from '../../_generated/server'
 import { textOrNull, flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
-import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './table'
+import { CURRENT_MODELS_TABLE, currentModelsTable } from './table'
 
 /** Interpret the model facts consumed by overview products. */
-export const Model = convexToZod(docValidator(V4_CURRENT_MODELS_TABLE, currentModelsTable))
+export const Model = convexToZod(docValidator(CURRENT_MODELS_TABLE, currentModelsTable))
   .extend({
     or_created_at: isoDate,
     metadata_json: JsonObjectFromString.pipe(
@@ -48,7 +48,7 @@ export const get = query({
   returns: v.union(v.null(), zodOutputToConvex(Model)),
   handler: async (ctx, args) => {
     const row = await ctx.db
-      .query(V4_CURRENT_MODELS_TABLE)
+      .query(CURRENT_MODELS_TABLE)
       .withIndex('by_model_id', (q) => q.eq('model_id', args.model_id))
       .unique()
     return row === null ? null : Model.parse(row)

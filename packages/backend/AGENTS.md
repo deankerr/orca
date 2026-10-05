@@ -1,23 +1,21 @@
 # packages/backend
 
-- Follow [provider identity](../../docs/orca/provider-identity.md); endpoint labels are endpoint-local.
 - `convex/public_api/` maintains a frozen external contract. Follow its local instructions; compatibility semantics must not shape other products.
-- Shared pure modules may live at the `convex/` root and be imported by backend and web code.
-- Keep normalization input validators private. Consumers validate the additional facts they need.
-- Preserve observed meaning, not byte fidelity or incidental object-key/array ordering.
-- Separate ingestion from products at the stored record format. Input retains facts; output interprets them.
-- Group output code by product, including queries, rendering, delivery, and product-owned storage.
-- Keep reused implementation within its domain; single-product helpers stay with that product.
-- Compose ordinary functions rather than introducing a generic pipeline or product registry.
-- Prefer pure domain functions without a Convex `ctx`, composed by thin Convex functions.
 - Allow uncaught exceptions to halt workflows and roll back mutations. Use `ConvexError` with domain data and a concise message for our own exceptions; do not catch and rethrow.
-
-## Environment and operations
-
 - Convex executes `convex/init.ts` after preview deployment to initialize its data.
-- Backend environment variables are declared in `convex/convex.config.ts`; project defaults configure new dev and preview deployments.
-- Follow [development data](../../docs/orca/development-data.md) when a task needs a populated dev deployment.
-- [Objects](convex/objects/README.md) records source-deployment constraints; [Discord](../../docs/orca/discord.md) covers live controls and manual delivery.
+- Preserve observed meaning, not byte fidelity or incidental object-key/array ordering.
+
+## Data boundaries
+
+- Parse external inputs where they enter the backend, then use the parsed result. Trust typed internal values and stored records without repeating those checks.
+- Keep upstream validators with the code that parses upstream data. If a product needs a stronger guarantee about a field, check that requirement in the product.
+- Ingestion stores observed facts. Products read those records and apply their own interpretation, filtering, and presentation rules.
+
+## Code organization
+
+- Keep each product's queries, rendering, delivery, storage, and helpers together. Put code shared by multiple products in the domain it belongs to.
+- Write domain logic as ordinary pure functions. Convex functions handle database access and scheduling, then call that logic.
+- Pure modules shared by backend and web code can live at the `convex/` root. Compose functions directly; avoid generic pipelines and product registries.
 
 ## Observability
 

@@ -35,8 +35,8 @@ test('manual delivery posts once, surfaces rejection, and refuses an unset webho
 
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token?thread_id=123',
-    ORCA_PUBLIC_URL: urls.publicUrl,
-    ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
+    ORCA_WEB_ORIGIN: urls.publicUrl,
+    ORCA_LOGO_ORIGIN: urls.logoOrigin,
   }
 
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
@@ -180,9 +180,9 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
 
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
-    ORCA_DISCORD_ALERTS_ENABLED: 'false',
-    ORCA_PUBLIC_URL: urls.publicUrl,
-    ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
+    ORCA_DISCORD_AUTO_SEND_ENABLED: 'false',
+    ORCA_WEB_ORIGIN: urls.publicUrl,
+    ORCA_LOGO_ORIGIN: urls.logoOrigin,
   }
 
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
@@ -204,12 +204,12 @@ test('gallery sends selected events sequentially with two-second gaps and stops 
     expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
     expect(request).not.toHaveBeenCalled()
 
-    delete process.env.ORCA_DISCORD_ALERTS_ENABLED
+    delete process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
     expect(await liveHandler(ctx, args)).toEqual({ sent: 0, skipped: 0 })
     expect(events).toEqual([])
     expect(request).not.toHaveBeenCalled()
 
-    process.env.ORCA_DISCORD_ALERTS_ENABLED = 'true'
+    process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'true'
     expect(await liveHandler(ctx, args)).toEqual({ sent: 3, skipped: 0 })
     expect(events).toEqual(args.event_ids)
     expect(pause.mock.calls.map((call) => call[1])).toEqual(Array.from({ length: 2 }, () => 2000))
@@ -294,9 +294,9 @@ test('latest replay fills its default count across filtered pages, respects limi
   const ctx = queryContext as unknown as ActionCtx
   const settings = {
     ORCA_DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test/token',
-    ORCA_DISCORD_ALERTS_ENABLED: 'false',
-    ORCA_PUBLIC_URL: urls.publicUrl,
-    ENTITY_LOGO_SERVICE_ORIGIN: urls.logoOrigin,
+    ORCA_DISCORD_AUTO_SEND_ENABLED: 'false',
+    ORCA_WEB_ORIGIN: urls.publicUrl,
+    ORCA_LOGO_ORIGIN: urls.logoOrigin,
   }
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   const originalTimeout = globalThis.setTimeout
@@ -323,7 +323,7 @@ test('latest replay fills its default count across filtered pages, respects limi
         .toReversed()
         .map((event) => event.scan_at),
     )
-    expect(process.env.ORCA_DISCORD_ALERTS_ENABLED).toBe('false')
+    expect(process.env.ORCA_DISCORD_AUTO_SEND_ENABLED).toBe('false')
 
     expect(await handler(ctx, { limit: 2 })).toEqual({ sent: 2, skipped: 101 })
     events = events.slice(101, 104)

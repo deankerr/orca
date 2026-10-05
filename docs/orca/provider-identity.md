@@ -1,62 +1,28 @@
 # Provider identity and endpoint-local fields
 
-This is ORCA's settled working rule for ambiguous OpenRouter provider data. It deliberately keeps
-a low-priority issue simple. Differences between provider labels and endpoint labels are expected;
-they are not inconsistencies to fix by substituting values, merging entities or inventing a hierarchy.
-Reopen this policy only in an explicitly developer-led investigation, not during routine review or
-implementation.
+ORCA uses the following ownership rules. Provider enrichment and inferred
+organization/variant hierarchies are outside current product scope.
 
-## Ownership rule
+| Source                           | ORCA meaning                                                     |
+| -------------------------------- | ---------------------------------------------------------------- |
+| `provider_info`                  | Related normalized provider observation.                         |
+| `provider_info.slug`             | Provider identity, translated to `provider_id` during assembly.  |
+| `provider_info.displayName`      | Provider entity display name.                                    |
+| Endpoint `provider_display_name` | Endpoint's display label, taken directly from that source field. |
+| Endpoint `provider_name`         | Endpoint property, even when equal to `provider_info.name`.      |
+| Endpoint `provider_model_id`     | Provider-side model identifier for this endpoint.                |
+| Endpoint `provider_region`       | Endpoint region.                                                 |
+| Endpoint `provider_slug`         | Opaque accessor, translated to `provider_tag` during assembly.   |
 
-Models and providers are normalized entities. They do not have separate per-endpoint states.
-An endpoint refers to those entities and owns its own configuration and presentation facts.
+Tag suffixes and labels do not establish entity identity. For example, replacing
+`Google Vertex (US)` and `Google Vertex (Global)` with their shared provider name
+would discard useful endpoint distinctions.
 
-| Observed source                  | ORCA meaning                                                                |
-| -------------------------------- | --------------------------------------------------------------------------- |
-| `provider_info`                  | Source observation for the related normalized provider entity.              |
-| `provider_info.slug`             | Provider entity identity.                                                   |
-| `provider_info.displayName`      | Display name of the provider entity.                                        |
-| Endpoint `provider_display_name` | Endpoint-local provider label; use this when displaying the endpoint.       |
-| Endpoint `provider_name`         | Endpoint property, even when it equals `provider_info.name`.                |
-| Endpoint `provider_model_id`     | Provider-side model identifier for this endpoint.                           |
-| Endpoint `provider_region`       | Region information supplied for this endpoint.                              |
-| Endpoint `provider_slug`         | Endpoint accessor, renamed `provider_tag` in ORCA; not a provider identity. |
+Use endpoint data policy for behavioral claims; provider terms/privacy URLs remain
+provider facts.
 
-- Source endpoint fields prefixed with `provider_`, except the related body `provider_info`, belong
-  to the endpoint. A naming prefix does not transfer ownership to the provider entity.
-- Copy an endpoint's `provider_display_name` from that endpoint's source field. Do not derive it
-  from either the endpoint's embedded `provider_info.displayName` or the selected provider record.
-- Preserve the endpoint's tag as opaque data; do not infer identity or configuration from its suffix.
-- Assembly is the sole translation boundary for the overloaded upstream names: replace
-  `provider_info.slug` with `provider_id` and endpoint `provider_slug` with `provider_tag`.
-  Remove both source properties from the assembled bodies; downstream consumers use only the
-  unambiguous names, not a "provider slug" concept.
-- A different label does not establish a different provider entity, and a similar label does not
-  establish that two provider identities should be merged.
-- Model/provider metadata stays with its owning normalized entity. Do not duplicate it into endpoint
-  metadata or describe duplicated values as endpoint-specific versions of those entities.
+Model/provider metadata belongs to its normalized entity. Product rows may project
+related context; historical products resolve that context at the selected observation.
 
-Selected typed context fields in a product row are projections of related entities, not independent
-entity states. Historical entity context is resolved at the selected observation time. An endpoint's
-own label remains endpoint data at that time.
-
-## Why the rule is intentionally simple
-
-OpenRouter's bookkeeping, ORCA's entity identities and users' ideas of a provider need not agree.
-We observe the exposed fields; we do not know the complete upstream model or its reasons for changing.
-
-- `Azure (BYOK Only)` may describe a configuration of Azure. That is not evidence for a separate
-  ORCA provider identity, nor a reason to replace the endpoint's label with `Azure`.
-- `DeepInfra Turbo` may reflect a more distinct upstream offering. A difference such as
-  `DeepInfra Turbo` versus `DeepInfra (Turbo)` does not establish its entity boundaries. Users can
-  reasonably understand either as DeepInfra without needing ORCA to settle that question.
-- `Google Vertex (US)` and `Google Vertex (Global)` are useful distinctions when comparing endpoints.
-  Replacing both with `Google Vertex` hides information users need, even if both endpoints refer to
-  the same provider entity.
-
-These are interpretations, not an authoritative upstream taxonomy. New observations may require us
-to reinterpret the data as a whole. A configuration/organization/variant hierarchy would encode more
-certainty than the evidence supports and is not needed for the current products.
-
-[OpenRouter provider observations](../openrouter/providers.md) supplies empirical background.
-Observed agreements between fields are not identity guarantees and do not override this policy.
+[Upstream observations](../openrouter/providers.md) record the evidence. Revisit these
+ownership rules through a focused investigation when new evidence requires it.

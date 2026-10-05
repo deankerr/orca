@@ -51,7 +51,6 @@ Catalog slugs beginning with `~` are "latest" aliases that point at the current 
 - ⚠️ The catalog model record is a projection of the targeted model and reflects that target inconsistently.
 - ⚠️ The nested `endpoint` is also a projection, and its `id` is not a UUID.
 - `/api/frontend/v1/stats/endpoint` for these rows always returns `404`.
-- 🧭 Filter `~` slugs out of ORCA observations; they add no durable identity or endpoint inventory.
 
 ## Nested copies
 

@@ -4,7 +4,7 @@ Events retain observed changes; alerts interpret those facts for Monitor, Feed, 
 
 ## Historical meaning
 
-- The baseline establishes knowledge. Events describe subsequent observed transitions, not upstream creation times.
+- Events describe transitions after the [baseline](../../CONTEXT.md), dated by observation rather than upstream creation.
 - Arrivals include reappearances. Models and providers arrive/depart as they gain their first or lose their last listed endpoint.
 - Models without endpoints remain known in Catalog, but their metadata changes do not produce Events.
 - Arrival classification uses knowledge strictly earlier than the event's observation, including baseline knowledge.
@@ -20,10 +20,6 @@ new model name without becoming another rename event.
 
 An endpoint relationship change is selected under its next model/provider. Departures use their
 last relationships. The former relationship is not an additional activity scope for an update.
-
-When a model has neither an immutable first-observation time nor earlier listings, classification
-falls back to its mutable Catalog observation time. A metadata update can erase that evidence and
-cause a false discovery. This is a limitation of missing historical evidence, not a creation claim.
 
 ## Comparison semantics and limitations
 
@@ -57,10 +53,6 @@ shapes, including true-or-absent signals and potentially empty selected containe
 Indexed-array diffs inside selected object groups such as `data_policy` can silently lose numeric
 child keys. No upstream occurrence is known. If observed, reject that group shape so preparation
 logs and skips the event; arbitrary object-array rendering is outside scope.
-
-Discord can batch identical field changes within an observation and entity kind. Each batch owns
-one change; other changes remain in individual alerts. Monitor and Feed remain unbatched because
-arbitrary query pages do not define meaningful batch membership.
 
 ## Monitor scope
 

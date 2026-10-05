@@ -6,7 +6,6 @@ OpenRouter endpoint payloads contain volatile performance and operational observ
 - `statsByTier` Optional nested stats record for endpoints with tiers like `flex`, `priority` (rare).
   - `statsByTier.default` is equal to `stats` if present.
 - `status` 💤
-- 🧭 ORCA classifies `capacity_tpm` as telemetry.
 
 ## Historical fields
 

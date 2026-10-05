@@ -4,7 +4,7 @@ import type { Infer } from 'convex/values'
 
 import { pricing } from '../../entities'
 
-export const V4_ENDPOINT_PRICES_TABLE = 'v4_endpoint_pricing_history' as const
+export const ENDPOINT_PRICES_TABLE = 'v4_endpoint_pricing_history' as const
 
 /** Selected pricing for an endpoint at an observation time. */
 export const endpointPricesTable = defineTable({

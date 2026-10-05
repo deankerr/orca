@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 
 import { query } from '../../_generated/server'
-import { V4_CURRENT_STATS_TABLE, currentStatsTable } from './table'
+import { CURRENT_STATS_TABLE, currentStatsTable } from './table'
 
 /** The grid consumes the complete published snapshot. */
 export const grid = query({
@@ -11,7 +11,7 @@ export const grid = query({
     rows: currentStatsTable.validator.fields.rows,
   }),
   handler: async (ctx) => {
-    const snapshot = await ctx.db.query(V4_CURRENT_STATS_TABLE).unique()
+    const snapshot = await ctx.db.query(CURRENT_STATS_TABLE).unique()
     return { as_of: snapshot?.scan_at ?? null, rows: snapshot?.rows ?? [] }
   },
 })

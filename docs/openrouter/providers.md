@@ -3,12 +3,6 @@
 OpenRouter's provider fields expose overlapping organization, configuration and endpoint concepts.
 The distinctions below describe observations, not an authoritative upstream entity model.
 
-[ORCA's provider identity and endpoint-local field policy](../orca/provider-identity.md) settles how
-we use these observations. Labels and apparent upstream inconsistencies do not reopen that policy.
-
-🧭 Providers are a low priority for ORCA. The catalog scan captures what the API exposes; deeper
-provider enrichment is intentionally out of scope for now.
-
 ## Organization
 
 The organization is the operator users recognize, such as `Azure` or `Amazon Bedrock`. It is
@@ -48,9 +42,7 @@ organization can have multiple records, such as `azure` and `azure/eu`.
 Endpoint `provider_slug` identifies a targetable configuration or endpoint grouping. OpenRouter's
 end-user API exposes the same concept as `tag`.
 
-🧭 Treat tag suffixes as opaque. They see heavy churn and are frequently misleading: the
-associated record's metadata often does not line up with what the tag implies, so no parsing or
-decomposition rule should be built on them.
+Tag suffixes see heavy churn and often disagree with the associated record's metadata.
 
 - Suffixes denote region, quantization, speed tier, compliance, or occasionally something else
   entirely, with no central registry.
@@ -65,8 +57,6 @@ decomposition rule should be built on them.
 - 📊 Observed 2026-08-28 (186 distinct tags over 1,146 endpoints): 75 tags matched a record
   exactly; 111 had no record, of which roughly 99 were quantization suffixes and the rest
   region/speed tags such as `azure/global`, `mistral/eu`, and `openai/flex`.
-- 🧭 ORCA keys provider entities by `provider_info.slug`; do not merge them by organization name
-  or infer a provider hierarchy from labels or tag suffixes.
 
 ## Endpoint-local provider metadata
 
@@ -74,6 +64,3 @@ decomposition rule should be built on them.
 are endpoint properties. `provider_info` is the related provider observation, not another endpoint
 property with the same ownership. `provider_model_id` is the upstream provider's identifier for that
 endpoint's model.
-
-- 🧭 Display an endpoint using its own `provider_display_name`, never a substituted
-  `provider_info.displayName` or normalized provider name. See the [settled policy](../orca/provider-identity.md).

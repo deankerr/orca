@@ -14,7 +14,6 @@ signals with different purposes, not interchangeable copies or a consistency hie
 | `tiers`                 | Named service-tier pricing views                           |
 
 - Prices can be extremely small decimal values.
-- 🧭 Preserve the upstream decimal representation when comparing prices.
 - ⚠️ A small price movement is not evidence of floating-point jitter or meaningless noise.
 
 ## API surfaces
@@ -38,8 +37,6 @@ mapping and conversion mean this object is not reliably derivable from `pricing_
   every endpoint.
 - A zero meter value and an absent meter are equivalent: both mean **unmetered**.
 - Unmetered does not establish whether the endpoint supports the associated feature or is free.
-- 🧭 Ignore transitions between zero and absence when interpreting pricing changes; they expose
-  OpenRouter's internal representation, not a pricing event.
 - `display_pricing` is copied under `pricing` as well as exposed at the endpoint root.
 - 🔄 Normalized rates can incorporate a discount or the active band of conditional pricing.
 
@@ -160,7 +157,6 @@ content hash and does not describe what changed.
 
 - A new value is not proof that a visible price changed.
 - An unchanged value is not proof that presented pricing remained unchanged.
-- 🧭 Use equality only as an independent revision signal.
 
 ## `pricing_json`
 
@@ -171,25 +167,17 @@ configuration such as thresholds, window bounds, and multipliers.
 - Key names and value shapes are not uniform across adapters.
 - Values include numeric strings in different decimal forms and JSON numbers.
 - `pricing.discount` is separate from this object.
-- 🧭 Do not parse `pricing_json`. Treat the complete value as an opaque change signal.
 
 ## `tiers`
 
 `tiers` describes named service tiers such as flex or priority. It is distinct from both
 `display_pricing[].tiers` and `pricing.overrides`.
 
-- 🧭 Treat the complete value as an independent change signal.
-
 ## Change-signal relationships
 
 Pricing fields overlap without forming a hierarchy. Durable change detection records which signals
 moved and does not infer that one changed field explains another.
 
-- 🧭 Compare the normalized rate fields inside `pricing` independently of `pricing.discount`,
-  `pricing.overrides`, `pricing.display_pricing`, root `display_pricing`, `pricing_json`,
-  `pricing_version_id`, and `tiers`.
-- 🧭 Record simultaneous changes without assigning precedence or causation.
-- 🧭 Compare exact values regardless of the movement's magnitude.
 - `pricing.discount` can change while `pricing_json` and `pricing_version_id` remain stable.
 - The active normalized rates of an existing schedule can change while `pricing.overrides`,
   `pricing_json`, and `pricing_version_id` remain stable.
@@ -211,10 +199,8 @@ moved and does not infer that one changed field explains another.
 Pricing representations and individual keys have been introduced and removed over time. Compare
 the state actually present in each observation.
 
-- 🧭 Preserve the raw observations, but normalize zero and absent meters to unmetered for analysis.
 - Historical snapshots include temporary upstream mistakes, schema migrations, and mass property
   changes as well as pricing changes.
-- 🧭 Investigate spikes before interpreting them as market activity.
 - Pricing conventions and feature adoption have changed substantially during collection; use the
   population listed at each historical time rather than today's survivors to measure historical
   prevalence.
