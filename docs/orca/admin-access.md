@@ -120,6 +120,13 @@ Authenticate through the WorkOS API for automated tests and create separate sess
 per worker. See [WorkOS testing](https://workos.com/docs/authkit/testing) and
 [example email domains](https://workos.com/docs/email#testing-with-example-domains).
 
+Production uses GitHub OAuth for convenient repeated admin sign-in. Configure the
+GitHub app's credentials in the production WorkOS environment, using WorkOS's
+provider callback as GitHub's authorization callback URL. This is distinct from
+ORCA's `/callback`, where WorkOS returns the application session. Keep the default
+`user:email` scope; admin login needs no repository access or returned GitHub tokens.
+See [WorkOS's GitHub setup](https://workos.com/docs/integrations/github-oauth).
+
 All dev deployments and preview branches share one WorkOS environment, so the managed
 account's ID can be reused across them. Setup configures **dev and preview only**
 project defaults and the selected dev deployment. Other existing deployments need a

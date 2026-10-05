@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { chmod, readFile, writeFile } from 'node:fs/promises'
+import { readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parseEnv } from 'node:util'
 
@@ -119,8 +119,11 @@ async function setup() {
     password,
   })
 
+  // Replace atomically so an interrupted reconciliation cannot truncate the saved password.
+  const updatedCredentialsPath = `${credentialsPath}.${randomBytes(8).toString('hex')}.tmp`
+
   await writeFile(
-    credentialsPath,
+    updatedCredentialsPath,
     [
       `WORKOS_CLIENT_ID=${developmentAuth.clientId}`,
       `ORCA_DEV_ADMIN_EMAIL=${account.email}`,
@@ -128,9 +131,9 @@ async function setup() {
       `ORCA_ADMIN_USER_ID=${account.id}`,
       '',
     ].join('\n'),
-    { mode: 0o600 },
+    { flag: 'wx', mode: 0o600 },
   )
-  await chmod(credentialsPath, 0o600)
+  await rename(updatedCredentialsPath, credentialsPath)
 
   for (const type of ['dev', 'preview']) {
     await convex(
