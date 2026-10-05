@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { internalMutation } from '../../_generated/server'
+import { internalMutation } from '#generated/server'
+
 import { ingestionsTable } from '../../ingestion/table'
 import { assertWorkOutput, completeWork, pendingWork, workId } from '../../ingestion/work'
 import type { Scan } from '../../scan'

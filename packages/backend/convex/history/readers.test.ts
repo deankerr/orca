@@ -3,7 +3,8 @@ import { expect, test } from 'bun:test'
 
 import type { PaginationOptions, RegisteredQuery } from 'convex/server'
 
-import type { QueryCtx } from '../_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { endpoints, forEndpoint } from './listings/query'
 import type { EndpointListingRow } from './listings/table'
 import { observe } from './pricing/query'

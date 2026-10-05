@@ -5,8 +5,9 @@ import { rejects } from 'node:assert/strict'
 import { getFunctionName } from 'convex/server'
 import type { RegisteredAction, RegisteredMutation } from 'convex/server'
 
-import type { Id } from './_generated/dataModel'
-import type { ActionCtx, MutationCtx } from './_generated/server'
+import type { Id } from '#generated/dataModel'
+import type { ActionCtx, MutationCtx } from '#generated/server'
+
 import * as stats from './catalog/stats/ingest'
 import { commitIngestion, run } from './ingest'
 import * as acceptance from './ingestion/release'

@@ -3,7 +3,8 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { getFunctionName } from 'convex/server'
 
-import type { ActionCtx, MutationCtx } from '../_generated/server'
+import type { ActionCtx, MutationCtx } from '#generated/server'
+
 import * as scans from '../scan'
 
 test('scan flag gates cron admission while manual capture remains available', async () => {

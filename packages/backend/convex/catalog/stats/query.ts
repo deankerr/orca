@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import { CURRENT_STATS_TABLE, currentStatsTable } from './table'
 
 /** The grid consumes the complete published snapshot. */

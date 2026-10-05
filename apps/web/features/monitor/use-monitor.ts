@@ -1,5 +1,5 @@
-import { api } from '@orca/backend/convex/_generated/api'
-import type { MonitorScope } from '@orca/backend/convex/alerts/monitor/query'
+import { api } from '@orca/backend/api'
+import type { MonitorScope } from '@orca/backend/monitor'
 import { usePaginatedQuery } from 'convex-helpers/react/cache'
 
 const PAGE_SIZE = 50

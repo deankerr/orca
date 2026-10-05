@@ -2,7 +2,8 @@
 import { spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
-import type { ActionCtx } from '../../_generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import * as objects from '../../objects'
 import { buildSnapshot } from './snapshot'
 

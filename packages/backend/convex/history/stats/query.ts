@@ -1,7 +1,8 @@
 import { withoutSystemFields } from 'convex-helpers'
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
 

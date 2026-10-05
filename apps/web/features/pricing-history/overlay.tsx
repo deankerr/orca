@@ -1,9 +1,9 @@
 'use client'
 
 import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
-import { formatPrice } from '@orca/backend/convex/numbers'
-import { priceMeters } from '@orca/backend/convex/priceMeters'
+import { api } from '@orca/backend/api'
+import { formatPrice } from '@orca/backend/numbers'
+import { priceMeters } from '@orca/backend/price-meters'
 import { useQuery } from '@tanstack/react-query'
 import { ConvexError } from 'convex/values'
 import dynamic from 'next/dynamic'

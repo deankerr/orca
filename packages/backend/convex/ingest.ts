@@ -2,8 +2,9 @@ import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
-import { internal } from './_generated/api'
-import { env, internalAction, internalMutation } from './_generated/server'
+import { internal } from '#generated/api'
+import { env, internalAction, internalMutation } from '#generated/server'
+
 import * as endpoints from './catalog/endpoints/ingest'
 import { currentEndpointsTable } from './catalog/endpoints/table'
 import * as models from './catalog/models/ingest'

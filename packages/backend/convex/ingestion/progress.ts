@@ -1,6 +1,7 @@
 import { docValidator, paginationOptsValidator, paginationResultValidator } from 'convex/server'
 
-import { internalQuery } from '../_generated/server'
+import { internalQuery } from '#generated/server'
+
 import { storedProcessorName, processorWorkTable, PROCESSOR_WORK_TABLE, workState } from './table'
 
 /** Inspect outstanding or completed work; later successes do not hide earlier failures. */

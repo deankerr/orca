@@ -2,7 +2,8 @@
 import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
-import type { QueryCtx } from '../_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import * as observation from '../clock'
 import { cappedCutoff } from './pagination'
 

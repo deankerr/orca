@@ -1,4 +1,4 @@
-import { formatPrice } from '@orca/backend/convex/numbers'
+import { formatPrice } from '@orca/backend/numbers'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,

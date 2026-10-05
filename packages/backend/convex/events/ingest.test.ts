@@ -2,7 +2,8 @@
 import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
-import type { MutationCtx } from '../_generated/server'
+import type { MutationCtx } from '#generated/server'
+
 import type { IngestionRow } from '../ingestion/table'
 import type { WorkId } from '../ingestion/work'
 import { commit } from './ingest'

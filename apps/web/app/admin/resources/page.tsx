@@ -1,6 +1,6 @@
 'use client'
 
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import {
   BracesIcon,
   ChartNoAxesColumnIncreasingIcon,

@@ -2,7 +2,8 @@ import { paginationOptsValidator, paginationResultValidator } from 'convex/serve
 import { v } from 'convex/values'
 import type { Validator, Value } from 'convex/values'
 
-import type { QueryCtx } from '../_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { clock } from '../clock'
 import { IsoDateTime } from '../isodatetime'
 

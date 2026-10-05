@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 
-import { internalQuery, query } from './_generated/server'
-import type { QueryCtx } from './_generated/server'
+import { internalQuery, query } from '#generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { INGESTIONS_TABLE } from './ingestion/table'
 
 /** Shared observation clock: latest ingested scan time, or null before the first ingestion. */

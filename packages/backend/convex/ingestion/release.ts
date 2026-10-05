@@ -1,7 +1,8 @@
 import { ConvexError } from 'convex/values'
 
-import type { Id } from '../_generated/dataModel'
-import type { MutationCtx } from '../_generated/server'
+import type { Id } from '#generated/dataModel'
+import type { MutationCtx } from '#generated/server'
+
 import { clock } from '../clock'
 import type { IngestionRow, ProcessorName } from './table'
 import { INGESTIONS_TABLE, PROCESSOR_WORK_TABLE } from './table'

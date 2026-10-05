@@ -2,7 +2,8 @@ import { paginationOptsValidator, paginationResultValidator } from 'convex/serve
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import { CURRENT_MODELS_TABLE } from '../../catalog/models/table'
 import { CURRENT_PROVIDERS_TABLE } from '../../catalog/providers/table'
 import { ENDPOINT_LISTINGS_TABLE } from '../../history/listings/table'

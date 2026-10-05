@@ -4,8 +4,9 @@ import * as R from 'remeda'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import { internal } from '../_generated/api'
-import { env, internalAction, internalMutation } from '../_generated/server'
+import { internal } from '#generated/api'
+import { env, internalAction, internalMutation } from '#generated/server'
+
 import { store } from '../scan'
 import { IdentifiedEndpoint, IdentifiedModel } from '../scan/collected'
 

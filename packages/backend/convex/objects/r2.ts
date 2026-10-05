@@ -1,7 +1,7 @@
 import { AwsClient } from 'aws4fetch'
 import { ConvexError } from 'convex/values'
 
-import { env } from '../_generated/server'
+import { env } from '#generated/server'
 
 /** Put/get gzipped bytes by key. */
 export type R2Transport = {

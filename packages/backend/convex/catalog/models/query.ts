@@ -3,7 +3,8 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { z } from 'zod'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import { textOrNull, flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 import { CURRENT_MODELS_TABLE, currentModelsTable } from './table'

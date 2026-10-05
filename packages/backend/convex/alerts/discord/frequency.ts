@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { internalQuery } from '../../_generated/server'
+import { internalQuery } from '#generated/server'
+
 import { ENDPOINT_PRICES_TABLE } from '../../history/pricing/table'
 
 /** Discord tolerates occasional repricing, but not sustained quote changes. */

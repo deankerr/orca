@@ -4,7 +4,8 @@ import assert from 'node:assert/strict'
 /* eslint-disable typescript/no-unsafe-type-assertion -- Minimal mutation double exercises deletion order and failure handling. */
 import { AwsClient } from 'aws4fetch'
 
-import type { ActionCtx, MutationCtx } from '../_generated/server'
+import type { ActionCtx, MutationCtx } from '#generated/server'
+
 import { finish, run } from './remove'
 import type { Locator } from './table'
 

@@ -4,7 +4,8 @@ import { deepEqual, equal } from 'node:assert/strict'
 
 import type { RegisteredQuery, PaginationOptions, PaginationResult } from 'convex/server'
 
-import type { QueryCtx } from '../../_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'
 import * as feedQueries from '../feed/query'

@@ -1,7 +1,7 @@
 'use client'
 
 import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import { useQuery } from '@tanstack/react-query'
 
 import { DataValue, DataLink, DataDate, DataDescription } from './data'

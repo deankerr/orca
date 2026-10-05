@@ -2,8 +2,9 @@ import { v } from 'convex/values'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import { internal } from '../_generated/api'
-import { env, internalAction, internalMutation } from '../_generated/server'
+import { internal } from '#generated/api'
+import { env, internalAction, internalMutation } from '#generated/server'
+
 import { store } from '../objects'
 
 const orFetch = up(fetch, () => ({

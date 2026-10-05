@@ -2,6 +2,20 @@
   "name": "@orca/backend",
   "private": true,
   "type": "module",
+  "imports": {
+    "#generated/*": "./convex/_generated/*.js"
+  },
+  "exports": {
+    "./api": "./convex/_generated/api.js",
+    "./numbers": "./convex/numbers.ts",
+    "./price-meters": "./convex/priceMeters.ts",
+    "./entity-logo": "./convex/entityLogo.ts",
+    "./alerts/curate": "./convex/alerts/shared/curate.ts",
+    "./alerts/facts": "./convex/alerts/shared/facts.ts",
+    "./alerts/pricing": "./convex/alerts/shared/pricing.ts",
+    "./monitor": "./convex/alerts/monitor/query.ts",
+    "./public-api/v2/schema": "./convex/public_api/v2/schema.ts"
+  },
   "scripts": {
     "dev": "PORTLESS_URL=$(portless get orca) convex dev"
   },

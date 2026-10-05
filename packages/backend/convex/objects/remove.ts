@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 
-import { internal } from '../_generated/api'
-import { internalAction, internalMutation } from '../_generated/server'
+import { internal } from '#generated/api'
+import { internalAction, internalMutation } from '#generated/server'
+
 import { createR2Transport } from './r2'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 

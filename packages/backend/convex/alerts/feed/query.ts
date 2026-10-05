@@ -2,7 +2,8 @@ import { paginationOptsValidator } from 'convex/server'
 import type { PaginationResult } from 'convex/server'
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import type { EventRow } from '../../events/table'
 import { prepare as prepareAlert } from '../shared/prepare'
 import { readPage } from '../shared/read'

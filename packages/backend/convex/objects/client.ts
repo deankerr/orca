@@ -2,7 +2,8 @@ import { validate } from 'convex-helpers/validators'
 import { ConvexHttpClient } from 'convex/browser'
 import { ConvexError } from 'convex/values'
 
-import { api } from '../_generated/api'
+import { api } from '#generated/api'
+
 import type { ObjectIdentity, ObjectReader } from './index'
 import { assertReadCount, decode, storedBatch, validateNames } from './local'
 import type { NameSelection } from './local'
