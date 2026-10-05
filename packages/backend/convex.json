@@ -1,5 +1,32 @@
 {
   "$schema": "node_modules/convex/schemas/convex.schema.json",
+  "authKit": {
+    "dev": {
+      "configure": {
+        "redirectUris": ["${buildEnv.PORTLESS_URL}/callback"],
+        "corsOrigins": ["${buildEnv.PORTLESS_URL}"]
+      },
+      "localEnvVars": {
+        "WORKOS_CLIENT_ID": "${authEnv.WORKOS_CLIENT_ID}",
+        "WORKOS_API_KEY": "${authEnv.WORKOS_API_KEY}",
+        "NEXT_PUBLIC_WORKOS_REDIRECT_URI": "${buildEnv.PORTLESS_URL}/callback"
+      }
+    },
+    "preview": {
+      "configure": {
+        "redirectUris": ["https://${buildEnv.VERCEL_BRANCH_URL}/callback"],
+        "corsOrigins": ["https://${buildEnv.VERCEL_BRANCH_URL}"]
+      }
+    },
+    "prod": {
+      "environmentType": "production",
+      "configure": {
+        "redirectUris": ["https://orca.orb.town/callback"],
+        "appHomepageUrl": "https://orca.orb.town",
+        "corsOrigins": ["https://orca.orb.town"]
+      }
+    }
+  },
   "aiFiles": {
     "enabled": false,
     "skills": {

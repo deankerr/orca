@@ -4,6 +4,8 @@ import { v } from 'convex/values'
 /** Deployment environment contract; project defaults supply values for new dev and preview deployments. */
 const app = defineApp({
   env: {
+    /** WorkOS application user allowed to administer this deployment; absent/empty denies everyone. */
+    ORCA_ADMIN_USER_ID: v.optional(v.string()),
     /** Storage for newly written objects; defaults to Convex. Existing objects retain their stored backend. */
     ORCA_OBJECTS_BACKEND: v.optional(v.union(v.literal('convex'), v.literal('r2'))),
     /** Canonical object reads use this deployment name; absent/empty reads locally. Writes remain local. */
