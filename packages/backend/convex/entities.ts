@@ -1,9 +1,10 @@
 import { v } from 'convex/values'
 import { z } from 'zod'
 
+import { ScannedEndpoint, ScannedModel, ScannedProvider } from '#scan/model'
+
 import { isoDate } from './fields'
 import { canonicalJson, JsonObject } from './json'
-import { ScannedEndpoint, ScannedModel, ScannedProvider } from './scan/schema'
 
 /** ORCA model fields shared by Catalog and Events; remaining source fields belong to metadata. */
 export const Model = z.object({

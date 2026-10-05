@@ -2,11 +2,11 @@ import { v } from 'convex/values'
 
 import { internal } from '#generated/api'
 import { internalAction } from '#generated/server'
+import * as scans from '#scan'
 
 import * as eventHistory from './events/ingest'
 import * as pricingHistory from './history/pricing/ingest'
 import { workId } from './ingestion/work'
-import { reader } from './scan'
 
 /** Manual recovery of a Pricing obligation; the routine supplies its already-loaded pair directly. */
 export const pricing = internalAction({
@@ -22,7 +22,7 @@ export const pricing = internalAction({
       return null
     }
 
-    await pricingHistory.process(ctx, await reader(ctx).loadPair(times), args.work_id)
+    await pricingHistory.process(ctx, await scans.reader(ctx).loadPair(times), args.work_id)
     return null
   },
 })
@@ -41,7 +41,7 @@ export const events = internalAction({
       return null
     }
 
-    await eventHistory.process(ctx, await reader(ctx).loadPair(times), args.work_id)
+    await eventHistory.process(ctx, await scans.reader(ctx).loadPair(times), args.work_id)
     return null
   },
 })

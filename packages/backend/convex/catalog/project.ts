@@ -1,8 +1,9 @@
 import { ConvexError } from 'convex/values'
 
+import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '#scan/model'
+
 import { encodePricing, normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
 import { canonicalJson } from '../json'
-import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '../scan'
 import type { CurrentEndpointRow } from './endpoints/table'
 import type { CurrentModelRow } from './models/table'
 import type { CurrentProviderRow } from './providers/table'

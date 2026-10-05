@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
 
+import type { Population, ScanReport } from '@orca/backend/scan/analysis'
 import type { ValueProfile } from '@orca/json-profile'
 import { distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 
-import type { Population, ScanReport } from '../../backend/convex/scan_analysis/profile'
 import { escapeHtml } from './summary'
 
 const payload = document.querySelector('#report')

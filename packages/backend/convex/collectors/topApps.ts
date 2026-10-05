@@ -4,8 +4,7 @@ import { z } from 'zod'
 
 import { internal } from '#generated/api'
 import { env, internalAction, internalMutation } from '#generated/server'
-
-import { store } from '../objects'
+import * as objects from '#objects'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
@@ -74,7 +73,7 @@ export const run = internalAction({
     const path = 'top-apps'
     const name = new Date(args.timestamp).toISOString().replace('T', '/')
 
-    await store(ctx, {
+    await objects.store(ctx, {
       path,
       name,
       text: JSON.stringify({

@@ -1,10 +1,13 @@
 import { expect, test } from 'bun:test'
 import { deepStrictEqual, throws } from 'node:assert/strict'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 
+import { profileScan, viewScanReport } from '@orca/backend/scan/analysis'
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { convexToJson } from 'convex/values'
 
-import { profileScan, viewScanReport } from '../../backend/convex/scan_analysis/profile'
 import { sampleScan } from './fixtures'
 import { renderHtml } from './html'
 
@@ -222,4 +225,35 @@ test('embeds observed values as inert JSON and escapes visible selection in the 
   )?.groups?.payload
 
   expect(payload === undefined ? null : JSON.parse(payload)).toEqual(report)
+})
+
+test('the HTML CLI consumes a Convex-encoded report and preserves output on invalid input', async () => {
+  const report = profileScan(sampleScan(), { scope: 'collected' })
+  const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-cli-'))
+  const output = path.join(directory, 'report.html')
+
+  async function render(input: string) {
+    const child = Bun.spawn(
+      [process.execPath, new URL('index.ts', import.meta.url).pathname, '--output', output],
+      { stderr: 'pipe', stdin: new Blob([input]), stdout: 'pipe' },
+    )
+
+    const stderr = await new Response(child.stderr).text()
+    return { code: await child.exited, stderr }
+  }
+
+  try {
+    const rendered = await render(JSON.stringify(convexToJson(JSON.stringify(report))))
+    expect(rendered.code).toBe(0)
+    const html = await Bun.file(output).text()
+    expect(html).toContain(JSON.stringify(report))
+    expect(html).toContain(report.scan_at)
+
+    const invalid = await render(JSON.stringify(viewScanReport(report)))
+    expect(invalid.code).toBe(1)
+    expect(invalid.stderr).toContain('Expected output from scan_analysis/index:report')
+    expect(await Bun.file(output).text()).toBe(html)
+  } finally {
+    await rm(directory, { force: true, recursive: true })
+  }
 })

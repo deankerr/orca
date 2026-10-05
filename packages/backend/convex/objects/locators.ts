@@ -2,7 +2,8 @@ import { ConvexError, v } from 'convex/values'
 
 import { internalMutation, internalQuery } from '#generated/server'
 
-import { findLocalNames, nameSelection } from './local'
+import { findLocalNames } from './local'
+import { nameSelection } from './protocol'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 
 const locator = locatorsTable.validator

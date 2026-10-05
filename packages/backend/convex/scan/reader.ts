@@ -1,13 +1,14 @@
 import { ConvexError } from 'convex/values'
 
+import type { ObjectReader } from '#objects'
+
 import { IsoDateTime } from '../isodatetime'
-import type { ObjectReader } from '../objects'
 import type { RawScan, ScanEntry } from './collected'
-import { extract } from './extract'
-import type { ScanPair } from './schema'
+import { fromCollected } from './model'
+import type { ScanPair } from './model'
 
 /** Parse an external scan reference; storage names and ISO datetimes identify the same capture. */
-export function scanAtFromReference(reference: string): string {
+function scanAtFromReference(reference: string): string {
   return IsoDateTime.parse(reference.startsWith('scan.') ? timeFromName(reference) : reference)
 }
 
@@ -32,20 +33,17 @@ export function createScanReader(objects: ObjectReader) {
     return names.map((name) => IsoDateTime.parse(timeFromName(name)))
   }
 
-  /** Newest capture at/after a known time; retain that time if no newer object exists. */
-  async function latest(from: string | null = null): Promise<string | null> {
-    const [scanAt] = await times(from, 1, 'desc')
-    return scanAt ?? from
+  /** Newest stored capture at/after the inclusive lower bound, or null if none exists. */
+  async function latest({ atOrAfter = null }: { atOrAfter?: string | null } = {}): Promise<
+    string | null
+  > {
+    const [scanAt] = await times(atOrAfter, 1, 'desc')
+    return scanAt ?? null
   }
 
   /** Load collected data by capture time or object name; omission selects the newest scan. */
-  async function loadRaw(reference?: string): Promise<RawScan> {
-    const scanAt =
-      reference === undefined
-        ? await latest()
-        : reference.startsWith('scan.')
-          ? scanAtFromReference(reference)
-          : reference
+  async function loadCollected(reference?: string): Promise<RawScan> {
+    const scanAt = reference === undefined ? await latest() : scanAtFromReference(reference)
 
     if (scanAt === null) {
       throw new ConvexError('No stored scans')
@@ -55,7 +53,7 @@ export function createScanReader(objects: ObjectReader) {
     return decodeScan(scanAt, text ?? null)
   }
 
-  /** Exact pair in one batch, including retries of historical work. */
+  /** Load an exact pair in ORCA's scope in one batch, including retries of historical work. */
   async function loadPair({
     from_scan_at: from,
     scan_at: to,
@@ -69,14 +67,16 @@ export function createScanReader(objects: ObjectReader) {
 
     const [previous, next] = await objects.loadMany([identity(from), identity(to)])
     return {
-      previous: extract(decodeScan(from, previous ?? null)),
-      next: extract(decodeScan(to, next ?? null)),
+      previous: fromCollected(decodeScan(from, previous ?? null)),
+      next: fromCollected(decodeScan(to, next ?? null)),
     }
   }
 
-  /** First capture at/after `from` and its successor; null means no complete pair yet. */
-  async function loadNextPair(from: string | null = null): Promise<ScanPair | null> {
-    const [previous, next] = await times(from, 2, 'asc')
+  /** First capture at/after the inclusive lower bound and its successor; null if incomplete. */
+  async function loadNextPair({
+    atOrAfter = null,
+  }: { atOrAfter?: string | null } = {}): Promise<ScanPair | null> {
+    const [previous, next] = await times(atOrAfter, 2, 'asc')
 
     if (previous === undefined || next === undefined) {
       return null
@@ -85,7 +85,7 @@ export function createScanReader(objects: ObjectReader) {
     return await loadPair({ from_scan_at: previous, scan_at: next })
   }
 
-  return { latest, loadRaw, loadPair, loadNextPair }
+  return { latest, loadCollected, loadPair, loadNextPair }
 }
 
 function identity(scanAt: string) {

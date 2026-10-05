@@ -3,8 +3,9 @@ import { ConvexError } from 'convex/values'
 import { Operation } from 'json-diff-ts'
 import type { IChange } from 'json-diff-ts'
 
+import type { Scan, ScanPair } from '#scan/model'
+
 import { encodePricing, normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
-import type { Scan, ScanPair } from '../scan'
 import { compare } from './compare'
 import type { EventRow } from './table'
 

@@ -1,4 +1,4 @@
-import type { RawScan } from '../../backend/convex/scan/collected'
+import type { RawScan } from '@orca/backend/scan/collection'
 
 /** Synthetic data for report verification; never presented as a real source observation. */
 export function sampleScan(): RawScan {

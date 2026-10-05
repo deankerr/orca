@@ -1,35 +1,14 @@
-import { validate } from 'convex-helpers/validators'
-/** Local read implementation shared by the canonical reader and the one-hop source endpoints. */
-import { ConvexError, v } from 'convex/values'
-import type { Infer } from 'convex/values'
-import { gunzipSync } from 'fflate'
+/** Local reads shared by the configured reader and the one-hop source endpoints. */
+import { ConvexError } from 'convex/values'
 
 import { internal } from '#generated/api'
 import type { ActionCtx, QueryCtx } from '#generated/server'
 
 import { byteStoreFor } from './bytes'
 import type { BlobRef } from './bytes'
+import { assertReadCount } from './protocol'
+import type { NameSelection, ObjectIdentity, StoredObject } from './protocol'
 import { OBJECTS_LOCATORS_TABLE } from './table'
-
-export const objectIdentity = v.object({ path: v.string(), name: v.string() })
-export const nameSelection = v.object({
-  path: v.string(),
-  atOrAfter: v.string(),
-  limit: v.number(),
-  order: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
-})
-export type NameSelection = Infer<typeof nameSelection>
-
-/** Wire representation stays private to objects; consumers receive decoded text. */
-export const storedObject = v.object({ codec: v.literal('gzip'), bytes: v.bytes() })
-export const storedBatch = v.array(v.union(v.null(), storedObject))
-type StoredObject = Infer<typeof storedObject>
-
-export function assertReadCount(count: number): void {
-  if (!Number.isInteger(count) || count < 1 || count > 100) {
-    throw new ConvexError('Object reads require between 1 and 100 items')
-  }
-}
 
 export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promise<string[]> {
   assertReadCount(args.limit)
@@ -41,29 +20,10 @@ export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promis
   return rows.map((row) => row.name)
 }
 
-/** Check discovery responses at both the deployment and standalone reader interfaces. */
-export function validateNames(names: unknown, selection: NameSelection): string[] {
-  if (!validate(v.array(v.string()), names) || names.length > selection.limit) {
-    throw new ConvexError('Object source returned invalid names')
-  }
-
-  for (const [index, name] of names.entries()) {
-    const previous = names[index - 1]
-    const outOfOrder =
-      previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
-
-    if (name < selection.atOrAfter || outOfOrder) {
-      throw new ConvexError('Object source returned names outside the requested order/range')
-    }
-  }
-
-  return names
-}
-
 /** Read the original compressed bytes, using only this deployment's committed locator. */
 export async function readLocal(
   ctx: ActionCtx,
-  identity: Infer<typeof objectIdentity>,
+  identity: ObjectIdentity,
 ): Promise<StoredObject | null> {
   const locator = await ctx.runQuery(internal.objects.locators.get, identity)
   if (locator === null) {
@@ -78,8 +38,4 @@ export async function readLocal(
     throw new ConvexError({ message: 'object blob missing', ...identity })
   }
   return { codec: locator.codec, bytes: new Uint8Array(body).buffer }
-}
-
-export function decode(stored: StoredObject | null): string | null {
-  return stored === null ? null : new TextDecoder().decode(gunzipSync(new Uint8Array(stored.bytes)))
 }

@@ -2,9 +2,9 @@ import { v } from 'convex/values'
 
 import { internalMutation } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
+import type { Scan, ScanPair } from '#scan/model'
 
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
-import type { Scan, ScanPair } from '../../scan'
 import { changedRows } from '../changes'
 import { projectProvider } from '../project'
 import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './table'

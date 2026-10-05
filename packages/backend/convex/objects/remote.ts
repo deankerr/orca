@@ -2,14 +2,8 @@ import { ConvexError, v } from 'convex/values'
 
 import { action, env, query } from '#generated/server'
 
-import {
-  assertReadCount,
-  findLocalNames,
-  nameSelection,
-  objectIdentity,
-  readLocal,
-  storedBatch,
-} from './local'
+import { findLocalNames, readLocal } from './local'
+import { assertReadCount, nameSelection, objectIdentity, storedBatch } from './protocol'
 
 function requireApiKey(apiKey: string): void {
   const expected = env.ORCA_OBJECTS_API_KEY

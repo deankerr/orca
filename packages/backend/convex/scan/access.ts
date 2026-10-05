@@ -1,12 +1,10 @@
 import { ConvexError } from 'convex/values'
 
 import type { ActionCtx } from '#generated/server'
+import * as objects from '#objects'
 
-import * as objects from '../objects'
 import type { RawScan } from './collected'
-import { createScanReader, encodeScan } from './objects'
-
-export type { Scan, ScanPair, ScannedModel, ScannedEndpoint, ScannedProvider } from './schema'
+import { createScanReader, encodeScan } from './reader'
 
 /** Store collected data; Objects owns compression, locators and the write backend. */
 export async function store(ctx: ActionCtx, scan: RawScan): Promise<void> {
@@ -17,7 +15,7 @@ export async function store(ctx: ActionCtx, scan: RawScan): Promise<void> {
   await objects.store(ctx, encodeScan(scan))
 }
 
-/** Read scans through the app's configured Objects source. */
+/** Read stored scans; Objects owns storage and source selection. */
 export function reader(ctx: ActionCtx) {
   return createScanReader({
     loadMany: async (identities) => await objects.loadMany(ctx, identities),

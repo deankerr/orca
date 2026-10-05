@@ -36,15 +36,15 @@ are shared by dev and preview; “unset” means the code fallback applies.
 
 #### Object storage and shared source data
 
-| Variable                            | Flags    | Consumer / fallback / relationship                                    | Dev/preview default    |
-| ----------------------------------- | -------- | --------------------------------------------------------------------- | ---------------------- |
-| `ORCA_OBJECTS_BACKEND`              | ◆ ◇      | Storage for new objects. Existing objects retain their backend.       | Unset → `convex`       |
-| `ORCA_OBJECTS_SOURCE_DEPLOYMENT`    | ◆ ◇      | Canonical read source; unset reads locally. Writes remain local.      | `dependable-husky-550` |
-| `ORCA_OBJECTS_API_KEY`              | ◆ 🔒 ◇ ⇄ | Shared credential; source, consuming deployments, and CLI must agree. | Configured secret      |
-| `ORCA_OBJECTS_R2_ACCOUNT_ID`        | ◆ ◇      | Cloudflare account owning the bucket.                                 | Unset                  |
-| `ORCA_OBJECTS_R2_BUCKET`            | ◆ ◇      | Bucket for R2 objects.                                                | Unset                  |
-| `ORCA_OBJECTS_R2_ACCESS_KEY_ID`     | ◆ 🔒 ◇   | R2 access credential.                                                 | Unset                  |
-| `ORCA_OBJECTS_R2_SECRET_ACCESS_KEY` | ◆ 🔒 ◇   | R2 signing secret, required even for existing-object reads/removals.  | Unset                  |
+| Variable                            | Flags    | Consumer / fallback / relationship                                   | Dev/preview default    |
+| ----------------------------------- | -------- | -------------------------------------------------------------------- | ---------------------- |
+| `ORCA_OBJECTS_BACKEND`              | ◆ ◇      | Storage for new objects. Existing objects retain their backend.      | Unset → `convex`       |
+| `ORCA_OBJECTS_SOURCE_DEPLOYMENT`    | ◆ ◇      | Canonical read source; unset reads locally. Writes remain local.     | `dependable-husky-550` |
+| `ORCA_OBJECTS_API_KEY`              | ◆ 🔒 ◇ ⇄ | Shared credential; source and consuming deployments must agree.      | Configured secret      |
+| `ORCA_OBJECTS_R2_ACCOUNT_ID`        | ◆ ◇      | Cloudflare account owning the bucket.                                | Unset                  |
+| `ORCA_OBJECTS_R2_BUCKET`            | ◆ ◇      | Bucket for R2 objects.                                               | Unset                  |
+| `ORCA_OBJECTS_R2_ACCESS_KEY_ID`     | ◆ 🔒 ◇   | R2 access credential.                                                | Unset                  |
+| `ORCA_OBJECTS_R2_SECRET_ACCESS_KEY` | ◆ 🔒 ◇   | R2 signing secret, required even for existing-object reads/removals. | Unset                  |
 
 Dev/preview have no R2 access. They read canonical objects through the source
 deployment’s object API and store local writes in Convex.
@@ -162,19 +162,6 @@ changes as well as different credentials.
 
 Both dev scripts use Portless name **`orca`**. Keep their origins aligned with
 AuthKit callbacks and logout registrations.
-
-## Scripts — `packages/scripts`
-
-### Scan-analysis CLI
-
-Supply through the shell/environment running the CLI.
-
-| Variable                         | Flags    | Consumer / fallback / relationship                                    |
-| -------------------------------- | -------- | --------------------------------------------------------------------- |
-| `ORCA_OBJECTS_SOURCE_DEPLOYMENT` | ◆ ◇      | Canonical read source; unset reads locally. Writes remain local.      |
-| `ORCA_OBJECTS_API_KEY`           | ◆ 🔒 ◇ ⇄ | Shared credential; source, consuming deployments, and CLI must agree. |
-
-See [scan-analysis CLI](../../packages/scripts/scan-analysis/README.md).
 
 ## Logos — `apps/logos`
 

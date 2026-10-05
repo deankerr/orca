@@ -4,13 +4,13 @@ import { isDeepEqual } from 'remeda'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
+import type { Scan, ScanPair } from '#scan/model'
 
 import { encodePricing, normalizePricing } from '../../entities'
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { ingestionsTable } from '../../ingestion/table'
 import { assertWorkOutput, completeWork, pendingWork, workId } from '../../ingestion/work'
 import type { WorkId } from '../../ingestion/work'
-import type { Scan, ScanPair } from '../../scan'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 
 /** Commit this work item's prices and completion together, including empty output. */

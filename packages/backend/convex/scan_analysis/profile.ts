@@ -3,8 +3,8 @@ import { profileJsonRecords, viewProfile } from '@orca/json-profile'
 import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
-import type { RawScan } from '../scan/collected'
-import { extract } from '../scan/extract'
+import type { RawScan } from '#scan/collection'
+import * as scanModel from '#scan/model'
 
 export type Selection = { model?: string; provider?: string; scope: 'orca' | 'collected' }
 export type Population = {
@@ -25,7 +25,7 @@ const providerBody = z.object({ slug: z.string() }).catchall(z.json())
 
 /** Profile one explicitly scoped population, retaining a few identities beside primitive examples. */
 export function profileScan(scan: RawScan, selection: Selection): ScanReport {
-  const extracted = selection.scope === 'orca' ? extract(scan) : null
+  const extracted = selection.scope === 'orca' ? scanModel.fromCollected(scan) : null
   const models = new Map<string, JsonRecord>()
   const endpoints = new Map<string, JsonRecord>()
   const providers = new Map<string, JsonRecord>()

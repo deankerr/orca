@@ -3,7 +3,11 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#generated/*": "./convex/_generated/*.js"
+    "#generated/*": "./convex/_generated/*.js",
+    "#objects": "./convex/objects/storage.ts",
+    "#scan": "./convex/scan/access.ts",
+    "#scan/collection": "./convex/scan/collected.ts",
+    "#scan/model": "./convex/scan/model.ts"
   },
   "exports": {
     "./api": "./convex/_generated/api.js",
@@ -14,7 +18,9 @@
     "./alerts/facts": "./convex/alerts/shared/facts.ts",
     "./alerts/pricing": "./convex/alerts/shared/pricing.ts",
     "./monitor": "./convex/alerts/monitor/query.ts",
-    "./public-api/v2/schema": "./convex/public_api/v2/schema.ts"
+    "./public-api/v2/schema": "./convex/public_api/v2/schema.ts",
+    "./scan/collection": "./convex/scan/collected.ts",
+    "./scan/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
     "dev": "PORTLESS_URL=$(portless get orca) convex dev"

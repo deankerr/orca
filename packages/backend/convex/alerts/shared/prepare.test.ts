@@ -1,11 +1,12 @@
 import { expect, spyOn, test } from 'bun:test'
 
+import type { Scan } from '#scan/model'
+
 import { encodePricing } from '../../entities'
 import { compare } from '../../events/compare'
 import { prepare } from '../../events/prepare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
-import type { Scan } from '../../scan'
 import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'
 import type { DiscordUrls } from '../discord/renderers/card'
 import { renderDiscordBatch } from '../discord/renderers/index'

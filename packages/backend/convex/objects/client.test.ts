@@ -6,8 +6,8 @@ import { ConvexHttpClient } from 'convex/browser'
 
 import type { ActionCtx } from '#generated/server'
 
-import { createObjectReader } from './client'
-import { loadMany } from './index'
+import { connect } from './client'
+import { loadMany } from './storage'
 
 test('standalone and deployment readers share ordered remote batches and propagate source failures', async () => {
   const savedSource = process.env.ORCA_OBJECTS_SOURCE_DEPLOYMENT
@@ -29,7 +29,7 @@ test('standalone and deployment readers share ordered remote batches and propaga
     null,
   ])
 
-  const standalone = createObjectReader('source-deployment', 'test-key')
+  const standalone = connect({ deployment: 'source-deployment', apiKey: 'test-key' })
 
   try {
     expect(await standalone.loadMany(identities)).toEqual(['logical text ✓', null])

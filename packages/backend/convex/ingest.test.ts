@@ -7,14 +7,14 @@ import type { RegisteredAction, RegisteredMutation } from 'convex/server'
 
 import type { Id } from '#generated/dataModel'
 import type { ActionCtx, MutationCtx } from '#generated/server'
+import * as scans from '#scan'
+import type { Scan } from '#scan/model'
 
 import * as stats from './catalog/stats/ingest'
 import { commitIngestion, run } from './ingest'
 import * as acceptance from './ingestion/release'
 import type { WorkId } from './ingestion/work'
 import { events as retryEvents } from './retry'
-import type { Scan } from './scan'
-import * as load from './scan'
 
 function handler<Args extends Record<string, unknown>, Result>(
   fn: RegisteredAction<'internal', Args, Result>,
@@ -23,16 +23,16 @@ function handler<Args extends Record<string, unknown>, Result>(
 }
 
 test('ingestion validates and normalizes operator start_at before selecting scans', async () => {
-  const scans = load.reader({} as ActionCtx)
-  const source = spyOn(load, 'reader').mockReturnValue(scans)
-  const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(null)
+  const reader = scans.reader({} as ActionCtx)
+  const source = spyOn(scans, 'reader').mockReturnValue(reader)
+  const nextPair = spyOn(reader, 'loadNextPair').mockResolvedValue(null)
   let scanAt: string | null = null
   const ctx = { runQuery: async () => scanAt } as unknown as ActionCtx
 
   try {
     for (const start_at of ['2026-10-03', '2026-10-03T10:00:00+10:00']) {
       await rejects(handler(run)(ctx, { start_at }), /Baseline requires two captures/)
-      expect(nextPair).toHaveBeenLastCalledWith('2026-10-03T00:00:00.000Z')
+      expect(nextPair).toHaveBeenLastCalledWith({ atOrAfter: '2026-10-03T00:00:00.000Z' })
     }
 
     nextPair.mockClear()
@@ -45,7 +45,7 @@ test('ingestion validates and normalizes operator start_at before selecting scan
 
     scanAt = '2026-10-03T00:00:00.000Z'
     expect(await handler(run)(ctx, {})).toBeNull()
-    expect(nextPair).toHaveBeenLastCalledWith(scanAt)
+    expect(nextPair).toHaveBeenLastCalledWith({ atOrAfter: scanAt })
   } finally {
     source.mockRestore()
     nextPair.mockRestore()
@@ -65,10 +65,10 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
     next: scan('2026-09-28T01:00:00.000Z'),
   }
 
-  const scans = load.reader({} as ActionCtx)
-  const source = spyOn(load, 'reader').mockReturnValue(scans)
-  const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(pair)
-  const exactPair = spyOn(scans, 'loadPair').mockResolvedValue(pair)
+  const reader = scans.reader({} as ActionCtx)
+  const source = spyOn(scans, 'reader').mockReturnValue(reader)
+  const nextPair = spyOn(reader, 'loadNextPair').mockResolvedValue(pair)
+  const exactPair = spyOn(reader, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
   const oldEnabled = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   const calls: string[] = []

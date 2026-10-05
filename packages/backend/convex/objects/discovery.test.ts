@@ -6,8 +6,8 @@ import { ConvexHttpClient } from 'convex/browser'
 
 import type { ActionCtx, QueryCtx } from '#generated/server'
 
-import { namesAtOrAfter } from './index'
 import { findLocalNames } from './local'
+import { namesAtOrAfter } from './storage'
 
 test('local discovery applies direction before limiting and preserves the inclusive lower bound', async () => {
   let lowerBound = ''

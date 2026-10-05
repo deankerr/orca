@@ -6,9 +6,8 @@ import { z } from 'zod'
 
 import { internal } from '#generated/api'
 import { env, internalAction, internalMutation } from '#generated/server'
-
-import { store } from '../scan'
-import { IdentifiedEndpoint, IdentifiedModel } from '../scan/collected'
+import * as scans from '#scan'
+import { IdentifiedEndpoint, IdentifiedModel } from '#scan/collection'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',
@@ -24,7 +23,7 @@ export const run = internalAction({
   returns: v.null(),
   handler: async (ctx) => {
     const entries = await collect()
-    await store(ctx, { scan_at: new Date().toISOString(), entries })
+    await scans.store(ctx, { scan_at: new Date().toISOString(), entries })
 
     return null
   },
