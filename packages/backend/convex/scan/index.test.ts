@@ -6,7 +6,8 @@ import { rejects } from 'node:assert/strict'
 
 import { ConvexHttpClient } from 'convex/browser'
 
-import type { ActionCtx } from '../_generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import * as objects from '../objects'
 import { createObjectReader } from '../objects/client'
 import { reader, store } from './index'

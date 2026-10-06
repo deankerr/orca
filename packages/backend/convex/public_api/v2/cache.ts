@@ -2,8 +2,9 @@ import { docValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { gzipSync } from 'fflate'
 
-import { internal } from '../../_generated/api'
-import { internalAction, internalMutation, internalQuery } from '../../_generated/server'
+import { internal } from '#generated/api'
+import { internalAction, internalMutation, internalQuery } from '#generated/server'
+
 import { reader } from '../../scan'
 import { buildSnapshot } from './snapshot'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './table'

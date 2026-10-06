@@ -4,7 +4,8 @@ import { rejects } from 'node:assert/strict'
 
 import type { RegisteredMutation } from 'convex/server'
 
-import type { MutationCtx } from '../../_generated/server'
+import type { MutationCtx } from '#generated/server'
+
 import * as endpoints from '../../catalog/endpoints/ingest'
 import * as models from '../../catalog/models/ingest'
 import * as providers from '../../catalog/providers/ingest'

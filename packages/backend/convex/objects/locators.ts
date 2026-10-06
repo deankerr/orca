@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
-import { internalMutation, internalQuery } from '../_generated/server'
+import { internalMutation, internalQuery } from '#generated/server'
+
 import { findLocalNames, nameSelection } from './local'
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 

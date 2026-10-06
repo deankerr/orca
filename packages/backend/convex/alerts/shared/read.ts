@@ -2,8 +2,9 @@ import { docValidator, paginationOptsValidator, paginationResultValidator } from
 import type { PaginationOptions } from 'convex/server'
 import { v } from 'convex/values'
 
-import { internalQuery } from '../../_generated/server'
-import type { QueryCtx } from '../../_generated/server'
+import { internalQuery } from '#generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { eventsTable, EVENTS_TABLE } from '../../events/table'
 
 export type EventScope =

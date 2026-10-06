@@ -1,5 +1,5 @@
 import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { usePaginatedQuery } from 'convex-helpers/react/cache'
 import type { PaginationStatus } from 'convex/react'

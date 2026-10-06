@@ -4,7 +4,8 @@ import { rejects } from 'node:assert/strict'
 
 import type { UserIdentity } from 'convex/server'
 
-import type { QueryCtx } from './_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { demo, viewer } from './admin'
 
 const originalAdmin = process.env.ORCA_ADMIN_USER_ID

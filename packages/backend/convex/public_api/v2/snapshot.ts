@@ -1,6 +1,7 @@
 import { ConvexError } from 'convex/values'
 
-import type { ActionCtx } from '../../_generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import { reader } from '../../scan'
 import { transformScanToV2Models } from './compatibility'
 import { OrcaPublicApiV2Schema } from './schema'

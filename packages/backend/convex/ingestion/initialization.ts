@@ -1,7 +1,8 @@
 import { ConvexError } from 'convex/values'
 
-import type { TableNames } from '../_generated/dataModel'
-import type { MutationCtx } from '../_generated/server'
+import type { TableNames } from '#generated/dataModel'
+import type { MutationCtx } from '#generated/server'
+
 import { clock } from '../clock'
 
 /** Partial initialization requires investigation/reset; this is not a resumable insert path. */

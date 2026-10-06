@@ -1,4 +1,4 @@
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import { compareItems, rankings, rankItem } from '@tanstack/match-sorter-utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CheckIcon } from 'lucide-react'

@@ -1,8 +1,9 @@
 import { ConvexError } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
-import { internal } from '../../_generated/api'
-import { httpAction } from '../../_generated/server'
+import { internal } from '#generated/api'
+import { httpAction } from '#generated/server'
+
 import { reader } from '../../scan'
 import { buildSnapshot } from './snapshot'
 

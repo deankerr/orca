@@ -4,8 +4,9 @@ import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
-import { internal } from '../_generated/api'
-import type { ActionCtx, QueryCtx } from '../_generated/server'
+import { internal } from '#generated/api'
+import type { ActionCtx, QueryCtx } from '#generated/server'
+
 import { byteStoreFor } from './bytes'
 import type { BlobRef } from './bytes'
 import { OBJECTS_LOCATORS_TABLE } from './table'

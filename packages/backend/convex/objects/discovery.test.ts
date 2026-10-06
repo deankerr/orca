@@ -4,7 +4,8 @@ import { rejects } from 'node:assert/strict'
 
 import { ConvexHttpClient } from 'convex/browser'
 
-import type { ActionCtx, QueryCtx } from '../_generated/server'
+import type { ActionCtx, QueryCtx } from '#generated/server'
+
 import { namesAtOrAfter } from './index'
 import { findLocalNames } from './local'
 

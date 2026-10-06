@@ -1,6 +1,6 @@
 'use client'
 
-import type { FieldChange } from '@orca/backend/convex/alerts/shared/curate'
+import type { FieldChange } from '@orca/backend/alerts/curate'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'

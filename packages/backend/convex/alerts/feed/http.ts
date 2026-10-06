@@ -1,8 +1,9 @@
 import type { PaginationResult } from 'convex/server'
 import { z } from 'zod'
 
-import { api } from '../../_generated/api'
-import { httpAction } from '../../_generated/server'
+import { api } from '#generated/api'
+import { httpAction } from '#generated/server'
+
 import type { FeedEvent } from './render'
 
 const parameters = z

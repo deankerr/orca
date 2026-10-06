@@ -1,4 +1,4 @@
-import { env } from '../_generated/server'
+import { env } from '#generated/server'
 
 /** Byte store for new writes. Existing objects are read from their locator. */
 export type ObjectBackend = 'convex' | 'r2'

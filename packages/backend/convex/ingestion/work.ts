@@ -1,9 +1,10 @@
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import type { Doc, Id } from '../_generated/dataModel'
-import type { MutationCtx, QueryCtx } from '../_generated/server'
-import { internalQuery } from '../_generated/server'
+import type { Doc, Id } from '#generated/dataModel'
+import type { MutationCtx, QueryCtx } from '#generated/server'
+import { internalQuery } from '#generated/server'
+
 import type { IngestionRow, ProcessorName } from './table'
 import { ingestionsTable, processorName, INGESTIONS_TABLE, PROCESSOR_WORK_TABLE } from './table'
 

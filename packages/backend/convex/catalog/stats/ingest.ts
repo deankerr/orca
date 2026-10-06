@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-import type { MutationCtx } from '../../_generated/server'
+import type { MutationCtx } from '#generated/server'
+
 import { CURRENT_STATS_TABLE } from './table'
 import type { CurrentStatsRow } from './table'
 

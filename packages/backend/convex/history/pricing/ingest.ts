@@ -1,9 +1,10 @@
 import { v } from 'convex/values'
 import { isDeepEqual } from 'remeda'
 
-import { internal } from '../../_generated/api'
-import { internalMutation } from '../../_generated/server'
-import type { ActionCtx } from '../../_generated/server'
+import { internal } from '#generated/api'
+import { internalMutation } from '#generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import { encodePricing, normalizePricing } from '../../entities'
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { ingestionsTable } from '../../ingestion/table'

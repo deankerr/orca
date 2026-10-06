@@ -1,4 +1,4 @@
-import { formatPrice } from '@orca/backend/convex/numbers'
+import { formatPrice } from '@orca/backend/numbers'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'

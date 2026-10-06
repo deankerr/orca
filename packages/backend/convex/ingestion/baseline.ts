@@ -1,5 +1,6 @@
-import { internal } from '../_generated/api'
-import type { ActionCtx } from '../_generated/server'
+import { internal } from '#generated/api'
+import type { ActionCtx } from '#generated/server'
+
 import * as endpoints from '../catalog/endpoints/ingest'
 import * as models from '../catalog/models/ingest'
 import * as providers from '../catalog/providers/ingest'

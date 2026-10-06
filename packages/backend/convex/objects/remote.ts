@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
-import { action, env, query } from '../_generated/server'
+import { action, env, query } from '#generated/server'
+
 import {
   assertReadCount,
   findLocalNames,

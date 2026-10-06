@@ -1,9 +1,10 @@
 import { v } from 'convex/values'
 
-import { internal } from '../_generated/api'
-import type { Id } from '../_generated/dataModel'
-import { internalMutation } from '../_generated/server'
-import type { ActionCtx, QueryCtx } from '../_generated/server'
+import { internal } from '#generated/api'
+import type { Id } from '#generated/dataModel'
+import { internalMutation } from '#generated/server'
+import type { ActionCtx, QueryCtx } from '#generated/server'
+
 import { CURRENT_MODELS_TABLE } from '../catalog/models/table'
 import { ENDPOINT_LISTINGS_TABLE } from '../history/listings/table'
 import { ingestionsTable } from '../ingestion/table'

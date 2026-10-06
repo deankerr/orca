@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 
-import { internal } from './_generated/api'
-import { internalMutation } from './_generated/server'
+import { internal } from '#generated/api'
+import { internalMutation } from '#generated/server'
+
 import { clock } from './clock'
 
 /** Preview bootstrap: seed two days of history, or resume an existing timeline. */

@@ -1,11 +1,6 @@
-import type { FieldValue } from '@orca/backend/convex/alerts/shared/curate'
-import { priceMeters } from '@orca/backend/convex/alerts/shared/pricing'
-import {
-  formatNumber,
-  formatPercent,
-  formatPrice,
-  relativeChange,
-} from '@orca/backend/convex/numbers'
+import type { FieldValue } from '@orca/backend/alerts/curate'
+import { priceMeters } from '@orca/backend/alerts/pricing'
+import { formatNumber, formatPercent, formatPrice, relativeChange } from '@orca/backend/numbers'
 
 export function formatChangeValue(value: FieldValue, path: string): string {
   if (path === 'pricing.discount' && typeof value === 'number') {

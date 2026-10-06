@@ -3,7 +3,8 @@ import { expect, test } from 'bun:test'
 
 import { getFunctionName } from 'convex/server'
 
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx } from '#generated/server'
+
 import init from './init'
 
 test('preview init schedules a short baseline, then resumes without resetting it', async () => {

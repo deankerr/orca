@@ -1,4 +1,4 @@
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import { withAuth } from '@workos-inc/authkit-nextjs'
 import { fetchQuery } from 'convex/nextjs'
 import { redirect } from 'next/navigation'

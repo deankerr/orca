@@ -3,8 +3,9 @@ import { expect, spyOn, test } from 'bun:test'
 
 import type { RegisteredMutation } from 'convex/server'
 
-import type { Doc, Id } from '../../_generated/dataModel'
-import type { ActionCtx, MutationCtx } from '../../_generated/server'
+import type { Doc, Id } from '#generated/dataModel'
+import type { ActionCtx, MutationCtx } from '#generated/server'
+
 import * as objects from '../../objects'
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'

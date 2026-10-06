@@ -3,7 +3,8 @@ import { rejects } from 'node:assert/strict'
 
 import { ComponentType } from 'discord-api-types/v10'
 
-import type { ActionCtx } from '../../_generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import { normalizeModel, normalizeEndpoint } from '../../entities'
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'

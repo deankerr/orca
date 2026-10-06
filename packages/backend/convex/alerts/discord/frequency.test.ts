@@ -2,7 +2,8 @@
 import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
-import type { QueryCtx } from '../../_generated/server'
+import type { QueryCtx } from '#generated/server'
+
 import { encodePricing } from '../../entities'
 import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'

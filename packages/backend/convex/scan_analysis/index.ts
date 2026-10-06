@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 
-import { internalAction } from '../_generated/server'
+import { internalAction } from '#generated/server'
+
 import { reader } from '../scan'
 import { scanAtFromReference } from '../scan/objects'
 import { profileScan, viewScanReport } from './profile'

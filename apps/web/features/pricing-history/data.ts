@@ -1,4 +1,4 @@
-import type { api } from '@orca/backend/convex/_generated/api'
+import type { api } from '@orca/backend/api'
 import type { FunctionReturnType } from 'convex/server'
 
 type Listings = FunctionReturnType<typeof api.history.listings.query.forEndpoint>

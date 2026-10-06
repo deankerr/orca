@@ -1,10 +1,11 @@
 import type { PaginationResult } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 
-import { internal } from '../../_generated/api'
-import type { Doc, Id } from '../../_generated/dataModel'
-import { env, internalAction } from '../../_generated/server'
-import type { ActionCtx } from '../../_generated/server'
+import { internal } from '#generated/api'
+import type { Doc, Id } from '#generated/dataModel'
+import { env, internalAction } from '#generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import { prepareBatch } from './prepare'
 import type { Card } from './renderers/card'
 import { renderDiscordBatch } from './renderers/index'

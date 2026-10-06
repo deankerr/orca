@@ -1,6 +1,7 @@
 import { ConvexError } from 'convex/values'
 
-import type { ActionCtx } from '../_generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import * as objects from '../objects'
 import type { RawScan } from './collected'
 import { createScanReader, encodeScan } from './objects'

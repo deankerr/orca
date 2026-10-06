@@ -1,7 +1,7 @@
 'use client'
 
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import { api } from '@orca/backend/convex/_generated/api'
+import { api } from '@orca/backend/api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthKitProvider, useAccessToken, useAuth } from '@workos-inc/authkit-nextjs/components'
 import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache'

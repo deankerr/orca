@@ -1,4 +1,4 @@
-import type { MonitorScope } from '@orca/backend/convex/alerts/monitor/query'
+import type { MonitorScope } from '@orca/backend/monitor'
 import { parseAsString, useQueryStates } from 'nuqs'
 
 export function useMonitorFilters() {

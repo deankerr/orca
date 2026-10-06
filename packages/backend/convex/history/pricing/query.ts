@@ -2,7 +2,8 @@ import { withoutSystemFields } from 'convex-helpers'
 import { paginationOptsValidator, paginationResultValidator } from 'convex/server'
 import { v } from 'convex/values'
 
-import { query } from '../../_generated/server'
+import { query } from '#generated/server'
+
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 

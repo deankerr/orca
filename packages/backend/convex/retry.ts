@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 
-import { internal } from './_generated/api'
-import { internalAction } from './_generated/server'
+import { internal } from '#generated/api'
+import { internalAction } from '#generated/server'
+
 import * as eventHistory from './events/ingest'
 import * as pricingHistory from './history/pricing/ingest'
 import { workId } from './ingestion/work'

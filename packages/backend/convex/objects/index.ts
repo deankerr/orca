@@ -8,9 +8,10 @@
 import { ConvexError } from 'convex/values'
 import { gzipSync } from 'fflate'
 
-import { internal } from '../_generated/api'
-import { env } from '../_generated/server'
-import type { ActionCtx } from '../_generated/server'
+import { internal } from '#generated/api'
+import { env } from '#generated/server'
+import type { ActionCtx } from '#generated/server'
+
 import { backendFor } from './backend'
 import { byteStoreFor } from './bytes'
 import { createObjectReader } from './client'

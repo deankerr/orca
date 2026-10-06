@@ -1,4 +1,4 @@
-import type { api } from '@orca/backend/convex/_generated/api'
+import type { api } from '@orca/backend/api'
 import { usePaginatedQuery } from 'convex-helpers/react/cache'
 import type { PaginatedQueryArgs } from 'convex/react'
 import { useEffect } from 'react'

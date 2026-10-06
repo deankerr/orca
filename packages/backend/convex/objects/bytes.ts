@@ -1,5 +1,6 @@
-import type { Id } from '../_generated/dataModel'
-import type { ActionCtx } from '../_generated/server'
+import type { Id } from '#generated/dataModel'
+import type { ActionCtx } from '#generated/server'
+
 import type { ObjectBackend } from './backend'
 import { createR2Transport, r2Key } from './r2'
 import type { R2Transport } from './r2'
