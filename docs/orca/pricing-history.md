@@ -37,13 +37,12 @@ visualization is outside its current scope. [Pricing policy](pricing.md) governs
 
 ## Completeness and recovery
 
-The observation horizon bounds time, not processor completion. Pending work can insert older
-quotes without advancing that horizon. History subscriptions must remain reactive even for older
-pages; immutable rows do not make an observation-time range permanently closed.
+Pricing and Listings commit with Catalog before the observation horizon advances, so event
+consumers can rely on their history through the accepted scan. This guarantee applies to new
+ingestions; it does not repair gaps left by earlier independent pricing processing.
 
 Per-endpoint pagination protects against large histories. Empty partial pages require continuation,
 and any endpoint query error blocks presentation of a partial chart.
 
 Retry currently remounts pagination with the same cache identity. A cached query error can survive
-until the subscription updates or expires. Public history exposes neither processor completeness
-nor an explicit timeline baseline.
+until the subscription updates or expires. Public history exposes no explicit timeline baseline.

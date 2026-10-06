@@ -26,7 +26,7 @@ export const observe = query({
   },
 })
 
-/** Page committed pricing observations; the cutoff does not imply gap-free processing. */
+/** Page committed pricing observations through the accepted observation horizon. */
 export const list = query({
   args: { endpoint_id: v.string(), ...pageArgs },
   returns: pageResult(endpointPricesTable.validator),
