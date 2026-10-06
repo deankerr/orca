@@ -15,6 +15,7 @@ import { commit } from '../../events/ingest'
 import { prepare } from '../../events/prepare'
 import type { EventRow } from '../../events/table'
 import * as listings from '../../history/listings/ingest'
+import * as pricing from '../../history/pricing/ingest'
 import { commitIngestion } from '../../ingest'
 import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'
 import type { DiscordUrls } from '../discord/renderers/card'
@@ -171,6 +172,7 @@ test('baseline, historical models, discoveries and repeated returns survive dela
   await handler(providers.initialize)(ctx, { rows: providers.initialRows(baseline) })
   await handler(endpoints.initialize)(ctx, { rows: endpoints.initialRows(baseline) })
   await handler(listings.initialize)(ctx, { rows: listings.initialRows(baseline) })
+  await handler(pricing.initialize)(ctx, { rows: pricing.initialRows(baseline) })
 
   const commitEvents = handler(commit)
   const pending: Parameters<typeof commitEvents>[] = []
@@ -191,6 +193,7 @@ test('baseline, historical models, discoveries and repeated returns survive dela
       providers: providers.prepare(pair),
       endpoints: endpoints.prepare(pair),
       listings: listings.prepare(pair),
+      pricing: pricing.prepare(pair),
       stats: stats.prepare(next.endpoints.values()),
     }
 
@@ -206,6 +209,16 @@ test('baseline, historical models, discoveries and repeated returns survive dela
       )
 
       expect(tables).toEqual(before)
+
+      await rejects(
+        handler(commitIngestion)(ctx, {
+          ...args,
+          pricing: args.pricing.map((row) => ({ ...row, scan_at: previous.scan_at })),
+        }),
+        /Pricing output does not match its ingestion/,
+      )
+
+      expect(tables).toEqual(before)
     }
 
     const work = await handler(commitIngestion)(ctx, args)
@@ -218,11 +231,15 @@ test('baseline, historical models, discoveries and repeated returns survive dela
       { scan_at: next.scan_at, rows: args.stats },
     ])
     expect(await handler(commitIngestion)(ctx, args)).toBeNull()
-    expect(rows('v4_processor_work').some((row) => row.processor === 'listings')).toBe(false)
+    expect(rows('v4_processor_work').every((row) => row.processor === 'events')).toBe(true)
 
     expect(
       rows('v4_endpoint_listing_history').filter((row) => row.scan_at === next.scan_at),
     ).toHaveLength(args.listings.length)
+
+    expect(
+      rows('v4_endpoint_pricing_history').filter((row) => row.scan_at === next.scan_at),
+    ).toMatchObject(args.pricing)
 
     pending.push([ctx, { ...args, work_id: work.events, rows: prepare(pair) }])
   }

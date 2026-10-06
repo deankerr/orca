@@ -75,6 +75,7 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
   let eventIds = ['fresh-event']
   let failEvents = false
   let failSchedule = false
+  let failAcceptance = false
   let duplicate = false
 
   const ctx = {
@@ -87,8 +88,13 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
       calls.push(name)
 
       if (name === 'ingest:commitIngestion') {
-        expect(args).toMatchObject({ scan_at: pair.next.scan_at, stats: [] })
-        return duplicate ? null : { events: 'event-work', pricing: 'pricing-work' }
+        expect(args).toMatchObject({ scan_at: pair.next.scan_at, stats: [], pricing: [] })
+
+        if (failAcceptance) {
+          throw new Error('Acceptance failed')
+        }
+
+        return duplicate ? null : { events: 'event-work' }
       }
 
       if (name === 'events/ingest:commit') {
@@ -149,10 +155,16 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
       }
 
       if (!duplicate) {
+        expect(calls).not.toContain('history/pricing/ingest:commit')
         expect(calls).not.toContain('catalog/stats/ingest:publish')
         expect(calls.at(-1)).toBe('ingest:run')
       }
     }
+
+    calls.length = 0
+    failAcceptance = true
+    await rejects(handler(run)(ctx, {}), /Acceptance failed/)
+    expect(calls).toEqual(['ingest:commitIngestion'])
 
     calls.length = 0
     await handler(retryEvents)(ctx, { work_id: 'event-work' as WorkId })
@@ -171,7 +183,7 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
   }
 })
 
-test('acceptance writes stats in its mutation and propagates snapshot failures', async () => {
+test('acceptance writes stats and pricing before releasing event work and propagates failures', async () => {
   const release = spyOn(acceptance, 'release').mockResolvedValue(
     'ingestion' as Id<'v4_scan_ingestions'>,
   )
@@ -187,16 +199,24 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
     providers: [],
     endpoints: [],
     listings: [],
+    pricing: [
+      {
+        endpoint_id: 'endpoint',
+        scan_at: '2026-10-03T01:00:00.000Z',
+        discount: 0,
+        meters: { prompt: '1' },
+      },
+    ],
     stats: stats.prepare([{ id: 'endpoint', stats: { p50_throughput: 42 } }]),
   }
 
   let existing: { _id: string } | null = null
-  let fail = false
+  let failTable: string | undefined
   const writes: unknown[] = []
 
   const write = async (...values: unknown[]) => {
-    if (fail) {
-      throw new Error('Snapshot write failed')
+    if (values[0] === failTable) {
+      throw new Error('Write failed')
     }
 
     writes.push(values)
@@ -224,20 +244,28 @@ test('acceptance writes stats in its mutation and propagates snapshot failures',
     }
 
     await invoke(commitIngestion)(ctx, args)
-    expect(writes).toEqual([['v4_current_stats_snapshot', snapshot]])
+    expect(writes).toEqual([
+      ['v4_current_stats_snapshot', snapshot],
+      ['v4_endpoint_pricing_history', args.pricing[0]],
+    ])
+    expect(createWork).toHaveBeenCalledTimes(1)
+    expect(createWork).toHaveBeenCalledWith(ctx, 'ingestion', 'events')
 
     existing = { _id: 'snapshot' }
     await invoke(commitIngestion)(ctx, args)
-    expect(writes.at(-1)).toEqual(['v4_current_stats_snapshot', 'snapshot', snapshot])
+    expect(writes.at(-2)).toEqual(['v4_current_stats_snapshot', 'snapshot', snapshot])
 
-    fail = true
-    createWork.mockClear()
-    await rejects(invoke(commitIngestion)(ctx, args), /Snapshot write failed/)
-    expect(createWork).not.toHaveBeenCalled()
+    for (const table of ['v4_current_stats_snapshot', 'v4_endpoint_pricing_history']) {
+      failTable = table
+      createWork.mockClear()
+      await rejects(invoke(commitIngestion)(ctx, args), /Write failed/)
+      expect(createWork).not.toHaveBeenCalled()
+    }
 
+    const writeCount = writes.length
     release.mockResolvedValue(null)
     expect(await invoke(commitIngestion)(ctx, args)).toBeNull()
-    expect(writes).toHaveLength(2)
+    expect(writes).toHaveLength(writeCount)
   } finally {
     release.mockRestore()
     createWork.mockRestore()

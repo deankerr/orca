@@ -18,14 +18,15 @@ import * as events from './events/ingest'
 import * as listings from './history/listings/ingest'
 import { endpointListingsTable } from './history/listings/table'
 import * as pricing from './history/pricing/ingest'
+import { endpointPricesTable } from './history/pricing/table'
 import { initializeBaseline } from './ingestion/baseline'
 import { release, createWork } from './ingestion/release'
 import { ingestionsTable } from './ingestion/table'
 import { workId } from './ingestion/work'
 
-const acceptedWork = v.object({ pricing: workId, events: workId })
+const acceptedWork = v.object({ events: workId })
 
-/** Accept consecutive pairs with complete Catalog and Listings before running processors. */
+/** Accept consecutive pairs with complete Catalog, Listings and Pricing before running Events. */
 export const run = internalAction({
   args: { start_at: v.optional(v.string()) },
   returns: v.null(),
@@ -62,6 +63,7 @@ export const run = internalAction({
       providers: providers.prepare(pair),
       endpoints: endpoints.prepare(pair),
       listings: listings.prepare(pair),
+      pricing: pricing.prepare(pair),
       stats: stats.prepare(pair.next.endpoints.values()),
     }
 
@@ -71,6 +73,7 @@ export const run = internalAction({
       providers: output.providers.length,
       endpoints: output.endpoints.length,
       listings: output.listings.length,
+      pricing: output.pricing.length,
       stats: output.stats.length,
       argumentLength: JSON.stringify(output).length,
     })
@@ -92,13 +95,7 @@ export const run = internalAction({
       return null
     }
 
-    // Acceptance already committed. Each attempt reuses this pair and fails independently.
-    try {
-      await pricing.process(ctx, pair, work.pricing)
-    } catch (error: unknown) {
-      console.error('[pricing] failed; work remains pending', { work_id: work.pricing, error })
-    }
-
+    // Acceptance already committed; event failures leave their work pending.
     try {
       const eventIds = await events.process(ctx, pair, work.events)
 
@@ -120,7 +117,7 @@ export const run = internalAction({
   },
 })
 
-/** Accept Catalog and Listings atomically; the action owns processor attempts. */
+/** Accept Catalog, Listings and Pricing atomically; the action owns event attempts. */
 export const commitIngestion = internalMutation({
   args: {
     ...ingestionsTable.validator.fields,
@@ -128,12 +125,17 @@ export const commitIngestion = internalMutation({
     providers: v.array(currentProvidersTable.validator),
     endpoints: v.array(currentEndpointsTable.validator),
     listings: v.array(endpointListingsTable.validator),
+    pricing: v.array(endpointPricesTable.validator),
     stats: currentStatsTable.validator.fields.rows,
   },
   returns: v.union(v.null(), acceptedWork),
   handler: async (ctx, args) => {
     if (args.listings.some((row) => row.scan_at !== args.scan_at)) {
       throw new ConvexError('Listing output does not match its ingestion')
+    }
+
+    if (args.pricing.some((row) => row.scan_at !== args.scan_at)) {
+      throw new ConvexError('Pricing output does not match its ingestion')
     }
 
     const ingestionId = await release(ctx, {
@@ -150,12 +152,11 @@ export const commitIngestion = internalMutation({
     await endpoints.write(ctx, args.endpoints)
     await stats.write(ctx, args.scan_at, args.stats)
     await listings.write(ctx, args.listings)
-
-    const pricingWork = await createWork(ctx, ingestionId, 'pricing')
+    await pricing.write(ctx, args.pricing)
 
     const eventsWork = await createWork(ctx, ingestionId, 'events')
 
-    return { pricing: pricingWork, events: eventsWork }
+    return { events: eventsWork }
   },
 })
 

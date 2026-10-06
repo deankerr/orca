@@ -77,12 +77,12 @@ An arriving identity was already known before this observation, including knowle
 A historical model record establishes knowledge even when ORCA has never observed endpoints for it.
 
 **Ingestion**:
-Acceptance of a scan pair after Catalog, Listings and current stats have committed together.
+Acceptance of a scan pair after Catalog, Listings, Pricing and current stats have committed together.
 Its recorded acceptance releases downstream processor work; that work may still be pending.
 
 **Pair processor**:
 Derives output for one ingestion's scan pair, with any historical context bounded to that observation.
-Catalog, Listings and current stats are not pair processors.
+Catalog, Listings, Pricing and current stats are not pair processors.
 
 **Processor work**:
 One pair processor's obligation for one ingestion. It remains outstanding until its output commits,
