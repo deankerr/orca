@@ -3,7 +3,7 @@ import { up } from 'up-fetch'
 import { z } from 'zod'
 
 import { internal } from '../_generated/api'
-import { env, internalAction } from '../_generated/server'
+import { env, internalAction, internalMutation } from '../_generated/server'
 import { store } from '../objects'
 
 const orFetch = up(fetch, () => ({
@@ -43,11 +43,11 @@ export const run = internalAction({
   },
 })
 
-export const start = internalAction({
+export const scheduled = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    if (env.ORCA_WORKFLOWS_ANALYTICS_ENABLED !== 'true') {
+    if (env.ORCA_ANALYTICS_CRON_ENABLED !== 'true') {
       return null
     }
 

@@ -7,7 +7,7 @@ import { currentModelsTable } from '../catalog/models/table'
 import { currentProvidersTable } from '../catalog/providers/table'
 import { pricing } from '../entities'
 
-export const V4_EVENTS_TABLE = 'v4_events' as const
+export const EVENTS_TABLE = 'v4_events' as const
 
 const model = currentModelsTable.validator.pick('model_id', 'display_name')
 const provider = currentProvidersTable.validator.pick('provider_id', 'display_name')

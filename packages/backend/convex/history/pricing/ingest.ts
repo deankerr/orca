@@ -10,7 +10,7 @@ import { ingestionsTable } from '../../ingestion/table'
 import { assertWorkOutput, completeWork, pendingWork, workId } from '../../ingestion/work'
 import type { WorkId } from '../../ingestion/work'
 import type { Scan, ScanPair } from '../../scan'
-import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
+import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 
 /** Commit this work item's prices and completion together, including empty output. */
 export const commit = internalMutation({
@@ -21,7 +21,7 @@ export const commit = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    console.log('[v4:pricing] commit', { work_id: args.work_id, inserts: args.rows.length })
+    console.log('[pricing] commit', { work_id: args.work_id, inserts: args.rows.length })
     const work = await pendingWork(ctx, args.work_id, 'pricing')
 
     if (work === null) {
@@ -30,7 +30,7 @@ export const commit = internalMutation({
 
     assertWorkOutput(work, args, args.rows)
     for (const row of args.rows) {
-      await ctx.db.insert(V4_ENDPOINT_PRICES_TABLE, row)
+      await ctx.db.insert(ENDPOINT_PRICES_TABLE, row)
     }
     await completeWork(ctx, args.work_id)
     return null
@@ -40,7 +40,7 @@ export const commit = internalMutation({
 /** Use supplied scan for either a routine attempt or recovery; completion commits with output. */
 export async function process(ctx: ActionCtx, pair: ScanPair, work_id: WorkId): Promise<void> {
   const rows = prepare(pair)
-  console.log('[v4:pricing] prepared', {
+  console.log('[pricing] prepared', {
     work_id,
     inserts: rows.length,
     argumentLength: JSON.stringify(rows).length,
@@ -77,9 +77,9 @@ export const initialize = internalMutation({
   args: { rows: v.array(endpointPricesTable.validator) },
   returns: v.null(),
   handler: async (ctx, { rows }) => {
-    await assertInitialTableEmpty(ctx, V4_ENDPOINT_PRICES_TABLE)
+    await assertInitialTableEmpty(ctx, ENDPOINT_PRICES_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(V4_ENDPOINT_PRICES_TABLE, row)
+      await ctx.db.insert(ENDPOINT_PRICES_TABLE, row)
     }
     return null
   },

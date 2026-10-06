@@ -15,7 +15,7 @@ import type {
 import { profileJsonRecords } from './profile.ts'
 
 describe('profileJsonRecords', () => {
-  test('distinguishes none from null and profiles exact key sets and values', () => {
+  test('distinguishes missing from null and profiles exact key sets and values', () => {
     const report = profileJsonRecords([
       { nested: { enabled: true }, status: null },
       { nested: {}, status: 'ready' },
@@ -33,7 +33,7 @@ describe('profileJsonRecords', () => {
     ])
     expect(status).toMatchObject({
       name: 'status',
-      none: 1,
+      missing: 1,
       path: '$[*]["status"]',
       population: 3,
       types: [
@@ -45,9 +45,9 @@ describe('profileJsonRecords', () => {
         },
       ],
     })
-    expect(Object.keys(status)).toEqual(['name', 'path', 'population', 'none', 'types'])
+    expect(Object.keys(status)).toEqual(['name', 'path', 'population', 'missing', 'types'])
     expect(findField(nested, 'enabled')).toMatchObject({
-      none: 1,
+      missing: 1,
       population: 3,
       types: [
         {
@@ -97,7 +97,7 @@ describe('profileJsonRecords', () => {
       { count: 2, keys: ['kind', 'score'] },
       { count: 1, keys: ['kind'] },
     ])
-    expect(findField(itemObjects, 'score')).toMatchObject({ none: 1, population: 3 })
+    expect(findField(itemObjects, 'score')).toMatchObject({ missing: 1, population: 3 })
     expect(findField(itemObjects, 'kind').types).toEqual([
       {
         count: 3,
@@ -149,7 +149,7 @@ describe('profileJsonRecords', () => {
     expect(findField(payloadObject, 'object_value').population).toBe(1)
     expect(findField(arrayItemObject, 'item_value').population).toBe(1)
     expect(findField(root, 'score')).toMatchObject({
-      none: 1,
+      missing: 1,
       types: [
         {
           count: 2,
@@ -182,7 +182,7 @@ describe('profileJsonRecords', () => {
 
   test('represents empty record populations and empty arrays without inventing item types', () => {
     expect(profileJsonRecords([])).toEqual({
-      profile_format: 'json-record-profile-v1',
+      profile_format: 'json-record-profile-v2',
       record_count: 0,
       root: { path: '$[*]', population: 0, types: [] },
     })
@@ -209,7 +209,7 @@ function assertPathsSelectObservedValues(
   for (const type of profile.types) {
     if (type.type === 'object') {
       for (const field of type.fields) {
-        assertPathsSelectObservedValues(field, records, field.population - field.none)
+        assertPathsSelectObservedValues(field, records, field.population - field.missing)
       }
     } else if (type.type === 'array') {
       assertPathsSelectObservedValues(type.items, records, type.items.population)

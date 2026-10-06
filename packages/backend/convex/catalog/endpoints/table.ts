@@ -5,7 +5,7 @@ import type { Infer } from 'convex/values'
 import { pricing } from '../../entities'
 
 /** Current or last-known endpoints; unlisting retains the row rather than deleting it. */
-export const V4_CURRENT_ENDPOINTS_TABLE = 'v4_endpoints' as const
+export const CURRENT_ENDPOINTS_TABLE = 'v4_endpoints' as const
 
 export const currentEndpointsTable = defineTable({
   endpoint_id: v.string(),

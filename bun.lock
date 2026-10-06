@@ -125,7 +125,6 @@
       "dependencies": {
         "@orca/backend": "workspace:*",
         "@orca/json-profile": "workspace:*",
-        "@workos-inc/node": "^10.14.0",
         "commander": "^15.0.0",
       },
       "devDependencies": {

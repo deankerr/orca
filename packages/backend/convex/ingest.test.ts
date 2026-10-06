@@ -8,10 +8,10 @@ import type { RegisteredAction, RegisteredMutation } from 'convex/server'
 import type { Id } from './_generated/dataModel'
 import type { ActionCtx, MutationCtx } from './_generated/server'
 import * as stats from './catalog/stats/ingest'
+import { commitIngestion, run } from './ingest'
 import * as acceptance from './ingestion/release'
 import type { WorkId } from './ingestion/work'
 import { events as retryEvents } from './retry'
-import { commitIngestion, run } from './routine'
 import type { Scan } from './scan'
 import * as load from './scan'
 
@@ -21,7 +21,7 @@ function handler<Args extends Record<string, unknown>, Result>(
   return (fn as unknown as { _handler: (ctx: ActionCtx, args: Args) => Promise<Result> })._handler
 }
 
-test('routine validates and normalizes operator start_at before selecting scans', async () => {
+test('ingestion validates and normalizes operator start_at before selecting scans', async () => {
   const scans = load.reader({} as ActionCtx)
   const source = spyOn(load, 'reader').mockReturnValue(scans)
   const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(null)
@@ -51,7 +51,7 @@ test('routine validates and normalizes operator start_at before selecting scans'
   }
 })
 
-test('only successful fresh routine events schedule enabled Discord broadcasts; retries never broadcast', async () => {
+test('only successful fresh ingestion events schedule enabled Discord broadcasts; retries never broadcast', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -69,7 +69,7 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
   const nextPair = spyOn(scans, 'loadNextPair').mockResolvedValue(pair)
   const exactPair = spyOn(scans, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
-  const oldEnabled = process.env.ORCA_DISCORD_ALERTS_ENABLED
+  const oldEnabled = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
@@ -85,7 +85,7 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
       const name = getFunctionName(ref)
       calls.push(name)
 
-      if (name === 'routine:commitIngestion') {
+      if (name === 'ingest:commitIngestion') {
         expect(args).toMatchObject({ scan_at: pair.next.scan_at, stats: [] })
         return duplicate ? null : { events: 'event-work', pricing: 'pricing-work' }
       }
@@ -131,7 +131,7 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
       'duplicate',
     ]) {
       calls.length = 0
-      process.env.ORCA_DISCORD_ALERTS_ENABLED = mode === 'disabled' ? 'false' : 'true'
+      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
       failSchedule = mode === 'schedule-error'
@@ -149,7 +149,7 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
 
       if (!duplicate) {
         expect(calls).not.toContain('catalog/stats/ingest:publish')
-        expect(calls.at(-1)).toBe('routine:run')
+        expect(calls.at(-1)).toBe('ingest:run')
       }
     }
 
@@ -163,9 +163,9 @@ test('only successful fresh routine events schedule enabled Discord broadcasts; 
     errors.mockRestore()
 
     if (oldEnabled === undefined) {
-      delete process.env.ORCA_DISCORD_ALERTS_ENABLED
+      delete process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
     } else {
-      process.env.ORCA_DISCORD_ALERTS_ENABLED = oldEnabled
+      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = oldEnabled
     }
   }
 })

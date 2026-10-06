@@ -6,7 +6,7 @@ import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import type { Scan, ScanPair } from '../../scan'
 import { changedRows } from '../changes'
 import { projectModel } from '../project'
-import { V4_CURRENT_MODELS_TABLE, currentModelsTable } from './table'
+import { CURRENT_MODELS_TABLE, currentModelsTable } from './table'
 import type { CurrentModelRow } from './table'
 
 export function prepare(pair: ScanPair) {
@@ -18,7 +18,7 @@ export function prepare(pair: ScanPair) {
 export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<void> {
   for (const row of rows) {
     const existing = await ctx.db
-      .query(V4_CURRENT_MODELS_TABLE)
+      .query(CURRENT_MODELS_TABLE)
       .withIndex('by_model_id', (q) => q.eq('model_id', row.model_id))
       .unique()
 
@@ -29,8 +29,8 @@ export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<
     }
 
     await (existing === null
-      ? ctx.db.insert(V4_CURRENT_MODELS_TABLE, next)
-      : ctx.db.replace(V4_CURRENT_MODELS_TABLE, existing._id, next))
+      ? ctx.db.insert(CURRENT_MODELS_TABLE, next)
+      : ctx.db.replace(CURRENT_MODELS_TABLE, existing._id, next))
   }
 }
 
@@ -42,9 +42,9 @@ export const initialize = internalMutation({
   args: { rows: v.array(currentModelsTable.validator) },
   returns: v.null(),
   handler: async (ctx, { rows }) => {
-    await assertInitialTableEmpty(ctx, V4_CURRENT_MODELS_TABLE)
+    await assertInitialTableEmpty(ctx, CURRENT_MODELS_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(V4_CURRENT_MODELS_TABLE, { ...row, from_scan_at: row.scan_at })
+      await ctx.db.insert(CURRENT_MODELS_TABLE, { ...row, from_scan_at: row.scan_at })
     }
     return null
   },

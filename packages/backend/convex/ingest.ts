@@ -16,10 +16,10 @@ import * as events from './events/ingest'
 import * as listings from './history/listings/ingest'
 import { endpointListingsTable } from './history/listings/table'
 import * as pricing from './history/pricing/ingest'
+import { initializeBaseline } from './ingestion/baseline'
 import { release, createWork } from './ingestion/release'
 import { ingestionsTable } from './ingestion/table'
 import { workId } from './ingestion/work'
-import { initialize } from './initialize'
 import { reader } from './scan'
 
 const acceptedWork = v.object({ pricing: workId, events: workId })
@@ -32,7 +32,7 @@ export const run = internalAction({
     const scanAt = await ctx.runQuery(internal.clock.get, {})
 
     if (scanAt !== null && args.start_at !== undefined) {
-      throw new ConvexError('start_at requires a fresh V4 timeline; omit it to resume')
+      throw new ConvexError('start_at requires a fresh timeline; omit it to resume')
     }
 
     const from =
@@ -64,7 +64,7 @@ export const run = internalAction({
       stats: stats.prepare(pair.next.endpoints.values()),
     }
 
-    console.log('[v4:ingestion] prepared', {
+    console.log('[ingestion] prepared', {
       scan_at: pair.next.scan_at,
       models: output.models.length,
       providers: output.providers.length,
@@ -75,11 +75,11 @@ export const run = internalAction({
     })
 
     if (scanAt === null) {
-      await initialize(ctx, pair.previous)
+      await initializeBaseline(ctx, pair.previous)
     }
 
     const work: Infer<typeof acceptedWork> | null = await ctx.runMutation(
-      internal.routine.commitIngestion,
+      internal.ingest.commitIngestion,
       {
         from_scan_at: pair.previous.scan_at,
         scan_at: pair.next.scan_at,
@@ -95,13 +95,13 @@ export const run = internalAction({
     try {
       await pricing.process(ctx, pair, work.pricing)
     } catch (error: unknown) {
-      console.error('[v4:pricing] failed; work remains pending', { work_id: work.pricing, error })
+      console.error('[pricing] failed; work remains pending', { work_id: work.pricing, error })
     }
 
     try {
       const eventIds = await events.process(ctx, pair, work.events)
 
-      if (env.ORCA_DISCORD_ALERTS_ENABLED === 'true' && eventIds.length > 0) {
+      if (env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true' && eventIds.length > 0) {
         // Scheduling is best-effort after commit; retries deliberately do not broadcast.
         await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.broadcast, {
           event_ids: eventIds,
@@ -114,7 +114,7 @@ export const run = internalAction({
       })
     }
 
-    await ctx.scheduler.runAfter(0, internal.routine.run, {})
+    await ctx.scheduler.runAfter(0, internal.ingest.run, {})
     return null
   },
 })
@@ -163,8 +163,8 @@ export const scheduled = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    if (env.ORCA_V4_INGEST_CRON_ENABLED === 'true') {
-      await ctx.scheduler.runAfter(0, internal.routine.run, {})
+    if (env.ORCA_INGESTION_CRON_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.ingest.run, {})
     }
 
     return null

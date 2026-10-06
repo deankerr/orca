@@ -67,16 +67,16 @@ export function createR2Transport(): R2Transport {
 
 function r2Client() {
   return new AwsClient({
-    accessKeyId: required(env.ORCA_R2_ACCESS_KEY_ID),
-    secretAccessKey: required(env.ORCA_R2_SECRET_ACCESS_KEY),
+    accessKeyId: required(env.ORCA_OBJECTS_R2_ACCESS_KEY_ID),
+    secretAccessKey: required(env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY),
     service: 's3',
     region: 'auto',
   })
 }
 
 function objectUrl(key: string) {
-  const accountId = required(env.ORCA_R2_ACCOUNT_ID)
-  const bucket = required(env.ORCA_R2_BUCKET)
+  const accountId = required(env.ORCA_OBJECTS_R2_ACCOUNT_ID)
+  const bucket = required(env.ORCA_OBJECTS_R2_BUCKET)
   const encodedKey = key.split('/').map(encodeURIComponent).join('/')
 
   return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`

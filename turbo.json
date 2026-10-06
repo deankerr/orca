@@ -16,7 +16,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["PORTLESS*", "LOCAL_DEV_ORIGIN"]
+      "passThroughEnv": ["PORTLESS*", "ORCA_DEV_ORIGIN"]
     },
     "start": {
       "cache": false,

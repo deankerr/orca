@@ -1,44 +1,26 @@
 import { defineApp } from 'convex/server'
 import { v } from 'convex/values'
 
-/** Deployment environment contract; project defaults supply values for new dev and preview deployments. */
 const app = defineApp({
   env: {
-    /** WorkOS application user allowed to administer this deployment; absent/empty denies everyone. */
     ORCA_ADMIN_USER_ID: v.optional(v.string()),
-    /** Storage for newly written objects; defaults to Convex. Existing objects retain their stored backend. */
     ORCA_OBJECTS_BACKEND: v.optional(v.union(v.literal('convex'), v.literal('r2'))),
-    /** Canonical object reads use this deployment name; absent/empty reads locally. Writes remain local. */
     ORCA_OBJECTS_SOURCE_DEPLOYMENT: v.optional(v.string()),
-    /** Shared API key for object-source discovery and compressed batch reads, on source and consumer. */
     ORCA_OBJECTS_API_KEY: v.optional(v.string()),
-    /** R2 access key used to sign object requests; required whenever accessing R2-backed objects. */
-    ORCA_R2_ACCESS_KEY_ID: v.optional(v.string()),
-    /** Secret paired with the R2 access key; required whenever accessing R2-backed objects. */
-    ORCA_R2_SECRET_ACCESS_KEY: v.optional(v.string()),
-    /** Cloudflare account owning the R2 bucket; required whenever accessing R2-backed objects. */
-    ORCA_R2_ACCOUNT_ID: v.optional(v.string()),
-    /** R2 bucket for object reads and writes; required whenever accessing R2-backed objects. */
-    ORCA_R2_BUCKET: v.optional(v.string()),
+    ORCA_OBJECTS_R2_ACCESS_KEY_ID: v.optional(v.string()),
+    ORCA_OBJECTS_R2_SECRET_ACCESS_KEY: v.optional(v.string()),
+    ORCA_OBJECTS_R2_ACCOUNT_ID: v.optional(v.string()),
+    ORCA_OBJECTS_R2_BUCKET: v.optional(v.string()),
 
-    /** Webhook target for Discord alerts; required for live and manual delivery. */
     ORCA_DISCORD_WEBHOOK_URL: v.optional(v.string()),
-    /** Live broadcasts only; absent/false disables scheduling and queued batch starts. Manual sends bypass it. */
-    ORCA_DISCORD_ALERTS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Web app URL used to construct endpoint-grid links in Discord messages. */
-    ORCA_PUBLIC_URL: v.string(),
-    /** Deployed logo-service origin for publicly reachable icons in Discord messages. */
-    ENTITY_LOGO_SERVICE_ORIGIN: v.string(),
+    ORCA_DISCORD_AUTO_SEND_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_WEB_ORIGIN: v.string(),
+    ORCA_LOGO_ORIGIN: v.string(),
 
-    // These controls enable their entry points only for 'true'; absent/false disables them.
-    /** Enables V4's scheduled entry point; direct run calls and existing continuations bypass it. */
-    ORCA_V4_INGEST_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables upstream scan capture, including manual calls to the scan action; ingestion is separate. */
-    ORCA_SCAN_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables the daily upstream analytics collector. */
-    ORCA_WORKFLOWS_ANALYTICS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
-    /** Enables the daily upstream top-apps collector. */
-    ORCA_WORKFLOWS_TOP_APPS_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_INGESTION_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_SCAN_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_ANALYTICS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_TOP_APPS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
   },
 })
 

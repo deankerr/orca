@@ -81,7 +81,7 @@ export const broadcast = internalAction({
   args: batchArgs,
   returns: batchCounts,
   handler: async (ctx, { event_ids }) => {
-    if (env.ORCA_DISCORD_ALERTS_ENABLED !== 'true') {
+    if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
       return { sent: 0, skipped: 0 }
     }
 
@@ -104,8 +104,8 @@ async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
 
   const { alerts, skipped } = await prepareForDelivery(ctx, rows)
   const notifications = renderDiscordBatch(alerts, {
-    publicUrl: env.ORCA_PUBLIC_URL,
-    logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
+    publicUrl: env.ORCA_WEB_ORIGIN,
+    logoOrigin: env.ORCA_LOGO_ORIGIN,
   })
   let sent = 0
 
@@ -134,8 +134,8 @@ async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'se
 
   const { alerts } = await prepareForDelivery(ctx, [{ ...event, _id: event_id }])
   const [notification] = renderDiscordBatch(alerts, {
-    publicUrl: env.ORCA_PUBLIC_URL,
-    logoOrigin: env.ENTITY_LOGO_SERVICE_ORIGIN,
+    publicUrl: env.ORCA_WEB_ORIGIN,
+    logoOrigin: env.ORCA_LOGO_ORIGIN,
   })
 
   if (notification === undefined) {

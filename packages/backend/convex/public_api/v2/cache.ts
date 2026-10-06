@@ -6,12 +6,12 @@ import { internal } from '../../_generated/api'
 import { internalAction, internalMutation, internalQuery } from '../../_generated/server'
 import { reader } from '../../scan'
 import { buildSnapshot } from './snapshot'
-import { publicApiV2CacheTable } from './table'
+import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './table'
 
 export const get = internalQuery({
   args: {},
-  returns: v.union(v.null(), docValidator('public_api_v2_cache', publicApiV2CacheTable)),
-  handler: async (ctx) => await ctx.db.query('public_api_v2_cache').order('desc').first(),
+  returns: v.union(v.null(), docValidator(PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable)),
+  handler: async (ctx) => await ctx.db.query(PUBLIC_API_V2_CACHE_TABLE).order('desc').first(),
 })
 
 /**
@@ -25,7 +25,7 @@ export const replaceIfNewer = internalMutation({
   },
   returns: v.union(v.null(), v.id('_storage')),
   handler: async (ctx, args) => {
-    const existing = await ctx.db.query('public_api_v2_cache').order('desc').first()
+    const existing = await ctx.db.query(PUBLIC_API_V2_CACHE_TABLE).order('desc').first()
     const existingScanAt = existing?.scan_at
 
     if (existingScanAt !== undefined && existingScanAt >= args.scan_at) {
@@ -33,10 +33,10 @@ export const replaceIfNewer = internalMutation({
     }
 
     if (existing !== null) {
-      await ctx.db.delete('public_api_v2_cache', existing._id)
+      await ctx.db.delete(PUBLIC_API_V2_CACHE_TABLE, existing._id)
     }
 
-    await ctx.db.insert('public_api_v2_cache', args)
+    await ctx.db.insert(PUBLIC_API_V2_CACHE_TABLE, args)
 
     // The caller deletes only the unused blob, after this transaction commits.
     return existing?.storage_id ?? null

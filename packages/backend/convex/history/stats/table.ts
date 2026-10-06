@@ -2,7 +2,7 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-export const V4_ENDPOINT_STATS_TABLE = 'v4_endpoint_stats' as const
+export const ENDPOINT_STATS_TABLE = 'v4_endpoint_stats' as const
 
 /** One supplied performance sample for an endpoint, scan, and tier. */
 export const endpointStatsTable = defineTable({

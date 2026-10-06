@@ -128,7 +128,10 @@ function render(): void {
     .filter(({ value }) => value.path.toLowerCase().includes(query))
     .toSorted((left, right) => {
       if (sort.value === 'missing') {
-        return right.none / (right.value.population || 1) - left.none / (left.value.population || 1)
+        return (
+          right.missing / (right.value.population || 1) -
+          left.missing / (left.value.population || 1)
+        )
       }
 
       if (sort.value === 'distinct') {
@@ -142,7 +145,7 @@ function render(): void {
   counts.textContent = `${selected.profile.record_count.toLocaleString()} entities · ${rows.length} of ${all.length} fields`
   empty.hidden = rows.length > 0
 
-  for (const { none, value } of rows) {
+  for (const { missing, value } of rows) {
     const row = document.createElement('details')
     const nulls = value.types.find((branch) => branch.type === 'null')?.count ?? 0
     row.className = 'field'
@@ -150,7 +153,7 @@ function render(): void {
     row.innerHTML = `<summary>
       <code class="path">${escapeHtml(value.path.replace(/^\$\[\*\]/, ''))}</code>
       <span class="types">${value.types.map((branch) => branch.type).join(' · ')}</span>
-      <span class="stat" title="${value.population - none} of ${value.population} locations"><span class="mobile-label">Present </span>${percentage(value.population - none, value.population)}</span>
+      <span class="stat" title="${value.population - missing} of ${value.population} locations"><span class="mobile-label">Present </span>${percentage(value.population - missing, value.population)}</span>
       <span class="stat"><span class="mobile-label">Null </span>${percentage(nulls, value.population)}</span>
       <span class="stat"><span class="mobile-label">Distinct </span>${distinctValues(value).toLocaleString()}</span>
     </summary>`
@@ -161,7 +164,7 @@ function render(): void {
       if (row.open && !loaded) {
         const detail = document.createElement('div')
         detail.className = 'detail'
-        detail.innerHTML = `<p class="hint">${none.toLocaleString()} absent · ${nulls.toLocaleString()} null · ${value.population.toLocaleString()} possible locations</p>${describe(value, selected)}`
+        detail.innerHTML = `<p class="hint">${missing.toLocaleString()} absent · ${nulls.toLocaleString()} null · ${value.population.toLocaleString()} possible locations</p>${describe(value, selected)}`
         row.append(detail)
         loaded = true
       }

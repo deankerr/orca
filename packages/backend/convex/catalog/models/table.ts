@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 /** Cumulative model knowledge; departed models retain their last-known facts. */
-export const V4_CURRENT_MODELS_TABLE = 'v4_models' as const
+export const CURRENT_MODELS_TABLE = 'v4_models' as const
 
 export const currentModelsTable = defineTable({
   model_id: v.string(),

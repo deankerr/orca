@@ -30,22 +30,22 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
-  readonly ENTITY_LOGO_SERVICE_ORIGIN: string;
   readonly ORCA_ADMIN_USER_ID: string | undefined;
-  readonly ORCA_DISCORD_ALERTS_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_ANALYTICS_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_DISCORD_AUTO_SEND_ENABLED: "true" | "false" | undefined;
   readonly ORCA_DISCORD_WEBHOOK_URL: string | undefined;
+  readonly ORCA_INGESTION_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_LOGO_ORIGIN: string;
   readonly ORCA_OBJECTS_API_KEY: string | undefined;
   readonly ORCA_OBJECTS_BACKEND: "convex" | "r2" | undefined;
+  readonly ORCA_OBJECTS_R2_ACCESS_KEY_ID: string | undefined;
+  readonly ORCA_OBJECTS_R2_ACCOUNT_ID: string | undefined;
+  readonly ORCA_OBJECTS_R2_BUCKET: string | undefined;
+  readonly ORCA_OBJECTS_R2_SECRET_ACCESS_KEY: string | undefined;
   readonly ORCA_OBJECTS_SOURCE_DEPLOYMENT: string | undefined;
-  readonly ORCA_PUBLIC_URL: string;
-  readonly ORCA_R2_ACCESS_KEY_ID: string | undefined;
-  readonly ORCA_R2_ACCOUNT_ID: string | undefined;
-  readonly ORCA_R2_BUCKET: string | undefined;
-  readonly ORCA_R2_SECRET_ACCESS_KEY: string | undefined;
-  readonly ORCA_SCAN_ENABLED: "true" | "false" | undefined;
-  readonly ORCA_V4_INGEST_CRON_ENABLED: "true" | "false" | undefined;
-  readonly ORCA_WORKFLOWS_ANALYTICS_ENABLED: "true" | "false" | undefined;
-  readonly ORCA_WORKFLOWS_TOP_APPS_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_SCAN_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_TOP_APPS_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_WEB_ORIGIN: string;
 };
 
 /**

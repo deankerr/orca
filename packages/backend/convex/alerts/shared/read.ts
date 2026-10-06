@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 
 import { internalQuery } from '../../_generated/server'
 import type { QueryCtx } from '../../_generated/server'
-import { eventsTable, V4_EVENTS_TABLE } from '../../events/table'
+import { eventsTable, EVENTS_TABLE } from '../../events/table'
 
 export type EventScope =
   | { kind: 'all' }
@@ -19,7 +19,7 @@ export async function readPage(
   scope: EventScope,
   paginationOpts: PaginationOptions,
 ) {
-  const events = ctx.db.query(V4_EVENTS_TABLE)
+  const events = ctx.db.query(EVENTS_TABLE)
 
   const source =
     scope.kind === 'entity'
@@ -53,14 +53,14 @@ export async function readPage(
 
 /** One captured event for manually triggered delivery. */
 export const get = internalQuery({
-  args: { event_id: v.id(V4_EVENTS_TABLE) },
-  returns: v.union(docValidator(V4_EVENTS_TABLE, eventsTable), v.null()),
-  handler: async (ctx, args) => await ctx.db.get(V4_EVENTS_TABLE, args.event_id),
+  args: { event_id: v.id(EVENTS_TABLE) },
+  returns: v.union(docValidator(EVENTS_TABLE, eventsTable), v.null()),
+  handler: async (ctx, args) => await ctx.db.get(EVENTS_TABLE, args.event_id),
 })
 
 /** Recent captured events for operator replay. */
 export const list = internalQuery({
   args: { paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(docValidator(V4_EVENTS_TABLE, eventsTable)),
+  returns: paginationResultValidator(docValidator(EVENTS_TABLE, eventsTable)),
   handler: async (ctx, { paginationOpts }) => await readPage(ctx, { kind: 'all' }, paginationOpts),
 })

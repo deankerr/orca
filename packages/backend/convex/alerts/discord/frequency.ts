@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { internalQuery } from '../../_generated/server'
-import { V4_ENDPOINT_PRICES_TABLE } from '../../history/pricing/table'
+import { ENDPOINT_PRICES_TABLE } from '../../history/pricing/table'
 
 /** Discord tolerates occasional repricing, but not sustained quote changes. */
 export const PRICE_CHANGE_COUNT = 2
@@ -24,7 +24,7 @@ export const check = internalQuery({
       ).toISOString()
 
       const recent = await ctx.db
-        .query(V4_ENDPOINT_PRICES_TABLE)
+        .query(ENDPOINT_PRICES_TABLE)
         .withIndex('by_endpoint_id_and_scan_at', (q) =>
           q.eq('endpoint_id', endpoint_id).gte('scan_at', start).lt('scan_at', scan_at),
         )

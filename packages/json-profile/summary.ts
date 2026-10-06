@@ -1,19 +1,19 @@
 import type { JsonProfile, ValueProfile } from './profile'
 
-export type ProfileRow = { none: number; value: ValueProfile }
+export type ProfileRow = { missing: number; value: ValueProfile }
 
 export function profileRows(profile: JsonProfile): ProfileRow[] {
   const rows: ProfileRow[] = []
 
-  function visit(value: ValueProfile, none = 0): void {
+  function visit(value: ValueProfile, missing = 0): void {
     if (value !== profile.root) {
-      rows.push({ none, value })
+      rows.push({ missing, value })
     }
 
     for (const branch of value.types) {
       if (branch.type === 'object') {
         for (const field of branch.fields) {
-          visit(field, field.none)
+          visit(field, field.missing)
         }
       } else if (branch.type === 'array') {
         visit(branch.items)

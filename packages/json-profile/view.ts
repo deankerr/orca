@@ -17,10 +17,10 @@ export function viewProfile(profile: JsonProfile, options: ViewOptions = {}) {
   }
 
   const paths = options.paths === undefined ? null : new Set(options.paths)
-  const fields = [{ none: 0, value: profile.root }, ...profileRows(profile)]
+  const fields = [{ missing: 0, value: profile.root }, ...profileRows(profile)]
     .filter(({ value }) => paths === null || paths.has(value.path))
-    .map(({ none, value }) => ({
-      missing: none,
+    .map(({ missing, value }) => ({
+      missing,
       path: value.path,
       population: value.population,
       types: value.types.map((branch) => viewBranch(branch, value, valueLimit)),

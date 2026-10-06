@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { MutationCtx } from '../../_generated/server'
-import { V4_CURRENT_STATS_TABLE } from './table'
+import { CURRENT_STATS_TABLE } from './table'
 import type { CurrentStatsRow } from './table'
 
 type EndpointStatsObservation = { id: string; stats?: unknown; statsByTier?: unknown }
@@ -12,12 +12,12 @@ export async function write(
   scanAt: string,
   rows: CurrentStatsRow[],
 ): Promise<void> {
-  const snapshot = await ctx.db.query(V4_CURRENT_STATS_TABLE).unique()
+  const snapshot = await ctx.db.query(CURRENT_STATS_TABLE).unique()
   const next = { scan_at: scanAt, rows }
 
   await (snapshot === null
-    ? ctx.db.insert(V4_CURRENT_STATS_TABLE, next)
-    : ctx.db.replace(V4_CURRENT_STATS_TABLE, snapshot._id, next))
+    ? ctx.db.insert(CURRENT_STATS_TABLE, next)
+    : ctx.db.replace(CURRENT_STATS_TABLE, snapshot._id, next))
 }
 
 const reading = z.number().nonnegative().optional().catch(undefined)

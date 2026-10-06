@@ -5,19 +5,14 @@ import type { Doc, Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 import { internalQuery } from '../_generated/server'
 import type { IngestionRow, ProcessorName } from './table'
-import {
-  ingestionsTable,
-  processorName,
-  V4_INGESTIONS_TABLE,
-  V4_PROCESSOR_WORK_TABLE,
-} from './table'
+import { ingestionsTable, processorName, INGESTIONS_TABLE, PROCESSOR_WORK_TABLE } from './table'
 
-export const workId = v.id(V4_PROCESSOR_WORK_TABLE)
+export const workId = v.id(PROCESSOR_WORK_TABLE)
 export type WorkId = Infer<typeof workId>
 
 /** Resolve an outstanding obligation to exact input times; loading belongs to composition. */
 export const getWorkInput = internalQuery({
-  args: { work_id: v.id(V4_PROCESSOR_WORK_TABLE), processor: processorName },
+  args: { work_id: v.id(PROCESSOR_WORK_TABLE), processor: processorName },
   returns: v.union(v.null(), ingestionsTable.validator),
   handler: async (ctx, args) => {
     const work = await pendingWork(ctx, args.work_id, args.processor)
@@ -33,10 +28,10 @@ export const getWorkInput = internalQuery({
 /** Read in the payload transaction: concurrent attempts conflict on this record. */
 export async function pendingWork(
   ctx: QueryCtx,
-  workId: Id<typeof V4_PROCESSOR_WORK_TABLE>,
+  workId: Id<typeof PROCESSOR_WORK_TABLE>,
   processor: ProcessorName,
-): Promise<(Doc<typeof V4_PROCESSOR_WORK_TABLE> & IngestionRow) | null> {
-  const work = await ctx.db.get(V4_PROCESSOR_WORK_TABLE, workId)
+): Promise<(Doc<typeof PROCESSOR_WORK_TABLE> & IngestionRow) | null> {
+  const work = await ctx.db.get(PROCESSOR_WORK_TABLE, workId)
 
   if (work === null || work.processor !== processor) {
     throw new ConvexError({ message: 'Processor work does not match', workId, processor })
@@ -46,7 +41,7 @@ export async function pendingWork(
     return null
   }
 
-  const ingestion = await ctx.db.get(V4_INGESTIONS_TABLE, work.ingestion_id)
+  const ingestion = await ctx.db.get(INGESTIONS_TABLE, work.ingestion_id)
 
   if (ingestion === null || ingestion.scan_at !== work.scan_at) {
     throw new ConvexError({ message: 'Processor input is not released', workId })
@@ -56,8 +51,8 @@ export async function pendingWork(
 }
 
 /** Never call separately from the payload writes; failure must roll both back. */
-export async function completeWork(ctx: MutationCtx, workId: Id<typeof V4_PROCESSOR_WORK_TABLE>) {
-  await ctx.db.patch(V4_PROCESSOR_WORK_TABLE, workId, { state: 'complete' })
+export async function completeWork(ctx: MutationCtx, workId: Id<typeof PROCESSOR_WORK_TABLE>) {
+  await ctx.db.patch(PROCESSOR_WORK_TABLE, workId, { state: 'complete' })
 }
 
 /** Bind even empty output to the exact pair recorded by the obligation. */

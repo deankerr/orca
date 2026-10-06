@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 
 import { query } from '../../_generated/server'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
-import { V4_ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
+import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
 
 /** Page committed samples across tiers; routine ingestion does not schedule Stats history. */
 export const list = query({
@@ -15,7 +15,7 @@ export const list = query({
       return emptyPage()
     }
     const result = await ctx.db
-      .query(V4_ENDPOINT_STATS_TABLE)
+      .query(ENDPOINT_STATS_TABLE)
       .withIndex('by_endpoint_id_and_scan_at', (q) =>
         q.eq('endpoint_id', args.endpoint_id).lte('scan_at', cutoff),
       )

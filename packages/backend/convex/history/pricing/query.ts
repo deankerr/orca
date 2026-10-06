@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 
 import { query } from '../../_generated/server'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../pagination'
-import { V4_ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
+import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
 
 /** Live endpoint history, oldest first; page dependencies exclude the moving observation clock. */
 export const observe = query({
@@ -12,7 +12,7 @@ export const observe = query({
   returns: paginationResultValidator(endpointPricesTable.validator),
   handler: async (ctx, args) => {
     const result = await ctx.db
-      .query(V4_ENDPOINT_PRICES_TABLE)
+      .query(ENDPOINT_PRICES_TABLE)
       .withIndex('by_endpoint_id_and_scan_at', (q) => q.eq('endpoint_id', args.endpoint_id))
       .order('asc')
       .paginate({
@@ -35,7 +35,7 @@ export const list = query({
       return emptyPage()
     }
     const result = await ctx.db
-      .query(V4_ENDPOINT_PRICES_TABLE)
+      .query(ENDPOINT_PRICES_TABLE)
       .withIndex('by_endpoint_id_and_scan_at', (q) =>
         q.eq('endpoint_id', args.endpoint_id).lte('scan_at', cutoff),
       )

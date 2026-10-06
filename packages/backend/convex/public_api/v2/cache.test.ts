@@ -8,6 +8,7 @@ import type { ActionCtx, MutationCtx } from '../../_generated/server'
 import * as objects from '../../objects'
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'
+import type { PUBLIC_API_V2_CACHE_TABLE } from './table'
 
 test('refresh rebuilds legacy or older captures and skips an unchanged capture', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
@@ -70,8 +71,8 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
   const oldBlob = 'old-blob' as Id<'_storage'>
   const newBlob = 'new-blob' as Id<'_storage'>
 
-  let existing: Doc<'public_api_v2_cache'> | null = {
-    _id: 'cache-row' as Id<'public_api_v2_cache'>,
+  let existing: Doc<typeof PUBLIC_API_V2_CACHE_TABLE> | null = {
+    _id: 'cache-row' as Id<typeof PUBLIC_API_V2_CACHE_TABLE>,
     _creationTime: 0,
     content_type: 'application/json',
     storage_id: oldBlob,

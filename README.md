@@ -17,8 +17,6 @@ That history powers a few things:
 - **Discord alerts** — entity events rendered to a single webhook target. (`packages/backend/convex/alerts/discord/`)
 - **Public API** — an HTTP endpoint exposing the curated model/endpoint data. See [Public API](#public-api) below.
 
-It's aimed at people who work with OpenRouter and LLMs directly — the kind of user who reads context lengths, quantization, and reasoning-token support closely and copies model slugs straight into their code. The presentation favors technical precision over simplification.
-
 ## Architecture
 
 Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage, scheduling, scan ingestion, change tracking, and the public API.
@@ -28,14 +26,6 @@ Turborepo monorepo. Next.js frontend on Vercel; Convex backend handling storage,
 | `apps/logos`       | Cloudflare Worker serving generated provider and model logo assets                           |
 | `apps/web`         | Next.js 16 / React 19 frontend — data grid, monitor, overviews, pricing history, API docs    |
 | `packages/backend` | Convex backend — schema, crons, scan ingestion, change tracking, Discord webhook, public API |
-
-## Documentation
-
-- [Domain vocabulary](CONTEXT.md): identity, observations, listings, and ingestion.
-- [Development data](docs/orca/development-data.md): populate a dev deployment and connect the web app.
-- [Provider identity](docs/orca/provider-identity.md), [pricing policy](docs/orca/pricing.md), and [Pricing History](docs/orca/pricing-history.md).
-- [Events and alerts](docs/orca/events.md), [Feed contract](docs/orca/feed.md), and [Discord operations](docs/orca/discord.md).
-- [OpenRouter catalog](docs/openrouter/catalog.md) and [pricing](docs/openrouter/pricing.md): upstream research, separate from ORCA policy.
 
 ## Public API
 
@@ -48,9 +38,6 @@ GET https://orca.orb.town/api/preview/v2/models
 The web route rewrites to the cached Convex HTTP action (`packages/backend/convex/public_api/v2/`). Its V2 response contract is frozen for compatibility. The `/api` page on the site documents the current response.
 
 ## Development
-
-For local exploration of stored scans, use [Scan analysis](packages/scripts/scan-analysis/README.md)
-to generate a standalone HTML or JSON profile.
 
 Requires [Bun](https://bun.sh), Node.js 24+, and a global [Portless](https://github.com/vercel-labs/portless) installation. The backend runs on [Convex](https://convex.dev).
 
@@ -68,7 +55,3 @@ Linting and formatting use OXC and are fast enough to run repo-wide:
 bun run fix     # oxlint + oxfmt, mutating
 bun run check   # non-mutating lint/format check
 ```
-
-## Environment
-
-Backend environment variables are documented alongside their validators in [`convex.config.ts`](packages/backend/convex/convex.config.ts).

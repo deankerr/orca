@@ -34,12 +34,12 @@ The web app defaults to `https://logos.orb.town` in every environment, including
 To preview local assets, start the server above and set this in `apps/web/.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_LOGO_SERVICE_ORIGIN=http://localhost:8787
+NEXT_PUBLIC_ORCA_LOGO_ORIGIN=http://localhost:8787
 ```
 
 Restart the web dev server after changing the override. Remove it to return to the production service.
 This is a full origin (scheme, hostname, and optional port), not just a hostname.
-Convex uses its separate `ENTITY_LOGO_SERVICE_ORIGIN` for Discord embeds, which must remain publicly accessible.
+Convex uses its separate `ORCA_LOGO_ORIGIN` for Discord embeds, which must remain publicly accessible.
 
 ## Manual Sources
 
