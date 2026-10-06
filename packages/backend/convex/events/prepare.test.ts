@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test'
 
+import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '#scan/model'
+
 import type { JsonValue } from '../json'
-import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '../scan'
 import { prepare } from './prepare'
 
 const from = '2026-09-28T10:00:00.000Z'

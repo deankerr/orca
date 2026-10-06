@@ -4,12 +4,17 @@ import { ConvexError } from 'convex/values'
 
 import { api } from '#generated/api'
 
-import type { ObjectIdentity, ObjectReader } from './index'
-import { assertReadCount, decode, storedBatch, validateNames } from './local'
-import type { NameSelection } from './local'
+import { assertReadCount, decode, storedBatch, validateNames } from './protocol'
+import type { NameSelection, ObjectIdentity, ObjectReader } from './protocol'
 
 /** Read logical objects from an explicit source, without a deployment or local storage. */
-export function createObjectReader(deployment: string, apiKey: string): ObjectReader {
+export function connect({
+  deployment,
+  apiKey,
+}: {
+  deployment: string
+  apiKey: string
+}): ObjectReader {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(deployment)) {
     throw new ConvexError('Object source must be a deployment name, not a URL')
   }

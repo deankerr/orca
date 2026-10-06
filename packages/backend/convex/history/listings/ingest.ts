@@ -2,9 +2,9 @@ import { v } from 'convex/values'
 
 import { internalMutation } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
+import type { ScannedEndpoint, Scan, ScanPair } from '#scan/model'
 
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
-import type { ScannedEndpoint, Scan, ScanPair } from '../../scan'
 import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './table'
 import type { EndpointListingRow } from './table'
 

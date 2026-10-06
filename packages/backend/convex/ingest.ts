@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { internal } from '#generated/api'
 import { env, internalAction, internalMutation } from '#generated/server'
+import * as scans from '#scan'
 
 import * as endpoints from './catalog/endpoints/ingest'
 import { currentEndpointsTable } from './catalog/endpoints/table'
@@ -21,7 +22,6 @@ import { initializeBaseline } from './ingestion/baseline'
 import { release, createWork } from './ingestion/release'
 import { ingestionsTable } from './ingestion/table'
 import { workId } from './ingestion/work'
-import { reader } from './scan'
 
 const acceptedWork = v.object({ pricing: workId, events: workId })
 
@@ -44,7 +44,7 @@ export const run = internalAction({
             .transform((value) => new Date(value).toISOString())
             .parse(args.start_at)
 
-    const pair = await reader(ctx).loadNextPair(from)
+    const pair = await scans.reader(ctx).loadNextPair({ atOrAfter: from })
 
     if (pair === null) {
       if (args.start_at !== undefined) {

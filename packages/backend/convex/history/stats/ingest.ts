@@ -2,10 +2,10 @@ import { v } from 'convex/values'
 import { z } from 'zod'
 
 import { internalMutation } from '#generated/server'
+import type { Scan } from '#scan/model'
 
 import { ingestionsTable } from '../../ingestion/table'
 import { assertWorkOutput, completeWork, pendingWork, workId } from '../../ingestion/work'
-import type { Scan } from '../../scan'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './table'
 
 /** Commit supplied stats and the work item's completion atomically. */

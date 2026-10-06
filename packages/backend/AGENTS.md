@@ -16,6 +16,7 @@
 - Keep each product's queries, rendering, delivery, storage, and helpers together. Put code shared by multiple products in the domain it belongs to.
 - Write domain logic as ordinary pure functions. Convex functions handle database access and scheduling, then call that logic.
 - Pure modules shared by backend and web code can live at the `convex/` root. Compose functions directly; avoid generic pipelines and product registries.
+- Consume Objects and Scan through their named package imports, using namespaces for operations and named imports for types and validators. Relative imports stay within each module; schema assembly imports tables directly. Cross-package consumers use explicit package exports.
 
 ## Observability
 

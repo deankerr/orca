@@ -1,12 +1,12 @@
 import { internal } from '#generated/api'
 import type { ActionCtx } from '#generated/server'
+import type { Scan } from '#scan/model'
 
 import * as endpoints from '../catalog/endpoints/ingest'
 import * as models from '../catalog/models/ingest'
 import * as providers from '../catalog/providers/ingest'
 import * as listings from '../history/listings/ingest'
 import * as pricing from '../history/pricing/ingest'
-import type { Scan } from '../scan'
 
 /** One-time composition before the first real ingestion; partial failure requires investigation/reset. */
 export async function initializeBaseline(ctx: ActionCtx, baseline: Scan) {

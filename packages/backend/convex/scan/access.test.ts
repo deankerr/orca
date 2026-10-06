@@ -4,14 +4,10 @@
 import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
-import { ConvexHttpClient } from 'convex/browser'
-
 import type { ActionCtx } from '#generated/server'
+import * as objects from '#objects'
 
-import * as objects from '../objects'
-import { createObjectReader } from '../objects/client'
-import { reader, store } from './index'
-import { createScanReader, scanAtFromReference } from './objects'
+import { reader, store } from './access'
 
 test('scan storage round-trips collected entries and loads exact pairs in one batch', async () => {
   const ctx = {} as ActionCtx
@@ -46,7 +42,7 @@ test('scan storage round-trips collected entries and loads exact pairs in one ba
     })
 
     batch.mockResolvedValue([text])
-    expect(await scans.loadRaw(scan_at)).toEqual(scan)
+    expect(await scans.loadCollected(scan_at)).toEqual(scan)
 
     const nextAt = '2026-10-02T11:40:04.272Z'
     batch.mockResolvedValue([text, text.replaceAll(scan_at, nextAt)])
@@ -124,7 +120,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
 
   try {
     const first = await scans.loadNextPair()
-    const following = await scans.loadNextPair('2026-10-01T12:00:00.000Z')
+    const following = await scans.loadNextPair({ atOrAfter: '2026-10-01T12:00:00.000Z' })
 
     expect(first?.previous.scan_at).toBe(times[0])
     expect(first?.next.scan_at).toBe(times[1])
@@ -189,14 +185,14 @@ test('discovery finds the newest capture in one read and keeps inclusive pair se
     })
 
     discovery.mockClear()
-    expect(await scans.latest(times.at(-1))).toBe(times.at(-1) ?? null)
+    expect(await scans.latest({ atOrAfter: times.at(-1) })).toBe(times.at(-1) ?? null)
     expect(discovery).toHaveBeenCalledTimes(1)
-    expect(await scans.latest(times[200])).toBe(times.at(-1) ?? null)
-    expect(await scans.loadNextPair(times[204])).toBeNull()
+    expect(await scans.latest({ atOrAfter: times[200] })).toBe(times.at(-1) ?? null)
+    expect(await scans.loadNextPair({ atOrAfter: times[204] })).toBeNull()
 
     discovery.mockResolvedValue([])
     expect(await scans.latest()).toBeNull()
-    expect(await scans.latest(times[204])).toBe(times[204] ?? null)
+    expect(await scans.latest({ atOrAfter: times[204] })).toBeNull()
     expect(await scans.loadNextPair()).toBeNull()
 
     for (const name of ['bad-name', 'scan.bad-time.jsonl', 'scan.2026-02-30T00:00:00.000Z.jsonl']) {
@@ -209,94 +205,41 @@ test('discovery finds the newest capture in one read and keeps inclusive pair se
   }
 })
 
-test('external scan references parse ISO times and filenames into capture times', () => {
+test('collected reads normalize references once and reject invalid references before storage access', async () => {
+  const ctx = {} as ActionCtx
+  const scans = reader(ctx)
   const time = '2026-10-03T00:00:00.000Z'
-  expect(scanAtFromReference(time)).toBe(time)
-  expect(scanAtFromReference(`scan.${time}.jsonl`)).toBe(time)
-  expect(scanAtFromReference('2026-10-03T00:00:00Z')).toBe(time)
-  expect(scanAtFromReference('2026-10-03T10:00:00+10:00')).toBe(time)
-
-  for (const invalid of [
-    '',
-    '2026-10-03',
-    '2026-02-30T00:00:00.000Z',
-    'scan.bad-time.jsonl',
-    'scan.invalid',
-  ]) {
-    expect(() => scanAtFromReference(invalid)).toThrow()
-  }
-})
-
-test('selects and decompresses one source object, with exact-time reads bypassing discovery', async () => {
-  const scan = {
-    scan_at: '2026-10-03T00:00:00.000Z',
-    entries: [
-      {
-        model_id: 'author/model',
-        variant: 'standard',
-        model: {
-          slug: 'author/model',
-          permaslug: 'author/model-v1',
-          input_modalities: ['text'],
-          output_modalities: ['image'],
-        },
-        endpoints: null,
-      },
-    ],
-  }
-
-  const text = scan.entries
-    .map((entry) => JSON.stringify({ ...entry, scan_at: scan.scan_at }))
-    .join('\n')
-
-  const name = `scan.${scan.scan_at}.jsonl`
-  const query = spyOn(ConvexHttpClient.prototype, 'query').mockResolvedValue([name])
-
-  const action = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
-    { bytes: Bun.gzipSync(text).buffer, codec: 'gzip' },
-  ])
-
-  const scans = createScanReader(createObjectReader('example-source', 'not-a-real-key'))
+  const batch = spyOn(objects, 'loadMany').mockResolvedValue([''])
+  const discovery = spyOn(objects, 'namesAtOrAfter').mockResolvedValue([])
 
   try {
-    expect(await scans.loadRaw()).toEqual(scan)
+    for (const reference of [
+      time,
+      `scan.${time}.jsonl`,
+      '2026-10-03T00:00:00Z',
+      '2026-10-03T10:00:00+10:00',
+    ]) {
+      expect(await scans.loadCollected(reference)).toEqual({ scan_at: time, entries: [] })
+      expect(batch).toHaveBeenLastCalledWith(ctx, [{ path: 'scans', name: `scan.${time}.jsonl` }])
+    }
 
-    expect(query.mock.calls[0]?.[1]).toEqual({
-      apiKey: 'not-a-real-key',
-      atOrAfter: '',
-      limit: 1,
-      order: 'desc',
-      path: 'scans',
-    })
+    expect(discovery).not.toHaveBeenCalled()
+    batch.mockClear()
 
-    expect(action.mock.calls[0]?.[1]).toEqual({
-      apiKey: 'not-a-real-key',
-      objects: [{ name, path: 'scans' }],
-    })
+    for (const invalid of [
+      '',
+      '2026-10-03',
+      '2026-02-30T00:00:00.000Z',
+      'scan.bad-time.jsonl',
+      'scan.invalid',
+    ]) {
+      await rejects(scans.loadCollected(invalid))
+    }
 
-    expect(await scans.loadRaw(scan.scan_at)).toEqual(scan)
-    expect(await scans.loadRaw(name)).toEqual(scan)
-    expect(query).toHaveBeenCalledTimes(1)
-    action.mockResolvedValue([null])
-    await rejects(scans.loadRaw(scan.scan_at), /Scan not found/)
-    action.mockResolvedValue([])
-    await rejects(scans.loadRaw(scan.scan_at), /invalid batch/)
-
-    query.mockResolvedValue([])
-
-    await rejects(scans.loadRaw(), {
-      data: 'No stored scans',
-      name: 'ConvexError',
-    })
-
-    query.mockResolvedValue(['not-a-scan'])
-
-    await rejects(scans.loadRaw(), {
-      data: { message: 'Invalid scan object name', name: 'not-a-scan' },
-      name: 'ConvexError',
-    })
+    expect(batch).not.toHaveBeenCalled()
+    expect(discovery).not.toHaveBeenCalled()
   } finally {
-    query.mockRestore()
-    action.mockRestore()
+    batch.mockRestore()
+    discovery.mockRestore()
   }
 })

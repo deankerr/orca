@@ -1,4 +1,5 @@
-import type { ScanReport } from '../../backend/convex/scan_analysis/profile'
+import type { ScanReport } from '@orca/backend/scan/analysis'
+
 import { escapeHtml } from './summary'
 
 /** Bundle only the local viewer; the saved report has no network or runtime dependencies. */
@@ -58,7 +59,7 @@ export async function renderHtml(report: ScanReport): Promise<string> {
     <p>Numeric summaries describe observed field values, not combined request performance. Numeric strings retain their source representation. Examples show up to three distinct primitive values with their entity identities.</p>
     <p>${report.selection.scope === 'orca' ? 'ORCA scope applies the current text-model selection and entity assembly rules.' : 'Collected data includes all collected models and endpoint source fields. Providers are counted once by identity, using the last collected body.'} This report describes one scan; capture time dates the observation.</p>
   </footer>
-  <noscript>Enable JavaScript to explore this report. Use the CLI’s --format json option for a plain data report.</noscript>
+  <noscript>Enable JavaScript to explore this report. Use scan_analysis/index:profile through the Convex CLI for a plain data report.</noscript>
 </main>
 <script type="application/json" id="report">${payload}</script>
 <script>${script.replaceAll('</script', '<\\/script')}</script>

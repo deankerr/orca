@@ -3,8 +3,8 @@ import { spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import type { ActionCtx } from '#generated/server'
+import * as objects from '#objects'
 
-import * as objects from '../../objects'
 import { buildSnapshot } from './snapshot'
 
 test('snapshot rejects missing data, unusable endpoint fields and empty snapshots before publication', async () => {

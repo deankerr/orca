@@ -1,7 +1,7 @@
 /**
  * Named, insert-only object store with deployment-wide read-source selection.
  *
- * Import `store` / `load` from this module. Callers pass uncompressed text.
+ * Callers pass uncompressed text and receive logical text in ordered batches.
  * UTF-8, gzip, local/remote reads, the storage backend and locators stay inside
  * the module. Writes always use local storage, configured in `backend.ts`.
  */
@@ -14,25 +14,13 @@ import type { ActionCtx } from '#generated/server'
 
 import { backendFor } from './backend'
 import { byteStoreFor } from './bytes'
-import { createObjectReader } from './client'
-import { assertReadCount, decode, readLocal } from './local'
-import type { NameSelection } from './local'
+import { connect } from './client'
+import { readLocal } from './local'
+import { assertReadCount, decode } from './protocol'
+import type { NameSelection, ObjectIdentity, ObjectReader } from './protocol'
 import type { Locator } from './table'
 
-/** Opaque identity of one stored object. Neither field is derived from the other. */
-export type ObjectIdentity = {
-  /** Grouping prefix. An object-storage backend uses this as the key prefix. */
-  path: string
-
-  /** Object name within `path`. Not parsed and not a storage locator. */
-  name: string
-}
-
-/** Logical read interface shared by deployment and standalone consumers. */
-export interface ObjectReader {
-  loadMany: (identities: ObjectIdentity[]) => Promise<(string | null)[]>
-  namesAtOrAfter: (selection: NameSelection) => Promise<string[]>
-}
+export type { ObjectReader } from './protocol'
 
 /**
  * Persist uncompressed text under an identity. Insert-only.
@@ -92,18 +80,7 @@ async function insertLocator(ctx: ActionCtx, identity: ObjectIdentity, locator: 
   }
 }
 
-/**
- * Return logical text from the configured source, or local storage when no source is configured.
- *
- * @returns The text, or `null` if nothing was stored under this pair.
- * @throws {ConvexError} If a locator exists but the blob behind it is gone.
- */
-export async function load(ctx: ActionCtx, args: ObjectIdentity): Promise<string | null> {
-  const [text] = await loadMany(ctx, [args])
-  return text ?? null
-}
-
-/** Load 1–100 exact identities in input order; remote bytes stay compressed until received here. */
+/** Load 1–100 identities in input order; absent objects are null, missing committed blobs throw. */
 export async function loadMany(
   ctx: ActionCtx,
   objects: ObjectIdentity[],
@@ -140,5 +117,5 @@ async function readSource(ctx: ActionCtx): Promise<ObjectReader | null> {
     throw new ConvexError('Object source cannot be this deployment')
   }
 
-  return createObjectReader(source, env.ORCA_OBJECTS_API_KEY ?? '')
+  return connect({ deployment: source, apiKey: env.ORCA_OBJECTS_API_KEY ?? '' })
 }

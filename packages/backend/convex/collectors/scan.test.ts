@@ -4,8 +4,7 @@ import { expect, spyOn, test } from 'bun:test'
 import { getFunctionName } from 'convex/server'
 
 import type { ActionCtx, MutationCtx } from '#generated/server'
-
-import * as scans from '../scan'
+import * as scans from '#scan'
 
 test('scan flag gates cron admission while manual capture remains available', async () => {
   const previous = process.env.ORCA_SCAN_CRON_ENABLED

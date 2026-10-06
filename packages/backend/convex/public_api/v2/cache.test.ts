@@ -5,15 +5,17 @@ import type { RegisteredMutation } from 'convex/server'
 
 import type { Doc, Id } from '#generated/dataModel'
 import type { ActionCtx, MutationCtx } from '#generated/server'
+import * as scans from '#scan'
 
-import * as objects from '../../objects'
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'
 import type { PUBLIC_API_V2_CACHE_TABLE } from './table'
 
 test('refresh rebuilds legacy or older captures and skips an unchanged capture', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockResolvedValue([`scan.${scanAt}.jsonl`])
+  const reader = scans.reader({} as ActionCtx)
+  const access = spyOn(scans, 'reader').mockReturnValue(reader)
+  const discovery = spyOn(reader, 'latest').mockResolvedValue(scanAt)
 
   const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
     updated_at: scanAt,
@@ -46,12 +48,7 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
       build.mockClear()
       await handler(ctx, {})
 
-      expect(discovery).toHaveBeenLastCalledWith(ctx, {
-        path: 'scans',
-        atOrAfter: key === undefined ? '' : `scan.${key}.jsonl`,
-        limit: 1,
-        order: 'desc',
-      })
+      expect(discovery).toHaveBeenLastCalledWith({ atOrAfter: key ?? null })
 
       expect(build).toHaveBeenCalledTimes(key === scanAt ? 0 : 1)
       expect(replacements).toHaveLength(key === scanAt ? 0 : 1)
@@ -61,7 +58,20 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
         expect(replacements[0]).not.toHaveProperty('scan_id')
       }
     }
+
+    discovery.mockResolvedValue(null)
+    build.mockClear()
+    replacements.length = 0
+
+    for (const key of [undefined, scanAt]) {
+      cachedScanAt = key
+      await handler(ctx, {})
+    }
+
+    expect(build).not.toHaveBeenCalled()
+    expect(replacements).toHaveLength(0)
   } finally {
+    access.mockRestore()
     discovery.mockRestore()
     build.mockRestore()
     logs.mockRestore()
