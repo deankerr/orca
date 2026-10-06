@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
+import { PostHogSignOutForm } from '@/components/app-layout/posthog-identity'
 import { Button } from '@/components/ui/button'
 
 import { signOutAdmin } from './actions'
@@ -30,11 +31,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             Signed in as {auth.user.email}. This account has not been granted admin access.
           </p>
           <p className="font-mono text-xs">{viewer.userId}</p>
-          <form action={signOutAdmin}>
+          <PostHogSignOutForm action={signOutAdmin}>
             <Button type="submit" variant="outline">
               Sign out
             </Button>
-          </form>
+          </PostHogSignOutForm>
         </PageHeader>
       </PageContainer>
     )

@@ -20,9 +20,9 @@
 
 ## Observability
 
-- Axiom Log Stream is enabled on the production deployment.
+- PostHog is the primary observability destination. Production streams Convex logs and reports exceptions to PostHog; Axiom remains connected as a secondary log destination.
 - Console logs and uncaught exceptions are captured with Convex function details. Per-function execution statistics and deployment metrics are recorded automatically.
-- Investigate using Axiom and Convex's existing logs and metrics before adding instrumentation. Do not introduce custom observability tables, wrappers, or error logging that duplicates this coverage.
+- Investigate using PostHog and Convex's existing logs and metrics before adding instrumentation. Do not introduce custom observability tables, wrappers, or error logging that duplicates this coverage.
 
 <!-- convex-ai-start -->
 
