@@ -105,5 +105,6 @@ Content prepared from entity events for a consumer, before presentation as a mes
 Consumers can apply different field selection, filtering and batching policies to the same events.
 
 **Batch alert**:
-One identical field change shared by multiple entities at the same observation, together with their
-identities and source events. Other field changes remain in individual alerts.
+One identical field change shared by multiple entities, or endpoint unlistings, at the same
+observation, together with their identities and source events. Other field changes remain in
+individual alerts.

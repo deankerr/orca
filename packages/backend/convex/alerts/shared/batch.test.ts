@@ -80,12 +80,146 @@ test('extracts each shared item independently, keeps unique fields, and drops on
   expect(result[2]).toEqual(bucket(0, [unique]))
   expect(occurrences(result)).toBe(11)
   expect(JSON.stringify(input)).toBe(before)
-  expect(batchAlerts(input.slice(0, 4))).toEqual(input.slice(0, 4))
+  expect(batchAlerts(input.slice(0, 2))).toEqual(input.slice(0, 2))
+  expect(batchAlerts(input.slice(0, 3)).map((item) => item.type)).toEqual([
+    'batch',
+    'batch',
+    'event',
+  ])
   expect(batchAlerts(Array.from({ length: 5 }, () => bucket(0)))).toHaveLength(5)
 })
 
+test('batches five endpoint unlistings at one observation and renders their provider group', () => {
+  const endpoints = [
+    ['deepseek/deepseek-v4-flash-0731', '78a678'],
+    ['deepseek/deepseek-v4-pro', '6c7fe4'],
+    ['deepseek/deepseek-v4-pro-0813', 'ca5f0f'],
+    ['deepseek/deepseek-v4.1-flash', '054ac2'],
+    ['z-ai/glm-5.3-flash', '6b1894'],
+  ]
+  const members = endpoints.map(([model_id, prefix], index): IndividualAlert => {
+    const { event, ...member } = bucket(index)
+
+    if (event.entity_kind !== 'endpoint') {
+      throw new Error('Expected endpoint fixture')
+    }
+
+    return {
+      ...member,
+      event: {
+        type: 'endpoint_removed',
+        entity_kind: 'endpoint',
+        entity_id: `${prefix}-endpoint`,
+        observed_at: event.observed_at,
+        before: {},
+        context: {
+          model: { model_id, display_name: model_id },
+          provider: { provider_id: 'nextbit', display_name: 'NextBit' },
+          endpoint: {
+            ...event.context.endpoint,
+            endpoint_id: `${prefix}-endpoint`,
+            provider_tag: 'nextbit/fp8',
+          },
+        },
+      },
+    }
+  })
+  const result = batchAlerts(members)
+  const cards = renderDiscordBatch(result, urls)
+  const embed = cards[0]?.message.embeds?.[0]
+
+  expect(result).toEqual([{ type: 'batch', change: { type: 'endpoint_removed' }, members }])
+  expect(cards).toHaveLength(1)
+  expect(cards[0]?.event_ids.toSorted()).toEqual(
+    members.map((member) => member.event_id).toSorted(),
+  )
+  expect(embed?.title).toBeUndefined()
+  expect(embed?.author?.name).toBe('NextBit • nextbit')
+  expect(embed?.author?.url).toBe('https://orca.orb.town/?q=nextbit')
+  expect(embed?.author?.icon_url).toContain('nextbit')
+  expect(embed?.color).toBe(0xef_44_44)
+  expect(embed?.description).toStartWith('− Provider **NextBit** unlisted 5 endpoints.\n\n')
+  expect(embed?.description).not.toContain('**`nextbit`**')
+  expect(embed?.description).not.toContain('nextbit/fp8')
+
+  for (const [model_id, prefix] of endpoints) {
+    expect(embed?.description?.split('\n')).toContain(`\`${model_id}\` • \`${prefix}\``)
+  }
+
+  const paged = batchCards(
+    {
+      type: 'batch',
+      change: { type: 'endpoint_removed' },
+      members: Array.from({ length: 45 }, (_, index) => ({
+        ...members[index % 5],
+        event_id: `page-${index}`,
+      })),
+    },
+    urls,
+  )
+
+  expect(paged.map((card) => card.event_ids.length)).toEqual([40, 5])
+
+  for (const [index, card] of paged.entries()) {
+    expect(card.message.embeds?.[0]?.author).toEqual(embed?.author)
+    expect(card.message.embeds?.[0]?.footer?.text).toBe(`${index + 1}/2`)
+    expect(card.message.embeds?.[0]?.description).toContain('unlisted 45 endpoints.')
+  }
+
+  const mixed = structuredClone(members)
+
+  if (mixed[0].event.entity_kind === 'endpoint') {
+    mixed[0].event.context.provider.provider_id = 'another-provider'
+  }
+
+  const mixedEmbed = renderDiscordBatch(batchAlerts(mixed), urls)[0]?.message.embeds?.[0]
+
+  expect(mixedEmbed?.author).toBeUndefined()
+  expect(mixedEmbed?.title).toBe('5 endpoints unlisted')
+
+  expect(batchAlerts(members.slice(0, 2))).toEqual(members.slice(0, 2))
+  expect(batchAlerts(members.slice(0, 3))).toEqual([
+    { type: 'batch', change: { type: 'endpoint_removed' }, members: members.slice(0, 3) },
+  ])
+  expect(batchAlerts(Array.from({ length: 5 }, () => members[0]))).toHaveLength(5)
+
+  const otherScan = members.slice(0, 3).map((member, index) => ({
+    ...member,
+    event: {
+      ...member.event,
+      observed_at: index === 0 ? '2026-10-01T18:40:00Z' : member.event.observed_at,
+    },
+  }))
+
+  expect(batchAlerts(otherScan)).toEqual(otherScan)
+
+  for (const entity_kind of ['model', 'provider'] as const) {
+    const departures: IndividualAlert[] = members.map((member, index) => ({
+      ...member,
+      event: {
+        entity_id: `${entity_kind}-${index}`,
+        observed_at: member.event.observed_at,
+        before: {},
+        ...(entity_kind === 'model'
+          ? {
+              type: 'model_removed',
+              entity_kind,
+              context: { model: { model_id: `model-${index}`, display_name: 'Model' } },
+            }
+          : {
+              type: 'provider_removed',
+              entity_kind,
+              context: { provider: { provider_id: `provider-${index}`, display_name: 'Provider' } },
+            }),
+      },
+    }))
+
+    expect(batchAlerts(departures)).toEqual(departures)
+  }
+})
+
 test('keeps scans, kinds, operations, values, and lifecycle events separate', () => {
-  const input = Array.from({ length: 4 }, (_, i) => bucket(i))
+  const input = Array.from({ length: 2 }, (_, i) => bucket(i))
   const base = bucket(4)
   const otherScan: IndividualAlert = {
     ...base,
@@ -123,7 +257,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
 
   expect(batchAlerts(all)).toEqual(all)
 
-  const numeric = Array.from({ length: 4 }, (_, i) =>
+  const numeric = Array.from({ length: 2 }, (_, i) =>
     bucket(i, [{ type: 'field_updated', path: 'context_length', before: 1, after: 2 }]),
   )
   const distinct: FieldChange[] = [
@@ -134,7 +268,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
 
   expect(
     batchAlerts([...numeric, ...distinct.map((change, i) => bucket(i + 4, [change]))]),
-  ).toHaveLength(7)
+  ).toHaveLength(5)
 })
 
 test('normalizes record keys and preserves eligibility when rendering a remainder', async () => {
@@ -198,12 +332,12 @@ test('batch cards identify all three entity types and page long lists without lo
         before: 'https://example.com/privacy',
         after: 'https://example.com/legal/privacy',
       },
-      ['provider', 'dataPolicy.privacyPolicyURL', 'https://example.com/legal/privacy'],
+      ['Provider • `provider`', 'dataPolicy.privacyPolicyURL', 'https://example.com/legal/privacy'],
     ],
     [
       bucket(0).event,
       unique,
-      ['author/model-0', 'provider/fp8', 'abcdef', 'max_output', '943,718', '131,072'],
+      ['author/model-0', 'provider', 'abcdef', 'max_output', '943,718', '131,072'],
     ],
     [
       bucket(0).event,
@@ -213,11 +347,14 @@ test('batch cards identify all three entity types and page long lists without lo
   ]
 
   for (const [event, change, expected] of cases) {
-    const cards = batchCards({
-      type: 'batch',
-      change,
-      members: [{ type: 'event', event_id: 'source', event }],
-    })
+    const cards = batchCards(
+      {
+        type: 'batch',
+        change,
+        members: [{ type: 'event', event_id: 'source', event }],
+      },
+      urls,
+    )
     const text = JSON.stringify(cards)
 
     for (const part of expected) {
@@ -226,7 +363,7 @@ test('batch cards identify all three entity types and page long lists without lo
   }
 
   const members = Array.from({ length: 100 }, (_, i) => bucket(i))
-  const cards = batchCards({ type: 'batch', change: shared, members })
+  const cards = batchCards({ type: 'batch', change: shared, members }, urls)
 
   expect(cards.length).toBeGreaterThan(1)
   expect(cards.flatMap((card) => card.event_ids).toSorted()).toEqual(
@@ -235,8 +372,57 @@ test('batch cards identify all three entity types and page long lists without lo
 
   for (const { message, event_ids } of cards) {
     expect(message.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4000)
+    expect(message.embeds?.[0]?.description).toContain('**Provider** • `provider`\n')
     expect(event_ids.length).toBeLessThanOrEqual(40)
     expect(message.allowed_mentions).toEqual({ parse: [] })
+  }
+})
+
+test('endpoint batch cards group by the smaller dimension and keep each identity on one line', () => {
+  for (const [providerCount, modelCount] of [
+    [1, 6],
+    [6, 1],
+    [2, 3],
+    [3, 2],
+    [2, 2],
+  ]) {
+    const members = Array.from({ length: 6 }, (_, index) => {
+      const member = bucket(index)
+
+      if (member.event.entity_kind === 'endpoint') {
+        member.event.entity_id = `00000${index}-endpoint`
+        member.event.context.model.model_id = `author/model-${index % modelCount}`
+        member.event.context.provider.provider_id = `provider-${index % providerCount}`
+        member.event.context.endpoint.provider_tag = `route-${index}/flex`
+      }
+
+      return member
+    })
+    const cards = batchCards({ type: 'batch', change: shared, members }, urls)
+    const description = cards[0]?.message.embeds?.[0]?.description ?? ''
+    const groupByModel = modelCount < providerCount
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0]?.event_ids.toSorted()).toEqual(
+      members.map((member) => member.event_id).toSorted(),
+    )
+    expect(description.match(/^\*\*/gm)).toHaveLength(Math.min(providerCount, modelCount))
+
+    for (let index = 0; index < 6; index += 1) {
+      const group = groupByModel
+        ? `author/model-${index % modelCount}`
+        : `provider-${index % providerCount}`
+      const label = groupByModel ? `route-${index}/flex` : `author/model-${index % modelCount}`
+
+      expect(description).toContain(
+        groupByModel ? `**\`${group}\`**\n` : `**Provider** • \`${group}\`\n`,
+      )
+      expect(description.split('\n')).toContain(`\`${label}\` • \`00000${index}\``)
+    }
+
+    if (!groupByModel) {
+      expect(description).not.toContain('route-')
+    }
   }
 })
 
@@ -343,11 +529,14 @@ test('oversized batch details and identity fields truncate without losing member
 
       return member
     })
-    const cards = batchCards({
-      type: 'batch',
-      change: { ...shared, removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}`) },
-      members,
-    })
+    const cards = batchCards(
+      {
+        type: 'batch',
+        change: { ...shared, removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}`) },
+        members,
+      },
+      urls,
+    )
 
     expect(cards.flatMap((card) => card.event_ids).toSorted()).toEqual(
       members.map((member) => member.event_id).toSorted(),
