@@ -1,32 +1,45 @@
 # discord-sender
 
 A small Convex component for delivering an ordered batch of Discord messages to
-multiple webhooks. This is the first implementation slice; it is not wired into
-ORCA or the existing `discord-delivery` package.
+multiple webhooks. It remains independent of ORCA and the existing
+`discord-delivery` package.
 
-## Ownership
+## Contract
 
-The caller constructs payloads, chooses recipients and supplies a deadline. The
-component stores those inputs once and records delivery attempts and responses.
-Workpool owns queueing, dispatch, concurrency and completion callbacks.
+The caller constructs serialized JSON payloads, chooses a snapshot of recipient
+webhook IDs, and supplies a deadline. The component owns delivery and inspection;
+Workpool owns execution, dispatch, concurrency and completion callbacks.
 
-The component owns three tables. Workpool and its dependencies have their own
-isolated tables; the three-table constraint applies to our delivery model.
+- Messages stay ordered within each input/webhook pair. Separate inputs may
+  interleave at the same webhook; avoiding unwanted overlap is the caller's responsibility.
+- Each recipient progresses independently. Permanent rejection stops its remaining
+  messages. Other recipients continue.
+- Network errors, 429 and 5xx retry the current message until the deadline.
+  An ambiguous response can therefore produce a duplicate Discord message.
+- The deadline is checked before every request. An in-flight request may finish
+  afterward; the successful prefix remains if the remainder expires.
+- HTTP 2xx means delivery succeeded. A usable Discord message ID is optional,
+  particularly with custom receivers or an unreadable response body.
+- `finishedAt` means every recipient is terminal, including failed, expired and
+  canceled deliveries. An empty recipient list finishes immediately and reserves
+  its batch key; empty message lists are rejected.
 
-| Table        | Contents                                                              | Mutation policy                                 |
-| ------------ | --------------------------------------------------------------------- | ----------------------------------------------- |
-| `webhooks`   | Full URL and optional name                                            | Immutable registration; a new URL gets a new ID |
-| `inputs`     | Batch key, ordered `{ key, payload }` messages, webhook IDs, deadline | Only `finishedAt` changes                       |
-| `deliveries` | Input/webhook/message position, claim or outcome, HTTP response       | Append only                                     |
+The component still owns three tables. Workpool and its dependencies own their
+execution tables separately.
 
-Each successful message has two ledger rows: a claim before HTTP and a success
-referencing that claim. Outcomes retain status, headers, raw response body and
-message/channel IDs when available. The original payload lives only in `inputs`;
-Workpool jobs contain just input and webhook IDs.
+| Table        | Contents                                             | Mutation policy           |
+| ------------ | ---------------------------------------------------- | ------------------------- |
+| `webhooks`   | Full normalized URL and optional name                | Immutable registration    |
+| `inputs`     | Batch key, ordered messages, recipient IDs, deadline | Only `finishedAt` changes |
+| `deliveries` | Scheduling, claims, responses and terminal outcomes  | Append only               |
 
-## Use from a host app
+Payloads live once in `inputs`; execution jobs and ledger records carry references.
+Every HTTP attempt has a preceding claim and a linked outcome. Workpool IDs remain
+in the ledger so execution can be inspected without storing a second mutable task state.
 
-Register the component when the app is ready to adopt it:
+## Host interface
+
+Register the component in the host app:
 
 ```ts
 // convex/convex.config.ts
@@ -38,8 +51,8 @@ app.use(discordSender)
 export default app
 ```
 
-Call it from a host mutation. Authentication and recipient selection belong in
-the host; component functions are not exposed directly to clients.
+Call it from a host mutation. Authentication, subscription ownership, receiver URL
+permissions and source-event provenance belong in the host wrappers.
 
 ```ts
 const webhookId = await ctx.runMutation(components.discordSender.api.registerWebhook, {
@@ -50,7 +63,7 @@ const webhookId = await ctx.runMutation(components.discordSender.api.registerWeb
 const inputId = await ctx.runMutation(components.discordSender.api.submitBatch, {
   key: 'scan:123:alerts:v1',
   webhookIds: [webhookId],
-  expiresAt: Date.now() + 60_000,
+  expiresAt: deadline,
   messages: [
     { key: 'heading', payload: JSON.stringify({ content: 'Scan results' }) },
     { key: 'details', payload: JSON.stringify({ embeds: [embedBuilder.toJSON()] }) },
@@ -58,153 +71,98 @@ const inputId = await ctx.runMutation(components.discordSender.api.submitBatch, 
 })
 ```
 
-`payload` is a serialized JSON object, compatible with discord.js builder output.
-Message keys must be nonempty and unique within a batch. Repeating a batch key
-with identical arguments returns the existing input ID without enqueueing again;
-different arguments with that key are rejected. Use a new key to send again.
+`payload` preserves the exact serialized JSON object, including discord.js builder
+output. The caller owns Discord content limits, card construction and mention policy.
+Message keys must be nonempty and unique within the batch.
 
-`registerWebhook` returns the existing ID for the same normalized URL and keeps
-its original name. HTTP(S) receiver URLs are accepted, including custom endpoints
-for development. Query parameters such as `thread_id` are preserved. Requests use
-`wait=true` for receipts and `with_components=true` when the payload includes
-components, following [Discord's execute-webhook contract](https://docs.discord.com/developers/resources/webhook#execute-webhook).
+A batch key is unique across the component instance. Repeating it with identical
+arguments returns the existing input ID. Any changed argument conflicts, including
+recipient order, payload bytes or deadline. Submission retries must reuse the
+original deadline; development rerenders use a fresh key and deadline.
 
-Inspect the immutable input with `api.getInput({ inputId })` and the ledger with
-`api.listDeliveries({ inputId, webhookId? })`. The latter groups rows by webhook
-and orders events within each webhook by creation time. Both are ordinary
-queries, requiring no replay or external requests.
+`registerWebhook` accepts HTTP(S), including custom development receivers. The same
+normalized full URL returns the original ID and name. Thread query parameters are
+preserved; execution sets `wait=true` and enables `with_components` when needed.
+Different query strings can identify destinations sharing one Discord webhook.
 
-## Execution
+Inspection and pending cancellation:
 
-```mermaid
-sequenceDiagram
-    participant App
-    participant Submit as submitBatch mutation
-    participant Pool as Workpool (5 jobs)
-    participant Worker as One webhook action
-    participant Ledger as deliveries
-    participant Discord
-    App->>Submit: ordered messages + recipients + deadline
-    Submit->>Submit: persist one input
-    loop each webhook, in the same transaction
-        Submit->>Pool: enqueue {inputId, webhookId}
-    end
-    Pool->>Worker: dispatch when capacity is available
-    Worker->>Ledger: load input and claim first message
-    loop messages in order, while before deadline
-        Worker->>Discord: POST with wait=true
-        Discord-->>Worker: response
-        Worker->>Ledger: record outcome and claim next message
-    end
-    Worker-->>Pool: return
-    Pool->>Ledger: completion callback; finish input if all recipients terminal
-```
+- `getInput({ inputId })`: original submission and completion timestamp.
+- `listInputs({ from, to, limit? })`: newest submissions in the half-open time
+  window `[from, to)`, with full inputs and `hasMore`. Default limit 25, maximum 100.
+  Time is submission time, independent of historical source-event timestamps.
+  Narrow the window when truncated; this is bounded discovery, not an export API.
+- `listDeliveries({ inputId, webhookId? })`: raw ledger, grouped by recipient and
+  chronological within each recipient, including original responses and receipts.
+- `getStatus({ inputId })`: recipient delivery states, successful counts, first
+  unsent positions, `scheduledAt` wake times and current Workpool execution states.
+  A wake time may resume the next message or record deadline expiry, not just retry
+  a failed request. An execution being finished does not imply successful delivery.
+  Summaries read only each recipient’s latest ledger entry: ordered delivery makes
+  its message index sufficient to identify the successful prefix.
+- `cancelPendingDelivery({ inputId, webhookId })`: cancels a pending recipient job,
+  including a delayed retry. Returns false for running, terminal or missing work.
+  Running work cannot currently be revoked; unsubscribe affects future submissions.
 
-For ten recipients, submission creates ten Workpool jobs. Up to five run across
-this component instance at once. Each job drains one recipient's messages in
-order; Workpool admits waiting jobs as slots become available. There are no
-competing workers scanning for unclaimed recipients.
+## Retry decisions
 
-Each enqueue includes its own completion context, so submission uses
-`enqueueAction` per recipient within one transaction. This allows a completion
-callback to identify the recipient even when its action throws.
+Workpool admits up to five recipient jobs across the instance. Each action drains
+its recipient until completion, permanent rejection, expiry, or a required wait.
+A wait records the result and enqueues a delayed continuation atomically, releasing
+its slot. The continuation resumes the same message after failure, or the next
+message after a successful exhausted-bucket response.
 
-The action loads payloads once. Mutations read the current claim/outcome, then
-append the result and next claim together. They use the action's cached immutable
-deadline/message count rather than rereading the entire payload array for every
-message. Concurrent claims are serialized by Convex transactions.
+Retry scheduling follows Discord's `Retry-After`/`retry_after` durations. Network
+and server errors use exponential backoff from one second to sixty seconds; 429
+waits have a one-second minimum. Successful responses reporting an exhausted bucket
+and `X-RateLimit-Reset-After` defer the next message. The deadline bounds every wait.
+These are scheduling defaults, not assumptions about Discord's fixed rate limits.
 
-The deadline is checked before each new request. A request already in flight may
-finish after the deadline. Expiry records the first unsent message position and
-stops that recipient; later positions remain unsent. A non-2xx response or network
-error similarly stops the recipient. Other recipients continue. An unexpected
-action failure is recorded through Workpool's completion callback.
+Automatic whole-action retries are disabled: retry decisions need the response's
+specific delay and the ledger's message position. Workpool still schedules and
+executes every continuation. Unexpected action exceptions currently stop the recipient.
 
-`finishedAt` means every recipient is terminal, including failures and expiry;
-it does not mean every message succeeded. An empty recipient list finishes
-immediately. Empty message lists are rejected.
+Protocol reference: https://docs.discord.com/developers/topics/rate-limits
 
-## Deliberate limits of this slice
+## Open design questions
 
-- Workpool action retries are disabled. HTTP errors, including 429, are recorded
-  without retrying. Discord bucket/global cooldown handling remains to be built.
-- Ordering holds within one input/webhook pair. Separate batches targeting the
-  same webhook can overlap; cross-batch serialization remains to be built.
-- There are no leases, watchdogs or separate recovery queues. Workpool owns the
-  execution lifecycle. The ledger guard prevents another worker from sending an
-  already claimed message; reclaiming abandoned claims is not implemented.
-- Receipts provide data for future message fetch/edit/delete operations; those
-  operations are not implemented. A lost response can leave no receipt.
-- Inputs and query results must fit ordinary Convex transaction/document limits.
-  There is no pagination, retention, payload cleanup, multipart upload or DLQ.
+Local comments identify the corresponding decisions beside their implementation.
 
-## Decisions before integration
+- Shared/global cooldown coordination remains open. This iteration observes hints
+  within one recipient chain; other chains can continue and encounter their own
+  429s. Full URLs, thread destinations and Discord bucket identities are different.
+  A shared gate needs an explicit scope, including the treatment of custom hosts.
+- Discord advises stopping use of a webhook after 404. This iteration stops the
+  current recipient batch; deciding how permanent rejection disables a destination
+  for future submissions remains part of webhook lifecycle design.
+- Webhook rename, disable, rotation and immediate unsubscribe are deferred. Rotation
+  must preserve the original destination needed to manage historical receipts.
+- Running cancellation and targeted operator retry are deferred. A running job can
+  enqueue a new continuation, so canceling its old Workpool ID alone is insufficient.
+  Resubmitting under a new key can resend an already successful prefix.
+- Workpool handles execution failures, but resuming an interrupted action with an
+  unresolved claim needs a deliberate delivery policy. No additional watchdog or
+  recovery queue exists in this iteration.
+- Message fetch/edit/delete are deferred. Preserve original receipts and payloads;
+  future edits should have their own ledger entries.
+- Future scheduling, source-time ordering, later fan-out, personalized payloads,
+  host completion callbacks, retention, multipart uploads and DLQ remain optional.
+- Inputs and inspection results must fit Convex document/transaction limits.
+  Full payload discovery and full ledger reads suit current small batches; larger
+  histories may warrant metadata-only discovery and pagination.
 
-These are discussion points, not additional requirements for this first slice.
-
-- **Finding and interpreting history.** The current queries require an input ID;
-  the host must retain it. The original "find malformed alerts early this morning"
-  workflow needs discovery by time, batch/message key, recipient and outcome.
-  Decide whether time means source-event time, submission time or delivery time;
-  historical ingestions make those different. Recommend bounded inspection queries
-  that also derive message outcomes, including the unsent suffix after failure or
-  expiry, so each caller does not have to interpret the ledger independently.
-- **Scheduling historical work.** `expiresAt` is a cutoff, not a not-before time
-  or ordering priority. Jobs are eligible immediately. The host can already derive
-  expiry from `scan_at` to discard stale backfills. A future `sendAt` needs a clear
-  choice between scheduling, source-time ordering, or both; recipient concurrency
-  alone provides neither cross-batch order nor a globally consecutive broadcast.
-- **Idempotency and changing recipients.** A batch key is unique across the component
-  instance. Identity comparison includes the exact deadline, recipient order,
-  message order, keys and payload strings. Use a stable deadline when retrying a
-  submission; recomputing `Date.now() + TTL` with the same key conflicts. Recipients
-  are a submission-time snapshot, including an empty list, which still reserves
-  the key. Adding subscribers to an existing broadcast needs an explicit operation
-  if the original payload is to remain stored once. Submitting under a new key sends
-  again to every included recipient. All recipients share one payload array and
-  deadline; personalized content or expiry currently requires separate inputs.
-  Keep exact-match idempotency for now; decide
-  separately whether recipient order should matter and whether later fan-out is needed.
-- **Webhook lifecycle and ownership.** Registration currently deduplicates by full
-  normalized URL. There is no list/get, rename, disable, unsubscribe or token-rotation
-  interface. Permanent HTTP failures stop only that input's recipient; future inputs
-  can still target the URL. Decide how disabling or rotating a webhook affects
-  already queued work while preserving the destination needed to manage old receipts.
-  Subscription ownership, allowed receiver URLs and permission to inspect payloads
-  belong in host wrappers; the component accepts custom HTTP(S) receivers and has
-  no tenant identity.
-- **Operator controls and completion.** There is no pause, cancellation or targeted
-  retry interface, and the host receives no completion callback. Reusing a finished
-  input's key does not restart it; a fresh submission may duplicate its successful
-  prefix. Decide whether operators need to resume only failed/unsent work, and
-  whether reactive queries are sufficient for completion or a host callback is
-  useful. Use Workpool's facilities for execution control rather than introducing
-  a second scheduler. Any pause/cancel contract must distinguish pending work from
-  HTTP requests already in flight.
-- **Payload and receipt guarantees.** Validation checks JSON-object shape, not
-  Discord's content limits or card semantics. The host owns construction, batching,
-  filtering and mention policy. `succeeded` means HTTP 2xx; a custom receiver or an
-  unreadable response body can leave no usable message ID. Future message management
-  should expose that distinction and preserve thread routing from the URL/receipt.
-  The ledger explains accepted work only: source-event links, filtered alerts,
-  rendering failures and reasons for never submitting a batch need host provenance.
-  Development rerendering can use a fresh key and deadline through a host-only action,
-  without changing the production delivery history.
-
-The existing `discord-delivery` package already has scheduled ordering, pause,
-destination disabling/repair, message management, time-filtered inspection and
-dead-letter delivery. Those are capabilities to evaluate before replacing it,
-not a reason to carry over its control tables or recovery machinery.
+The existing `discord-delivery` package has additional operator and integration
+features. Evaluate them individually before replacing it. ORCA mounts this component
+alongside the existing sender for development; its alert producers still use the
+existing component.
 
 ## Validation
 
-From the repository root:
-
 ```sh
 bun test packages/discord-sender
-bun run fix
+bun run fix packages/discord-sender
 ```
 
-The tests run the real Workpool and its Batch Worker dependency in `convex-test`
-under Bun, with HTTP mocked at `fetch`. They exercise the full scheduling path,
-ordered sends, persisted claims, receipts, deadlines and terminal failures.
+Tests use real Workpool and its Batch Worker dependency under `convex-test`, with
+HTTP mocked at `fetch`. They exercise scheduling, ordered delivery, retry
+continuations, deadline cutoffs, pending cancellation, receipts and inspection.

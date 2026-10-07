@@ -71,7 +71,7 @@ automatic admission. The obsolete webhook URL default was removed from dev/previ
 on October 7, 2026; existing deployments running earlier code retain their values
 until migrated. See docs/orca/discord.md for registration and development demo procedures.
 
-The reusable sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
+The `discordDelivery` sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
 **1-second exponential retry backoff capped at 60 seconds**, and a **30-second recovery
 poll** while a scheduled request remains active. Sleeps for future send times and
 cooldowns are capped at **24 hours** per wakeup; the original deadline still applies.
@@ -210,3 +210,7 @@ Production origin **`https://orca.orb.town`** is repeated in Convex AuthKit regi
 Next.js callback defaults, and the backend web-origin setting. Keep them aligned.
 Logo origins are configured separately for web and Discord. WorkOS login policy and
 logout allowlists are managed outside Git.
+
+The backend also mounts `discordSender` for development exercises; ORCA alert
+producers still use `discordDelivery`. Its webhook records are independent.
+Delivery and retry defaults for the new component live in packages/discord-sender/README.md.

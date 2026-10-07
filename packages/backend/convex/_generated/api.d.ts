@@ -254,4 +254,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   discordDelivery: import("@orca/discord-delivery/_generated/component.js").ComponentApi<"discordDelivery">;
+  discordSender: import("@orca/discord-sender/_generated/component.js").ComponentApi<"discordSender">;
 };
