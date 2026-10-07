@@ -221,11 +221,11 @@ test('cheap exclusions, lifecycle and schedule changes do not read history', asy
 })
 
 test('filtering precedes batching and database failures propagate', async () => {
-  const rows = Array.from({ length: 5 }, (_, i) => update(`endpoint-${i}`, oldPrice, newPrice))
-  const result = await prepareBatch(rows, async () => [true, false, false, false, false])
+  const rows = Array.from({ length: 3 }, (_, i) => update(`endpoint-${i}`, oldPrice, newPrice))
+  const result = await prepareBatch(rows, async () => [true, false, false])
 
   expect(result.skipped).toBe(1)
-  expect(result.alerts).toHaveLength(4)
+  expect(result.alerts).toHaveLength(2)
   expect(result.alerts.every((alert) => alert.type === 'event')).toBe(true)
 
   await rejects(

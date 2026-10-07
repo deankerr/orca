@@ -682,10 +682,10 @@ test('failed events are logged and omitted before batching; healthy events keep 
     expect(() => curate(unsupported)).toThrow('supported_parameters')
     expect(() => curate(missingValue)).toThrow('context_length')
 
-    // A failed fifth entity cannot make four healthy entities eligible for a batch.
-    const four = await prepareBatch([...good.slice(0, 4), unsupported])
+    // A failed third entity cannot make two healthy entities eligible for a batch.
+    const two = await prepareBatch([...good.slice(0, 2), unsupported])
 
-    expect(four.alerts.every((alert) => alert.type === 'event')).toBe(true)
+    expect(two.alerts.every((alert) => alert.type === 'event')).toBe(true)
 
     expect(prepareAlert(unsupported)).toBeNull()
     expect(prepareAlert(unsupported)).toBeNull()

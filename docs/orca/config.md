@@ -68,6 +68,10 @@ missing/`false` disables it.
 See [Discord operations](discord.md) and [development data](development-data.md)
 before enabling collection or replaying history.
 
+Discord batching requires **3 distinct entities** with the same change at one observation,
+including endpoint unlistings. The threshold is hardcoded in
+`packages/backend/convex/alerts/shared/batch.ts`.
+
 ### Developer login storage: project defaults and deployment environment
 
 Retrieve through the authenticated Convex CLI for browser login.

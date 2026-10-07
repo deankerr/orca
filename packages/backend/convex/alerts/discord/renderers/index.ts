@@ -11,7 +11,7 @@ import { providerCard } from './providerCard'
 export function renderDiscordBatch(alerts: Alert[], urls: DiscordUrls): Notification[] {
   return alerts.flatMap((alert) =>
     alert.type === 'batch'
-      ? batchCards(alert)
+      ? batchCards(alert, urls)
       : [{ message: renderDiscord(alert.event, urls), event_ids: [alert.event_id] }],
   )
 }

@@ -2,12 +2,16 @@ import { canonicalJson } from '../../json'
 import type { EntityAlert, FieldChange } from './curate'
 
 export type IndividualAlert = { type: 'event'; event_id: string; event: EntityAlert }
-export type BatchAlert = { type: 'batch'; change: FieldChange; members: IndividualAlert[] }
+export type BatchAlert = {
+  type: 'batch'
+  change: FieldChange | { type: 'endpoint_removed' }
+  members: IndividualAlert[]
+}
 export type Alert = IndividualAlert | BatchAlert
 
-const BATCH_THRESHOLD = 5
+const BATCH_THRESHOLD = 3
 
-/** Extract repeated field items; retain the remaining event and its source identity. */
+/** Group endpoint unlistings and repeated field items; retain source identities and residual fields. */
 export function batchAlerts(events: IndividualAlert[]): Alert[] {
   const groups = new Map<
     string,
@@ -17,11 +21,14 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
   for (const bucket of events) {
     const { event } = bucket
 
-    if (!('changes' in event)) {
-      continue
-    }
+    const changes: BatchAlert['change'][] =
+      event.type === 'endpoint_removed'
+        ? [{ type: 'endpoint_removed' }]
+        : 'changes' in event
+          ? event.changes
+          : []
 
-    for (const [index, change] of event.changes.entries()) {
+    for (const [index, change] of changes.entries()) {
       const key = JSON.stringify([event.observed_at, event.entity_kind, canonicalJson(change)])
       let group = groups.get(key)
 
@@ -62,7 +69,15 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
     const { event } = bucket
 
     if (!('changes' in event)) {
-      result.push(bucket)
+      const batch = extracted.get(bucket)?.get(0)
+
+      if (batch === undefined) {
+        result.push(bucket)
+      } else if (!emitted.has(batch)) {
+        result.push(batch)
+        emitted.add(batch)
+      }
+
       continue
     }
 
