@@ -52,7 +52,7 @@ test('ingestion validates and normalizes operator start_at before selecting scan
   }
 })
 
-test('only successful fresh ingestion events schedule enabled Discord broadcasts; retries never broadcast', async () => {
+test('ingestion leaves Discord admission to the event transaction and continues after event failures', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -74,7 +74,6 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
-  let failSchedule = false
   let failAcceptance = false
   let duplicate = false
 
@@ -117,42 +116,22 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
         calls.push(name)
         expect(delay).toBe(0)
 
-        if (name === 'alerts/discord/delivery:broadcast') {
-          expect(args).toEqual({ event_ids: ['fresh-event'] })
-
-          if (failSchedule) {
-            throw new Error('Scheduling failed')
-          }
-        }
+        expect(args).toEqual({})
       },
     },
   } as unknown as ActionCtx
 
   try {
-    for (const mode of [
-      'disabled',
-      'empty',
-      'event-error',
-      'schedule-error',
-      'live',
-      'duplicate',
-    ]) {
+    for (const mode of ['disabled', 'empty', 'event-error', 'live', 'duplicate']) {
       calls.length = 0
       process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
-      failSchedule = mode === 'schedule-error'
       duplicate = mode === 'duplicate'
       await handler(run)(ctx, {})
 
       const broadcasts = calls.filter((name) => name === 'alerts/discord/delivery:broadcast')
-      expect(broadcasts).toHaveLength(['live', 'schedule-error'].includes(mode) ? 1 : 0)
-
-      if (broadcasts.length > 0) {
-        expect(calls.indexOf('events/ingest:commit')).toBeLessThan(
-          calls.indexOf('alerts/discord/delivery:broadcast'),
-        )
-      }
+      expect(broadcasts).toHaveLength(0)
 
       if (!duplicate) {
         expect(calls).not.toContain('history/pricing/ingest:commit')

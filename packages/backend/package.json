@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
+    "@noble/hashes": "^1.8.0",
+    "@orca/discord-delivery": "workspace:*",
     "@orca/json-profile": "workspace:*",
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",
@@ -42,6 +44,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
+    "convex-test": "0.0.54",
     "typescript": "catalog:"
   }
 }

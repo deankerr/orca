@@ -8,15 +8,21 @@ import type { PricingCandidate } from './frequency'
 export async function prepareBatch(
   rows: (EventRow & { _id: string })[],
   readFrequency: (candidates: PricingCandidate[]) => Promise<boolean[]>,
-): Promise<{ alerts: Alert[]; skipped: number }> {
+): Promise<{
+  alerts: Alert[]
+  skipped: number
+  skippedEvents: { event_id: string; reason: 'ineligible' | 'frequent_pricing' }[]
+}> {
   const alerts: IndividualAlert[] = []
   let skipped = 0
+  const skippedEvents: { event_id: string; reason: 'ineligible' | 'frequent_pricing' }[] = []
 
   for (const row of rows) {
     const event = prepare(row)
 
     if (event === null) {
       skipped += 1
+      skippedEvents.push({ event_id: row._id, reason: 'ineligible' })
     } else {
       alerts.push({ type: 'event', event_id: row._id, event })
     }
@@ -50,11 +56,12 @@ export async function prepareBatch(
 
     if (changes.length === 0) {
       skipped += 1
+      skippedEvents.push({ event_id: alert.event_id, reason: 'frequent_pricing' })
       return []
     }
 
     return [{ ...alert, event: { ...alert.event, changes } }]
   })
 
-  return { alerts: batchAlerts(selected), skipped }
+  return { alerts: batchAlerts(selected), skipped, skippedEvents }
 }

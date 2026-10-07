@@ -56,17 +56,27 @@ Keep the object source fixed while a timeline or pending processor work exists.
 Switches below enable their guarded entry point only for the exact string `true`;
 missing/`false` disables it.
 
-| Variable                         | Flags  | Consumer / fallback                                                           | Dev/preview default |
-| -------------------------------- | ------ | ----------------------------------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇    | Enables scheduled scan capture; manual runs bypass it.                        | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇    | Enables scheduled ingestion; manual runs and continuations bypass it.         | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇    | Enables scheduled upstream analytics collection.                              | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇    | Enables scheduled upstream top-apps collection.                               | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇    | Enables automatic scheduling and queued batch starts; manual sends bypass it. | `false`             |
-| `ORCA_DISCORD_WEBHOOK_URL`       | ◆ 🔒 ◇ | Posting credential and destination; production uses its own channel.          | Configured secret   |
+| Variable                         | Flags | Consumer / fallback                                                                                            | Dev/preview default |
+| -------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                                                         | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.                                          | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                                                               | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                                                                | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Admits automatic alert preparation; explicit submissions bypass it. Queued delivery has its own pause control. | `false`             |
 
-See [Discord operations](discord.md) and [development data](development-data.md)
-before enabling collection or replaying history.
+Discord URLs are registered destination records in the discordDelivery component.
+Automatic ORCA routes default to **3,600,000 ms (one hour)** maximum age from the
+observation time; configure each route explicitly. Queue pause is independent of
+automatic admission. The obsolete webhook URL default was removed from dev/preview
+on October 7, 2026; existing deployments running earlier code retain their values
+until migrated. See docs/orca/discord.md for registration and replay procedures.
+
+The reusable sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
+**1-second exponential retry backoff capped at 60 seconds**, and a **30-second recovery
+poll** while a scheduled request remains active. Discord-provided cooldowns take
+precedence when longer. Groups accept at most **500 messages**, **256 KiB per payload**,
+and **4 MiB total payloads**. Configure expiry and retry attempts at submission;
+retention is unlimited. These limits live in packages/discord-delivery/src/component.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in

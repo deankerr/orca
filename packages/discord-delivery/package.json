@@ -1,0 +1,22 @@
+{
+  "name": "@orca/discord-delivery",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./convex.config.js": "./src/component/convex.config.ts",
+    "./_generated/component.js": "./src/component/_generated/component.ts",
+    "./schema": "./src/component/schema.ts",
+    "./validators": "./src/component/validators.ts"
+  },
+  "dependencies": {
+    "@convex-dev/batch-worker": "0.3.4",
+    "convex": "catalog:",
+    "convex-helpers": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "convex-test": "0.0.54",
+    "typescript": "catalog:"
+  }
+}

@@ -1,189 +1,236 @@
-import type { PaginationResult } from 'convex/server'
+import { docValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
+import type { Infer } from 'convex/values'
 
-import { internal } from '#generated/api'
-import type { Doc, Id } from '#generated/dataModel'
-import { env, internalAction } from '#generated/server'
-import type { ActionCtx } from '#generated/server'
+import { components, internal } from '#generated/api'
+import { internalMutation, internalQuery } from '#generated/server'
+import type { MutationCtx } from '#generated/server'
 
-import { prepareBatch } from './prepare'
-import type { Card } from './renderers/card'
-import { renderDiscordBatch } from './renderers/index'
-
-/** Operator-only, single-attempt delivery. Repeating the call posts the event again. */
-export const send = internalAction({
-  args: { event_id: v.id('v4_events') },
-  returns: v.union(v.literal('sent'), v.literal('skipped')),
-  handler: async (ctx, { event_id }) => await sendEvent(ctx, event_id),
-})
+import { readPage } from '../shared/read'
+import { automaticRoutes } from './admission'
+import { renderEvents, renderedBatch, renderRows } from './render'
+import {
+  DISCORD_PREPARATIONS_TABLE,
+  discordPreparationsTable,
+  preparationState,
+  skippedEvent,
+} from './table'
 
 const batchArgs = { event_ids: v.array(v.id('v4_events')) }
-const batchCounts = v.object({ sent: v.number(), skipped: v.number() })
-
-/** Operator replay; explicitly sending examples bypasses the live broadcast switch. */
-export const sendExamples = internalAction({
-  args: batchArgs,
-  returns: batchCounts,
-  handler: async (ctx, { event_ids }) => await sendBatch(ctx, event_ids),
+const enqueueOptions = {
+  destinationKeys: v.array(v.string()),
+  key: v.optional(v.string()),
+  sendAt: v.optional(v.number()),
+  maxAgeMs: v.optional(v.number()),
+}
+const queuedBatch = v.object({
+  groupIds: v.array(v.string()),
+  queued: v.number(),
+  skipped: v.number(),
+  skippedEvents: v.array(skippedEvent),
 })
 
-/** Replay the latest renderable events, oldest first, without enabling live delivery. */
-export const sendLatest = internalAction({
-  args: { limit: v.optional(v.number()) },
-  returns: batchCounts,
-  handler: async (ctx, { limit = 10 }) => {
+/** Today's rendering, without queuing or contacting Discord. Archived payloads live in the sender. */
+export const preview = internalQuery({
+  args: batchArgs,
+  returns: renderedBatch,
+  handler: async (ctx, { event_ids }) => await renderEvents(ctx, event_ids),
+})
+
+async function enqueueRendered(
+  ctx: MutationCtx,
+  rendered: Infer<typeof renderedBatch>,
+  options: {
+    destinationKeys: string[]
+    key?: string
+    sendAt: number
+    maxAgeMs?: number
+    reference?: string
+  },
+): Promise<Infer<typeof queuedBatch>> {
+  const destinations = [...new Set(options.destinationKeys)]
+  if (destinations.length === 0 || destinations.length > 20) {
+    throw new ConvexError('Supply between 1 and 20 destinations.')
+  }
+  const groupIds: string[] = []
+  if (rendered.messages.length > 0) {
+    for (const destinationKey of destinations) {
+      const groupId: string = await ctx.runMutation(components.discordDelivery.api.enqueue, {
+        destinationKey,
+        key: options.key ?? rendered.key,
+        sendAt: options.sendAt,
+        maxAgeMs: options.maxAgeMs,
+        messages: rendered.messages.map(({ key, payload }) => ({ key, payload })),
+        reference:
+          options.reference ??
+          JSON.stringify({
+            kind: 'events',
+            messages: rendered.messages.map(({ key, event_ids }) => ({ key, event_ids })),
+          }),
+      })
+      groupIds.push(groupId)
+    }
+  }
+  return {
+    groupIds,
+    queued: rendered.messages.length * destinations.length,
+    skipped: rendered.skippedEvents.length,
+    skippedEvents: rendered.skippedEvents,
+  }
+}
+
+/** Operator replay uses current time unless explicitly given scan time and an expiry. */
+export const sendExamples = internalMutation({
+  args: { ...batchArgs, ...enqueueOptions },
+  returns: queuedBatch,
+  handler: async (ctx, args) =>
+    await enqueueRendered(ctx, await renderEvents(ctx, args.event_ids), {
+      ...args,
+      sendAt: args.sendAt ?? Date.now(),
+    }),
+})
+
+export const send = internalMutation({
+  args: { event_id: v.id('v4_events'), ...enqueueOptions },
+  returns: queuedBatch,
+  handler: async (ctx, args) =>
+    await enqueueRendered(ctx, await renderEvents(ctx, [args.event_id]), {
+      ...args,
+      sendAt: args.sendAt ?? Date.now(),
+    }),
+})
+
+/** Bounded recent replay, oldest first; all delivery still goes through the shared queue. */
+export const sendLatest = internalMutation({
+  args: { limit: v.optional(v.number()), ...enqueueOptions },
+  returns: queuedBatch,
+  handler: async (ctx, { limit = 10, ...options }) => {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
       throw new ConvexError('limit must be an integer between 1 and 50.')
     }
-
-    const ids: Id<'v4_events'>[] = []
-    let cursor: string | null = null
-    let skipped = 0
-
-    // ponytail: inspect at most 500 recent events; return fewer examples when
-    // this window is mostly filtered. Historical replay can grow separately.
-    for (let pageIndex = 0; pageIndex < 5; pageIndex += 1) {
-      const page: PaginationResult<Doc<'v4_events'>> = await ctx.runQuery(
-        internal.alerts.shared.read.list,
-        {
-          paginationOpts: { cursor, numItems: 100 },
-        },
-      )
-
-      for (const event of page.page) {
-        const { alerts } = await prepareForDelivery(ctx, [event])
-
-        if (alerts.length === 0) {
-          skipped += 1
-        } else {
-          ids.push(event._id)
-        }
-
-        if (ids.length === limit) {
-          break
-        }
+    const page = await readPage(ctx, { kind: 'all' }, { cursor: null, numItems: 500 })
+    const selected = []
+    for (const row of page.page) {
+      const candidate = await renderRows(ctx, [row])
+      if (candidate.messages.length > 0) {
+        selected.push(row)
       }
-
-      if (ids.length === limit || page.isDone) {
+      if (selected.length === limit) {
         break
       }
-
-      cursor = page.continueCursor
     }
-
-    const counts = await sendBatch(ctx, ids.toReversed())
-
-    return { sent: counts.sent, skipped: skipped + counts.skipped }
+    return await enqueueRendered(ctx, await renderRows(ctx, selected), {
+      ...options,
+      sendAt: options.sendAt ?? Date.now(),
+    })
   },
 })
 
-/** One attempt per scan: no delivery ledger, retries, or cross-batch ordering. */
-export const broadcast = internalAction({
-  args: batchArgs,
-  returns: batchCounts,
-  handler: async (ctx, { event_ids }) => {
-    if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
-      return { sent: 0, skipped: 0 }
+/** The nested transaction rolls back every destination enqueue together on a preparation failure. */
+export const prepare = internalMutation({
+  args: { preparationId: v.id(DISCORD_PREPARATIONS_TABLE) },
+  returns: v.null(),
+  handler: async (ctx, { preparationId }) => {
+    const work = await ctx.db.get(DISCORD_PREPARATIONS_TABLE, preparationId)
+    if (work === null || work.state === 'complete') {
+      return null
     }
-
-    return await sendBatch(ctx, event_ids)
-  },
-})
-
-async function sendBatch(ctx: ActionCtx, eventIds: Id<'v4_events'>[]) {
-  const rows: Doc<'v4_events'>[] = []
-
-  for (const event_id of new Set(eventIds)) {
-    const row = await ctx.runQuery(internal.alerts.shared.read.get, { event_id })
-
-    if (row === null) {
-      throw new ConvexError({ message: 'Event not found.', event_id })
-    }
-
-    rows.push({ ...row, _id: event_id })
-  }
-
-  const { alerts, skipped } = await prepareForDelivery(ctx, rows)
-  const notifications = renderDiscordBatch(alerts, {
-    publicUrl: env.ORCA_WEB_ORIGIN,
-    logoOrigin: env.ORCA_LOGO_ORIGIN,
-  })
-  let sent = 0
-
-  for (const { message, event_ids } of notifications) {
-    if (sent > 0) {
-      // oxlint-disable-next-line promise/avoid-new -- Convex timers expose callbacks; this is fixed pacing between Discord messages.
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 2000)
+    try {
+      await ctx.runMutation(internal.alerts.discord.delivery.commitPreparation, { preparationId })
+    } catch (error) {
+      await ctx.db.patch(DISCORD_PREPARATIONS_TABLE, preparationId, {
+        state: 'failed',
+        attempts: work.attempts + 1,
+        error: error instanceof Error ? error.message : String(error),
       })
     }
+    return null
+  },
+})
 
-    // ponytail: fixed pacing and stop-on-error; durable delivery remains deferred.
-    await postMessage(message, event_ids)
-    sent += 1
-  }
-
-  return { sent, skipped }
-}
-
-async function sendEvent(ctx: ActionCtx, event_id: Id<'v4_events'>): Promise<'sent' | 'skipped'> {
-  const event = await ctx.runQuery(internal.alerts.shared.read.get, { event_id })
-
-  if (event === null) {
-    throw new ConvexError({ message: 'Event not found.', event_id })
-  }
-
-  const { alerts } = await prepareForDelivery(ctx, [{ ...event, _id: event_id }])
-  const [notification] = renderDiscordBatch(alerts, {
-    publicUrl: env.ORCA_WEB_ORIGIN,
-    logoOrigin: env.ORCA_LOGO_ORIGIN,
-  })
-
-  if (notification === undefined) {
-    return 'skipped'
-  }
-
-  await postMessage(notification.message, notification.event_ids)
-  return 'sent'
-}
-
-/** Resolve frequency in one query per prepared batch, after shared eligibility. */
-async function prepareForDelivery(
-  ctx: ActionCtx,
-  rows: Doc<'v4_events'>[],
-): ReturnType<typeof prepareBatch> {
-  return await prepareBatch(
-    rows,
-    async (candidates) =>
-      await ctx.runQuery(internal.alerts.discord.frequency.check, { candidates }),
-  )
-}
-
-async function postMessage(message: Card, event_ids: string[]): Promise<void> {
-  const webhook = env.ORCA_DISCORD_WEBHOOK_URL
-
-  if (webhook === undefined || webhook === '') {
-    throw new ConvexError('Set ORCA_DISCORD_WEBHOOK_URL before sending Discord events.')
-  }
-
-  const url = new URL(webhook)
-  url.searchParams.set('wait', 'true')
-
-  if (message.components !== undefined) {
-    url.searchParams.set('with_components', 'true')
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(message),
-  })
-
-  if (!response.ok) {
-    throw new ConvexError({
-      message: 'Discord webhook rejected the event.',
-      status: response.status,
-      event_ids,
+export const commitPreparation = internalMutation({
+  args: { preparationId: v.id(DISCORD_PREPARATIONS_TABLE) },
+  returns: v.null(),
+  handler: async (ctx, { preparationId }) => {
+    const work = await ctx.db.get(DISCORD_PREPARATIONS_TABLE, preparationId)
+    if (work === null || work.state === 'complete') {
+      return null
+    }
+    if (work.routes.length === 0) {
+      throw new ConvexError(
+        'No automatic Discord destinations configured. Configure a route, then retry this preparation.',
+      )
+    }
+    const rendered = await renderEvents(ctx, work.event_ids)
+    const groupIds: string[] = []
+    for (const route of work.routes) {
+      const result = await enqueueRendered(ctx, rendered, {
+        destinationKeys: [route.destinationKey],
+        key: 'automatic-events',
+        sendAt: Date.parse(work.scan_at),
+        maxAgeMs: route.maxAgeMs,
+        reference: JSON.stringify({
+          kind: 'automatic-events',
+          preparationId,
+          scan_at: work.scan_at,
+          messages: rendered.messages.map(({ key, event_ids }) => ({ key, event_ids })),
+        }),
+      })
+      groupIds.push(...result.groupIds)
+    }
+    await ctx.db.patch(DISCORD_PREPARATIONS_TABLE, preparationId, {
+      state: 'complete',
+      attempts: work.attempts + 1,
+      completedAt: Date.now(),
+      groupIds,
+      skippedEvents: rendered.skippedEvents,
+      error: undefined,
     })
-  }
-}
+    return null
+  },
+})
+
+/** Retries preserve captured routing; only a previously missing route set is filled in. */
+export const retryPreparation = internalMutation({
+  args: { preparationId: v.id(DISCORD_PREPARATIONS_TABLE) },
+  returns: v.null(),
+  handler: async (ctx, { preparationId }) => {
+    const work = await ctx.db.get(DISCORD_PREPARATIONS_TABLE, preparationId)
+    if (work === null) {
+      throw new ConvexError('Preparation not found.')
+    }
+    if (work.state === 'complete') {
+      return null
+    }
+    await ctx.db.patch(DISCORD_PREPARATIONS_TABLE, preparationId, {
+      state: 'pending',
+      error: undefined,
+      routes: work.routes.length === 0 ? await automaticRoutes(ctx) : work.routes,
+    })
+    await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.prepare, { preparationId })
+    return null
+  },
+})
+
+export const preparations = internalQuery({
+  args: {
+    state: v.optional(preparationState),
+    from: v.optional(v.string()),
+    to: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(docValidator(DISCORD_PREPARATIONS_TABLE, discordPreparationsTable)),
+  handler: async (ctx, { state, from = '', to = '\uFFFF', limit = 100 }) => {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      throw new ConvexError('limit must be between 1 and 500.')
+    }
+    const query = ctx.db.query(DISCORD_PREPARATIONS_TABLE)
+    const range =
+      state === undefined
+        ? query.withIndex('by_scan_at', (q) => q.gte('scan_at', from).lt('scan_at', to))
+        : query.withIndex('by_state_scan_at', (q) =>
+            q.eq('state', state).gte('scan_at', from).lt('scan_at', to),
+          )
+    return await range.order('desc').take(limit)
+  },
+})
