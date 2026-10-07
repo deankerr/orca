@@ -1,5 +1,11 @@
 import { defineSchema } from 'convex/server'
 
+import {
+  DISCORD_ROUTES_TABLE,
+  DISCORD_PREPARATIONS_TABLE,
+  discordRoutesTable,
+  discordPreparationsTable,
+} from './alerts/discord/table'
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './catalog/endpoints/table'
 import { CURRENT_MODELS_TABLE, currentModelsTable } from './catalog/models/table'
 import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './catalog/providers/table'
@@ -20,6 +26,8 @@ import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v
 
 export default defineSchema(
   {
+    [DISCORD_ROUTES_TABLE]: discordRoutesTable,
+    [DISCORD_PREPARATIONS_TABLE]: discordPreparationsTable,
     [OBJECTS_LOCATORS_TABLE]: locatorsTable,
 
     [PUBLIC_API_V2_CACHE_TABLE]: publicApiV2CacheTable,

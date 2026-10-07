@@ -9,9 +9,13 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as alerts_discord_admission from "../alerts/discord/admission.js";
 import type * as alerts_discord_delivery from "../alerts/discord/delivery.js";
+import type * as alerts_discord_destinations from "../alerts/discord/destinations.js";
 import type * as alerts_discord_frequency from "../alerts/discord/frequency.js";
+import type * as alerts_discord_outbox from "../alerts/discord/outbox.js";
 import type * as alerts_discord_prepare from "../alerts/discord/prepare.js";
+import type * as alerts_discord_render from "../alerts/discord/render.js";
 import type * as alerts_discord_renderers_batchCards from "../alerts/discord/renderers/batchCards.js";
 import type * as alerts_discord_renderers_card from "../alerts/discord/renderers/card.js";
 import type * as alerts_discord_renderers_display from "../alerts/discord/renderers/display.js";
@@ -21,6 +25,7 @@ import type * as alerts_discord_renderers_index from "../alerts/discord/renderer
 import type * as alerts_discord_renderers_modelCard from "../alerts/discord/renderers/modelCard.js";
 import type * as alerts_discord_renderers_pricing from "../alerts/discord/renderers/pricing.js";
 import type * as alerts_discord_renderers_providerCard from "../alerts/discord/renderers/providerCard.js";
+import type * as alerts_discord_table from "../alerts/discord/table.js";
 import type * as alerts_feed_http from "../alerts/feed/http.js";
 import type * as alerts_feed_query from "../alerts/feed/query.js";
 import type * as alerts_feed_render from "../alerts/feed/render.js";
@@ -116,9 +121,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  "alerts/discord/admission": typeof alerts_discord_admission;
   "alerts/discord/delivery": typeof alerts_discord_delivery;
+  "alerts/discord/destinations": typeof alerts_discord_destinations;
   "alerts/discord/frequency": typeof alerts_discord_frequency;
+  "alerts/discord/outbox": typeof alerts_discord_outbox;
   "alerts/discord/prepare": typeof alerts_discord_prepare;
+  "alerts/discord/render": typeof alerts_discord_render;
   "alerts/discord/renderers/batchCards": typeof alerts_discord_renderers_batchCards;
   "alerts/discord/renderers/card": typeof alerts_discord_renderers_card;
   "alerts/discord/renderers/display": typeof alerts_discord_renderers_display;
@@ -128,6 +137,7 @@ declare const fullApi: ApiFromModules<{
   "alerts/discord/renderers/modelCard": typeof alerts_discord_renderers_modelCard;
   "alerts/discord/renderers/pricing": typeof alerts_discord_renderers_pricing;
   "alerts/discord/renderers/providerCard": typeof alerts_discord_renderers_providerCard;
+  "alerts/discord/table": typeof alerts_discord_table;
   "alerts/feed/http": typeof alerts_feed_http;
   "alerts/feed/query": typeof alerts_feed_query;
   "alerts/feed/render": typeof alerts_feed_render;
@@ -242,4 +252,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  discordDelivery: import("@orca/discord-delivery/_generated/component.js").ComponentApi<"discordDelivery">;
+};

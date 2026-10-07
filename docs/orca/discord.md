@@ -1,29 +1,103 @@
 # Discord alerts
 
-One webhook per deployment. Dev/preview share a private development channel;
-production has its own destination. Variables and defaults live in [configuration](config.md).
+## Delivery and destinations
 
-## Delivery
+One discordDelivery component serializes every destination. Each accepted group finishes,
+fails or expires before another begins. Full payloads, HTTP results and unsent records are
+retained. Requirements and queue semantics live in packages/discord-delivery/REQUIREMENTS.md
+and packages/discord-delivery/ARCHITECTURE.md; ORCA producer policy lives in
+docs/orca/alerts-expansion.md.
 
-Disable `ORCA_DISCORD_AUTO_SEND_ENABLED` before historical replay or catch-up;
-automatic delivery has no age cutoff. Queued batches check the switch when starting.
-Running batches continue independently. Re-enable it when ingestion is current.
+Register a webhook URL as a destination, then configure its automatic ORCA route. Run
+these internal operators from packages/backend with an explicit deployment:
 
-Fresh event commits trigger best-effort delivery. Processor retries never broadcast.
-A scheduling failure can lose a broadcast after its events have committed. Delivery
-has no automatic retry or deduplication; a failed send abandons the rest of its batch.
-Batches may interleave, so a missing message does not prove ingestion failed.
+```sh
+bun run convex run alerts/discord/destinations:register '{"key":"dev","url":"<webhook-url>"}' --deployment <deployment>
+bun run convex run alerts/discord/destinations:configureRoute '{"destinationKey":"dev","enabled":true,"maxAgeMs":3600000}' --deployment <deployment>
+```
 
-## Manual delivery
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` admits automatic preparation with event commits.
+The route's age is measured from `scan_at`, so old backfill is recorded and expires.
+The switch governs admission; use `alerts/discord/outbox:pause` with `{"paused":true}`
+to pause accepted delivery. In-flight HTTP can finish. Resume with `{"paused":false}`.
 
-These internal functions bypass the switch and can duplicate messages. Run from
-`packages/backend` with an explicit deployment:
+Preparation errors remain in `discord_alert_preparations`. Inspect with
+`alerts/discord/delivery:preparations`, then invoke `:retryPreparation` with its
+`preparationId` after fixing the cause. An empty route snapshot can be populated during
+explicit recovery. Preparation enqueues all selected destinations transactionally.
 
-| Function                               | Arguments              |
-| -------------------------------------- | ---------------------- |
-| `alerts/discord/delivery:send`         | `{"event_id":"…"}`     |
-| `alerts/discord/delivery:sendExamples` | `{"event_ids":["…"]}`  |
-| `alerts/discord/delivery:sendLatest`   | `{}` or `{"limit":15}` |
+## Preview and explicit submission
+
+These internal operators return queued group IDs and counts; delivery is asynchronous.
+They bypass automatic admission and accept explicit destinations. Identical content at
+the same destination and send time deduplicates. Set a new explicit sendAt to intentionally
+send another copy.
+
+| Function                               | Arguments                                                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `alerts/discord/delivery:preview`      | `{"event_ids":["…"]}`                                                                                               |
+| `alerts/discord/delivery:send`         | `{"event_id":"…","destinationKeys":["dev"]}`                                                                        |
+| `alerts/discord/delivery:sendExamples` | `{"event_ids":["…"],"destinationKeys":["dev"]}`                                                                     |
+| `alerts/discord/delivery:sendLatest`   | `{"limit":15,"destinationKeys":["dev"]}`                                                                            |
+| `alerts/discord/outbox:enqueue`        | `{destinationKey,key,sendAt?,messages:[{key,payload}],maxAgeMs?,maxAttempts?,reference?,deadLetterDestinationKey?}` |
+
+`payload` is a serialized JSON object, such as a Discord.js builder result. The generic
+operator supports status/news/manual groups with no entity events. Array order determines
+message order. Explicit event sends default to observation time without an age limit;
+automatic routes apply their configured maximum age.
+
+## Investigating output
+
+Convert the user's time window and timezone to epoch milliseconds. Query receipts for
+when HTTP responses were recorded, or groups for intended send time; historical work can
+make these windows very different.
+
+```sh
+bun run convex run alerts/discord/outbox:inspectReceipts '{"from":<start-ms>,"to":<end-ms>,"paginationOpts":{"numItems":50,"cursor":null}}' --deployment <deployment>
+bun run convex run alerts/discord/outbox:message '{"messageId":"<result.messageId>"}' --deployment <deployment>
+bun run convex run alerts/discord/outbox:inspectGroups '{"from":<start-ms>,"to":<end-ms>,"paginationOpts":{"numItems":50,"cursor":null}}' --deployment <deployment>
+```
+
+Follow `continueCursor` until `isDone`; filtered pages can be empty. The message query
+returns the frozen payload and latest result. `inspectMessages` pages a group or caller
+message key. `inspectAttempts` uses claim/schedule time and shows uncertain recovery and
+retries. `inspectGroups` accepts destination, key and status filters to find failed or
+expired work with no HTTP result. Preparation records also retain ineligible/frequent-price
+skip reasons. A current preview is useful for comparison, not evidence of an old send.
+
+All wrappers are internal. Trusted CLI operators can run them against an explicitly
+selected deployment. Convex MCP read-only data/one-off query access requires its production
+read setting; the general `run` tool also permits mutations and requires broader access.
+The installed Convex 1.45 MCP data tool does not select child components. Use the
+internal query wrappers through the trusted CLI, or inspect the component directly with
+the CLI's read-only data command:
+
+```sh
+bun run convex data results --component discordDelivery --limit 100 --format json --deployment <deployment>
+```
+
+This does not run the renderer or a send action. The wrappers provide indexed time windows
+and pagination instead of scanning raw records.
+
+## Message management and demonstration
+
+`alerts/discord/outbox:manage` accepts `{messageId,operation,key,sendAt?,payload?}`.
+Operations are `get`, `edit` and `delete`; edits require serialized `payload`. Supply the
+component's original message ID, rather than a Discord snowflake. The saved receipt and
+URL locate the remote message. Management creates a new queued group and retains the
+original send. Discord's unknown-message response to DELETE counts as an already-completed
+delete; an unknown-message GET remains a failed lookup.
+
+The reproducible development demonstration is:
+
+```sh
+bun packages/scripts/discord-demo.ts <dev-deployment> orca-dev-3 orca-dev-4
+```
+
+Register those development destinations first. This sends ordered text/V2 groups, exercises
+an invalid payload and one-hop terminal report, edits/fetches/deletes a demo message, and
+writes docs/orca/discord-demo.json with the selected population and receipt IDs. The archive
+retains deleted-message evidence. Run only against destinations intended for testing.
 
 ## Presentation
 

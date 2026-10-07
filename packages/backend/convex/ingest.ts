@@ -97,16 +97,9 @@ export const run = internalAction({
 
     // Acceptance already committed; event failures leave their work pending.
     try {
-      const eventIds = await events.process(ctx, pair, work.events)
-
-      if (env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true' && eventIds.length > 0) {
-        // Scheduling is best-effort after commit; retries deliberately do not broadcast.
-        await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.broadcast, {
-          event_ids: eventIds,
-        })
-      }
+      await events.process(ctx, pair, work.events)
     } catch (error: unknown) {
-      console.error('[events] processing or Discord scheduling failed', {
+      console.error('[events] processing failed', {
         work_id: work.events,
         error,
       })
