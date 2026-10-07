@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { convexTest } from 'convex-test'
 import type { GenericSchema, SchemaDefinition } from 'convex/server'
 
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import schema from './schema'
 
@@ -89,6 +89,15 @@ async function submit(t: Harness, webhookIds: Id<'webhooks'>[], expiresAt = STAR
   })
 }
 
+// Job scheduling is part of the ledger too; these assertions focus on message attempts.
+async function messageHistory(
+  t: Harness,
+  args: { inputId: Id<'inputs'>; webhookId?: Id<'webhooks'> },
+) {
+  const rows = await t.query(api.api.listDeliveries, args)
+  return rows.filter(({ event }) => event.kind !== 'queued')
+}
+
 async function finishedAt(t: Harness, inputId: Id<'inputs'>) {
   const input = await t.query(api.api.getInput, { inputId })
   return input?.finishedAt
@@ -144,7 +153,7 @@ describe('Workpool delivery', () => {
       }
 
       const bodies = bodiesByWebhook.get(webhookId) ?? []
-      const history = await t.query(api.api.listDeliveries, { inputId, webhookId })
+      const history = await messageHistory(t, { inputId, webhookId })
       const claim = history.at(-1)
       expect(claim).toMatchObject({ event: { kind: 'claimed' }, messageIndex: bodies.length })
 
@@ -180,7 +189,7 @@ describe('Workpool delivery', () => {
     const input = await t.query(api.api.getInput, { inputId })
     expect(input).toMatchObject({ messages, webhookIds })
     expect(input?.finishedAt).toBeDefined()
-    const history = await t.query(api.api.listDeliveries, { inputId })
+    const history = await messageHistory(t, { inputId })
     expect(history).toHaveLength(12)
     for (const row of history) {
       expect(row).not.toHaveProperty('payload')
@@ -258,7 +267,7 @@ describe('Workpool delivery', () => {
       await firstFiveStarted.promise
       expect(active).toBe(5)
       expect(startedWebhooks.size).toBe(5)
-      const firstClaims = await t.query(api.api.listDeliveries, { inputId })
+      const firstClaims = await messageHistory(t, { inputId })
       expect(firstClaims).toHaveLength(5)
       expect(firstClaims.every(({ event }) => event.kind === 'claimed')).toBe(true)
       expect(await finishedAt(t, inputId)).toBeUndefined()
@@ -299,7 +308,7 @@ describe('Workpool delivery', () => {
     const inputId = await submit(t, [])
     await drain(t)
     expect(await finishedAt(t, inputId)).toBeDefined()
-    expect(await t.query(api.api.listDeliveries, { inputId })).toEqual([])
+    expect(await messageHistory(t, { inputId })).toEqual([])
     expect(fetcher).not.toHaveBeenCalled()
   })
 
@@ -313,7 +322,7 @@ describe('Workpool delivery', () => {
 
     const inputId = await submit(t, webhookIds, START - 1)
     await drain(t)
-    const history = await t.query(api.api.listDeliveries, { inputId })
+    const history = await messageHistory(t, { inputId })
     expect(history).toHaveLength(2)
     expect(history.every(({ event }) => event.kind === 'expired')).toBe(true)
     expect(await finishedAt(t, inputId)).toBeDefined()
@@ -332,7 +341,7 @@ describe('Workpool delivery', () => {
 
     await drain(t)
     expect(fetcher).toHaveBeenCalledTimes(1)
-    const history = await t.query(api.api.listDeliveries, { inputId })
+    const history = await messageHistory(t, { inputId })
 
     expect(history.map(({ messageIndex, event }) => [messageIndex, event.kind])).toEqual([
       [0, 'claimed'],
@@ -341,6 +350,12 @@ describe('Workpool delivery', () => {
     ])
 
     expect(await finishedAt(t, inputId)).toBeDefined()
+    const status = await t.query(api.api.getStatus, { inputId })
+    expect(status?.recipients[0]).toMatchObject({
+      nextMessageIndex: 1,
+      sentCount: 1,
+      state: 'expired',
+    })
   })
 
   test('a rejected message stops that recipient while other recipients finish', async () => {
@@ -358,7 +373,7 @@ describe('Workpool delivery', () => {
 
     await drain(t)
     expect([...calls.values()].toSorted((a, b) => a - b)).toEqual([1, 3])
-    const history = await t.query(api.api.listDeliveries, { inputId })
+    const history = await messageHistory(t, { inputId })
     const failures = history.filter(({ event }) => event.kind === 'failed')
     expect(failures).toHaveLength(1)
 
@@ -376,6 +391,235 @@ describe('Workpool delivery', () => {
 
     expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(3)
     expect(await finishedAt(t, inputId)).toBeDefined()
+    const status = await t.query(api.api.getStatus, { inputId })
+    expect(status?.recipients.find(({ webhookId }) => webhookId === webhookIds[0])).toMatchObject({
+      error: 'HTTP 400',
+      nextMessageIndex: 0,
+      sentCount: 0,
+      state: 'failed',
+    })
+  })
+
+  test('a rate-limited message resumes durably after Discord’s delay without replaying its successful prefix', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 1)
+    const inputId = await submit(t, webhookIds)
+    const calls: Array<{ body: string; at: number }> = []
+    let rejectedAt = 0
+
+    mockFetch(async (_url, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new TypeError('Expected serialized body')
+      }
+      calls.push({ at: Date.now(), body: init.body })
+      if (calls.length === 2) {
+        rejectedAt = Date.now()
+        return Response.json({ retry_after: 2 }, { headers: { 'Retry-After': '1' }, status: 429 })
+      }
+      if (calls.length === 3) {
+        // The retry is a new durable Workpool job, rather than a sleeping HTTP loop.
+        const ledger = await t.query(api.api.listDeliveries, { inputId })
+        const queued = ledger.filter(({ event }) => event.kind === 'queued')
+        expect(queued).toHaveLength(2)
+        expect(new Set(queued.map(({ workId }) => workId)).size).toBe(2)
+        expect(await finishedAt(t, inputId)).toBeUndefined()
+      }
+      return Response.json({ id: `message-${calls.length}` })
+    })
+
+    await drain(t)
+    expect(calls.map(({ body }) => body)).toEqual([
+      messages[0].payload,
+      messages[1].payload,
+      messages[1].payload,
+      messages[2].payload,
+    ])
+    expect(calls[2].at).toBeGreaterThanOrEqual(rejectedAt + 2000)
+    const history = await messageHistory(t, { inputId })
+    expect(history.filter(({ event }) => event.kind === 'retrying')).toHaveLength(1)
+    expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(3)
+    expect(history.filter(({ event }) => event.kind === 'failed')).toHaveLength(0)
+    expect(await finishedAt(t, inputId)).toBeDefined()
+  })
+
+  test('an exhausted successful bucket delays the next message without retrying the delivered message', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 1)
+    const inputId = await submit(t, webhookIds)
+    const calls: Array<{ body: string; at: number }> = []
+    mockFetch(async (_url, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new TypeError('Expected serialized body')
+      }
+      calls.push({ at: Date.now(), body: init.body })
+      return Response.json(
+        { id: `message-${calls.length}` },
+        {
+          headers:
+            calls.length === 1
+              ? {
+                  'X-RateLimit-Remaining': '0',
+                  'X-RateLimit-Reset-After': '1.5',
+                }
+              : {},
+        },
+      )
+    })
+
+    let waiting = false
+    for (let tick = 0; tick < 100 && !waiting; tick += 1) {
+      await t.finishAllScheduledFunctions(() => {
+        jest.advanceTimersByTime(10)
+      })
+      const status = await t.query(api.api.getStatus, { inputId })
+      const recipient = status?.recipients[0]
+      if (recipient?.state === 'waiting') {
+        waiting = true
+        // A queued next message still has a successful prefix. scheduledAt describes
+        // this pause too, although the preceding HTTP request succeeded.
+        expect(recipient).toMatchObject({ nextMessageIndex: 1, sentCount: 1 })
+        expect(recipient.scheduledAt).toBeGreaterThanOrEqual(calls[0].at + 1500)
+      }
+    }
+    expect(waiting).toBe(true)
+    await drain(t)
+    expect(calls.map(({ body }) => body)).toEqual(messages.map(({ payload }) => payload))
+    expect(calls[1].at - calls[0].at).toBeGreaterThanOrEqual(1500)
+    const ledger = await t.query(api.api.listDeliveries, { inputId })
+    expect(ledger.filter(({ event }) => event.kind === 'queued')).toHaveLength(2)
+    expect(ledger.filter(({ event }) => event.kind === 'retrying')).toHaveLength(0)
+    expect(await finishedAt(t, inputId)).toBeDefined()
+  })
+
+  test('network and server failures retry the same message with backoff until the deadline cuts off the suffix', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 1)
+    const expiresAt = START + 4500
+    const inputId = await submit(t, webhookIds, expiresAt)
+    const calls: Array<{ body: string; at: number }> = []
+
+    mockFetch(async (_url, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new TypeError('Expected serialized body')
+      }
+      calls.push({ at: Date.now(), body: init.body })
+      if (calls.length === 1) {
+        throw new Error('response lost')
+      }
+      return new Response('unavailable', { status: 503 })
+    })
+
+    await drain(t)
+    expect(calls.length).toBeGreaterThanOrEqual(2)
+    expect(calls.every(({ body, at }) => body === messages[0].payload && at < expiresAt)).toBe(true)
+    expect(calls[1].at - calls[0].at).toBeGreaterThanOrEqual(1000)
+    const history = await messageHistory(t, { inputId })
+    expect(history.at(-1)).toMatchObject({ event: { kind: 'expired' }, messageIndex: 0 })
+    expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(0)
+    expect(history.filter(({ event }) => event.kind === 'retrying')).toHaveLength(calls.length)
+    expect(await finishedAt(t, inputId)).toBeDefined()
+  })
+
+  test('a retry delay beyond the deadline expires without sending another request', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 1)
+    const inputId = await submit(t, webhookIds, START + 1000)
+    const fetcher = mockFetch(async () => Response.json({ retry_after: 120 }, { status: 429 }))
+
+    await drain(t)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    const history = await messageHistory(t, { inputId })
+    expect(history.map(({ event }) => event.kind)).toEqual(['claimed', 'retrying', 'expired'])
+    expect(await finishedAt(t, inputId)).toBeDefined()
+  })
+
+  test('pending recipient work can be canceled while running recipients finish their messages', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 6)
+    const inputId = await submit(t, webhookIds)
+    const started = Promise.withResolvers<null>()
+    const release = Promise.withResolvers<null>()
+    const called = new Set<string>()
+    let requests = 0
+
+    mockFetch(async (url) => {
+      requests += 1
+      called.add(url.pathname)
+      if (called.size === 5) {
+        started.resolve(null)
+      }
+      await release.promise
+      return Response.json({ id: `receipt-${requests}` })
+    })
+
+    const allScheduled = drain(t)
+    try {
+      await started.promise
+      const status = await t.query(api.api.getStatus, { inputId })
+      const pending = status?.recipients.find(({ execution }) => execution?.state === 'pending')
+      const running = status?.recipients.find(({ execution }) => execution?.state === 'running')
+      expect(status?.recipients.filter(({ state }) => state === 'sending')).toHaveLength(5)
+      if (!pending || !running) {
+        throw new Error('Expected pending and running recipients')
+      }
+      expect(
+        await t.mutation(api.api.cancelPendingDelivery, { inputId, webhookId: running.webhookId }),
+      ).toBe(false)
+      expect(
+        await t.mutation(api.api.cancelPendingDelivery, { inputId, webhookId: pending.webhookId }),
+      ).toBe(true)
+      // Workpool processes cancellation asynchronously. Even a late start must observe
+      // the terminal ledger entry written by our cancellation mutation before HTTP.
+      const requestsBeforeLateStart = requests
+      await t.action(internal.worker.deliver, { inputId, webhookId: pending.webhookId })
+      expect(requests).toBe(requestsBeforeLateStart)
+    } finally {
+      release.resolve(null)
+      await allScheduled
+    }
+
+    expect(requests).toBe(15)
+    expect(called.size).toBe(5)
+    const status = await t.query(api.api.getStatus, { inputId })
+    expect(status?.recipients.filter(({ state }) => state === 'canceled')).toHaveLength(1)
+    expect(
+      status?.recipients.filter(({ state, sentCount }) => state === 'succeeded' && sentCount === 3),
+    ).toHaveLength(5)
+    expect(status?.finishedAt).toBeDefined()
+  })
+
+  test('a delayed retry exposes its waiting state and can be canceled through Workpool', async () => {
+    const t = setup()
+    const webhookIds = await registerWebhooks(t, 1)
+    const inputId = await submit(t, webhookIds)
+    const fetcher = mockFetch(async () => Response.json({ retry_after: 60 }, { status: 429 }))
+    let waiting = false
+    for (let tick = 0; tick < 100 && !waiting; tick += 1) {
+      await t.finishAllScheduledFunctions(() => {
+        jest.advanceTimersByTime(10)
+      })
+      const status = await t.query(api.api.getStatus, { inputId })
+      const recipient = status?.recipients[0]
+      if (recipient?.state === 'waiting') {
+        waiting = true
+        expect(recipient.execution?.state).toBe('pending')
+        expect(recipient.sentCount).toBe(0)
+        expect(recipient.nextMessageIndex).toBe(0)
+        expect(recipient.scheduledAt).toBeGreaterThan(Date.now())
+        expect(
+          await t.mutation(api.api.cancelPendingDelivery, {
+            inputId,
+            webhookId: recipient.webhookId,
+          }),
+        ).toBe(true)
+      }
+    }
+    expect(waiting).toBe(true)
+    await drain(t)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    const status = await t.query(api.api.getStatus, { inputId })
+    expect(status?.recipients[0]).toMatchObject({ sentCount: 0, state: 'canceled' })
+    expect(status?.finishedAt).toBeDefined()
   })
 
   test('a repeated submission reuses its input and does not enqueue another delivery', async () => {
@@ -388,7 +632,7 @@ describe('Workpool delivery', () => {
     expect(await submit(t, webhookIds)).toBe(inputId)
     await drain(t)
     expect(fetcher).toHaveBeenCalledTimes(3)
-    expect(await t.query(api.api.listDeliveries, { inputId })).toHaveLength(6)
+    expect(await messageHistory(t, { inputId })).toHaveLength(6)
 
     await rejects(
       t.mutation(api.api.submitBatch, {
@@ -420,7 +664,7 @@ describe('Workpool delivery', () => {
 
     expect(fetcher).toHaveBeenCalledTimes(3)
 
-    const failedHistory = await t.query(api.api.listDeliveries, {
+    const failedHistory = await messageHistory(t, {
       inputId,
       webhookId: brokenWebhookId,
     })
@@ -445,6 +689,34 @@ describe('Workpool delivery', () => {
 })
 
 describe('submission boundaries', () => {
+  test('input discovery uses submission time with bounded results and exclusive upper boundary', async () => {
+    const t = setup()
+    const ids: Id<'inputs'>[] = []
+    for (let index = 0; index < 3; index += 1) {
+      jest.setSystemTime(START + index * 1000)
+      ids.push(
+        await t.mutation(api.api.submitBatch, {
+          expiresAt: START + 60_000,
+          key: `discovery-${index}`,
+          messages,
+          webhookIds: [],
+        }),
+      )
+    }
+    const bounded = await t.query(api.api.listInputs, { from: START, to: START + 2000 })
+    expect(bounded.inputs.map(({ _id }) => _id).toSorted()).toEqual(ids.slice(0, 2).toSorted())
+    expect(bounded.hasMore).toBe(false)
+    expect(bounded.inputs.every((input) => input.messages[0].payload === messages[0].payload)).toBe(
+      true,
+    )
+    const limited = await t.query(api.api.listInputs, { from: START, limit: 1, to: START + 3000 })
+    expect(limited.inputs).toHaveLength(1)
+    expect(limited.hasMore).toBe(true)
+    const empty = await t.query(api.api.listInputs, { from: START + 3000, to: START + 4000 })
+    expect(empty).toEqual({ hasMore: false, inputs: [] })
+    await rejects(t.query(api.api.listInputs, { from: START, limit: 101, to: START + 3000 }))
+  })
+
   test('invalid batches leave no input, delivery, or scheduled HTTP side effect', async () => {
     const t = setup()
     const webhookIds = await registerWebhooks(t, 1)
@@ -599,6 +871,6 @@ describe('submission boundaries', () => {
     }
     const inputs = await t.run(async (ctx) => await ctx.db.query('inputs').collect())
     expect(inputs).toHaveLength(1)
-    expect(await t.query(api.api.listDeliveries, { inputId })).toHaveLength(8)
+    expect(await messageHistory(t, { inputId })).toHaveLength(8)
   })
 })

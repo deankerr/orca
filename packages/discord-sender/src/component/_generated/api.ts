@@ -10,6 +10,7 @@
 
 import type * as api_ from "../api.js";
 import type * as pool from "../pool.js";
+import type * as retry from "../retry.js";
 import type * as transport from "../transport.js";
 import type * as worker from "../worker.js";
 
@@ -23,6 +24,7 @@ import { anyApi, componentsGeneric } from "convex/server";
 const fullApi: ApiFromModules<{
   api: typeof api_;
   pool: typeof pool;
+  retry: typeof retry;
   transport: typeof transport;
   worker: typeof worker;
 }> = anyApi as any;
