@@ -26,26 +26,31 @@ Preparation errors remain in `discord_alert_preparations`. Inspect with
 `preparationId` after fixing the cause. An empty route snapshot can be populated during
 explicit recovery. Preparation enqueues all selected destinations transactionally.
 
-## Preview and explicit submission
+## Iterating on alerts in development
 
-These internal operators return queued group IDs and counts; delivery is asynchronous.
-They bypass automatic admission and accept explicit destinations. Identical content at
-the same destination and send time deduplicates. Set a new explicit sendAt to intentionally
-send another copy.
+Use a scan already ingested by the development deployment and registered development
+Discord destinations. Each invocation rerenders the complete scan with current filtering,
+batching, ordering, and cards, then submits fresh groups through the shared sender.
 
-| Function                               | Arguments                                                                                                           |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `alerts/discord/delivery:preview`      | `{"event_ids":["…"]}`                                                                                               |
-| `alerts/discord/delivery:send`         | `{"event_id":"…","destinationKeys":["dev"]}`                                                                        |
-| `alerts/discord/delivery:sendExamples` | `{"event_ids":["…"],"destinationKeys":["dev"]}`                                                                     |
-| `alerts/discord/delivery:sendLatest`   | `{"limit":15,"destinationKeys":["dev"]}`                                                                            |
-| `alerts/discord/outbox:enqueue`        | `{destinationKey,key,sendAt?,messages:[{key,payload}],maxAgeMs?,maxAttempts?,reference?,deadLetterDestinationKey?}` |
+From `packages/backend`:
 
-`payload` is a serialized JSON object, such as a Discord.js builder result. The generic
-operator supports status/news/manual groups with no entity events. Array order determines
-message order. Explicit event sends default to the current time without an age limit.
-Reuse an explicit `sendAt` when retrying the same submission to avoid another copy.
-Automatic routes apply their configured maximum age.
+```sh
+bun run convex run alerts/discord/delivery:demoScan '{"scan_at":"2026-10-07T03:00:00.000Z","destinationKeys":["orca-dev-3","orca-dev-4"]}' --deployment <dev-deployment>
+```
+
+Rerun the same command after pushing rendering changes to that development deployment.
+Delivery starts now with no expiry; card timestamps and pricing-frequency lookbacks retain
+the original observation time. Every invocation intentionally sends another copy, including
+identical output. The result contains queued group IDs, message counts, and skipped events;
+delivery is asynchronous. Inspect those groups with `alerts/discord/outbox:group`.
+
+Automatic admission and preparation records are bypassed. Previous runs and Discord
+messages are retained. Run this internal operator only against development deployments
+and destinations; production alert state is not reset or edited for development.
+
+`alerts/discord/delivery:preview` accepts `{"event_ids":["…"]}` for a query-only rendering
+of selected events. Oversized scans fail rather than submitting a partial selection.
+Normal sender payload and group limits still apply; limits are recorded in docs/orca/config.md.
 
 ## Investigating output
 

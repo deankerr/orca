@@ -1,12 +1,13 @@
 import { docValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
+import { z } from 'zod'
 
 import { components, internal } from '#generated/api'
 import { internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { readPage } from '../shared/read'
+import { EVENTS_TABLE } from '../../events/table'
 import { automaticRoutes } from './admission'
 import { renderEvents, renderedBatch, renderRows } from './render'
 import {
@@ -17,12 +18,6 @@ import {
 } from './table'
 
 const batchArgs = { event_ids: v.array(v.id('v4_events')) }
-const enqueueOptions = {
-  destinationKeys: v.array(v.string()),
-  key: v.optional(v.string()),
-  sendAt: v.optional(v.number()),
-  maxAgeMs: v.optional(v.number()),
-}
 const queuedBatch = v.object({
   groupIds: v.array(v.string()),
   queued: v.number(),
@@ -79,49 +74,41 @@ async function enqueueRendered(
   }
 }
 
-/** Operator replay uses current time unless explicitly given scan time and an expiry. */
-export const sendExamples = internalMutation({
-  args: { ...batchArgs, ...enqueueOptions },
-  returns: queuedBatch,
-  handler: async (ctx, args) =>
-    await enqueueRendered(ctx, await renderEvents(ctx, args.event_ids), {
-      ...args,
-      sendAt: args.sendAt ?? Date.now(),
-    }),
-})
+const MAX_DEMO_EVENTS = 1000
 
-export const send = internalMutation({
-  args: { event_id: v.id('v4_events'), ...enqueueOptions },
+/** Development iteration: rerender a complete scan and submit a fresh run through the normal queue. */
+export const demoScan = internalMutation({
+  args: { scan_at: v.string(), destinationKeys: v.array(v.string()) },
   returns: queuedBatch,
-  handler: async (ctx, args) =>
-    await enqueueRendered(ctx, await renderEvents(ctx, [args.event_id]), {
-      ...args,
-      sendAt: args.sendAt ?? Date.now(),
-    }),
-})
-
-/** Bounded recent replay, oldest first; all delivery still goes through the shared queue. */
-export const sendLatest = internalMutation({
-  args: { limit: v.optional(v.number()), ...enqueueOptions },
-  returns: queuedBatch,
-  handler: async (ctx, { limit = 10, ...options }) => {
-    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
-      throw new ConvexError('limit must be an integer between 1 and 50.')
+  handler: async (ctx, { scan_at, destinationKeys }) => {
+    const scanAt = z.iso
+      .datetime({ offset: true })
+      .transform((value) => new Date(value).toISOString())
+      .parse(scan_at)
+    const rows = await ctx.db
+      .query(EVENTS_TABLE)
+      .withIndex('by_scan_at', (q) => q.eq('scan_at', scanAt))
+      .take(MAX_DEMO_EVENTS + 1)
+    if (rows.length === 0) {
+      throw new ConvexError('No events found for this scan_at on the selected deployment.')
     }
-    const page = await readPage(ctx, { kind: 'all' }, { cursor: null, numItems: 500 })
-    const selected = []
-    for (const row of page.page) {
-      const candidate = await renderRows(ctx, [row])
-      if (candidate.messages.length > 0) {
-        selected.push(row)
-      }
-      if (selected.length === limit) {
-        break
-      }
+    if (rows.length > MAX_DEMO_EVENTS) {
+      throw new ConvexError(
+        `Demo scans support at most ${MAX_DEMO_EVENTS} events; refusing to send a partial scan.`,
+      )
     }
-    return await enqueueRendered(ctx, await renderRows(ctx, selected), {
-      ...options,
-      sendAt: options.sendAt ?? Date.now(),
+    const rendered = await renderRows(ctx, rows)
+    // Convex seeds Math.random per invocation and preserves it across transaction retries.
+    const key = `demo:${scanAt}:${Math.random().toString(36).slice(2)}:${Math.random().toString(36).slice(2)}`
+    return await enqueueRendered(ctx, rendered, {
+      destinationKeys,
+      key,
+      sendAt: Date.now(),
+      reference: JSON.stringify({
+        kind: 'demo-scan',
+        scan_at: scanAt,
+        messages: rendered.messages.map(({ key, event_ids }) => ({ key, event_ids })),
+      }),
     })
   },
 })

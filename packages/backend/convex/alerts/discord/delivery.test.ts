@@ -10,7 +10,7 @@ import type { MutationCtx, QueryCtx } from '#generated/server'
 import { compare } from '../../events/compare'
 import type { JsonValue } from '../../json'
 import { admitAutomatic } from './admission'
-import { commitPreparation, prepare, preview, retryPreparation, sendExamples } from './delivery'
+import { commitPreparation, demoScan, prepare, preview, retryPreparation } from './delivery'
 import { canonicalJson, contentKey, renderRows } from './render'
 
 function mutation<Args extends Record<string, unknown>, Result>(
@@ -68,7 +68,7 @@ async function withOrigins(run: () => Promise<void>) {
   }
 }
 
-test('preview is query-only, reports suppressed source events, and replay archives its exact payloads for each destination', async () => {
+test('preview is query-only, reports suppressed source events, and preserves deterministic ordering', async () => {
   const visible = [changed('first'), changed('second')]
   const hidden = row(
     'hidden',
@@ -76,13 +76,8 @@ test('preview is query-only, reports suppressed source events, and replay archiv
     { pricing: { meters: { prompt: '1.001' } } },
   )
   const rows = [...visible, hidden]
-  const queued: Record<string, unknown>[] = []
   const ctx = {
     db: { get: async (_table: string, id: string) => rows.find((item) => item._id === id) ?? null },
-    runMutation: async (_fn: unknown, args: Record<string, unknown>) => {
-      queued.push(args)
-      return `group-${queued.length}`
-    },
   } as unknown as MutationCtx
   const request = spyOn(globalThis, 'fetch').mockRejectedValue(
     new Error('Rendering must never contact Discord'),
@@ -93,30 +88,11 @@ test('preview is query-only, reports suppressed source events, and replay archiv
       const rendered = await query(preview)(ctx, args)
       expect(rendered.messages).toHaveLength(2)
       expect(rendered.skippedEvents).toEqual([{ event_id: 'hidden', reason: 'ineligible' }])
-      const replay = await mutation(sendExamples)(ctx, {
-        ...args,
-        destinationKeys: ['dev-3', 'dev-4', 'dev-3'],
-        sendAt: 42,
-      })
-      expect(replay).toMatchObject({ groupIds: ['group-1', 'group-2'], queued: 4, skipped: 1 })
-      expect(queued).toHaveLength(2)
-      for (const item of queued) {
-        expect(item.messages).toEqual(
-          rendered.messages.map(({ key, payload }) => ({ key, payload })),
-        )
-        expect(item.sendAt).toBe(42)
-        expect(item.reference).toContain('first')
-        expect(JSON.stringify(item.messages)).not.toContain('event_ids')
-      }
       const reversed = await query(preview)(ctx, { event_ids: args.event_ids.toReversed() })
       expect(reversed).toEqual(rendered)
       await rejects(
         query(preview)(ctx, { event_ids: ['missing' as Id<'v4_events'>] }),
         /Event not found/,
-      )
-      await rejects(
-        mutation(sendExamples)(ctx, { ...args, destinationKeys: [] }),
-        /between 1 and 20/,
       )
     })
     expect(request).not.toHaveBeenCalled()
@@ -254,4 +230,23 @@ test('identical legitimate notification bodies retain distinct deterministic key
     expect(rendered.messages[1]?.key).toBe(`${rendered.messages[0]?.key}:2`)
     expect(await renderRows({} as QueryCtx, rows.toReversed())).toEqual(rendered)
   })
+})
+
+test('oversized demo scans fail before rendering or queuing a partial batch', async () => {
+  const ctx = {
+    db: {
+      query: () => ({
+        withIndex: () => ({
+          take: async () => Array.from({ length: 1001 }, () => changed('event')),
+        }),
+      }),
+    },
+  } as unknown as MutationCtx
+  await rejects(
+    mutation(demoScan)(ctx, {
+      scan_at: '2026-09-30T01:00:00.000Z',
+      destinationKeys: ['dev'],
+    }),
+    /refusing to send a partial scan/,
+  )
 })
