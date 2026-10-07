@@ -1,0 +1,2755 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>discord-delivery — An architectural walkthrough</title>
+    <style>
+      :root {
+        --paper: #f4f2ea;
+        --card: #fffef9;
+        --ink: #182c2b;
+        --muted: #586a65;
+        --line: #d3d9cd;
+        --green: #155c49;
+        --lime: #e0ef9f;
+        --orange: #ae481e;
+        --orange-bg: #fae5d5;
+        --blue: #285c83;
+        --blue-bg: #e6eef6;
+        --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+        --serif: Georgia, 'Times New Roman', serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 28px;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font:
+          16px/1.65 system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      a {
+        color: var(--green);
+        text-underline-offset: 3px;
+      }
+      button,
+      select {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      select:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid var(--orange);
+        outline-offset: 4px;
+      }
+      button:disabled {
+        cursor: default;
+        opacity: 0.4;
+      }
+      .skip {
+        position: fixed;
+        top: -80px;
+        left: 20px;
+        z-index: 9;
+        background: var(--ink);
+        color: white;
+        padding: 12px;
+      }
+      .skip:focus {
+        top: 12px;
+      }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 246px;
+        border-right: 1px solid var(--line);
+        padding: 32px 25px;
+        background: var(--paper);
+        overflow: auto;
+      }
+      .brand {
+        font: 700 15px var(--mono);
+        letter-spacing: -0.6px;
+      }
+      .brand-mark {
+        display: inline-grid;
+        place-items: center;
+        background: var(--ink);
+        color: var(--lime);
+        width: 29px;
+        height: 29px;
+        margin-right: 8px;
+      }
+      .edition {
+        font: 11px var(--mono);
+        color: var(--muted);
+        margin: 18px 0 28px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .sidebar nav a {
+        display: block;
+        text-decoration: none;
+        color: var(--muted);
+        font-size: 13px;
+        padding: 7px 9px;
+        border-left: 2px solid transparent;
+      }
+      .sidebar nav a.active {
+        color: var(--green);
+        border-color: var(--green);
+        background: #e6ebdc;
+        font-weight: 650;
+      }
+      .sidebar nav span {
+        font: 11px var(--mono);
+        margin-right: 10px;
+        color: #7e8a7b;
+      }
+      .side-foot {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 30px;
+        border-top: 1px solid var(--line);
+        padding-top: 20px;
+      }
+      .side-foot button {
+        border: 1px solid var(--line);
+        background: transparent;
+        padding: 7px 12px;
+        color: var(--green);
+        margin-top: 12px;
+      }
+      main {
+        margin-left: 246px;
+        padding: 0 5.2vw 70px;
+        max-width: 1600px;
+      }
+      .hero {
+        padding: 62px 0 40px;
+        border-bottom: 1px solid var(--ink);
+      }
+      .eyebrow {
+        font: 11px/1.5 var(--mono);
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        color: var(--green);
+      }
+      h1 {
+        font: normal clamp(44px, 5.3vw, 76px)/1.03 var(--serif);
+        letter-spacing: -2.4px;
+        max-width: 900px;
+        margin: 24px 0;
+      }
+      h1 em {
+        font-weight: normal;
+        color: var(--green);
+      }
+      .lede {
+        font-size: 19px;
+        line-height: 1.65;
+        max-width: 780px;
+        color: var(--muted);
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 25px 0;
+      }
+      .pill {
+        font: 11px/1.5 var(--mono);
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        padding: 5px 10px;
+        white-space: nowrap;
+      }
+      .pill.dark {
+        background: var(--ink);
+        color: var(--lime);
+        border-color: var(--ink);
+      }
+      .section {
+        padding: 52px 0 48px;
+        border-bottom: 1px solid var(--line);
+        scroll-margin-top: 20px;
+      }
+      .section-heading {
+        display: flex;
+        align-items: baseline;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+      .section-no {
+        font: 13px var(--mono);
+        color: var(--orange);
+      }
+      h2 {
+        font: normal clamp(30px, 3vw, 43px)/1.15 var(--serif);
+        letter-spacing: -0.8px;
+        margin: 0;
+      }
+      h3 {
+        font-size: 18px;
+        line-height: 1.35;
+        margin: 0 0 12px;
+      }
+      h4 {
+        font-size: 15px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 17px;
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
+      .intro {
+        max-width: 830px;
+        font-size: 18px;
+        color: var(--muted);
+        margin-bottom: 27px;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        padding: 24px;
+        min-width: 0;
+      }
+      .card p,
+      .card li {
+        font-size: 14px;
+      }
+      .number {
+        font: normal 42px var(--serif);
+        color: var(--green);
+        display: block;
+        margin-bottom: 12px;
+      }
+      .dark-panel {
+        background: var(--ink);
+        color: #eef2df;
+        padding: 28px;
+        margin: 25px 0;
+      }
+      .dark-panel p {
+        color: #becfc1;
+      }
+      .dark-panel h3 {
+        color: var(--lime);
+      }
+      .note {
+        border-left: 3px solid var(--green);
+        background: #e7edde;
+        padding: 18px 21px;
+        margin: 22px 0;
+        font-size: 14px;
+      }
+      .note.warn {
+        border-color: var(--orange);
+        background: var(--orange-bg);
+      }
+      .note.blue {
+        border-color: var(--blue);
+        background: var(--blue-bg);
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        background: #203431;
+        color: #e7eddc;
+        padding: 22px;
+        margin: 18px 0;
+        overflow: auto;
+        font: 12px/1.8 var(--mono);
+        border-radius: 3px;
+      }
+      pre code {
+        font-size: inherit;
+        overflow-wrap: normal;
+      }
+      .comment {
+        color: #a8b99d;
+      }
+      .token {
+        color: #e3eea3;
+      }
+      ul,
+      ol {
+        padding-left: 21px;
+        margin: 12px 0;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid var(--line);
+        margin: 22px 0;
+        background: var(--card);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+        text-align: left;
+      }
+      th {
+        font-size: 11px;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        background: #e9ecdf;
+        color: var(--green);
+        font-weight: 700;
+      }
+      th,
+      td {
+        padding: 16px 18px;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border: 0;
+      }
+      td:first-child {
+        font-weight: 650;
+      }
+      td p {
+        margin-bottom: 8px;
+      }
+      caption {
+        text-align: left;
+        padding: 14px 18px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .diagram {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 22px;
+        margin: 25px 0;
+        overflow: auto;
+      }
+      .diagram svg {
+        display: block;
+        width: 100%;
+        min-width: 610px;
+        height: auto;
+      }
+      .diagram figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 15px;
+      }
+      .diagram svg text {
+        font-family: system-ui, sans-serif;
+        fill: var(--ink);
+      }
+      .diagram svg .label {
+        font-size: 15px;
+        font-weight: 650;
+      }
+      .diagram svg .sub {
+        font-size: 12px;
+        fill: var(--muted);
+      }
+      .diagram svg .tiny {
+        font-size: 10px;
+        fill: var(--muted);
+      }
+      .diagram svg .white {
+        fill: #eef2df;
+      }
+      .diagram svg .lime {
+        fill: var(--lime);
+      }
+      .diagram svg .mono {
+        font-family: var(--mono);
+      }
+      .tag {
+        display: inline-block;
+        font: 10px/1.5 var(--mono);
+        padding: 3px 7px;
+        letter-spacing: 0.4px;
+        background: #e7edde;
+        color: var(--green);
+        margin: 0 5px 8px 0;
+        text-transform: uppercase;
+      }
+      .tag.orange {
+        background: var(--orange-bg);
+        color: var(--orange);
+      }
+      .tag.blue {
+        background: var(--blue-bg);
+        color: var(--blue);
+      }
+      details {
+        border-top: 1px solid var(--line);
+        padding: 18px 0;
+      }
+      details:last-child {
+        border-bottom: 1px solid var(--line);
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 650;
+      }
+      details p {
+        margin-top: 15px;
+        font-size: 14px;
+      }
+      .module-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .module {
+        padding: 19px;
+        border: 1px solid var(--line);
+        background: var(--card);
+      }
+      .module a {
+        font: 600 14px var(--mono);
+      }
+      .module p {
+        margin-top: 10px;
+        font-size: 13px;
+      }
+      .entity-buttons {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      .entity-buttons button,
+      .choice button {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 9px 13px;
+        color: var(--ink);
+        font: 12px var(--mono);
+      }
+      .entity-buttons button[aria-pressed='true'],
+      .choice button[aria-pressed='true'] {
+        background: var(--green);
+        border-color: var(--green);
+        color: white;
+      }
+      .entity-detail {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-top: 3px solid var(--green);
+        padding: 24px;
+        min-height: 222px;
+      }
+      .entity-detail .fields {
+        color: var(--green);
+        font: 12px/1.8 var(--mono);
+        margin: 15px 0;
+        overflow-wrap: anywhere;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .controls select {
+        padding: 10px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        max-width: 100%;
+      }
+      .controls button {
+        background: var(--green);
+        color: white;
+        border: 1px solid var(--green);
+        padding: 10px 16px;
+      }
+      .controls button.secondary {
+        background: transparent;
+        color: var(--green);
+      }
+      .sim {
+        background: var(--card);
+        border: 1px solid var(--line);
+        padding: 25px;
+        margin: 25px 0;
+      }
+      .lanes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .lane {
+        border: 1px solid var(--line);
+        padding: 18px;
+      }
+      .lane-title {
+        font: 11px var(--mono);
+        margin-bottom: 15px;
+        color: var(--muted);
+      }
+      .messages {
+        display: flex;
+        gap: 8px;
+      }
+      .msg {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        flex: 1;
+        padding: 15px 8px;
+        text-align: center;
+        font: 13px var(--mono);
+      }
+      .msg small {
+        display: block;
+        font: 10px system-ui;
+        margin-top: 6px;
+      }
+      .msg.sent {
+        background: #e0edbc;
+        border-color: #a1ba6b;
+        color: #224f2c;
+      }
+      .msg.active {
+        background: var(--orange-bg);
+        border-color: var(--orange);
+        color: var(--orange);
+      }
+      .msg.expired {
+        background: #eceae7;
+        color: #777;
+        text-decoration: line-through;
+      }
+      .sim-readout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+      .msg.failed {
+        background: var(--orange-bg);
+        border-color: var(--orange);
+        color: var(--orange);
+      }
+      .msg.unsent {
+        background: #eceae7;
+        color: #777;
+      }
+      .sim-state {
+        background: var(--ink);
+        color: var(--lime);
+        padding: 18px;
+        font: 12px/1.9 var(--mono);
+        white-space: pre-wrap;
+      }
+      .sim-narrative {
+        font-size: 14px;
+      }
+      .sim-narrative h4 {
+        font-size: 18px;
+      }
+      .step-counter {
+        font: 11px var(--mono);
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .choice {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0;
+      }
+      .verdict {
+        padding: 16px;
+        border: 1px solid var(--line);
+        background: #e7edde;
+        font-size: 14px;
+        min-height: 92px;
+      }
+      .time-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        position: relative;
+        margin: 24px 0;
+      }
+      .time-node {
+        border-top: 2px solid var(--green);
+        padding: 22px 18px 0 0;
+        position: relative;
+      }
+      .time-node::before {
+        content: '';
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--green);
+        position: absolute;
+        top: -6px;
+        left: 0;
+      }
+      .time-node b {
+        font: 20px var(--mono);
+      }
+      .time-node p {
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      .boundary {
+        display: grid;
+        grid-template-columns: 1fr 32px 1fr;
+        align-items: center;
+        gap: 15px;
+        margin: 25px 0;
+      }
+      .boundary .card:last-child {
+        border: 2px solid var(--green);
+      }
+      .boundary-arrow {
+        color: var(--green);
+        font-size: 27px;
+      }
+      .foot {
+        padding: 30px 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .sources {
+        columns: 2;
+        column-gap: 30px;
+        font-size: 13px;
+      }
+      .sources li {
+        break-inside: avoid;
+      }
+      .risk td:first-child {
+        min-width: 170px;
+      }
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 246px;
+        height: 3px;
+        background: var(--orange);
+        z-index: 10;
+        width: 0;
+      }
+      .only-print {
+        display: none;
+      }
+      @media (min-width: 1600px) {
+        main {
+          margin-right: auto;
+          padding-left: 90px;
+          padding-right: 90px;
+        }
+      }
+      @media (max-width: 1080px) {
+        .sidebar {
+          width: 206px;
+          padding: 25px 16px;
+        }
+        main {
+          margin-left: 206px;
+          padding-left: 4vw;
+          padding-right: 4vw;
+        }
+        .progress {
+          left: 206px;
+        }
+        .grid3 {
+          grid-template-columns: 1fr;
+        }
+        .grid3 .card {
+          padding: 20px;
+        }
+        .number {
+          font-size: 30px;
+          float: left;
+          margin: 0 20px 0 0;
+        }
+        .sim-readout {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 760px) {
+        .sidebar {
+          position: static;
+          width: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+          padding: 18px 20px;
+        }
+        .edition,
+        .side-foot {
+          display: none;
+        }
+        .sidebar nav {
+          display: flex;
+          overflow: auto;
+          margin-top: 15px;
+          gap: 7px;
+        }
+        .sidebar nav a {
+          white-space: nowrap;
+          border-left: 0;
+          padding: 7px 10px;
+          border-bottom: 2px solid transparent;
+        }
+        .sidebar nav a.active {
+          border-bottom-color: var(--green);
+        }
+        .sidebar nav span {
+          display: none;
+        }
+        main {
+          margin: 0;
+          padding: 0 20px 35px;
+        }
+        .hero {
+          padding-top: 36px;
+        }
+        h1 {
+          font-size: 48px;
+          letter-spacing: -1.8px;
+        }
+        .lede {
+          font-size: 17px;
+        }
+        .section {
+          padding: 36px 0;
+        }
+        .grid2,
+        .module-grid,
+        .lanes {
+          grid-template-columns: 1fr;
+        }
+        .section-heading {
+          gap: 13px;
+        }
+        .card {
+          padding: 20px;
+        }
+        .diagram {
+          padding: 12px;
+          margin-left: 0;
+          margin-right: 0;
+        }
+        .boundary {
+          grid-template-columns: 1fr;
+        }
+        .boundary-arrow {
+          transform: rotate(90deg);
+          text-align: center;
+        }
+        .time-row {
+          grid-template-columns: 1fr;
+        }
+        .time-node {
+          margin-top: 22px;
+          padding-bottom: 10px;
+        }
+        .sources {
+          columns: 1;
+        }
+        .sim {
+          padding: 16px;
+        }
+        .sim-readout {
+          gap: 15px;
+        }
+        .step-counter {
+          width: 100%;
+          margin-left: 0;
+        }
+        .progress {
+          left: 0;
+        }
+        .table-wrap table {
+          min-width: 620px;
+        }
+        .entity-detail {
+          min-height: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+      @media print {
+        body {
+          font-size: 11px;
+          background: white;
+        }
+        .sidebar,
+        .progress,
+        .skip,
+        .controls,
+        .entity-buttons,
+        .choice {
+          display: none;
+        }
+        main {
+          margin: 0;
+          padding: 0;
+          max-width: none;
+        }
+        .hero {
+          padding-top: 0;
+        }
+        h1 {
+          font-size: 42px;
+        }
+        h2 {
+          font-size: 28px;
+        }
+        .section {
+          padding: 25px 0;
+          break-before: auto;
+        }
+        .card,
+        .diagram,
+        .entity-detail,
+        pre,
+        .sim,
+        .note {
+          break-inside: avoid;
+        }
+        pre {
+          white-space: pre-wrap;
+        }
+        a {
+          color: inherit;
+        }
+        .only-print {
+          display: block;
+        }
+        .diagram svg {
+          min-width: 0;
+        }
+        .sources {
+          columns: 2;
+        }
+        .sim-readout {
+          grid-template-columns: 1fr 1fr;
+        }
+        .table-wrap {
+          overflow: visible;
+        }
+        th,
+        td {
+          padding: 9px;
+        }
+        .grid3 {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .number {
+          float: none;
+        }
+        .foot {
+          padding-bottom: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to walkthrough</a>
+    <div class="progress" aria-hidden="true"></div>
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">↗</span>discord-delivery</div>
+      <div class="edition">Architecture field guide<br />07 October 2026</div>
+      <nav aria-label="Walkthrough sections">
+        <a href="#problem"><span>01</span>The problem</a
+        ><a href="#contract"><span>02</span>The contract</a
+        ><a href="#interface"><span>03</span>Using the component</a
+        ><a href="#model"><span>04</span>Data & ownership</a
+        ><a href="#flow"><span>05</span>One delivery, end to end</a
+        ><a href="#lab"><span>06</span>Queue laboratory</a
+        ><a href="#failures"><span>07</span>Failure & recovery</a
+        ><a href="#inspection"><span>08</span>Investigation & edits</a
+        ><a href="#modules"><span>09</span>Inside the package</a
+        ><a href="#decisions"><span>10</span>Decisions & alternatives</a
+        ><a href="#orca"><span>11</span>The ORCA boundary</a
+        ><a href="#limits"><span>12</span>Weaknesses & evidence</a>
+      </nav>
+      <div class="side-foot">
+        An implementation walkthrough of the current working tree. Diagrams are explanatory; the
+        queue lab makes no network requests.<br /><button id="print">Print / save PDF</button>
+      </div>
+    </aside>
+    <main id="main">
+      <header class="hero">
+        <div class="eyebrow">Convex component · Design, mechanisms, tradeoffs</div>
+        <h1>Ordered delivery.<br /><em>Inspectable history.</em></h1>
+        <p class="lede">
+          <code>discord-delivery</code> turns a collection of webhook calls into durable, ordered
+          work. It remembers what was accepted, what was attempted, what Discord returned, and why
+          something never left the queue.
+        </p>
+        <div class="meta">
+          <span class="pill dark">@orca/discord-delivery</span
+          ><span class="pill">1 global sender</span><span class="pill">7 component tables</span
+          ><span class="pill">1 message / HTTP request</span
+          ><span class="pill">Retries may duplicate</span>
+        </div>
+        <p class="small">
+          Reading map: start with the contract, step through the queue lab, then inspect the
+          tradeoffs. This is a source-grounded snapshot of the uncommitted implementation, not a
+          promise of production rollout. <a href="REQUIREMENTS.md">Requirements</a> ·
+          <a href="ARCHITECTURE.md">Architecture reference</a>
+        </p>
+      </header>
+
+      <section class="section" id="problem">
+        <div class="section-heading">
+          <span class="section-no">01</span>
+          <h2>The problem is coordination</h2>
+        </div>
+        <p class="intro">
+          Rendering a Discord card produces a payload. Delivering it reliably requires coordination
+          across concurrent producers, HTTP failures, scheduler delays, and investigations hours
+          later.
+        </p>
+        <div class="grid3">
+          <div class="card">
+            <span class="number">01</span>
+            <h3>Backfills collide</h3>
+            <p>
+              Independent ingestions can each start sending. Their requests overlap, hit rate
+              limits, and scramble the order that a reader sees.
+            </p>
+          </div>
+          <div class="card">
+            <span class="number">02</span>
+            <h3>A send has an uncertain edge</h3>
+            <p>
+              Discord can accept a message before the action loses its response. Retrying favors
+              eventual delivery, but can create a second copy.
+            </p>
+          </div>
+          <div class="card">
+            <span class="number">03</span>
+            <h3>Re-rendering is not evidence</h3>
+            <p>
+              Replaying today's renderer does not tell an agent what an earlier version actually
+              submitted—or which messages were skipped.
+            </p>
+          </div>
+        </div>
+        <figure class="diagram">
+          <svg viewBox="0 0 900 310" role="img" aria-labelledby="problem-title problem-desc">
+            <title id="problem-title">
+              Independent webhook sends become one durable serial queue
+            </title>
+            <desc id="problem-desc">
+              Three concurrent producers previously sent directly to Discord. With this component,
+              they submit immutable groups into an ordered queue. One sender delivers every message
+              in group A before group B.
+            </desc>
+            <defs>
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#74887a" />
+              </marker>
+            </defs>
+            <text x="20" y="26" class="tiny mono">BEFORE / INDEPENDENT ACTIONS</text>
+            <g fill="#fae5d5" stroke="#d6b59b">
+              <rect x="20" y="48" width="135" height="43" rx="4" />
+              <rect x="20" y="126" width="135" height="43" rx="4" />
+              <rect x="20" y="204" width="135" height="43" rx="4" />
+            </g>
+            <text x="38" y="75" class="label">Ingestion A</text>
+            <text x="38" y="153" class="label">Ingestion B</text>
+            <text x="38" y="231" class="label">Manual send</text>
+            <g fill="none" stroke="#b7734f" stroke-width="2" marker-end="url(#arrow)">
+              <path d="M155 69 C240 69 220 149 293 149" />
+              <path d="M155 147 L293 147" />
+              <path d="M155 225 C240 225 220 150 293 150" />
+            </g>
+            <rect x="298" y="111" width="112" height="72" fill="#182c2b" rx="5" />
+            <text x="321" y="140" class="label white">Discord</text>
+            <text x="322" y="162" class="tiny lime">429 / overlap</text>
+            <line x1="445" x2="445" y1="10" y2="285" stroke="#d3d9cd" />
+            <text x="475" y="26" class="tiny mono">NOW / ACCEPT, RECORD, SERIALIZE</text>
+            <rect x="475" y="48" width="397" height="52" fill="#e7edde" stroke="#b8c7a7" rx="4" />
+            <text x="495" y="70" class="label">All producers → enqueue</text>
+            <text x="495" y="87" class="tiny">
+              One transaction saves the complete group and wakes the worker
+            </text>
+            <path d="M674 100 V128" stroke="#74887a" marker-end="url(#arrow)" />
+            <g fill="#e0ef9f" stroke="#9daf75">
+              <rect x="477" y="135" width="71" height="43" rx="3" />
+              <rect x="553" y="135" width="71" height="43" rx="3" />
+              <rect x="629" y="135" width="71" height="43" rx="3" />
+            </g>
+            <g fill="#e6eef6" stroke="#afc3d2">
+              <rect x="720" y="135" width="71" height="43" rx="3" />
+              <rect x="796" y="135" width="71" height="43" rx="3" />
+            </g>
+            <text x="500" y="161" class="label mono">A1</text>
+            <text x="576" y="161" class="label mono">A2</text>
+            <text x="652" y="161" class="label mono">A3</text>
+            <text x="743" y="161" class="label mono">B1</text>
+            <text x="819" y="161" class="label mono">B2</text>
+            <text x="482" y="197" class="tiny">Group A · destination α</text>
+            <text x="723" y="197" class="tiny">Group B · destination β</text>
+            <path d="M674 209 V233" stroke="#74887a" marker-end="url(#arrow)" />
+            <rect x="475" y="239" width="397" height="43" fill="#182c2b" rx="4" />
+            <text x="495" y="266" class="label white">One HTTP request → one recorded outcome</text>
+          </svg>
+          <figcaption>
+            “Batch” means coordinated queue processing. The component does not combine several
+            Discord messages into one HTTP request.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="section" id="contract">
+        <div class="section-heading">
+          <span class="section-no">02</span>
+          <h2>The contract, precisely</h2>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <span class="tag">Guarantee within the component</span>
+            <h3>A group keeps the sender</h3>
+            <p>
+              Each group has one destination and an ordered list of messages. Once selected, it
+              holds the global sender through retries until it succeeds, expires, or fails. Other
+              destinations wait too.
+            </p>
+            <p>
+              Acceptance is transactional: all messages and the task exist together, or none do.
+              HTTP delivery is sequential and can partially succeed.
+            </p>
+          </div>
+          <div class="card">
+            <span class="tag orange">Deliberate uncertainty</span>
+            <h3>Retry is a policy, not exactly once</h3>
+            <p>
+              Lost outcomes are retried, as requested. The local identity prevents duplicate
+              <em>submissions</em>; it cannot prevent Discord from accepting the same message twice
+              across uncertain attempts.
+            </p>
+            <p>
+              Retries are bounded. There is no unconditional guarantee that every accepted group
+              will eventually be delivered.
+            </p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Concept</th>
+                <th>Meaning in this implementation</th>
+                <th>Consequence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>sendAt</code></td>
+                <td>
+                  Epoch milliseconds; ordering value, not-before time, identity member, and expiry
+                  base.
+                </td>
+                <td>It is not a deadline or a promise of exact send time.</td>
+              </tr>
+              <tr>
+                <td>Group identity</td>
+                <td><code>(destinationKey, sendAt, key)</code></td>
+                <td>
+                  Same identity and content returns the existing group. Conflicting content throws.
+                </td>
+              </tr>
+              <tr>
+                <td>Message identity</td>
+                <td>A nonempty key unique inside its group; position follows array order.</td>
+                <td>
+                  The same deterministic message key may recur across groups and destinations.
+                </td>
+              </tr>
+              <tr>
+                <td>Expiry</td>
+                <td><code>expiresAt = sendAt + maxAgeMs</code>, when configured.</td>
+                <td>Old work can be accepted, archived, then expire without any HTTP request.</td>
+              </tr>
+              <tr>
+                <td>Destination</td>
+                <td>A registered key with a full HTTP(S) URL; the group snapshots that URL.</td>
+                <td>
+                  Rotation changes future groups. Accepted groups and later management retain their
+                  original route.
+                </td>
+              </tr>
+              <tr>
+                <td>Payload</td>
+                <td>A serialized JSON object supplied by the host application.</td>
+                <td>No JSX, builder dependency, or ORCA event knowledge inside the component.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note warn">
+          <strong>Ordering has a horizon.</strong> The worker orders work that has already arrived.
+          If an older historical group arrives after a newer one has started, it cannot go back in
+          time. Strict backfill order requires ordered submission, or pausing the component while
+          the complete set is submitted.
+        </div>
+        <h3>Try the submission identity</h3>
+        <p class="small">
+          Assume destination <code>alerts</code>, <code>sendAt = T</code>, key
+          <code>release:42</code> already exists.
+        </p>
+        <div class="choice" role="group" aria-label="Dedupe examples">
+          <button data-dedupe="same" aria-pressed="true">Identical submission</button
+          ><button data-dedupe="payload" aria-pressed="false">Change the body</button
+          ><button data-dedupe="time" aria-pressed="false">Change sendAt</button
+          ><button data-dedupe="url" aria-pressed="false">Rotate the destination URL</button>
+        </div>
+        <div class="verdict" id="dedupe-verdict" aria-live="polite">
+          <strong>Reuse the existing group.</strong> No new task or HTTP request is created.
+          Re-submitting a failed or expired group does not restart it.
+        </div>
+        <p class="small" style="margin-top: 13px">
+          Content equality includes ordered message keys, exact payload strings, retry/expiry
+          policy, reference, and dead-letter destination. Equivalent JSON with a different
+          serialization can conflict. Canonicalization belongs to the caller.
+        </p>
+      </section>
+
+      <section class="section" id="interface">
+        <div class="section-heading">
+          <span class="section-no">03</span>
+          <h2>A small host-facing interface</h2>
+        </div>
+        <p class="intro">
+          The host installs one Convex component and calls its generated function references. There
+          is no separate client class. Authentication, operator access, rendering, and business
+          policy stay in the application.
+        </p>
+        <pre><code><span class="comment">// Host convex.config.ts</span>
+import { defineApp } from 'convex/server'
+import discordDelivery from '@orca/discord-delivery/convex.config.js'
+
+const app = defineApp()
+app.use(discordDelivery)
+export default app</code></pre>
+        <pre><code><span class="comment">// Inside a trusted host mutation; components comes from the host's _generated/api.</span>
+await ctx.runMutation(components.discordDelivery.api.registerDestination, {
+  key: 'dev-alerts',
+  name: 'Development alerts',
+  url: webhookUrl, <span class="comment">// Full URL saved in the destinations table.</span>
+})
+
+const groupId = await ctx.runMutation(components.discordDelivery.api.enqueue, {
+  destinationKey: 'dev-alerts',
+  key: 'release:42',
+  sendAt: releaseTimestampMs,
+  maxAgeMs: 60 * 60 * 1000, <span class="comment">// Optional; no expiry when omitted.</span>
+  maxAttempts: 8,          <span class="comment">// Optional; budget PER MESSAGE, including its first attempt.</span>
+  <span class="comment">// deadLetterDestinationKey: 'delivery-reports', // Optional; register this key first.</span>
+  reference: JSON.stringify({ releaseId: 42 }), <span class="comment">// Opaque to the component.</span>
+  messages: [
+    { key: 'header', payload: JSON.stringify({ content: 'Release 42' }) },
+    { key: 'body',   payload: JSON.stringify(renderedDiscordPayload) },
+    { key: 'footer', payload: JSON.stringify({ content: 'End of release' }) },
+  ],
+})</code></pre>
+        <div class="grid2">
+          <div class="card">
+            <h3>Mutation surface</h3>
+            <ul>
+              <li>
+                <code>registerDestination</code> creates/updates a key and clears its disabled
+                state.
+              </li>
+              <li><code>enqueue</code> accepts an immutable send group.</li>
+              <li><code>setPaused</code> pauses/resumes the global sender.</li>
+              <li>
+                <code>manageMessage</code> queues a GET, edit, or delete for an original sent
+                message.
+              </li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Query surface</h3>
+            <ul>
+              <li><code>getDestination / listDestinations</code></li>
+              <li><code>getGroup / listGroups</code></li>
+              <li><code>getMessage / listMessages</code></li>
+              <li><code>listAttempts</code></li>
+              <li>
+                <code>history.groups / messages / attempts / results</code> provide cursor
+                pagination.
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Admission bound</th>
+                <th>Current choice</th>
+                <th>Why it matters</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Group</td>
+                <td>1–500 messages; at most 4 MiB of payload bytes.</td>
+                <td>Bounds transaction size and avoids one unbounded submission.</td>
+              </tr>
+              <tr>
+                <td>Message</td>
+                <td>JSON object; at most 256 KiB of UTF-8 payload bytes.</td>
+                <td>
+                  This is a storage guard, not full Discord schema validation. Multipart file
+                  uploads are not implemented.
+                </td>
+              </tr>
+              <tr>
+                <td>Retry budget</td>
+                <td>Default 8; configurable 1–100 per message.</td>
+                <td>429s count against the same budget. Pause preflight skips do not.</td>
+              </tr>
+              <tr>
+                <td>Inspection pages</td>
+                <td>1–500 items requested; default bounded-list limit 100.</td>
+                <td>Payload-heavy pages can still approach Convex read/return limits.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">
+          The package is currently a private workspace package. Its reusable boundary exists;
+          publication, a polished external SDK, and a versioned compatibility policy are not
+          finished product features.
+        </p>
+      </section>
+
+      <section class="section" id="model">
+        <div class="section-heading">
+          <span class="section-no">04</span>
+          <h2>Keep the evidence. Move the cursor.</h2>
+        </div>
+        <p class="intro">
+          The model is a hybrid: immutable accepted work and recorded outcomes, plus a small mutable
+          projection that coordinates delivery. It is not a fully event-sourced system.
+        </p>
+        <figure class="diagram">
+          <svg viewBox="0 0 920 440" role="img" aria-labelledby="model-title model-desc">
+            <title id="model-title">Seven-table component data model</title>
+            <desc id="model-desc">
+              A destination has many groups; each group has ordered messages and one mutable task. A
+              message has attempts, each with zero or one result. The singleton control record
+              points to the active task and attempt. Groups and messages are immutable. Tasks,
+              destinations and control are mutable. Attempts and results retain delivery evidence.
+            </desc>
+            <g fill="none" stroke="#74887a" stroke-width="1.5" marker-end="url(#arrow)">
+              <path d="M190 78 H289" />
+              <path d="M480 78 H579" />
+              <path d="M390 119 V218" />
+              <path d="M675 119 V218" />
+              <path d="M770 260 H801 V374 H771" />
+              <path d="M192 260 H289" />
+              <path d="M100 302 V338 H675 V301" />
+            </g>
+            <g fill="#e6eef6" stroke="#9eb8cc">
+              <rect x="10" y="37" width="180" height="82" rx="4" />
+              <rect x="10" y="219" width="182" height="83" rx="4" />
+              <rect x="290" y="219" width="190" height="83" rx="4" />
+            </g>
+            <g fill="#e7edde" stroke="#a9bd99">
+              <rect x="290" y="37" width="190" height="82" rx="4" />
+              <rect x="580" y="37" width="190" height="82" rx="4" />
+            </g>
+            <g fill="#faedda" stroke="#cabb9c">
+              <rect x="580" y="219" width="190" height="83" rx="4" />
+              <rect x="580" y="355" width="190" height="72" rx="4" />
+            </g>
+            <text x="27" y="64" class="label mono">destinations</text>
+            <text x="27" y="85" class="sub">key · URL · disabled state</text>
+            <text x="27" y="103" class="tiny">mutable registration</text>
+            <text x="308" y="64" class="label mono">groups</text>
+            <text x="308" y="85" class="sub">identity · route · policy</text>
+            <text x="308" y="103" class="tiny">immutable accepted envelope</text>
+            <text x="598" y="64" class="label mono">messages</text>
+            <text x="598" y="85" class="sub">position · key · payload</text>
+            <text x="598" y="103" class="tiny">immutable request intent</text>
+            <text x="27" y="246" class="label mono">control</text>
+            <text x="27" y="267" class="sub">active IDs · cooldown</text>
+            <text x="27" y="286" class="tiny">one global row · pause flag</text>
+            <text x="308" y="246" class="label mono">tasks</text>
+            <text x="308" y="267" class="sub">cursor · retries · status</text>
+            <text x="308" y="286" class="tiny">one mutable task / group</text>
+            <text x="598" y="246" class="label mono">attempts</text>
+            <text x="598" y="267" class="sub">claim time · scheduler ID</text>
+            <text x="598" y="286" class="tiny">one record / scheduled request</text>
+            <text x="598" y="382" class="label mono">results</text>
+            <text x="598" y="403" class="sub">raw response · receipt</text>
+            <text x="214" y="66" class="tiny">1 → many</text>
+            <text x="502" y="66" class="tiny">1 → many</text>
+            <text x="400" y="167" class="tiny">1 → 1</text>
+            <text x="686" y="167" class="tiny">1 → many</text>
+            <text x="812" y="327" class="tiny">1 → 0…1</text>
+            <text x="213" y="248" class="tiny">active</text>
+            <text x="235" y="331" class="tiny">active attempt pointer</text>
+            <text x="10" y="391" class="tiny">BLUE = MUTABLE CONTROL</text>
+            <text x="10" y="411" class="tiny">
+              GREEN = ACCEPTED INTENT · SAND = ATTEMPT EVIDENCE
+            </text>
+          </svg>
+          <figcaption>
+            Arrows show ownership/cardinality or control pointers, not every stored ID. Attempts and
+            results also carry group/message IDs for direct investigation. The scheduler is a Convex
+            system table, and Batch Worker has its own child-component state; neither is included in
+            these seven tables.
+          </figcaption>
+        </figure>
+        <div class="entity-buttons" role="group" aria-label="Explore a table">
+          <button data-entity="groups" aria-pressed="true">groups</button
+          ><button data-entity="messages" aria-pressed="false">messages</button
+          ><button data-entity="tasks" aria-pressed="false">tasks</button
+          ><button data-entity="attempts" aria-pressed="false">attempts</button
+          ><button data-entity="results" aria-pressed="false">results</button
+          ><button data-entity="control" aria-pressed="false">control</button
+          ><button data-entity="destinations" aria-pressed="false">destinations</button>
+        </div>
+        <div class="entity-detail" id="entity-detail" aria-live="polite">
+          <span class="tag">Immutable intent</span>
+          <h3>groups</h3>
+          <p>
+            The accepted delivery envelope freezes a destination URL, ordered message count,
+            identity, and policy. Registration changes cannot silently reroute existing work.
+          </p>
+          <div class="fields">
+            destinationId · destinationKey · url · key · sendAt · expiresAt? · maxAttempts ·
+            messageCount · reference? · deadLetterDestinationKey?
+          </div>
+          <p class="small">
+            Writer: enqueueGroup. Indexes support identity checks and time/key/destination
+            investigations. The destination snapshot is intentional duplication.
+          </p>
+        </div>
+        <div class="grid2" style="margin-top: 22px">
+          <div class="card">
+            <h3>One owner for progression</h3>
+            <p>
+              The worker mutation advances the cursor, chooses retries, terminates a group, and
+              selects subsequent work. The HTTP action only records an outcome. Two functions do not
+              independently decide what should be sent next.
+            </p>
+          </div>
+          <div class="card">
+            <h3>“Immutable” has a precise boundary</h3>
+            <p>
+              Attempt creation and attaching its scheduler ID happen in the same transaction.
+              Results are appended once. Tasks and global control remain mutable; there is no replay
+              engine that reconstructs them from an event stream.
+            </p>
+          </div>
+        </div>
+        <div class="note">
+          Separating payloads from hot state keeps retries from rewriting large bodies. The price is
+          seven tables, several indexes, and joins for inspection. This is more machinery than a
+          two-table outbox, chosen to make uncertain attempts and management history first-class
+          records.
+        </div>
+      </section>
+
+      <section class="section" id="flow">
+        <div class="section-heading">
+          <span class="section-no">05</span>
+          <h2>One delivery, end to end</h2>
+        </div>
+        <figure class="diagram">
+          <svg viewBox="0 0 910 480" role="img" aria-labelledby="flow-title flow-desc">
+            <title id="flow-title">Delivery sequence across transactions and external HTTP</title>
+            <desc id="flow-desc">
+              The host accepts a group transactionally and pings Batch Worker. The worker rereads
+              eligibility and claims an attempt with a scheduled action. The action checks its fence
+              and sends HTTP. It records the result and wakes the worker, which consumes the result
+              before advancing.
+            </desc>
+            <g fill="#e7edde" stroke="#bac5af">
+              <rect x="10" y="12" width="170" height="40" rx="3" />
+              <rect x="250" y="12" width="175" height="40" rx="3" />
+              <rect x="493" y="12" width="170" height="40" rx="3" />
+              <rect x="745" y="12" width="150" height="40" rx="3" />
+            </g>
+            <text x="40" y="38" class="label">Host mutation</text>
+            <text x="271" y="38" class="label">Worker mutation</text>
+            <text x="516" y="38" class="label">Request action</text>
+            <text x="790" y="38" class="label">Discord</text>
+            <g stroke="#c8d0c1" stroke-dasharray="4 5">
+              <path d="M95 52 V465" />
+              <path d="M338 52 V465" />
+              <path d="M579 52 V465" />
+              <path d="M820 52 V465" />
+            </g>
+            <rect x="14" y="76" width="212" height="57" fill="#182c2b" rx="4" />
+            <text x="28" y="98" class="white sub">Validate + dedupe + save</text>
+            <text x="28" y="117" class="white sub">group / messages / task / ping</text>
+            <path d="M97 150 H338" stroke="#74887a" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="137" y="143" class="tiny">Batch Worker wakes</text>
+            <rect x="251" y="170" width="214" height="55" fill="#182c2b" rx="4" />
+            <text x="265" y="192" class="white sub">Re-read state; claim attempt</text>
+            <text x="265" y="212" class="white sub">schedule action; save active ID</text>
+            <path d="M338 249 H579" stroke="#74887a" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="360" y="242" class="tiny">Convex scheduler runs action</text>
+            <text x="588" y="269" class="tiny">Preflight: fence / expiry / pause</text>
+            <path d="M579 290 H820" stroke="#74887a" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="630" y="283" class="tiny">One POST, GET, PATCH or DELETE</text>
+            <path d="M820 323 H579" stroke="#74887a" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="630" y="316" class="tiny">Status + headers + body</text>
+            <path d="M579 358 H338" stroke="#74887a" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="362" y="350" class="tiny">recordResult mutation + ping</text>
+            <rect x="251" y="379" width="270" height="62" fill="#e0ef9f" stroke="#a5b887" rx="4" />
+            <text x="266" y="402" class="label">Consume outcome, then progress</text>
+            <text x="266" y="423" class="sub">Advance / delay / finish → next iteration</text>
+          </svg>
+          <figcaption>
+            Each solid dark box is an atomic mutation boundary. HTTP crosses that boundary; database
+            state and Discord acceptance cannot be committed atomically.
+          </figcaption>
+        </figure>
+        <ol>
+          <li>
+            <strong>Accept.</strong> Validate bounded JSON work. Read the identity index. Store
+            immutable rows plus one task, and ping the named <code>delivery</code> worker in the
+            same mutation.
+          </li>
+          <li>
+            <strong>Select.</strong> If no group is active, choose the earliest queued
+            <code>sendAt</code>. A future group waits until eligible. Once active, its cursor
+            determines the only message that can run.
+          </li>
+          <li>
+            <strong>Claim.</strong> Re-read all eligibility in the mutation because Batch Worker's
+            query snapshot can be stale. Create an attempt, schedule its action, and save the active
+            attempt ID transactionally.
+          </li>
+          <li>
+            <strong>Perform.</strong> The action rechecks its fence, pause, and expiry. The
+            transport performs one request with a 20-second timeout covering response-body reading.
+          </li>
+          <li>
+            <strong>Record.</strong> Insert one result if that attempt is still current. Duplicate
+            result writes are ignored; stale attempts cannot overwrite a newer attempt.
+          </li>
+          <li>
+            <strong>Progress.</strong> Consume the result before another request can be claimed. A
+            successful final message completes the group and releases the sender.
+          </li>
+        </ol>
+        <div class="note blue">
+          <strong>Scheduler overlap is not HTTP overlap.</strong> A completed HTTP request can have
+          its result consumed while its action finishes bookkeeping. The invariant is one active
+          local request, not that two action invocations can never briefly coexist. After a timeout,
+          Discord might still finish processing an uncertain request; local serialization cannot
+          guarantee remote completion order in that case.
+        </div>
+      </section>
+
+      <section class="section" id="lab">
+        <div class="section-heading">
+          <span class="section-no">06</span>
+          <h2>A queue you can step through</h2>
+        </div>
+        <p class="intro">
+          Two destinations share one sender. Group A has a header, body, and footer; group B must
+          wait. Change the scenario to see which state changes—and which records remain.
+        </p>
+        <div class="sim">
+          <div class="controls">
+            <label for="scenario" class="small">Scenario</label
+            ><select id="scenario">
+              <option value="success">Successful group</option>
+              <option value="rate">429 and global waiting</option>
+              <option value="uncertain">Lost result and possible duplicate</option>
+              <option value="expired">Old group expires without HTTP</option>
+              <option value="partial">Partial delivery, then permanent failure</option></select
+            ><button id="next">Next step →</button
+            ><button id="reset" class="secondary">Reset</button
+            ><span class="step-counter" id="step-counter">Step 1 / 5</span>
+          </div>
+          <div class="lanes">
+            <div class="lane">
+              <div class="lane-title">GROUP A · DESTINATION α · EARLIER sendAt</div>
+              <div class="messages">
+                <div class="msg" id="a1">A1<small>header</small></div>
+                <div class="msg" id="a2">A2<small>body</small></div>
+                <div class="msg" id="a3">A3<small>footer</small></div>
+              </div>
+            </div>
+            <div class="lane">
+              <div class="lane-title">GROUP B · DESTINATION β · LATER sendAt</div>
+              <div class="messages">
+                <div class="msg" id="b1">B1<small>message</small></div>
+              </div>
+            </div>
+          </div>
+          <div class="sim-readout">
+            <div class="sim-state" id="sim-state">
+              active group — cursor 0 attempts 0 results 0 cooldown none
+            </div>
+            <div class="sim-narrative" aria-live="polite" aria-atomic="true">
+              <h4 id="sim-title">Both groups are accepted</h4>
+              <p id="sim-text">
+                Their complete payloads are already stored. A has the earlier sendAt and will be
+                selected first. No HTTP request has started.
+              </p>
+              <p class="small" id="sim-records">Written: 2 groups · 4 messages · 2 tasks.</p>
+            </div>
+          </div>
+        </div>
+        <p class="small">
+          Schematic state snapshots, not a live component instance. “Attempts” and “results” count
+          records for group A in this illustration; some successful steps are condensed. Green means
+          confirmed; orange means active or failed; gray means skipped/terminal unsent. All five
+          scenarios are also described in the failure table below.
+        </p>
+      </section>
+
+      <section class="section" id="failures">
+        <div class="section-heading">
+          <span class="section-no">07</span>
+          <h2>Failure is part of the protocol</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Observation</th>
+                <th>Worker decision</th>
+                <th>What remains true</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>HTTP 2xx</td>
+                <td>Advance the cursor, reset that message's attempt counter.</td>
+                <td>Original payload and response remain separate records.</td>
+              </tr>
+              <tr>
+                <td>2xx headers, body lost</td>
+                <td>Keep the known success; record the body-read error.</td>
+                <td>No blind duplicate retry. Without a receipt ID, management is unavailable.</td>
+              </tr>
+              <tr>
+                <td>429 or exhausted bucket</td>
+                <td>
+                  Honor the largest recognized delay; hold the global sender. 429 retries also use
+                  exponential backoff.
+                </td>
+                <td>A different destination cannot jump ahead, even if its own bucket is free.</td>
+              </tr>
+              <tr>
+                <td>Network uncertainty / 5xx</td>
+                <td>Retry the same message, within its budget.</td>
+                <td>A lost response can mean Discord already has a copy.</td>
+              </tr>
+              <tr>
+                <td>Permanent error / budget exhausted</td>
+                <td>Fail the group; stop its remaining messages.</td>
+                <td>
+                  Already confirmed messages stay sent. There is no rollback of Discord side
+                  effects.
+                </td>
+              </tr>
+              <tr>
+                <td>Send returns 401 / 403 / 404</td>
+                <td>
+                  Also disable the registered destination if its current URL matches the group's
+                  snapshot.
+                </td>
+                <td>
+                  Re-registration clears disabled state. Management errors do not disable a webhook.
+                </td>
+              </tr>
+              <tr>
+                <td>Expiry before request</td>
+                <td>Expire the group without another HTTP request.</td>
+                <td>
+                  A success received after expiry still counts; remaining messages can expire.
+                </td>
+              </tr>
+              <tr>
+                <td>Pause before preflight</td>
+                <td>Record a skipped attempt; restore its retry budget.</td>
+                <td>
+                  Pause is not cancellation. A request that already passed preflight may complete.
+                </td>
+              </tr>
+              <tr>
+                <td>DELETE 404, Discord code 10008</td>
+                <td>Treat “unknown message” as already deleted and complete the operation.</td>
+                <td>Keep the actual 404 response as evidence; other 404s still fail.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Backoff has two clocks</h3>
+            <p>
+              Retry delay is the maximum of the received rate delay and exponential backoff:
+              <code>1s × 2^(attempt−1)</code>, capped at 60 seconds. There is no jitter.
+            </p>
+            <p>
+              Rate limits can extend past that cap. Long valid deadlines are honored through
+              scheduler sleeps of at most 24 hours each. Eight attempts does not bound total
+              wall-clock time.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Dead letter means a summary</h3>
+            <p>
+              Failed and expired groups always produce a warning log. An optional registered
+              destination receives a new one-message group containing a bounded terminal summary and
+              original group ID.
+            </p>
+            <p>
+              The complete payloads stay in the archive. This summary uses the same sender, can
+              itself fail, and does not recursively forward its own failures.
+            </p>
+          </div>
+        </div>
+        <h3 style="margin-top: 28px">Recovery asks the scheduler, not just a timer</h3>
+        <figure class="diagram">
+          <svg viewBox="0 0 900 235" role="img" aria-labelledby="recovery-title recovery-desc">
+            <title id="recovery-title">Recovery decision tree for an attempt with no result</title>
+            <desc id="recovery-desc">
+              If an active attempt has a result, consume it. Otherwise inspect its scheduled
+              function. Pending or in-progress executions are polled again in thirty seconds. Ended
+              or missing executions generate an uncertain recovered result and enter normal retry
+              handling.
+            </desc>
+            <rect x="12" y="80" width="175" height="75" fill="#182c2b" rx="4" />
+            <text x="30" y="109" class="label white">Active attempt</text>
+            <text x="30" y="132" class="sub white">No result yet</text>
+            <path d="M187 117 H256" stroke="#74887a" marker-end="url(#arrow)" />
+            <rect x="262" y="80" width="199" height="75" fill="#e7edde" stroke="#a9bd99" rx="4" />
+            <text x="280" y="109" class="label">Read scheduler state</text>
+            <text x="280" y="132" class="sub">Not “lease timed out”</text>
+            <g stroke="#74887a" fill="none" marker-end="url(#arrow)">
+              <path d="M461 100 H500 V49 H584" />
+              <path d="M461 137 H500 V187 H584" />
+            </g>
+            <rect x="590" y="12" width="290" height="75" fill="#e6eef6" stroke="#afc3d2" rx="4" />
+            <text x="609" y="41" class="label">pending / inProgress</text>
+            <text x="609" y="64" class="sub">Wait; poll again in 30s</text>
+            <rect x="590" y="150" width="290" height="75" fill="#fae5d5" stroke="#d4b596" rx="4" />
+            <text x="609" y="179" class="label">Ended / canceled / missing</text>
+            <text x="609" y="202" class="sub">Record uncertainty → retry policy</text>
+          </svg>
+          <figcaption>
+            A blind lease timeout could start a second HTTP request while the first still runs.
+            Scheduler state preserves serialization; attempt-ID fencing prevents late writes from
+            acting for a newer attempt.
+          </figcaption>
+        </figure>
+        <p>
+          The worker also recovers a scheduler invocation marked successful if no result was
+          persisted. That is explicitly uncertain, not evidence that the webhook failed. If an
+          execution remains <code>inProgress</code> indefinitely, the sender waits; the design
+          depends on Convex execution-state accuracy and Batch Worker liveness.
+        </p>
+      </section>
+
+      <section class="section" id="inspection">
+        <div class="section-heading">
+          <span class="section-no">08</span>
+          <h2>“What happened early this morning?”</h2>
+        </div>
+        <p class="intro">
+          Start by choosing the clock. Intended time, scheduler claim time, and result-recording
+          time answer different questions—especially for old data and delayed sends.
+        </p>
+        <div class="time-row">
+          <div class="time-node">
+            <b>03:00</b>
+            <p>
+              <strong>groups.sendAt</strong><br />Intended send time or historical scan time.<br /><code
+                >history.groups</code
+              >
+              filters this clock.
+            </p>
+          </div>
+          <div class="time-node">
+            <b>08:12</b>
+            <p>
+              <strong>attempts.startedAt</strong><br />When the attempt was claimed/scheduled. Not
+              necessarily actual network start.<br /><code>history.attempts</code> filters this
+              clock.
+            </p>
+          </div>
+          <div class="time-node">
+            <b>08:13</b>
+            <p>
+              <strong>results.completedAt</strong><br />When the outcome was recorded.<br /><code
+                >history.results</code
+              >
+              filters this clock.
+            </p>
+          </div>
+        </div>
+        <pre><code><span class="comment">// Inside a trusted host query: begin with recorded outcomes in an incident window.</span>
+const page = await ctx.runQuery(components.discordDelivery.history.results, {
+  from: morningStartMs,
+  to: morningEndMs,
+  paginationOpts: { numItems: 50, cursor: null },
+})
+<span class="comment">// Each result links to the exact local message and group.
+// Fetch message.payload, inspect response.body, follow attempts for retries.
+// Continue with page.continueCursor until page.isDone, including empty filtered pages.</span>
+const message = await ctx.runQuery(components.discordDelivery.api.getMessage, {
+  messageId: localMessageId,
+})</code></pre>
+        <div class="grid2">
+          <div class="card">
+            <h3>Evidence hierarchy</h3>
+            <ol>
+              <li><strong>Accepted message:</strong> exact serialized payload.</li>
+              <li>
+                <strong>Attempt:</strong> a scheduled request, which may have been skipped before
+                HTTP.
+              </li>
+              <li>
+                <strong>Result:</strong> status, headers, body, receipt IDs, errors, or explicit
+                uncertainty.
+              </li>
+              <li><strong>Task:</strong> why the group ended and which positions completed.</li>
+            </ol>
+            <p>
+              A result may appear briefly before the worker advances the derived message status.
+              Inspect both when investigating active work.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Finding what was not sent</h3>
+            <p>
+              Query groups by intended time, destination, key, or terminal status, then inspect
+              their messages and attempts. “Failed” on a remaining message can mean it was never
+              attempted because an earlier message failed.
+            </p>
+            <p>
+              Do not infer HTTP contact from an attempt row alone. A preflight skip has an attempt
+              and a result, but made no network request.
+            </p>
+          </div>
+        </div>
+        <div class="note warn">
+          <strong>Bounded lists are convenience views.</strong> <code>listGroups</code> examines at
+          most 500 indexed candidate groups, then applies task-status filtering and the requested
+          result limit. It is not an exhaustive status search. Paginated history can return an empty
+          filtered page with <code>isDone = false</code>; continue reading.
+        </div>
+        <h3>Get, edit, and delete keep their own history</h3>
+        <pre><code>const editGroupId = await ctx.runMutation(
+  components.discordDelivery.api.manageMessage,
+  {
+    messageId: originalLocalMessageId, <span class="comment">// Local messages ID, not Discord's snowflake.</span>
+    operation: 'edit',                 <span class="comment">// Or 'get' / 'delete'; those omit payload.</span>
+    key: 'correction:42:v1',
+    sendAt: Date.now(),
+    payload: JSON.stringify({ content: 'Corrected release details' }),
+  },
+)</code></pre>
+        <p>
+          This creates a <em>new group</em> linked by <code>sourceMessageId</code>. It uses a
+          confirmed remote message ID and the original URL snapshot; it does not overwrite the
+          original send or pretend the old payload was always correct. A forum/media thread created
+          by a send is routed using the receipt's channel ID when needed.
+        </p>
+        <p class="small">
+          The archive is not a continuously synchronized view of Discord: external edits or deletes
+          require another GET to observe them. Management joins the same global queue. It has no
+          priority lane and currently exposes neither a retry-budget option nor expiry. It requires
+          a confirmed receipt: uncertain extra copies cannot be located or managed from this ledger
+          alone. Arbitrary URL destinations still need to implement Discord-compatible routes and
+          responses for management to work.
+        </p>
+      </section>
+
+      <section class="section" id="modules">
+        <div class="section-heading">
+          <span class="section-no">09</span>
+          <h2>Inside the package</h2>
+        </div>
+        <p class="intro">
+          The important seam is between deciding what should happen next and performing one external
+          side effect. The remaining modules support admission and investigation without importing
+          host-domain concepts.
+        </p>
+        <div class="module-grid">
+          <div class="module">
+            <span class="tag">Host boundary</span><br /><a href="src/component/api.ts">api.ts</a>
+            <p>
+              Destination registration, enqueue, pause, management, and bounded inspection.
+              Translates public component operations into internal queue behavior.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag">Admission</span><br /><a href="src/component/queue.ts">queue.ts</a>
+            <p>
+              Validates work, checks identity, writes group/message/task rows, accesses shared
+              control, and pings Batch Worker. Both normal sends and management use this admission
+              path.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag blue">Progression owner</span><br /><a href="src/component/worker.ts"
+              >worker.ts</a
+            >
+            <p>
+              Work query, eligibility recheck, attempt claim, result recording/consumption, retries,
+              scheduler recovery, terminal transitions, and dead-letter summaries.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag orange">External side effect</span><br /><a
+              href="src/component/request.ts"
+              >request.ts</a
+            >
+            <p>
+              Preflight reads the active-attempt fence, pause, and expiry; the action executes one
+              request and commits its result. No self-retry or cursor advancement.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag orange">Protocol</span><br /><a href="src/component/transport.ts"
+              >transport.ts</a
+            >
+            <p>
+              HTTP method/URL construction, timeout, raw response capture, receipt parsing, and
+              rate-delay interpretation. Injectable fetch keeps protocol tests independent of
+              Discord.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag">Read model</span><br /><a href="src/component/inspection.ts"
+              >inspection.ts</a
+            >
+            + <a href="src/component/history.ts">history.ts</a>
+            <p>
+              Shared indexed selection and derived message/attempt views; cursor pagination through
+              convex-helpers. Bounded and paginated APIs share filter semantics.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag">Stored and returned shapes</span><br /><a
+              href="src/component/schema.ts"
+              >schema.ts</a
+            >
+            + <a href="src/component/validators.ts">validators.ts</a>
+            <p>
+              Tables, indexes, operation/status unions, query arguments, and validated return views
+              across the component boundary.
+            </p>
+          </div>
+          <div class="module">
+            <span class="tag blue">Loop liveness</span><br /><a
+              href="src/component/convex.config.ts"
+              >convex.config.ts</a
+            >
+            + Batch Worker
+            <p>
+              Installs Batch Worker. The named loop asks for work or an idle timeout; the delivery
+              package owns ordering, grouping, retry policy, and all delivery evidence.
+            </p>
+          </div>
+        </div>
+        <div class="dark-panel">
+          <h3>The reusable unit is delivery intent</h3>
+          <p>
+            The component knows destinations, groups, messages, operations, and receipts. It does
+            not know scans, ingestions, endpoint changes, filters, pricing thresholds, or Discord.js
+            builders. <code>reference</code> is an opaque caller string, not a hidden ORCA schema.
+          </p>
+        </div>
+        <p class="small">
+          The transport sets <code>wait=true</code> for sends to obtain receipts and
+          <code>with_components=true</code> when a payload includes components. It preserves
+          destination query parameters, uses message routes for management, and rejects HTTP
+          redirects. Full URLs are accepted; a generic transport adapter system is not implemented.
+        </p>
+      </section>
+
+      <section class="section" id="decisions">
+        <div class="section-heading">
+          <span class="section-no">10</span>
+          <h2>The choices behind the machinery</h2>
+        </div>
+        <p class="intro">
+          Some choices follow the brief directly. Others narrow an ambiguous requirement or add
+          implementation policy. These distinctions matter when deciding what to keep.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Decision</th>
+                <th>Relationship to the brief</th>
+                <th>Tradeoff / alternative</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>One global component and active group</td>
+                <td>
+                  <span class="tag">Aligned</span><br />Honors no interleaving, including across
+                  destinations.
+                </td>
+                <td>
+                  Maximum simplicity of ordering; accepts head-of-line blocking. Per-destination
+                  lanes would improve throughput but need global rate coordination and a revised
+                  ordering contract.
+                </td>
+              </tr>
+              <tr>
+                <td>Batch Worker drives the loop</td>
+                <td>
+                  <span class="tag">Recommended option selected</span><br />Uses the
+                  one-process/table-drain model suggested in the brief.
+                </td>
+                <td>
+                  Workpool's completion/control separation and scheduler recovery informed the
+                  design. A concurrency limit of one alone does not keep a group's retries ahead of
+                  other jobs.
+                </td>
+              </tr>
+              <tr>
+                <td>Seven tables; hybrid state</td>
+                <td>
+                  <span class="tag blue">Implementation choice</span><br />Expands the suggested
+                  group/task and message records into explicit evidence and control.
+                </td>
+                <td>
+                  More joins and schema surface. A simple mutable outbox is smaller; full event
+                  sourcing offers replay but adds projection/reconstruction complexity.
+                </td>
+              </tr>
+              <tr>
+                <td>Retry uncertain outcomes</td>
+                <td>
+                  <span class="tag">Explicit user decision</span><br />Possible duplicates are
+                  accepted.
+                </td>
+                <td>
+                  Skipping uncertainty reduces duplicates but risks missing accepted work. Local
+                  dedupe cannot supply remote exactly-once semantics.
+                </td>
+              </tr>
+              <tr>
+                <td>Eight attempts by default; 429 counts</td>
+                <td>
+                  <span class="tag blue">Implementation choice</span><br />The brief did not specify
+                  this policy.
+                </td>
+                <td>
+                  Finite failure behavior; persistent throttling can exhaust a message's budget.
+                  Separate throttling/retry budgets could be considered if this occurs.
+                </td>
+              </tr>
+              <tr>
+                <td>Every rate delay is global</td>
+                <td>
+                  <span class="tag blue">Conservative choice</span><br />Stronger blocking than
+                  per-webhook Discord buckets require.
+                </td>
+                <td>
+                  Avoids concurrent floods and fits strict group affinity. It leaves throughput
+                  unused and can postpone unrelated destinations.
+                </td>
+              </tr>
+              <tr>
+                <td>Dead-letter summary through the same queue</td>
+                <td>
+                  <span class="tag orange">Narrowed</span><br />Implements the optional failure
+                  destination as a bounded report, not a full original-payload forwarder.
+                </td>
+                <td>
+                  Easy to inspect and no recursive failures. It is not an independent, guaranteed
+                  emergency channel or a pluggable logging sink.
+                </td>
+              </tr>
+              <tr>
+                <td>Arbitrary HTTP(S) URLs, Discord protocol</td>
+                <td>
+                  <span class="tag orange">Scope boundary</span><br />Supports custom receivers
+                  without forcing discord.com.
+                </td>
+                <td>
+                  URL flexibility does not make this a general “anything anywhere” transport.
+                  JSON-only payloads and Discord route/receipt assumptions remain.
+                </td>
+              </tr>
+              <tr>
+                <td>No JSX extraction; no production composer</td>
+                <td>
+                  <span class="tag">Aligned with revised brief</span><br />Discord.js builders
+                  remain host-side; custom payload iteration is a dev workflow.
+                </td>
+                <td>
+                  The primitive can serve future broadcasts/status alerts. Those product workflows
+                  are not implemented by the component.
+                </td>
+              </tr>
+              <tr>
+                <td>Full retention</td>
+                <td>
+                  <span class="tag">Deferred as requested</span><br />No TTL, pruning, or payload
+                  zeroing.
+                </td>
+                <td>
+                  Maximum evidence now; future cleanup must preserve references, dedupe meaning, and
+                  management requirements.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <details open>
+          <summary>Why not Workpool with maxParallelism = 1?</summary>
+          <p>
+            That bounds concurrency, but the requirement is also <em>group affinity</em>: once A
+            starts, its delayed retries must retain the sender ahead of B. Modeling each message as
+            an independent job would need additional coordination. Modeling each group as one job is
+            viable, but still needs a global coordinator for deadlines, cooldowns, and durable
+            message evidence. Batch Worker avoids a second delivery-job model here. Workpool becomes
+            more attractive if independent destination concurrency becomes a goal.
+          </p>
+        </details>
+        <details open>
+          <summary>Why not a durable Workflow per group?</summary>
+          <p>
+            A workflow can express a sequence of messages and retries, and would suit richer
+            multi-step business processes or compensation. It would still need coordination across
+            workflows to enforce the current global non-interleaving rule. This component's problem
+            is primarily draining one owned queue, so a central state machine is the smaller fit.
+          </p>
+        </details>
+        <details open>
+          <summary>Why not the old action + short sleep?</summary>
+          <p>
+            It remains reasonable for an isolated disposable demo. It does not solve collisions
+            between separate invocations, durable investigation, coordinated expiry, or resuming an
+            interrupted group. Using the real queue for dev iteration also exercises the path whose
+            output is being investigated.
+          </p>
+        </details>
+      </section>
+
+      <section class="section" id="orca">
+        <div class="section-heading">
+          <span class="section-no">11</span>
+          <h2>ORCA is a caller, not the component</h2>
+        </div>
+        <div class="boundary">
+          <div class="card">
+            <span class="tag orange">Application-owned</span>
+            <h3>ORCA alerts</h3>
+            <p>
+              Ingest events → preparation obligation → filtering → batching/order → Discord.js
+              builders → serialized payloads.
+            </p>
+            <p>
+              Owns route selection, automatic-send policy, historical scan references, and operator
+              workflows.
+            </p>
+          </div>
+          <div class="boundary-arrow" aria-hidden="true">→</div>
+          <div class="card">
+            <span class="tag">Reusable component</span>
+            <h3>Delivery groups</h3>
+            <p>
+              Accept → schedule → send/retry/expire → preserve evidence → inspect or queue
+              management.
+            </p>
+            <p>Receives only keys, times, destinations, opaque references, and JSON bodies.</p>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Automatic alerts</h3>
+            <p>
+              ORCA records preparation work with event ingestion and captures routes. Preparation
+              renders the applicable events and enqueues route groups; its completed state prevents
+              repeated automatic preparation.
+            </p>
+            <p>
+              Historical <code>scan_at</code> maps to <code>sendAt</code>. Route expiry can
+              naturally archive old alerts as expired. The component does not need to understand why
+              the timestamp is old.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Repeated dev demonstrations</h3>
+            <p>
+              <code>demoScan(scan_at, destinationKeys)</code> reads the same historical scan and
+              uses current filtering, batching, and card construction. Each invocation gets fresh
+              identity and sends now, without expiry.
+            </p>
+            <p>
+              It bypasses the automatic preparation record, retains earlier runs and Discord
+              messages, and does not delete production alert state to defeat dedupe.
+            </p>
+          </div>
+        </div>
+        <div class="note blue">
+          <strong>The two times are deliberately separated in dev.</strong> The historical scan
+          remains the rendering context/reference. The group's current <code>sendAt</code> makes
+          another iteration eligible immediately. Repeated demos test current output, not what the
+          historical automatic run actually emitted.
+        </div>
+        <p>
+          The current demo helper requires explicit destination keys, rejects missing/oversized scan
+          selections, and can return no groups when everything is filtered. It is an internal
+          operator function intended for dev; it does not have a hard deployment-tier guard. That
+          intent is a workflow convention, not an enforced production prohibition.
+        </p>
+        <p class="small">
+          Future status messages, manual broadcasts, milestones, filtered routes, and experimental
+          renderings can use the same component. Their trigger, formatting, and authorization belong
+          in ORCA. See <a href="../../docs/orca/discord.md">ORCA alert operations</a>,
+          <a href="../../docs/orca/alerts-expansion.md">alerts expansion requirements</a>, and
+          <a href="../../docs/orca/config.md">configuration</a> for application-specific details.
+        </p>
+      </section>
+
+      <section class="section" id="limits">
+        <div class="section-heading">
+          <span class="section-no">12</span>
+          <h2>What to watch, and what is proven</h2>
+        </div>
+        <p class="intro">
+          Durability makes failures inspectable; it does not remove them. These are the concrete
+          limits of the current implementation and the conditions that would justify another design
+          pass.
+        </p>
+        <div class="table-wrap risk">
+          <table>
+            <thead>
+              <tr>
+                <th>Weakness / limit</th>
+                <th>Practical effect</th>
+                <th>What would improve it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Global head-of-line blocking</td>
+                <td>
+                  A slow destination, large group, or long rate deadline delays everything—including
+                  management and dead-letter summaries.
+                </td>
+                <td>
+                  Keep current policy while strict order matters. Revisit destination lanes or
+                  explicit priority only with a changed contract.
+                </td>
+              </tr>
+              <tr>
+                <td>Unbounded response-body capture</td>
+                <td>
+                  Request payloads are bounded, response bodies are not. A custom receiver can
+                  return a body too large for a Convex result record; persisting the outcome can
+                  fail and turn into uncertain retries.
+                </td>
+                <td>
+                  Define a byte cap and truncation marker, or move large bodies to storage. This
+                  remains an implementation gap.
+                </td>
+              </tr>
+              <tr>
+                <td>Evidence does not enumerate uncertain copies</td>
+                <td>
+                  A remote message accepted without a saved receipt may exist, but its ID is
+                  unknown. The ledger cannot prove absence or find every duplicate.
+                </td>
+                <td>
+                  A reconciliation strategy would require additional remote capabilities. Do not
+                  present this as exactly-once delivery.
+                </td>
+              </tr>
+              <tr>
+                <td>Bounded queries, potentially large documents</td>
+                <td>
+                  500 rows can contain far more data than a practical query response allows. Status
+                  filtering is post-pagination; payload search is client-side.
+                </td>
+                <td>
+                  Use small pages now. Add metadata-only views, byte-aware limits, or dedicated
+                  search if the archive grows.
+                </td>
+              </tr>
+              <tr>
+                <td>Scheduler and worker dependency</td>
+                <td>
+                  The sender relies on correct scheduler state and Batch Worker wake/recovery
+                  behavior. Persistent pending/in-progress execution can hold the queue.
+                </td>
+                <td>
+                  Add operational health/age signals and realistic fault testing before stronger
+                  availability claims.
+                </td>
+              </tr>
+              <tr>
+                <td>No cancellation or terminal-group restart API</td>
+                <td>
+                  Re-enqueueing the same identity returns its terminal group. There is no selective
+                  cancel, reorder, or “retry failed group” command.
+                </td>
+                <td>
+                  Use deliberate new identities when appropriate; add operations only with clear
+                  historical and ordering semantics.
+                </td>
+              </tr>
+              <tr>
+                <td>Pause and expiry are preflight checks</td>
+                <td>
+                  They cannot atomically retract a request after it passed the check. Partially
+                  delivered groups stay partially delivered.
+                </td>
+                <td>
+                  Document this boundary; remote rollback is a separate feature, not something a
+                  database transaction can supply.
+                </td>
+              </tr>
+              <tr>
+                <td>URL snapshots and retained credentials</td>
+                <td>
+                  Rotated URLs remain in historical groups and may still be used. Raw URLs/bodies
+                  require trusted operator access. Arbitrary outbound URLs should not be
+                  user-controlled through an unauthenticated wrapper.
+                </td>
+                <td>
+                  The host must control registration and inspection. Future redaction/retention
+                  would need an explicit compatibility policy.
+                </td>
+              </tr>
+              <tr>
+                <td>Dead-letter path shares failure modes</td>
+                <td>
+                  A report waits in the same queue and can fail. The sink key resolves when the
+                  report is created, not when the original group was accepted.
+                </td>
+                <td>
+                  An independent reporting integration is a future alternative. Avoid ad hoc table
+                  deletion that breaks referenced destinations.
+                </td>
+              </tr>
+              <tr>
+                <td>No retention strategy yet</td>
+                <td>
+                  Every payload, attempt and response accumulates; retries amplify archive size.
+                </td>
+                <td>
+                  Measure actual volume first. Payload zeroing or storage offload must preserve
+                  useful audit evidence and dedupe behavior.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Verification recorded during this implementation</h3>
+        <div class="grid3">
+          <div class="card">
+            <span class="tag">Automated</span>
+            <h3>223 tests passing</h3>
+            <p>
+              Latest recorded review run: 4,386 assertions across 52 files, plus
+              <code>bun run fix</code>. Coverage includes admission/dedupe, ordering, retries,
+              expiry, recovery, protocol handling, inspection, and ORCA integration.
+            </p>
+          </div>
+          <div class="card">
+            <span class="tag">Isolated development</span>
+            <h3>Real Discord exercised</h3>
+            <p>
+              Private dev destinations were used for serial groups, expiry/dead-letter behavior, and
+              message GET/edit/delete. Repeated historical scan demos retained prior runs and left
+              preparation records unchanged.
+            </p>
+          </div>
+          <div class="card">
+            <span class="tag orange">Limits of that evidence</span>
+            <h3>Not a load or chaos proof</h3>
+            <p>
+              No production rollout is implied. Forum-thread management is tested with mocked
+              transport, not a live forum demo. Recovery tests are simulations, not forced
+              production execution failures.
+            </p>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 18px">
+          These counts describe the preceding code-review validation, not a fresh test run performed
+          by this HTML page. The queue lab is explanatory and makes no calls to Convex or Discord.
+          No throughput benchmark, long-term storage measurement, or unconditional liveness proof is
+          claimed.
+        </p>
+        <h3 style="margin-top: 30px">Source map and further reading</h3>
+        <ul class="sources">
+          <li><a href="REQUIREMENTS.md">Component requirements</a></li>
+          <li><a href="ARCHITECTURE.md">Architecture and dependency choices</a></li>
+          <li><a href="src/component/schema.ts">Exact fields and indexes</a></li>
+          <li><a href="src/component/worker.ts">Actual state machine and recovery</a></li>
+          <li><a href="src/component/worker.test.ts">Queue and inspection tests</a></li>
+          <li><a href="src/component/transport.test.ts">Transport and rate-limit tests</a></li>
+          <li>
+            <a href="../../packages/backend/convex/alerts/discord/delivery.ts"
+              >ORCA operator wrappers and dev demo</a
+            >
+          </li>
+          <li><a href="../../docs/orca/discord-demo.json">Recorded component demo evidence</a></li>
+          <li><a href="https://github.com/get-convex/batch-worker">Batch Worker upstream</a></li>
+          <li><a href="https://github.com/get-convex/workpool">Workpool upstream</a></li>
+          <li>
+            <a href="https://docs.discord.com/developers/resources/webhook"
+              >Discord webhook protocol</a
+            >
+          </li>
+          <li>
+            <a href="https://docs.convex.dev/scheduling/scheduled-functions"
+              >Convex scheduled functions</a
+            >
+          </li>
+        </ul>
+      </section>
+      <footer class="foot">
+        discord-delivery · Architectural walkthrough · Working-tree snapshot, 07 October 2026<br />Self-contained
+        HTML, CSS, SVG, and JavaScript. No fonts, scripts, telemetry, or live API calls loaded from
+        external services. Source links assume this file remains in
+        <code>packages/discord-delivery/</code>.
+      </footer>
+    </main>
+    <script>
+      ;(() => {
+        'use strict'
+        const entityData = {
+          groups: [
+            'Immutable intent',
+            'The accepted delivery envelope freezes a destination URL, ordered message count, identity, and policy. Registration changes cannot silently reroute existing work.',
+            'destinationId · destinationKey · url · key · sendAt · expiresAt? · maxAttempts · messageCount · reference? · deadLetterDestinationKey?',
+            'Writer: enqueueGroup. Indexes support identity checks and time/key/destination investigations. The destination snapshot is intentional duplication.',
+          ],
+          messages: [
+            'Immutable intent',
+            'Each row is one ordered send or management request. Keeping payloads out of tasks avoids rewriting them during every retry.',
+            'groupId · position · key · operation · payload? · remoteMessageId? · sourceMessageId?',
+            'Writer: enqueueGroup. Indexes: group + position, group + key, and key. Management references an original send; it never replaces that row.',
+          ],
+          tasks: [
+            'Mutable projection',
+            'One task holds the group’s progress. cursor identifies the next message; attemptsUsed belongs to that message and resets after success.',
+            'groupId · sendAt · status · cursor · attemptsUsed · nextAttemptAt · finishedAt? · reason?',
+            'Created at admission; progressed by the worker mutation. Status: queued, active, succeeded, failed, expired. Indexes: group and status + sendAt.',
+          ],
+          attempts: [
+            'Scheduled request evidence',
+            'An attempt exists when an action is claimed, before HTTP starts. Its scheduled function ID lets recovery distinguish a still-running action from one that ended without a result.',
+            'groupId · messageId · number · startedAt · scheduledId?',
+            'Writer: worker mutation. scheduledId is attached in the creation transaction. startedAt is claim/schedule time. Indexes: message + startedAt and startedAt.',
+          ],
+          results: [
+            'Immutable outcome',
+            'Stores one observed or recovered outcome per attempt. A recovered result says delivery is uncertain; a preflight skip explicitly says no HTTP was attempted.',
+            'attemptId · groupId · messageId · completedAt · recovered · response { status, headers, body, error?, messageId?, channelId?, retryAfterMs?, skipped? }',
+            'Writers: recordResult and worker recovery. The active attempt fence and unique lookup prevent replacement. Indexes: attempt, message, and completedAt.',
+          ],
+          control: [
+            'Mutable singleton',
+            'The one global coordinator points at the active task and attempt, and holds pause and rate-limit state across every destination.',
+            'key = global · activeTaskId? · activeAttemptId? · cooldownUntil · paused',
+            'Created on demand; worker owns active pointers and cooldown; setPaused owns pause. This compact shared row deliberately serializes queue coordination.',
+          ],
+          destinations: [
+            'Mutable registration',
+            'Maps a caller key to a full URL and optional name. A permanent execute-webhook error can disable the current matching URL; re-registration repairs it.',
+            'key · name? · url · disabledReason?',
+            'Writers: registerDestination and worker failure handling. Index: key. Accepted groups keep their own URL snapshot; there is no public destination-delete API.',
+          ],
+        }
+        for (const button of document.querySelectorAll('[data-entity]'))
+          button.addEventListener('click', () => {
+            document
+              .querySelectorAll('[data-entity]')
+              .forEach((b) => b.setAttribute('aria-pressed', String(b === button)))
+            const name = button.dataset.entity,
+              data = entityData[name],
+              panel = document.getElementById('entity-detail')
+            panel.replaceChildren()
+            for (const [tag, cls, text] of [
+              ['span', 'tag', data[0]],
+              ['h3', '', name],
+              ['p', '', data[1]],
+              ['div', 'fields', data[2]],
+              ['p', 'small', data[3]],
+            ]) {
+              const el = document.createElement(tag)
+              el.className = cls
+              el.textContent = text
+              panel.append(el)
+            }
+          })
+        const dedupe = {
+          same: [
+            'Reuse the existing group.',
+            'No new task or HTTP request is created. Re-submitting a failed or expired group does not restart it.',
+          ],
+          payload: [
+            'Reject the conflicting submission.',
+            'The identity is already taken. Different bodies, message order, or policy cannot silently replace accepted work—even when equivalent JSON uses a different key order.',
+          ],
+          time: [
+            'Accept a new group.',
+            'sendAt is part of identity. A different timestamp intentionally permits another copy; it also changes not-before time and the expiry base.',
+          ],
+          url: [
+            'Reuse the existing group and its saved URL.',
+            'Registration rotation does not alter accepted work or invalidate an otherwise identical resubmission. A newly identified group snapshots the current URL.',
+          ],
+        }
+        for (const button of document.querySelectorAll('[data-dedupe]'))
+          button.addEventListener('click', () => {
+            document
+              .querySelectorAll('[data-dedupe]')
+              .forEach((b) => b.setAttribute('aria-pressed', String(b === button)))
+            const [title, body] = dedupe[button.dataset.dedupe],
+              out = document.getElementById('dedupe-verdict'),
+              strong = document.createElement('strong')
+            strong.textContent = title
+            out.replaceChildren(strong, document.createTextNode(' ' + body))
+          })
+        // Explicit explanatory snapshots. This is not a second implementation of the worker.
+        const initial = {
+          cells: ['', '', '', ''],
+          group: '—',
+          cursor: 0,
+          attempts: 0,
+          results: 0,
+          cooldown: 'none',
+          title: 'Both groups are accepted',
+          text: 'Their complete payloads are already stored. A has the earlier sendAt and will be selected first. No HTTP request has started.',
+          records: 'Written: 2 groups · 4 messages · 2 tasks.',
+        }
+        const scenarios = {
+          success: [
+            initial,
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 1,
+              results: 0,
+              cooldown: 'none',
+              title: 'A1 is claimed',
+              text: 'The worker creates an attempt and schedules its action in one transaction. B waits even though it has a different destination.',
+              records: 'Written: attempt A1.1 · active task and attempt pointers.',
+            },
+            {
+              cells: ['sent', 'active', '', ''],
+              group: 'A',
+              cursor: 1,
+              attempts: 2,
+              results: 1,
+              cooldown: 'none',
+              title: 'The header is confirmed; the body starts',
+              text: 'A1’s result is consumed before A2 is claimed. The cursor advances and the per-message retry counter resets.',
+              records: 'Written: A1 result · cursor 1 · attempt A2.1.',
+            },
+            {
+              cells: ['sent', 'sent', 'active', ''],
+              group: 'A',
+              cursor: 2,
+              attempts: 3,
+              results: 2,
+              cooldown: 'none',
+              title: 'The footer still owns the lane',
+              text: 'No B message can appear between A’s header, body, and footer. A successful response can still impose a bucket cooldown before the next claim.',
+              records: 'Written: A2 result · cursor 2 · attempt A3.1.',
+            },
+            {
+              cells: ['sent', 'sent', 'sent', 'active'],
+              group: 'B',
+              cursor: 3,
+              attempts: 3,
+              results: 3,
+              cooldown: 'none',
+              title: 'A finishes; B can begin',
+              text: 'Only after the final result is consumed does A release the global sender. B becomes the next active group.',
+              records: 'Written: A3 result · task A succeeded · active task B.',
+            },
+          ],
+          rate: [
+            initial,
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 1,
+              results: 1,
+              cooldown: 'retry-after 5s',
+              title: 'A1 receives a 429',
+              text: 'The result is saved. Its supplied five-second delay exceeds the first one-second backoff, so the worker waits at least five seconds.',
+              records: 'Written: result HTTP 429 · global cooldown · nextAttemptAt.',
+            },
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 1,
+              results: 1,
+              cooldown: 'waiting',
+              title: 'Both destinations wait',
+              text: 'There is no active HTTP request during this wait. A keeps group ownership; B cannot use the otherwise free sender.',
+              records: 'No new message attempt. A has used one of its allowed attempts.',
+            },
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 2,
+              results: 1,
+              cooldown: 'elapsed',
+              title: 'Retry the same message',
+              text: 'When the deadline passes, A1 is claimed again. A2 does not run until this message succeeds.',
+              records: 'Written: attempt A1.2 · active attempt pointer.',
+            },
+            {
+              cells: ['sent', 'active', '', ''],
+              group: 'A',
+              cursor: 1,
+              attempts: 3,
+              results: 2,
+              cooldown: 'none',
+              title: 'Confirmed; resume inside A',
+              text: 'The successful retry releases the message, not the group. A2 now runs, and B continues to wait.',
+              records: 'Written: successful A1 result · cursor 1 · attempt A2.1.',
+            },
+          ],
+          uncertain: [
+            initial,
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 1,
+              results: 0,
+              cooldown: 'none',
+              title: 'Discord may have accepted A1',
+              text: 'Imagine the action ends after remote acceptance but before saving its result. The local database has an attempt and no receipt.',
+              records: 'No result persisted. A remote message may already exist.',
+            },
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 1,
+              results: 1,
+              cooldown: 'backoff 1s',
+              title: 'Recovery records uncertainty',
+              text: 'The scheduler says the execution has ended. The worker inserts a recovered result with status null, then applies normal retry policy. It would keep waiting if the action were still inProgress.',
+              records: 'Written: recovered=true result · uncertainty reason · retry deadline.',
+            },
+            {
+              cells: ['active', '', '', ''],
+              group: 'A',
+              cursor: 0,
+              attempts: 2,
+              results: 1,
+              cooldown: 'elapsed',
+              title: 'Retry can produce a second copy',
+              text: 'This is the explicit delivery preference: retry rather than lose the alert. The local dedupe key cannot tell Discord to suppress a previously accepted request.',
+              records: 'Written: attempt A1.2. There may now be two remote copies.',
+            },
+            {
+              cells: ['sent', 'active', '', ''],
+              group: 'A',
+              cursor: 1,
+              attempts: 3,
+              results: 2,
+              cooldown: 'none',
+              title: 'One confirmed receipt; possible extra copy',
+              text: 'A1’s confirmed retry has a message ID that can be managed. The earlier uncertain copy has no known ID in this archive. A2 proceeds.',
+              records: 'Written: successful receipt · cursor 1 · attempt A2.1.',
+            },
+          ],
+          expired: [
+            initial,
+            {
+              cells: ['expired', 'expired', 'expired', ''],
+              group: '—',
+              cursor: 0,
+              attempts: 0,
+              results: 0,
+              cooldown: 'none',
+              title: 'A’s deadline is already past',
+              text: 'The worker sees sendAt + maxAgeMs ≤ now before claiming any message. It marks A expired. Every original payload remains available for investigation.',
+              records: 'Written: task A expired · finishedAt and reason. No attempts or HTTP.',
+            },
+            {
+              cells: ['expired', 'expired', 'expired', 'active'],
+              group: 'B',
+              cursor: 0,
+              attempts: 0,
+              results: 0,
+              cooldown: 'none',
+              title: 'Release the sender',
+              text: 'B can begin. If A configured a dead-letter destination, a separate summary group is queued; it does not jump ahead of other queued work.',
+              records: 'Written: active task B. Optional: terminal summary group.',
+            },
+          ],
+          partial: [
+            initial,
+            {
+              cells: ['sent', 'active', '', ''],
+              group: 'A',
+              cursor: 1,
+              attempts: 2,
+              results: 1,
+              cooldown: 'none',
+              title: 'The header is already visible',
+              text: 'A1 succeeded and A2 is being attempted. Group submission was atomic, but Discord delivery is not.',
+              records: 'Written: A1 receipt · cursor 1 · attempt A2.1.',
+            },
+            {
+              cells: ['sent', 'failed', 'unsent', ''],
+              group: '—',
+              cursor: 1,
+              attempts: 2,
+              results: 2,
+              cooldown: 'none',
+              title: 'A2 fails permanently; A3 is never attempted',
+              text: 'A2 returns a permanent 400. The group fails with one completed message. The footer remains unsent; the header is not automatically deleted.',
+              records: 'Written: HTTP 400 result · task A failed · reason. A3 has no attempt.',
+            },
+            {
+              cells: ['sent', 'failed', 'unsent', 'active'],
+              group: 'B',
+              cursor: 1,
+              attempts: 2,
+              results: 2,
+              cooldown: 'none',
+              title: 'B may proceed after the failure',
+              text: 'A terminal group releases the sender. Its failed and unsent message records remain queryable alongside the earlier success.',
+              records: 'Written: active task B. A retains its partial-delivery evidence.',
+            },
+          ],
+        }
+        let scenario = 'success',
+          step = 0
+        function renderScenario() {
+          const states = scenarios[scenario],
+            s = states[step]
+          ;['a1', 'a2', 'a3', 'b1'].forEach((id, i) => {
+            const el = document.getElementById(id)
+            el.className = 'msg ' + s.cells[i]
+            el.setAttribute(
+              'aria-label',
+              id.toUpperCase() +
+                ': ' +
+                (s.cells[i] === 'unsent'
+                  ? 'failed group; never attempted'
+                  : s.cells[i] || 'queued'),
+            )
+          })
+          document.getElementById('sim-state').textContent =
+            `active group  ${s.group}\ncursor (A)    ${s.cursor}\nattempts (A)  ${s.attempts}\nresults (A)   ${s.results}\ncooldown      ${s.cooldown}`
+          document.getElementById('sim-title').textContent = s.title
+          document.getElementById('sim-text').textContent = s.text
+          document.getElementById('sim-records').textContent = s.records
+          document.getElementById('step-counter').textContent =
+            `Step ${step + 1} / ${states.length}`
+          document.getElementById('next').disabled = step === states.length - 1
+        }
+        document.getElementById('scenario').addEventListener('change', (e) => {
+          scenario = e.target.value
+          step = 0
+          renderScenario()
+        })
+        document.getElementById('next').addEventListener('click', () => {
+          if (step < scenarios[scenario].length - 1) {
+            step++
+            renderScenario()
+          }
+        })
+        document.getElementById('reset').addEventListener('click', () => {
+          step = 0
+          renderScenario()
+        })
+        renderScenario()
+        document.getElementById('print').addEventListener('click', () => window.print())
+        const sections = [...document.querySelectorAll('section[id]')],
+          links = [...document.querySelectorAll('nav a')]
+        function progress() {
+          const total = document.documentElement.scrollHeight - innerHeight
+          const bar = document.querySelector('.progress')
+          bar.style.width =
+            (total > 0
+              ? (scrollY / total) * (innerWidth - parseFloat(getComputedStyle(bar).left))
+              : 0) + 'px'
+          let current = sections[0].id
+          for (const section of sections) {
+            if (section.getBoundingClientRect().top < 170) current = section.id
+          }
+          for (const link of links) {
+            const active = link.hash === '#' + current
+            link.classList.toggle('active', active)
+            if (active) link.setAttribute('aria-current', 'location')
+            else link.removeAttribute('aria-current')
+          }
+        }
+        addEventListener('scroll', progress, { passive: true })
+        addEventListener('resize', progress)
+        progress()
+      })()
+    </script>
+  </body>
+</html>

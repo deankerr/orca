@@ -1,0 +1,45 @@
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
+
+export const vMessage = v.object({ key: v.string(), payload: v.string() })
+
+export const vResponse = v.object({
+  body: v.string(),
+  channelId: v.optional(v.string()),
+  error: v.optional(v.string()),
+  headers: v.record(v.string(), v.string()),
+  messageId: v.optional(v.string()),
+  status: v.union(v.number(), v.null()),
+})
+
+export default defineSchema({
+  deliveries: defineTable({
+    claimId: v.optional(v.id('deliveries')),
+    event: v.union(
+      v.object({ kind: v.literal('claimed') }),
+      v.object({ kind: v.literal('succeeded'), response: vResponse }),
+      v.object({
+        error: v.optional(v.string()),
+        kind: v.literal('failed'),
+        response: v.optional(vResponse),
+      }),
+      v.object({ kind: v.literal('expired') }),
+    ),
+    inputId: v.id('inputs'),
+    messageIndex: v.number(),
+    webhookId: v.id('webhooks'),
+  })
+    .index('by_input_webhook', ['inputId', 'webhookId'])
+    .index('by_claim', ['claimId']),
+  inputs: defineTable({
+    expiresAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    key: v.string(),
+    messages: v.array(vMessage),
+    webhookIds: v.array(v.id('webhooks')),
+  }).index('by_key', ['key']),
+  webhooks: defineTable({
+    name: v.optional(v.string()),
+    url: v.string(),
+  }).index('by_url', ['url']),
+})

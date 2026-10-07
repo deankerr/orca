@@ -1,7 +1,3 @@
-import { v } from 'convex/values'
-import type { Infer } from 'convex/values'
-
-import { internalQuery } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
 import { ENDPOINT_PRICES_TABLE } from '../../history/pricing/table'
@@ -10,17 +6,9 @@ import { ENDPOINT_PRICES_TABLE } from '../../history/pricing/table'
 export const PRICE_CHANGE_COUNT = 2
 export const PRICE_CHANGE_WINDOW_HOURS = 24
 
-const candidate = v.object({ endpoint_id: v.string(), scan_at: v.string() })
-export type PricingCandidate = Infer<typeof candidate>
+export type PricingCandidate = { endpoint_id: string; scan_at: string }
 
 /** One result per candidate, in input order; prior quotes include filtered small movements. */
-export const check = internalQuery({
-  args: { candidates: v.array(candidate) },
-  returns: v.array(v.boolean()),
-  handler: async (ctx, { candidates }) => await readFrequency(ctx, candidates),
-})
-
-/** Shared by preview queries and transactional preparation. */
 export async function readFrequency(
   ctx: QueryCtx,
   candidates: PricingCandidate[],

@@ -41,20 +41,29 @@ async function destination(t: Harness, key = 'first', url = `https://example.tes
 async function enqueue(
   t: Harness,
   key: string,
-  sendAt = START,
-  count = 1,
-  destinationKey = 'first',
-  extra: { maxAgeMs?: number; maxAttempts?: number; deadLetterDestinationKey?: string } = {},
+  {
+    sendAt = START,
+    messageCount = 1,
+    destinationKey = 'first',
+    ...policy
+  }: {
+    sendAt?: number
+    messageCount?: number
+    destinationKey?: string
+    maxAgeMs?: number
+    maxAttempts?: number
+    deadLetterDestinationKey?: string
+  } = {},
 ) {
   return await t.mutation(api.api.enqueue, {
     destinationKey,
     key,
-    messages: Array.from({ length: count }, (_, i) => ({
-      key: `${key}:${i}`,
-      payload: JSON.stringify({ content: `${key}:${i}` }),
+    messages: Array.from({ length: messageCount }, (_, position) => ({
+      key: `${key}:${position}`,
+      payload: JSON.stringify({ content: `${key}:${position}` }),
     })),
     sendAt,
-    ...extra,
+    ...policy,
   })
 }
 async function tick(t: Harness) {
@@ -117,8 +126,8 @@ describe('serialized durable delivery', () => {
     const t = setup()
     await destination(t)
     await destination(t, 'second')
-    const later = await enqueue(t, 'later', START, 2, 'second')
-    const earlier = await enqueue(t, 'earlier', START - 1000, 3)
+    const later = await enqueue(t, 'later', { destinationKey: 'second', messageCount: 2 })
+    const earlier = await enqueue(t, 'earlier', { messageCount: 3, sendAt: START - 1000 })
     const seen = []
     for (let index = 0; index < 5; index += 1) {
       await tick(t)
@@ -127,133 +136,198 @@ describe('serialized durable delivery', () => {
       seen.push(required(attempt).groupId)
       // A stale Batch Worker batch cannot open another request while this one is pending.
       await tick(t)
-      const observed1 = await current(t)
-      expect(observed1?._id).toBe(required(attempt)._id)
+      const retainedAttempt = await current(t)
+      expect(retainedAttempt?._id).toBe(required(attempt)._id)
       await settle(t)
     }
     expect(seen).toEqual([earlier, earlier, earlier, later, later])
-    const observed2 = await task(t, earlier)
-    expect(observed2.status).toBe('succeeded')
-    const observed3 = await task(t, later)
-    expect(observed3.status).toBe('succeeded')
+    const earlierTask = await task(t, earlier)
+    expect(earlierTask.status).toBe('succeeded')
+    const laterTask = await task(t, later)
+    expect(laterTask.status).toBe('succeeded')
   })
 
   test('retains an active group when an older historical group arrives late', async () => {
     const t = setup()
     await destination(t)
-    const active = await enqueue(t, 'active', START, 2)
+    const active = await enqueue(t, 'active', { messageCount: 2 })
     await tick(t)
     await settle(t)
-    const historical = await enqueue(t, 'historical', START - 60_000)
+    const historical = await enqueue(t, 'historical', { sendAt: START - 60_000 })
     await tick(t)
-    const observed4 = await current(t)
-    expect(observed4?.groupId).toBe(active)
+    const activeGroupAttempt = await current(t)
+    expect(activeGroupAttempt?.groupId).toBe(active)
     await settle(t)
     await tick(t)
-    const observed5 = await current(t)
-    expect(observed5?.groupId).toBe(historical)
+    const historicalGroupAttempt = await current(t)
+    expect(historicalGroupAttempt?.groupId).toBe(historical)
   })
 
   test('future work sleeps, newly enqueued earlier work wakes, and expired history records no attempt', async () => {
     const t = setup()
     await destination(t)
-    const future = await enqueue(t, 'future', START + 60_000)
-    const observed6 = await t.query(internal.worker.getBatch, { name: 'delivery' })
-    expect(observed6).toMatchObject({
+    const future = await enqueue(t, 'future', { sendAt: START + 60_000 })
+    const futureBatch = await t.query(internal.worker.getBatch, { name: 'delivery' })
+    expect(futureBatch).toMatchObject({
       kind: 'idle',
       timeoutMs: 60_000,
     })
     await tick(t)
-    const observed7 = await current(t)
-    expect(observed7).toBeNull()
-    const expired = await enqueue(t, 'expired', START - 60_000, 2, 'first', { maxAgeMs: 1000 })
+    const beforeSendTime = await current(t)
+    expect(beforeSendTime).toBeNull()
+    const expired = await enqueue(t, 'expired', {
+      maxAgeMs: 1000,
+      messageCount: 2,
+      sendAt: START - 60_000,
+    })
     await tick(t)
-    const observed8 = await task(t, expired)
-    expect(observed8.status).toBe('expired')
-    const observed9 = await t.query(api.api.listAttempts, {})
-    expect(observed9).toEqual([])
+    const expiredTask = await task(t, expired)
+    expect(expiredTask.status).toBe('expired')
+    const attemptsBeforeSendTime = await t.query(api.api.listAttempts, {})
+    expect(attemptsBeforeSendTime).toEqual([])
     jest.setSystemTime(START + 60_000)
     await tick(t)
-    const observed10 = await current(t)
-    expect(observed10?.groupId).toBe(future)
+    const eligibleAttempt = await current(t)
+    expect(eligibleAttempt?.groupId).toBe(future)
   })
 
   test('keeps an accepted message when the group expires during its HTTP attempt', async () => {
     const t = setup()
     await destination(t)
-    const group = await enqueue(t, 'partial', START, 3, 'first', { maxAgeMs: 1000 })
+    const group = await enqueue(t, 'partial', { maxAgeMs: 1000, messageCount: 3 })
     await tick(t)
     jest.setSystemTime(START + 2000)
     await settle(t)
     await tick(t)
-    const observed11 = await task(t, group)
-    expect(observed11).toMatchObject({ cursor: 1, status: 'expired' })
+    const partiallyExpiredTask = await task(t, group)
+    expect(partiallyExpiredTask).toMatchObject({ cursor: 1, status: 'expired' })
     const messages = await t.query(api.api.listMessages, { groupId: group })
     expect(messages.map((message) => message.status)).toEqual(['sent', 'expired', 'expired'])
-    const observed12 = await t.query(api.api.listAttempts, {})
-    expect(observed12).toHaveLength(1)
+    const attempts = await t.query(api.api.listAttempts, {})
+    expect(attempts).toHaveLength(1)
   })
 
   test('preflight refuses delayed scheduled sends after expiry and records unsent terminal state', async () => {
     const t = setup()
     await destination(t)
-    const group = await enqueue(t, 'delayed', START, 1, 'first', { maxAgeMs: 1000 })
+    const group = await enqueue(t, 'delayed', { maxAgeMs: 1000 })
     await tick(t)
     const attempt = required(await current(t))
     jest.setSystemTime(START + 1000)
-    const observed13 = await t.query(internal.request.readRequest, { attemptId: attempt._id })
-    expect(observed13).toEqual({
+    const expiredRequest = await t.query(internal.request.readRequest, { attemptId: attempt._id })
+    expect(expiredRequest).toEqual({
       skipped: 'expired',
     })
     await t.action(internal.request.execute, { attemptId: attempt._id })
     await tick(t)
-    const observed14 = await task(t, group)
-    expect(observed14.status).toBe('expired')
+    const expiredTask = await task(t, group)
+    expect(expiredTask.status).toBe('expired')
   })
 
   test('429 waits globally without yielding group ownership, then retries the same message', async () => {
     const t = setup()
     await destination(t)
     await destination(t, 'second')
-    const first = await enqueue(t, 'rate-limited', START, 2)
-    const next = await enqueue(t, 'other', START + 1, 1, 'second')
+    const first = await enqueue(t, 'rate-limited', { messageCount: 2 })
+    const next = await enqueue(t, 'other', { destinationKey: 'second', sendAt: START + 1 })
     await tick(t)
     const original = await settle(t, 429, { retryAfterMs: 2500 })
     jest.setSystemTime(START + 2499)
     await tick(t)
-    const observed15 = await current(t)
-    expect(observed15).toBeNull()
-    const observed16 = await task(t, next)
-    expect(observed16.status).toBe('queued')
+    const duringCooldown = await current(t)
+    expect(duringCooldown).toBeNull()
+    const waitingTask = await task(t, next)
+    expect(waitingTask.status).toBe('queued')
     jest.setSystemTime(START + 2500)
     await tick(t)
-    const observed17 = await current(t)
-    expect(observed17).toMatchObject({
+    const retriedAttempt = await current(t)
+    expect(retriedAttempt).toMatchObject({
       groupId: first,
       messageId: original.messageId,
       number: 2,
     })
     await settle(t)
     await tick(t)
-    const observed18 = await current(t)
-    expect(observed18?.groupId).toBe(first)
+    const nextMessageAttempt = await current(t)
+    expect(nextMessageAttempt?.groupId).toBe(first)
   })
 
   test('successful exhausted-bucket response delays the next group globally', async () => {
     const t = setup()
     await destination(t)
     await enqueue(t, 'first')
-    const next = await enqueue(t, 'next', START + 1)
+    const next = await enqueue(t, 'next', { sendAt: START + 1 })
     await tick(t)
     await settle(t, 200, { retryAfterMs: 3000 })
     jest.setSystemTime(START + 1000)
     await tick(t)
-    const observed19 = await current(t)
-    expect(observed19).toBeNull()
+    const duringCooldown = await current(t)
+    expect(duringCooldown).toBeNull()
     jest.setSystemTime(START + 3000)
     await tick(t)
-    const observed20 = await current(t)
-    expect(observed20?.groupId).toBe(next)
+    const nextGroupAttempt = await current(t)
+    expect(nextGroupAttempt?.groupId).toBe(next)
+  })
+
+  test('long cooldowns use bounded sleeps without allowing early delivery', async () => {
+    const t = setup()
+    await destination(t)
+    const day = 24 * 60 * 60 * 1000
+    await enqueue(t, 'long-cooldown')
+    const next = await enqueue(t, 'after-cooldown', { sendAt: START + 1 })
+    await tick(t)
+    await settle(t, 200, { retryAfterMs: 10 * day })
+    expect(await t.query(internal.worker.getBatch, { name: 'delivery' })).toMatchObject({
+      kind: 'idle',
+      timeoutMs: day,
+    })
+    jest.setSystemTime(START + day)
+    await tick(t)
+    expect(await current(t)).toBeNull()
+    expect(await t.query(internal.worker.getBatch, { name: 'delivery' })).toMatchObject({
+      kind: 'idle',
+      timeoutMs: day,
+    })
+    jest.setSystemTime(START + 10 * day)
+    await tick(t)
+    const nextAttempt = await current(t)
+    expect(nextAttempt?.groupId).toBe(next)
+  })
+
+  test('confirmed acceptance with a lost body advances without retrying the send', async () => {
+    const t = setup()
+    await destination(t)
+    const groupId = await enqueue(t, 'accepted-no-body', { messageCount: 2 })
+    await tick(t)
+    const first = required(await current(t))
+    await t.mutation(internal.worker.recordResult, {
+      attemptId: first._id,
+      response: {
+        body: '',
+        error: 'Response body unavailable: connection lost',
+        headers: {},
+        status: 200,
+      },
+    })
+    await tick(t)
+    expect(await task(t, groupId)).toMatchObject({ cursor: 1, status: 'active' })
+    await tick(t)
+    const nextAttempt = await current(t)
+    expect(nextAttempt?.messageId).not.toBe(first.messageId)
+    const messages = await t.query(api.api.listMessages, { groupId })
+    expect(messages[0]).toMatchObject({
+      result: { response: { status: 200 } },
+      status: 'sent',
+    })
+    await rejects(
+      t.mutation(api.api.manageMessage, {
+        key: 'no-receipt',
+        messageId: first.messageId,
+        operation: 'get',
+        sendAt: START,
+      }),
+      /No confirmed Discord message receipt/,
+    )
   })
 
   test('a canceled request recovers as uncertain, retries, and ignores stale duplicate results', async () => {
@@ -276,17 +350,17 @@ describe('serialized durable delivery', () => {
       attemptId: old._id,
       response: { body: '{}', headers: {}, messageId: 'late', status: 200 },
     })
-    const observed21 = await current(t)
-    expect(observed21?._id).toBe(next._id)
+    const currentAfterStaleResult = await current(t)
+    expect(currentAfterStaleResult?._id).toBe(next._id)
     await settle(t)
     await t.mutation(internal.worker.recordResult, {
       attemptId: next._id,
       response: { body: '', headers: {}, status: 500 },
     })
-    const observed22 = await task(t, group)
-    expect(observed22).toMatchObject({ cursor: 1, status: 'succeeded' })
-    const observed23 = await t.query(api.api.listAttempts, { messageId: old.messageId })
-    expect(observed23).toHaveLength(2)
+    const completedTask = await task(t, group)
+    expect(completedTask).toMatchObject({ cursor: 1, status: 'succeeded' })
+    const attemptHistory = await t.query(api.api.listAttempts, { messageId: old.messageId })
+    expect(attemptHistory).toHaveLength(2)
   })
 
   test('pending and in-progress actions remain exclusive, but success without completion recovers', async () => {
@@ -297,8 +371,8 @@ describe('serialized durable delivery', () => {
     const attempt = required(await current(t))
     jest.setSystemTime(START + 600_000)
     await tick(t)
-    const observed24 = await current(t)
-    expect(observed24?._id).toBe(attempt._id)
+    const pendingAttempt = await current(t)
+    expect(pendingAttempt?._id).toBe(attempt._id)
     for (const kind of ['inProgress', 'success'] as const) {
       await t.run(async (ctx) => {
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Inject scheduler-only states to simulate a crashed action; application functions cannot normally write system rows.
@@ -309,12 +383,12 @@ describe('serialized durable delivery', () => {
       })
       await tick(t)
       if (kind === 'inProgress') {
-        const observed25 = await current(t)
-        expect(observed25?._id).toBe(attempt._id)
+        const runningAttempt = await current(t)
+        expect(runningAttempt?._id).toBe(attempt._id)
       }
     }
-    const observed26 = await current(t)
-    expect(observed26).toBeNull()
+    const afterRecovery = await current(t)
+    expect(afterRecovery).toBeNull()
     const history = await t.query(api.api.listAttempts, { messageId: attempt.messageId })
     expect(history[0]?.result?.response.error).toContain('success')
     expect(history[0]?.result?.recovered).toBe(true)
@@ -325,49 +399,49 @@ describe('serialized durable delivery', () => {
     await destination(t)
     await destination(t, 'second')
     const original = await enqueue(t, 'repeat')
-    const observed27 = await enqueue(t, 'repeat')
-    expect(observed27).toBe(original)
-    const observed28 = await enqueue(t, 'repeat', START + 1)
-    expect(observed28).not.toBe(original)
-    const observed29 = await enqueue(t, 'repeat', START, 1, 'second')
-    expect(observed29).not.toBe(original)
-    await rejects(enqueue(t, 'repeat', START, 2), /different content/)
-    const observed30 = await t.query(api.api.listGroups, {})
-    expect(observed30).toHaveLength(3)
+    const duplicateGroup = await enqueue(t, 'repeat')
+    expect(duplicateGroup).toBe(original)
+    const differentTimeGroup = await enqueue(t, 'repeat', { sendAt: START + 1 })
+    expect(differentTimeGroup).not.toBe(original)
+    const differentDestinationGroup = await enqueue(t, 'repeat', { destinationKey: 'second' })
+    expect(differentDestinationGroup).not.toBe(original)
+    await rejects(enqueue(t, 'repeat', { messageCount: 2 }), /different content/)
+    const groups = await t.query(api.api.listGroups, {})
+    expect(groups).toHaveLength(3)
   })
 
   test('permanent send failure terminates the group and prevents retries against a disabled destination', async () => {
     const t = setup()
     await destination(t)
-    const bad = await enqueue(t, 'bad', START, 3)
+    const bad = await enqueue(t, 'bad', { messageCount: 3 })
     const next = await enqueue(t, 'next')
     await tick(t)
     await settle(t, 404)
     await tick(t)
-    const observed31 = await task(t, bad)
-    expect(observed31).toMatchObject({ cursor: 0, status: 'failed' })
-    const observed32 = await task(t, next)
-    expect(observed32).toMatchObject({
+    const failedTask = await task(t, bad)
+    expect(failedTask).toMatchObject({ cursor: 0, status: 'failed' })
+    const disabledDestinationTask = await task(t, next)
+    expect(disabledDestinationTask).toMatchObject({
       reason: 'Destination disabled: HTTP 404',
       status: 'failed',
     })
-    const observed33 = await t.query(api.api.listAttempts, {})
-    expect(observed33).toHaveLength(1)
+    const attempts = await t.query(api.api.listAttempts, {})
+    expect(attempts).toHaveLength(1)
   })
 
   test('maxAttempts bounds transient failures and retains every response', async () => {
     const t = setup()
     await destination(t)
-    const group = await enqueue(t, 'exhaust', START, 2, 'first', { maxAttempts: 2 })
+    const group = await enqueue(t, 'exhaust', { maxAttempts: 2, messageCount: 2 })
     await tick(t)
     await settle(t, 503)
     jest.setSystemTime(START + 1000)
     await tick(t)
     await settle(t, 503)
-    const observed34 = await task(t, group)
-    expect(observed34).toMatchObject({ attemptsUsed: 2, cursor: 0, status: 'failed' })
-    const observed35 = await t.query(api.api.listAttempts, {})
-    expect(observed35).toHaveLength(2)
+    const exhaustedTask = await task(t, group)
+    expect(exhaustedTask).toMatchObject({ attemptsUsed: 2, cursor: 0, status: 'failed' })
+    const attempts = await t.query(api.api.listAttempts, {})
+    expect(attempts).toHaveLength(2)
   })
 
   test('pause stops not-yet-started requests, resumes the group, and does not consume retry allowance', async () => {
@@ -379,15 +453,15 @@ describe('serialized durable delivery', () => {
     await t.mutation(api.api.setPaused, { paused: true })
     await t.action(internal.request.execute, { attemptId: attempt._id })
     await tick(t)
-    const observed36 = await task(t, group)
-    expect(observed36).toMatchObject({ attemptsUsed: 0, status: 'active' })
+    const pausedTask = await task(t, group)
+    expect(pausedTask).toMatchObject({ attemptsUsed: 0, status: 'active' })
     await tick(t)
-    const observed37 = await current(t)
-    expect(observed37).toBeNull()
+    const whilePaused = await current(t)
+    expect(whilePaused).toBeNull()
     await t.mutation(api.api.setPaused, { paused: false })
     await tick(t)
-    const observed38 = await current(t)
-    expect(observed38?.number).toBe(1)
+    const resumedAttempt = await current(t)
+    expect(resumedAttempt?.number).toBe(1)
   })
 
   test('receipt operations preserve original payload and webhook snapshot after destination rotation', async () => {
@@ -407,17 +481,17 @@ describe('serialized durable delivery', () => {
     })
     await tick(t)
     const active = required(await current(t))
-    const observed39 = await t.query(internal.request.readRequest, { attemptId: active._id })
-    expect(observed39).toMatchObject({
+    const editRequest = await t.query(internal.request.readRequest, { attemptId: active._id })
+    expect(editRequest).toMatchObject({
       operation: 'edit',
       payload: '{"content":"corrected"}',
       url: 'https://example.test/webhook/first',
     })
     await settle(t)
-    const observed40 = await task(t, edit)
-    expect(observed40.status).toBe('succeeded')
-    const observed41 = await t.query(api.api.getMessage, { messageId: original.message._id })
-    expect(observed41).toEqual(original)
+    const editedTask = await task(t, edit)
+    expect(editedTask.status).toBe('succeeded')
+    const retainedOriginal = await t.query(api.api.getMessage, { messageId: original.message._id })
+    expect(retainedOriginal).toEqual(original)
     const deletion = await t.mutation(api.api.manageMessage, {
       key: 'delete',
       messageId: original.message._id,
@@ -426,33 +500,35 @@ describe('serialized durable delivery', () => {
     })
     await tick(t)
     await settle(t, 404)
-    const observed42 = await task(t, deletion)
-    expect(observed42.status).toBe('failed')
-    const observed43 = await t.query(api.api.listDestinations, {})
-    expect(observed43[0]).not.toHaveProperty('disabledReason')
+    const failedDeletion = await task(t, deletion)
+    expect(failedDeletion.status).toBe('failed')
+    const destinations = await t.query(api.api.listDestinations, {})
+    expect(destinations[0]).not.toHaveProperty('disabledReason')
   })
 
   test('an expired group forwards one terminal report, and a failed report cannot recurse', async () => {
     const t = setup()
     await destination(t)
     await destination(t, 'sink')
-    const expired = await enqueue(t, 'expired', START - 1000, 2, 'first', {
+    const expired = await enqueue(t, 'expired', {
       deadLetterDestinationKey: 'sink',
       maxAgeMs: 10,
+      messageCount: 2,
+      sendAt: START - 1000,
     })
     await tick(t)
-    const observed44 = await task(t, expired)
-    expect(observed44.status).toBe('expired')
+    const expiredTask = await task(t, expired)
+    expect(expiredTask.status).toBe('expired')
     const groups = await t.query(api.api.listGroups, {})
     expect(groups).toHaveLength(2)
     const report = required(groups.find((view) => view.group.destinationKey === 'sink'))
     expect(report.group.deadLetterDestinationKey).toBeUndefined()
     await tick(t)
     await settle(t, 400)
-    const observed45 = await task(t, report.group._id)
-    expect(observed45.status).toBe('failed')
-    const observed46 = await t.query(api.api.listGroups, {})
-    expect(observed46).toHaveLength(2)
+    const failedReport = await task(t, report.group._id)
+    expect(failedReport.status).toBe('failed')
+    const groupsAfterReportFailure = await t.query(api.api.listGroups, {})
+    expect(groupsAfterReportFailure).toHaveLength(2)
   })
 
   test('Batch Worker scheduled loop drives actual transport and persists returned receipts', async () => {
@@ -471,8 +547,8 @@ describe('serialized durable delivery', () => {
     )
     const request = spyOn(globalThis, 'fetch').mockImplementation(fetcher)
     try {
-      const first = await enqueue(t, 'scheduler-first', START, 2)
-      const second = await enqueue(t, 'scheduler-second', START + 10, 1)
+      const first = await enqueue(t, 'scheduler-first', { messageCount: 2 })
+      const second = await enqueue(t, 'scheduler-second', { sendAt: START + 10 })
       await t.finishAllScheduledFunctions(() => {
         jest.runAllTimers()
       })
@@ -481,10 +557,10 @@ describe('serialized durable delivery', () => {
         '{"content":"scheduler-first:1"}',
         '{"content":"scheduler-second:0"}',
       ])
-      const observed47 = await task(t, first)
-      expect(observed47.status).toBe('succeeded')
-      const observed48 = await task(t, second)
-      expect(observed48.status).toBe('succeeded')
+      const firstTask = await task(t, first)
+      expect(firstTask.status).toBe('succeeded')
+      const secondTask = await task(t, second)
+      expect(secondTask.status).toBe('succeeded')
       const messages = await t.query(api.api.listMessages, { groupId: first })
       expect(messages.map((message) => message.result?.response.messageId)).toEqual([
         'discord-1',
@@ -499,7 +575,7 @@ describe('serialized durable delivery', () => {
     const t = setup()
     await destination(t)
     for (let index = 0; index < 5; index += 1) {
-      await enqueue(t, `history-${index}`, START - 60_000)
+      await enqueue(t, `history-${index}`, { sendAt: START - 60_000 })
     }
     const seen: string[] = []
     let cursor: string | null = null
@@ -537,8 +613,8 @@ describe('serialized durable delivery', () => {
     expect(delivered.page).toHaveLength(1)
     expect(delivered.page[0]?.attempt.startedAt).toBe(START)
     expect(delivered.page[0]?.result?.response.messageId).toBeDefined()
-    const observed49 = await t.query(api.api.listGroups, { from: START, to: START })
-    expect(observed49).toEqual([])
+    const groupsAtAttemptTime = await t.query(api.api.listGroups, { from: START, to: START })
+    expect(groupsAtAttemptTime).toEqual([])
   })
 
   test('DELETE unknown-message confirms absence while preserving the raw 404 receipt', async () => {
@@ -590,4 +666,143 @@ describe('serialized durable delivery', () => {
     expect(inventory.tasks).toHaveLength(1)
     expect(inventory.messages).toHaveLength(1)
   })
+})
+
+test('forum thread creation receipts route management through the original webhook and returned thread', async () => {
+  const t = setup()
+  await destination(t)
+  const groupId = await t.mutation(api.api.enqueue, {
+    destinationKey: 'first',
+    key: 'forum',
+    messages: [{ key: 'post', payload: '{"content":"hello","thread_name":"Discussion"}' }],
+    sendAt: START,
+  })
+  await tick(t)
+  const originalAttempt = required(await current(t))
+  await t.mutation(internal.worker.recordResult, {
+    attemptId: originalAttempt._id,
+    response: {
+      body: '{"id":"456","channel_id":"123"}',
+      channelId: '123',
+      headers: {},
+      messageId: '456',
+      status: 200,
+    },
+  })
+  await tick(t)
+  const originalMessages = await t.query(api.api.listMessages, { groupId })
+  const original = required(originalMessages[0])
+  await destination(t, 'first', 'https://example.test/rotated')
+  for (const operation of ['get', 'edit', 'delete'] as const) {
+    await t.mutation(api.api.manageMessage, {
+      key: operation,
+      messageId: original.message._id,
+      operation,
+      sendAt: START,
+      ...(operation === 'edit' ? { payload: '{"content":"edited"}' } : {}),
+    })
+    await tick(t)
+    const active = required(await current(t))
+    expect(await t.query(internal.request.readRequest, { attemptId: active._id })).toMatchObject({
+      messageId: '456',
+      operation,
+      url: 'https://example.test/webhook/first?thread_id=123',
+    })
+    await settle(t)
+  }
+  expect(await t.query(api.api.getMessage, { messageId: original.message._id })).toEqual(original)
+})
+
+test('management of a created thread requires a confirmed thread receipt', async () => {
+  const t = setup()
+  await destination(t)
+  const groupId = await t.mutation(api.api.enqueue, {
+    destinationKey: 'first',
+    key: 'forum',
+    messages: [{ key: 'post', payload: '{"content":"hello","thread_name":"Discussion"}' }],
+    sendAt: START,
+  })
+  await tick(t)
+  await settle(t)
+  const originalMessages = await t.query(api.api.listMessages, { groupId })
+  const original = required(originalMessages[0])
+  await rejects(
+    t.mutation(api.api.manageMessage, {
+      key: 'get',
+      messageId: original.message._id,
+      operation: 'get',
+      sendAt: START,
+    }),
+    /No confirmed Discord thread receipt/,
+  )
+  expect(await t.query(api.api.listGroups, {})).toHaveLength(1)
+})
+
+test('keyed history applies the intended-time window before bounding the archive read', async () => {
+  const t = setup()
+  await destination(t)
+  await destination(t, 'second')
+  const older = await enqueue(t, 'recurring', { destinationKey: 'second', sendAt: START - 60_000 })
+  for (let i = 0; i < 501; i += 1) {
+    await enqueue(t, 'recurring', { sendAt: START + i })
+  }
+  const filter = { from: START - 60_000, key: 'recurring', to: START - 60_000 }
+  const groups = await t.query(api.api.listGroups, filter)
+  expect(groups.map(({ group }) => group._id)).toEqual([older])
+  const page = await t.query(api.history.groups, {
+    ...filter,
+    paginationOpts: { cursor: null, numItems: 1 },
+  })
+  expect(page.page.map(({ group }) => group._id)).toEqual([older])
+  const destinationFilter = { destinationKey: 'second', key: 'recurring' }
+  const destinationGroups = await t.query(api.api.listGroups, destinationFilter)
+  expect(destinationGroups.map(({ group }) => group._id)).toEqual([older])
+  const destinationPage = await t.query(api.history.groups, {
+    ...destinationFilter,
+    paginationOpts: { cursor: null, numItems: 1 },
+  })
+  expect(destinationPage.page.map(({ group }) => group._id)).toEqual([older])
+})
+
+test('message and attempt filters apply before page limits', async () => {
+  const t = setup()
+  await destination(t)
+  const groupId = await enqueue(t, 'large', { messageCount: 2 })
+  const messages = await t.query(api.api.listMessages, { groupId })
+  const second = required(messages[1]).message
+  const matchingMessages = await t.query(api.api.listMessages, {
+    groupId,
+    key: second.key,
+    limit: 1,
+  })
+  expect(matchingMessages.map(({ message }) => message._id)).toEqual([second._id])
+  const messagePage = await t.query(api.history.messages, {
+    groupId,
+    key: second.key,
+    paginationOpts: { cursor: null, numItems: 1 },
+  })
+  expect(messagePage.page.map(({ message }) => message._id)).toEqual([second._id])
+  const oldAttempt = await t.run(async (ctx) => {
+    const old = await ctx.db.insert('attempts', {
+      groupId,
+      messageId: second._id,
+      number: 1,
+      startedAt: START,
+    })
+    await ctx.db.insert('attempts', {
+      groupId,
+      messageId: second._id,
+      number: 2,
+      startedAt: START + 1000,
+    })
+    return old
+  })
+  const filter = { from: START, messageId: second._id, to: START }
+  const attempts = await t.query(api.api.listAttempts, { ...filter, limit: 1 })
+  expect(attempts.map(({ attempt }) => attempt._id)).toEqual([oldAttempt])
+  const attemptPage = await t.query(api.history.attempts, {
+    ...filter,
+    paginationOpts: { cursor: null, numItems: 1 },
+  })
+  expect(attemptPage.page.map(({ attempt }) => attempt._id)).toEqual([oldAttempt])
 })

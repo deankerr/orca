@@ -16,6 +16,7 @@ export const operation = v.union(
 )
 export const responseFields = {
   body: v.string(),
+  channelId: v.optional(v.string()),
   error: v.optional(v.string()),
   headers: v.record(v.string(), v.string()),
   messageId: v.optional(v.string()),
@@ -78,7 +79,7 @@ export const resultFields = {
 }
 export default defineSchema({
   attempts: defineTable(attemptFields)
-    .index('by_message', ['messageId'])
+    .index('by_message_startedAt', ['messageId', 'startedAt'])
     .index('by_startedAt', ['startedAt']),
   control: defineTable({
     activeAttemptId: v.optional(v.id('attempts')),
@@ -91,9 +92,11 @@ export default defineSchema({
   groups: defineTable(groupFields)
     .index('by_destination_sendAt_key', ['destinationKey', 'sendAt', 'key'])
     .index('by_sendAt', ['sendAt'])
-    .index('by_key', ['key']),
+    .index('by_key_sendAt', ['key', 'sendAt'])
+    .index('by_key_destination_sendAt', ['key', 'destinationKey', 'sendAt']),
   messages: defineTable(messageFields)
     .index('by_group_position', ['groupId', 'position'])
+    .index('by_group_key', ['groupId', 'key'])
     .index('by_key', ['key']),
   results: defineTable(resultFields)
     .index('by_attempt', ['attemptId'])

@@ -7,6 +7,7 @@ export type Request = {
 
 export type ResponseSnapshot = {
   body: string
+  channelId?: string
   error?: string
   headers: Record<string, string>
   messageId?: string
@@ -38,14 +39,25 @@ export async function executeRequest(
       redirect: 'error',
       signal: controller.signal,
     })
-    const body = await response.text()
+    let body = ''
+    let bodyError: string | undefined
+    try {
+      body = await response.text()
+    } catch (error: unknown) {
+      // Receiving the status confirms the HTTP outcome even if its body is lost.
+      // In particular, preserve 2xx acceptance and 429 cooldowns instead of retrying blindly.
+      bodyError = `Response body unavailable: ${error instanceof Error ? error.message : String(error)}`
+    }
     const data = parseObject(body)
     const retryAfterMs = retryDelay(response.headers, data)
+    const channelId = typeof data?.channel_id === 'string' ? data.channel_id : undefined
     const messageId = typeof data?.id === 'string' ? data.id : undefined
 
     return {
       body,
       headers: Object.fromEntries(response.headers),
+      ...(channelId === undefined ? {} : { channelId }),
+      ...(bodyError === undefined ? {} : { error: bodyError }),
       ...(messageId === undefined ? {} : { messageId }),
       ...(retryAfterMs === undefined ? {} : { retryAfterMs }),
       status: response.status,
@@ -125,26 +137,31 @@ function parseObject(body: string): Record<string, unknown> | null {
 
 function retryDelay(headers: Headers, data: Record<string, unknown> | null): number | undefined {
   const delays: number[] = []
+  const addDelay = (milliseconds: number) => {
+    // Validate after conversion: finite seconds can overflow when multiplied by 1,000.
+    // A deadline outside JavaScript's timestamp domain cannot be scheduled.
+    if (Number.isFinite(milliseconds) && milliseconds <= 8.64e15 - Date.now()) {
+      delays.push(Math.max(0, milliseconds))
+    }
+  }
   const retryAfter = headers.get('retry-after')
 
   if (retryAfter !== null) {
     const seconds = Number(retryAfter)
     const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now()
 
-    if (Number.isFinite(delay)) {
-      delays.push(Math.max(0, delay))
-    }
+    addDelay(delay)
   }
 
   if (typeof data?.retry_after === 'number' && Number.isFinite(data.retry_after)) {
-    delays.push(Math.max(0, data.retry_after * 1000))
+    addDelay(data.retry_after * 1000)
   }
 
   if (headers.get('x-ratelimit-remaining') === '0') {
     const reset = headers.get('x-ratelimit-reset-after')
 
     if (reset !== null && Number.isFinite(Number(reset))) {
-      delays.push(Math.max(0, Number(reset) * 1000))
+      addDelay(Number(reset) * 1000)
     }
   }
 

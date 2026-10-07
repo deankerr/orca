@@ -114,6 +114,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             recovered: boolean;
             response: {
               body: string;
+              channelId?: string;
               error?: string;
               headers: Record<string, string>;
               messageId?: string;
@@ -157,6 +158,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             recovered: boolean;
             response: {
               body: string;
+              channelId?: string;
               error?: string;
               headers: Record<string, string>;
               messageId?: string;
@@ -249,6 +251,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             recovered: boolean;
             response: {
               body: string;
+              channelId?: string;
               error?: string;
               headers: Record<string, string>;
               messageId?: string;
@@ -302,7 +305,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         "internal",
         {
           from?: number;
-          limit?: number;
           messageId?: string;
           paginationOpts: {
             cursor: string | null;
@@ -337,6 +339,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
               recovered: boolean;
               response: {
                 body: string;
+                channelId?: string;
                 error?: string;
                 headers: Record<string, string>;
                 messageId?: string;
@@ -356,7 +359,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           destinationKey?: string;
           from?: number;
           key?: string;
-          limit?: number;
           paginationOpts: {
             cursor: string | null;
             endCursor?: string | null;
@@ -408,7 +410,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         {
           groupId?: string;
           key?: string;
-          limit?: number;
           paginationOpts: {
             cursor: string | null;
             endCursor?: string | null;
@@ -443,6 +444,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
               recovered: boolean;
               response: {
                 body: string;
+                channelId?: string;
                 error?: string;
                 headers: Record<string, string>;
                 messageId?: string;
@@ -491,6 +493,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             recovered: boolean;
             response: {
               body: string;
+              channelId?: string;
               error?: string;
               headers: Record<string, string>;
               messageId?: string;
