@@ -1,8 +1,13 @@
 import { v } from 'convex/values'
 
-import type { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
-import type { QueryCtx } from './_generated/server'
+import {
+  selectGroups,
+  selectMessages,
+  selectAttempts,
+  viewMessage,
+  viewAttempt,
+} from './inspection'
 import { required, enqueueGroup, boundedLimit, getTask, ensureControl, wake } from './queue'
 import {
   destination,
@@ -87,12 +92,12 @@ export const manageMessage = mutation({
       throw new Error('Manage an original sent message')
     }
     const group = required(await ctx.db.get(message.groupId))
-    const successful = await ctx.db
+    const attemptResults = await ctx.db
       .query('results')
       .withIndex('by_message', (q) => q.eq('messageId', message._id))
       .order('desc')
       .take(100)
-    const receipt = successful.find(
+    const receipt = attemptResults.find(
       (result) =>
         result.response.status !== null &&
         result.response.status >= 200 &&
@@ -108,6 +113,20 @@ export const manageMessage = mutation({
     if (args.operation !== 'edit' && args.payload !== undefined) {
       throw new Error('Only edit accepts a payload')
     }
+    const url = new URL(group.url)
+    const payload: unknown = JSON.parse(required(message.payload))
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'thread_name' in payload &&
+      !url.searchParams.has('thread_id')
+    ) {
+      if (receipt.response.channelId === undefined || receipt.response.channelId === '') {
+        throw new Error('No confirmed Discord thread receipt')
+      }
+      // Creating a forum/media thread routes the message to the returned channel.
+      url.searchParams.set('thread_id', receipt.response.channelId)
+    }
     return await enqueueGroup(ctx, {
       destinationKey: group.destinationKey,
       key: args.key,
@@ -122,7 +141,7 @@ export const manageMessage = mutation({
       ],
       reference: `message:${message._id}`,
       sendAt: args.sendAt,
-      urlOverride: group.url,
+      urlOverride: url.toString(),
     })
   },
   returns: v.id('groups'),
@@ -139,65 +158,16 @@ export const listGroups = query({
   args: listGroupsArgs,
   handler: async (ctx, args) => {
     const limit = boundedLimit(args.limit)
-    // Range bounds are applied before the bounded read. Narrow windows avoid fetching large archives.
-    let groups: Doc<'groups'>[]
-    if (args.key !== undefined) {
-      groups = await ctx.db
-        .query('groups')
-        .withIndex('by_key', (q) => q.eq('key', required(args.key)))
-        .order('desc')
-        .take(500)
-    } else if (args.destinationKey === undefined) {
-      groups = await ctx.db
-        .query('groups')
-        .withIndex('by_sendAt', (q) =>
-          q.gte('sendAt', args.from ?? 0).lte('sendAt', args.to ?? Number.MAX_SAFE_INTEGER),
-        )
-        .order('desc')
-        .take(500)
-    } else {
-      groups = await ctx.db
-        .query('groups')
-        .withIndex('by_destination_sendAt_key', (q) =>
-          q
-            .eq('destinationKey', required(args.destinationKey))
-            .gte('sendAt', args.from ?? 0)
-            .lte('sendAt', args.to ?? Number.MAX_SAFE_INTEGER),
-        )
-        .order('desc')
-        .take(500)
-    }
+    const groups = await selectGroups(ctx.db, args).order('desc').take(500)
     const views = await Promise.all(
       groups.map(async (group) => ({ group, task: await getTask(ctx, group._id) })),
     )
     return views
-      .filter(
-        (view) =>
-          (!args.status || view.task.status === args.status) &&
-          (args.destinationKey === undefined ||
-            view.group.destinationKey === args.destinationKey) &&
-          (args.from === undefined || view.group.sendAt >= args.from) &&
-          (args.to === undefined || view.group.sendAt <= args.to),
-      )
+      .filter((view) => args.status === undefined || view.task.status === args.status)
       .slice(0, limit)
   },
   returns: v.array(groupView),
 })
-export async function viewMessage(ctx: QueryCtx, message: Doc<'messages'>) {
-  const task = await getTask(ctx, message.groupId)
-  const result = await ctx.db
-    .query('results')
-    .withIndex('by_message', (q) => q.eq('messageId', message._id))
-    .order('desc')
-    .first()
-  let status: 'sent' | 'completed' | Doc<'tasks'>['status'] = task.status
-  if (message.position < task.cursor) {
-    status = message.operation === 'send' ? 'sent' : 'completed'
-  } else if (message.position > task.cursor && task.status === 'active') {
-    status = 'queued'
-  }
-  return { message, result, status }
-}
 export const getMessage = query({
   args: { messageId: v.id('messages') },
   handler: async (ctx, args) => {
@@ -210,25 +180,8 @@ export const listMessages = query({
   args: listMessagesArgs,
   handler: async (ctx, args) => {
     const limit = boundedLimit(args.limit)
-    if (args.groupId === undefined && args.key === undefined) {
-      throw new Error('Supply groupId or message key')
-    }
-    const messages =
-      args.groupId === undefined
-        ? await ctx.db
-            .query('messages')
-            .withIndex('by_key', (q) => q.eq('key', required(args.key)))
-            .order('desc')
-            .take(limit)
-        : await ctx.db
-            .query('messages')
-            .withIndex('by_group_position', (q) => q.eq('groupId', required(args.groupId)))
-            .take(limit)
-    return await Promise.all(
-      messages
-        .filter((message) => args.key === undefined || message.key === args.key)
-        .map(async (message) => await viewMessage(ctx, message)),
-    )
+    const messages = await selectMessages(ctx.db, args).take(limit)
+    return await Promise.all(messages.map(async (message) => await viewMessage(ctx, message)))
   },
   returns: v.array(messageView),
 })
@@ -236,37 +189,8 @@ export const listAttempts = query({
   args: listAttemptsArgs,
   handler: async (ctx, args) => {
     const limit = boundedLimit(args.limit)
-    const attempts =
-      args.messageId === undefined
-        ? await ctx.db
-            .query('attempts')
-            .withIndex('by_startedAt', (q) =>
-              q
-                .gte('startedAt', args.from ?? 0)
-                .lte('startedAt', args.to ?? Number.MAX_SAFE_INTEGER),
-            )
-            .order('desc')
-            .take(limit)
-        : await ctx.db
-            .query('attempts')
-            .withIndex('by_message', (q) => q.eq('messageId', required(args.messageId)))
-            .order('desc')
-            .take(limit)
-    return await Promise.all(
-      attempts
-        .filter(
-          (attempt) =>
-            (args.from === undefined || attempt.startedAt >= args.from) &&
-            (args.to === undefined || attempt.startedAt <= args.to),
-        )
-        .map(async (attempt) => ({
-          attempt,
-          result: await ctx.db
-            .query('results')
-            .withIndex('by_attempt', (q) => q.eq('attemptId', attempt._id))
-            .unique(),
-        })),
-    )
+    const attempts = await selectAttempts(ctx.db, args).order('desc').take(limit)
+    return await Promise.all(attempts.map(async (attempt) => await viewAttempt(ctx, attempt)))
   },
   returns: v.array(attemptView),
 })

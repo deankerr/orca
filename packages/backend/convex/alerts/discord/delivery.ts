@@ -37,10 +37,10 @@ async function enqueueRendered(
   rendered: Infer<typeof renderedBatch>,
   options: {
     destinationKeys: string[]
-    key?: string
+    key: string
     sendAt: number
     maxAgeMs?: number
-    reference?: string
+    reference: string
   },
 ): Promise<Infer<typeof queuedBatch>> {
   const destinations = [...new Set(options.destinationKeys)]
@@ -52,16 +52,11 @@ async function enqueueRendered(
     for (const destinationKey of destinations) {
       const groupId: string = await ctx.runMutation(components.discordDelivery.api.enqueue, {
         destinationKey,
-        key: options.key ?? rendered.key,
+        key: options.key,
         sendAt: options.sendAt,
         maxAgeMs: options.maxAgeMs,
         messages: rendered.messages.map(({ key, payload }) => ({ key, payload })),
-        reference:
-          options.reference ??
-          JSON.stringify({
-            kind: 'events',
-            messages: rendered.messages.map(({ key, event_ids }) => ({ key, event_ids })),
-          }),
+        reference: options.reference,
       })
       groupIds.push(groupId)
     }

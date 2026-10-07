@@ -52,7 +52,7 @@ test('ingestion validates and normalizes operator start_at before selecting scan
   }
 })
 
-test('ingestion leaves Discord admission to the event transaction and continues after event failures', async () => {
+test('ingestion continues after event failures, stops at duplicates, and supports event recovery', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -70,7 +70,6 @@ test('ingestion leaves Discord admission to the event transaction and continues 
   const nextPair = spyOn(reader, 'loadNextPair').mockResolvedValue(pair)
   const exactPair = spyOn(reader, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
-  const oldEnabled = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
@@ -122,22 +121,18 @@ test('ingestion leaves Discord admission to the event transaction and continues 
   } as unknown as ActionCtx
 
   try {
-    for (const mode of ['disabled', 'empty', 'event-error', 'live', 'duplicate']) {
+    for (const mode of ['empty', 'event-error', 'live', 'duplicate']) {
       calls.length = 0
-      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
       duplicate = mode === 'duplicate'
       await handler(run)(ctx, {})
 
-      const broadcasts = calls.filter((name) => name === 'alerts/discord/delivery:broadcast')
-      expect(broadcasts).toHaveLength(0)
-
-      if (!duplicate) {
-        expect(calls).not.toContain('history/pricing/ingest:commit')
-        expect(calls).not.toContain('catalog/stats/ingest:publish')
-        expect(calls.at(-1)).toBe('ingest:run')
-      }
+      expect(calls).toEqual(
+        duplicate
+          ? ['ingest:commitIngestion']
+          : ['ingest:commitIngestion', 'events/ingest:commit', 'ingest:run'],
+      )
     }
 
     calls.length = 0
@@ -153,12 +148,6 @@ test('ingestion leaves Discord admission to the event transaction and continues 
     nextPair.mockRestore()
     exactPair.mockRestore()
     errors.mockRestore()
-
-    if (oldEnabled === undefined) {
-      delete process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
-    } else {
-      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = oldEnabled
-    }
   }
 })
 

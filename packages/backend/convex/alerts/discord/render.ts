@@ -13,7 +13,6 @@ import { renderDiscordBatch } from './renderers/index'
 import { skippedEvent } from './table'
 
 export const renderedBatch = v.object({
-  key: v.string(),
   messages: v.array(
     v.object({ key: v.string(), payload: v.string(), event_ids: v.array(v.string()) }),
   ),
@@ -62,7 +61,7 @@ export async function renderRows(ctx: QueryCtx, rows: (EventRow & { _id: string 
       event_ids,
     }
   })
-  return { key: contentKey(messages.map(({ key }) => key)), messages, skippedEvents }
+  return { messages, skippedEvents }
 }
 
 export async function renderEvents(ctx: QueryCtx, eventIds: Id<'v4_events'>[]) {

@@ -98,14 +98,17 @@ export const pause = internalMutation({
 
 /** Paginated history avoids silently omitting deliveries during a busy incident window. */
 export const inspectGroups = internalQuery({
-  args: { ...listGroupsArgs, paginationOpts: paginationOptsValidator },
+  args: {
+    ...v.object(listGroupsArgs).omit('limit').fields,
+    paginationOpts: paginationOptsValidator,
+  },
   returns: paginationResultValidator(groupView),
   handler: async (ctx, args): Promise<PaginationResult<Infer<typeof groupView>>> =>
     await ctx.runQuery(components.discordDelivery.history.groups, args),
 })
 export const inspectMessages = internalQuery({
   args: {
-    ...listMessagesArgs,
+    ...v.object(listMessagesArgs).omit('limit').fields,
     groupId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
@@ -115,7 +118,7 @@ export const inspectMessages = internalQuery({
 })
 export const inspectAttempts = internalQuery({
   args: {
-    ...listAttemptsArgs,
+    ...v.object(listAttemptsArgs).omit('limit').fields,
     messageId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },

@@ -32,13 +32,14 @@ describe('Discord HTTP contract', () => {
   })
 
   test('preserves receipt and raw body', async () => {
-    const body = '{"id":"456","content":"normalized"}'
+    const body = '{"id":"456","channel_id":"789","content":"normalized"}'
     const result = await executeRequest(
       { operation: 'send', payload: '{"content":"hello"}', url: destination },
       reply(body),
     )
     expect(result.status).toBe(200)
     expect(result.messageId).toBe('456')
+    expect(result.channelId).toBe('789')
     expect(result.body).toBe(body)
   })
 
@@ -73,6 +74,60 @@ describe('Discord HTTP contract', () => {
     const result = await executeRequest({ operation: 'send', url: destination }, fetcher)
     expect(result.status).toBeNull()
     expect(result.error).toBe('connection lost')
+  })
+
+  test('a lost response body preserves confirmed acceptance and rate-limit headers', async () => {
+    for (const status of [200, 429]) {
+      const result = await executeRequest(
+        { operation: 'send', url: destination },
+        async () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.error(new Error('connection lost reading body'))
+              },
+            }),
+            { headers: { 'Retry-After': '20' }, status },
+          ),
+      )
+      expect(result).toMatchObject({
+        body: '',
+        error: 'Response body unavailable: connection lost reading body',
+        headers: { 'retry-after': '20' },
+        retryAfterMs: 20_000,
+        status,
+      })
+      expect(result.messageId).toBeUndefined()
+    }
+  })
+
+  test('unrepresentable cooldowns cannot poison the global queue', async () => {
+    const cases = [
+      reply('{"retry_after":1e308}', 429),
+      reply('{}', 429, { 'Retry-After': '1e20' }),
+      reply('{}', 429, {
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset-After': '1e308',
+      }),
+    ]
+    for (const fetcher of cases) {
+      const result = await executeRequest({ operation: 'send', url: destination }, fetcher)
+      expect(result.status).toBe(429)
+      expect(result.retryAfterMs).toBeUndefined()
+    }
+    const result = await executeRequest(
+      { operation: 'send', url: destination },
+      reply('{"retry_after":1e308}', 429, { 'Retry-After': '20' }),
+    )
+    expect(result.retryAfterMs).toBe(20_000)
+  })
+
+  test('valid long cooldowns are retained without shortening the advertised wait', async () => {
+    const result = await executeRequest(
+      { operation: 'send', url: destination },
+      reply('{}', 429, { 'Retry-After': '31536000' }),
+    )
+    expect(result.retryAfterMs).toBe(31_536_000_000)
   })
 
   test('uses the proper methods and omits GET/DELETE request bodies', async () => {

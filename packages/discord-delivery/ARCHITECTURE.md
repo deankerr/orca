@@ -43,11 +43,15 @@ historical ordering must enqueue in order, or pause while submitting the complet
 ## Failure and recovery
 
 - 2xx records success and advances the cursor. Raw request and response remain distinct.
+  If reading the body fails after headers arrive, retain the status and headers: confirmed
+  acceptance still succeeds, while a 429 still supplies its cooldown. Missing receipt IDs
+  prevent management of that message but do not cause a duplicate send.
 - Network failures and 5xx retry with bounded exponential backoff. Discord may already
   have accepted an uncertain request; retries deliberately permit duplicates.
 - 429 waits at least the supplied delay and holds the global sender. Successful responses
   with an exhausted bucket also establish a cooldown. 429 attempts consume the configured
-  retry budget so a receiver cannot block the queue forever.
+  retry budget. Invalid delays outside the supported timestamp domain are ignored; valid
+  long waits are honored through bounded scheduler sleeps.
 - Permanent failures terminate the group. Earlier successful messages remain successful;
   the failing message and remaining unsent messages retain their records.
 - Execute-webhook 401/403/404 disables that destination URL for subsequent groups until
@@ -72,7 +76,8 @@ recursive failures. Full original payloads remain available through inspection.
 Get/edit/delete requests create new queued groups targeting the original saved URL and
 Discord message ID. They preserve the original payload and receipt. Each operation has
 its own request and result history; consumers can inspect edits without rewriting the
-original send record.
+original send record. When a send creates a forum/media thread, the receipt channel ID
+supplies the thread route for subsequent management.
 
 Group time filters use intended `sendAt`; attempt time filters use claim/schedule time, and receipt filters use recorded response time.
 Both are needed when investigating delayed or historical work. Indexed history queries

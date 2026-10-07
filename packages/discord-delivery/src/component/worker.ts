@@ -12,6 +12,7 @@ import type { operation as operationValidator } from './schema'
 
 const validators = defineBatchWorkerValidators({ batch: {} })
 const RECOVERY_POLL_MS = 30_000
+const MAX_SLEEP_MS = 24 * 60 * 60 * 1000
 
 function alreadyDeleted(
   result: Infer<typeof response>,
@@ -86,7 +87,9 @@ export const getBatch = internalQuery({
     )
     const delay = eligibleAt - Date.now()
     return delay > 0
-      ? { kind: 'idle' as const, timeoutMs: delay }
+      ? // Long send times/cooldowns remain authoritative; revisit them without asking
+        // Convex to schedule arbitrarily far into the future.
+        { kind: 'idle' as const, timeoutMs: Math.min(delay, MAX_SLEEP_MS) }
       : { batch: {}, kind: 'work' as const }
   },
   returns: validators.vQueryReturns,

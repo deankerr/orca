@@ -9,12 +9,8 @@
  */
 
 import type * as api_ from "../api.js";
-import type * as history from "../history.js";
-import type * as inspection from "../inspection.js";
-import type * as queue from "../queue.js";
-import type * as request from "../request.js";
+import type * as pool from "../pool.js";
 import type * as transport from "../transport.js";
-import type * as validators from "../validators.js";
 import type * as worker from "../worker.js";
 
 import type {
@@ -26,12 +22,8 @@ import { anyApi, componentsGeneric } from "convex/server";
 
 const fullApi: ApiFromModules<{
   api: typeof api_;
-  history: typeof history;
-  inspection: typeof inspection;
-  queue: typeof queue;
-  request: typeof request;
+  pool: typeof pool;
   transport: typeof transport;
-  validators: typeof validators;
   worker: typeof worker;
 }> = anyApi as any;
 
@@ -62,5 +54,5 @@ export const internal: FilterApi<
 > = anyApi as any;
 
 export const components = componentsGeneric() as unknown as {
-  batchWorker: import("@convex-dev/batch-worker/_generated/component.js").ComponentApi<"batchWorker">;
+  workpool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"workpool">;
 };

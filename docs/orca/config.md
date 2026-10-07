@@ -73,7 +73,9 @@ until migrated. See docs/orca/discord.md for registration and development demo p
 
 The reusable sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
 **1-second exponential retry backoff capped at 60 seconds**, and a **30-second recovery
-poll** while a scheduled request remains active. Discord-provided cooldowns take
+poll** while a scheduled request remains active. Sleeps for future send times and
+cooldowns are capped at **24 hours** per wakeup; the original deadline still applies.
+Discord-provided cooldowns take
 precedence when longer. Groups accept at most **500 messages**, **256 KiB per payload**,
 and **4 MiB total payloads**. Configure expiry and retry attempts at submission;
 retention is unlimited. These limits live in packages/discord-delivery/src/component.
