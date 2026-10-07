@@ -69,7 +69,7 @@ Automatic ORCA routes default to **3,600,000 ms (one hour)** maximum age from th
 observation time; configure each route explicitly. Queue pause is independent of
 automatic admission. The obsolete webhook URL default was removed from dev/preview
 on October 7, 2026; existing deployments running earlier code retain their values
-until migrated. See docs/orca/discord.md for registration and replay procedures.
+until migrated. See docs/orca/discord.md for registration and development demo procedures.
 
 The reusable sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
 **1-second exponential retry backoff capped at 60 seconds**, and a **30-second recovery
@@ -77,6 +77,10 @@ poll** while a scheduled request remains active. Discord-provided cooldowns take
 precedence when longer. Groups accept at most **500 messages**, **256 KiB per payload**,
 and **4 MiB total payloads**. Configure expiry and retry attempts at submission;
 retention is unlimited. These limits live in packages/discord-delivery/src/component.
+
+Development `demoScan` accepts at most **1,000 events** from one scan, failing rather
+than sending a partial scan. Its deliveries start now without expiry; each invocation
+creates fresh groups.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in

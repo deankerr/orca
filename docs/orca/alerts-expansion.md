@@ -19,8 +19,11 @@
 - Preserve event provenance outside the reusable component's domain model, using opaque
   references and deterministic message keys. Operators can locate a rendered message
   without assuming a one-event-to-one-message mapping.
-- Operators can enqueue arbitrary builder-produced messages for admin status, public
-  announcements, manual broadcasts or computed milestones. These need no entity event.
+- Development demos rerender a complete historical scan through the same filtering,
+  batching, and delivery path. Each invocation sends fresh groups now without expiry,
+  independently of automatic admission or preparation records. Retain previous runs.
+- The sender can support future admin status, announcements, broadcasts, or computed
+  milestones without entity events; production manual composition has no current requirement.
 - Filtered, experimental and alternate alert producers can use separate destinations
   through the same sender. Their selection rules remain ORCA policy.
 
