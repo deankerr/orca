@@ -43,8 +43,9 @@ send another copy.
 
 `payload` is a serialized JSON object, such as a Discord.js builder result. The generic
 operator supports status/news/manual groups with no entity events. Array order determines
-message order. Explicit event sends default to observation time without an age limit;
-automatic routes apply their configured maximum age.
+message order. Explicit event sends default to the current time without an age limit.
+Reuse an explicit `sendAt` when retrying the same submission to avoid another copy.
+Automatic routes apply their configured maximum age.
 
 ## Investigating output
 
