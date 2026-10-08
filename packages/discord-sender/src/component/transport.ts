@@ -1,11 +1,10 @@
-import type { Infer } from 'convex/values'
 import { isNonNullish, pickBy } from 'remeda'
 import { up } from 'up-fetch'
 import { z } from 'zod'
 
-import type { vResponse } from './schema'
+import type { ResponseSnapshot } from './protocol'
 
-export type ResponseSnapshot = Infer<typeof vResponse>
+export type { ResponseSnapshot } from './protocol'
 
 type Fetcher = (input: RequestInfo | URL, options?: RequestInit) => Promise<Response>
 
@@ -16,7 +15,7 @@ const zReceipt = z.object({
   id: z.string().nullish().catch(null),
 })
 
-/** One request; Workpool and the delivery ledger own execution and persistence. */
+/** One HTTP request. Scheduling and persistence belong to the caller. */
 export async function executeWebhook(
   request: { payload: string; url: string },
   fetcher: Fetcher = fetch,
@@ -38,7 +37,8 @@ export async function executeWebhook(
       method: 'POST',
       parseResponse: readResponse,
       redirect: 'error',
-      // Every HTTP result belongs in the ledger; the worker decides its outcome.
+      // Keep rejected HTTP responses intact. Protocol classification decides which
+      // responses are terminal and which require another attempt.
       reject: () => false,
       retry: { attempts: 0 },
       timeout: 20_000,
