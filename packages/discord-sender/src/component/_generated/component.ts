@@ -24,80 +24,55 @@ import type { FunctionReference } from "convex/server";
 export type ComponentApi<Name extends string | undefined = string | undefined> =
   {
     api: {
-      cancelPendingDelivery: FunctionReference<
-        "mutation",
-        "internal",
-        { inputId: string; webhookId: string },
-        boolean,
-        Name
-      >;
-      getInput: FunctionReference<
+      getJob: FunctionReference<
         "query",
         "internal",
-        { inputId: string },
+        { jobId: string },
         {
           _creationTime: number;
           _id: string;
+          availableAt: number;
           expiresAt: number;
           finishedAt?: number;
           key: string;
           messages: Array<{ key: string; payload: string }>;
-          webhookIds: Array<string>;
+          outcome?: "succeeded" | "failed" | "expired";
+          retryCount: number;
+          webhookId: string;
         } | null,
         Name
       >;
-      getStatus: FunctionReference<
+      listJobs: FunctionReference<
         "query",
         "internal",
-        { inputId: string },
-        null | {
-          finishedAt?: number;
-          recipients: Array<{
-            error?: string;
-            execution?:
-              | { previousAttempts: number; state: "pending" }
-              | { previousAttempts: number; state: "running" }
-              | { state: "finished" };
-            nextMessageIndex?: number;
-            scheduledAt?: number;
-            sentCount: number;
-            state:
-              | "pending"
-              | "sending"
-              | "waiting"
-              | "succeeded"
-              | "failed"
-              | "expired"
-              | "canceled";
+        { from: number; limit?: number; to: number },
+        {
+          hasMore: boolean;
+          jobs: Array<{
+            _creationTime: number;
+            _id: string;
+            availableAt: number;
+            expiresAt: number;
+            finishedAt?: number;
+            key: string;
+            messages: Array<{ key: string; payload: string }>;
+            outcome?: "succeeded" | "failed" | "expired";
+            retryCount: number;
             webhookId: string;
-            workId?: string;
           }>;
         },
         Name
       >;
-      listDeliveries: FunctionReference<
+      listResults: FunctionReference<
         "query",
         "internal",
-        { inputId: string; webhookId?: string },
+        { jobId: string },
         Array<{
           _creationTime: number;
           _id: string;
-          claimId?: string;
-          event:
-            | { attempt: number; kind: "queued"; runAt: number }
-            | { attempt: number; kind: "claimed" }
-            | {
-                kind: "retrying";
-                response: {
-                  body: string;
-                  channelId?: string;
-                  error?: string;
-                  headers: Record<string, string>;
-                  messageId?: string;
-                  status: number | null;
-                };
-                retryAt: number;
-              }
+          jobId: string;
+          messageKey: string;
+          result:
             | {
                 kind: "succeeded";
                 response: {
@@ -110,9 +85,8 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                 };
               }
             | {
-                error?: string;
                 kind: "failed";
-                response?: {
+                response: {
                   body: string;
                   channelId?: string;
                   error?: string;
@@ -120,32 +94,8 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   messageId?: string;
                   status: number | null;
                 };
-              }
-            | { kind: "expired" }
-            | { kind: "canceled" };
-          inputId: string;
-          messageIndex: number;
-          webhookId: string;
-          workId: string;
+              };
         }>,
-        Name
-      >;
-      listInputs: FunctionReference<
-        "query",
-        "internal",
-        { from: number; limit?: number; to: number },
-        {
-          hasMore: boolean;
-          inputs: Array<{
-            _creationTime: number;
-            _id: string;
-            expiresAt: number;
-            finishedAt?: number;
-            key: string;
-            messages: Array<{ key: string; payload: string }>;
-            webhookIds: Array<string>;
-          }>;
-        },
         Name
       >;
       registerWebhook: FunctionReference<
@@ -155,6 +105,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         string,
         Name
       >;
+      resume: FunctionReference<"mutation", "internal", {}, null, Name>;
       submitBatch: FunctionReference<
         "mutation",
         "internal",
@@ -162,7 +113,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           expiresAt: number;
           key: string;
           messages: Array<{ key: string; payload: string }>;
-          webhookIds: Array<string>;
+          webhookId: string;
         },
         string,
         Name

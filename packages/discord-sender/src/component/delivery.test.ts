@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test'
-import { deepEqual, rejects } from 'node:assert/strict'
+import { rejects } from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { setImmediate } from 'node:timers/promises'
@@ -8,9 +8,11 @@ import { fileURLToPath } from 'node:url'
 import { convexTest } from 'convex-test'
 import type { GenericSchema, SchemaDefinition } from 'convex/server'
 
-import { api, internal } from './_generated/api'
-import type { Doc, Id } from './_generated/dataModel'
+import { api } from './_generated/api'
+import type { Id } from './_generated/dataModel'
+import { pool } from './pool'
 import schema from './schema'
+import * as transport from './transport'
 
 const START = Date.UTC(2026, 9, 8, 10)
 const workpoolPackage = fileURLToPath(import.meta.resolve('@convex-dev/workpool/package.json'))
@@ -45,33 +47,22 @@ function setup() {
 }
 type Harness = ReturnType<typeof setup>
 
-function mockFetch(handler: (url: URL, init: RequestInit | undefined) => Promise<Response>) {
+function mockFetch(handler: (url: URL, body: string) => Promise<Response>) {
   const implementation = Object.assign(
     async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       const request = new Request(input, init)
-      return await handler(new URL(request.url), {
-        ...init,
-        body: await request.text(),
-        headers: request.headers,
-        method: request.method,
-      })
+      return await handler(new URL(request.url), await request.text())
     },
     { preconnect: fetch.preconnect },
   )
   return spyOn(globalThis, 'fetch').mockImplementation(implementation)
 }
 
-async function registerWebhooks(t: Harness, count: number) {
-  return await Promise.all(
-    Array.from(
-      { length: count },
-      async (_, index) =>
-        await t.mutation(api.api.registerWebhook, {
-          name: `recipient-${index}`,
-          url: `https://discord.com/api/webhooks/${100_000_000_000_000_000n + BigInt(index)}/test-token-${index}`,
-        }),
-    ),
-  )
+async function registerWebhook(t: Harness, index = 0, query = '') {
+  return await t.mutation(api.api.registerWebhook, {
+    name: `recipient-${index}`,
+    url: `https://discord.com/api/webhooks/${100_000_000_000_000_000n + BigInt(index)}/test-token-${index}${query}`,
+  })
 }
 
 const messages = [
@@ -80,39 +71,35 @@ const messages = [
   { key: 'model-b-overview', payload: JSON.stringify({ content: 'Model B overview' }) },
 ]
 
-async function submit(t: Harness, webhookIds: Id<'webhooks'>[], expiresAt = START + 3_600_000) {
+async function submit(
+  t: Harness,
+  webhookId: Id<'webhooks'>,
+  options: { expiresAt?: number; key?: string; messages?: typeof messages } = {},
+) {
   return await t.mutation(api.api.submitBatch, {
-    expiresAt,
+    expiresAt: START + 3_600_000,
     key: 'ingestion-1',
     messages,
-    webhookIds,
+    webhookId,
+    ...options,
   })
 }
 
-// Job scheduling is part of the ledger too; these assertions focus on message attempts.
-async function messageHistory(
-  t: Harness,
-  args: { inputId: Id<'inputs'>; webhookId?: Id<'webhooks'> },
-) {
-  const rows = await t.query(api.api.listDeliveries, args)
-  return rows.filter(({ event }) => event.kind !== 'queued')
-}
-
-async function finishedAt(t: Harness, inputId: Id<'inputs'>) {
-  const input = await t.query(api.api.getInput, { inputId })
-  return input?.finishedAt
+async function advance(t: Harness, milliseconds = 10) {
+  // Small increments exercise Workpool scheduling without jumping immediately to
+  // its recovery timers or turning a short cooldown into a test-time expiry.
+  await t.finishAllScheduledFunctions(() => {
+    jest.advanceTimersByTime(milliseconds)
+  })
 }
 
 async function drain(t: Harness) {
-  // Small steps let pending jobs start without jumping to Workpool's recovery timers.
-  for (let tick = 0; tick < 1000; tick += 1) {
-    await t.finishAllScheduledFunctions(() => {
-      jest.advanceTimersByTime(10)
-    })
+  for (let tick = 0; tick < 2000; tick += 1) {
+    await advance(t)
 
     const unfinished = await t.run(async (ctx) => {
-      const inputs = await ctx.db.query('inputs').collect()
-      return inputs.some((input) => input.finishedAt === undefined)
+      const jobs = await ctx.db.query('jobs').collect()
+      return jobs.some((job) => job.finishedAt === undefined)
     })
 
     if (!unfinished) {
@@ -122,7 +109,19 @@ async function drain(t: Harness) {
       return
     }
   }
-  throw new Error('Workpool did not finish the submitted inputs')
+  throw new Error('Workpool did not finish the submitted jobs')
+}
+
+async function waitForCooldown(t: Harness, jobId: Id<'jobs'>) {
+  for (let tick = 0; tick < 100; tick += 1) {
+    await advance(t)
+    const job = await t.query(api.api.getJob, { jobId })
+
+    if (job !== null && job.availableAt > Date.now() && job.finishedAt === undefined) {
+      return job
+    }
+  }
+  throw new Error('Expected a checkpointed job waiting for its cooldown')
 }
 
 beforeEach(() => {
@@ -136,602 +135,586 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
-describe('Workpool delivery', () => {
-  test('claims before HTTP, sends each recipient the ordered messages, and retains immutable receipts', async () => {
+describe('serial job draining', () => {
+  test('sends each ordered job completely and only persists terminal message results', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 2)
-    const inputId = await submit(t, webhookIds)
-    const claimsBeforeHttp = new Map<string, Doc<'deliveries'>>()
-    const bodiesByWebhook = new Map<string, string[]>()
+    const webhookId = await registerWebhook(t)
+    const firstJob = await submit(t, webhookId)
+    const secondJob = await submit(t, webhookId, { key: 'ingestion-2' })
+    const calls: string[] = []
+    const resultCountsBeforeHttp: number[] = []
+    const waitParameters: Array<string | null> = []
 
-    const fetcher = mockFetch(async (url, init) => {
-      const index = Number(url.pathname.split('/').at(-1)?.replace('test-token-', ''))
-      const webhookId = webhookIds[index]
-
-      if (webhookId === undefined || typeof init?.body !== 'string') {
-        throw new Error('Unexpected webhook request')
-      }
-
-      const bodies = bodiesByWebhook.get(webhookId) ?? []
-      const history = await messageHistory(t, { inputId, webhookId })
-      const claim = history.at(-1)
-      expect(claim).toMatchObject({ event: { kind: 'claimed' }, messageIndex: bodies.length })
-
-      if (claim === undefined) {
-        throw new Error('Expected claim before sending')
-      }
-
-      claimsBeforeHttp.set(claim._id, claim)
-      expect(init.method).toBe('POST')
-      expect(url.searchParams.get('wait')).toBe('true')
-      expect(await finishedAt(t, inputId)).toBeUndefined()
-      bodies.push(init.body)
-      bodiesByWebhook.set(webhookId, bodies)
+    mockFetch(async (url, body) => {
+      const jobId = calls.length < messages.length ? firstJob : secondJob
+      const results = await t.query(api.api.listResults, { jobId })
+      resultCountsBeforeHttp.push(results.length)
+      waitParameters.push(url.searchParams.get('wait'))
+      calls.push(body)
       return Response.json(
-        {
-          channel_id: `channel-${index}`,
-          content: 'saved',
-          id: `message-${index}-${bodies.length}`,
-        },
+        { channel_id: 'channel', id: `message-${calls.length}` },
         { headers: { 'x-ratelimit-remaining': '4' } },
       )
     })
 
     await drain(t)
 
-    expect(fetcher).toHaveBeenCalledTimes(6)
+    expect(calls).toEqual([...messages, ...messages].map(({ payload }) => payload))
+    expect(resultCountsBeforeHttp).toEqual([0, 1, 2, 0, 1, 2])
+    expect(waitParameters).toEqual(Array.from({ length: 6 }, () => 'true'))
 
-    expect([...bodiesByWebhook.values()]).toEqual([
-      messages.map(({ payload }) => payload),
-      messages.map(({ payload }) => payload),
-    ])
+    for (const [jobIndex, jobId] of [firstJob, secondJob].entries()) {
+      const job = await t.query(api.api.getJob, { jobId })
+      expect(job).toMatchObject({ messages, outcome: 'succeeded', retryCount: 0, webhookId })
+      expect(job?.finishedAt).toBeDefined()
+      const results = await t.query(api.api.listResults, { jobId })
+      expect(results).toHaveLength(messages.length)
+      expect(results.map(({ messageKey }) => messageKey)).toEqual(messages.map(({ key }) => key))
 
-    const input = await t.query(api.api.getInput, { inputId })
-    expect(input).toMatchObject({ messages, webhookIds })
-    expect(input?.finishedAt).toBeDefined()
-    const history = await messageHistory(t, { inputId })
-    expect(history).toHaveLength(12)
-    for (const row of history) {
-      expect(row).not.toHaveProperty('payload')
-      expect(row).not.toHaveProperty('messages')
-      expect(row._creationTime).toBeGreaterThanOrEqual(START)
-
-      if (row.event.kind === 'claimed') {
-        deepEqual(row, claimsBeforeHttp.get(row._id))
-      } else {
-        expect(row.claimId).toBeDefined()
-        expect(claimsBeforeHttp.has(row.claimId ?? '')).toBe(true)
-        const recipientIndex = webhookIds.indexOf(row.webhookId)
-
-        expect(row.event).toMatchObject({
-          kind: 'succeeded',
-          response: {
-            body: JSON.stringify({
-              channel_id: `channel-${recipientIndex}`,
-              content: 'saved',
-              id: `message-${recipientIndex}-${row.messageIndex + 1}`,
-            }),
-            channelId: `channel-${recipientIndex}`,
-            headers: { 'x-ratelimit-remaining': '4' },
-            messageId: `message-${recipientIndex}-${row.messageIndex + 1}`,
-            status: 200,
+      for (const [index, row] of results.entries()) {
+        expect(row).not.toHaveProperty('payload')
+        expect(row).not.toHaveProperty('attempts')
+        expect(row).toMatchObject({
+          jobId,
+          result: {
+            kind: 'succeeded',
+            response: {
+              body: JSON.stringify({
+                channel_id: 'channel',
+                id: `message-${jobIndex * 3 + index + 1}`,
+              }),
+              channelId: 'channel',
+              headers: { 'x-ratelimit-remaining': '4' },
+              messageId: `message-${jobIndex * 3 + index + 1}`,
+              status: 200,
+            },
           },
         })
       }
     }
-    const inputs = await t.run(async (ctx) => await ctx.db.query('inputs').collect())
-    expect(inputs).toHaveLength(1)
   })
 
-  test('ten assigned webhook jobs share five slots and finish the input only after the last recipient', async () => {
+  test('redundant wake requests share one Workpool slot and never overlap HTTP', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 10)
-    const inputId = await submit(t, webhookIds)
-    const firstFiveStarted = Promise.withResolvers<null>()
-    const replacementStarted = Promise.withResolvers<null>()
-    const gates: Array<ReturnType<typeof Promise.withResolvers<null>>> = []
-    let holding = true
+    const firstWebhook = await registerWebhook(t)
+    const secondWebhook = await registerWebhook(t, 1)
+    await submit(t, firstWebhook)
+    await submit(t, secondWebhook, { key: 'ingestion-2' })
+    await t.mutation(api.api.resume, {})
+    await t.mutation(api.api.resume, {})
+    const started = Promise.withResolvers<null>()
+    const release = Promise.withResolvers<null>()
     let active = 0
     let maximumActive = 0
     let requests = 0
-    const startedWebhooks = new Set<string>()
 
-    mockFetch(async (url) => {
+    mockFetch(async () => {
       requests += 1
-      const requestNumber = requests
       active += 1
       maximumActive = Math.max(maximumActive, active)
-      startedWebhooks.add(url.pathname)
 
-      if (holding) {
-        const gate = Promise.withResolvers<null>()
-        gates.push(gate)
-
-        if (gates.length === 5) {
-          firstFiveStarted.resolve(null)
-        }
-
-        if (startedWebhooks.size === 6) {
-          replacementStarted.resolve(null)
-        }
-
-        await gate.promise
+      if (requests === 1) {
+        started.resolve(null)
+        await release.promise
       }
 
+      await setImmediate()
       active -= 1
-      return Response.json({ channel_id: 'channel', id: `message-${requestNumber}` })
+      return Response.json({ id: `receipt-${requests}` })
     })
 
-    const allScheduled = drain(t)
-    try {
-      await firstFiveStarted.promise
-      expect(active).toBe(5)
-      expect(startedWebhooks.size).toBe(5)
-      const firstClaims = await messageHistory(t, { inputId })
-      expect(firstClaims).toHaveLength(5)
-      expect(firstClaims.every(({ event }) => event.kind === 'claimed')).toBe(true)
-      expect(await finishedAt(t, inputId)).toBeUndefined()
+    const scheduled = drain(t)
 
-      // Complete one assigned job's three HTTP calls while the other four remain blocked.
-      gates[0]?.resolve(null)
-      for (let nextGate = 5; nextGate < 7; nextGate += 1) {
-        while (gates.length <= nextGate) {
-          await setImmediate()
-        }
-        gates[nextGate]?.resolve(null)
-      }
-      await replacementStarted.promise
-      expect(active).toBe(5)
-      expect(startedWebhooks.size).toBe(6)
-      expect(await finishedAt(t, inputId)).toBeUndefined()
+    try {
+      await started.promise
+      await setImmediate()
+      expect(requests).toBe(1)
+      expect(active).toBe(1)
     } finally {
-      holding = false
-      for (const gate of gates) {
-        gate.resolve(null)
-      }
-      await allScheduled
+      release.resolve(null)
+      await scheduled
     }
 
-    expect(maximumActive).toBe(5)
-    expect(requests).toBe(30)
-    expect(startedWebhooks.size).toBe(10)
-    expect(await finishedAt(t, inputId)).toBeDefined()
+    expect(requests).toBe(6)
+    expect(maximumActive).toBe(1)
   })
 
-  test('zero recipients completes without a delivery or HTTP request', async () => {
+  test('a retry checkpoints the current message, switches jobs, and resumes without replaying its prefix', async () => {
     const t = setup()
+    const firstWebhook = await registerWebhook(t)
+    const secondWebhook = await registerWebhook(t, 1)
+    const firstJob = await submit(t, firstWebhook)
+    const secondJob = await submit(t, secondWebhook, { key: 'ingestion-2' })
+    const calls: Array<{ body: string; recipient: string; at: number }> = []
+    let rejectedAt = 0
+    let retryCountAtResumedAttempt: number | undefined
+    let retryCountAfterSuccess: number | undefined
+    let firstRecipientAttempts = 0
 
-    const fetcher = mockFetch(async () => {
-      throw new Error('No recipient should be called')
-    })
+    mockFetch(async (url, body) => {
+      const recipient = url.pathname.endsWith('test-token-0') ? 'first' : 'second'
+      calls.push({ at: Date.now(), body, recipient })
 
-    const inputId = await submit(t, [])
-    await drain(t)
-    expect(await finishedAt(t, inputId)).toBeDefined()
-    expect(await messageHistory(t, { inputId })).toEqual([])
-    expect(fetcher).not.toHaveBeenCalled()
-  })
+      if (recipient === 'first') {
+        firstRecipientAttempts += 1
 
-  test('an already expired input records terminal outcomes without HTTP', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 2)
+        if (firstRecipientAttempts === 2) {
+          rejectedAt = Date.now()
+          return new Response('temporarily unavailable', { status: 503 })
+        }
 
-    const fetcher = mockFetch(async () => {
-      throw new Error('Expired payload must not be sent')
-    })
+        if (firstRecipientAttempts === 3) {
+          const job = await t.query(api.api.getJob, { jobId: firstJob })
+          retryCountAtResumedAttempt = job?.retryCount
+        }
 
-    const inputId = await submit(t, webhookIds, START - 1)
-    await drain(t)
-    const history = await messageHistory(t, { inputId })
-    expect(history).toHaveLength(2)
-    expect(history.every(({ event }) => event.kind === 'expired')).toBe(true)
-    expect(await finishedAt(t, inputId)).toBeDefined()
-    expect(fetcher).not.toHaveBeenCalled()
-  })
+        if (firstRecipientAttempts === 4) {
+          const job = await t.query(api.api.getJob, { jobId: firstJob })
+          retryCountAfterSuccess = job?.retryCount
+        }
+      }
 
-  test('expiry after a confirmed message preserves its receipt and stops the remaining suffix', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds, START + 60_000)
-
-    const fetcher = mockFetch(async () => {
-      jest.setSystemTime(START + 120_000)
-      return Response.json({ channel_id: 'channel', id: 'delivered-before-expiry' })
+      return Response.json({ id: `receipt-${calls.length}` })
     })
 
     await drain(t)
-    expect(fetcher).toHaveBeenCalledTimes(1)
-    const history = await messageHistory(t, { inputId })
 
-    expect(history.map(({ messageIndex, event }) => [messageIndex, event.kind])).toEqual([
-      [0, 'claimed'],
-      [0, 'succeeded'],
-      [1, 'expired'],
+    expect(calls.map(({ recipient }) => recipient)).toEqual([
+      'first',
+      'first',
+      'second',
+      'second',
+      'second',
+      'first',
+      'first',
     ])
+    expect(calls.filter(({ recipient }) => recipient === 'first').map(({ body }) => body)).toEqual([
+      messages[0].payload,
+      messages[1].payload,
+      messages[1].payload,
+      messages[2].payload,
+    ])
+    expect(calls[5].at).toBeGreaterThanOrEqual(rejectedAt + 1000)
+    expect(retryCountAtResumedAttempt).toBe(1)
+    expect(retryCountAfterSuccess).toBe(0)
 
-    expect(await finishedAt(t, inputId)).toBeDefined()
-    const status = await t.query(api.api.getStatus, { inputId })
-    expect(status?.recipients[0]).toMatchObject({
-      nextMessageIndex: 1,
-      sentCount: 1,
-      state: 'expired',
-    })
+    for (const jobId of [firstJob, secondJob]) {
+      const results = await t.query(api.api.listResults, { jobId })
+      expect(results).toHaveLength(3)
+      expect(results.every(({ result }) => result.kind === 'succeeded')).toBe(true)
+      expect(await t.query(api.api.getJob, { jobId })).toMatchObject({ outcome: 'succeeded' })
+    }
   })
 
-  test('a rejected message stops that recipient while other recipients finish', async () => {
+  test('when all jobs are cooling down the action returns and a later wake resumes them', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 2)
-    const inputId = await submit(t, webhookIds)
-    const calls = new Map<string, number>()
+    const firstWebhook = await registerWebhook(t)
+    const secondWebhook = await registerWebhook(t, 1)
+    const firstJob = await submit(t, firstWebhook)
+    const secondJob = await submit(t, secondWebhook, { key: 'ingestion-2' })
+    const calls = new Map<string, number[]>()
 
     mockFetch(async (url) => {
-      calls.set(url.pathname, (calls.get(url.pathname) ?? 0) + 1)
-      return url.pathname.endsWith('test-token-0')
-        ? Response.json({ code: 50_006, message: 'Cannot send an empty message' }, { status: 400 })
-        : Response.json({ channel_id: 'channel', id: 'confirmed' })
+      const attempts = calls.get(url.pathname) ?? []
+      attempts.push(Date.now())
+      calls.set(url.pathname, attempts)
+      return attempts.length === 1
+        ? new Response('try later', { status: 503 })
+        : Response.json({ id: `receipt-${attempts.length}` })
+    })
+
+    // finishAllScheduledFunctions waits for actions that actually started. Reaching
+    // these checkpoints before availableAt proves the action put both jobs down.
+    const firstWaiting = await waitForCooldown(t, firstJob)
+    const secondWaiting = await waitForCooldown(t, secondJob)
+
+    for (const waiting of [firstWaiting, secondWaiting]) {
+      expect(waiting.retryCount).toBe(1)
+      expect(waiting.availableAt).toBeGreaterThan(Date.now())
+      expect(await t.query(api.api.listResults, { jobId: waiting._id })).toEqual([])
+    }
+
+    expect([...calls.values()].map((attempts) => attempts.length)).toEqual([1, 1])
+
+    await drain(t)
+
+    for (const [index, attempts] of [...calls.values()].entries()) {
+      expect(attempts).toHaveLength(4)
+      expect(attempts[1]).toBeGreaterThanOrEqual([firstWaiting, secondWaiting][index].availableAt)
+    }
+
+    for (const jobId of [firstJob, secondJob]) {
+      expect(await t.query(api.api.getJob, { jobId })).toMatchObject({
+        outcome: 'succeeded',
+        retryCount: 0,
+      })
+    }
+  })
+
+  test('a new eligible job brings a future wake forward without bypassing an existing cooldown', async () => {
+    const t = setup()
+    const firstWebhook = await registerWebhook(t)
+    const otherWebhook = await registerWebhook(t, 1)
+    const firstJob = await submit(t, firstWebhook, { messages: messages.slice(0, 1) })
+    const calls: Array<{ at: number; body: string }> = []
+
+    mockFetch(async (_url, body) => {
+      calls.push({ at: Date.now(), body })
+      return calls.length === 1
+        ? Response.json({ retry_after: 2 }, { status: 429 })
+        : Response.json({ id: `receipt-${calls.length}` })
+    })
+
+    const waiting = await waitForCooldown(t, firstJob)
+    const newJob = await submit(t, otherWebhook, { key: 'new-job', messages: messages.slice(1, 2) })
+
+    await drain(t)
+
+    expect(calls.map(({ body }) => body)).toEqual([
+      messages[0].payload,
+      messages[1].payload,
+      messages[0].payload,
+    ])
+    expect(calls[1].at).toBeLessThan(waiting.availableAt)
+    expect(calls[2].at).toBeGreaterThanOrEqual(waiting.availableAt)
+    expect(await t.query(api.api.getJob, { jobId: newJob })).toMatchObject({ outcome: 'succeeded' })
+  })
+
+  test('an exhausted successful webhook bucket gates other jobs and threads while another webhook proceeds', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const threadWebhookId = await registerWebhook(t, 0, '?thread_id=thread-2')
+    const independentWebhookId = await registerWebhook(t, 1)
+    await submit(t, webhookId, { messages: messages.slice(0, 1) })
+    await submit(t, threadWebhookId, { key: 'same-webhook-thread', messages: messages.slice(1, 2) })
+    await submit(t, independentWebhookId, {
+      key: 'different-webhook',
+      messages: messages.slice(2, 3),
+    })
+    const calls: Array<{ at: number; body: string }> = []
+
+    mockFetch(async (_url, body) => {
+      calls.push({ at: Date.now(), body })
+      return Response.json(
+        { id: `receipt-${calls.length}` },
+        {
+          headers:
+            calls.length === 1
+              ? { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset-After': '2' }
+              : {},
+        },
+      )
     })
 
     await drain(t)
-    expect([...calls.values()].toSorted((a, b) => a - b)).toEqual([1, 3])
-    const history = await messageHistory(t, { inputId })
-    const failures = history.filter(({ event }) => event.kind === 'failed')
-    expect(failures).toHaveLength(1)
 
-    expect(failures[0]).toMatchObject({
-      event: {
+    expect(calls.map(({ body }) => body)).toEqual([
+      messages[0].payload,
+      messages[2].payload,
+      messages[1].payload,
+    ])
+    expect(calls[1].at).toBeLessThan(calls[0].at + 2000)
+    expect(calls[2].at).toBeGreaterThanOrEqual(calls[0].at + 2000)
+  })
+
+  test('a global 429 prevents switching to an otherwise eligible webhook', async () => {
+    const t = setup()
+    const firstWebhook = await registerWebhook(t)
+    const secondWebhook = await registerWebhook(t, 1)
+    await submit(t, firstWebhook, { messages: messages.slice(0, 1) })
+    await submit(t, secondWebhook, { key: 'ingestion-2', messages: messages.slice(1, 2) })
+    const calls: Array<{ at: number; body: string }> = []
+
+    mockFetch(async (_url, body) => {
+      calls.push({ at: Date.now(), body })
+      return calls.length === 1
+        ? Response.json(
+            { global: true, retry_after: 2 },
+            { headers: { 'X-RateLimit-Global': 'true' }, status: 429 },
+          )
+        : Response.json({ id: `receipt-${calls.length}` })
+    })
+
+    await drain(t)
+
+    expect(calls.map(({ body }) => body)).toEqual([
+      messages[0].payload,
+      messages[0].payload,
+      messages[1].payload,
+    ])
+    expect(calls[1].at).toBeGreaterThanOrEqual(calls[0].at + 2000)
+    expect(calls[2].at).toBeGreaterThanOrEqual(calls[0].at + 2000)
+  })
+
+  test('a permanent rejection stops only its job and stores the final failed response', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const failedJob = await submit(t, webhookId)
+    const nextJob = await submit(t, webhookId, { key: 'ingestion-2' })
+    let requests = 0
+
+    mockFetch(async () => {
+      requests += 1
+      return requests === 2
+        ? Response.json({ code: 50_006, message: 'Cannot send an empty message' }, { status: 400 })
+        : Response.json({ id: `receipt-${requests}` })
+    })
+
+    await drain(t)
+
+    expect(requests).toBe(5)
+    expect(await t.query(api.api.getJob, { jobId: failedJob })).toMatchObject({ outcome: 'failed' })
+    const results = await t.query(api.api.listResults, { jobId: failedJob })
+    expect(results.map(({ result }) => result.kind)).toEqual(['succeeded', 'failed'])
+    expect(results[1]).toMatchObject({
+      messageKey: messages[1].key,
+      result: {
         kind: 'failed',
         response: {
           body: JSON.stringify({ code: 50_006, message: 'Cannot send an empty message' }),
           status: 400,
         },
       },
-      messageIndex: 0,
-      webhookId: webhookIds[0],
     })
-
-    expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(3)
-    expect(await finishedAt(t, inputId)).toBeDefined()
-    const status = await t.query(api.api.getStatus, { inputId })
-    expect(status?.recipients.find(({ webhookId }) => webhookId === webhookIds[0])).toMatchObject({
-      error: 'HTTP 400',
-      nextMessageIndex: 0,
-      sentCount: 0,
-      state: 'failed',
+    expect(await t.query(api.api.getJob, { jobId: nextJob })).toMatchObject({
+      outcome: 'succeeded',
     })
   })
 
-  test('a rate-limited message resumes durably after Discord’s delay without replaying its successful prefix', async () => {
+  test('Workpool retries an unexpected action failure from the durable successful prefix', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds)
-    const calls: Array<{ body: string; at: number }> = []
-    let rejectedAt = 0
+    const webhookId = await registerWebhook(t)
+    const jobId = await submit(t, webhookId)
+    const { executeWebhook } = transport
+    let transportCalls = 0
+    const bodies: string[] = []
 
-    mockFetch(async (_url, init) => {
-      if (typeof init?.body !== 'string') {
-        throw new TypeError('Expected serialized body')
+    // This is an action failure, rather than a Discord/network response. Workpool
+    // owns the retry; the sender must neither invent a message failure nor resend
+    // the message whose terminal receipt was already committed.
+    spyOn(transport, 'executeWebhook').mockImplementation(async (...args) => {
+      transportCalls += 1
+
+      if (transportCalls === 2) {
+        throw new Error('One-shot action interruption')
       }
-      calls.push({ at: Date.now(), body: init.body })
-      if (calls.length === 2) {
-        rejectedAt = Date.now()
-        return Response.json({ retry_after: 2 }, { headers: { 'Retry-After': '1' }, status: 429 })
-      }
-      if (calls.length === 3) {
-        // The retry is a new durable Workpool job, rather than a sleeping HTTP loop.
-        const ledger = await t.query(api.api.listDeliveries, { inputId })
-        const queued = ledger.filter(({ event }) => event.kind === 'queued')
-        expect(queued).toHaveLength(2)
-        expect(new Set(queued.map(({ workId }) => workId)).size).toBe(2)
-        expect(await finishedAt(t, inputId)).toBeUndefined()
-      }
-      return Response.json({ id: `message-${calls.length}` })
+
+      return await executeWebhook(...args)
+    })
+
+    mockFetch(async (_url, body) => {
+      bodies.push(body)
+      return Response.json({ id: `receipt-${bodies.length}` })
     })
 
     await drain(t)
-    expect(calls.map(({ body }) => body)).toEqual([
-      messages[0].payload,
-      messages[1].payload,
-      messages[1].payload,
-      messages[2].payload,
+
+    expect(transportCalls).toBe(4)
+    expect(bodies).toEqual(messages.map(({ payload }) => payload))
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject({
+      outcome: 'succeeded',
+      retryCount: 0,
+    })
+    const results = await t.query(api.api.listResults, { jobId })
+    expect(results).toHaveLength(3)
+    expect(results.every(({ result }) => result.kind === 'succeeded')).toBe(true)
+  })
+
+  test('the action budget yields to a fresh Workpool drain without replaying its successful prefix', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const enqueues = spyOn(pool, 'enqueueAction')
+    const jobId = await submit(t, webhookId, { expiresAt: START + 60 * 60 * 1000 })
+    const bodies: string[] = []
+
+    mockFetch(async (_url, body) => {
+      bodies.push(body)
+
+      if (bodies.length === 1) {
+        // Move past the drain's 25-minute budget without advancing the HTTP timeout.
+        // The successful response is checkpointed before the action yields its slot.
+        jest.setSystemTime(START + 26 * 60 * 1000)
+      }
+
+      return Response.json({ id: `receipt-${bodies.length}` })
+    })
+
+    await drain(t)
+
+    expect(enqueues).toHaveBeenCalledTimes(2)
+    expect(bodies).toEqual(messages.map(({ payload }) => payload))
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject({
+      outcome: 'succeeded',
+      retryCount: 0,
+    })
+    expect(await t.query(api.api.listResults, { jobId })).toHaveLength(messages.length)
+  })
+
+  test('submitting while a drain is running schedules a later pass for the new job', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const firstJob = await submit(t, webhookId, { messages: messages.slice(0, 1) })
+    let nextJob: Id<'jobs'> | undefined
+    const bodies: string[] = []
+
+    mockFetch(async (_url, body) => {
+      bodies.push(body)
+
+      if (bodies.length === 1) {
+        nextJob = await submit(t, webhookId, {
+          key: 'submitted-during-drain',
+          messages: messages.slice(1),
+        })
+      }
+
+      return Response.json({ id: `receipt-${bodies.length}` })
+    })
+
+    await drain(t)
+
+    expect(bodies).toEqual(messages.map(({ payload }) => payload))
+    expect(nextJob).toBeDefined()
+
+    if (nextJob === undefined) {
+      throw new Error('Expected the concurrent submission to return a job')
+    }
+
+    for (const jobId of [firstJob, nextJob]) {
+      expect(await t.query(api.api.getJob, { jobId })).toMatchObject({ outcome: 'succeeded' })
+    }
+  })
+})
+
+describe('expiry before attempts', () => {
+  test('an already expired job is finalized without a result row or HTTP attempt', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const jobId = await submit(t, webhookId, { expiresAt: START - 1 })
+    const fetcher = mockFetch(async () => Response.json({ id: 'should-not-send' }))
+
+    await drain(t)
+
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(await t.query(api.api.listResults, { jobId })).toEqual([])
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject({ outcome: 'expired' })
+  })
+
+  test('a response received after expiry is preserved, then the unsent suffix expires', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const jobId = await submit(t, webhookId, { expiresAt: START + 60_000 })
+
+    const fetcher = mockFetch(async () => {
+      jest.setSystemTime(START + 120_000)
+      return Response.json({ channel_id: 'channel', id: 'sent-before-deadline' })
+    })
+
+    await drain(t)
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(await t.query(api.api.listResults, { jobId })).toMatchObject([
+      {
+        messageKey: messages[0].key,
+        result: { kind: 'succeeded', response: { messageId: 'sent-before-deadline' } },
+      },
     ])
-    expect(calls[2].at).toBeGreaterThanOrEqual(rejectedAt + 2000)
-    const history = await messageHistory(t, { inputId })
-    expect(history.filter(({ event }) => event.kind === 'retrying')).toHaveLength(1)
-    expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(3)
-    expect(history.filter(({ event }) => event.kind === 'failed')).toHaveLength(0)
-    expect(await finishedAt(t, inputId)).toBeDefined()
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject({ outcome: 'expired' })
   })
 
-  test('an exhausted successful bucket delays the next message without retrying the delivered message', async () => {
+  test('a final successful response after the deadline still completes its job', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds)
-    const calls: Array<{ body: string; at: number }> = []
-    mockFetch(async (_url, init) => {
-      if (typeof init?.body !== 'string') {
-        throw new TypeError('Expected serialized body')
-      }
-      calls.push({ at: Date.now(), body: init.body })
-      return Response.json(
-        { id: `message-${calls.length}` },
-        {
-          headers:
-            calls.length === 1
-              ? {
-                  'X-RateLimit-Remaining': '0',
-                  'X-RateLimit-Reset-After': '1.5',
-                }
-              : {},
-        },
-      )
+    const webhookId = await registerWebhook(t)
+    const jobId = await submit(t, webhookId, {
+      expiresAt: START + 60_000,
+      messages: messages.slice(0, 1),
     })
 
-    let waiting = false
-    for (let tick = 0; tick < 100 && !waiting; tick += 1) {
-      await t.finishAllScheduledFunctions(() => {
-        jest.advanceTimersByTime(10)
-      })
-      const status = await t.query(api.api.getStatus, { inputId })
-      const recipient = status?.recipients[0]
-      if (recipient?.state === 'waiting') {
-        waiting = true
-        // A queued next message still has a successful prefix. scheduledAt describes
-        // this pause too, although the preceding HTTP request succeeded.
-        expect(recipient).toMatchObject({ nextMessageIndex: 1, sentCount: 1 })
-        expect(recipient.scheduledAt).toBeGreaterThanOrEqual(calls[0].at + 1500)
-      }
-    }
-    expect(waiting).toBe(true)
-    await drain(t)
-    expect(calls.map(({ body }) => body)).toEqual(messages.map(({ payload }) => payload))
-    expect(calls[1].at - calls[0].at).toBeGreaterThanOrEqual(1500)
-    const ledger = await t.query(api.api.listDeliveries, { inputId })
-    expect(ledger.filter(({ event }) => event.kind === 'queued')).toHaveLength(2)
-    expect(ledger.filter(({ event }) => event.kind === 'retrying')).toHaveLength(0)
-    expect(await finishedAt(t, inputId)).toBeDefined()
-  })
-
-  test('network and server failures retry the same message with backoff until the deadline cuts off the suffix', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const expiresAt = START + 4500
-    const inputId = await submit(t, webhookIds, expiresAt)
-    const calls: Array<{ body: string; at: number }> = []
-
-    mockFetch(async (_url, init) => {
-      if (typeof init?.body !== 'string') {
-        throw new TypeError('Expected serialized body')
-      }
-      calls.push({ at: Date.now(), body: init.body })
-      if (calls.length === 1) {
-        throw new Error('response lost')
-      }
-      return new Response('unavailable', { status: 503 })
+    mockFetch(async () => {
+      jest.setSystemTime(START + 120_000)
+      return Response.json({ id: 'last-message' })
     })
 
     await drain(t)
-    expect(calls.length).toBeGreaterThanOrEqual(2)
-    expect(calls.every(({ body, at }) => body === messages[0].payload && at < expiresAt)).toBe(true)
-    expect(calls[1].at - calls[0].at).toBeGreaterThanOrEqual(1000)
-    const history = await messageHistory(t, { inputId })
-    expect(history.at(-1)).toMatchObject({ event: { kind: 'expired' }, messageIndex: 0 })
-    expect(history.filter(({ event }) => event.kind === 'succeeded')).toHaveLength(0)
-    expect(history.filter(({ event }) => event.kind === 'retrying')).toHaveLength(calls.length)
-    expect(await finishedAt(t, inputId)).toBeDefined()
+
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject({ outcome: 'succeeded' })
+    expect(await t.query(api.api.listResults, { jobId })).toHaveLength(1)
   })
 
-  test('a retry delay beyond the deadline expires without sending another request', async () => {
+  test('a cooldown beyond expiry wakes at the deadline and retains no transient response', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds, START + 1000)
-    const fetcher = mockFetch(async () => Response.json({ retry_after: 120 }, { status: 429 }))
-
-    await drain(t)
-    expect(fetcher).toHaveBeenCalledTimes(1)
-    const history = await messageHistory(t, { inputId })
-    expect(history.map(({ event }) => event.kind)).toEqual(['claimed', 'retrying', 'expired'])
-    expect(await finishedAt(t, inputId)).toBeDefined()
-  })
-
-  test('pending recipient work can be canceled while running recipients finish their messages', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 6)
-    const inputId = await submit(t, webhookIds)
-    const started = Promise.withResolvers<null>()
-    const release = Promise.withResolvers<null>()
-    const called = new Set<string>()
-    let requests = 0
-
-    mockFetch(async (url) => {
-      requests += 1
-      called.add(url.pathname)
-      if (called.size === 5) {
-        started.resolve(null)
-      }
-      await release.promise
-      return Response.json({ id: `receipt-${requests}` })
-    })
-
-    const allScheduled = drain(t)
-    try {
-      await started.promise
-      const status = await t.query(api.api.getStatus, { inputId })
-      const pending = status?.recipients.find(({ execution }) => execution?.state === 'pending')
-      const running = status?.recipients.find(({ execution }) => execution?.state === 'running')
-      expect(status?.recipients.filter(({ state }) => state === 'sending')).toHaveLength(5)
-      if (!pending || !running) {
-        throw new Error('Expected pending and running recipients')
-      }
-      expect(
-        await t.mutation(api.api.cancelPendingDelivery, { inputId, webhookId: running.webhookId }),
-      ).toBe(false)
-      expect(
-        await t.mutation(api.api.cancelPendingDelivery, { inputId, webhookId: pending.webhookId }),
-      ).toBe(true)
-      // Workpool processes cancellation asynchronously. Even a late start must observe
-      // the terminal ledger entry written by our cancellation mutation before HTTP.
-      const requestsBeforeLateStart = requests
-      await t.action(internal.worker.deliver, { inputId, webhookId: pending.webhookId })
-      expect(requests).toBe(requestsBeforeLateStart)
-    } finally {
-      release.resolve(null)
-      await allScheduled
-    }
-
-    expect(requests).toBe(15)
-    expect(called.size).toBe(5)
-    const status = await t.query(api.api.getStatus, { inputId })
-    expect(status?.recipients.filter(({ state }) => state === 'canceled')).toHaveLength(1)
-    expect(
-      status?.recipients.filter(({ state, sentCount }) => state === 'succeeded' && sentCount === 3),
-    ).toHaveLength(5)
-    expect(status?.finishedAt).toBeDefined()
-  })
-
-  test('a delayed retry exposes its waiting state and can be canceled through Workpool', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds)
-    const fetcher = mockFetch(async () => Response.json({ retry_after: 60 }, { status: 429 }))
-    let waiting = false
-    for (let tick = 0; tick < 100 && !waiting; tick += 1) {
-      await t.finishAllScheduledFunctions(() => {
-        jest.advanceTimersByTime(10)
-      })
-      const status = await t.query(api.api.getStatus, { inputId })
-      const recipient = status?.recipients[0]
-      if (recipient?.state === 'waiting') {
-        waiting = true
-        expect(recipient.execution?.state).toBe('pending')
-        expect(recipient.sentCount).toBe(0)
-        expect(recipient.nextMessageIndex).toBe(0)
-        expect(recipient.scheduledAt).toBeGreaterThan(Date.now())
-        expect(
-          await t.mutation(api.api.cancelPendingDelivery, {
-            inputId,
-            webhookId: recipient.webhookId,
-          }),
-        ).toBe(true)
-      }
-    }
-    expect(waiting).toBe(true)
-    await drain(t)
-    expect(fetcher).toHaveBeenCalledTimes(1)
-    const status = await t.query(api.api.getStatus, { inputId })
-    expect(status?.recipients[0]).toMatchObject({ sentCount: 0, state: 'canceled' })
-    expect(status?.finishedAt).toBeDefined()
-  })
-
-  test('a repeated submission reuses its input and does not enqueue another delivery', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const inputId = await submit(t, webhookIds)
-    expect(await submit(t, webhookIds)).toBe(inputId)
-    const fetcher = mockFetch(async () => Response.json({ channel_id: 'channel', id: 'confirmed' }))
-    await drain(t)
-    expect(await submit(t, webhookIds)).toBe(inputId)
-    await drain(t)
-    expect(fetcher).toHaveBeenCalledTimes(3)
-    expect(await messageHistory(t, { inputId })).toHaveLength(6)
-
-    await rejects(
-      t.mutation(api.api.submitBatch, {
-        expiresAt: START + 3_600_000,
-        key: 'ingestion-1',
-        messages: [{ key: 'changed', payload: '{"content":"changed"}' }],
-        webhookIds,
-      }),
+    const webhookId = await registerWebhook(t)
+    const jobId = await submit(t, webhookId, { expiresAt: START + 4000 })
+    const fetcher = mockFetch(async () =>
+      Response.json({ message: 'temporary', retry_after: 120 }, { status: 429 }),
     )
-  })
-
-  test('Workpool reports an unexpected action failure through its completion callback', async () => {
-    const t = setup()
-    const webhookIds = await registerWebhooks(t, 2)
-    const inputId = await submit(t, webhookIds)
-    const [brokenWebhookId] = webhookIds
-
-    if (brokenWebhookId === undefined) {
-      throw new Error('Expected a webhook to corrupt in the fixture')
-    }
-    // Invalid historical data makes URL construction throw before transport handles HTTP errors.
-    await t.run(async (ctx) => {
-      await ctx.db.patch(brokenWebhookId, { url: 'not a URL' })
-    })
-
-    const fetcher = mockFetch(async () => Response.json({ channel_id: 'channel', id: 'confirmed' }))
 
     await drain(t)
 
-    expect(fetcher).toHaveBeenCalledTimes(3)
+    const job = await t.query(api.api.getJob, { jobId })
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(job).toMatchObject({ outcome: 'expired' })
+    expect(job?.finishedAt).toBeGreaterThanOrEqual(START + 4000)
+    expect(job?.finishedAt).toBeLessThan(START + 10_000)
+    expect(job).not.toHaveProperty('response')
+    expect(await t.query(api.api.listResults, { jobId })).toEqual([])
+  })
 
-    const failedHistory = await messageHistory(t, {
-      inputId,
-      webhookId: brokenWebhookId,
+  test('expiry removes a job from the active list and the next job can complete', async () => {
+    const t = setup()
+    const webhookId = await registerWebhook(t)
+    const expiredJob = await submit(t, webhookId, { expiresAt: START - 1 })
+    const nextJob = await submit(t, webhookId, { key: 'still-current' })
+    const bodies: string[] = []
+
+    mockFetch(async (_url, body) => {
+      bodies.push(body)
+      return Response.json({ id: `receipt-${bodies.length}` })
     })
 
-    expect(failedHistory.map(({ event }) => event.kind)).toEqual(['claimed', 'failed'])
-    const [claim, failure] = failedHistory
+    await drain(t)
 
-    expect(failure).toMatchObject({
-      claimId: claim?._id,
-      event: { kind: 'failed' },
-      messageIndex: 0,
+    expect(bodies).toEqual(messages.map(({ payload }) => payload))
+    expect(await t.query(api.api.getJob, { jobId: expiredJob })).toMatchObject({
+      outcome: 'expired',
     })
-
-    if (failure?.event.kind !== 'failed') {
-      throw new Error('Expected the Workpool failure callback to record the error')
-    }
-
-    expect(failure.event.error).toContain('URL')
-    expect(failure.event).not.toHaveProperty('response')
-    expect(await finishedAt(t, inputId)).toBeDefined()
+    expect(await t.query(api.api.getJob, { jobId: nextJob })).toMatchObject({
+      outcome: 'succeeded',
+    })
   })
 })
 
 describe('submission boundaries', () => {
-  test('input discovery uses submission time with bounded results and exclusive upper boundary', async () => {
+  test('job discovery uses submission time with bounded results and an exclusive upper boundary', async () => {
     const t = setup()
-    const ids: Id<'inputs'>[] = []
+    const webhookId = await registerWebhook(t)
+    const ids: Id<'jobs'>[] = []
+
     for (let index = 0; index < 3; index += 1) {
       jest.setSystemTime(START + index * 1000)
-      ids.push(
-        await t.mutation(api.api.submitBatch, {
-          expiresAt: START + 60_000,
-          key: `discovery-${index}`,
-          messages,
-          webhookIds: [],
-        }),
-      )
+      ids.push(await submit(t, webhookId, { key: `discovery-${index}` }))
     }
-    const bounded = await t.query(api.api.listInputs, { from: START, to: START + 2000 })
-    expect(bounded.inputs.map(({ _id }) => _id).toSorted()).toEqual(ids.slice(0, 2).toSorted())
+
+    const bounded = await t.query(api.api.listJobs, { from: START, to: START + 2000 })
+    expect(bounded.jobs.map(({ _id }) => _id).toSorted()).toEqual(ids.slice(0, 2).toSorted())
     expect(bounded.hasMore).toBe(false)
-    expect(bounded.inputs.every((input) => input.messages[0].payload === messages[0].payload)).toBe(
-      true,
-    )
-    const limited = await t.query(api.api.listInputs, { from: START, limit: 1, to: START + 3000 })
-    expect(limited.inputs).toHaveLength(1)
+    expect(bounded.jobs.every((job) => job.messages[0].payload === messages[0].payload)).toBe(true)
+    const limited = await t.query(api.api.listJobs, { from: START, limit: 1, to: START + 3000 })
+    expect(limited.jobs).toHaveLength(1)
     expect(limited.hasMore).toBe(true)
-    const empty = await t.query(api.api.listInputs, { from: START + 3000, to: START + 4000 })
-    expect(empty).toEqual({ hasMore: false, inputs: [] })
-    await rejects(t.query(api.api.listInputs, { from: START, limit: 101, to: START + 3000 }))
+    expect(await t.query(api.api.listJobs, { from: START + 3000, to: START + 4000 })).toEqual({
+      hasMore: false,
+      jobs: [],
+    })
+    await rejects(t.query(api.api.listJobs, { from: START, limit: 101, to: START + 3000 }))
   })
 
-  test('invalid batches leave no input, delivery, or scheduled HTTP side effect', async () => {
+  test('invalid submissions leave no job, result or scheduled HTTP side effect', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 1)
-    const [webhookId] = webhookIds
-
-    if (webhookId === undefined) {
-      throw new Error('Expected a registered webhook')
-    }
-
-    const valid = { expiresAt: START + 3_600_000, key: 'invalid-batch', messages, webhookIds }
-
+    const webhookId = await registerWebhook(t)
+    const valid = { expiresAt: START + 3_600_000, key: 'invalid-batch', messages, webhookId }
     const invalidInputs = [
       { ...valid, key: '' },
       { ...valid, messages: [] },
-      { ...valid, webhookIds: [webhookId, webhookId] },
       { ...valid, messages: [{ key: '', payload: '{}' }] },
       {
         ...valid,
@@ -748,41 +731,34 @@ describe('submission boundaries', () => {
       { ...valid, expiresAt: Number.NaN },
       { ...valid, expiresAt: Number.POSITIVE_INFINITY },
     ]
-
-    const fetcher = mockFetch(async () => {
-      throw new Error('A rejected submission must not make HTTP requests')
-    })
+    const fetcher = mockFetch(async () => Response.json({ id: 'should-not-send' }))
 
     for (const input of invalidInputs) {
       await rejects(t.mutation(api.api.submitBatch, input))
     }
+
     await drain(t)
 
     const rows = await t.run(async (ctx) => ({
-      deliveries: await ctx.db.query('deliveries').collect(),
-      inputs: await ctx.db.query('inputs').collect(),
+      jobs: await ctx.db.query('jobs').collect(),
+      results: await ctx.db.query('results').collect(),
     }))
-
-    expect(rows).toEqual({ deliveries: [], inputs: [] })
+    expect(rows).toEqual({ jobs: [], results: [] })
     expect(fetcher).not.toHaveBeenCalled()
   })
 
   test('webhook registration normalizes HTTP URLs while preserving custom hosts and routing parameters', async () => {
     const t = setup()
-
     const httpsId = await t.mutation(api.api.registerWebhook, {
       name: 'custom receiver',
       url: 'HTTPS://Receiver.Example:443/webhooks/test?thread_id=123&wait=false',
     })
-
     const sameId = await t.mutation(api.api.registerWebhook, {
       url: 'https://receiver.example/webhooks/test?thread_id=123&wait=false',
     })
-
     const httpId = await t.mutation(api.api.registerWebhook, {
       url: 'http://Receiver.Example:80/webhooks/test?thread_id=456',
     })
-
     expect(sameId).toBe(httpsId)
 
     for (const url of [
@@ -796,24 +772,21 @@ describe('submission boundaries', () => {
 
     const webhooks = await t.run(async (ctx) => await ctx.db.query('webhooks').collect())
     expect(webhooks).toHaveLength(2)
-
     expect(webhooks.find(({ _id }) => _id === httpsId)).toMatchObject({
       name: 'custom receiver',
       url: 'https://receiver.example/webhooks/test?thread_id=123&wait=false',
     })
-
     expect(webhooks.find(({ _id }) => _id === httpId)).toMatchObject({
       url: 'http://receiver.example/webhooks/test?thread_id=456',
     })
   })
 
-  test('payload bytes survive validation and sending, and every immutable input field participates in dedupe', async () => {
+  test('payload bytes survive parsing and sending, and all immutable job fields participate in dedupe', async () => {
     const t = setup()
-    const webhookIds = await registerWebhooks(t, 2)
-
+    const webhookId = await registerWebhook(t)
+    const otherWebhookId = await registerWebhook(t, 1)
     const firstPayload =
       '  { "content" : "\\u0068ello \\u2603", "allowed_mentions" : { "parse" : [] } }\n'
-
     const original = {
       expiresAt: START + 3_600_000,
       key: 'byte-preserving-batch',
@@ -821,24 +794,14 @@ describe('submission boundaries', () => {
         { key: 'overview', payload: firstPayload },
         { key: 'pricing', payload: '{ "content": "Pricing", "embeds": [] }' },
       ],
-      webhookIds,
+      webhookId,
     }
-
-    const inputId = await t.mutation(api.api.submitBatch, original)
-    expect(await t.mutation(api.api.submitBatch, original)).toBe(inputId)
-
+    const jobId = await t.mutation(api.api.submitBatch, original)
+    expect(await t.mutation(api.api.submitBatch, original)).toBe(jobId)
     const conflictingInputs = [
-      { ...original, webhookIds: webhookIds.toReversed() },
+      { ...original, webhookId: otherWebhookId },
       { ...original, messages: original.messages.toReversed() },
       { ...original, expiresAt: original.expiresAt + 1 },
-      {
-        ...original,
-        messages: original.messages.map((message) =>
-          message.key === 'overview'
-            ? { ...message, payload: '{"content":"hello ☃","allowed_mentions":{"parse":[]}}' }
-            : message,
-        ),
-      },
       {
         ...original,
         messages: original.messages.map((message) => ({
@@ -846,31 +809,34 @@ describe('submission boundaries', () => {
           key: `renamed-${message.key}`,
         })),
       },
+      {
+        ...original,
+        messages: [
+          { key: 'overview', payload: '{"content":"hello ☃","allowed_mentions":{"parse":[]}}' },
+          original.messages[1],
+        ],
+      },
     ]
+
     for (const input of conflictingInputs) {
       await rejects(t.mutation(api.api.submitBatch, input))
     }
+
     const sentBodies: string[] = []
 
-    mockFetch(async (_url, init) => {
-      if (typeof init?.body !== 'string') {
-        throw new TypeError('Expected the submitted serialized payload')
-      }
-
-      sentBodies.push(init.body)
-      return Response.json({ channel_id: 'channel', id: 'confirmed' })
+    mockFetch(async (_url, body) => {
+      sentBodies.push(body)
+      return Response.json({ channel_id: 'channel', id: `receipt-${sentBodies.length}` })
     })
 
     await drain(t)
+    expect(await t.mutation(api.api.submitBatch, original)).toBe(jobId)
+    await t.mutation(api.api.resume, {})
+    await drain(t)
 
-    const stored = await t.query(api.api.getInput, { inputId })
-    expect(stored).toMatchObject(original)
-    expect(sentBodies).toHaveLength(4)
-    for (const { payload } of original.messages) {
-      expect(sentBodies.filter((body) => body === payload)).toHaveLength(2)
-    }
-    const inputs = await t.run(async (ctx) => await ctx.db.query('inputs').collect())
-    expect(inputs).toHaveLength(1)
-    expect(await messageHistory(t, { inputId })).toHaveLength(8)
+    expect(sentBodies).toEqual(original.messages.map(({ payload }) => payload))
+    expect(await t.query(api.api.getJob, { jobId })).toMatchObject(original)
+    expect(await t.query(api.api.listResults, { jobId })).toHaveLength(2)
+    expect(await t.run(async (ctx) => await ctx.db.query('jobs').collect())).toHaveLength(1)
   })
 })

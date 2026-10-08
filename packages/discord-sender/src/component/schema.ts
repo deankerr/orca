@@ -1,52 +1,48 @@
-import { vWorkId } from '@convex-dev/workpool'
+import { zodToConvex } from 'convex-helpers/server/zod4'
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-export const vMessage = v.object({ key: v.string(), payload: v.string() })
+import { zResponse } from './protocol'
 
-export const vResponse = v.object({
-  body: v.string(),
-  channelId: v.optional(v.string()),
-  error: v.optional(v.string()),
-  headers: v.record(v.string(), v.string()),
-  messageId: v.optional(v.string()),
-  status: v.union(v.number(), v.null()),
-})
+export const vResponse = zodToConvex(zResponse)
 
 export default defineSchema({
-  // One recipient delivery spans many immutable ledger entries and may use several
-  // Workpool jobs. Rows describe scheduling and attempts, not separate delivered messages.
-  deliveries: defineTable({
-    claimId: v.optional(v.id('deliveries')),
-    event: v.union(
-      v.object({ attempt: v.number(), kind: v.literal('queued'), runAt: v.number() }),
-      v.object({ attempt: v.number(), kind: v.literal('claimed') }),
-      v.object({ kind: v.literal('retrying'), response: vResponse, retryAt: v.number() }),
-      v.object({ kind: v.literal('succeeded'), response: vResponse }),
-      v.object({
-        error: v.optional(v.string()),
-        kind: v.literal('failed'),
-        response: v.optional(vResponse),
-      }),
-      v.object({ kind: v.literal('expired') }),
-      v.object({ kind: v.literal('canceled') }),
-    ),
-    inputId: v.id('inputs'),
-    messageIndex: v.number(),
-    webhookId: v.id('webhooks'),
-    // A retry is a new Workpool job. Correlation prevents its predecessor's completion
-    // callback from mistaking a scheduled continuation for a finished recipient.
-    workId: vWorkId,
-  })
-    .index('by_input_webhook', ['inputId', 'webhookId'])
-    .index('by_claim', ['claimId']),
-  inputs: defineTable({
+  jobs: defineTable({
+    availableAt: v.number(),
     expiresAt: v.number(),
     finishedAt: v.optional(v.number()),
     key: v.string(),
-    messages: v.array(vMessage),
-    webhookIds: v.array(v.id('webhooks')),
-  }).index('by_key', ['key']),
+    messages: v.array(v.object({ key: v.string(), payload: v.string() })),
+    outcome: v.optional(v.union(v.literal('succeeded'), v.literal('failed'), v.literal('expired'))),
+    // Retry checkpoint for the first unfinished message, not a lifetime attempts
+    // metric. Success resets it; transient responses themselves go to logs.
+    retryCount: v.number(),
+    webhookId: v.id('webhooks'),
+  })
+    .index('by_key', ['key'])
+    .index('by_finishedAt', ['finishedAt']),
+  results: defineTable({
+    jobId: v.id('jobs'),
+    messageKey: v.string(),
+    result: v.union(
+      v.object({ kind: v.literal('succeeded'), response: vResponse }),
+      v.object({ kind: v.literal('failed'), response: vResponse }),
+    ),
+    // One terminal result per attempted message. The job's immutable array already
+    // supplies order and payload. An unsent suffix has no result rows: the job
+    // explains why sending stopped.
+  }).index('by_jobId', ['jobId']),
+  sender: defineTable({
+    globalAvailableAt: v.number(),
+    // Scheduled mutation, never an action lease. The timer hands execution to
+    // Workpool; Workpool alone owns exclusive sending.
+    wakeAt: v.optional(v.number()),
+    wakeId: v.optional(v.id('_scheduled_functions')),
+    // Resource keys exclude routing query parameters: two thread destinations can
+    // share a webhook limit. A pruned map keeps gates together without duplicating
+    // cooldowns across destination rows at our present volume.
+    webhookAvailableAt: v.record(v.string(), v.number()),
+  }),
   webhooks: defineTable({
     name: v.optional(v.string()),
     url: v.string(),

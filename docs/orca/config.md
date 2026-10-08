@@ -203,4 +203,6 @@ logout allowlists are managed outside Git.
 
 The backend also mounts `discordSender` for development exercises; ORCA alert
 producers still use `discordDelivery`. Its webhook records are independent.
-Delivery and retry defaults for the new component live in packages/discord-sender/README.md.
+Delivery, retry and scheduling defaults for the new component live in
+packages/discord-sender/README.md. Workpool concurrency is a correctness invariant;
+changing it requires revisiting the sender's ownership model.
