@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "dev": "portless run --name orca next dev",
+    "dev": "bun run --cwd ../../packages/backend dev --once && next dev",
     "start": "next start"
   },
   "dependencies": {

@@ -97,18 +97,18 @@ WorkOS issuer and JWKS.
 Local inputs live in **`packages/backend/.env.local`** or the dev process environment.
 Vercel supplies build inputs for deployed apps.
 
-| Variable                          | Flags    | Consumer / relationship                                                                                                                                         |
-| --------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONVEX_DEPLOYMENT`               | ◇ ⚙      | Local Convex CLI deployment selection.                                                                                                                          |
-| `CONVEX_DEPLOY_KEY`               | 🔒 ◇     | Convex deploy credential supplied by Vercel for automated builds, scoped separately for production and previews.                                                |
-| `WORKOS_CLIENT_ID`                | ◇ 🌐 ⚙ ⇄ | Managed auth environment's client ID; must agree with the deployed auth config and web app.                                                                     |
-| `WORKOS_API_KEY`                  | 🔒 ◇ ⚙   | WorkOS environment credential used by managed AuthKit configuration. The web app also needs a server credential for this same environment.                      |
-| `WORKOS_ENVIRONMENT_ID`           | ◇ ⚙      | Managed WorkOS environment selection. Dev/preview default: `environment_01M41R065TB5P1NN7FXF4500A5`.                                                            |
-| `PORTLESS_URL`                    | ◇ 🌐 ⚙ ⇄ | Backend dev obtains it with `portless get orca`. Must match the web dev server's external origin so the registered callback/CORS URLs match the browser origin. |
-| `VERCEL_BRANCH_URL`               | ◇ 🌐 ⚙ ⇄ | Vercel preview branch hostname, without a scheme. Both Convex registration and Next.js callback selection use it for the same build.                            |
-| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.                                                                             |
+| Variable                          | Flags    | Consumer / relationship                                                                                                                                                                                                 |
+| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONVEX_DEPLOYMENT`               | ◇ ⚙      | Local Convex CLI deployment selection.                                                                                                                                                                                  |
+| `CONVEX_DEPLOY_KEY`               | 🔒 ◇     | Convex deploy credential supplied by Vercel for automated builds, scoped separately for production and previews.                                                                                                        |
+| `WORKOS_CLIENT_ID`                | ◇ 🌐 ⚙ ⇄ | Managed auth environment's client ID; must agree with the deployed auth config and web app.                                                                                                                             |
+| `WORKOS_API_KEY`                  | 🔒 ◇ ⚙   | WorkOS environment credential used by managed AuthKit configuration. The web app also needs a server credential for this same environment.                                                                              |
+| `WORKOS_ENVIRONMENT_ID`           | ◇ ⚙      | Managed WorkOS environment selection. Dev/preview default: `environment_01M41R065TB5P1NN7FXF4500A5`.                                                                                                                    |
+| `ORCA_DEV_URL`                    | ◇ 🌐 ⚙ ⇄ | Browser-facing dev URL supplied by root startup to Next.js and Convex. Backend-only commands fall back to the root local URL lookup. Process input; derived per checkout rather than stored in Convex project defaults. |
+| `VERCEL_BRANCH_URL`               | ◇ 🌐 ⚙ ⇄ | Vercel preview branch hostname, without a scheme. Both Convex registration and Next.js callback selection use it for the same build.                                                                                    |
+| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.                                                                                                                                     |
 
-[`convex.json`](../../packages/backend/convex.json) registers `${PORTLESS_URL}/callback`
+[`convex.json`](../../packages/backend/convex.json) registers `${ORCA_DEV_URL}/callback`
 and its origin for dev, and `https://${VERCEL_BRANCH_URL}/callback` and its origin for
 previews. Production callback, homepage, and CORS registration instead hardcode
 **`https://orca.orb.town`**.
@@ -135,8 +135,10 @@ Next.js and supplies the selected backend URL to that build.
 | `WORKOS_COOKIE_PASSWORD`          | 🔒 ◇     | At least 32 characters. Instances sharing sessions need the same secret.                          |
 | `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.               |
 
-Keep the callback override unset in Vercel so Next.js and Convex select matching
-origins. The local fallback is **`https://orca.localhost/callback`**. See [administrator access](admin-access.md) for WorkOS policy and logout configuration.
+Next.js derives the callback from `ORCA_DEV_URL` during development,
+`VERCEL_BRANCH_URL` for preview builds, and **`https://orca.orb.town`** for other
+builds. `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is a derived output; keep it unset in
+Vercel. See administrator access for WorkOS policy and logout configuration.
 
 ### Analytics and build inputs
 
@@ -159,13 +161,21 @@ changes as well as different credentials.
 
 ### Local dev server
 
-| Variable          | Flags    | Consumer / fallback / relationship                                                                                                                            |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORTLESS_URL`    | ◇ 🌐 ⚙ ⇄ | Portless supplies the checkout's external app origin to Next.js. Takes precedence over a stale callback override and must agree with the backend dev process. |
-| `ORCA_DEV_ORIGIN` | ◆ ◇ 🌐   | Additional origin allowed by the Next.js dev server.                                                                                                          |
+| Variable                 | Flags  | Consumer / relationship                                                                                             |
+| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| `PORTLESS_URL`           | ◇ 🌐 ⚙ | Portless's local URL; root startup uses it when no Tailscale URL is supplied.                                       |
+| `PORTLESS_TAILSCALE`     | ◇      | Set to `1` in the host's shell or service environment to enable tailnet sharing. Leave unset for local development. |
+| `PORTLESS_TAILSCALE_URL` | ◇ 🌐 ⚙ | Portless's tailnet URL, including the allocated HTTPS port; preferred by root startup.                              |
 
-Both dev scripts use Portless name **`orca`**. Keep their origins aligned with
-AuthKit callbacks and logout registrations.
+Root `portless.json` owns the app name. Root dev commands resolve the browser URL
+once and pass `ORCA_DEV_URL` through Turbo. Next.js derives the callback and allowed
+dev hostname from it; Convex registers that same callback and origin with WorkOS.
+Use the root dev commands so the URL and server port come from the same launch.
+
+Backend-only commands use the local URL from `dev:origin`. Web startup runs
+`convex dev --once` against the selected backend before Next.js, synchronizing
+backend code and registering the callback even when starting only the web app.
+Portless owns worktree prefixes, port allocation, and forwarding cleanup.
 
 ## Logos — `apps/logos`
 
@@ -175,8 +185,8 @@ static-assets object binding.
 
 ## Root tooling
 
-[`turbo.json`](../../turbo.json) passes `PORTLESS*` and `ORCA_DEV_ORIGIN` to dev tasks
-and declares PostHog/Vercel build inputs.
+`turbo.json` passes the allocated port, host, CA certificate and `ORCA_DEV_URL`
+to dev tasks and declares PostHog/Vercel build inputs.
 
 ## Configuration ownership
 

@@ -1,26 +1,20 @@
-// oxlint-disable typescript/no-non-null-assertion -- Configuration requires these environment variables.
 import { withPostHogConfig } from '@posthog/nextjs-config'
 import type { NextConfig } from 'next'
 
 import { getConvexHttpUrl } from './lib/utils'
 
-const localDevOrigin = process.env.ORCA_DEV_ORIGIN
-const portlessUrl = process.env.PORTLESS_URL
-
 // Preview credentials are shared, but the callback must return to this branch's web app.
-const workosRedirectUri =
-  (portlessUrl !== undefined && portlessUrl !== '' ? `${portlessUrl}/callback` : undefined) ??
-  process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ??
-  (process.env.VERCEL_ENV === 'preview'
-    ? `https://${process.env.VERCEL_BRANCH_URL}/callback`
-    : process.env.VERCEL_ENV === 'production'
-      ? 'https://orca.orb.town/callback'
-      : 'https://orca.localhost/callback')
+const appUrl = new URL(
+  process.env.NODE_ENV === 'development'
+    ? (process.env.ORCA_DEV_URL ?? '')
+    : process.env.VERCEL_ENV === 'preview'
+      ? `https://${process.env.VERCEL_BRANCH_URL}`
+      : 'https://orca.orb.town',
+)
 
 const nextConfig: NextConfig = {
-  env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: workosRedirectUri },
-  // empty strings are ignored
-  allowedDevOrigins: [localDevOrigin ?? ''],
+  env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: new URL('/callback', appUrl).href },
+  allowedDevOrigins: [appUrl.hostname],
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
   reactCompiler: true,
@@ -47,13 +41,9 @@ const nextConfig: NextConfig = {
 }
 
 // sourcemap uploads require PostHog credentials, skip entirely in local dev
-const withPostHog =
-  process.env.POSTHOG_PROJECT_ID !== undefined && process.env.POSTHOG_API_KEY !== undefined
-    ? (config: NextConfig) =>
-        withPostHogConfig(config, {
-          personalApiKey: process.env.POSTHOG_API_KEY!,
-          projectId: process.env.POSTHOG_PROJECT_ID!,
-        })
-    : (config: NextConfig) => config
+const posthogApiKey = process.env.POSTHOG_API_KEY
+const posthogProjectId = process.env.POSTHOG_PROJECT_ID
 
-export default withPostHog(nextConfig)
+export default posthogApiKey !== undefined && posthogProjectId !== undefined
+  ? withPostHogConfig(nextConfig, { personalApiKey: posthogApiKey, projectId: posthogProjectId })
+  : nextConfig
