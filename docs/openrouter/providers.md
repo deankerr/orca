@@ -1,66 +1,68 @@
-# Providers
+# Provider observations
 
-OpenRouter's provider fields expose overlapping organization, configuration and endpoint concepts.
-The distinctions below describe observations, not an authoritative upstream entity model.
+OpenRouter's embedded provider records mix provider facts, routing variants, and
+endpoint configuration. Their fields are evidence, rather than an authoritative
+entity model. ORCA's normalization policy lives in `docs/orca/provider-identity.md`.
 
-## Organization
+## Namespaces and metadata
 
-The organization is the operator users recognize, such as `Azure` or `Amazon Bedrock`. It is
-identified by the `name` field on every `provider_info` record.
+- The 2026-10-07T17:40:37.518Z capture contains 1,604 endpoints, 121 distinct
+  `provider_info.slug` values, 92 provider names, and 229 endpoint routing tags.
+  ORCA's text scope contains 1,381 endpoints and 108 embedded slugs.
+- Endpoint `provider_name` equals `provider_info.name` throughout that capture and
+  the earliest retained capture, 2025-08-13T20:19:21.211Z. Names can span several
+  provider records. Historical names also conflict with slug families: an
+  `anthropic/claude-on-aws` record calls itself `Amazon Bedrock`.
+- Multiple provider bodies share a slug. In the October capture, adapter, host,
+  pricing strategy, and occasionally display name vary between endpoints. A last
+  writer can therefore promote incidental endpoint configuration into provider facts.
+- Endpoint policy is the source for behavioral claims. In the October capture,
+  142 endpoint/provider policy pairs disagree on a shared key. Terms and privacy
+  URLs remain useful provider facts.
+- Endpoint tags form another namespace: four tags in the October capture occur
+  under multiple embedded provider slugs. Preserve the tag supplied on each endpoint.
+- Older provider bodies include owners/editors, model denylists, region overrides,
+  multipart capability, and behavioral policies nested under `dataPolicy.paidModels`.
 
-- `provider_info.name` is the organization key: it is constant across an organization's records
-  and stable over the observed corpus. An upstream rename still appears as a change of identity.
-- Endpoint `provider_name` carries the same value: it agreed with the owning record's `name` on
-  every endpoint in the corpus below.
-- 📊 Observed 2026-08-28 (105 provider records from 789 text→text models): 105 records collapsed
-  to 73 organizations; 18 organizations had multiple records, including Google, Amazon Bedrock,
-  Fireworks, and DeepInfra.
-- Provider slug prefixes cannot recover the organization: `sambanova-turbo` is a full record slug
-  with no slash-delimited suffix.
+## Historical identity repairs
 
-## Provider record
+These observations come from archived production captures and the retained provider
+catalog inspected in October 2026. Catalog `scan_at` dates the last fact update;
+it does not establish the provider's departure. Transition times below are capture
+times, rather than exact upstream change times.
 
-The embedded `provider_info` object describes a targetable provider configuration. One
-organization can have multiple records, such as `azure` and `azure/eu`.
+- `sambanova-turbo` and `sambanova` coexist in the October capture with the same name
+  and API host. The turbo spelling is an unslashed serving variant.
+- `nebius-fast` is present in the earliest retained August 2025 capture. Between
+  2025-10-07T00:11:13.924Z and 01:11:40.360Z, endpoint
+  `41c6e987-156d-4426-b1d6-d374b0ee760f` changes its provider slug and tag to
+  `nebius/fast`, retaining its model, API host, and adapter.
+- Between 2026-07-23T22:50:26.251Z and 2026-07-24T00:50:26.247Z, the same 19
+  endpoint UUIDs change from `wandb` to `wandb-legacy`. Their provider host and
+  name agree. This repair retains W&B as its own historical provider identity.
+- Retained `model-run` and `modelrun` records share the name `ModelRun`; the later
+  display name is `ModelRun [by Modular]`. Host and policy URLs differ.
 
-- Same-organization records differ in `slug`, `displayName`, `baseUrl`, `adapterName`, and
-  `pricingStrategy`. These records are useful routing targets, but should not be mistaken for
-  separate provider organizations.
-- Real differences between same-organization records are infrastructure-level: Azure's regional
-  records carry distinct `baseUrl`s, and `pricingStrategy`/`adapterName` switch with the API
-  surface being served.
-- ⚠️ Data policy fields are identical within an organization, even when the slug implies
-  otherwise: `xai/zdr` and `mistral/zdr` both declare `retainsPrompts: true` with
-  `retentionDays: 30` despite a zero-data-retention label. Tagged records are serving variants,
-  not separately modeled compliance tiers.
-- ⚠️ `displayName` is not a grouping key: `google-vertex/us` and `google-vertex/us-east5` share
-  "Google Vertex (US)", and `deepinfra` and `deepinfra/base` are indistinguishable by both `name`
-  and `displayName`.
+## Claude Platform on AWS
 
-## Endpoint targeting key
+Focused searches located these adjacent absence/presence boundaries. They establish
+observed onsets of the runs examined, rather than an exhaustive search for every
+earlier appearance or interruption.
 
-Endpoint `provider_slug` identifies a targetable configuration or endpoint grouping. OpenRouter's
-end-user API exposes the same concept as `tag`.
+| Embedded slug                  | First present capture at the located boundary | Last present capture checked         |
+| ------------------------------ | --------------------------------------------- | ------------------------------------ |
+| `anthropic/2`                  | 2026-04-03T22:50:00.116Z                      | 2026-08-17T23:30:04.172Z             |
+| `anthropic/claude-on-aws`      | 2026-05-30T03:50:00.314Z                      | 2026-08-17T21:30:04.171Z             |
+| `amazon-bedrock/claude-on-aws` | 2026-06-09T17:50:00.557Z                      | 2026-08-17T21:30:04.171Z             |
+| `claude-on-aws`                | 2026-07-25T20:50:26.218Z                      | Still present in the October capture |
 
-Tag suffixes see heavy churn and often disagree with the associated record's metadata.
+`anthropic/2` initially displayed `Anthropic 2` and used `https://api.anthropic.com/v1`.
+The same endpoint UUIDs subsequently displayed `Claude Platform on AWS` and used
+`https://aws-external-anthropic.us-east-1.api.aws/v1`; this is visible by May 15.
 
-- Suffixes denote region, quantization, speed tier, compliance, or occasionally something else
-  entirely, with no central registry.
-- `amazon-bedrock/claude-on-aws` was a real tag on now-unavailable endpoints: a model name inside
-  a provider tag.
-- A tag relates to provider records in one of three ways: an exact record match (`azure/us`), a
-  base-record match for quantization-suffixed tags (`deepinfra/fp8` → `deepinfra`), or no record
-  at all (`azure/swedencentral`, `novita/fp8`).
-- ⚠️ The same tag can resolve to different records per endpoint with no model-family pattern:
-  `google-vertex/global`, `google-vertex/us-east5`, and `amazon-bedrock/us-east-1` each resolved
-  to both a tagged record and the base record in the same corpus.
-- 📊 Observed 2026-08-28 (186 distinct tags over 1,146 endpoints): 75 tags matched a record
-  exactly; 111 had no record, of which roughly 99 were quantization suffixes and the rest
-  region/speed tags such as `azure/global`, `mistral/eu`, and `openai/flex`.
-
-## Endpoint-local provider metadata
-
-`provider_display_name`, `provider_name`, `provider_model_id`, `provider_region`, and `provider_slug`
-are endpoint properties. `provider_info` is the related provider observation, not another endpoint
-property with the same ownership. `provider_model_id` is the upstream provider's identifier for that
-endpoint's model.
+By August 17, all four spellings use that AWS host and the same service label.
+The older named aliases carry AWS policy/status URLs and the `Amazon Bedrock` name;
+`anthropic/2` carries Anthropic URLs/name. The canonical record carries Anthropic URLs,
+the service name, and a different BYOK flag. Adapter and behavioral defaults also
+differ. At 2026-08-18T01:30:04.089Z, only the canonical spelling remains among these
+records; some endpoint UUIDs were replaced rather than renamed.

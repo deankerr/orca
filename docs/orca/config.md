@@ -2,6 +2,9 @@
 
 Variables and deployment defaults, grouped by package and scope.
 
+Provider identity repairs and metadata omissions are code-owned extraction policy in
+`packages/backend/convex/scan/provider.ts`; their rationale is in `docs/orca/provider-identity.md`.
+
 ## Legend
 
 | Symbol | Meaning                                                             |

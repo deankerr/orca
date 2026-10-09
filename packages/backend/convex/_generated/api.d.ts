@@ -104,6 +104,7 @@ import type * as retry from "../retry.js";
 import type * as scan_access from "../scan/access.js";
 import type * as scan_collected from "../scan/collected.js";
 import type * as scan_model from "../scan/model.js";
+import type * as scan_provider from "../scan/provider.js";
 import type * as scan_reader from "../scan/reader.js";
 import type * as scan_analysis_index from "../scan_analysis/index.js";
 import type * as scan_analysis_profile from "../scan_analysis/profile.js";
@@ -211,6 +212,7 @@ declare const fullApi: ApiFromModules<{
   "scan/access": typeof scan_access;
   "scan/collected": typeof scan_collected;
   "scan/model": typeof scan_model;
+  "scan/provider": typeof scan_provider;
   "scan/reader": typeof scan_reader;
   "scan_analysis/index": typeof scan_analysis_index;
   "scan_analysis/profile": typeof scan_analysis_profile;

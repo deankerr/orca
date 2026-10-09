@@ -43,7 +43,8 @@ A model offering identified in ORCA by its model slug, including any variant suf
 Once observed, a model remains known even when it has no listed endpoints.
 
 **Provider**:
-A model-serving provider identified in ORCA by its provider slug.
+A model-serving provider identified by an ORCA-normalized provider slug. Scan extraction
+groups upstream slash variants and repairs known historical aliases into that identity.
 Once observed, a provider remains known even when it has no listed endpoints.
 
 **Endpoint**:
@@ -57,7 +58,8 @@ _Avoid_: Readings, performance samples
 
 **Slug identity**:
 A name-based model or provider identity, distinct from an endpoint's UUID identity.
-A different slug does not by itself establish continuity with a previously known entity.
+Provider identity uses the normalized slug; model identity uses the model slug as observed.
+A different identity does not by itself establish continuity with a previously known entity.
 
 **Provider tag**:
 An endpoint-specific upstream accessor key whose value can change or be shared by endpoints.

@@ -1,28 +1,43 @@
-# Provider identity and endpoint-local fields
+# Provider extraction policy
 
-ORCA uses the following ownership rules. Provider enrichment and inferred
-organization/variant hierarchies are outside current product scope.
+ORCA presents one provider across its upstream routing variants. Identity is an
+opinionated normalization of `provider_info.slug`: explicit historical repairs take
+precedence, then the prefix before the first slash becomes `provider_id`. The repairs
+live in `scan/provider.ts`. Upstream `name` remains descriptive metadata.
 
-| Source                           | ORCA meaning                                                     |
-| -------------------------------- | ---------------------------------------------------------------- |
-| `provider_info`                  | Related normalized provider observation.                         |
-| `provider_info.slug`             | Provider identity, translated to `provider_id` during assembly.  |
-| `provider_info.displayName`      | Provider entity display name.                                    |
-| Endpoint `provider_display_name` | Endpoint's display label, taken directly from that source field. |
-| Endpoint `provider_name`         | Endpoint property, even when equal to `provider_info.name`.      |
-| Endpoint `provider_model_id`     | Provider-side model identifier for this endpoint.                |
-| Endpoint `provider_region`       | Endpoint region.                                                 |
-| Endpoint `provider_slug`         | Opaque accessor, translated to `provider_tag` during assembly.   |
+Historical repairs deliberately retain ModelRun continuity across its host and
+branding changes, retain W&B separately from CoreWeave, and group Claude Platform
+on AWS with its earlier `Anthropic 2` phase. Changes in observed names and policy
+URLs remain metadata updates within those identities.
 
-Tag suffixes and labels do not establish entity identity. For example, replacing
-`Google Vertex (US)` and `Google Vertex (Global)` with their shared provider name
-would discard useful endpoint distinctions.
+Extraction applies the same identity to providers and their endpoint relationships.
+Endpoint UUIDs, routing tags, and display labels retain their observed meanings.
+The raw collection remains available independently of extraction, including to the
+frozen public API adapter.
 
-Use endpoint data policy for behavioral claims; provider terms/privacy URLs remain
-provider facts.
+## Selecting provider facts
 
-Model/provider metadata belongs to its normalized entity. Product rows may project
-related context; historical products resolve that context at the selected observation.
+- Prefer embedded records whose raw slug already equals the normalized identity.
+- Within that pool, choose the most frequent complete cleaned record. If no canonical
+  record was observed, use all records for that identity. Equal counts break by
+  canonical JSON order, so traversal order cannot select different facts.
+- Keep the selected record whole. Mixing fields from conflicting observations could
+  manufacture a provider state that OpenRouter never supplied.
+- A change in the selected record is an observed metadata update. Historical URLs
+  and display names can change while the provider identity continues.
 
-[Upstream observations](../openrouter/providers.md) record the evidence. Revisit these
-ownership rules through a focused investigation when new evidence requires it.
+## Metadata boundary
+
+Provider extraction omits known internal configuration and endpoint defaults:
+adapters, hosts, pricing/region configuration, capability flags, behavioral policy
+defaults (including legacy `paidModels`), owners/editors, model denylists, and upstream
+icon presentation. These are inconsistent across endpoints or belong to upstream
+implementation details. Endpoint capability and data-policy fields remain intact.
+
+Names, location, status and policy URLs, `byokEnabled`, `sendClientIp`, and unknown
+future fields survive extraction. The organization-level `byokEnabled` flag is distinct
+from endpoint `is_byok`. Missing values, explicit nulls, and empty policy objects remain
+distinct. Adding an omission is a deliberate policy change; new fields remain visible
+until evidence supports discarding them.
+
+Historical evidence for the repairs is recorded in `docs/openrouter/providers.md`.

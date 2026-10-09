@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { RawScan } from './collected'
+import { assembleProviders, extractProvider } from './provider'
 
 /** Loaded model with an assembled identity; other source fields remain unnormalized JSON. */
 export const ScannedModel = z
@@ -43,8 +44,6 @@ export type Scan = {
 
 export type ScanPair = { previous: Scan; next: Scan }
 
-const ProviderBody = z.object({ slug: z.string() }).catchall(z.json())
-
 /** Apply product scope before assembling providers from embedded observations. */
 function hasTextModalities(model: RawScan['entries'][number]['model']): boolean {
   return model.input_modalities.includes('text') && model.output_modalities.includes('text')
@@ -53,7 +52,7 @@ function hasTextModalities(model: RawScan['entries'][number]['model']): boolean 
 /** Assemble entities by identity, preserving source facts for downstream consumers. */
 export function fromCollected({ scan_at, entries }: RawScan): Scan {
   const models: Scan['models'] = new Map()
-  const providers: Scan['providers'] = new Map()
+  const providerObservations: ReturnType<typeof extractProvider>[] = []
   const endpoints: Scan['endpoints'] = new Map()
 
   for (const entry of entries) {
@@ -70,8 +69,8 @@ export function fromCollected({ scan_at, entries }: RawScan): Scan {
     // `status` is noisy and meaningless; dropping it here keeps it out of every consumer.
     for (const { provider_info, provider_slug, status: _status, ...body } of entry.endpoints ??
       []) {
-      const { slug: provider_id, ...provider } = ProviderBody.parse(provider_info)
-      providers.set(provider_id, { ...provider, provider_id })
+      const provider = extractProvider(provider_info)
+      providerObservations.push(provider)
 
       endpoints.set(
         body.id,
@@ -79,12 +78,12 @@ export function fromCollected({ scan_at, entries }: RawScan): Scan {
           ...body,
           variant: entry.variant,
           model_id: entry.model_id,
-          provider_id,
+          provider_id: provider.provider.provider_id,
           provider_tag: provider_slug,
         }),
       )
     }
   }
 
-  return { scan_at, models, providers, endpoints }
+  return { scan_at, models, providers: assembleProviders(providerObservations), endpoints }
 }
