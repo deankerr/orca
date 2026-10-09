@@ -1,118 +1,75 @@
 # Discord alerts
 
-## Delivery and destinations
+## Admission and routing
 
-One discordDelivery component serializes every destination. Each accepted group finishes,
-fails or expires before another begins. Full payloads, HTTP results and unsent records are
-retained. Requirements and queue semantics live in packages/discord-delivery/REQUIREMENTS.md
-and packages/discord-delivery/ARCHITECTURE.md; ORCA producer policy lives in
-docs/orca/alerts-expansion.md.
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` submits alerts with fresh ingestion event
+commits. Every registered `discordSender` webhook receives the same ordered batch.
+Registering a webhook therefore opts it into all automatic ingestion alerts;
+subscription and destination-management policy remain future work.
 
-Register a webhook URL as a destination, then configure its automatic ORCA route. Run
-these internal operators from packages/backend with an explicit deployment:
+Rendering and job submission share the event commit transaction. If either fails,
+the event commit rolls back and processor work remains pending. After fixing the
+cause, use the existing `retry:events` operator action to retry that work; preparation
+failures are not retried automatically. With no registered webhooks or no eligible
+messages, the commit proceeds without a send job.
+The switch controls admission; already submitted jobs continue running.
 
-```sh
-bun run convex run alerts/discord/destinations:register '{"key":"dev","url":"<webhook-url>"}' --deployment <deployment>
-bun run convex run alerts/discord/destinations:configureRoute '{"destinationKey":"dev","enabled":true,"maxAgeMs":3600000}' --deployment <deployment>
-```
+Job keys contain the observation's `scan_at` and webhook ID. Deadlines derive from
+that observation time, so historical backfill can submit jobs which expire before
+sending. The age policy lives in docs/orca/config.md. Sender ordering, retries,
+expiry and recovery semantics live in packages/discord-sender/README.md.
 
-`ORCA_DISCORD_AUTO_SEND_ENABLED=true` admits automatic preparation with event commits.
-The route's age is measured from `scan_at`, so old backfill is recorded and expires.
-The switch governs admission; use `alerts/discord/outbox:pause` with `{"paused":true}`
-to pause accepted delivery. In-flight HTTP can finish. Resume with `{"paused":false}`.
+## Registration and inspection
 
-Preparation errors remain in `discord_alert_preparations`. Inspect with
-`alerts/discord/delivery:preparations`, then invoke `:retryPreparation` with its
-`preparationId` after fixing the cause. An empty route snapshot can be populated during
-explicit recovery. Preparation enqueues all selected destinations transactionally.
-
-## Iterating on alerts in development
-
-Use a scan already ingested by the development deployment and registered development
-Discord destinations. Each invocation rerenders the complete scan with current filtering,
-batching, ordering, and cards, then submits fresh groups through the shared sender.
-
-From `packages/backend`:
+Use the component API directly from packages/backend, selecting the deployment
+explicitly. Registration changes the recipients of subsequent ingestions.
 
 ```sh
-bun run convex run alerts/discord/delivery:demoScan '{"scan_at":"2026-10-07T03:00:00.000Z","destinationKeys":["orca-dev-3","orca-dev-4"]}' --deployment <dev-deployment>
+bunx convex run api:registerWebhook '{"name":"Development","url":"<webhook-url>"}' --component discordSender --deployment <deployment>
+bunx convex run api:listWebhooks '{}' --component discordSender --deployment <deployment>
 ```
 
-Rerun the same command after pushing rendering changes to that development deployment.
-Delivery starts now with no expiry; card timestamps and pricing-frequency lookbacks retain
-the original observation time. Every invocation intentionally sends another copy, including
-identical output. The result contains queued group IDs, message counts, and skipped events;
-delivery is asynchronous. Inspect those groups with `alerts/discord/outbox:group`.
+For development, use the worktree's deployment and private development webhooks.
+The same ingestion path exercises filtering, batching, cards and delivery. Sender
+`api:submitBatch` accepts custom ordered payloads for focused delivery exercises;
+use a fresh key and deadline for each intentional repeat.
 
-Automatic admission and preparation records are bypassed. Previous runs and Discord
-messages are retained. Run this internal operator only against development deployments
-and destinations; production alert state is not reset or edited for development.
-
-`alerts/discord/delivery:preview` accepts `{"event_ids":["…"]}` for a query-only rendering
-of selected events. Oversized scans fail rather than submitting a partial selection.
-Normal sender payload and group limits still apply; limits are recorded in docs/orca/config.md.
-
-## Investigating output
-
-Convert the user's time window and timezone to epoch milliseconds. Query receipts for
-when HTTP responses were recorded, or groups for intended send time; historical work can
-make these windows very different.
+To manually send one completed ingestion with current card rendering:
 
 ```sh
-bun run convex run alerts/discord/outbox:inspectReceipts '{"from":<start-ms>,"to":<end-ms>,"paginationOpts":{"numItems":50,"cursor":null}}' --deployment <deployment>
-bun run convex run alerts/discord/outbox:message '{"messageId":"<result.messageId>"}' --deployment <deployment>
-bun run convex run alerts/discord/outbox:inspectGroups '{"from":<start-ms>,"to":<end-ms>,"paginationOpts":{"numItems":50,"cursor":null}}' --deployment <deployment>
+bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <dev-deployment>
 ```
 
-Follow `continueCursor` until `isDone`; filtered pages can be empty. The message query
-returns the frozen payload and latest result. `inspectMessages` pages a group or caller
-message key. `inspectAttempts` uses claim/schedule time and shows uncertain recovery and
-retries. `inspectGroups` accepts destination, key and status filters to find failed or
-expired work with no HTTP result. Preparation records also retain ineligible/frequent-price
-skip reasons. A current preview is useful for comparison, not evidence of an old send.
+This explicit operator command works with auto-send disabled and uses all registered
+webhooks. Each invocation creates fresh jobs with a one-hour deadline from now,
+while cards and filtering retain the original observation time. Repeating the
+command intentionally sends again without changing earlier jobs or ingestion work.
+It returns `jobIds` and the message count per destination; zero destinations or
+fully filtered output produces no jobs. Event processing must be complete.
 
-All wrappers are internal. Trusted CLI operators can run them against an explicitly
-selected deployment. Convex MCP read-only data/one-off query access requires its production
-read setting; the general `run` tool also permits mutations and requires broader access.
-The installed Convex 1.45 MCP data tool does not select child components. Use the
-internal query wrappers through the trusted CLI, or inspect the component directly with
-the CLI's read-only data command:
+To investigate output, convert the requested time window and timezone to epoch
+milliseconds. `listJobs` uses submission time, which can differ from the source's
+`scan_at`; job keys retain that observation time.
 
 ```sh
-bun run convex data results --component discordDelivery --limit 100 --format json --deployment <deployment>
+bunx convex run api:listJobs '{"from":<start-ms>,"to":<end-ms>}' --component discordSender --deployment <deployment>
+bunx convex run api:getJob '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
+bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
 ```
 
-This does not run the renderer or a send action. The wrappers provide indexed time windows
-and pagination instead of scanning raw records.
-
-## Message management and demonstration
-
-`alerts/discord/outbox:manage` accepts `{messageId,operation,key,sendAt?,payload?}`.
-Operations are `get`, `edit` and `delete`; edits require serialized `payload`. Supply the
-component's original message ID, rather than a Discord snowflake. The saved receipt and
-URL locate the remote message. Management creates a new queued group and retains the
-original send. Discord's unknown-message response to DELETE counts as an already-completed
-delete; an unknown-message GET remains a failed lookup.
-
-The reproducible development demonstration is:
-
-```sh
-bun packages/scripts/discord-demo.ts <dev-deployment> orca-dev-3 orca-dev-4
-```
-
-Register those development destinations first. This sends ordered text/V2 groups, exercises
-an invalid payload and one-hop terminal report, edits/fetches/deletes a demo message, and
-writes docs/orca/discord-demo.json with the selected population and receipt IDs. The archive
-retains deleted-message evidence. Run only against destinations intended for testing.
+If `hasMore` is true, narrow the discovery window. Jobs preserve the submitted
+payloads; results preserve terminal Discord responses. A finished job's missing
+results represent its unsent suffix. Transient errors remain in logs. These queries
+inspect stored evidence without rerendering cards or sending messages.
 
 ## Presentation
 
-Apply shared [alert eligibility](pricing.md#alert-eligibility), then the frequency
+Apply shared alert eligibility from docs/orca/pricing.md, then the frequency
 rule below, before grouping identical changes. Monitor and Feed remain unbatched;
 query pages do not define meaningful batch membership.
 
 Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language. See [event meaning](events.md).
+availability; unclassified arrivals use neutral language. Event meaning is documented in docs/orca/events.md.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 ## Frequent pricing changes

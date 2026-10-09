@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./convex.config.js": "./src/component/convex.config.ts",
-    "./_generated/component.js": "./src/component/_generated/component.ts"
+    "./_generated/component.js": "./src/component/_generated/component.ts",
+    "./schema": "./src/component/schema.ts"
   },
   "scripts": {
     "test": "bun test src"

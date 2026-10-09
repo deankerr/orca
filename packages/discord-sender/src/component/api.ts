@@ -86,6 +86,14 @@ export const getJob = query({
   returns: v.union(schema.doc('jobs'), v.null()),
 })
 
+// The host chooses recipients. Returning all registrations supports the initial
+// ingestion policy without introducing subscriptions or ORCA concepts here.
+export const listWebhooks = query({
+  args: {},
+  handler: async (ctx) => await ctx.db.query('webhooks').collect(),
+  returns: v.array(schema.doc('webhooks')),
+})
+
 export const listResults = query({
   args: { jobId: v.id('jobs') },
   handler: async (ctx, { jobId }) =>

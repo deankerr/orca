@@ -6,7 +6,7 @@ import { internalMutation } from '#generated/server'
 import type { ActionCtx, QueryCtx } from '#generated/server'
 import type { ScanPair } from '#scan/model'
 
-import { admitAutomatic } from '../alerts/discord/admission'
+import { sendIngestionAlerts } from '../alerts/discord/delivery'
 import { CURRENT_MODELS_TABLE } from '../catalog/models/table'
 import { ENDPOINT_LISTINGS_TABLE } from '../history/listings/table'
 import { ingestionsTable } from '../ingestion/table'
@@ -86,7 +86,7 @@ export const commit = internalMutation({
       eventIds.push(eventId)
     }
 
-    await admitAutomatic(ctx, { scan_at: args.scan_at, event_ids: eventIds })
+    await sendIngestionAlerts(ctx, { scan_at: args.scan_at, event_ids: eventIds })
     await completeWork(ctx, args.work_id)
     console.log('[events] commit', { work_id: args.work_id, inserts: args.rows.length })
     return eventIds

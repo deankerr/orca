@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, expect, jest, test } from 'bun:test'
+import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import componentSchema from '@orca/discord-delivery/schema'
+import componentSchema from '@orca/discord-sender/schema'
 import { convexTest } from 'convex-test'
 import type { GenericSchema, SchemaDefinition } from 'convex/server'
 
@@ -12,48 +13,68 @@ import { components, internal } from '#generated/api'
 import schema from '../../schema'
 
 const componentRoot = path.dirname(
-  fileURLToPath(import.meta.resolve('@orca/discord-delivery/schema')),
+  fileURLToPath(import.meta.resolve('@orca/discord-sender/schema')),
 )
+const workpoolPackage = createRequire(path.join(componentRoot, 'schema.ts')).resolve(
+  '@convex-dev/workpool/package.json',
+)
+const workpoolRoot = path.join(path.dirname(workpoolPackage), 'src/component')
 const batchRoot = path.join(
-  componentRoot,
-  '../../node_modules/@convex-dev/batch-worker/src/component',
+  path.dirname(createRequire(workpoolPackage).resolve('@convex-dev/batch-worker/package.json')),
+  'src/component',
 )
-const loadedBatchSchema: unknown = await import(path.join(batchRoot, 'schema.ts'))
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The installed component exports this schema; its bundled test helper requires Vite instead of Bun.
-const batchSchema = loadedBatchSchema as { default: SchemaDefinition<GenericSchema, boolean> }
+
+async function loadSchema(root: string) {
+  const loaded: unknown = await import(path.join(root, 'schema.ts'))
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Installed component schemas are loaded dynamically because their bundled test helpers require Vite.
+  return (loaded as { default: SchemaDefinition<GenericSchema, boolean> }).default
+}
+
+const workpoolSchema = await loadSchema(workpoolRoot)
+const batchSchema = await loadSchema(batchRoot)
+
 function modules(root: string) {
   return Object.fromEntries(
     [...new Bun.Glob('**/*.{ts,js}').scanSync({ absolute: true, cwd: root })]
-      .filter((path) => !path.endsWith('.test.ts') && !path.endsWith('.d.ts'))
-      .map((path) => [path, async (): Promise<unknown> => await import(path)]),
+      .filter((file) => !file.endsWith('.test.ts') && !file.endsWith('.d.ts'))
+      .map((file) => [file, async (): Promise<unknown> => await import(file)]),
   )
 }
+
 function setup() {
   const t = convexTest({
     schema,
     modules: modules(path.resolve(import.meta.dir, '../..')),
     transactionLimits: true,
   })
-  t.registerComponent('discordDelivery', componentSchema, modules(componentRoot))
-  t.registerComponent('discordDelivery/batchWorker', batchSchema.default, modules(batchRoot))
+  t.registerComponent('discordSender', componentSchema, modules(componentRoot))
+  t.registerComponent('discordSender/workpool', workpoolSchema, modules(workpoolRoot))
+  t.registerComponent('discordSender/workpool/batchWorker', batchSchema, modules(batchRoot))
   return t
 }
 
+type Harness = ReturnType<typeof setup>
+const START = Date.parse('2026-10-07T12:00:00.000Z')
+const pair = { from_scan_at: '2026-10-07T11:00:00.000Z', scan_at: '2026-10-07T11:50:00.000Z' }
 const settings = {
   ORCA_DISCORD_AUTO_SEND_ENABLED: 'true',
   ORCA_WEB_ORIGIN: 'https://orca.orb.town',
   ORCA_LOGO_ORIGIN: 'https://logos.orb.town',
 }
 let previous: Record<string, string | undefined>
+
 beforeEach(() => {
   jest.useFakeTimers()
-  jest.setSystemTime(Date.parse('2026-10-07T12:00:00.000Z'))
+  jest.setSystemTime(START)
   previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   Object.assign(process.env, settings)
 })
+
 afterEach(() => {
+  jest.restoreAllMocks()
   jest.clearAllTimers()
   jest.useRealTimers()
+
   for (const [key, value] of Object.entries(previous)) {
     if (value === undefined) {
       Reflect.deleteProperty(process.env, key)
@@ -63,26 +84,33 @@ afterEach(() => {
   }
 })
 
-const pair = { from_scan_at: '2026-09-30T00:00:00.000Z', scan_at: '2026-09-30T01:00:00.000Z' }
-async function commitEvent(t: ReturnType<typeof setup>) {
+async function registerWebhook(t: Harness, name: string) {
+  return await t.mutation(components.discordSender.api.registerWebhook, {
+    name,
+    url: `https://example.test/${name}`,
+  })
+}
+
+async function pendingCommit(t: Harness, input = pair, eligible = true) {
   const work_id = await t.run(async (ctx) => {
-    const ingestion_id = await ctx.db.insert('v4_scan_ingestions', pair)
+    const ingestion_id = await ctx.db.insert('v4_scan_ingestions', input)
     return await ctx.db.insert('v4_processor_work', {
       ingestion_id,
-      scan_at: pair.scan_at,
+      scan_at: input.scan_at,
       processor: 'events',
       state: 'pending',
     })
   })
-  await t.mutation(internal.events.ingest.commit, {
-    ...pair,
+
+  return {
+    ...input,
     work_id,
     rows: [
       {
-        scan_at: pair.scan_at,
-        entity_kind: 'endpoint',
+        scan_at: input.scan_at,
+        entity_kind: 'endpoint' as const,
         entity_id: 'endpoint',
-        type: 'UPDATE',
+        type: 'UPDATE' as const,
         context: {
           model: { model_id: 'author/model', display_name: 'Model' },
           provider: { provider_id: 'provider', display_name: 'Provider' },
@@ -95,218 +123,273 @@ async function commitEvent(t: ReturnType<typeof setup>) {
         change_json: JSON.stringify({
           type: 'UPDATE',
           key: 'endpoint',
-          changes: [
-            {
-              type: 'UPDATE',
-              key: 'metadata',
-              changes: [{ type: 'UPDATE', key: 'is_disabled', value: true, oldValue: false }],
-            },
-          ],
-        }),
-      },
-    ],
-  })
-  const preparations = await t.query(internal.alerts.discord.delivery.preparations, {})
-  const [preparation] = preparations
-  if (preparation === undefined) {
-    throw new Error('Expected preparation committed with event')
-  }
-  return preparation
-}
-
-test('event commit records its obligation and preparation rollback preserves all-or-nothing multi-destination enqueue', async () => {
-  const t = setup()
-  await t.mutation(components.discordDelivery.api.registerDestination, {
-    key: 'first',
-    url: 'https://example.test/first',
-  })
-  await t.run(async (ctx) => {
-    await ctx.db.insert('discord_alert_routes', {
-      destinationKey: 'first',
-      enabled: true,
-      maxAgeMs: 1000,
-    })
-    await ctx.db.insert('discord_alert_routes', {
-      destinationKey: 'missing',
-      enabled: true,
-      maxAgeMs: 1000,
-    })
-  })
-  const preparation = await commitEvent(t)
-  expect(preparation.state).toBe('pending')
-  expect(preparation.routes).toHaveLength(2)
-  await t.mutation(internal.alerts.discord.delivery.prepare, { preparationId: preparation._id })
-  expect(await t.query(components.discordDelivery.api.listGroups, {})).toEqual([])
-  const failed = await t.query(internal.alerts.discord.delivery.preparations, { state: 'failed' })
-  expect(failed).toHaveLength(1)
-  expect(failed[0]?.error).toContain('destination')
-  await t.mutation(components.discordDelivery.api.registerDestination, {
-    key: 'missing',
-    url: 'https://example.test/second',
-  })
-  await t.mutation(internal.alerts.discord.delivery.retryPreparation, {
-    preparationId: preparation._id,
-  })
-  await t.mutation(internal.alerts.discord.delivery.prepare, { preparationId: preparation._id })
-  await t.finishAllScheduledFunctions(() => {
-    jest.runAllTimers()
-  })
-  const groups = await t.query(components.discordDelivery.api.listGroups, {})
-  expect(groups).toHaveLength(2)
-  for (const { group, task } of groups) {
-    expect(group.sendAt).toBe(Date.parse(pair.scan_at))
-    expect(group.expiresAt).toBe(Date.parse(pair.scan_at) + 1000)
-    expect(task.status).toBe('expired')
-    const messages = await t.query(components.discordDelivery.api.listMessages, {
-      groupId: group._id,
-    })
-    expect(messages[0]?.message.payload).toContain('disabled')
-  }
-  const complete = await t.query(internal.alerts.discord.delivery.preparations, {
-    state: 'complete',
-  })
-  expect(complete[0]?.groupIds).toHaveLength(2)
-  await t.mutation(internal.alerts.discord.delivery.prepare, { preparationId: preparation._id })
-  expect(await t.query(components.discordDelivery.api.listGroups, {})).toHaveLength(2)
-})
-
-test('an unconfigured automatic destination leaves a visible obligation that can capture routes on retry', async () => {
-  const t = setup()
-  const preparation = await commitEvent(t)
-  await t.mutation(internal.alerts.discord.delivery.prepare, { preparationId: preparation._id })
-  const failed = await t.query(internal.alerts.discord.delivery.preparations, { state: 'failed' })
-  expect(failed[0]?.error).toContain('No automatic Discord destinations')
-  await t.mutation(internal.alerts.discord.destinations.register, {
-    key: 'first',
-    url: 'https://example.test/first',
-  })
-  await t.mutation(internal.alerts.discord.destinations.configureRoute, {
-    destinationKey: 'first',
-    enabled: true,
-  })
-  await t.mutation(internal.alerts.discord.delivery.retryPreparation, {
-    preparationId: preparation._id,
-  })
-  await t.mutation(internal.alerts.discord.delivery.prepare, { preparationId: preparation._id })
-  expect(
-    await t.query(internal.alerts.discord.delivery.preparations, { state: 'complete' }),
-  ).toHaveLength(1)
-})
-
-test('demo scans repeat at the same time, preserve full-scan filtering and batching, and leave automatic work unchanged', async () => {
-  const t = setup()
-  for (const key of ['first', 'second']) {
-    await t.mutation(components.discordDelivery.api.registerDestination, {
-      key,
-      url: `https://example.test/${key}`,
-    })
-  }
-  const preparation = await commitEvent(t)
-  const eventIds = await t.run(async (ctx) => {
-    const event = await ctx.db.get('v4_events', preparation.event_ids[0])
-    if (event === null) {
-      throw new Error('Missing fixture event')
-    }
-    const { _id, _creationTime: _created, ...source } = event
-    const ids = [_id]
-    for (const entity_id of ['second-endpoint', 'third-endpoint']) {
-      ids.push(await ctx.db.insert('v4_events', { ...source, entity_id }))
-    }
-    ids.push(
-      await ctx.db.insert('v4_events', {
-        ...source,
-        entity_id: 'hidden',
-        change_json: JSON.stringify({
-          type: 'UPDATE',
-          key: 'hidden',
-          changes: [
-            {
-              type: 'UPDATE',
-              key: 'pricing',
-              changes: [
+          changes: eligible
+            ? [
                 {
                   type: 'UPDATE',
-                  key: 'meters',
+                  key: 'metadata',
+                  changes: [{ type: 'UPDATE', key: 'is_disabled', value: true, oldValue: false }],
+                },
+              ]
+            : [
+                {
+                  type: 'UPDATE',
+                  key: 'pricing',
                   changes: [
                     {
                       type: 'UPDATE',
-                      key: 'prompt',
-                      value: '1.001',
-                      oldValue: '1',
+                      key: 'meters',
+                      changes: [{ type: 'UPDATE', key: 'prompt', value: '1.001', oldValue: '1' }],
                     },
                   ],
                 },
               ],
-            },
-          ],
         }),
-      }),
-    )
-    await ctx.db.insert('v4_events', { ...source, scan_at: pair.from_scan_at })
-    return ids
-  })
-  const before = await t.query(internal.alerts.discord.delivery.preparations, {})
-  const preview = await t.query(internal.alerts.discord.delivery.preview, { event_ids: eventIds })
-  expect(preview.messages).toHaveLength(1)
-  expect(preview.messages[0]?.event_ids).toHaveLength(3)
-  expect(preview.skippedEvents).toEqual([{ event_id: eventIds[3], reason: 'ineligible' }])
-  // Explicit demos work even while automatic admission is disabled.
-  process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
-  const args = { scan_at: pair.scan_at, destinationKeys: ['first', 'second', 'first'] }
-  const first = await t.mutation(internal.alerts.discord.delivery.demoScan, args)
-  const second = await t.mutation(internal.alerts.discord.delivery.demoScan, args)
-  expect(first).toMatchObject({ queued: 2, skipped: 1, skippedEvents: preview.skippedEvents })
-  expect(first.groupIds).toHaveLength(2)
-  expect(second.groupIds).toHaveLength(2)
-  expect(new Set([...first.groupIds, ...second.groupIds]).size).toBe(4)
-  const groups = await t.query(components.discordDelivery.api.listGroups, {})
-  expect(groups).toHaveLength(4)
-  for (const { group } of groups) {
-    expect(group.sendAt).toBe(Date.now())
-    expect(group.expiresAt).toBeUndefined()
-    expect(JSON.parse(group.reference ?? 'null')).toEqual({
-      kind: 'demo-scan',
-      scan_at: pair.scan_at,
-      messages: preview.messages.map(({ key, event_ids }) => ({ key, event_ids })),
-    })
-    const messages = await t.query(components.discordDelivery.api.listMessages, {
-      groupId: group._id,
-    })
-    expect(messages.map(({ message }) => ({ key: message.key, payload: message.payload }))).toEqual(
-      preview.messages.map(({ key, payload }) => ({ key, payload })),
-    )
-    expect(messages[0]?.message.payload).toContain(pair.scan_at)
+      },
+    ],
   }
-  expect(await t.query(internal.alerts.discord.delivery.preparations, {})).toEqual(before)
+}
+
+async function jobs(t: Harness) {
+  const result = await t.query(components.discordSender.api.listJobs, {
+    from: START,
+    to: Date.now() + 1,
+  })
+  return result.jobs
+}
+
+test('event commit queues identical rendered messages to every webhook and repeated commit does nothing', async () => {
+  const t = setup()
+  const webhookIds = await Promise.all(
+    ['first', 'second'].map(async (name) => await registerWebhook(t, name)),
+  )
+  const input = await pendingCommit(t)
+  const eventIds = await t.mutation(internal.events.ingest.commit, input)
+  const queued = await jobs(t)
+
+  expect(eventIds).toHaveLength(1)
+  expect(queued).toHaveLength(2)
+  expect(new Set(queued.map((job) => job.webhookId))).toEqual(new Set(webhookIds))
+  expect(queued[0]?.messages).toEqual(queued[1]?.messages)
+
+  for (const job of queued) {
+    expect(job.key).toBe(`ingestion:${pair.scan_at}:${job.webhookId}`)
+    expect(job.expiresAt).toBe(Date.parse(pair.scan_at) + 3_600_000)
+    expect(job.messages).toHaveLength(1)
+    expect(job.messages[0]?.payload).toContain('disabled')
+    expect(job.messages[0]?.payload).toContain(pair.scan_at)
+  }
+
+  expect(await t.mutation(internal.events.ingest.commit, input)).toEqual([])
+  expect(await jobs(t)).toEqual(queued)
+  expect(await t.run(async (ctx) => await ctx.db.query('v4_events').collect())).toHaveLength(1)
+  expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
+    state: 'complete',
+  })
 })
 
-test('demo scan rejects missing scans and invalid destinations without partial fanout', async () => {
-  const t = setup()
-  await t.mutation(components.discordDelivery.api.registerDestination, {
-    key: 'first',
-    url: 'https://example.test/first',
+for (const scenario of ['disabled', 'no webhooks', 'filtered', 'empty'] as const) {
+  test(`${scenario} ingestion completes without sender jobs`, async () => {
+    const t = setup()
+
+    if (scenario !== 'no webhooks') {
+      await registerWebhook(t, 'first')
+    }
+    if (scenario === 'disabled') {
+      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
+    }
+
+    const input = await pendingCommit(t, pair, scenario !== 'filtered')
+    if (scenario === 'empty') {
+      input.rows = []
+    }
+    const ids = await t.mutation(internal.events.ingest.commit, input)
+
+    expect(ids).toHaveLength(scenario === 'empty' ? 0 : 1)
+    expect(await jobs(t)).toEqual([])
+    expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
+      state: 'complete',
+    })
   })
-  await commitEvent(t)
-  for (const destinationKeys of [[], ['first', 'missing']]) {
-    await rejects(
-      t.mutation(internal.alerts.discord.delivery.demoScan, {
-        scan_at: pair.scan_at,
-        destinationKeys,
-      }),
-    )
+}
+
+test('historical ingestion is submitted normally and expires without contacting Discord', async () => {
+  const t = setup()
+  await registerWebhook(t, 'first')
+  await registerWebhook(t, 'second')
+  const input = await pendingCommit(t, {
+    from_scan_at: '2026-09-30T00:00:00.000Z',
+    scan_at: '2026-09-30T01:00:00.000Z',
+  })
+  const request = spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('Expired jobs must never send'),
+  )
+  await t.mutation(internal.events.ingest.commit, input)
+  expect(await jobs(t)).toHaveLength(2)
+
+  await t.finishAllScheduledFunctions(() => {
+    jest.advanceTimersByTime(10)
+  })
+
+  for (const job of await jobs(t)) {
+    expect(job.outcome).toBe('expired')
+    expect(job.finishedAt).toBeDefined()
+    expect(job.expiresAt).toBe(Date.parse(input.scan_at) + 3_600_000)
+    expect(await t.query(components.discordSender.api.listResults, { jobId: job._id })).toEqual([])
   }
-  await rejects(
-    t.mutation(internal.alerts.discord.delivery.demoScan, {
-      scan_at: '2020-01-01T00:00:00.000Z',
-      destinationKeys: ['first'],
-    }),
-    /No events found/,
-  )
-  await rejects(
-    t.mutation(internal.alerts.discord.delivery.demoScan, {
-      scan_at: 'invalid',
-      destinationKeys: ['first'],
-    }),
-  )
-  expect(await t.query(components.discordDelivery.api.listGroups, {})).toEqual([])
+  expect(request).not.toHaveBeenCalled()
 })
+
+test('a rejected destination submission rolls back event inserts, work completion and earlier fanout', async () => {
+  const t = setup()
+  await registerWebhook(t, 'first')
+  const second = await registerWebhook(t, 'second')
+  const input = await pendingCommit(t)
+  // A conflicting existing job exercises a real component error after the first
+  // destination was submitted, proving the host/component transaction boundary.
+  await t.mutation(components.discordSender.api.submitBatch, {
+    key: `ingestion:${pair.scan_at}:${second}`,
+    webhookId: second,
+    expiresAt: Date.parse(pair.scan_at) + 3_600_000,
+    messages: [{ key: 'conflict', payload: '{"content":"different input"}' }],
+  })
+  const before = await jobs(t)
+
+  await rejects(t.mutation(internal.events.ingest.commit, input), /different input/)
+
+  expect(await jobs(t)).toEqual(before)
+  expect(await t.run(async (ctx) => await ctx.db.query('v4_events').collect())).toEqual([])
+  expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
+    state: 'pending',
+  })
+})
+
+async function ingestionFor(t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
+  const work = await t.run(async (ctx) => await ctx.db.get(input.work_id))
+
+  if (!work) {
+    throw new Error('Fixture requires processor work')
+  }
+
+  return work.ingestion_id
+}
+
+async function ingestionState(t: Harness) {
+  return await t.run(async (ctx) => ({
+    ingestions: await ctx.db.query('v4_scan_ingestions').collect(),
+    events: await ctx.db.query('v4_events').collect(),
+    work: await ctx.db.query('v4_processor_work').collect(),
+  }))
+}
+
+test('manual historical alerts render the original events with a fresh deadline and repeatable jobs', async () => {
+  const t = setup()
+  await registerWebhook(t, 'first')
+  await registerWebhook(t, 'second')
+  const input = await pendingCommit(t, {
+    from_scan_at: '2026-09-30T00:00:00.000Z',
+    scan_at: '2026-09-30T01:00:00.000Z',
+  })
+  await t.mutation(internal.events.ingest.commit, input)
+  const ingestion_id = await ingestionFor(t, input)
+  const originalJobs = await jobs(t)
+  const originalState = await ingestionState(t)
+
+  for (let iteration = 1; iteration <= 2; iteration += 1) {
+    const result = await t.mutation(internal.alerts.discord.delivery.sendIngestion, {
+      ingestion_id,
+    })
+    const queued = await jobs(t)
+    const manualJobs = queued.filter((job) => result.jobIds.includes(job._id))
+
+    expect(result.messageCount).toBe(1)
+    expect(result.jobIds).toHaveLength(2)
+    expect(queued).toHaveLength(2 + iteration * 2)
+    expect(manualJobs).toHaveLength(2)
+    expect(new Set(manualJobs.map((job) => job.webhookId))).toEqual(
+      new Set(originalJobs.map((job) => job.webhookId)),
+    )
+
+    for (const job of manualJobs) {
+      expect(job.expiresAt).toBe(START + 3_600_000)
+      expect(job.messages).toEqual(originalJobs[0]?.messages)
+      expect(job.messages[0]?.payload).toContain(input.scan_at)
+    }
+
+    expect(
+      queued.filter((job) => originalJobs.some((original) => original._id === job._id)),
+    ).toEqual(originalJobs)
+    expect(await ingestionState(t)).toEqual(originalState)
+  }
+})
+
+test('manual alerts send while automatic ingestion alerts are disabled', async () => {
+  const t = setup()
+  process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
+  await registerWebhook(t, 'first')
+  const input = await pendingCommit(t)
+  await t.mutation(internal.events.ingest.commit, input)
+  expect(await jobs(t)).toEqual([])
+
+  const result = await t.mutation(internal.alerts.discord.delivery.sendIngestion, {
+    ingestion_id: await ingestionFor(t, input),
+  })
+
+  expect(result.jobIds).toHaveLength(1)
+  expect(result.messageCount).toBe(1)
+  expect(await jobs(t)).toHaveLength(1)
+})
+
+for (const scenario of ['pending events', 'missing events work', 'missing ingestion'] as const) {
+  test(`manual alerts reject ${scenario} without creating jobs`, async () => {
+    const t = setup()
+    await registerWebhook(t, 'first')
+    const input = await pendingCommit(t)
+    const ingestion_id = await ingestionFor(t, input)
+
+    if (scenario === 'missing events work') {
+      await t.run(async (ctx) => {
+        await ctx.db.delete(input.work_id)
+      })
+    } else if (scenario === 'missing ingestion') {
+      await t.run(async (ctx) => {
+        await ctx.db.delete(ingestion_id)
+      })
+    }
+    const before = await ingestionState(t)
+
+    await rejects(
+      t.mutation(internal.alerts.discord.delivery.sendIngestion, { ingestion_id }),
+      /ingestion|events|complete/i,
+    )
+
+    expect(await jobs(t)).toEqual([])
+    expect(await ingestionState(t)).toEqual(before)
+  })
+}
+
+for (const scenario of ['filtered', 'empty', 'no webhooks'] as const) {
+  test(`manual ${scenario} ingestion creates no jobs`, async () => {
+    const t = setup()
+    process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
+
+    if (scenario !== 'no webhooks') {
+      await registerWebhook(t, 'first')
+    }
+
+    const input = await pendingCommit(t, pair, scenario !== 'filtered')
+    if (scenario === 'empty') {
+      input.rows = []
+    }
+    await t.mutation(internal.events.ingest.commit, input)
+    const before = await ingestionState(t)
+    const result = await t.mutation(internal.alerts.discord.delivery.sendIngestion, {
+      ingestion_id: await ingestionFor(t, input),
+    })
+
+    expect(result.jobIds).toEqual([])
+    expect(result.messageCount).toBe(0)
+    expect(await jobs(t)).toEqual([])
+    expect(await ingestionState(t)).toEqual(before)
+  })
+}
