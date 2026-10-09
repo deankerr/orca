@@ -4,7 +4,7 @@ OpenRouter endpoint payloads contain volatile performance and operational observ
 
 - `stats` Optional. Absence indicates not enough traffic for an observation.
 - `statsByTier` Optional nested stats record for endpoints with tiers like `flex`, `priority` (rare).
-  - `statsByTier.default` is equal to `stats` if present.
+- `statsByTier.default` is equal to `stats` if present.
 - `status` 💤
 
 ## Historical fields

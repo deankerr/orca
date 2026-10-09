@@ -1,7 +1,7 @@
 # Discord alerts
 
 One webhook per deployment. Dev/preview share a private development channel;
-production has its own destination. Variables and defaults live in [configuration](config.md).
+production has its own destination.
 
 ## Delivery
 
@@ -27,12 +27,12 @@ These internal functions bypass the switch and can duplicate messages. Run from
 
 ## Presentation
 
-Apply shared [alert eligibility](pricing.md#alert-eligibility), then the frequency
+Apply shared alert eligibility, then the frequency
 rule below, before grouping identical changes. Monitor and Feed remain unbatched;
 query pages do not define meaningful batch membership.
 
 Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language. See [event meaning](events.md).
+availability; unclassified arrivals use neutral language.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 ## Frequent pricing changes

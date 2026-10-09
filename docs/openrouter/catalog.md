@@ -6,6 +6,7 @@ OpenRouter's frontend catalog is a list of model records plus a per-model endpoi
 
 `GET https://openrouter.ai/api/frontend/v1/catalog/models` returns historical records as well as currently available models.
 
+- The nested `endpoint` represents the top endpoint by traffic.
 - A catalog model with a nested `endpoint` object has at least one queryable inference endpoint.
 - A catalog model whose `endpoint` is `null` has no current inference endpoint.
 - 📊 On 2026-07-24 the catalog contained 815 model records; 374 had no endpoints, including long-retired models.
@@ -18,7 +19,6 @@ Endpoint rows for one model variant are fetched from the stats endpoint, not fro
 - `permaslug` is the catalog model's `permaslug`.
 - `variant` is the nested catalog `endpoint.variant` (`standard` when the slug has no variant suffix).
 - A `404` for a concrete model means there are no endpoints now, not that the model is unknown.
-- ⚠️ Latest aliases (`~` slugs) also `404` here even though the catalog row carries a nested `endpoint`.
 
 ## Identifiers
 
@@ -26,13 +26,17 @@ OpenRouter exposes several related identifiers. They are structured values, not 
 
 ### `slug`
 
-`slug` identifies the current model, for example `openai/gpt-oss-120b`.
+`slug` identifies the current model, for example `openai/gpt-oss-120b`. The first path segment
+is the author slug (`openai` in that example).
 
-- The first path segment is the author slug (`openai` in that example).
-- A colon suffix names a variant in observation scopes and endpoint identifiers: `openai/gpt-oss-120b:free`, `anthropic/claude-3.7-sonnet:thinking`.
+A colon suffix names a variant in observation scopes and endpoint identifiers:
+`openai/gpt-oss-120b:free`, `anthropic/claude-3.7-sonnet:thinking`.
+
 - Observed variant suffixes include `free`, `thinking`, and `exacto`.
 - The unsuffixed slug is the standard variant.
-- ⚠️ The nested `model.slug` on an endpoint payload identifies the base model. Variant identity is carried by endpoint fields such as `model_variant_slug`, not by a separate variant model record.
+
+⚠️ The nested `model.slug` on an endpoint payload identifies the base model. Variant identity is
+carried by endpoint fields such as `model_variant_slug`, not by a separate variant model record.
 
 ### `permaslug`
 
@@ -54,14 +58,10 @@ Catalog slugs beginning with `~` are "latest" aliases that point at the current 
 
 ## Nested copies
 
-Endpoint payloads repeat complete `model` and `provider_info` objects. The nested model can itself contain an endpoint scope.
-
-- ⚠️ These are denormalized copies of the same conceptual entities, not additional identities.
-- See [Catalog model and endpoint examples](appendix/catalog-model-and-endpoint-examples.md) for annotated payloads showing the nested records.
+Endpoint payloads repeat complete `model` and `provider_info` objects. The nested model can itself
+contain an endpoint scope. These are copies of the same conceptual entities, not additional identities.
 
 ## Catalog-wide rewrites
 
-Large same-field changes across many records can be an upstream reporting transition rather than independent market events.
-
-- Historical examples include catalog-wide data-policy changes and widespread quantization changes.
-- Interpret those as a common rewrite, not as a separate change on every affected endpoint.
+Large same-field changes across many records can be an upstream reporting transition. Historical
+examples include catalog-wide data-policy changes and widespread quantization changes.

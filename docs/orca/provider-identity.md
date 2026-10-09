@@ -23,6 +23,3 @@ provider facts.
 
 Model/provider metadata belongs to its normalized entity. Product rows may project
 related context; historical products resolve that context at the selected observation.
-
-[Upstream observations](../openrouter/providers.md) record the evidence. Revisit these
-ownership rules through a focused investigation when new evidence requires it.

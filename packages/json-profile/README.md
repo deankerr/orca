@@ -1,15 +1,8 @@
 # JSON profile
 
-```ts
-import { profileJsonRecords, viewProfile } from '@orca/json-profile'
+A field's population is its containing objects; nested fields can have a different denominator from
+the root record count.
 
-const profile = profileJsonRecords(records)
-const overview = viewProfile(profile)
-const detail = viewProfile(profile, { paths: ['$[*]["quantization"]'], valueLimit: null })
-```
-
-- A field's population is its containing objects; nested fields can have a different
-  denominator from the root record count.
 - `missing` counts absent properties; JSON `null` is a present value.
 - Array-item counts include repetitions. They count occurrences, not supporting entities.
 - Numeric strings remain strings. Numeric summaries use weighted nearest-rank quantiles.

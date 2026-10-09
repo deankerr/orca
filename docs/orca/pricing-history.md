@@ -9,7 +9,6 @@ membership cannot reconstruct that history.
 An endpoint can change model while retaining its UUID, including moves to or from a `:free`
 variant. Discover endpoints through a model's historical listings, then consider each endpoint's
 complete listing history: the row ending membership in model A can be indexed under model B.
-See the [observed identity changes](../openrouter/appendix/endpoint-identity-changes.md).
 
 Pricing retrieval remains endpoint-scoped. Model grouping and membership interpretation belong
 to this product. Fetching quotes outside the selected model's membership is acceptable; filtering
@@ -33,13 +32,12 @@ Apply listings and quotes at a shared timestamp together. Closed spans are half-
 identities, so grouping by tag must not collapse distinct endpoint quotes.
 
 The chart plots daily samples over long ranges but inspects exact observations. Conditional-price
-visualization is outside its current scope. [Pricing policy](pricing.md) governs units and discounts.
+visualization is outside its current scope.
 
 ## Completeness and recovery
 
-Pricing and Listings commit with Catalog before the observation horizon advances, so event
-consumers can rely on their history through the accepted scan. This guarantee applies to new
-ingestions; it does not repair gaps left by earlier independent pricing processing.
+History is complete through the accepted scan for new ingestions. Gaps in older retained history
+can still affect charts.
 
 Per-endpoint pagination protects against large histories. Empty partial pages require continuation,
 and any endpoint query error blocks presentation of a partial chart.

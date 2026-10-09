@@ -1,180 +1,100 @@
-# Acquiring Missing Logos
+# Acquiring missing logos
 
-This runbook turns a missing public logo key into reviewable source assets for the entity logo
-service. It is written for coding agents, but the same evidence and checks apply to manual work.
+A public logo key is complete when all three groups resolve to intentional, legible assets
+for the requested entity and the build, tests, and repository checks pass.
 
-## Definition of Done
+## Confirm identity
 
-A logo key is fulfilled when:
+Logo keys are the lowercased author or provider segment of an OpenRouter slug. Preserve punctuation
+and use the exact public key as the filename: `x-ai` and `black-forest-labs` are valid keys.
 
-- every public group (`light`, `dark`, and `avatar`) resolves to an intentional asset;
-- every generated asset has a transparent 128×128 canvas;
-- the files identify the requested entity, use the exact public key as their filename, and build
-  successfully;
-- the generated WebP files remain legible at the sizes used by ORCA;
-- the developer review includes the source provenance and any transformations without committing
-  that review metadata to the repository; and
-- the logo build, logo tests, and repository formatter/checker pass.
+Check `FAILED_LOGO_QUESTS.md` for earlier sourcing evidence, then search `sources/`,
+`sources/aliases.json`, and installed LobeHub packages for the key and spelling variants.
+Use an alias when the service already has the same entity under another key.
 
-## 1. Confirm the Key
+For a provider, inspect the current backend's `GET /providers` record before searching the web.
+The `privacy_policy_url`, `terms_of_service_url`, and `status_page_url` fields can identify the
+owner's domain when search coverage is sparse. A similar company name does not establish identity.
 
-Logo keys come from the lowercased author or provider segment of an OpenRouter slug. Preserve
-punctuation: `x-ai` and `black-forest-labs` are valid keys.
-
-Before acquiring anything:
-
-1. Check [FAILED_LOGO_QUESTS.md](./FAILED_LOGO_QUESTS.md), then search `sources/`,
-   `sources/aliases.json`, and the installed LobeHub packages for the key and obvious spelling
-   variants.
-2. For provider keys, inspect the provider record through the current backend's `GET /providers`
-   route before searching the web. New providers often have little or ambiguous search coverage;
-   fields such as `privacy_policy_url`, `terms_of_service_url`, and `status_page_url` can identify
-   the owner's canonical domain and point to the correct website.
-3. Confirm that the requested entity is the one represented by the slug. Do not guess from a
-   similar company name.
-4. Prefer an alias when the service already has the same entity under another key.
-
-## 2. Choose an Authoritative Source
+## Choose a source
 
 Use the first viable source in this order:
 
-1. an owner-published brand or press kit;
-2. an asset referenced by the owner's current website, structured metadata, documentation, or
-   official application;
-3. an asset in the owner's official source repository;
-4. a reputable third-party catalog only when it identifies its upstream source and the owner does
-   not publish a usable asset.
+1. Owner-published brand or press kit.
+2. Artwork referenced by the owner's current website, metadata, documentation, or official application.
+3. Artwork in the owner's official source repository.
+4. A reputable third-party catalog with an identified upstream source, when the owner publishes no usable asset.
 
-Image search results and logo-download sites are discovery aids, not provenance. Never recreate a
-trademark with image generation or trace a raster image when an official vector or adequate raster
-exists.
+Image search and download sites are discovery aids, not provenance. Never generate a trademark
+or trace raster artwork when an official vector or adequate raster exists. Record and escalate
+unclear or prohibitive usage terms before publishing the artwork.
 
-Start by looking for square or nearly square assets. High-resolution app icons, Apple touch icons,
-social avatars, and standalone logomarks are especially useful. A desirable avatar usually has a
-solid-color square background because its bounds and contrast remain clear without relying on the
-surrounding UI.
+Prefer square marks, app icons, or social avatars. Inspect page HTML for self-contained inline SVGs,
+including header artwork. Never collect or publish wordmarks: they become illegible in ORCA's small containers.
+A composite SVG can supply a mark by retaining its logo paths and normalizing the viewBox.
 
-Useful SVGs are not always linked as files. Inspect the page HTML for embedded SVG elements,
-especially in the header or among the first elements rendered on the page, and extract an embedded
-mark when it is authoritative and self-contained.
+Prefer SVG, then transparent raster artwork with at least 128 useful pixels on its shortest dimension.
+Avoid screenshots, tiny favicons, excess padding, and external fonts or URLs. Preserve path geometry
+and deliberate owner-published app-icon backgrounds. Prefer solid square backgrounds for avatars
+when the owner supplies them: their bounds and contrast remain clear across UI surfaces.
+Do not upscale a poor source to meet the size.
 
-Check that the asset is current, belongs to the intended entity, and is suitable for third-party
-identification. If the owner's usage terms prohibit the intended use or permission is unclear,
-record the issue and escalate it rather than silently substituting another source.
+## Choose variants
 
-## 3. Classify the Available Artwork
+| Source directory  | Purpose                                                       |
+| ----------------- | ------------------------------------------------------------- |
+| `sources/light/`  | Artwork for a light surface, usually dark or full color       |
+| `sources/dark/`   | Artwork for a dark surface, usually white or light            |
+| `sources/avatar/` | Compact, color-independent or owner-published app/avatar icon |
+| `sources/base/`   | One best-effort asset for every otherwise missing group       |
 
-Never collect or publish a wordmark. ORCA displays logos in small, near-square containers where
-wordmarks become illegible.
+Monochrome light/dark variants must have identical geometry, sizing, and viewBox; only pure black
+(`#000000`) and pure white (`#ffffff`) invert. If the owner publishes one such transparent SVG,
+create the inverse so the mark remains visible in both modes. Use a separate owner-published avatar
+when it is better suited to the compact display.
 
-- `light/` is artwork for a light surface, usually the dark or full-color mark.
-- `dark/` is artwork for a dark surface, usually the white or light mark.
-- `avatar/` is the compact, color-independent or owner-published app/avatar icon.
-- `base/` supplies the same best-effort asset to all three groups.
+A colorful or complex mark can use `base/` when inversion is inappropriate. Review contrast in
+all three resolved outputs. Create group-specific files only for intentional variants.
 
-Choose the strategy that matches the available artwork.
+## Inspect source assets
 
-### Monochrome Theme Pair
+For SVG, reject scripts, event handlers, remote references, and linked fonts. Check that the viewBox
+encloses the artwork and that fills rasterize as intended. For raster files, inspect format,
+dimensions, alpha, useful-pixel bounds, and visual quality.
 
-Light and dark monochrome variants must have identical geometry, sizing, and viewBox. Their only
-artwork difference is the inversion between pure black (`#000000`) and pure white (`#ffffff`). If
-the owner publishes only one pure black or white SVG on a transparent background, create the
-inverted theme variant; otherwise one mode will make the mark invisible. Add a separate avatar when
-the owner publishes a more suitable app icon or solid-background square.
+Save only the selected variants as `sources/{group}/{key}.{ext}`.
 
-### Single Color or Complex Asset
+## Build and review
 
-Many brands publish only one usable mark, and it may be colorful, detailed, or unsuitable for
-black/white inversion. Put that asset in `base/`; the build intentionally copies it across
-`light`, `dark`, and `avatar` as a best effort. This is usually acceptable, but the review sheet
-must show all three resolved outputs so contrast problems remain visible.
-
-### Composite Logo and Wordmark
-
-When no standalone square mark is available, look for a vector that combines a logo with a
-wordmark. The logo portion can usually be extracted safely by retaining only its paths and
-normalizing the resulting viewBox. Do not retain the wordmark paths. Composite logo SVGs commonly
-appear near the top of a page or inline in its initial HTML.
-
-Use group-specific files when the owner publishes real variants. A build warning for a manual key
-means the quest is incomplete unless the missing groups are already supplied upstream.
-
-Prefer SVG, then a transparent raster at least 128 px on its shortest useful dimension. Avoid
-screenshots, tiny favicons, excessive transparent padding, and artwork that relies on external
-fonts or URLs. A deliberate solid-color app-icon background is useful, not a baked-in background
-to remove. Preserve owner-published path geometry instead of redrawing it. It is safe to adjust an
-SVG's width, height, and viewBox to create a square canvas, isolate a logo from a wordmark, or make
-a consistent theme pair. If a source must be cropped, extracted, recolored beyond black/white
-inversion, or otherwise normalized, document the transformation in the developer review.
-
-## 4. Inspect Before Check-in
-
-For SVG files, inspect the text and reject active or remote content such as scripts, event
-handlers, external references, and linked fonts. Confirm that the `viewBox` encloses the artwork
-and that fills will rasterize to the intended colors.
-
-For raster files, confirm the format, dimensions, alpha channel, useful-pixel bounds, and visual
-quality. Do not upscale a low-resolution source merely to satisfy a nominal dimension.
-
-Add the selected files as:
-
-```txt
-sources/base/{key}.{ext}
-sources/light/{key}.{ext}
-sources/dark/{key}.{ext}
-sources/avatar/{key}.{ext}
-```
-
-Only create the files that match the selected variant strategy.
-
-## 5. Prepare the Developer Review
-
-Present provenance with the generated review sheet. For every acquired source, include:
-
-- the resolved group and repository-relative source file;
-- the direct upstream URL;
-- the owner page or repository that established the asset's authority when it is not obvious from
-  the direct URL;
-- the UTC retrieval date;
-- the original format and dimensions when relevant; and
-- every extraction, viewBox adjustment, crop, background decision, or color transformation.
-
-Provenance belongs in the developer review or handoff only. Do not commit a provenance catalog,
-downloaded source page, review note, or generated review sheet to the repository. The review
-evidence does not grant trademark or copyright permission.
-
-## 6. Build and Review
-
-From the repository root:
+Run from the repository root:
 
 ```sh
 bun run --cwd apps/logos generate
 bun run --cwd apps/logos test
 bun run --cwd apps/logos review {key}
-```
-
-Inspect `apps/logos/dist/v1/manifest.json` and confirm the key has all three groups, the expected
-manual source paths, no alias, a 128×128 canvas in every group, and no coverage warning. Review the
-generated sheet: light must use pure white, dark must use pure black, and avatar transparency must
-be visible through the pure black/white alpha grid. Also inspect the assets at the small UI sizes
-used by ORCA.
-
-Finish with the repository-required check:
-
-```sh
 bun run fix
 ```
 
-Review every file changed by that command before handing off.
+Inspect `apps/logos/dist/v1/manifest.json`: the key must resolve all groups with the expected source
+paths and no alias for a newly acquired manual asset, with no coverage warning. Each generated canvas
+must be transparent and use the dimensions recorded in `docs/orca/config.md`. Inspect the review
+sheet and the assets at ORCA's small display sizes.
+Review every file changed by formatting before handoff.
 
-## Known Process Gaps
+For every acquired source, include these facts with the generated review sheet:
 
-These defaults make acquisition repeatable, but the service does not yet enforce all of them:
+- Resolved group and repository-relative source file.
+- Direct upstream URL.
+- Owner page or repository establishing authority when the direct URL is insufficient.
+- UTC retrieval date.
+- Original format and dimensions when relevant.
+- Every extraction, viewBox adjustment, crop, background decision, or color transformation.
 
-- the `avatar` contract does not specify how to resolve an icon that works poorly in one UI theme;
-- provenance intentionally lives in developer-review history rather than the codebase;
-- there is no freshness policy or owner for detecting rebrands; and
-- trademark/usage review has no project-level escalation policy.
+Do not commit provenance catalogs, downloaded source pages, review notes, or generated review sheets.
+Review evidence does not grant trademark or copyright permission.
 
-Until those are resolved, agents should follow this runbook, state any exception explicitly, and
-avoid making irreversible artwork changes.
+## Unresolved policy
+
+The avatar contract has no rule for artwork that works poorly in one UI theme. There is no assigned
+rebrand freshness policy or project-level trademark escalation process. State exceptions in the
+review and preserve the original artwork so decisions remain reversible.
