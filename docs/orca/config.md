@@ -20,11 +20,9 @@ ignored by Git.
 
 ### Convex runtime: `convex.config.ts`
 
-Set these in the **Convex deployment environment**, validated by
-[`convex.config.ts`](../../packages/backend/convex/convex.config.ts). Project defaults
-initialize new deployments; update existing deployments explicitly. When changing these
-variables, update both dev and preview defaults and this reference. The defaults below
-are shared by dev and preview; “unset” means the code fallback applies.
+Set these in the **Convex deployment environment**, parsed by `convex.config.ts`.
+Project defaults initialize new deployments. The defaults below are shared by dev
+and preview; “unset” means the code fallback applies.
 
 #### Administrator access and public links
 
@@ -66,8 +64,7 @@ missing/`false` disables it.
 
 Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
 `packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
-`scan_at`; manual `sendIngestion` deadlines use invocation time. Routing and
-operator procedures live in docs/orca/discord.md.
+`scan_at`; manual `sendIngestion` deadlines use invocation time.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
@@ -82,12 +79,11 @@ Retrieve through the authenticated Convex CLI for browser login.
 | `ORCA_DEV_ADMIN_EMAIL`    | ◆ ◇ ⇄    | Shared dev/preview browser login; absent in production.            | `admin@orca.test`   |
 | `ORCA_DEV_ADMIN_PASSWORD` | ◆ 🔒 ◇ ⇄ | Must match WorkOS, dev/preview defaults, and existing deployments. | Configured secret   |
 
-`ORCA_ADMIN_USER_ID` identifies the same account. See [development login](admin-access.md#development-login).
+`ORCA_ADMIN_USER_ID` identifies the same account.
 
 ### Convex authentication: `auth.config.ts`
 
-[`auth.config.ts`](../../packages/backend/convex/auth.config.ts) configures the trusted
-WorkOS issuer and JWKS.
+`auth.config.ts` configures the trusted WorkOS issuer and JWKS.
 
 | Variable           | Flags    | Consumer / relationship                                                                                                                            | Dev/preview default                 |
 | ------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
@@ -109,7 +105,7 @@ Vercel supplies build inputs for deployed apps.
 | `VERCEL_BRANCH_URL`               | ◇ 🌐 ⚙ ⇄ | Vercel preview branch hostname, without a scheme. Both Convex registration and Next.js callback selection use it for the same build.                                                                                    |
 | `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.                                                                                                                                     |
 
-[`convex.json`](../../packages/backend/convex.json) registers `${ORCA_DEV_URL}/callback`
+`convex.json` registers `${ORCA_DEV_URL}/callback`
 and its origin for dev, and `https://${VERCEL_BRANCH_URL}/callback` and its origin for
 previews. Production callback, homepage, and CORS registration instead hardcode
 **`https://orca.orb.town`**.
@@ -139,7 +135,25 @@ Next.js and supplies the selected backend URL to that build.
 Next.js derives the callback from `ORCA_DEV_URL` during development,
 `VERCEL_BRANCH_URL` for preview builds, and **`https://orca.orb.town`** for other
 builds. `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is a derived output; keep it unset in
-Vercel. See administrator access for WorkOS policy and logout configuration.
+Vercel.
+
+### WorkOS sign-out URIs
+
+The shared dev/preview environment has these entries in WorkOS Applications → Redirects → Sign-out URIs:
+
+| URI                                                       | Scope                             |
+| --------------------------------------------------------- | --------------------------------- |
+| `https://orca.localhost/`                                 | Main local checkout               |
+| `https://*.orca.localhost/`                               | Local worktrees                   |
+| `https://orca-git-*-deank.vercel.app/`                    | Vercel branch previews            |
+| `https://fserv.bleak-scala.ts.net/`                       | Default Tailscale HTTPS port      |
+| `https://fserv.bleak-scala.ts.net:8443/` through `:8450/` | Eight explicit additional entries |
+
+Update these when changing the hostname scheme, development host, or Vercel project/team.
+The fserv entries cover Portless's nine preferred Tailscale HTTPS ports. Additional ports need
+explicit entries: WorkOS permits wildcard logout ports only on localhost/loopback. Keep trailing
+slashes to match the app's logout destination. Managed AuthKit registers callbacks and CORS;
+the sign-out allowlist is managed separately.
 
 ### Analytics and build inputs
 
@@ -154,9 +168,9 @@ Vercel. See administrator access for WorkOS policy and logout configuration.
 | `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | ◇ 🌐 ⚙   | Invalidates the persisted public query cache and tags analytics. Defaults to `development`.                                                                  |
 | `NODE_ENV`                          | ⚙        | Runtime mode. Development enables the local title prefix, breakpoint indicator, and detailed error UI.                                                       |
 
-[`next.config.ts`](../../apps/web/next.config.ts) hardcodes PostHog proxy destinations
+`next.config.ts` hardcodes PostHog proxy destinations
 **`us-assets.i.posthog.com`** and **`us.i.posthog.com`**;
-[`instrumentation-client.ts`](../../apps/web/instrumentation-client.ts) uses
+`instrumentation-client.ts` uses
 **`https://us.posthog.com`** as the UI host. EU or self-hosted PostHog needs endpoint
 changes as well as different credentials.
 
@@ -180,9 +194,11 @@ Portless owns worktree prefixes, port allocation, and forwarding cleanup.
 
 ## Logos — `apps/logos`
 
-[`wrangler.jsonc`](../../apps/logos/wrangler.jsonc) names the Worker
-**`entity-logo-service`** within the selected Cloudflare account. `ASSETS` is its
-static-assets object binding.
+`wrangler.jsonc` names the Worker **`entity-logo-service`** within the selected Cloudflare account.
+`ASSETS` is its static-assets object binding.
+
+`OUTPUT_IMAGE_SIZE_PX` in `apps/logos/src/build.ts` sets the generated image canvas to **128×128**.
+`run_worker_first` is unset, so static asset hits do not invoke the Worker.
 
 ## Root tooling
 

@@ -1,88 +1,45 @@
 # Entity Logo Service
 
-Standalone Cloudflare Workers Static Assets service for public WebP logo delivery.
+Cloudflare Workers Static Assets serves public WebP logos at `/v1/{group}/{key}.webp`.
+The public groups are `light`, `dark`, and `avatar`. Unknown logo image paths return the
+requested group's fallback image.
 
-## Contract
+## Source precedence
 
-```txt
-/v1/light/{key}.webp
-/v1/dark/{key}.webp
-/v1/avatar/{key}.webp
-/v1/light/fallback.webp
-/v1/dark/fallback.webp
-/v1/avatar/fallback.webp
-```
+Each group resolves independently: LobeHub assets take precedence over manual group assets,
+which take precedence over `sources/base/`. A base asset fills every group still missing that key.
+Pinned LobeHub packages supply color variants where available; brand/text variants are excluded.
 
-Known files are served directly by Cloudflare Static Assets. Unknown logo image paths fall through to `src/worker.ts`, which returns the fallback image for the requested group.
+`dist/v1/manifest.json` records shadowed manual assets and incomplete group coverage. Generation
+warns about incomplete manual keys and rejects non-square outputs or light/dark dimension mismatches.
 
-## Generate assets
+## Generate and preview
+
+Run from `apps/logos`:
 
 ```sh
 bun run generate
+bunx wrangler dev --port 8787
 ```
 
-The generator reads pinned LobeHub packages, selects `*-color.webp` where available, ignores brand/text variants, processes every output through Sharp, and writes `dist/v1`. Every public image is emitted on a transparent 128×128 canvas. Generation rejects non-square outputs and light/dark pairs with unequal dimensions.
+Fallback artwork comes from `branding/svg/orb-ring-mark.svg`; regenerate after editing it.
+To preview the local assets in the web app, set `NEXT_PUBLIC_ORCA_LOGO_ORIGIN=http://localhost:8787`
+in `apps/web/.env.local` and restart the web server. Remove the override to restore its default.
+Discord images need a publicly accessible origin.
 
-`OUTPUT_IMAGE_SIZE_PX` in `src/build.ts` controls the generated image size.
+## Review and deploy
 
-Fallback image generation lives in `src/fallback-image.ts` and reads `branding/svg/orb-ring-mark.svg`.
-After editing the SVG, regenerate assets and preview with `bunx wrangler dev --port 8787` from this directory.
-
-## Local web preview
-
-The web app defaults to `https://logos.orb.town` in every environment, including development.
-To preview local assets, start the server above and set this in `apps/web/.env.local`:
-
-```dotenv
-NEXT_PUBLIC_ORCA_LOGO_ORIGIN=http://localhost:8787
-```
-
-Restart the web dev server after changing the override. Remove it to return to the production service.
-This is a full origin (scheme, hostname, and optional port), not just a hostname.
-Convex uses its separate `ORCA_LOGO_ORIGIN` for Discord embeds, which must remain publicly accessible.
-
-## Manual Sources
-
-Source-controlled manual assets live in:
-
-```txt
-sources/base/
-sources/light/
-sources/dark/
-sources/avatar/
-```
-
-Put one generic asset in `sources/base/` when it should fill every missing output group. Put files in `sources/light/`, `sources/dark/`, or `sources/avatar/` only when that group has a real variant.
-
-The generator resolves each group independently:
-
-```txt
-resolved[group][key] = lobehub[group][key] ?? manual[group][key] ?? manual.base[key]
-```
-
-LobeHub always wins when both sources provide the same group/key. Shadowed manual assets are listed in `dist/v1/manifest.json` so they can be cleaned up deliberately.
-
-Manual keys that still resolve to only some public groups after LobeHub, group overrides, and base assets are applied print a generation warning and are listed in `manifest.json`.
-
-For the acquisition workflow, source selection rules, and developer-review checklist, see
-[ACQUIRING_LOGOS.md](./ACQUIRING_LOGOS.md).
-
-## Review
-
-After generating assets, create the standard review sheet for a key:
+After generating assets, create a review sheet for a key:
 
 ```sh
 bun run review coreweave
 ```
 
-The sheet is written to `dist/review/{key}.png`. Light and dark outputs are shown on pure white and
-pure black. The avatar is shown over a pure black/white alpha grid that reveals the exact transparent
-canvas without introducing a brand or UI color.
-
-## Deploy
+The sheet is written to `dist/review/{key}.png`. Light and dark outputs appear on pure white and
+pure black; the avatar appears over a black/white alpha grid to reveal transparency.
 
 ```sh
 bun run deploy
 ```
 
-`wrangler.jsonc` keeps `run_worker_first` unset, so static asset hits do not invoke the Worker.
+Deployment publishes the generated assets and fallback Worker.

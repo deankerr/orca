@@ -6,9 +6,7 @@ Model changes for an endpoint UUID are real but uncommon in the retained product
 **19 changes across 2,832 endpoint UUIDs (0.67%)**, with one change per affected endpoint.
 All observed changes follow recognizable variant or naming patterns.
 
-For ORCA, **a changed model slug is a model change**, including a `:free` suffix, capitalization,
-or naming correction. Recognizing a pattern does not authorize ORCA to collapse those identities
-or ignore the transition. The evidence establishes frequency, not an invariant that model
+The evidence establishes frequency within retained history, not an invariant that model
 membership never changes.
 
 ## Scope and method
@@ -34,10 +32,6 @@ The earliest listing observation was `2025-08-13T20:19:21.211Z`; the latest was
 `2026-09-26T05:40:04.126Z`. These are timestamps of listing records, not a claim about the latest
 processed scan: unchanged context produces no new listing record. The analysis covers retained
 observations, not changes before the baseline or between source captures.
-
-The production dashboard's approximately 5.9K listing documents and 2.8K endpoint documents
-are consistent with this scale. The exact 2,832 count above is distinct UUIDs in listing history,
-not a separate count of Catalog documents.
 
 ## Observed patterns
 

@@ -18,8 +18,7 @@ submitted sender jobs continue independently. No eligible messages or matching
 webhooks produces no jobs.
 
 The submission key is `ingestion:<scan_at>`. Historical backfill can submit jobs
-that expire before sending; the age policy lives in docs/orca/config.md. Webhook
-management and delivery contracts live in packages/discord-sender/README.md.
+that expire before sending.
 
 ## Registration
 
@@ -78,12 +77,12 @@ historical evidence; `prepareIngestion` rerenders with current code and history.
 
 ## Presentation
 
-Apply shared alert eligibility from docs/orca/pricing.md, then the frequency
-rule below, before grouping identical changes. Monitor and Feed remain unbatched;
+Apply shared alert eligibility, then the frequency rule below, before grouping identical changes.
+Monitor and Feed remain unbatched;
 query pages do not define meaningful batch membership.
 
 Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language. Event meaning is documented in docs/orca/events.md.
+availability; unclassified arrivals use neutral language.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 ## Frequent pricing changes

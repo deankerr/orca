@@ -1,7 +1,7 @@
 # Administrator access
 
 `/admin` and protected Convex entry points authorize the user selected by
-`ORCA_ADMIN_USER_ID`. Each protected entry point calls `requireAdmin`.
+`ORCA_ADMIN_USER_ID`.
 
 ## Development login
 
@@ -13,29 +13,15 @@ the header menu to resume anonymous work.
 ## Environments
 
 Dev/preview share users and login policy. Use a separate WorkOS environment for
-experiments that change these. Provisioning is covered in [setup](setup.md).
+experiments that change these.
 
 Convex registers callbacks and CORS. WorkOS owns login methods, signup policy, and
 logout destinations. Production GitHub OAuth uses the provider callback shown by
 WorkOS and its default `user:email` scope.
 
-The shared logout allowlist contains:
-
-- `https://orca.localhost/`
-- `https://*.orca.localhost/`
-- `https://orca-git-*-deank.vercel.app/`
-- `https://fserv.bleak-scala.ts.net/`
-- `https://fserv.bleak-scala.ts.net:8443/` through `:8450/` (eight explicit entries)
-
-Update it when changing the hostname scheme or Vercel project/team. Preview sessions
-belong to the branch hostname; sign-in redirects unique deployment URLs there.
-
-The fserv entries cover Portless's nine preferred Tailscale HTTPS ports. Additional
-ports or development hosts need explicit entries in WorkOS Applications → Redirects
-→ Sign-out URIs. Keep the trailing slash to match the app's logout destination.
-Convex's managed AuthKit configuration registers callbacks and CORS origins only.
-WorkOS permits wildcard logout ports only on localhost/loopback; an unlisted
-tailnet destination falls back to the default sign-out URL.
+Preview sessions belong to the branch hostname; sign-in redirects unique deployment
+URLs there. An unlisted tailnet logout destination falls back to WorkOS's default
+sign-out URL.
 
 ## Local callbacks
 

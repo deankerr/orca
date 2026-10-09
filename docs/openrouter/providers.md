@@ -1,66 +1,56 @@
 # Providers
 
-OpenRouter's provider fields expose overlapping organization, configuration and endpoint concepts.
-The distinctions below describe observations, not an authoritative upstream entity model.
+OpenRouter's provider fields expose overlapping organization, configuration, and endpoint concepts.
+The distinctions below describe the 2026-08-28 corpus, not an authoritative upstream entity model.
+It contained 105 provider records from 789 text→text models and 186 distinct tags over 1,146 endpoints.
 
 ## Organization
 
-The organization is the operator users recognize, such as `Azure` or `Amazon Bedrock`. It is
-identified by the `name` field on every `provider_info` record.
+`provider_info.name` identified the recognizable operator, such as `Azure` or `Amazon Bedrock`.
+It was constant across each organization's records, and every endpoint's `provider_name` agreed
+with its owning record's `name`. A rename would appear as an identity change under this grouping.
 
-- `provider_info.name` is the organization key: it is constant across an organization's records
-  and stable over the observed corpus. An upstream rename still appears as a change of identity.
-- Endpoint `provider_name` carries the same value: it agreed with the owning record's `name` on
-  every endpoint in the corpus below.
-- 📊 Observed 2026-08-28 (105 provider records from 789 text→text models): 105 records collapsed
-  to 73 organizations; 18 organizations had multiple records, including Google, Amazon Bedrock,
-  Fireworks, and DeepInfra.
-- Provider slug prefixes cannot recover the organization: `sambanova-turbo` is a full record slug
-  with no slash-delimited suffix.
+The 105 records collapsed to 73 organizations. Eighteen had multiple records, including Google,
+Amazon Bedrock, Fireworks, and DeepInfra. Slug prefixes cannot reliably recover the organization:
+`sambanova-turbo` is a full record slug with no slash-delimited suffix.
 
 ## Provider record
 
-The embedded `provider_info` object describes a targetable provider configuration. One
-organization can have multiple records, such as `azure` and `azure/eu`.
+The embedded `provider_info` describes a targetable provider configuration. One organization can
+have multiple records, such as `azure` and `azure/eu`. Same-organization records differed in `slug`,
+`displayName`, `baseUrl`, `adapterName`, and `pricingStrategy`. Azure's regional records had distinct
+`baseUrl`s; adapter and pricing strategy varied with the API surface being served.
 
-- Same-organization records differ in `slug`, `displayName`, `baseUrl`, `adapterName`, and
-  `pricingStrategy`. These records are useful routing targets, but should not be mistaken for
-  separate provider organizations.
-- Real differences between same-organization records are infrastructure-level: Azure's regional
-  records carry distinct `baseUrl`s, and `pricingStrategy`/`adapterName` switch with the API
-  surface being served.
-- ⚠️ Data policy fields are identical within an organization, even when the slug implies
-  otherwise: `xai/zdr` and `mistral/zdr` both declare `retainsPrompts: true` with
-  `retentionDays: 30` despite a zero-data-retention label. Tagged records are serving variants,
-  not separately modeled compliance tiers.
-- ⚠️ `displayName` is not a grouping key: `google-vertex/us` and `google-vertex/us-east5` share
-  "Google Vertex (US)", and `deepinfra` and `deepinfra/base` are indistinguishable by both `name`
-  and `displayName`.
+⚠️ Data policy fields were identical within an organization even when a slug implied otherwise.
+Both `xai/zdr` and `mistral/zdr` declared `retainsPrompts: true` and `retentionDays: 30` despite
+zero-data-retention labels. The labels alone do not establish compliance behavior.
+
+⚠️ `displayName` cannot group records reliably. `google-vertex/us` and `google-vertex/us-east5`
+shared "Google Vertex (US)"; `deepinfra` and `deepinfra/base` shared both `name` and `displayName`.
 
 ## Endpoint targeting key
 
 Endpoint `provider_slug` identifies a targetable configuration or endpoint grouping. OpenRouter's
-end-user API exposes the same concept as `tag`.
+public API exposes the same concept as `tag`. Suffixes denote region, quantization, speed tier,
+compliance, or other distinctions without a central registry. Historical tags include
+`amazon-bedrock/claude-on-aws`, which embeds a model name.
 
-Tag suffixes see heavy churn and often disagree with the associated record's metadata.
+| Relationship to provider records            | Example                             |
+| ------------------------------------------- | ----------------------------------- |
+| Exact record match                          | `azure/us`                          |
+| Quantization suffix targeting a base record | `deepinfra/fp8` → `deepinfra`       |
+| No corresponding record                     | `azure/swedencentral`, `novita/fp8` |
 
-- Suffixes denote region, quantization, speed tier, compliance, or occasionally something else
-  entirely, with no central registry.
-- `amazon-bedrock/claude-on-aws` was a real tag on now-unavailable endpoints: a model name inside
-  a provider tag.
-- A tag relates to provider records in one of three ways: an exact record match (`azure/us`), a
-  base-record match for quantization-suffixed tags (`deepinfra/fp8` → `deepinfra`), or no record
-  at all (`azure/swedencentral`, `novita/fp8`).
-- ⚠️ The same tag can resolve to different records per endpoint with no model-family pattern:
-  `google-vertex/global`, `google-vertex/us-east5`, and `amazon-bedrock/us-east-1` each resolved
-  to both a tagged record and the base record in the same corpus.
-- 📊 Observed 2026-08-28 (186 distinct tags over 1,146 endpoints): 75 tags matched a record
-  exactly; 111 had no record, of which roughly 99 were quantization suffixes and the rest
-  region/speed tags such as `azure/global`, `mistral/eu`, and `openai/flex`.
+⚠️ The same tag could resolve to different records per endpoint without a model-family pattern.
+`google-vertex/global`, `google-vertex/us-east5`, and `amazon-bedrock/us-east-1` each resolved to
+both a tagged record and the base record in this corpus.
+
+Of 186 tags, 75 matched a record exactly and 111 had no exact record. Roughly 99 of those 111
+were quantization suffixes; the rest were region/speed tags such as `azure/global`, `mistral/eu`,
+and `openai/flex`.
 
 ## Endpoint-local provider metadata
 
 `provider_display_name`, `provider_name`, `provider_model_id`, `provider_region`, and `provider_slug`
-are endpoint properties. `provider_info` is the related provider observation, not another endpoint
-property with the same ownership. `provider_model_id` is the upstream provider's identifier for that
-endpoint's model.
+are endpoint fields. `provider_info` is the related provider observation. `provider_model_id`
+is the upstream provider's identifier for that endpoint's model.

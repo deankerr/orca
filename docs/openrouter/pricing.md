@@ -21,20 +21,15 @@ signals with different purposes, not interchangeable copies or a consistency hie
 OpenRouter's public endpoint API exposes a reduced endpoint representation. The frontend bundle
 contains the additional pricing representations used for comprehensive change detection.
 
-- The public response includes normalized `pricing` fields such as `prompt`, `completion`,
-  `input_cache_read`, and `discount`.
-- [`api-v1-endpoints.md`](appendix/api-v1-endpoints.md) contains a concise public response sample.
-- The frontend bundle supplies fields including `display_pricing`, `pricing_json`,
-  `pricing_version_id`, and `tiers`.
-- ⚠️ A field observed on one API surface is not necessarily exposed on the other.
+The public response includes normalized `pricing` fields such as `prompt`, `completion`,
+`input_cache_read`, and `discount`. The frontend bundle also supplies `display_pricing`,
+`pricing_json`, `pricing_version_id`, and `tiers`. Field presence differs between the surfaces.
 
 ## `pricing`
 
 `pricing` is OpenRouter's normalized view of the rates it currently presents. Adapter-specific
 mapping and conversion mean this object is not reliably derivable from `pricing_json`.
 
-- In the frontend bundle, `prompt`, `completion`, `discount`, and `display_pricing` are present on
-  every endpoint.
 - A zero meter value and an absent meter are equivalent: both mean **unmetered**.
 - Unmetered does not establish whether the endpoint supports the associated feature or is free.
 - `display_pricing` is copied under `pricing` as well as exposed at the endpoint root.
@@ -45,17 +40,18 @@ mapping and conversion mean this object is not reliably derivable from `pricing_
 `prompt` prices text input and `completion` prices text output. The API expresses token rates per
 token, while OpenRouter interfaces present text-token rates per million tokens.
 
-- 📊 In the 2026-08-24 bundle, `prompt` and `completion` were present on all 1,231 endpoints,
-  including all 1,080 text-input-and-output endpoints.
-- Multi-turn agentic workloads repeatedly include earlier messages as input. A response is output
-  once, then can become prompt input on every later turn in the same context.
-- 📊 One coding workload shown in OpenRouter's dashboard for 2026-08-05 contained 62.2 million
-  prompt tokens, 298 thousand reasoning tokens, and 260 thousand completion tokens; more than 99%
-  of its raw token volume was prompt input. The caching view showed most prompt tokens as cached.
-- ⚠️ Raw token share is not cost share. Cache status, discounts, and different input and output
-  rates materially change the bill.
-- ⚠️ Some audio-transcription endpoints use `prompt` for a per-audio-hour price. Rendering that
-  value as a per-million-token rate produces nonsensical headline prices.
+Multi-turn agentic workloads repeatedly include earlier messages as input. A response is output
+once, then can become prompt input on every later turn in the same context.
+
+📊 One coding workload shown in OpenRouter's dashboard for 2026-08-05 contained 62.2 million prompt
+tokens, 298 thousand reasoning tokens, and 260 thousand completion tokens; more than 99% of its raw
+token volume was prompt input. The caching view showed most prompt tokens as cached.
+
+⚠️ Raw token share is not cost share. Cache status, discounts, and different input and output rates
+materially change the bill.
+
+⚠️ Some audio-transcription endpoints use `prompt` for a per-audio-hour price. Rendering that value
+as a per-million-token rate produces nonsensical headline prices.
 
 ### Prompt-cache meters
 
@@ -63,31 +59,22 @@ Prompt caching changes the price of repeated input. Read and write rates are sep
 than properties of the base `prompt` rate.
 
 - `input_cache_read` prices input served from a prompt cache.
-- `input_cache_write` and `input_cache_write_1h` price cache creation where the provider charges for
-  it.
-- 📊 Among 1,080 text-input-and-output endpoints in the 2026-08-24 bundle,
-  `input_cache_read` appeared on 740 (68.5%), `input_cache_write` on 182 (16.9%), and
-  `input_cache_write_1h` on 101 (9.4%).
-- ⚠️ The economic value of caching depends on the workload, cache hit rate, retention policy, and
-  endpoint-specific rates; property presence does not supply a universal savings factor.
+- `input_cache_write` and `input_cache_write_1h` price cache creation where the provider charges for it.
+
+⚠️ The economic value of caching depends on the workload, cache hit rate, retention policy, and
+endpoint-specific rates; property presence does not supply a universal savings factor.
 
 ### Other meters
 
 Less common meters represent additional modalities or provider services. Their low endpoint count
 does not imply low cost or low importance for workloads that use them.
 
-- `web_search` is a flat service charge rather than a token rate; `0.01` is the predominant observed
-  value.
+- `web_search` is a flat service charge rather than a token rate; `0.01` is the predominant observed value.
 - `web_search` is a passthrough charge and is not adjusted by `pricing.discount`.
 - `image` prices image input; `image_output` prices provider-side image generation.
 - OpenRouter presents `image` and `image_output` per thousand tokens rather than per million tokens.
 - `audio` prices audio input; `input_audio_cache` prices cached audio input.
-- `internal_reasoning` prices native reasoning tokens when an endpoint exposes a distinct reasoning
-  rate.
-- 📊 Among 1,080 text-input-and-output endpoints in the 2026-08-24 bundle, `web_search` appeared on
-  300 (27.8%); every image, audio, and reasoning meter appeared on fewer than 5%.
-- 📊 Full counts for both endpoint populations are recorded in
-  [`endpoint-pricing-property-frequency.md`](appendix/endpoint-pricing-property-frequency.md).
+- `internal_reasoning` prices native reasoning tokens when an endpoint exposes a distinct reasoning rate.
 
 ## `pricing.discount`
 
@@ -100,11 +87,13 @@ The normalized rates and headline values in `display_pricing` already include th
 - Provider discount battles produce frequent, fine-grained changes to this field.
 - OpenRouter also uses the field for rare, large, fixed-duration site promotions.
 - ⚠️ Tiny discount movements in provider discount battles are real pricing events, not float noise.
-- 📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, two Phala endpoints repeated
-  daily discount cycles (0/30% and 0/34%) while their source pricing and revision stayed fixed.
-  Direct inspection of their raw payloads found no exposed schedule definition; a recursive
-  search across all 3,380 Phala observations (20 endpoint UUIDs) found no schedule indicators.
-- ⚠️ Periodic discount movements do not establish that an endpoint exposes schedule metadata.
+
+📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, two Phala endpoints repeated daily
+discount cycles (0/30% and 0/34%) while their source pricing and revision stayed fixed. Direct
+inspection of their raw payloads found no exposed schedule definition; a recursive search across all
+3,380 Phala observations (20 endpoint UUIDs) found no schedule indicators.
+
+Periodic discount movements therefore do not establish that an endpoint exposes schedule metadata.
 
 ## `pricing.overrides`
 
@@ -113,12 +102,13 @@ pricing is exposed. It is part of the public endpoint API's `pricing` structure,
 frontend bundle. Rows have no schedule discriminator and remain open to additional conditions.
 
 - Prompt-length rows contain `min_prompt_tokens` and rates above that threshold.
-- The normalized `pricing.*` fields present the active schedule band or the default prompt-length
-  band.
-- 📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, 213 endpoint UUIDs exposed
-  overrides: 206 with prompt-length conditions and seven with schedules. No mixed schedule/context
-  arrays appeared in that corpus; this does not constrain future representations.
-- Schedules vary and do not provide a universal base price or default band.
+- The normalized `pricing.*` fields present the active schedule band or the default prompt-length band.
+
+📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, 213 endpoint UUIDs exposed overrides:
+206 with prompt-length conditions and seven with schedules. No mixed schedule/context arrays
+appeared in that corpus; this does not constrain future representations.
+
+Schedules vary and do not provide a universal base price or default band.
 
 The scheduled rows in that corpus used three condition shapes:
 
@@ -131,11 +121,9 @@ The scheduled rows in that corpus used three condition shapes:
 - Clocks were integer HHMM values, including `utc_end: 0` for a window ending at midnight.
 - `utc_days` contained lowercase weekday names. Requiring both clock fields misses whole-day rows.
 - Several rows can repeat the same rates; a condition row is not necessarily a distinct price band.
-- Observed schedule rates covered `prompt`, `completion`, and `input_cache_read`; context rows
-  also varied in cache-write and audio meter coverage. These are observations, not a closed schema.
 
-ORCA's [schedule detection and alert policy](../orca/pricing.md#alert-eligibility) uses a derived
-boolean and override equality. Rendering schedule conditions is a separate concern.
+Observed schedule rates covered `prompt`, `completion`, and `input_cache_read`; context rows also
+varied in cache-write and audio meter coverage. These are observations, not a closed schema.
 
 ## `display_pricing`
 
@@ -144,11 +132,11 @@ a view for presentation, not an authored-pricing source.
 
 - Rows use `kind: "token"`, `"unit"`, or `"schedule"` in current observations.
 - `display_pricing[].tiers` is distinct from the endpoint's `tiers` object.
-- The object is exposed at the endpoint root and copied under `pricing`.
 - 🔄 Presentation data can change with normalized rates or independently of them.
-- Schedule rows expose `scheduleWindows`; DeepSeek also exposed `scheduleExceptions` with numeric
-  day/clock fields in the 2026-09-26 through 2026-10-03 captures. This differs from named `utc_days`
-  in overrides; the exception semantics were not established by the inspection.
+
+Schedule rows expose `scheduleWindows`; DeepSeek also exposed `scheduleExceptions` with numeric
+day/clock fields in the 2026-09-26 through 2026-10-03 captures. This differs from named `utc_days`
+in overrides; the exception semantics were not established by the inspection.
 
 ## `pricing_version_id`
 
@@ -175,38 +163,37 @@ configuration such as thresholds, window bounds, and multipliers.
 
 ## Change-signal relationships
 
-Pricing fields overlap without forming a hierarchy. Durable change detection records which signals
-moved and does not infer that one changed field explains another.
+Changes to these representations are independent observations; simultaneous movement does not
+establish causation.
 
-- `pricing.discount` can change while `pricing_json` and `pricing_version_id` remain stable.
-- The active normalized rates of an existing schedule can change while `pricing.overrides`,
-  `pricing_json`, and `pricing_version_id` remain stable.
-- A complete `display_pricing` array includes active headline prices, so its movement does not
-  establish that a schedule definition changed.
-- 📊 Tencent HY4 Preview acquired overrides at the 2026-09-30T10:40:04.109Z capture while its
-  current input, output, and cache-read rates stayed unchanged. Schedule introduction is independent
-  of current-rate movement.
-- `pricing_version_id` can change while `pricing_json`, normalized `pricing`, `display_pricing`, and
-  `tiers` remain stable.
-- `display_pricing` can change independently of normalized rates and authored-pricing signals.
-- 📊 Across 270 observations of `deepseek/deepseek-v4-flash-0731` from 2026-05-08 through
-  2026-08-24, 54 `pricing_version_id` transitions included 49 `pricing_json` transitions and five
-  version-only transitions. Four of the five had no other stable non-telemetry content change; the
-  fifth accompanied an adapter migration.
+| Changed signal          | Fields that can remain stable                                    |
+| ----------------------- | ---------------------------------------------------------------- |
+| `pricing.discount`      | `pricing_json`, `pricing_version_id`                             |
+| Active normalized rates | `pricing.overrides`, `pricing_json`, `pricing_version_id`        |
+| `pricing_version_id`    | `pricing_json`, normalized `pricing`, `display_pricing`, `tiers` |
+| `display_pricing`       | Normalized rates and authored-pricing signals                    |
+
+A complete `display_pricing` array includes active headline prices, so its movement does not
+establish that a schedule definition changed.
+
+📊 Tencent HY4 Preview acquired overrides at the 2026-09-30T10:40:04.109Z capture while its current
+input, output, and cache-read rates stayed unchanged. Schedule introduction is independent of
+current-rate movement.
+
+📊 Across 270 observations of `deepseek/deepseek-v4-flash-0731` from 2026-05-08 through 2026-08-24,
+54 `pricing_version_id` transitions included 49 `pricing_json` transitions and five version-only
+transitions. Four of the five had no other stable non-telemetry content change; the fifth
+accompanied an adapter migration.
 
 ## Historical data
 
-Pricing representations and individual keys have been introduced and removed over time. Compare
-the state actually present in each observation.
-
-- Historical snapshots include temporary upstream mistakes, schema migrations, and mass property
-  changes as well as pricing changes.
-- Pricing conventions and feature adoption have changed substantially during collection; use the
-  population listed at each historical time rather than today's survivors to measure historical
-  prevalence.
+Pricing representations and individual keys have been introduced and removed over time. Historical
+snapshots include temporary upstream mistakes, schema migrations, and mass property changes.
+Historical prevalence depends on the population present at each capture; today's survivors cannot
+represent earlier feature adoption.
 
 ## Reasoning meter
 
-As of 2026-10-04, the working inventory has one vintage model endpoint that genuinely uses
-`internal_reasoning` and around 100 Gemini endpoints where the field is misleading. ORCA
-[omits this meter from product pricing](../orca/pricing.md#deliberately-omitted-meters) for now.
+In the working inventory inspected on 2026-10-04, one vintage model endpoint used
+`internal_reasoning` as a distinct rate; around 100 Gemini endpoints exposed misleading values.
+These are approximate inventory observations, not a prevalence measurement over a defined corpus.

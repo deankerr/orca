@@ -1,29 +1,45 @@
 # packages/backend
 
-- `convex/public_api/` maintains a frozen external contract. Follow its local instructions; compatibility semantics must not shape other products.
-- Allow uncaught exceptions to halt workflows and roll back mutations. Use `ConvexError` with domain data and a concise message for our own exceptions; do not catch and rethrow.
+- `convex/public_api/` maintains a frozen external contract; follow its local instructions.
+- Keep public API compatibility semantics out of other products.
+- Allow uncaught exceptions to halt workflows and roll back mutations.
+- Use `ConvexError` with domain data and a concise message for our own exceptions; do not catch and rethrow.
 - Convex executes `convex/init.ts` after preview deployment to initialize its data.
 - Preserve observed meaning, not byte fidelity or incidental object-key/array ordering.
-- Run backend tests with `bun test` and import test APIs from `bun:test`. This overrides the Vitest setup recommended by Convex skills and generated guidance.
+- Run backend tests with `bun test` and import test APIs from `bun:test`.
+- Bun testing takes precedence over the Vitest setup in Convex skills and generated guidance.
 
 ## Data boundaries
 
-- Parse external inputs where they enter the backend, then use the parsed result. Trust typed internal values and stored records without repeating those checks.
-- Keep upstream validators with the code that parses upstream data. If a product needs a stronger guarantee about a field, check that requirement in the product.
-- Ingestion stores observed facts. Products read those records and apply their own interpretation, filtering, and presentation rules.
+- Parse external inputs at the backend boundary, then use the parsed result.
+- Trust typed internal values and stored records without repeating boundary checks.
+- Keep upstream validators with the code that parses upstream data.
+- Check stronger field guarantees in the product that requires them.
+- Ingestion stores observed facts; products apply their own interpretation, filtering, and presentation.
 
 ## Code organization
 
-- Keep each product's queries, rendering, delivery, storage, and helpers together. Put code shared by multiple products in the domain it belongs to.
-- Write domain logic as ordinary pure functions. Convex functions handle database access and scheduling, then call that logic.
-- Pure modules shared by backend and web code can live at the `convex/` root. Compose functions directly; avoid generic pipelines and product registries.
-- Consume Objects and Scan through their named package imports, using namespaces for operations and named imports for types and validators. Relative imports stay within each module; schema assembly imports tables directly. Cross-package consumers use explicit package exports.
+- Keep each product's queries, rendering, delivery, storage, and helpers together.
+- Put code shared by multiple products in the domain it belongs to.
+- Write domain logic as ordinary pure functions; Convex functions handle database access and scheduling.
+- Pure modules shared by backend and web code can live at the `convex/` root.
+- Compose functions directly; avoid generic pipelines and product registries.
+
+### Objects and Scan
+
+- Consume Objects and Scan through their named package imports.
+- Use namespaces for operations and named imports for types and validators.
+- Keep relative imports within each module; schema assembly imports tables directly.
+- Cross-package consumers use explicit package exports.
 
 ## Observability
 
-- PostHog is the primary observability destination. Production streams Convex logs and reports exceptions to PostHog; Axiom remains connected as a secondary log destination.
-- Console logs and uncaught exceptions are captured with Convex function details. Per-function execution statistics and deployment metrics are recorded automatically.
-- Investigate using PostHog and Convex's existing logs and metrics before adding instrumentation. Do not introduce custom observability tables, wrappers, or error logging that duplicates this coverage.
+Production streams Convex logs and exceptions to PostHog, the primary observability destination.
+Axiom remains connected as a secondary log destination. Captured logs and exceptions include
+Convex function details; execution statistics and deployment metrics are recorded automatically.
+
+Investigate existing logs and metrics before adding instrumentation. Do not add custom observability
+tables, wrappers, or error logging that duplicates this coverage.
 
 <!-- convex-ai-start -->
 

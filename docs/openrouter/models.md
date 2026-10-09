@@ -11,12 +11,15 @@ payload. Fields that have no established semantics are intentionally left withou
 - `permaslug` — versioned model identifier; it can equal `slug`.
 - `name`
 - `short_name`
-- `author` — author slug. It almost always matches the first segment of `slug` (known exceptions: `deepseek` -> `deepseek-ai`, `cognitivecomputations` -> `venice`).
+- `author` — author slug.
 - `author_display_name`
 - `description`
 - `group` — 💤
 - `hf_slug` — ⚠️ both `""` and `null` have represented absence.
 - `model_version_group_id` — ❓ sparse opaque identifier; exact semantics are unknown.
+
+Known differences between the first `slug` segment and `author` include `deepseek` → `deepseek-ai`
+and `cognitivecomputations` → `venice`.
 
 ## Modalities and capabilities
 
@@ -32,8 +35,7 @@ payload. Fields that have no established semantics are intentionally left withou
 - `is_trainable_text` — 💤
 - `is_trainable_image` — 💤
 - `features`
-- `features.chat_template_config` — 📌 the observed substantive key is
-  `should_hoist_and_merge_system_messages`.
+- `features.chat_template_config` — the observed substantive key is `should_hoist_and_merge_system_messages`.
 - `features.reasoning_config` — ⚠️ observed to duplicate top-level `reasoning_config` exactly.
 
 ### `reasoning_config`
@@ -57,7 +59,7 @@ Key presence varies by model. Values can also be `null`.
 - `default_parameters` — values may be `null`.
 - `default_stops`
 - `default_system`
-- `router` — 📌 observed only as `null` in the 2026-07 corpus.
+- `router` — observed only as `null` in the 2026-07 corpus.
 
 ## Limits
 
@@ -79,10 +81,8 @@ Key presence varies by model. Values can also be `null`.
 
 ## Visibility
 
-- `hidden` — ⚠️ observed as `false` in public captures; public data cannot establish hidden-model
-  behavior.
-- `is_private` — ⚠️ observed as `false` in public captures; public data cannot establish private-model
-  behavior.
+- `hidden` — ⚠️ observed as `false` in public captures; public data cannot establish hidden-model behavior.
+- `is_private` — ⚠️ observed as `false` in public captures; public data cannot establish private-model behavior.
 
 ## Timestamps
 
