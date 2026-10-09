@@ -95,11 +95,6 @@ it requires two submissions: read the initial receipt, register its thread URL,
 then submit the remaining messages there. Thread names, tags and lifecycle
 management remain caller policy.
 
-Live verification on 2026-10-09 against the private development forum covered post
-creation, three ordered replies, editing the opener and a reply, and repeated
-deletion of a reply. Direct Discord reads confirmed the edits and deletion. Media
-channels use the same documented contract but were not exercised.
-
 ## Recovery and observability
 
 - Workpool concurrency **1** is an ownership invariant. Separate webhook lanes share one `@discordjs/rest` client and its rate-limit state within an action.
@@ -115,7 +110,3 @@ channels use the same documented contract but were not exercised.
 - Rate-limit memory lasts for one action. Restarts can encounter the same limit again; coordination excludes other deployments/applications sharing an outbound IP.
 - Jobs and the open-work snapshot must fit Convex document/transaction limits. Payloads are stored per destination job; discovery is intentionally sized for low volume.
 - Delivery accepts JSON payloads. Multipart uploads, scheduled sending, source-time ordering, completion callbacks, Discord fetch operations, retention and a DLQ are outside the current scope. Full records are retained.
-
-## Remaining decisions
-
-None for the current scope. Automatic creation of one forum post per batch is deferred.

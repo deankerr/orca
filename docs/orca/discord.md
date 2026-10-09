@@ -5,43 +5,36 @@
 `ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules alert preparation after fresh
 ingestion events have committed. Preparation renders the events and submits once
 to the sender's `ingestion` topic; each eligible subscriber receives the same
-ordered batch. Subscription selection and fan-out belong to the sender.
+ordered batch.
 
-Event creation and completion are independent of alert preparation. Rendering and
-sender admission share a later transaction, so their failures leave committed
-events intact and roll back only alert jobs from that attempt. Scheduling from the
-ingestion action is best-effort: a failure between event commit and scheduling can
-leave alerts unqueued. Scheduling/preparation failures are observable in logs;
-use `sendIngestion` below for an intentional send after fixing the cause.
+Preparation failures leave committed events intact. Scheduling from the ingestion
+action is best-effort: a failure between event commit and scheduling can leave
+alerts unqueued. Inspect scheduling/preparation failures in logs and use
+`sendIngestion` for an intentional send after fixing the cause.
 Event-only `retry:events` recovery does not broadcast alerts.
 
 The switch is checked before scheduling and again when preparation starts. Already
 submitted sender jobs continue independently. No eligible messages or matching
 webhooks produces no jobs.
 
-The submission key is `ingestion:<scan_at>`; the sender deduplicates per webhook.
-Deadlines derive from that observation time, so historical backfill can submit jobs which expire before
-sending. The age policy lives in docs/orca/config.md. Sender ordering, retries,
-expiry and recovery semantics live in packages/discord-sender/README.md.
+The submission key is `ingestion:<scan_at>`. Historical backfill can submit jobs
+that expire before sending; the age policy lives in docs/orca/config.md. Webhook
+management and delivery contracts live in packages/discord-sender/README.md.
 
-## Registration and inspection
+## Registration
 
-Use the component API directly from packages/backend, selecting the deployment
-explicitly. Register with the `ingestion` topic to receive subsequent ingestion alerts.
+Each deployment needs an eligible webhook subscribed to `ingestion` before alerts
+can produce delivery jobs. Webhook URLs and subscriptions live in the component.
+Run operator commands from `packages/backend`, selecting the deployment explicitly.
 
 ```sh
-bunx convex run api:registerWebhook '{"name":"Development","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>
+bunx convex run api:registerWebhook '{"name":"Ingestion alerts","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>
 bunx convex run api:listWebhooks '{}' --component discordSender --deployment <deployment>
 ```
 
-`api:setWebhookTopics({webhookId,topics})` replaces a webhook's subscriptions.
-`api:invalidateWebhook({webhookId})` invalidates it for future submissions and cancels
-its queued jobs when they are reached; an already active job continues.
-
 For development, use the worktree's deployment and private development webhooks.
-The same ingestion path exercises filtering, batching, cards and delivery. Sender
-`api:submitBatch` accepts custom ordered payloads for focused delivery exercises;
-use a fresh key and deadline for each intentional repeat.
+
+## Prepare and send an ingestion
 
 To prepare one completed ingestion with current filtering and card rendering,
 without enqueueing or sending anything:
@@ -50,26 +43,25 @@ without enqueueing or sending anything:
 bunx convex run alerts/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
 ```
 
-This read-only query returns `scan_at`, ordered `messages` (each with a stable
-`key`, serialized JSON `payload`, and source `event_ids`), and `skippedEvents`
-with filtering reasons. It uses the same preparation path as manual sending,
-regardless of auto-send, observation age or registered webhooks. It reflects
-current rendering and available history, rather than a previously sent payload.
+The query returns `scan_at`, ordered `messages` (each with a stable `key`,
+serialized JSON `payload`, and source `event_ids`), and `skippedEvents` with
+filtering reasons. It uses current rendering and available history, regardless of
+auto-send, observation age or registered webhooks.
 
 To manually send that ingestion:
 
 ```sh
-bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <dev-deployment>
+bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
 ```
 
-This explicit operator command works with auto-send disabled and uses active
-webhooks subscribed to `ingestion`. Each invocation creates fresh jobs with a one-hour deadline from now,
-while cards and filtering retain the original observation time. Repeating the
-command intentionally sends again without changing earlier jobs or ingestion work.
-It returns `jobIds` and the rendered message count; zero matching destinations or
-fully filtered output produces no jobs. A positive count with no jobs means there
-were rendered messages but no matching active recipients. Event processing must
-be complete.
+Each invocation intentionally sends again to eligible `ingestion` subscribers,
+with a fresh deadline based on the configured age limit. Cards and filtering
+retain the original observation time. The command works with auto-send disabled
+and returns `jobIds` and `messageCount`; a positive count with no jobs means there
+were rendered messages but no eligible subscribers. Both operator commands require
+completed event processing.
+
+## Inspect delivered output
 
 To investigate output, convert the requested time window and timezone to epoch
 milliseconds. `listJobs` uses submission time, which can differ from the source's
@@ -81,13 +73,8 @@ bunx convex run api:getJob '{"jobId":"<job-id>"}' --component discordSender --de
 bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
 ```
 
-If `hasMore` is true, narrow the discovery window. Jobs preserve the submitted
-payloads; results preserve terminal Discord responses. A finished job's missing
-results represent its unsent suffix. SDK retries have no individual result rows. These queries
-inspect stored evidence without rerendering cards or sending messages. Unfinished
-delivery jobs are revisited by the component's recovery cron after execution
-failures; `api:resume` requests that same recovery immediately. This does not retry
-ORCA alert preparation or reopen permanently rejected delivery jobs.
+If `hasMore` is true, narrow the discovery window. Use stored jobs and results for
+historical evidence; `prepareIngestion` rerenders with current code and history.
 
 ## Presentation
 

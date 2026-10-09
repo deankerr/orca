@@ -56,31 +56,18 @@ Keep the object source fixed while a timeline or pending processor work exists.
 Switches below enable their guarded entry point only for the exact string `true`;
 missing/`false` disables it.
 
-| Variable                         | Flags | Consumer / fallback                                                                                              | Dev/preview default |
-| -------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                                                           | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.                                            | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                                                                 | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                                                                  | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Schedules alerts after fresh event commits; preparation targets `ingestion` subscribers. Existing jobs continue. | `false`             |
+| Variable                         | Flags | Consumer / fallback                                                         | Dev/preview default |
+| -------------------------------- | ----- | --------------------------------------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                      | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.       | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                            | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                             | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Enables automatic alerts after fresh event commits; manual sends bypass it. | `false`             |
 
-The `rugged-cardinal-168` worktree dev deployment overrides
-`ORCA_DISCORD_AUTO_SEND_ENABLED=true` for ingestion/sender stress testing against its
-private development webhooks. Project defaults remain `false`.
-
-Discord webhook URLs live in the `discordSender` component's `webhooks` table.
-Active webhooks subscribed to the `ingestion` topic receive automatic ingestion
-alerts. The delivery deadline is **3,600,000 ms (one hour)** after `scan_at`, defined in
-`packages/backend/convex/alerts/discord/delivery.ts`. Old observations can therefore
-produce jobs that expire without sending. The explicit single-ingestion operator
-command instead starts that one-hour window at invocation time. Registration and inspection procedures
-live in docs/orca/discord.md.
-
-Delivery, retry and scheduling defaults, including periodic outage recovery, live
-in packages/discord-sender/README.md. The recovery cron belongs to the component
-and does not depend on ORCA ingestion or its auto-send switch.
-Workpool concurrency is a correctness invariant; changing it requires revisiting
-the sender's ownership model.
+Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
+`packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
+`scan_at`; manual `sendIngestion` deadlines use invocation time. Routing and
+operator procedures live in docs/orca/discord.md.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
