@@ -6,6 +6,8 @@
 - Use `ConvexError` with domain data and a concise message for our own exceptions; do not catch and rethrow.
 - Convex executes `convex/init.ts` after preview deployment to initialize its data.
 - Preserve observed meaning, not byte fidelity or incidental object-key/array ordering.
+- Run backend tests with `bun test` and import test APIs from `bun:test`.
+- Bun testing takes precedence over the Vitest setup in Convex skills and generated guidance.
 
 ## Data boundaries
 

@@ -1,3 +1,4 @@
+import discordSender from '@orca/discord-sender/convex.config.js'
 import { defineApp } from 'convex/server'
 import { v } from 'convex/values'
 
@@ -12,7 +13,6 @@ const app = defineApp({
     ORCA_OBJECTS_R2_ACCOUNT_ID: v.optional(v.string()),
     ORCA_OBJECTS_R2_BUCKET: v.optional(v.string()),
 
-    ORCA_DISCORD_WEBHOOK_URL: v.optional(v.string()),
     ORCA_DISCORD_AUTO_SEND_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_WEB_ORIGIN: v.string(),
     ORCA_LOGO_ORIGIN: v.string(),
@@ -23,5 +23,7 @@ const app = defineApp({
     ORCA_TOP_APPS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
   },
 })
+
+app.use(discordSender)
 
 export default app

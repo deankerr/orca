@@ -54,14 +54,17 @@ Keep the object source fixed while a timeline or pending processor work exists.
 Switches below enable their guarded entry point only for the exact string `true`;
 missing/`false` disables it.
 
-| Variable                         | Flags  | Consumer / fallback                                                           | Dev/preview default |
-| -------------------------------- | ------ | ----------------------------------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇    | Enables scheduled scan capture; manual runs bypass it.                        | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇    | Enables scheduled ingestion; manual runs and continuations bypass it.         | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇    | Enables scheduled upstream analytics collection.                              | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇    | Enables scheduled upstream top-apps collection.                               | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇    | Enables automatic scheduling and queued batch starts; manual sends bypass it. | `false`             |
-| `ORCA_DISCORD_WEBHOOK_URL`       | ◆ 🔒 ◇ | Posting credential and destination; production uses its own channel.          | Configured secret   |
+| Variable                         | Flags | Consumer / fallback                                                         | Dev/preview default |
+| -------------------------------- | ----- | --------------------------------------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                      | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.       | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                            | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                             | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Enables automatic alerts after fresh event commits; manual sends bypass it. | `false`             |
+
+Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
+`packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
+`scan_at`; manual `sendIngestion` deadlines use invocation time.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
