@@ -1,4 +1,3 @@
-import discordDelivery from '@orca/discord-delivery/convex.config.js'
 import discordSender from '@orca/discord-sender/convex.config.js'
 import { defineApp } from 'convex/server'
 import { v } from 'convex/values'
@@ -25,7 +24,6 @@ const app = defineApp({
   },
 })
 
-app.use(discordDelivery)
 app.use(discordSender)
 
 export default app

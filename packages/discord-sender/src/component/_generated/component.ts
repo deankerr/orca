@@ -98,6 +98,18 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         }>,
         Name
       >;
+      listWebhooks: FunctionReference<
+        "query",
+        "internal",
+        {},
+        Array<{
+          _creationTime: number;
+          _id: string;
+          name?: string;
+          url: string;
+        }>,
+        Name
+      >;
       registerWebhook: FunctionReference<
         "mutation",
         "internal",

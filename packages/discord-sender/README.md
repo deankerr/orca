@@ -3,8 +3,9 @@
 A Convex component that sends an ordered batch of Discord messages to one webhook.
 Callers own payload construction and choose the destination and deadline. The
 component owns delivery, rate-limit scheduling and durable terminal receipts.
-ORCA currently mounts it for development; its alert producers still use
-`discord-delivery`.
+ORCA uses it for regular ingestion alerts, submitting one job per registered
+webhook. Host admission and age policy live in docs/orca/discord.md and
+docs/orca/config.md.
 
 ## Contract
 
@@ -67,6 +68,8 @@ normalized full URL returns the original ID and name. Thread query parameters ar
 preserved; requests set `wait=true` and enable `with_components` when needed.
 
 Inspection and recovery:
+
+- `listWebhooks({})` returns registered destinations for host routing.
 
 - `getJob({ jobId })` returns the input and operational checkpoint.
 - `listResults({ jobId })` returns terminal message responses in sending order.

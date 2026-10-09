@@ -56,33 +56,29 @@ Keep the object source fixed while a timeline or pending processor work exists.
 Switches below enable their guarded entry point only for the exact string `true`;
 missing/`false` disables it.
 
-| Variable                         | Flags | Consumer / fallback                                                                                            | Dev/preview default |
-| -------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                                                         | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.                                          | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                                                               | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                                                                | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Admits automatic alert preparation; explicit submissions bypass it. Queued delivery has its own pause control. | `false`             |
+| Variable                         | Flags | Consumer / fallback                                                                           | Dev/preview default |
+| -------------------------------- | ----- | --------------------------------------------------------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                                        | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.                         | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                                              | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                                               | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Submits ingestion alerts to every registered sender webhook; already submitted jobs continue. | `false`             |
 
-Discord URLs are registered destination records in the discordDelivery component.
-Automatic ORCA routes default to **3,600,000 ms (one hour)** maximum age from the
-observation time; configure each route explicitly. Queue pause is independent of
-automatic admission. The obsolete webhook URL default was removed from dev/preview
-on October 7, 2026; existing deployments running earlier code retain their values
-until migrated. See docs/orca/discord.md for registration and development demo procedures.
+The `rugged-cardinal-168` worktree dev deployment overrides
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` for ingestion/sender stress testing against its
+private development webhooks. Project defaults remain `false`.
 
-The `discordDelivery` sender defaults to **8 attempts per message**, a **20-second HTTP timeout**,
-**1-second exponential retry backoff capped at 60 seconds**, and a **30-second recovery
-poll** while a scheduled request remains active. Sleeps for future send times and
-cooldowns are capped at **24 hours** per wakeup; the original deadline still applies.
-Discord-provided cooldowns take
-precedence when longer. Groups accept at most **500 messages**, **256 KiB per payload**,
-and **4 MiB total payloads**. Configure expiry and retry attempts at submission;
-retention is unlimited. These limits live in packages/discord-delivery/src/component.
+Discord webhook URLs live in the `discordSender` component's `webhooks` table.
+Every registered webhook receives automatic ingestion alerts. The delivery deadline
+is **3,600,000 ms (one hour)** after `scan_at`, defined in
+`packages/backend/convex/alerts/discord/delivery.ts`. Old observations can therefore
+produce jobs that expire without sending. The explicit single-ingestion operator
+command instead starts that one-hour window at invocation time. Registration and inspection procedures
+live in docs/orca/discord.md.
 
-Development `demoScan` accepts at most **1,000 events** from one scan, failing rather
-than sending a partial scan. Its deliveries start now without expiry; each invocation
-creates fresh groups.
+Delivery, retry and scheduling defaults live in packages/discord-sender/README.md.
+Workpool concurrency is a correctness invariant; changing it requires revisiting
+the sender's ownership model.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
@@ -210,9 +206,3 @@ Production origin **`https://orca.orb.town`** is repeated in Convex AuthKit regi
 Next.js callback defaults, and the backend web-origin setting. Keep them aligned.
 Logo origins are configured separately for web and Discord. WorkOS login policy and
 logout allowlists are managed outside Git.
-
-The backend also mounts `discordSender` for development exercises; ORCA alert
-producers still use `discordDelivery`. Its webhook records are independent.
-Delivery, retry and scheduling defaults for the new component live in
-packages/discord-sender/README.md. Workpool concurrency is a correctness invariant;
-changing it requires revisiting the sender's ownership model.

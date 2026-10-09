@@ -28,7 +28,6 @@
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
     "@noble/hashes": "^1.8.0",
-    "@orca/discord-delivery": "workspace:*",
     "@orca/discord-sender": "workspace:*",
     "@orca/json-profile": "workspace:*",
     "aws4fetch": "^1.0.20",

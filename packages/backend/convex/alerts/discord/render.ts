@@ -1,6 +1,6 @@
 import { sha256 } from '@noble/hashes/sha2'
 import { bytesToHex } from '@noble/hashes/utils'
-import { ConvexError, v } from 'convex/values'
+import { ConvexError } from 'convex/values'
 
 import type { Id } from '#generated/dataModel'
 import { env } from '#generated/server'
@@ -10,14 +10,6 @@ import type { EventRow } from '../../events/table'
 import { readFrequency } from './frequency'
 import { prepareBatch } from './prepare'
 import { renderDiscordBatch } from './renderers/index'
-import { skippedEvent } from './table'
-
-export const renderedBatch = v.object({
-  messages: v.array(
-    v.object({ key: v.string(), payload: v.string(), event_ids: v.array(v.string()) }),
-  ),
-  skippedEvents: v.array(skippedEvent),
-})
 
 /** Stable across JSON object insertion order; arrays intentionally retain display order. */
 export function canonicalJson(value: unknown): string {
