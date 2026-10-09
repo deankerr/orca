@@ -24,11 +24,15 @@ The shared logout allowlist contains:
 - `https://orca.localhost/`
 - `https://*.orca.localhost/`
 - `https://orca-git-*-deank.vercel.app/`
+- `https://fserv.bleak-scala.ts.net/`
+- `https://fserv.bleak-scala.ts.net:8443/` through `:8450/` (eight explicit entries)
 
 Update it when changing the hostname scheme or Vercel project/team. Preview sessions
 belong to the branch hostname; sign-in redirects unique deployment URLs there.
 
-Tailscale URLs also need explicit logout destinations, including each HTTPS port.
+The fserv entries cover Portless's nine preferred Tailscale HTTPS ports. Additional
+ports or development hosts need explicit entries in WorkOS Applications → Redirects
+→ Sign-out URIs. Keep the trailing slash to match the app's logout destination.
 Convex's managed AuthKit configuration registers callbacks and CORS origins only.
 WorkOS permits wildcard logout ports only on localhost/loopback; an unlisted
 tailnet destination falls back to the default sign-out URL.
