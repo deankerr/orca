@@ -9,11 +9,10 @@
  */
 
 import type * as api_ from "../api.js";
+import type * as crons from "../crons.js";
+import type * as discord from "../discord.js";
 import type * as pool from "../pool.js";
-import type * as protocol from "../protocol.js";
-import type * as retry from "../retry.js";
-import type * as scheduling from "../scheduling.js";
-import type * as transport from "../transport.js";
+import type * as state from "../state.js";
 import type * as worker from "../worker.js";
 
 import type {
@@ -25,11 +24,10 @@ import { anyApi, componentsGeneric } from "convex/server";
 
 const fullApi: ApiFromModules<{
   api: typeof api_;
+  crons: typeof crons;
+  discord: typeof discord;
   pool: typeof pool;
-  protocol: typeof protocol;
-  retry: typeof retry;
-  scheduling: typeof scheduling;
-  transport: typeof transport;
+  state: typeof state;
   worker: typeof worker;
 }> = anyApi as any;
 

@@ -7,6 +7,8 @@ import { env } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
 import type { EventRow } from '../../events/table'
+import { EVENTS_TABLE } from '../../events/table'
+import { INGESTIONS_TABLE, PROCESSOR_WORK_TABLE } from '../../ingestion/table'
 import { readFrequency } from './frequency'
 import { prepareBatch } from './prepare'
 import { renderDiscordBatch } from './renderers/index'
@@ -23,6 +25,35 @@ export function canonicalJson(value: unknown): string {
 
 export function contentKey(value: unknown): string {
   return bytesToHex(sha256(canonicalJson(value)))
+}
+
+/** Preparation and manual sending read the same complete observation. */
+export async function renderIngestion(ctx: QueryCtx, ingestionId: Id<typeof INGESTIONS_TABLE>) {
+  const ingestion = await ctx.db.get(INGESTIONS_TABLE, ingestionId)
+
+  if (ingestion === null) {
+    throw new ConvexError('Ingestion not found')
+  }
+
+  const work = await ctx.db
+    .query(PROCESSOR_WORK_TABLE)
+    .withIndex('by_ingestion_id_and_processor', (q) =>
+      q.eq('ingestion_id', ingestionId).eq('processor', 'events'),
+    )
+    .unique()
+
+  if (work?.state !== 'complete') {
+    throw new ConvexError('Ingestion event processing must be complete before preparing alerts')
+  }
+
+  // Filtering and batching must not depend on a caller-selected event subset.
+  // Keep the original observation time even when previewing historical data.
+  const rows = await ctx.db
+    .query(EVENTS_TABLE)
+    .withIndex('by_scan_at', (q) => q.eq('scan_at', ingestion.scan_at))
+    .collect()
+
+  return { scan_at: ingestion.scan_at, ...(await renderRows(ctx, rows)) }
 }
 
 export async function renderRows(ctx: QueryCtx, rows: (EventRow & { _id: string })[]) {

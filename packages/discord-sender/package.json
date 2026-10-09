@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@convex-dev/workpool": "0.4.13",
+    "@discordjs/rest": "2.6.3",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
     "remeda": "catalog:",
-    "up-fetch": "^2.6.1",
     "zod": "catalog:"
   },
   "devDependencies": {

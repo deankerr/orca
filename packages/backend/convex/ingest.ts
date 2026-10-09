@@ -97,9 +97,18 @@ export const run = internalAction({
 
     // Acceptance already committed; event failures leave their work pending.
     try {
-      await events.process(ctx, pair, work.events)
+      const eventIds = await events.process(ctx, pair, work.events)
+
+      if (env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true' && eventIds.length > 0) {
+        // Events are already committed. Alert preparation runs independently;
+        // scheduling is best-effort, and event-only retries do not broadcast.
+        await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.sendIngestionAlerts, {
+          scan_at: pair.next.scan_at,
+          event_ids: eventIds,
+        })
+      }
     } catch (error: unknown) {
-      console.error('[events] processing failed', {
+      console.error('[ingestion] event processing or Discord scheduling failed', {
         work_id: work.events,
         error,
       })

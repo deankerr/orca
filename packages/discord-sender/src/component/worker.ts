@@ -1,288 +1,280 @@
-import { ConvexError, v } from 'convex/values'
-import { pickBy } from 'remeda'
+import { DiscordAPIError } from '@discordjs/rest'
+import { v } from 'convex/values'
+import { groupBy } from 'remeda'
 
 import { internal } from './_generated/api'
-import type { Doc } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import { internalAction, internalMutation, internalQuery } from './_generated/server'
-import { classifyResponse, webhookResourceKey } from './retry'
-import type { Cooldown } from './retry'
-import { vResponse } from './schema'
-import { executeWebhook } from './transport'
+import { createDiscord, ExpiredError, invalidatesWebhook, parseWebhookUrl } from './discord'
+import { pool } from './pool'
+import { vResult } from './schema'
+import { finishJob, invalidateWebhook } from './state'
 
-type Gates = Pick<Doc<'sender'>, 'globalAvailableAt' | 'webhookAvailableAt'>
-type Decision = ReturnType<typeof classifyResponse>
-
-type ActiveJob = {
-  job: Doc<'jobs'>
-  nextMessageIndex: number
-  resourceKey: string
-  url: string
-}
-
-type DrainState = { gates: Gates; jobs: ActiveJob[] }
+type ActiveJob = { job: Doc<'jobs'>; nextMessageIndex: number; url: string }
 
 export const load = internalQuery({
   args: {},
-  handler: async (ctx): Promise<DrainState | null> => {
+  handler: async (ctx): Promise<Id<'jobs'>[][]> => {
     const jobs = await ctx.db
       .query('jobs')
       // oxlint-disable-next-line unicorn/no-useless-undefined -- Convex requires an explicit value to query absent optional fields.
       .withIndex('by_finishedAt', (q) => q.eq('finishedAt', undefined))
       .collect()
+    const destinations = await ctx.db.query('webhooks').collect()
+    const webhooks = new Map(destinations.map((webhook) => [webhook._id, webhook]))
+    const lanes = groupBy(jobs, (job) => {
+      const webhook = webhooks.get(job.webhookId)
+      // Missing registrations still get a lane: start cancels their jobs normally,
+      // without making another destination's work depend on a historical row.
+      return webhook ? parseWebhookUrl(webhook.url).resourceKey : job.webhookId
+    })
 
-    if (jobs.length === 0) {
+    return Object.values(lanes).map((lane) => lane.map((job) => job._id))
+  },
+})
+
+export const start = internalMutation({
+  args: { jobId: v.id('jobs') },
+  handler: async (ctx, { jobId }): Promise<ActiveJob | null> => {
+    const job = await ctx.db.get(jobId)
+
+    if (!job || job.finishedAt !== undefined) {
       return null
     }
 
-    const sender = await ctx.db.query('sender').unique()
+    const webhook = await ctx.db.get(job.webhookId)
 
-    if (!sender) {
-      throw new ConvexError('Open jobs require sender state')
+    if (!webhook || webhook.invalidatedAt !== undefined) {
+      await finishJob(ctx, jobId, 'cancelled')
+      return null
     }
 
-    const destinations = await ctx.db.query('webhooks').collect()
-    const webhooks = new Map(destinations.map((webhook) => [webhook._id, webhook]))
-    const activeJobs = await Promise.all(
-      jobs.map(async (job): Promise<ActiveJob> => {
-        const webhook = webhooks.get(job.webhookId)
+    const last = await ctx.db
+      .query('results')
+      .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
+      .order('desc')
+      .first()
 
-        if (!webhook) {
-          throw new ConvexError('Job webhook does not exist')
-        }
-
-        const last = await ctx.db
-          .query('results')
-          .withIndex('by_jobId', (q) => q.eq('jobId', job._id))
-          .order('desc')
-          .first()
-
-        // Open jobs can only have a successful prefix: a failed result and job
-        // finalization commit together. Its last key locates the next message in
-        // the immutable array. No stored cursor, position or receipt scan is needed.
-        const nextMessageIndex = last
-          ? job.messages.findIndex((message) => message.key === last.messageKey) + 1
-          : 0
-
-        return {
-          job,
-          nextMessageIndex,
-          resourceKey: webhookResourceKey(webhook.url),
-          url: webhook.url,
-        }
-      }),
-    )
-
+    // This transaction is the job-start boundary. Later webhook invalidation or
+    // removal cannot revoke it: only job cancellation/expiry stops active work.
+    // An action restart starts unfinished jobs again and rechecks eligibility.
+    // Open jobs have a successful prefix; failure receipts and completion commit
+    // together. Workpool ownership means there is no claim or persisted cursor.
     return {
-      gates: {
-        globalAvailableAt: sender.globalAvailableAt,
-        webhookAvailableAt: sender.webhookAvailableAt,
-      },
-      jobs: activeJobs,
+      job,
+      nextMessageIndex: last
+        ? job.messages.findIndex((message) => message.key === last.messageKey) + 1
+        : 0,
+      url: webhook.url,
     }
   },
 })
 
-function applyCooldowns(
-  gates: Gates,
-  resourceKey: string,
-  cooldowns: Cooldown[],
-  now: number,
-): Gates {
-  const updated = {
-    globalAvailableAt: gates.globalAvailableAt,
-    webhookAvailableAt: pickBy(gates.webhookAvailableAt, (at) => at > now),
-  }
-
-  for (const cooldown of cooldowns) {
-    if (cooldown.scope === 'global') {
-      updated.globalAvailableAt = Math.max(updated.globalAvailableAt, cooldown.availableAt)
-    } else {
-      updated.webhookAvailableAt[resourceKey] = Math.max(
-        updated.webhookAvailableAt[resourceKey] ?? 0,
-        cooldown.availableAt,
-      )
-    }
-  }
-
-  return updated
-}
+export const isOpen = internalQuery({
+  args: { jobId: v.id('jobs') },
+  handler: async (ctx, { jobId }) => {
+    const job = await ctx.db.get(jobId)
+    // Deliberately do not read the webhook here. Invalidation controls job start;
+    // cancellation controls an active job. Topic edits affect neither.
+    return job !== null && job.finishedAt === undefined
+  },
+  returns: v.boolean(),
+})
 
 export const checkpoint = internalMutation({
   args: {
     isLastMessage: v.boolean(),
     jobId: v.id('jobs'),
     messageKey: v.string(),
-    resourceKey: v.string(),
-    response: vResponse,
-    retryCount: v.number(),
+    result: vResult,
   },
-  handler: async (ctx, args): Promise<Decision> => {
-    const now = Date.now()
-    const decision = classifyResponse(args.response, args.retryCount, now)
+  handler: async (ctx, { jobId, messageKey, isLastMessage, result }) => {
+    await ctx.db.insert('results', { jobId, messageKey, result })
 
-    if (decision.cooldowns.length > 0) {
-      const sender = await ctx.db.query('sender').unique()
+    // A cancelled job can still have an outstanding HTTP request. Keep the actual
+    // response, while finishJob preserves whichever terminal outcome committed.
+    if (result.kind === 'failed' && invalidatesWebhook(result.error)) {
+      const job = await ctx.db.get(jobId)
+      const webhook = job ? await ctx.db.get(job.webhookId) : null
 
-      if (!sender) {
-        throw new ConvexError('A response requires sender state')
+      if (webhook) {
+        const { route } = parseWebhookUrl(webhook.url)
+        const registrations = await ctx.db.query('webhooks').collect()
+
+        // Thread-specific registrations can share credentials. A failure of those
+        // credentials invalidates them all; user removal affects only its own row.
+        for (const registration of registrations) {
+          if (parseWebhookUrl(registration.url).route === route) {
+            await invalidateWebhook(ctx, registration._id)
+          }
+        }
       }
-
-      await ctx.db.patch(
-        sender._id,
-        applyCooldowns(sender, args.resourceKey, decision.cooldowns, now),
-      )
     }
 
-    // The action is the only writer of delivery progress. Its immutable job data
-    // and current retry count are already loaded; rereading payloads or acquiring
-    // a per-message claim here would add no protection under Workpool concurrency 1.
-    if (decision.kind === 'retry') {
-      await ctx.db.patch(args.jobId, {
-        availableAt: decision.retryAt,
-        retryCount: args.retryCount + 1,
-      })
-      console.warn('Discord message will retry', {
-        jobId: args.jobId,
-        messageKey: args.messageKey,
-        response: args.response,
-        retryAt: decision.retryAt,
-        retryCount: args.retryCount + 1,
-      })
-      return decision
+    if (result.kind === 'failed' || isLastMessage) {
+      await finishJob(ctx, jobId, result.kind)
     }
 
-    // Attempt -> terminal message result. Persist the receipt and any job finish
-    // atomically, so a restarted action cannot resend an acknowledged prefix.
-    // Expiry never changes the meaning of a response to a request already begun.
-    await ctx.db.insert('results', {
-      jobId: args.jobId,
-      messageKey: args.messageKey,
-      result: { kind: decision.kind, response: args.response },
-    })
-    const finished = decision.kind === 'failed' || args.isLastMessage
-
-    if (finished) {
-      await ctx.db.patch(args.jobId, { finishedAt: now, outcome: decision.kind, retryCount: 0 })
-    } else if (args.retryCount > 0) {
-      await ctx.db.patch(args.jobId, { retryCount: 0 })
-    }
-
-    // A successful attempt already passed availableAt, so that timestamp needs no
-    // update. Ordinary nonfinal success only inserts its result; the job's payload
-    // document stays untouched until a retry checkpoint or finalization needs it.
-    return decision
-  },
-})
-
-export const expire = internalMutation({
-  args: { jobId: v.id('jobs') },
-  handler: async (ctx, { jobId }) => {
-    // Open -> expired happens before attempting a message. There is no response
-    // to attach and no synthetic task result for the unsent suffix.
-    await ctx.db.patch(jobId, { finishedAt: Date.now(), outcome: 'expired', retryCount: 0 })
     return null
   },
   returns: v.null(),
 })
 
-function availableAt(active: ActiveJob, gates: Gates): number {
-  return Math.max(
-    active.job.availableAt,
-    gates.globalAvailableAt,
-    gates.webhookAvailableAt[active.resourceKey] ?? 0,
-  )
-}
+export const expire = internalMutation({
+  args: { jobId: v.id('jobs') },
+  handler: async (ctx, { jobId }) => {
+    await finishJob(ctx, jobId, 'expired')
+    return null
+  },
+  returns: v.null(),
+})
 
-// Give a busy drain a generous margin before the action runtime limit. Ordinary
-// cooldowns never consume this budget sleeping: the action releases its slot.
-const DRAIN_BUDGET_MS = 25 * 60 * 1000
+// Both the cron and manual recovery enter through the same discovery path. An
+// expired job still needs a drain to finalize it. No Workpool-ID bookkeeping is
+// needed: redundant drains serialize and can safely discover an empty queue.
+export const recover = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const job = await ctx.db
+      .query('jobs')
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- Convex requires an explicit value to query absent optional fields.
+      .withIndex('by_finishedAt', (q) => q.eq('finishedAt', undefined))
+      .first()
+
+    if (job) {
+      await pool.enqueueAction(ctx, internal.worker.drain, {})
+    }
+
+    return null
+  },
+  returns: v.null(),
+})
 
 export const drain = internalAction({
   args: {},
   handler: async (ctx): Promise<null> => {
-    const state = await ctx.runQuery(internal.worker.load, {})
-
-    if (!state) {
-      return null
+    const lanes = await ctx.runQuery(internal.worker.load, {})
+    const discord = createDiscord()
+    let stopped = false
+    const stopAfterProgressFailure = (error: unknown): never => {
+      // Unlike an unavailable webhook, inability to record progress affects every
+      // lane. Other in-flight sends must still finish and attempt their checkpoint.
+      stopped = true
+      throw error
     }
 
-    const { jobs } = state
-    let { gates } = state
-    let current: ActiveJob | undefined
-    const yieldAt = Date.now() + DRAIN_BUDGET_MS
+    // Workpool owns one drain, but that drain can run different webhooks at once.
+    // Within a webhook, complete each job before starting the next. Only submit a
+    // message after its predecessor's receipt commits: SDK queues know requests,
+    // not our rule that a permanent rejection stops a job's unfinished suffix.
+    const outcomes = await Promise.allSettled(
+      lanes.map(async (lane) => {
+        for (const jobId of lane) {
+          if (stopped) {
+            return
+          }
 
-    // Workpool admits only one drain. Jobs submitted while it runs will schedule
-    // another drain, so this snapshot needs no polling or second running flag.
-    // Keep a selected job until it finishes or must wait; then take the oldest
-    // eligible job. Cooldowns may therefore interleave jobs, never message order.
-    while (jobs.length > 0) {
-      const now = Date.now()
-      const currentGates = gates
-      const expired = jobs.find((active) => active.job.expiresAt <= now)
+          const active = await ctx
+            .runMutation(internal.worker.start, { jobId })
+            .catch(stopAfterProgressFailure)
 
-      if (expired) {
-        await ctx.runMutation(internal.worker.expire, { jobId: expired.job._id })
-        jobs.splice(jobs.indexOf(expired), 1)
+          if (!active) {
+            continue
+          }
 
-        if (current === expired) {
-          current = undefined
+          const { job, nextMessageIndex, url } = active
+
+          for (const message of job.messages.slice(nextMessageIndex)) {
+            if (stopped) {
+              return
+            }
+
+            const open = await ctx
+              .runQuery(internal.worker.isOpen, { jobId })
+              .catch(stopAfterProgressFailure)
+
+            if (stopped || !open) {
+              break
+            }
+
+            if (Date.now() >= job.expiresAt) {
+              await ctx
+                .runMutation(internal.worker.expire, { jobId: job._id })
+                .catch(stopAfterProgressFailure)
+              break
+            }
+
+            let result: Doc<'results'>['result']
+
+            try {
+              const response = await discord.request({
+                expiresAt: job.expiresAt,
+                operation: message.kind,
+                url,
+                ...('payload' in message ? { payload: message.payload } : {}),
+                ...('messageId' in message ? { messageId: message.messageId } : {}),
+                ...('threadId' in message ? { threadId: message.threadId } : {}),
+              })
+              result = { kind: 'succeeded', response }
+            } catch (error) {
+              if (error instanceof ExpiredError) {
+                await ctx
+                  .runMutation(internal.worker.expire, { jobId: job._id })
+                  .catch(stopAfterProgressFailure)
+                break
+              }
+
+              if (!(error instanceof DiscordAPIError)) {
+                // SDK has exhausted its own retries, or execution itself failed.
+                // Let Workpool retry from receipts; don't mislabel this as a
+                // permanent Discord rejection. Only this webhook lane stops;
+                // the other lanes finish before the action fails. The recovery
+                // cron revisits open jobs even after Workpool retries run out.
+                throw error
+              }
+
+              // A repeated delete after an ambiguous response has achieved its
+              // purpose when Discord says the message no longer exists. Unknown
+              // webhook (10015) remains a failure; it is not proof of deletion.
+              result =
+                message.kind === 'delete' && error.code === 10_008
+                  ? { kind: 'succeeded', response: null }
+                  : {
+                      error: { code: error.code, message: error.message, status: error.status },
+                      kind: 'failed',
+                    }
+            }
+
+            // Keep this outside the HTTP catch: a failed database checkpoint must
+            // halt execution, never be interpreted as a Discord message failure.
+            await ctx
+              .runMutation(internal.worker.checkpoint, {
+                isLastMessage: message === job.messages.at(-1),
+                jobId: job._id,
+                messageKey: message.key,
+                result,
+              })
+              .catch(stopAfterProgressFailure)
+
+            if (result.kind === 'failed') {
+              break
+            }
+          }
         }
+      }),
+    )
 
-        continue
-      }
+    // Never fail fast while another lane can still send. Await its current request
+    // and receipt first, then release the Workpool slot. A runtime termination can
+    // still lose an uncheckpointed success; retries can duplicate that message.
+    const failure = outcomes.find((outcome) => outcome.status === 'rejected')
 
-      if (current && availableAt(current, gates) > now) {
-        current = undefined
-      }
-
-      current ??= jobs.find((active) => availableAt(active, currentGates) <= now)
-
-      if (!current || now >= yieldAt) {
-        // All waiting -> put down work. Wake for the first useful send OR expiry;
-        // otherwise a long Retry-After would leave expired jobs appearing open.
-        const runAt = current
-          ? now
-          : Math.min(
-              ...jobs.map((active) =>
-                Math.min(availableAt(active, currentGates), active.job.expiresAt),
-              ),
-            )
-        await ctx.runMutation(internal.scheduling.schedule, { runAt })
-        return null
-      }
-
-      // Ready -> attempt. Expiry was checked above, immediately before this path,
-      // with no intervening await. We deliberately write nothing before HTTP.
-      const message = current.job.messages[current.nextMessageIndex]
-      const response = await executeWebhook({ payload: message.payload, url: current.url })
-      const isLastMessage = current.nextMessageIndex === current.job.messages.length - 1
-      const decision = await ctx.runMutation(internal.worker.checkpoint, {
-        isLastMessage,
-        jobId: current.job._id,
-        messageKey: message.key,
-        resourceKey: current.resourceKey,
-        response,
-        retryCount: current.job.retryCount,
-      })
-
-      // Advance memory only after the durable checkpoint. A crash before that
-      // checkpoint retries this message; a crash after it derives the new prefix.
-      // No transient response or attempt history becomes persistent task state.
-      gates = applyCooldowns(gates, current.resourceKey, decision.cooldowns, Date.now())
-
-      if (decision.kind === 'retry') {
-        current.job.availableAt = decision.retryAt
-        current.job.retryCount += 1
-        current = undefined
-      } else if (decision.kind === 'failed' || isLastMessage) {
-        jobs.splice(jobs.indexOf(current), 1)
-        current = undefined
-      } else {
-        current.nextMessageIndex += 1
-        current.job.retryCount = 0
-      }
+    if (failure?.status === 'rejected') {
+      throw failure.reason
     }
 
+    // Newly admitted jobs have their own queued drain, so no polling or separate
+    // wake/lock table is required. SDK bucket state lasts for this action only.
     return null
   },
   returns: v.null(),

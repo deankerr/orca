@@ -1,52 +1,42 @@
 # discord-sender
 
-A Convex component that sends an ordered batch of Discord messages to one webhook.
-Callers own payload construction and choose the destination and deadline. The
-component owns delivery, rate-limit scheduling and durable terminal receipts.
-ORCA uses it for regular ingestion alerts, submitting one job per registered
-webhook. Host admission and age policy live in docs/orca/discord.md and
-docs/orca/config.md.
+Ordered Discord webhook delivery for Convex. The host supplies serialized message
+payloads, topics and deadlines. The component owns subscriptions, delivery,
+message edits/deletes and queryable receipts. Host authentication, payload policy
+and source-event provenance stay with the caller.
 
-## Contract
+Mount `@orca/discord-sender/convex.config.js` with `app.use(...)`. Call the public
+interface below through `components.discordSender.api` from host mutations and
+queries. ORCA's ingestion policy lives in docs/orca/discord.md and docs/orca/config.md.
 
-- A job owns one webhook and an immutable ordered array of serialized payloads.
-  The caller can submit separate jobs for multiple destinations.
-- Workpool admits one sending action across the component. The action keeps
-  sending its selected job until it finishes or must wait, then selects the oldest
-  eligible job. Jobs can interleave when one waits; each job's messages stay ordered.
-- Before every attempt, an expired job is finalized and removed from active work.
-  A request that began before the deadline may complete afterward. Its terminal
-  response is saved; expiry cuts off only the unfinished suffix.
-- Network errors, 429 and 5xx retry until the deadline. An ambiguous response may
-  produce a duplicate Discord message. Permanent rejection stops that job.
-- HTTP 2xx is success even when Discord's message ID or response body is unavailable.
-  Available message/channel IDs, status, headers and body are retained with the
-  terminal result. Transient responses go to logs.
-- Payloads live once per job. Terminal results reference message keys. The retry
-  count belongs to the current unfinished message and resets after success;
-  there is no persistent attempt history or pre-attempt task record.
-- `finishedAt` and `outcome` distinguish completion, rejection and expiry.
-  Results describe messages with a terminal response. Missing results in a finished
-  job are its unsent suffix, not missing audit events.
+## Public API
 
-Workpool's concurrency limit is an invariant. Raising it requires redesigning
-ownership and shared-state reads. It is not a performance tuning option.
+### Webhooks and subscriptions
 
-## Host interface
+| Mutation/query                            | Result          | Contract                                                                                                                                        |
+| ----------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `registerWebhook({ url, name?, topics })` | Webhook ID      | Registers a destination. Repeating an eligible canonical URL returns the original row unchanged. An invalidated URL gets a new registration ID. |
+| `listWebhooks({})`                        | Webhook records | Includes invalidated registrations for inspection.                                                                                              |
+| `setWebhookTopics({ webhookId, topics })` | `null`          | Replaces subscriptions on an eligible registration. Existing jobs remain unchanged.                                                             |
+| `removeWebhook({ webhookId })`            | `null`          | Sets irreversible `invalidatedAt`. Keeps history and leaves active jobs running; queued jobs are cancelled when they try to start.              |
 
-Mount `@orca/discord-sender/convex.config.js` with `app.use(...)`, then call it from
-host mutations. Authentication, subscription ownership, receiver URL permissions,
-card construction, mentions and source-event provenance belong to the host.
+- URLs must use HTTPS `discord.com`. API-version paths are canonicalized; `thread_id` is retained.
+- Topics are exact, case-sensitive strings. A registration can have several, or none.
+- Invalidation gates admission and job start. Explicit cancellation controls active jobs.
+- Discord errors `10015` (unknown webhook) and `50027` (invalid webhook token) invalidate registrations sharing the failed credentials. Other permanent API rejections fail their job without condemning the webhook.
+- A missing registration has the same admission/start behavior as an invalidated one. Recovery rechecks eligibility when restarting unfinished jobs.
+
+### Delivery and cancellation
+
+| Mutation                                           | Result                   | Contract                                                                                                               |
+| -------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `submitBatch({ topic, key, expiresAt, messages })` | `{ webhookId, jobId }[]` | Creates one ordered job per eligible subscriber. Unavailable recipients are silently skipped; no matches returns `[]`. |
+| `cancelJob({ jobId })`                             | `null`                   | Finishes an open job as cancelled. Every terminal outcome and completion time is permanent.                            |
 
 ```ts
-const webhookId = await ctx.runMutation(components.discordSender.api.registerWebhook, {
-  name: 'Development',
-  url: webhookUrl,
-})
-
-const jobId = await ctx.runMutation(components.discordSender.api.submitBatch, {
-  key: 'scan:123:alerts:development:v1',
-  webhookId,
+const recipients = await ctx.runMutation(components.discordSender.api.submitBatch, {
+  topic: 'ingestion',
+  key: 'scan:123:alerts:v1',
   expiresAt: deadline,
   messages: [
     { key: 'heading', payload: JSON.stringify({ content: 'Scan results' }) },
@@ -55,85 +45,77 @@ const jobId = await ctx.runMutation(components.discordSender.api.submitBatch, {
 })
 ```
 
-Message keys are nonempty and unique within the job. Payloads must be serialized
-JSON objects; their exact bytes are preserved. Empty message arrays are rejected.
+- `expiresAt` is an epoch-millisecond deadline. Batch/message keys must be nonempty; a batch contains at least one message with keys unique within it. Each `payload` is a serialized JSON object.
+- Deduplication uses `(key, webhookId)`. Identical input returns the existing job; changed input conflicts. Preserve the deadline when retrying a submission. Intentional resends need a new key.
+- Each submission resolves current subscriptions. Repeating a key can admit newly subscribed destinations. Admission is atomic across recipients: a conflicting eligible destination rolls back the submission.
+- Jobs for the same Discord webhook run in submission order, with messages in array order. Thread destinations sharing that webhook share the same ordering. Different webhooks can progress concurrently.
+- Expiry is checked before each HTTP attempt, including retries after SDK waits. An attempt started before expiry may finish afterward.
+- Cancellation is checked between operations. A request already handed to the SDK can complete, including its waits/retries. Its receipt is retained even when cancellation has already finished the job.
 
-The job key is unique across the component instance. Identical repeated submissions
-return the existing job ID. Changed payloads, message order, destination or deadline
-conflict. Submission retries reuse the original deadline; development rerenders use
-a fresh key and deadline. Fan-out needs a distinct job key per destination.
+### Message edits and deletes
 
-Registration accepts HTTP(S), including custom development receivers. The same
-normalized full URL returns the original ID and name. Thread query parameters are
-preserved; requests set `wait=true` and enable `with_components` when needed.
+| Mutation                                             | Result           | Contract                                                                                                                            |
+| ---------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `editMessage({ resultId, key, expiresAt, payload })` | Job ID or `null` | Queues an edit using the target message and destination from a successful send/edit receipt.                                        |
+| `deleteMessage({ resultId, key, expiresAt })`        | Job ID or `null` | Queues a deletion using a successful send/edit receipt. Discord's unknown-message response (`10008`) counts as successful deletion. |
 
-Inspection and recovery:
+- Both operations use the same ordering, deadlines and cancellation as sends. Their new jobs and receipts preserve the original records.
+- An unavailable destination returns `null`. Malformed input, unsuitable receipts and conflicting keys for eligible destinations remain errors.
+- `removeWebhook` removes a registration from use; it does not delete the webhook at Discord.
 
-- `listWebhooks({})` returns registered destinations for host routing.
+### Inspection and recovery
 
-- `getJob({ jobId })` returns the input and operational checkpoint.
-- `listResults({ jobId })` returns terminal message responses in sending order.
-- `listJobs({ from, to, limit? })` discovers submissions in `[from, to)`, newest first,
-  including payloads. Default limit 25, maximum 100; `hasMore` indicates that the
-  agent should narrow its window. Time means submission time, not source-event time.
-- `resume({})` wakes the sender after an operator fixes an execution error. It
-  preserves successful prefixes and leaves terminal jobs closed.
+| Query/mutation                   | Result                 | Contract                                                                                                                             |
+| -------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `getJob({ jobId })`              | Job or `null`          | Submitted input, destination and terminal outcome.                                                                                   |
+| `listJobs({ from, to, limit? })` | `{ jobs, hasMore }`    | Submissions in epoch-millisecond window `[from, to)`, newest first. Default limit 25; maximum 100. Narrow the window when truncated. |
+| `listResults({ jobId })`         | Ordered result records | Complete parsed Discord message responses, `null` for successful deletion, or terminal error status/code/message.                    |
+| `resume({})`                     | `null`                 | Checks for unfinished work and queues a drain when needed. Terminal jobs remain closed.                                              |
 
-## Scheduling decisions
+- Discovery uses submission time, not source-event time. The host supplies provenance through its keys and payloads.
+- Unsent suffixes have no result rows; the job outcome explains their termination. SDK retries have no individual receipt records.
+- Stored receipts describe observed responses. They are not a live view of messages subsequently changed in Discord.
 
-The component owns `webhooks`, `jobs`, `results`, and a singleton `sender` table.
-The singleton stores shared cooldowns and the next scheduled wake. It is scheduling
-state, not a worker lock. Workpool and its dependencies own their execution tables.
+## Forums and threads
 
-Discord's `Retry-After`/`retry_after` durations govern 429 waits, with a one-second
-minimum. Network/server failures back off from one to sixty seconds. An exhausted
-bucket response defers every job sharing that webhook resource, including thread
-URL variants. A global 429 gates the whole component. Different custom receiver
-paths have separate resource gates, but a custom global response also gates the
-whole component; this is deliberately conservative.
+Discord's Execute Webhook contract requires forum/media destinations to receive
+`thread_name` in the payload to create a post, or `thread_id` in the URL query to
+send into an existing post. Reference: docs.discord.com/developers/resources/webhook.
 
-A waiting action returns instead of sleeping. One scheduled mutation hands the
-next drain to Workpool at the earliest readiness or expiry time. Submissions can
-bring that wake forward. If a submission arrives during a drain, another queued
-drain picks it up afterward. The action yields after 25 minutes of continuous work.
-HTTP requests have a 20-second timeout.
+| Intent                                             | Input                                                                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Create a forum post                                | Register the forum webhook URL; submit a message containing `thread_name` and its initial content.           |
+| Send an ordered batch into an existing post/thread | Register the webhook URL with `?thread_id=<id>` and submit to that registration's topic.                     |
+| Edit/delete a sent message                         | Supply its result ID. Created-post receipts retain the thread route through Discord's returned `channel_id`. |
 
-Unexpected action failures use Workpool's retry policy. Each new execution derives
-the successful prefix from the latest terminal result. Persistent execution errors
-can exhaust those retries and leave jobs open; use logs and `resume` after fixing
-the cause. There is no secondary recovery cron. HTTP failures use the component's
-response-specific scheduling and do not consume Workpool execution retries.
+A batch does not automatically adopt a thread created by its first message.
+Repeating `thread_name` creates separate posts; an ordinary follow-up without a
+thread target cannot use the bare forum webhook. Creating a post and then filling
+it requires two submissions: read the initial receipt, register its thread URL,
+then submit the remaining messages there. Thread names, tags and lifecycle
+management remain caller policy.
 
-Protocol reference: https://docs.discord.com/developers/topics/rate-limits
+Live verification on 2026-10-09 against the private development forum covered post
+creation, three ordered replies, editing the opener and a reply, and repeated
+deletion of a reply. Direct Discord reads confirmed the edits and deletion. Media
+channels use the same documented contract but were not exercised.
 
-State transitions and their invariants are documented beside the code that performs
-them. The HTTP transport and protocol classification depend on neither the database
-schema nor Workpool.
+## Recovery and observability
+
+- Workpool concurrency **1** is an ownership invariant. Separate webhook lanes share one `@discordjs/rest` client and its rate-limit state within an action.
+- A permanent Discord rejection finishes its job as failed. Exhausted HTTP retries leave work unfinished and stop that webhook lane; other lanes finish before the action fails for Workpool retry.
+- Progress-recording failures stop further work across lanes while outstanding requests attempt to checkpoint. Recovery continues from saved successful prefixes.
+- A component-owned cron checks unfinished jobs every **five minutes**, including expired work and jobs left after Workpool exhausts its retries. `resume` requests the same recovery immediately.
+- `console.warn` reports SDK rate-limit waits and first-time webhook invalidation, with IDs/cooldown metadata rather than credentials. Skips, ordinary completions and repeated invalidation remain silent. Execution errors propagate to Workpool.
+
+## Known limitations
+
+- An accepted Discord send whose response/checkpoint is lost can be repeated. Retrying uncertain outcomes is the chosen policy.
+- SDK waits occupy the current drain and delay newly submitted jobs. Expiry prevents late transmission, but finalization can occur after the deadline.
+- Rate-limit memory lasts for one action. Restarts can encounter the same limit again; coordination excludes other deployments/applications sharing an outbound IP.
+- Jobs and the open-work snapshot must fit Convex document/transaction limits. Payloads are stored per destination job; discovery is intentionally sized for low volume.
+- Delivery accepts JSON payloads. Multipart uploads, scheduled sending, source-time ordering, completion callbacks, Discord fetch operations, retention and a DLQ are outside the current scope. Full records are retained.
 
 ## Remaining decisions
 
-- Global coordination covers this component instance, not other applications or
-  deployments sharing Discord's unauthenticated IP limit. Webhook keys currently
-  strip query parameters but do not normalize Discord host/API-version aliases or
-  coordinate different webhook tokens that Discord reports as a shared bucket.
-- A permanent rejection ends the current job. Destination disable/rotation and
-  Discord's advice to stop using a webhook after 404 still need lifecycle policy.
-- Cancellation, per-job execution dashboards, targeted operator retry, completion
-  callbacks, fetch/edit/delete and retention remain deferred. Original receipts
-  and immutable destinations retain the information needed for message management.
-- Each job and the active snapshot must fit Convex document/transaction limits.
-  Payload sharing across destinations and paginated worker discovery should be
-  justified by actual volume before adding another storage layer.
-- Scheduled sending, source-time ordering, multipart uploads and a DLQ remain
-  optional. `availableAt` is currently an internal retry checkpoint.
-
-## Validation
-
-```sh
-bun test packages/discord-sender
-bun run fix packages/discord-sender
-```
-
-Tests use real Workpool and its Batch Worker dependency under `convex-test`, with
-HTTP mocked. They exercise serialization, job switching, cooldowns, expiry, wake-up
-handoffs, action recovery and durable receipts.
+None for the current scope. Automatic creation of one forum post per batch is deferred.

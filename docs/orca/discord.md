@@ -2,50 +2,74 @@
 
 ## Admission and routing
 
-`ORCA_DISCORD_AUTO_SEND_ENABLED=true` submits alerts with fresh ingestion event
-commits. Every registered `discordSender` webhook receives the same ordered batch.
-Registering a webhook therefore opts it into all automatic ingestion alerts;
-subscription and destination-management policy remain future work.
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules alert preparation after fresh
+ingestion events have committed. Preparation renders the events and submits once
+to the sender's `ingestion` topic; each eligible subscriber receives the same
+ordered batch. Subscription selection and fan-out belong to the sender.
 
-Rendering and job submission share the event commit transaction. If either fails,
-the event commit rolls back and processor work remains pending. After fixing the
-cause, use the existing `retry:events` operator action to retry that work; preparation
-failures are not retried automatically. With no registered webhooks or no eligible
-messages, the commit proceeds without a send job.
-The switch controls admission; already submitted jobs continue running.
+Event creation and completion are independent of alert preparation. Rendering and
+sender admission share a later transaction, so their failures leave committed
+events intact and roll back only alert jobs from that attempt. Scheduling from the
+ingestion action is best-effort: a failure between event commit and scheduling can
+leave alerts unqueued. Scheduling/preparation failures are observable in logs;
+use `sendIngestion` below for an intentional send after fixing the cause.
+Event-only `retry:events` recovery does not broadcast alerts.
 
-Job keys contain the observation's `scan_at` and webhook ID. Deadlines derive from
-that observation time, so historical backfill can submit jobs which expire before
+The switch is checked before scheduling and again when preparation starts. Already
+submitted sender jobs continue independently. No eligible messages or matching
+webhooks produces no jobs.
+
+The submission key is `ingestion:<scan_at>`; the sender deduplicates per webhook.
+Deadlines derive from that observation time, so historical backfill can submit jobs which expire before
 sending. The age policy lives in docs/orca/config.md. Sender ordering, retries,
 expiry and recovery semantics live in packages/discord-sender/README.md.
 
 ## Registration and inspection
 
 Use the component API directly from packages/backend, selecting the deployment
-explicitly. Registration changes the recipients of subsequent ingestions.
+explicitly. Register with the `ingestion` topic to receive subsequent ingestion alerts.
 
 ```sh
-bunx convex run api:registerWebhook '{"name":"Development","url":"<webhook-url>"}' --component discordSender --deployment <deployment>
+bunx convex run api:registerWebhook '{"name":"Development","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>
 bunx convex run api:listWebhooks '{}' --component discordSender --deployment <deployment>
 ```
+
+`api:setWebhookTopics({webhookId,topics})` replaces a webhook's subscriptions.
+`api:removeWebhook({webhookId})` invalidates it for future submissions and cancels
+its queued jobs when they are reached; an already active job continues.
 
 For development, use the worktree's deployment and private development webhooks.
 The same ingestion path exercises filtering, batching, cards and delivery. Sender
 `api:submitBatch` accepts custom ordered payloads for focused delivery exercises;
 use a fresh key and deadline for each intentional repeat.
 
-To manually send one completed ingestion with current card rendering:
+To prepare one completed ingestion with current filtering and card rendering,
+without enqueueing or sending anything:
+
+```sh
+bunx convex run alerts/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+```
+
+This read-only query returns `scan_at`, ordered `messages` (each with a stable
+`key`, serialized JSON `payload`, and source `event_ids`), and `skippedEvents`
+with filtering reasons. It uses the same preparation path as manual sending,
+regardless of auto-send, observation age or registered webhooks. It reflects
+current rendering and available history, rather than a previously sent payload.
+
+To manually send that ingestion:
 
 ```sh
 bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <dev-deployment>
 ```
 
-This explicit operator command works with auto-send disabled and uses all registered
-webhooks. Each invocation creates fresh jobs with a one-hour deadline from now,
+This explicit operator command works with auto-send disabled and uses active
+webhooks subscribed to `ingestion`. Each invocation creates fresh jobs with a one-hour deadline from now,
 while cards and filtering retain the original observation time. Repeating the
 command intentionally sends again without changing earlier jobs or ingestion work.
-It returns `jobIds` and the message count per destination; zero destinations or
-fully filtered output produces no jobs. Event processing must be complete.
+It returns `jobIds` and the rendered message count; zero matching destinations or
+fully filtered output produces no jobs. A positive count with no jobs means there
+were rendered messages but no matching active recipients. Event processing must
+be complete.
 
 To investigate output, convert the requested time window and timezone to epoch
 milliseconds. `listJobs` uses submission time, which can differ from the source's
@@ -59,8 +83,11 @@ bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender
 
 If `hasMore` is true, narrow the discovery window. Jobs preserve the submitted
 payloads; results preserve terminal Discord responses. A finished job's missing
-results represent its unsent suffix. Transient errors remain in logs. These queries
-inspect stored evidence without rerendering cards or sending messages.
+results represent its unsent suffix. SDK retries have no individual result rows. These queries
+inspect stored evidence without rerendering cards or sending messages. Unfinished
+delivery jobs are revisited by the component's recovery cron after execution
+failures; `api:resume` requests that same recovery immediately. This does not retry
+ORCA alert preparation or reopen permanently rejected delivery jobs.
 
 ## Presentation
 

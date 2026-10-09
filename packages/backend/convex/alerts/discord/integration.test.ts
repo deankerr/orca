@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
-import { rejects } from 'node:assert/strict'
+import { ok, rejects } from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -84,10 +84,11 @@ afterEach(() => {
   }
 })
 
-async function registerWebhook(t: Harness, name: string) {
+async function registerWebhook(t: Harness, name: string, topics = ['ingestion']) {
   return await t.mutation(components.discordSender.api.registerWebhook, {
     name,
-    url: `https://example.test/${name}`,
+    topics,
+    url: `https://discord.com/api/v10/webhooks/100000000000000001/${name}-test-token`,
   })
 }
 
@@ -158,13 +159,35 @@ async function jobs(t: Harness) {
   return result.jobs
 }
 
-test('event commit queues identical rendered messages to every webhook and repeated commit does nothing', async () => {
+// The parent action invokes these in separate steps. Tests call the scheduled
+// mutation directly to inspect queued jobs without running live HTTP actions.
+async function commitAndPrepareAlerts(
+  t: Harness,
+  input: Awaited<ReturnType<typeof pendingCommit>>,
+) {
+  const event_ids = await t.mutation(internal.events.ingest.commit, input)
+  await t.mutation(internal.alerts.discord.delivery.sendIngestionAlerts, {
+    scan_at: input.scan_at,
+    event_ids,
+  })
+  return event_ids
+}
+
+test('events complete before separate alert delivery queues subscribed jobs; repeated commits do nothing', async () => {
   const t = setup()
   const webhookIds = await Promise.all(
     ['first', 'second'].map(async (name) => await registerWebhook(t, name)),
   )
   const input = await pendingCommit(t)
   const eventIds = await t.mutation(internal.events.ingest.commit, input)
+  expect(await jobs(t)).toEqual([])
+  expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
+    state: 'complete',
+  })
+  await t.mutation(internal.alerts.discord.delivery.sendIngestionAlerts, {
+    scan_at: input.scan_at,
+    event_ids: eventIds,
+  })
   const queued = await jobs(t)
 
   expect(eventIds).toHaveLength(1)
@@ -173,19 +196,36 @@ test('event commit queues identical rendered messages to every webhook and repea
   expect(queued[0]?.messages).toEqual(queued[1]?.messages)
 
   for (const job of queued) {
-    expect(job.key).toBe(`ingestion:${pair.scan_at}:${job.webhookId}`)
+    expect(job.key).toBe(`ingestion:${pair.scan_at}`)
+    expect(job.topic).toBe('ingestion')
     expect(job.expiresAt).toBe(Date.parse(pair.scan_at) + 3_600_000)
     expect(job.messages).toHaveLength(1)
-    expect(job.messages[0]?.payload).toContain('disabled')
-    expect(job.messages[0]?.payload).toContain(pair.scan_at)
+    const [message] = job.messages
+    ok(message?.kind === 'send')
+    expect(message.payload).toContain('disabled')
+    expect(message.payload).toContain(pair.scan_at)
   }
 
-  expect(await t.mutation(internal.events.ingest.commit, input)).toEqual([])
+  expect(await commitAndPrepareAlerts(t, input)).toEqual([])
   expect(await jobs(t)).toEqual(queued)
   expect(await t.run(async (ctx) => await ctx.db.query('v4_events').collect())).toHaveLength(1)
   expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
     state: 'complete',
   })
+})
+
+test('ingestion excludes nonmatching and invalidated webhooks', async () => {
+  const t = setup()
+  const selected = await registerWebhook(t, 'subscribed')
+  await registerWebhook(t, 'other-topic', ['status'])
+  const removed = await registerWebhook(t, 'removed')
+  await t.mutation(components.discordSender.api.removeWebhook, { webhookId: removed })
+
+  await commitAndPrepareAlerts(t, await pendingCommit(t))
+
+  const queued = await jobs(t)
+  expect(queued).toHaveLength(1)
+  expect(queued[0]?.webhookId).toBe(selected)
 })
 
 for (const scenario of ['disabled', 'no webhooks', 'filtered', 'empty'] as const) {
@@ -203,7 +243,7 @@ for (const scenario of ['disabled', 'no webhooks', 'filtered', 'empty'] as const
     if (scenario === 'empty') {
       input.rows = []
     }
-    const ids = await t.mutation(internal.events.ingest.commit, input)
+    const ids = await commitAndPrepareAlerts(t, input)
 
     expect(ids).toHaveLength(scenario === 'empty' ? 0 : 1)
     expect(await jobs(t)).toEqual([])
@@ -224,14 +264,23 @@ test('historical ingestion is submitted normally and expires without contacting 
   const request = spyOn(globalThis, 'fetch').mockRejectedValue(
     new Error('Expired jobs must never send'),
   )
-  await t.mutation(internal.events.ingest.commit, input)
-  expect(await jobs(t)).toHaveLength(2)
+  const event_ids = await t.mutation(internal.events.ingest.commit, input)
+  await t.run(async (ctx) => {
+    await ctx.scheduler.runAfter(0, internal.alerts.discord.delivery.sendIngestionAlerts, {
+      scan_at: input.scan_at,
+      event_ids,
+    })
+  })
+  expect(await jobs(t)).toEqual([])
 
   await t.finishAllScheduledFunctions(() => {
     jest.advanceTimersByTime(10)
   })
 
-  for (const job of await jobs(t)) {
+  const expired = await jobs(t)
+  expect(expired).toHaveLength(2)
+
+  for (const job of expired) {
     expect(job.outcome).toBe('expired')
     expect(job.finishedAt).toBeDefined()
     expect(job.expiresAt).toBe(Date.parse(input.scan_at) + 3_600_000)
@@ -240,28 +289,60 @@ test('historical ingestion is submitted normally and expires without contacting 
   expect(request).not.toHaveBeenCalled()
 })
 
-test('a rejected destination submission rolls back event inserts, work completion and earlier fanout', async () => {
+test('a rejected alert submission rolls back fanout but preserves committed events and work', async () => {
   const t = setup()
-  await registerWebhook(t, 'first')
-  const second = await registerWebhook(t, 'second')
+  const first = await registerWebhook(t, 'first', [])
+  await registerWebhook(t, 'second')
   const input = await pendingCommit(t)
   // A conflicting existing job exercises a real component error after the first
   // destination was submitted, proving the host/component transaction boundary.
   await t.mutation(components.discordSender.api.submitBatch, {
-    key: `ingestion:${pair.scan_at}:${second}`,
-    webhookId: second,
+    key: `ingestion:${pair.scan_at}`,
+    topic: 'ingestion',
     expiresAt: Date.parse(pair.scan_at) + 3_600_000,
     messages: [{ key: 'conflict', payload: '{"content":"different input"}' }],
   })
+  await t.mutation(components.discordSender.api.setWebhookTopics, {
+    webhookId: first,
+    topics: ['ingestion'],
+  })
   const before = await jobs(t)
+  const event_ids = await t.mutation(internal.events.ingest.commit, input)
+  const committed = await ingestionState(t)
 
-  await rejects(t.mutation(internal.events.ingest.commit, input), /different input/)
+  await rejects(
+    t.mutation(internal.alerts.discord.delivery.sendIngestionAlerts, {
+      scan_at: input.scan_at,
+      event_ids,
+    }),
+    /different input/,
+  )
 
   expect(await jobs(t)).toEqual(before)
-  expect(await t.run(async (ctx) => await ctx.db.query('v4_events').collect())).toEqual([])
-  expect(await t.run(async (ctx) => await ctx.db.get(input.work_id))).toMatchObject({
-    state: 'pending',
-  })
+  expect(await ingestionState(t)).toEqual(committed)
+  expect(committed.events).toHaveLength(1)
+  expect(committed.work[0]?.state).toBe('complete')
+})
+
+test('a rendering error cannot undo the committed ingestion', async () => {
+  const t = setup()
+  await registerWebhook(t, 'first')
+  const input = await pendingCommit(t)
+  process.env.ORCA_WEB_ORIGIN = 'not-a-url'
+  const event_ids = await t.mutation(internal.events.ingest.commit, input)
+  const committed = await ingestionState(t)
+
+  await rejects(
+    t.mutation(internal.alerts.discord.delivery.sendIngestionAlerts, {
+      scan_at: input.scan_at,
+      event_ids,
+    }),
+  )
+
+  expect(await jobs(t)).toEqual([])
+  expect(await ingestionState(t)).toEqual(committed)
+  expect(committed.events).toHaveLength(1)
+  expect(committed.work[0]?.state).toBe('complete')
 })
 
 async function ingestionFor(t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
@@ -282,6 +363,52 @@ async function ingestionState(t: Harness) {
   }))
 }
 
+test('preparing historical alerts is read-only without destinations and matches a subsequent manual send', async () => {
+  const t = setup()
+  process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
+  const input = await pendingCommit(t, {
+    from_scan_at: '2026-09-30T00:00:00.000Z',
+    scan_at: '2026-09-30T01:00:00.000Z',
+  })
+  const eventIds = await t.mutation(internal.events.ingest.commit, input)
+  const ingestion_id = await ingestionFor(t, input)
+  const before = await ingestionState(t)
+  const scheduled = await t.run(
+    async (ctx) => await ctx.db.system.query('_scheduled_functions').collect(),
+  )
+  const request = spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('Preparation must never contact Discord'),
+  )
+
+  const prepared = await t.query(internal.alerts.discord.delivery.prepareIngestion, {
+    ingestion_id,
+  })
+
+  expect(prepared.scan_at).toBe(input.scan_at)
+  expect(prepared.messages).toHaveLength(1)
+  expect(prepared.messages[0]?.event_ids).toEqual(eventIds)
+  expect(prepared.messages[0]?.payload).toContain(input.scan_at)
+  expect(prepared.skippedEvents).toEqual([])
+  expect(await jobs(t)).toEqual([])
+  expect(await ingestionState(t)).toEqual(before)
+  expect(
+    await t.run(async (ctx) => await ctx.db.system.query('_scheduled_functions').collect()),
+  ).toEqual(scheduled)
+  expect(request).not.toHaveBeenCalled()
+
+  await registerWebhook(t, 'first')
+  const sent = await t.mutation(internal.alerts.discord.delivery.sendIngestion, { ingestion_id })
+  const queued = await jobs(t)
+
+  expect(sent.jobIds).toHaveLength(1)
+  expect(queued).toHaveLength(1)
+  expect(queued[0]?.messages).toEqual(
+    prepared.messages.map(({ key, payload }) => ({ kind: 'send', key, payload })),
+  )
+  expect(await ingestionState(t)).toEqual(before)
+  expect(request).not.toHaveBeenCalled()
+})
+
 test('manual historical alerts render the original events with a fresh deadline and repeatable jobs', async () => {
   const t = setup()
   await registerWebhook(t, 'first')
@@ -290,7 +417,7 @@ test('manual historical alerts render the original events with a fresh deadline 
     from_scan_at: '2026-09-30T00:00:00.000Z',
     scan_at: '2026-09-30T01:00:00.000Z',
   })
-  await t.mutation(internal.events.ingest.commit, input)
+  await commitAndPrepareAlerts(t, input)
   const ingestion_id = await ingestionFor(t, input)
   const originalJobs = await jobs(t)
   const originalState = await ingestionState(t)
@@ -313,7 +440,9 @@ test('manual historical alerts render the original events with a fresh deadline 
     for (const job of manualJobs) {
       expect(job.expiresAt).toBe(START + 3_600_000)
       expect(job.messages).toEqual(originalJobs[0]?.messages)
-      expect(job.messages[0]?.payload).toContain(input.scan_at)
+      const [message] = job.messages
+      ok(message?.kind === 'send')
+      expect(message.payload).toContain(input.scan_at)
     }
 
     expect(
@@ -328,7 +457,7 @@ test('manual alerts send while automatic ingestion alerts are disabled', async (
   process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = 'false'
   await registerWebhook(t, 'first')
   const input = await pendingCommit(t)
-  await t.mutation(internal.events.ingest.commit, input)
+  await commitAndPrepareAlerts(t, input)
   expect(await jobs(t)).toEqual([])
 
   const result = await t.mutation(internal.alerts.discord.delivery.sendIngestion, {
@@ -362,6 +491,10 @@ for (const scenario of ['pending events', 'missing events work', 'missing ingest
       t.mutation(internal.alerts.discord.delivery.sendIngestion, { ingestion_id }),
       /ingestion|events|complete/i,
     )
+    await rejects(
+      t.query(internal.alerts.discord.delivery.prepareIngestion, { ingestion_id }),
+      /ingestion|events|complete/i,
+    )
 
     expect(await jobs(t)).toEqual([])
     expect(await ingestionState(t)).toEqual(before)
@@ -381,14 +514,29 @@ for (const scenario of ['filtered', 'empty', 'no webhooks'] as const) {
     if (scenario === 'empty') {
       input.rows = []
     }
-    await t.mutation(internal.events.ingest.commit, input)
+    await commitAndPrepareAlerts(t, input)
     const before = await ingestionState(t)
+    const ingestion_id = await ingestionFor(t, input)
+    const prepared = await t.query(internal.alerts.discord.delivery.prepareIngestion, {
+      ingestion_id,
+    })
+
+    expect(prepared.scan_at).toBe(input.scan_at)
+    expect(prepared.messages).toHaveLength(scenario === 'no webhooks' ? 1 : 0)
+    expect(prepared.skippedEvents).toEqual(
+      scenario === 'filtered'
+        ? before.events.map((event) => ({ event_id: event._id, reason: 'ineligible' }))
+        : [],
+    )
+    expect(await jobs(t)).toEqual([])
+    expect(await ingestionState(t)).toEqual(before)
+
     const result = await t.mutation(internal.alerts.discord.delivery.sendIngestion, {
-      ingestion_id: await ingestionFor(t, input),
+      ingestion_id,
     })
 
     expect(result.jobIds).toEqual([])
-    expect(result.messageCount).toBe(0)
+    expect(result.messageCount).toBe(scenario === 'no webhooks' ? 1 : 0)
     expect(await jobs(t)).toEqual([])
     expect(await ingestionState(t)).toEqual(before)
   })
