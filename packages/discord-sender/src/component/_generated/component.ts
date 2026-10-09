@@ -24,6 +24,27 @@ import type { FunctionReference } from "convex/server";
 export type ComponentApi<Name extends string | undefined = string | undefined> =
   {
     api: {
+      cancelJob: FunctionReference<
+        "mutation",
+        "internal",
+        { jobId: string },
+        null,
+        Name
+      >;
+      deleteMessage: FunctionReference<
+        "mutation",
+        "internal",
+        { expiresAt: number; key: string; resultId: string },
+        string | null,
+        Name
+      >;
+      editMessage: FunctionReference<
+        "mutation",
+        "internal",
+        { expiresAt: number; key: string; payload: string; resultId: string },
+        string | null,
+        Name
+      >;
       getJob: FunctionReference<
         "query",
         "internal",
@@ -31,13 +52,27 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         {
           _creationTime: number;
           _id: string;
-          availableAt: number;
           expiresAt: number;
           finishedAt?: number;
           key: string;
-          messages: Array<{ key: string; payload: string }>;
-          outcome?: "succeeded" | "failed" | "expired";
-          retryCount: number;
+          messages: Array<
+            | { key: string; kind: "send"; payload: string }
+            | {
+                key: string;
+                kind: "edit";
+                messageId: string;
+                payload: string;
+                threadId?: string;
+              }
+            | {
+                key: string;
+                kind: "delete";
+                messageId: string;
+                threadId?: string;
+              }
+          >;
+          outcome?: "succeeded" | "failed" | "expired" | "cancelled";
+          topic?: string;
           webhookId: string;
         } | null,
         Name
@@ -51,13 +86,27 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           jobs: Array<{
             _creationTime: number;
             _id: string;
-            availableAt: number;
             expiresAt: number;
             finishedAt?: number;
             key: string;
-            messages: Array<{ key: string; payload: string }>;
-            outcome?: "succeeded" | "failed" | "expired";
-            retryCount: number;
+            messages: Array<
+              | { key: string; kind: "send"; payload: string }
+              | {
+                  key: string;
+                  kind: "edit";
+                  messageId: string;
+                  payload: string;
+                  threadId?: string;
+                }
+              | {
+                  key: string;
+                  kind: "delete";
+                  messageId: string;
+                  threadId?: string;
+                }
+            >;
+            outcome?: "succeeded" | "failed" | "expired" | "cancelled";
+            topic?: string;
             webhookId: string;
           }>;
         },
@@ -73,27 +122,14 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           jobId: string;
           messageKey: string;
           result:
+            | { kind: "succeeded"; response: Record<string, any> | null }
             | {
-                kind: "succeeded";
-                response: {
-                  body: string;
-                  channelId?: string;
-                  error?: string;
-                  headers: Record<string, string>;
-                  messageId?: string;
-                  status: number | null;
+                error: {
+                  code: number | string;
+                  message: string;
+                  status: number;
                 };
-              }
-            | {
                 kind: "failed";
-                response: {
-                  body: string;
-                  channelId?: string;
-                  error?: string;
-                  headers: Record<string, string>;
-                  messageId?: string;
-                  status: number | null;
-                };
               };
         }>,
         Name
@@ -105,7 +141,9 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         Array<{
           _creationTime: number;
           _id: string;
+          invalidatedAt?: number;
           name?: string;
+          topics: Array<string>;
           url: string;
         }>,
         Name
@@ -113,11 +151,25 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       registerWebhook: FunctionReference<
         "mutation",
         "internal",
-        { name?: string; url: string },
+        { name?: string; topics: Array<string>; url: string },
         string,
         Name
       >;
+      removeWebhook: FunctionReference<
+        "mutation",
+        "internal",
+        { webhookId: string },
+        null,
+        Name
+      >;
       resume: FunctionReference<"mutation", "internal", {}, null, Name>;
+      setWebhookTopics: FunctionReference<
+        "mutation",
+        "internal",
+        { topics: Array<string>; webhookId: string },
+        null,
+        Name
+      >;
       submitBatch: FunctionReference<
         "mutation",
         "internal",
@@ -125,9 +177,9 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           expiresAt: number;
           key: string;
           messages: Array<{ key: string; payload: string }>;
-          webhookId: string;
+          topic: string;
         },
-        string,
+        Array<{ jobId: string; webhookId: string }>,
         Name
       >;
     };

@@ -1,11 +1,16 @@
-import { zid, zodToConvexFields } from 'convex-helpers/server/zod4'
+import { zodToConvexFields } from 'convex-helpers/server/zod4'
 import { ConvexError, v } from 'convex/values'
-import { isDeepEqual, pick, uniqueBy } from 'remeda'
+import { isDeepEqual, pick, unique, uniqueBy } from 'remeda'
 import { z } from 'zod'
 
+import { internal } from './_generated/api'
+import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
-import { scheduleDrain } from './scheduling'
+import type { MutationCtx } from './_generated/server'
+import { parseWebhookUrl } from './discord'
+import { pool } from './pool'
 import schema from './schema'
+import { finishJob, invalidateWebhook } from './state'
 
 const zSerializedPayload = z.string().transform((payload) => {
   // Content limits and card construction belong to the caller. Parse enough here
@@ -23,62 +28,236 @@ const zBatchInput = z.object({
     .refine((messages) => uniqueBy(messages, (entry) => entry.key).length === messages.length, {
       message: 'Message keys must be unique within a batch',
     }),
-  webhookId: zid('webhooks'),
+  topic: z.string().min(1),
 })
 
-const zWebhookUrl = z
-  .url({ protocol: /^https?$/ })
-  .transform((value) => new URL(value))
-  .refine((url) => !url.username && !url.password && !url.hash, {
-    message: 'Webhook URL must use HTTP(S) without credentials or a fragment',
-  })
-  .transform((url) => url.toString())
+const zTopics = z.array(z.string().min(1)).transform((topics) => unique(topics))
 
 export const registerWebhook = mutation({
-  args: { name: v.optional(v.string()), url: v.string() },
+  args: { name: v.optional(v.string()), topics: v.array(v.string()), url: v.string() },
   handler: async (ctx, args) => {
-    const url = zWebhookUrl.parse(args.url)
+    const { url } = parseWebhookUrl(args.url)
+    const topics = zTopics.parse(args.topics)
     const existing = await ctx.db
       .query('webhooks')
-      .withIndex('by_url', (q) => q.eq('url', url))
+      .withIndex('by_url_and_invalidatedAt', (q) =>
+        // oxlint-disable-next-line unicorn/no-useless-undefined -- Match registrations that have never been invalidated.
+        q.eq('url', url).eq('invalidatedAt', undefined),
+      )
       .unique()
 
-    return existing?._id ?? (await ctx.db.insert('webhooks', { ...args, url }))
+    // Registration never edits an existing row. Replacing an invalidated URL
+    // creates a new identity; old jobs cannot follow it or become eligible again.
+    return existing?._id ?? (await ctx.db.insert('webhooks', { ...args, topics, url }))
   },
   returns: v.id('webhooks'),
+})
+
+export const setWebhookTopics = mutation({
+  args: { topics: v.array(v.string()), webhookId: v.id('webhooks') },
+  handler: async (ctx, { topics, webhookId }) => {
+    const webhook = await ctx.db.get(webhookId)
+
+    if (!webhook || webhook.invalidatedAt !== undefined) {
+      throw new ConvexError('Webhook is unavailable')
+    }
+
+    // Subscription changes select future submissions only. They never inspect,
+    // cancel, backfill or reopen jobs that were already admitted.
+    await ctx.db.patch(webhookId, { topics: zTopics.parse(topics) })
+    return null
+  },
+  returns: v.null(),
+})
+
+export const removeWebhook = mutation({
+  args: { webhookId: v.id('webhooks') },
+  handler: async (ctx, { webhookId }) => {
+    await invalidateWebhook(ctx, webhookId)
+    return null
+  },
+  returns: v.null(),
+})
+
+export const cancelJob = mutation({
+  args: { jobId: v.id('jobs') },
+  handler: async (ctx, { jobId }) => {
+    await finishJob(ctx, jobId, 'cancelled')
+    return null
+  },
+  returns: v.null(),
 })
 
 export const submitBatch = mutation({
   args: zodToConvexFields(zBatchInput.shape),
   handler: async (ctx, args) => {
     const input = zBatchInput.parse(args)
-    const existing = await ctx.db
-      .query('jobs')
-      .withIndex('by_key', (q) => q.eq('key', input.key))
-      .unique()
+    const webhooks = await ctx.db.query('webhooks').collect()
+    const messages = input.messages.map((message) => ({ ...message, kind: 'send' as const }))
+    const recipients: { jobId: Id<'jobs'>; webhookId: Id<'webhooks'> }[] = []
+    let created = false
 
-    if (existing) {
-      if (!isDeepEqual(pick(existing, ['expiresAt', 'key', 'messages', 'webhookId']), input)) {
-        throw new ConvexError('Batch key already exists with different input')
+    for (const webhook of webhooks) {
+      if (!webhook.topics.includes(input.topic)) {
+        continue
       }
 
-      return existing._id
+      const result = await submit(ctx, { ...input, messages, webhookId: webhook._id })
+
+      if (!result) {
+        continue
+      }
+
+      created ||= result.created
+      recipients.push({ jobId: result.jobId, webhookId: webhook._id })
     }
 
-    if (!(await ctx.db.get(input.webhookId))) {
-      throw new ConvexError('Webhook does not exist')
+    // One drain for the whole fan-out, committed with its jobs. Repeated identical
+    // submissions do not enqueue work; recovery has its own discovery path.
+    if (created) {
+      await pool.enqueueAction(ctx, internal.worker.drain, {})
     }
 
-    // Accepted -> open. A job owns one destination and its ordered payloads.
-    // Fan-out is an explicit caller choice; we do not keep a recipient/input layer
-    // merely to optimize a duplication that our present workload does not have.
-    const now = Date.now()
-    const jobId = await ctx.db.insert('jobs', { ...input, availableAt: now, retryCount: 0 })
-    await scheduleDrain(ctx, now)
-    return jobId
+    return recipients
   },
-  returns: v.id('jobs'),
+  returns: v.array(v.object({ jobId: v.id('jobs'), webhookId: v.id('webhooks') })),
 })
+
+/** Edits and deletes use the same ordered, durable delivery path as sends. */
+export const editMessage = mutation({
+  args: { expiresAt: v.number(), key: v.string(), payload: v.string(), resultId: v.id('results') },
+  handler: async (ctx, args) => {
+    const target = await messageTarget(ctx, args.resultId)
+    return await submitOperation(ctx, {
+      expiresAt: args.expiresAt,
+      key: args.key,
+      messages: [
+        {
+          key: 'edit',
+          kind: 'edit',
+          messageId: target.messageId,
+          payload: zSerializedPayload.parse(args.payload),
+          ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
+        },
+      ],
+      webhookId: target.webhookId,
+    })
+  },
+  returns: v.union(v.id('jobs'), v.null()),
+})
+
+export const deleteMessage = mutation({
+  args: { expiresAt: v.number(), key: v.string(), resultId: v.id('results') },
+  handler: async (ctx, args) => {
+    const target = await messageTarget(ctx, args.resultId)
+    return await submitOperation(ctx, {
+      expiresAt: args.expiresAt,
+      key: args.key,
+      messages: [
+        {
+          key: 'delete',
+          kind: 'delete',
+          messageId: target.messageId,
+          ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
+        },
+      ],
+      webhookId: target.webhookId,
+    })
+  },
+  returns: v.union(v.id('jobs'), v.null()),
+})
+
+async function messageTarget(ctx: MutationCtx, resultId: Id<'results'>) {
+  const receipt = await ctx.db.get(resultId)
+  const response = receipt?.result.kind === 'succeeded' ? receipt.result.response : null
+
+  if (!receipt || !response || typeof response.id !== 'string') {
+    throw new ConvexError('A successful message receipt is required')
+  }
+
+  const job = await ctx.db.get(receipt.jobId)
+
+  if (!job) {
+    throw new ConvexError('Receipt job does not exist')
+  }
+
+  const source = job.messages.find((message) => message.key === receipt.messageKey)
+
+  if (!source) {
+    throw new ConvexError('Receipt message does not exist')
+  }
+
+  let threadId = source.kind === 'edit' ? source.threadId : undefined
+
+  if (source.kind === 'send') {
+    const payload = z
+      .object({ thread_name: z.unknown().optional() })
+      .parse(JSON.parse(source.payload))
+
+    if (typeof payload.thread_name === 'string') {
+      const webhook = await ctx.db.get(job.webhookId)
+
+      if (webhook && !new URL(webhook.url).searchParams.has('thread_id')) {
+        // A forum/media send can create its own thread; later edits must retain
+        // that receipt-derived route even though they no longer carry thread_name.
+        threadId = z
+          .string()
+          .regex(/^\d{17,20}$/)
+          .parse(response.channel_id)
+      }
+    }
+  }
+
+  // The caller supplies a receipt, never a different destination for its message.
+  // Original sends and later edits remain immutable evidence of each operation.
+  return { messageId: response.id, threadId, webhookId: job.webhookId }
+}
+
+type JobInput = Pick<Doc<'jobs'>, 'key' | 'expiresAt' | 'webhookId' | 'messages' | 'topic'>
+
+async function submitOperation(ctx: MutationCtx, input: JobInput): Promise<Id<'jobs'> | null> {
+  z.object({ expiresAt: z.number().nonnegative(), key: z.string().min(1) }).parse(input)
+  const result = await submit(ctx, input)
+
+  if (!result) {
+    return null
+  }
+
+  if (result.created) {
+    await pool.enqueueAction(ctx, internal.worker.drain, {})
+  }
+
+  return result.jobId
+}
+
+async function submit(ctx: MutationCtx, input: JobInput) {
+  const webhook = await ctx.db.get(input.webhookId)
+
+  // Losing a destination is an ordinary routing outcome, including direct
+  // edit/delete submissions. Skip before dedupe: an unavailable recipient must
+  // not turn a batch into an error, even if its historical key has different input.
+  if (!webhook || webhook.invalidatedAt !== undefined) {
+    return null
+  }
+
+  const existing = await ctx.db
+    .query('jobs')
+    .withIndex('by_key_and_webhookId', (q) =>
+      q.eq('key', input.key).eq('webhookId', input.webhookId),
+    )
+    .unique()
+
+  if (existing) {
+    if (
+      !isDeepEqual(pick(existing, ['expiresAt', 'key', 'messages', 'webhookId', 'topic']), input)
+    ) {
+      throw new ConvexError('Job key already exists with different input')
+    }
+    return { created: false, jobId: existing._id }
+  }
+
+  return { created: true, jobId: await ctx.db.insert('jobs', input) }
+}
 
 export const getJob = query({
   args: { jobId: v.id('jobs') },
@@ -86,8 +265,7 @@ export const getJob = query({
   returns: v.union(schema.doc('jobs'), v.null()),
 })
 
-// The host chooses recipients. Returning all registrations supports the initial
-// ingestion policy without introducing subscriptions or ORCA concepts here.
+// Include invalidated registrations for inspection; topic admission excludes them.
 export const listWebhooks = query({
   args: {},
   handler: async (ctx) => await ctx.db.query('webhooks').collect(),
@@ -130,13 +308,13 @@ export const listJobs = query({
   returns: v.object({ hasMore: v.boolean(), jobs: v.array(schema.doc('jobs')) }),
 })
 
-// Operator recovery after fixing an execution error that exhausted Workpool retries.
+// Immediate operator recovery uses the same path as the periodic recovery cron.
 // A wake never reopens a terminal job or discards receipts. No mutable "sending"
 // status is needed merely to mirror Workpool execution.
 export const resume = mutation({
   args: {},
   handler: async (ctx) => {
-    await scheduleDrain(ctx, Date.now())
+    await ctx.runMutation(internal.worker.recover, {})
     return null
   },
   returns: v.null(),
