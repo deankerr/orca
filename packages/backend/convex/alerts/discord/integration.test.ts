@@ -218,8 +218,8 @@ test('ingestion excludes nonmatching and invalidated webhooks', async () => {
   const t = setup()
   const selected = await registerWebhook(t, 'subscribed')
   await registerWebhook(t, 'other-topic', ['status'])
-  const removed = await registerWebhook(t, 'removed')
-  await t.mutation(components.discordSender.api.removeWebhook, { webhookId: removed })
+  const invalidated = await registerWebhook(t, 'invalidated')
+  await t.mutation(components.discordSender.api.invalidateWebhook, { webhookId: invalidated })
 
   await commitAndPrepareAlerts(t, await pendingCommit(t))
 
