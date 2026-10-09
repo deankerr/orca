@@ -8,6 +8,7 @@
         "POSTHOG_API_KEY",
         "POSTHOG_PROJECT_ID",
         "VERCEL_ENV",
+        "VERCEL_BRANCH_URL",
         "NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
@@ -16,7 +17,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["PORTLESS*", "ORCA_DEV_ORIGIN"]
+      "passThroughEnv": ["PORT", "HOST", "NODE_EXTRA_CA_CERTS", "ORCA_DEV_URL"]
     },
     "start": {
       "cache": false,

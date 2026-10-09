@@ -23,7 +23,7 @@
     "./scan/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
-    "dev": "PORTLESS_URL=$(portless get orca) convex dev"
+    "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev"
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",

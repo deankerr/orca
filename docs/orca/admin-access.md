@@ -28,10 +28,17 @@ The shared logout allowlist contains:
 Update it when changing the hostname scheme or Vercel project/team. Preview sessions
 belong to the branch hostname; sign-in redirects unique deployment URLs there.
 
+Tailscale URLs also need explicit logout destinations, including each HTTPS port.
+Convex's managed AuthKit configuration registers callbacks and CORS origins only.
+WorkOS permits wildcard logout ports only on localhost/loopback; an unlisted
+tailnet destination falls back to the default sign-out URL.
+
 ## Local callbacks
 
-For direct Convex pushes, supply `PORTLESS_URL` from `portless get orca`. Login must
-begin and finish on that external origin. Restart failed attempts at `/admin`;
+Web startup registers the callback for Portless's selected browser URL. For direct
+Convex pushes, supply `ORCA_DEV_URL` from the root `bun run --silent dev:origin` for local access, or
+the running server's printed Tailscale URL for remote access. Login must begin and
+finish on that external origin. Restart failed attempts at `/admin`;
 callback codes and PKCE state are single-use.
 
 ## Verify auth changes

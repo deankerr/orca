@@ -27,3 +27,11 @@ Authorize the CLI with `bun run --cwd packages/backend convex login`
 Use [worktree setup](../../.agents/skills/orca-worktree-setup/SKILL.md) for an isolated
 backend and web app. A fresh main checkout uses its personal dev deployment.
 Editing and local checks require only `bun install --frozen-lockfile`.
+
+For a remote development host, connect Tailscale, enable tailnet HTTPS, and grant
+the development user permission to manage Tailscale Serve. Set
+`export PORTLESS_TAILSCALE=1` in the host's shell startup configuration. If the agent
+server runs as a systemd service, also set `Environment=PORTLESS_TAILSCALE=1` in its
+service override and restart it to inherit the setting. Then `bun run dev` and
+`bun run dev:web` print a tailnet URL that the browser can open. On a local machine,
+leave the flag unset for the usual Portless `.localhost` URL.
