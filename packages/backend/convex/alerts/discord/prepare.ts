@@ -14,14 +14,12 @@ export async function prepareBatch(
   skippedEvents: { event_id: string; reason: 'ineligible' | 'frequent_pricing' }[]
 }> {
   const alerts: IndividualAlert[] = []
-  let skipped = 0
   const skippedEvents: { event_id: string; reason: 'ineligible' | 'frequent_pricing' }[] = []
 
   for (const row of rows) {
     const event = prepare(row)
 
     if (event === null) {
-      skipped += 1
       skippedEvents.push({ event_id: row._id, reason: 'ineligible' })
     } else {
       alerts.push({ type: 'event', event_id: row._id, event })
@@ -55,7 +53,6 @@ export async function prepareBatch(
     const changes = alert.event.changes.filter((change) => !change.path.startsWith('pricing.'))
 
     if (changes.length === 0) {
-      skipped += 1
       skippedEvents.push({ event_id: alert.event_id, reason: 'frequent_pricing' })
       return []
     }
@@ -63,5 +60,5 @@ export async function prepareBatch(
     return [{ ...alert, event: { ...alert.event, changes } }]
   })
 
-  return { alerts: batchAlerts(selected), skipped, skippedEvents }
+  return { alerts: batchAlerts(selected), skipped: skippedEvents.length, skippedEvents }
 }

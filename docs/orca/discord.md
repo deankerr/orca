@@ -35,7 +35,7 @@ bunx convex run api:listWebhooks '{}' --component discordSender --deployment <de
 ```
 
 `api:setWebhookTopics({webhookId,topics})` replaces a webhook's subscriptions.
-`api:removeWebhook({webhookId})` invalidates it for future submissions and cancels
+`api:invalidateWebhook({webhookId})` invalidates it for future submissions and cancels
 its queued jobs when they are reached; an already active job continues.
 
 For development, use the worktree's deployment and private development webhooks.

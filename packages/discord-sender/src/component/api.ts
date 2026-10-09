@@ -7,15 +7,15 @@ import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import type { MutationCtx } from './_generated/server'
-import { parseWebhookUrl } from './discord'
+import { parseMessagePayload, parseWebhookUrl } from './discord'
 import { pool } from './pool'
 import schema from './schema'
-import { finishJob, invalidateWebhook } from './state'
+import * as state from './state'
 
 const zSerializedPayload = z.string().transform((payload) => {
-  // Content limits and card construction belong to the caller. Parse enough here
-  // to establish a JSON object, preserving its serialized wire body.
-  z.record(z.string(), z.unknown()).parse(JSON.parse(payload))
+  // Keep the supplied JSON for inspection. Reject values the sender cannot parse
+  // before admitting a job; content limits and card construction belong to callers.
+  parseMessagePayload(payload)
   return payload
 })
 
@@ -70,10 +70,10 @@ export const setWebhookTopics = mutation({
   returns: v.null(),
 })
 
-export const removeWebhook = mutation({
+export const invalidateWebhook = mutation({
   args: { webhookId: v.id('webhooks') },
   handler: async (ctx, { webhookId }) => {
-    await invalidateWebhook(ctx, webhookId)
+    await state.invalidateWebhook(ctx, webhookId)
     return null
   },
   returns: v.null(),
@@ -82,7 +82,7 @@ export const removeWebhook = mutation({
 export const cancelJob = mutation({
   args: { jobId: v.id('jobs') },
   handler: async (ctx, { jobId }) => {
-    await finishJob(ctx, jobId, 'cancelled')
+    await state.finishJob(ctx, jobId, 'cancelled')
     return null
   },
   returns: v.null(),

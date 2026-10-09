@@ -5,6 +5,11 @@ import { z } from 'zod'
 const zObject = z.record(z.string(), z.json())
 const zSnowflake = z.string().regex(/^\d{17,20}$/)
 
+/** Admission and transmission must accept the same JSON values. */
+export function parseMessagePayload(payload: string) {
+  return zObject.parse(JSON.parse(payload))
+}
+
 export class ExpiredError extends Error {
   constructor() {
     super('Discord request expired before transmission')
@@ -88,7 +93,7 @@ export function createDiscord() {
           ? webhook.route
           : (`${webhook.route}/messages/${zSnowflake.parse(input.messageId)}` as const)
       const body =
-        input.operation === 'delete' ? undefined : zObject.parse(JSON.parse(input.payload ?? ''))
+        input.operation === 'delete' ? undefined : parseMessagePayload(input.payload ?? '')
 
       url.pathname = `/api/v10${route}`
 

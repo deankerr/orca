@@ -77,6 +77,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         } | null,
         Name
       >;
+      invalidateWebhook: FunctionReference<
+        "mutation",
+        "internal",
+        { webhookId: string },
+        null,
+        Name
+      >;
       listJobs: FunctionReference<
         "query",
         "internal",
@@ -153,13 +160,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         "internal",
         { name?: string; topics: Array<string>; url: string },
         string,
-        Name
-      >;
-      removeWebhook: FunctionReference<
-        "mutation",
-        "internal",
-        { webhookId: string },
-        null,
         Name
       >;
       resume: FunctionReference<"mutation", "internal", {}, null, Name>;

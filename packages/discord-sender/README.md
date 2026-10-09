@@ -18,7 +18,7 @@ queries. ORCA's ingestion policy lives in docs/orca/discord.md and docs/orca/con
 | `registerWebhook({ url, name?, topics })` | Webhook ID      | Registers a destination. Repeating an eligible canonical URL returns the original row unchanged. An invalidated URL gets a new registration ID. |
 | `listWebhooks({})`                        | Webhook records | Includes invalidated registrations for inspection.                                                                                              |
 | `setWebhookTopics({ webhookId, topics })` | `null`          | Replaces subscriptions on an eligible registration. Existing jobs remain unchanged.                                                             |
-| `removeWebhook({ webhookId })`            | `null`          | Sets irreversible `invalidatedAt`. Keeps history and leaves active jobs running; queued jobs are cancelled when they try to start.              |
+| `invalidateWebhook({ webhookId })`        | `null`          | Sets irreversible `invalidatedAt`. Keeps history and leaves active jobs running; queued jobs are cancelled when they try to start.              |
 
 - URLs must use HTTPS `discord.com`. API-version paths are canonicalized; `thread_id` is retained.
 - Topics are exact, case-sensitive strings. A registration can have several, or none.
@@ -61,7 +61,7 @@ const recipients = await ctx.runMutation(components.discordSender.api.submitBatc
 
 - Both operations use the same ordering, deadlines and cancellation as sends. Their new jobs and receipts preserve the original records.
 - An unavailable destination returns `null`. Malformed input, unsuitable receipts and conflicting keys for eligible destinations remain errors.
-- `removeWebhook` removes a registration from use; it does not delete the webhook at Discord.
+- `invalidateWebhook` disables the registration; it does not delete the webhook at Discord.
 
 ### Inspection and recovery
 
