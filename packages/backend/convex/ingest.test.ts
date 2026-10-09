@@ -52,7 +52,7 @@ test('ingestion validates and normalizes operator start_at before selecting scan
   }
 })
 
-test('only successful fresh ingestion events schedule enabled Discord broadcasts; retries never broadcast', async () => {
+test('ingestion schedules alerts after event commit, continues after failures, and keeps retries event-only', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -70,11 +70,11 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
   const nextPair = spyOn(reader, 'loadNextPair').mockResolvedValue(pair)
   const exactPair = spyOn(reader, 'loadPair').mockResolvedValue(pair)
   const errors = spyOn(console, 'error').mockImplementation(() => {})
-  const oldEnabled = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
-  let failSchedule = false
+  let failAlertScheduling = false
+  const previousAutoSend = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   let failAcceptance = false
   let duplicate = false
 
@@ -117,48 +117,45 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
         calls.push(name)
         expect(delay).toBe(0)
 
-        if (name === 'alerts/discord/delivery:broadcast') {
-          expect(args).toEqual({ event_ids: ['fresh-event'] })
+        if (name === 'alerts/discord/delivery:sendIngestionAlerts') {
+          expect(calls.indexOf('events/ingest:commit')).toBeLessThan(calls.length - 1)
+          expect(args).toEqual({ scan_at: pair.next.scan_at, event_ids: eventIds })
 
-          if (failSchedule) {
-            throw new Error('Scheduling failed')
+          if (failAlertScheduling) {
+            throw new Error('Alert scheduling failed')
           }
+        } else {
+          expect(name).toBe('ingest:run')
+          expect(args).toEqual({})
         }
       },
     },
   } as unknown as ActionCtx
 
   try {
-    for (const mode of [
-      'disabled',
-      'empty',
-      'event-error',
-      'schedule-error',
-      'live',
-      'duplicate',
-    ]) {
+    for (const mode of ['empty', 'event-error', 'live', 'alert-error', 'disabled', 'duplicate']) {
       calls.length = 0
-      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
-      failSchedule = mode === 'schedule-error'
+      failAlertScheduling = mode === 'alert-error'
+      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
+      errors.mockClear()
       duplicate = mode === 'duplicate'
       await handler(run)(ctx, {})
 
-      const broadcasts = calls.filter((name) => name === 'alerts/discord/delivery:broadcast')
-      expect(broadcasts).toHaveLength(['live', 'schedule-error'].includes(mode) ? 1 : 0)
-
-      if (broadcasts.length > 0) {
-        expect(calls.indexOf('events/ingest:commit')).toBeLessThan(
-          calls.indexOf('alerts/discord/delivery:broadcast'),
-        )
-      }
-
-      if (!duplicate) {
-        expect(calls).not.toContain('history/pricing/ingest:commit')
-        expect(calls).not.toContain('catalog/stats/ingest:publish')
-        expect(calls.at(-1)).toBe('ingest:run')
-      }
+      expect(calls).toEqual(
+        duplicate
+          ? ['ingest:commitIngestion']
+          : [
+              'ingest:commitIngestion',
+              'events/ingest:commit',
+              ...(['live', 'alert-error'].includes(mode)
+                ? ['alerts/discord/delivery:sendIngestionAlerts']
+                : []),
+              'ingest:run',
+            ],
+      )
+      expect(errors).toHaveBeenCalledTimes(mode === 'event-error' || mode === 'alert-error' ? 1 : 0)
     }
 
     calls.length = 0
@@ -175,10 +172,10 @@ test('only successful fresh ingestion events schedule enabled Discord broadcasts
     exactPair.mockRestore()
     errors.mockRestore()
 
-    if (oldEnabled === undefined) {
+    if (previousAutoSend === undefined) {
       delete process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
     } else {
-      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = oldEnabled
+      process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = previousAutoSend
     }
   }
 })
