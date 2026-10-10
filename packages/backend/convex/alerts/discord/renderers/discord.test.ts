@@ -2,8 +2,8 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { ComponentType } from 'discord-api-types/v10'
 
+import { compare } from '../../../compare'
 import { normalizeModel, normalizeProvider, normalizeEndpoint } from '../../../entities'
-import { compare } from '../../../events/compare'
 import type { EventRow } from '../../../events/table'
 import type { JsonValue } from '../../../json'
 import { render as renderPrepared } from '../../feed/render'

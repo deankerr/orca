@@ -30,9 +30,8 @@ String arrays compare as sets, ignoring order. Accepted `json-diff-ts` limitatio
 
 - Repeated strings collapse, so duplicate-count changes disappear.
 - Membership matching drops the literal string `__proto__`.
-- Object-to-scalar transitions can omit the new scalar or the entire change.
 - Arrays directly nested in arrays retain positional behavior; supported entity shapes avoid this case.
-- In version 4.10.4, `applyChangeset` skips UPDATEs to null. Rendering reads retained diff nodes directly.
+- `applyChangeset` skips UPDATEs to null. Rendering reads retained diff nodes directly.
 
 Lifecycle events carry complete projected facts. Updates retain changed facts, with complete
 before/after pricing context on new endpoint pricing updates. That context is optional for older

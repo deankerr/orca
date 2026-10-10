@@ -2,7 +2,6 @@ import { omit } from 'convex-helpers'
 import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
-import { canonicalJson } from '../json'
 import type { ScannedProvider } from './model'
 
 const overrides = new Map([
@@ -25,6 +24,7 @@ export function providerId(slug: string): string {
 const ProviderBody = z
   .object({
     slug: z.string(),
+    displayName: z.string(),
     dataPolicy: z.record(z.string(), z.json()).nullable().optional(),
   })
   .catchall(z.json())
@@ -65,13 +65,16 @@ export function extractProvider(value: unknown) {
           ])
   }
 
-  const provider: ScannedProvider = { ...facts, provider_id: providerId(slug) }
+  const provider: ScannedProvider & { displayName: string } = {
+    ...facts,
+    provider_id: providerId(slug),
+  }
   return { slug, provider }
 }
 
-type ProviderObservation = ReturnType<typeof extractProvider>
+export type ProviderObservation = ReturnType<typeof extractProvider> & { endpoint_id: string }
 
-/** Prefer canonical records, then the most common cleaned body; ties use canonical JSON order. */
+/** Select a base display name and one complete observation; see docs/orca/provider-identity.md. */
 export function assembleProviders(observations: ProviderObservation[]) {
   const groups = new Map<string, ProviderObservation[]>()
 
@@ -84,15 +87,24 @@ export function assembleProviders(observations: ProviderObservation[]) {
 
   return new Map(
     [...groups].map(([id, group]) => {
+      // Base-slug observations usually carry the service label rather than a serving variant.
       const canonical = group.filter(({ slug }) => slug === id)
       const candidates = canonical.length > 0 ? canonical : group
-      const votes = new Map<string, { provider: ProviderObservation['provider']; count: number }>()
 
-      for (const { provider } of candidates) {
-        const key = canonicalJson(provider)
-        const vote = votes.get(key) ?? { provider, count: 0 }
+      // Vote only on the label: URLs and unknown metadata must never split a name's votes.
+      const votes = new Map<string, { observation: ProviderObservation; count: number }>()
+
+      for (const observation of candidates) {
+        const name = observation.provider.displayName
+        const vote = votes.get(name) ?? { observation, count: 0 }
         vote.count += 1
-        votes.set(key, vote)
+
+        // UUID order selects one whole record without treating its metadata as more authoritative.
+        if (observation.endpoint_id < vote.observation.endpoint_id) {
+          vote.observation = observation
+        }
+
+        votes.set(name, vote)
       }
 
       const [winner] = [...votes].toSorted(
@@ -104,7 +116,7 @@ export function assembleProviders(observations: ProviderObservation[]) {
         throw new ConvexError('Provider group has no observations')
       }
 
-      return [id, winner[1].provider] as const
+      return [id, winner[1].observation.provider] as const
     }),
   )
 }

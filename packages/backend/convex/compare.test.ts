@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test'
 import { Operation } from 'json-diff-ts'
 
 import { compare } from './compare'
+import type { JsonValue } from './json'
 
 test('string arrays use value identity at known, new, and nested paths', () => {
   const previous = {
@@ -88,5 +89,20 @@ test('mixed arrays retain index matching in either direction', () => {
     [['tools', 1], ['tools']],
   ]) {
     expect(compare({ values: previous }, { values: next })[0]?.embeddedKey).toBe('$index')
+  }
+})
+
+test('object type transitions retain complete before and after values', () => {
+  const objects: JsonValue[] = [{}, { enabled: true }]
+
+  for (const previous of objects) {
+    for (const next of [false, 'none', [], null, 10]) {
+      expect(compare({ config: previous }, { config: next })).toEqual([
+        { type: Operation.UPDATE, key: 'config', oldValue: previous, value: next },
+      ])
+      expect(compare({ config: next }, { config: previous })).toEqual([
+        { type: Operation.UPDATE, key: 'config', oldValue: next, value: previous },
+      ])
+    }
   }
 })

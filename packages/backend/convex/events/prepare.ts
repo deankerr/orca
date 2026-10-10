@@ -5,8 +5,8 @@ import type { IChange } from 'json-diff-ts'
 
 import type { Scan, ScanPair } from '#scan/model'
 
+import { compare } from '../compare'
 import { encodePricing, normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
-import { compare } from './compare'
 import type { EventRow } from './table'
 
 /** Compare endpoint-present entities; historical enrichment happens when events commit. */

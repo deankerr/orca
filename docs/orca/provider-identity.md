@@ -17,14 +17,37 @@ frozen public API adapter.
 
 ## Selecting provider facts
 
-- Prefer embedded records whose raw slug already equals the normalized identity.
-- Within that pool, choose the most frequent complete cleaned record. If no canonical
-  record was observed, use all records for that identity. Equal counts break by
-  canonical JSON order, so traversal order cannot select different facts.
-- Keep the selected record whole. Mixing fields from conflicting observations could
-  manufacture a provider state that OpenRouter never supplied.
-- A change in the selected record is an observed metadata update. Historical URLs
-  and display names can change while the provider identity continues.
+Provider extraction chooses one representative observation per identity. Its purpose
+is a useful base display name and a coherent provider record, not reconciliation of
+every inconsistent upstream copy. Google Vertex and Google AI Studio remain distinct
+providers; an internal `name` such as "Google" cannot substitute for their display
+names. Evidence and the limitations of the public provider list live in
+`docs/openrouter/providers.md`.
+
+Selection uses only raw slug, display name, and source endpoint UUID:
+
+- Prefer observations whose raw slug equals the normalized identity; fall back to
+  all observations for that identity when none match.
+- Choose the most frequent `displayName` in that pool, breaking equal counts by
+  lexical display-name order. Each embedded endpoint observation contributes a vote.
+- Among observations with the winning name, take the one with the lexically smallest
+  endpoint UUID. Retain its complete cleaned provider record.
+
+The UUID is an arbitrary stable tie-break, not an authority or freshness signal.
+This keeps source traversal order out of selection. All retained metadata besides
+`displayName` is opaque to selection: different URLs, locations, or unknown future
+fields cannot split votes or change the chosen source. Structural comparison belongs
+to consumers comparing the resulting provider across scans.
+
+A metadata change in the selected source survives extraction. A conflicting change
+in an unselected source may disappear. That loss is an accepted consequence of a
+single representative; fields are never assembled into a state absent from the scan.
+A change in candidate membership or labels can change the representative and its
+metadata. The raw capture retains every observation independently.
+
+These rules are confined to `scan/provider.ts`. The public provider-list endpoint
+is not an extraction dependency, so historical replay uses the same evidence as
+current extraction.
 
 ## Metadata boundary
 

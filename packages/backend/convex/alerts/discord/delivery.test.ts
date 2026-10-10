@@ -5,8 +5,8 @@ import { ComponentType } from 'discord-api-types/v10'
 
 import type { ActionCtx } from '#generated/server'
 
+import { compare } from '../../compare'
 import { normalizeModel, normalizeEndpoint } from '../../entities'
-import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import { broadcast, send, sendExamples, sendLatest } from './delivery'

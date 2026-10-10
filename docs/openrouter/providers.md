@@ -24,6 +24,45 @@ entity model. ORCA's normalization policy lives in `docs/orca/provider-identity.
 - Older provider bodies include owners/editors, model denylists, region overrides,
   multipart capability, and behavioral policies nested under `dataPolicy.paidModels`.
 
+## Provider names and the provider-list endpoint
+
+`provider_info.name` behaves like an internal provider key: it is shared across
+routing variants and agrees with endpoint `provider_name` in the captures checked.
+That is evidence about its role, not confirmation of OpenRouter's database schema.
+`displayName` supplies user-facing naming, but sometimes includes serving variants
+such as Fast, Turbo, or BYOK Only. Neither field alone defines a reliable identity.
+
+The public list at https://openrouter.ai/api/v1/providers overlaps the embedded
+provider metadata. It was unavailable during part of the retained history and is
+not captured in ORCA scans. Maintainer observations suggest incomplete coverage of
+known providers; it has not been established as a complete historical registry.
+
+The response checked on 2026-10-10 exposes `name` and `slug`, with location and
+policy/status URLs, but no display-name field. It calls `google-vertex` "Google"
+and `google-ai-studio` "Google AI Studio". These are distinct user-facing services:
+their endpoint offerings and BYOK credentials differ, Vertex hosts Claude, and they
+use different logos. "Google Vertex" is the useful service label for the former.
+
+## Differences after removing endpoint configuration
+
+In the 2026-10-07T17:40:37.518Z scan, ORCA's provider-field omission policy leaves
+79 providers across 1,381 in-scope endpoint observations. Every remaining disagreement
+within a normalized provider is confined to `displayName`:
+
+- 67 providers have identical cleaned records across all their observations.
+- Nine have differing labels only on aliases: Alibaba, Baseten, Decart, DeepInfra,
+  Fireworks, Google Vertex, MiniMax, Moonshot AI, and SambaNova.
+- Three have competing labels even on the exact base slug: Azure (60 ordinary,
+  one BYOK Only), Amazon Bedrock (50 ordinary, one BYOK Only), and Morph (six
+  ordinary, one Fast).
+- Every provider has a base-slug observation. Excluding aliases leaves 1,235
+  observations; voting over all observations instead produces the same winners.
+
+This is evidence from one scan, not a guarantee that other provider fields always
+agree. Earlier Claude-on-AWS observations below already demonstrate differing
+provider policy URLs and BYOK flags across aliases. A relationship between label
+variants and internal hosts is plausible, but has not been established generally.
+
 ## Historical identity repairs
 
 These observations come from archived production captures and the retained provider

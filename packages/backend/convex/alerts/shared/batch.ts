@@ -1,4 +1,4 @@
-import { canonicalJson } from '../../json'
+import { compare } from '../../compare'
 import type { EntityAlert, FieldChange } from './curate'
 
 export type IndividualAlert = { type: 'event'; event_id: string; event: EntityAlert }
@@ -15,7 +15,7 @@ const BATCH_THRESHOLD = 3
 export function batchAlerts(events: IndividualAlert[]): Alert[] {
   const groups = new Map<
     string,
-    { batch: BatchAlert; occurrences: [IndividualAlert, number][]; entities: Set<string> }
+    { batch: BatchAlert; occurrences: [IndividualAlert, number][]; entities: Set<string> }[]
   >()
 
   for (const bucket of events) {
@@ -29,8 +29,16 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
           : []
 
     for (const [index, change] of changes.entries()) {
-      const key = JSON.stringify([event.observed_at, event.entity_kind, canonicalJson(change)])
-      let group = groups.get(key)
+      const key = JSON.stringify([
+        event.observed_at,
+        event.entity_kind,
+        change.type,
+        'path' in change ? change.path : null,
+      ])
+      const candidates = groups.get(key) ?? []
+      let group = candidates.find(
+        (candidate) => compare(candidate.batch.change, change).length === 0,
+      )
 
       if (group === undefined) {
         group = {
@@ -38,7 +46,8 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
           occurrences: [],
           entities: new Set(),
         }
-        groups.set(key, group)
+        candidates.push(group)
+        groups.set(key, candidates)
       }
 
       group.occurrences.push([bucket, index])
@@ -52,7 +61,7 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
 
   const extracted = new Map<IndividualAlert, Map<number, BatchAlert>>()
 
-  for (const { batch, occurrences } of groups.values()) {
+  for (const { batch, occurrences } of [...groups.values()].flat()) {
     if (batch.members.length >= BATCH_THRESHOLD) {
       for (const [bucket, index] of occurrences) {
         const items = extracted.get(bucket) ?? new Map<number, BatchAlert>()

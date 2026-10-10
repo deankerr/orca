@@ -1,20 +1,21 @@
 import { diff } from 'json-diff-ts'
 
-import type { JsonValue } from '../json'
+import type { JsonValue } from './json'
 
-/** Discover string arrays in both observations, including fields first seen upstream. */
+/** Compare JSON using value matching for string arrays and index matching for other arrays. */
 export function compare(previous: JsonValue, next: JsonValue) {
   const embeddedObjKeys = new Map<string, string>()
 
   function visit(value: JsonValue, path: string) {
     if (Array.isArray(value)) {
-      // ponytail: $value ignores duplicate counts; revisit only if multiplicity becomes meaningful.
       const stringArray = value.every((item) => typeof item === 'string')
+      // A non-string array on either side makes this path use index matching.
       embeddedObjKeys.set(
         path,
         stringArray && embeddedObjKeys.get(path) !== '$index' ? '$value' : '$index',
       )
-      // The library omits array indices from configured paths, including nested object arrays.
+
+      // json-diff-ts addresses items[0].tags and items[1].tags as the same path: items.tags.
       for (const item of value) {
         visit(item, path)
       }
@@ -25,8 +26,10 @@ export function compare(previous: JsonValue, next: JsonValue) {
     }
   }
 
+  // Discover array paths on both sides, including newly added and removed fields.
   visit(previous, '')
   visit(next, '')
-  // Keep scalar/null transitions as UPDATEs; accepted library limits are in docs/orca/events.md.
+
+  // Keep type transitions as single UPDATEs with complete before and after values.
   return diff(previous, next, { embeddedObjKeys, treatTypeChangeAsReplace: false })
 }

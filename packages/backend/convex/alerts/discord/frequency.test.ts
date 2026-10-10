@@ -4,8 +4,8 @@ import { rejects } from 'node:assert/strict'
 
 import type { QueryCtx } from '#generated/server'
 
+import { compare } from '../../compare'
 import { encodePricing } from '../../entities'
-import { compare } from '../../events/compare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import { prepare as prepareShared } from '../shared/prepare'

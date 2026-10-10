@@ -2,8 +2,8 @@ import { expect, spyOn, test } from 'bun:test'
 
 import type { Scan } from '#scan/model'
 
+import { compare } from '../../compare'
 import { encodePricing } from '../../entities'
-import { compare } from '../../events/compare'
 import { prepare } from '../../events/prepare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'

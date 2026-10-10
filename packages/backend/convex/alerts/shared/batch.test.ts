@@ -1,7 +1,7 @@
 import { expect, spyOn, test } from 'bun:test'
 import { deepEqual } from 'node:assert/strict'
 
-import { compare } from '../../events/compare'
+import { compare } from '../../compare'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import { prepareBatch as prepareDiscordBatch } from '../discord/prepare'

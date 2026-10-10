@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import type { RawScan } from './collected'
 import { assembleProviders, extractProvider } from './provider'
+import type { ProviderObservation } from './provider'
 
 /** Loaded model with an assembled identity; other source fields remain unnormalized JSON. */
 export const ScannedModel = z
@@ -52,7 +53,7 @@ function hasTextModalities(model: RawScan['entries'][number]['model']): boolean 
 /** Assemble entities by identity, preserving source facts for downstream consumers. */
 export function fromCollected({ scan_at, entries }: RawScan): Scan {
   const models: Scan['models'] = new Map()
-  const providerObservations: ReturnType<typeof extractProvider>[] = []
+  const providerObservations: ProviderObservation[] = []
   const endpoints: Scan['endpoints'] = new Map()
 
   for (const entry of entries) {
@@ -70,7 +71,7 @@ export function fromCollected({ scan_at, entries }: RawScan): Scan {
     for (const { provider_info, provider_slug, status: _status, ...body } of entry.endpoints ??
       []) {
       const provider = extractProvider(provider_info)
-      providerObservations.push(provider)
+      providerObservations.push({ ...provider, endpoint_id: body.id })
 
       endpoints.set(
         body.id,

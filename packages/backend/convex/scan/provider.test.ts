@@ -25,7 +25,10 @@ test('provider identity uses slash prefixes and explicit historical repairs, wit
   ]) {
     expect(providerId(slug)).toBe(id)
     expect(providerId(id)).toBe(id)
-    expect(extractProvider({ slug }).provider).toEqual({ provider_id: id })
+    expect(extractProvider({ slug, displayName: 'Provider' }).provider).toEqual({
+      provider_id: id,
+      displayName: 'Provider',
+    })
   }
 })
 
@@ -89,35 +92,87 @@ test('omits internal configuration and endpoint defaults while preserving unknow
   })
   expect(normalizeProvider(provider).metadata).toHaveProperty('futureFact', input.futureFact)
   expect(input).toEqual(before)
-  expect(extractProvider({ slug: 'p' }).provider).not.toHaveProperty('dataPolicy')
-  expect(extractProvider({ slug: 'p', dataPolicy: null }).provider.dataPolicy).toBeNull()
+  expect(extractProvider({ slug: 'p', displayName: 'Provider' }).provider).not.toHaveProperty(
+    'dataPolicy',
+  )
   expect(
-    extractProvider({ slug: 'p', dataPolicy: { training: true } }).provider.dataPolicy,
+    extractProvider({ slug: 'p', displayName: 'Provider', dataPolicy: null }).provider.dataPolicy,
+  ).toBeNull()
+  expect(
+    extractProvider({ slug: 'p', displayName: 'Provider', dataPolicy: { training: true } }).provider
+      .dataPolicy,
   ).toEqual({})
 })
 
-test('canonical observations outrank variants; cleaned-body frequency and ties ignore input order', () => {
+test('canonical observations outrank variants; name frequency and ties ignore input order', () => {
   const observations = [
     { slug: 'azure/eu', displayName: 'Azure EU', headquarters: 'EU' },
     { slug: 'azure/eu', displayName: 'Azure EU', headquarters: 'EU' },
     { slug: 'azure', displayName: 'Azure (BYOK Only)', headquarters: 'US' },
     { slug: 'azure', displayName: 'Azure', headquarters: 'US', adapterName: 'A' },
     { slug: 'azure', displayName: 'Azure', headquarters: 'US', adapterName: 'B' },
-  ].map(extractProvider)
+  ].map((body, index) => ({ ...extractProvider(body), endpoint_id: String(index) }))
 
   const expected = { provider_id: 'azure', displayName: 'Azure', headquarters: 'US' }
   expect(assembleProviders(observations).get('azure')).toEqual(expected)
   expect(assembleProviders(observations.toReversed()).get('azure')).toEqual(expected)
 
   const fallback = [
-    extractProvider({ slug: 'azure/us', displayName: 'Azure US' }),
-    extractProvider({ slug: 'azure/eu', displayName: 'Azure EU' }),
+    { ...extractProvider({ slug: 'azure/us', displayName: 'Azure US' }), endpoint_id: 'a' },
+    { ...extractProvider({ slug: 'azure/eu', displayName: 'Azure EU' }), endpoint_id: 'z' },
   ]
   expect(assembleProviders(fallback).get('azure')).toEqual({
     provider_id: 'azure',
     displayName: 'Azure EU',
   })
   expect(assembleProviders(fallback.toReversed())).toEqual(assembleProviders(fallback))
+})
+
+test('metadata cannot split name votes or select the representative; source changes remain observable', () => {
+  const endpoints = [
+    endpoint('c', 'azure', { displayName: 'Azure', statusPageUrl: 'https://c.example' }),
+    endpoint('b', 'azure', { displayName: 'Azure', statusPageUrl: 'https://b.example' }),
+    endpoint('a', 'azure', { displayName: 'Azure', statusPageUrl: 'https://a.example' }),
+    endpoint('d', 'azure', { displayName: 'Azure (BYOK Only)' }),
+    endpoint('e', 'azure', { displayName: 'Azure (BYOK Only)' }),
+  ]
+  const before = structuredClone(endpoints)
+  const selected = fromCollected(captured(endpoints)).providers.get('azure')
+
+  expect(selected).toEqual({
+    provider_id: 'azure',
+    displayName: 'Azure',
+    statusPageUrl: 'https://a.example',
+  })
+  expect(fromCollected(captured(endpoints.toReversed())).providers.get('azure')).toEqual(selected)
+  expect(endpoints).toEqual(before)
+
+  const unselectedChanged = endpoints.map((item) =>
+    item.id === 'b'
+      ? endpoint('b', 'azure', {
+          displayName: 'Azure',
+          statusPageUrl: 'https://b.example',
+          futureFact: ['z', 'a'],
+        })
+      : item,
+  )
+  expect(fromCollected(captured(unselectedChanged)).providers.get('azure')).toEqual(selected)
+
+  const selectedChanged = endpoints.map((item) =>
+    item.id === 'a'
+      ? endpoint('a', 'azure', {
+          displayName: 'Azure',
+          statusPageUrl: 'https://changed.example',
+          futureFact: ['z', 'a'],
+        })
+      : item,
+  )
+  expect(fromCollected(captured(selectedChanged)).providers.get('azure')).toEqual({
+    provider_id: 'azure',
+    displayName: 'Azure',
+    statusPageUrl: 'https://changed.example',
+    futureFact: ['z', 'a'],
+  })
 })
 
 test('extraction preserves endpoint facts and raw inputs while grouping providers before events', () => {

@@ -6,7 +6,7 @@ import type { RegisteredQuery, PaginationOptions, PaginationResult } from 'conve
 
 import type { QueryCtx } from '#generated/server'
 
-import { compare } from '../../events/compare'
+import { compare } from '../../compare'
 import type { EventRow } from '../../events/table'
 import * as feedQueries from '../feed/query'
 import type { FeedEvent } from '../feed/render'

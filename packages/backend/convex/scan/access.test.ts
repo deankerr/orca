@@ -90,7 +90,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
         model_variant_slug: id,
         variant: 'free',
         provider_slug: 'provider/region',
-        provider_info: { slug: 'provider', name: 'Provider' },
+        provider_info: { slug: 'provider', name: 'Provider', displayName: 'Provider' },
         status: 'online',
       },
     ],
@@ -135,7 +135,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
       expect(scan?.models.get(id)).toEqual({ ...entry(id).model, id, variant: 'free' })
 
       expect([...(scan?.providers.values() ?? [])]).toEqual([
-        { provider_id: 'provider', name: 'Provider' },
+        { provider_id: 'provider', name: 'Provider', displayName: 'Provider' },
       ])
 
       expect([...(scan?.endpoints.values() ?? [])]).toEqual([
