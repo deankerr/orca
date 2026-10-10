@@ -16,9 +16,9 @@
 ## Product and documentation
 
 ORCA serves technical OpenRouter users who value rapid endpoint comparison, precise terminology,
-and dense data. `CONTEXT.md` defines domain language.
+and dense data. `GLOSSARY.md` defines domain language.
 
-- Use `orca-docs` when writing, reviewing, or maintaining documentation.
+- Use `orca-docs` for documentation and `domain-modeling` for `GLOSSARY.md`.
 - The root `README.md` serves prospective users; other documentation serves agents and project/technology experts.
 - `docs/orca/config.md` records maintained configuration, defaults, and operational requirements.
 - Update `docs/orca/config.md` when maintained env vars, defaults, or hardcoded configuration change.

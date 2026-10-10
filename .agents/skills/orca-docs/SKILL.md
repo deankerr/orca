@@ -1,9 +1,12 @@
 ---
 name: orca-docs
-description: Write, review, and maintain ORCA documentation, including deciding what to remove or update after code changes.
+description: Write, review, and maintain ORCA documentation, including deciding what to remove or update after code changes. Excludes GLOSSARY.md, which follows the domain-modeling skill.
 ---
 
 # ORCA documentation
+
+`GLOSSARY.md` is excluded from this skill. Use the domain-modeling skill and its
+`GLOSSARY-FORMAT.md` guidance for that file.
 
 Write for agents and project/technology experts unless the project specifies another audience.
 Assume readers can inspect code, search the repository, and already have related documentation in context.

@@ -4,8 +4,10 @@ Events retain observed changes; alerts interpret those facts for Monitor, Feed, 
 
 ## Historical meaning
 
+- Endpoint ADD/REMOVE events describe listing and unlisting, including relisting.
+- Model/provider ADD/REMOVE events describe gaining listed endpoints or losing the last listed endpoint.
 - Models without endpoints remain known in Catalog, but their metadata changes do not produce Events.
-- Arrival classification uses knowledge strictly earlier than the event's observation, including baseline knowledge.
+- ADD classification uses knowledge strictly earlier than the event's observation, including baseline knowledge.
 - An absent `previously_known` value is unclassified; it must not become a discovery claim.
 - A known model gaining endpoints is not proof that ORCA previously observed it serving through endpoints.
 - The stable event address is `scan_at` + `entity_kind` + `entity_id`; ingestion fixes its predecessor scan.
@@ -13,13 +15,13 @@ Events retain observed changes; alerts interpret those facts for Monitor, Feed, 
 Projection changes can revise historical output. Delivered messages remain with recipients even if
 history is regenerated.
 
-Identity context comes from the next observation for arrivals/updates and the previous observation
-for departures. Related names come from that same observation, so headings remain meaningful as
+Identity context comes from the next observation for ADD/UPDATE events and the previous observation
+for REMOVE events. Related names come from that same observation, so headings remain meaningful as
 Catalog evolves. A model rename produces a model event; an endpoint price update can carry the
 new model name without becoming another rename event.
 
-An endpoint relationship change is selected under its next model/provider. Departures use their
-last relationships. The former relationship is not an additional activity scope for an update.
+An endpoint relationship change is selected under its next model/provider. Endpoint unlistings
+use their last relationships. The former relationship is not an additional activity scope for an update.
 
 ## Comparison semantics and limitations
 
@@ -62,7 +64,7 @@ extensions without parsing conditions, matching rate bands, or choosing an activ
 For pricing scheduled on either side of an event, unchanged overrides suppress the pricing
 update. Changed overrides produce “Price schedule changed”, including schedule introduction
 or removal, even when the presented rates do not move. Current-band meter deltas are omitted
-from that alert. Endpoint arrivals with a schedule include “Price schedule detected”.
+from that alert. Endpoint listing alerts with a schedule include “Price schedule detected”.
 
 Schedule classification uses the event's observed before/after quotes. Older events
 without quote context retain the numeric eligibility rule below; today's Catalog

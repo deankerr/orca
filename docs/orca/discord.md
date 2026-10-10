@@ -81,8 +81,9 @@ Apply shared alert eligibility, then the frequency rule below, before grouping i
 Monitor and Feed remain unbatched;
 query pages do not define meaningful batch membership.
 
-Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language.
+Only model discoveries receive introductory cards. For previously known entities, cards describe
+endpoint relisting or a model/provider having listed endpoints. Events without prior-knowledge
+classification use neutral language.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 ## Frequent pricing changes

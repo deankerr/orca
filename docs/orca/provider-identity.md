@@ -1,65 +1,36 @@
 # Provider extraction policy
 
-ORCA presents one provider across its upstream routing variants. Identity is an
-opinionated normalization of `provider_info.slug`: explicit historical repairs take
-precedence, then the prefix before the first slash becomes `provider_id`. The repairs
-live in `scan/provider.ts`. Upstream `name` remains descriptive metadata.
+## Identity decisions
 
-Historical repairs deliberately retain ModelRun continuity across its host and
-branding changes, retain W&B separately from CoreWeave, and group Claude Platform
-on AWS with its earlier `Anthropic 2` phase. Changes in observed names and policy
-URLs remain metadata updates within those identities.
+ORCA groups routing variants into provider identities using normalized slugs. Upstream names
+remain descriptive: they can span distinct services or reflect historical branding.
 
-Extraction applies the same identity to providers and their endpoint relationships.
-Endpoint UUIDs, routing tags, and display labels retain their observed meanings.
-The raw collection remains available independently of extraction, including to the
-frozen public API adapter.
+- ModelRun retains continuity across its host and branding changes.
+- W&B retains a historical identity separate from CoreWeave.
+- Claude Platform on AWS includes its earlier Anthropic 2 phase.
+- Google Vertex and Google AI Studio remain distinct services; "Google Vertex" is the label for the former.
 
-## Selecting provider facts
+## Representative facts
 
-Provider extraction chooses one representative observation per identity. Its purpose
-is a useful base display name and a coherent provider record, not reconciliation of
-every inconsistent upstream copy. Google Vertex and Google AI Studio remain distinct
-providers; an internal `name` such as "Google" cannot substitute for their display
-names.
+One complete observation supplies each provider's facts. This preserves an observed combination
+of metadata instead of assembling a synthetic record from conflicting copies.
 
-Selection uses only raw slug, display name, and source endpoint UUID:
+Base-slug preference and display-name voting favor a useful service label over incidental
+serving variants. Other metadata is opaque to selection, so a URL or an unknown field cannot
+split a label's votes. Stable tie-breaking makes selection independent of source traversal order;
+it conveys no authority or freshness.
 
-Prefer observations whose raw slug equals the normalized identity; fall back to all observations for
-that identity when none match.
+A conflicting change in an unselected observation can disappear. Changes in candidate membership
+or labels can instead replace the representative and its metadata. Both are accepted consequences
+of retaining one coherent record; raw captures preserve the other observations.
 
-Choose the most frequent `displayName` in that pool, breaking equal counts by lexical display-name
-order. Each embedded endpoint observation contributes a vote.
+Historical replay uses embedded observations. The public provider list is outside extraction
+because it cannot supply that historical evidence.
 
-Among observations with the winning name, take the one with the lexically smallest endpoint UUID.
-Retain its complete cleaned provider record.
+## Metadata ownership
 
-The UUID is an arbitrary stable tie-break, not an authority or freshness signal.
-This keeps source traversal order out of selection. All retained metadata besides
-`displayName` is opaque to selection: different URLs, locations, or unknown future
-fields cannot split votes or change the chosen source. Structural comparison belongs
-to consumers comparing the resulting provider across scans.
-
-A metadata change in the selected source survives extraction. A conflicting change
-in an unselected source may disappear. That loss is an accepted consequence of a
-single representative; fields are never assembled into a state absent from the scan.
-A change in candidate membership or labels can change the representative and its
-metadata. The raw capture retains every observation independently.
-
-These rules are confined to `scan/provider.ts`. The public provider-list endpoint
-is not an extraction dependency, so historical replay uses the same evidence as
-current extraction.
-
-## Metadata boundary
-
-Provider extraction omits known internal configuration and endpoint defaults:
-adapters, hosts, pricing/region configuration, capability flags, behavioral policy
-defaults (including legacy `paidModels`), owners/editors, model denylists, and upstream
-icon presentation. These are inconsistent across endpoints or belong to upstream
-implementation details. Endpoint capability and data-policy fields remain intact.
-
-Names, location, status and policy URLs, `byokEnabled`, `sendClientIp`, and unknown
-future fields survive extraction. The organization-level `byokEnabled` flag is distinct
-from endpoint `is_byok`. Missing values, explicit nulls, and empty policy objects remain
-distinct. Adding an omission is a deliberate policy change; new fields remain visible
-until evidence supports discarding them.
+- Endpoint data policy governs behavioral claims; provider terms and privacy URLs remain provider facts.
+- Internal configuration and endpoint defaults are omitted because they vary by endpoint or describe upstream machinery.
+- Endpoint routing tags, display labels, capabilities, and policies retain their observed meanings.
+- Provider `byokEnabled` and endpoint `is_byok` describe different scopes.
+- Unknown provider fields remain visible until evidence supports a deliberate omission.
