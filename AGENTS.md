@@ -1,6 +1,6 @@
-> This branch is incompatible with current production data. Do not merge without a migration plan.
-
 # ORCA (OpenRouter Capability Analysis)
+
+**This branch is incompatible with current production data, and does not require consideration of transition during development. The locally associated dev deployment can be destroyed and a new instance provisioned when required. Do not merge without a migration plan.**
 
 ## Development
 
