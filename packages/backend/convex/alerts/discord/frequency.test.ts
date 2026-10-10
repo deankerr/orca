@@ -1,4 +1,4 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- An indexed database double exercises the registered query without deploying test mutations. */
+/* oxlint-disable typescript/no-unsafe-type-assertion -- An indexed database double exercises historical filtering without deploying test mutations. */
 import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
@@ -9,7 +9,7 @@ import { encodePricing } from '../../entities'
 import type { EventRow } from '../../events/table'
 import type { JsonValue } from '../../json'
 import { prepare as prepareShared } from '../shared/prepare'
-import { check, PRICE_CHANGE_COUNT, PRICE_CHANGE_WINDOW_HOURS } from './frequency'
+import { readFrequency, PRICE_CHANGE_COUNT, PRICE_CHANGE_WINDOW_HOURS } from './frequency'
 import type { PricingCandidate } from './frequency'
 import { prepareBatch } from './prepare'
 
@@ -64,12 +64,6 @@ function history(rows: PricingCandidate[]) {
   } as unknown as QueryCtx
 }
 
-const read = (
-  check as unknown as {
-    _handler: (ctx: QueryCtx, args: { candidates: PricingCandidate[] }) => Promise<boolean[]>
-  }
-)._handler
-
 test('counts only prior endpoint quotes in the inclusive rolling window, bounded at the threshold', async () => {
   const preceding = Array.from({ length: PRICE_CHANGE_COUNT - 1 }, (_, i) => ({
     endpoint_id: 'one',
@@ -86,19 +80,17 @@ test('counts only prior endpoint quotes in the inclusive rolling window, bounded
 
   const candidates = [{ endpoint_id: 'one', scan_at }]
 
-  expect(await read(history(rows), { candidates })).toEqual([false])
+  expect(await readFrequency(history(rows), candidates)).toEqual([false])
   rows.push({ endpoint_id: 'one', scan_at: at(-PRICE_CHANGE_WINDOW_HOURS) })
-  expect(await read(history(rows), { candidates })).toEqual([true])
+  expect(await readFrequency(history(rows), candidates)).toEqual([true])
 
   // Replaying later still uses the event's observation; a subsequent quiet period recovers.
   expect(
-    await read(history(rows), {
-      candidates: [
-        ...candidates,
-        { endpoint_id: 'missing', scan_at },
-        { endpoint_id: 'one', scan_at: at(PRICE_CHANGE_WINDOW_HOURS + 2) },
-      ],
-    }),
+    await readFrequency(history(rows), [
+      ...candidates,
+      { endpoint_id: 'missing', scan_at },
+      { endpoint_id: 'one', scan_at: at(PRICE_CHANGE_WINDOW_HOURS + 2) },
+    ]),
   ).toEqual([true, false, false])
 })
 

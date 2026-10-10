@@ -2,29 +2,26 @@
 
 Annotated payload examples from the catalog model list and endpoint stats API, with selected fields omitted.
 
-## Model (from catalog endpoint)
+The capture time for these examples was not recorded. They illustrate observed payload shapes;
+field presence and equality here do not establish catalog-wide invariants.
 
-- `endpoint` is a nullable, embedded copy of its "top endpoint", which is the endpoint that is receiving the most traffic.
-  - If this field is `null`, that means this model has _zero_ endpoints, and its `/stats/endpoint` will 404.
-  - The record isn't valuable, since it will be with the rest of the model's endpoints.
-- All of the unique model data exists on each endpoint.
-- Contains an embedded copy of itself via its top endpoint.
-- Model records tell us very little of interest themselves, which is why ORCA is endpoint-focused.
-- `permaslug` may or may not be the same as `slug`.
-  - It is necessary for querying `/stats/endpoint`.
-  - It has _never_ changed independently from `slug` in our archive history.
+## Catalog model
+
+This sample embeds a top endpoint, which embeds another model copy. The inner model's display
+names omit the variant suffix, while the endpoint's `model_variant_slug` includes `:free`.
+The outer and inner models use the same base `slug` and `permaslug`.
 
 ```jsonc
 // /api/frontend/v1/catalog/models -> data
 [
   {
-    // **omitted** 25 low value keys
+    // 25 fields omitted
     "slug": "nvidia/nemotron-nano-12b-v2-vl",
     "permaslug": "nvidia/nemotron-nano-12b-v2-vl",
     "author": "nvidia",
     "endpoint": {
       // embedded "top" endpoint
-      // **omitted** 13 low value keys
+      // 13 fields omitted
       "variant": "free",
       "id": "28304d1d-c2b9-4291-ba4d-dc63e798227e",
       "name": "Nvidia | nvidia/nemotron-nano-12b-v2-vl:free",
@@ -34,7 +31,7 @@ Annotated payload examples from the catalog model list and endpoint stats API, w
         // - name/short name missing the `(variant)` suffix
         // - another embedded endpoint
         //
-        // **omitted** 25 low value keys
+        // 25 fields omitted
         "slug": "nvidia/nemotron-nano-12b-v2-vl",
         "hf_slug": "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
         "updated_at": "2026-02-27T19:15:13.186228+00:00",
@@ -71,21 +68,20 @@ Annotated payload examples from the catalog model list and endpoint stats API, w
         },
         //
       },
-      "model_variant_slug": "nvidia/nemotron-nano-12b-v2-vl:free", // the "true" model slug and best primary key for a model
+      "model_variant_slug": "nvidia/nemotron-nano-12b-v2-vl:free", // variant identifier
       "model_variant_permaslug": "nvidia/nemotron-nano-12b-v2-vl:free",
       "provider_name": "Nvidia",
       "provider_info": {
-        // the only available source of the Provider entity, after its dedicated endpoint was removed
+        // embedded provider record
         //
-        // **omitted** 8 low value keys
+        // 8 fields omitted
         "name": "Nvidia",
         "displayName": "NVIDIA",
         "slug": "nvidia",
         "headquarters": "US",
         "datacenters": ["US"],
-        "sendClientIp": false, // always false, would be highly controversial to become true
-        // **omitted** 12 more provider keys which are denomralized onto endpoint
-        // ... and can be overridden per endpoint, making these ones misleading/practically useless
+        "sendClientIp": false, // observed value
+        // 12 provider fields omitted
         //
       },
       "provider_display_name": "NVIDIA",
@@ -222,12 +218,9 @@ Annotated payload examples from the catalog model list and endpoint stats API, w
 
 ## Endpoint stats
 
-Endpoints from the endpoints endpoint are exactly the same as the embedded model copy,
-but MAY also included stats fields, which appear to be denormalized from another source.
-
-- If the stats nested object is present, it will always have the full set (non-optional keys).
-- `stats` has always existed, but other noisy stats keys have come and gone.
-- The endpoint returns all currently available for a endpoints for a model scope (`permaslug` + `variant`)
+The stats response uses the endpoint shape with additional telemetry. This excerpt shows
+matching `stats` and `statsByTier.default` values. Omitted identity fields and the absence of a
+capture timestamp prevent treating the two examples as a matched observation pair.
 
 ```jsonc
 // /api/frontend/v1/stats/endpoint?permaslug=nvidia/nemotron-nano-12b-v2-vl&variant=free

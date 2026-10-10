@@ -1,7 +1,6 @@
 # Pricing policy
 
-[OpenRouter pricing](../openrouter/pricing.md) records upstream representations and observations.
-This document records how ORCA interprets and presents them.
+ORCA preserves observed prices and applies product-specific presentation.
 
 ## Observed rates
 
@@ -9,8 +8,7 @@ ORCA retains the decimal meter strings OpenRouter presents, with discount and co
 overrides alongside them. Tiny movements are real observations; display rounding must not
 change the captured facts or turn small nonzero prices into zero.
 
-- Presented rates already include `discount`. Never apply it a second time.
-- Zero and absence do not establish that an endpoint is free or supports a feature.
+- Never apply `discount` a second time to a presented rate.
 - Retain zero in stored history; products omit it from displayed rates.
 - Preserve conditional overrides with their observation. Today's Catalog cannot explain a historical quote.
 
@@ -35,7 +33,9 @@ The Grid, Monitor, Entity Overview, Pricing History, and Discord have different 
 - Use Input/Output or IN/OUT when helpful. Do not reserve paired slots for every modality; most would be empty.
 - Product names such as `text_input` and `cache_read` are presentation vocabulary, not stored meter names.
 - `discount` is a percentage adjustment, never a currency meter. Zero means no adjustment.
-- `web_search` is a per-search service charge, unaffected by discount. Prefer showing it with the native-search capability.
+
+`web_search` is a per-search service charge, unaffected by discount. Prefer showing it with the
+native-search capability.
 
 `priceMeters.ts` is authoritative for supported meter units and scaling; each product selects
 its labels and meters. Do not duplicate the complete mapping here.
@@ -46,35 +46,3 @@ Do not display or surface these fields:
 
 - misleading: `internal_reasoning`
 - obsolete: `request`, `variable_pricings`
-
-## Alert eligibility
-
-Monitor, Feed, and Discord use shared eligibility. Any `pricing.overrides` row with a key
-starting with `utc` establishes that a schedule is present. This deliberately accepts upstream
-extensions without parsing conditions, matching rate bands, or choosing an active band.
-
-For pricing scheduled on either side of an event, unchanged overrides suppress the pricing
-update. Changed overrides produce “Price schedule changed”, including schedule introduction
-or removal, even when the presented rates do not move. Current-band meter deltas are omitted
-from that alert. Endpoint arrivals with a schedule include “Price schedule detected”.
-
-Schedule classification uses the event's observed before/after quotes. Older events
-without quote context retain the numeric eligibility rule below; today's Catalog
-cannot supply their historical schedule.
-
-Other endpoint pricing updates first suppress numeric discount adjustments of at most two
-percentage points, then require an eligible meter movement of at least 2%, measured before
-rounding. A valid transition between zero/absence and a positive rate also qualifies. Invalid,
-negative, or non-string values do not. Discount alone does not qualify because presented rates
-already reflect it. Long-context overrides alone do not establish a schedule.
-
-This coarse rule suppresses the whole event, including coincident non-pricing changes.
-Lifecycle events and updates without pricing changes are outside the rule; captured events
-remain intact. Other opaque pricing, presentation-only changes, and revision-only changes are
-not selected as standalone alert signals.
-
-Discord additionally applies a [pricing-frequency policy](discord.md#frequent-pricing-changes)
-using recent quote history. This is a delivery preference; it does not discard captured events
-or apply to Monitor and Feed.
-
-See [Pricing History](pricing-history.md) for interpreting quotes across membership and availability changes.

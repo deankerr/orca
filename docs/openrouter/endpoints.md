@@ -8,23 +8,23 @@ payload. Fields that have no established semantics are intentionally left withou
 ## Identity
 
 - `id` — opaque UUID, observed to be globally unique and stable for an endpoint's lifetime.
-- `name` — `${provider_name} | ${model_variant_permaslug}` Human-readable but not a safe primary key; a historical collision is known.
+- `name` — `${provider_name} | ${model_variant_permaslug}`; a historical collision is known.
 - `model_variant_slug`
 - `model_variant_permaslug`
 - `variant`
 - `created_at`
 
-An endpoint UUID can retain its identity across model, provider, and tag changes. See the
-[September 2026 identity observations](appendix/endpoint-identity-changes.md) for dated evidence,
-including moves between standard and `:free` model variants.
+An endpoint UUID can retain its identity across model, provider, and tag changes, including moves
+between standard and `:free` model variants. Retained listing history through September 26, 2026
+establishes these transitions in `endpoint-identity-changes.md`.
 
 ## Provider relationship
 
 ⚠️ These are endpoint properties. They are not reliable denormalized attributes of the embedded
 provider record.
 
-- `provider_name` — Seemingly OpenRouter's primary key for provider entities, values include `Anthropic`, `Google`.
-- `provider_slug` — ⚠️ endpoint targeting key, exposed as `tag` in the end-user API; values include `anthropic`, `google/global`.
+- `provider_name` — observed values include `Anthropic` and `Google`.
+- `provider_slug` — targeting key exposed as `tag` in the public API, e.g. `anthropic`, `google/global`.
 - `provider_display_name`
 - `provider_model_id` — 💤 provider's own model identifier for this endpoint.
 - `provider_region`
@@ -52,11 +52,9 @@ provider record.
 - `moderation_required`
 - `supported_parameters` — ⚠️ contains LLM-shaped boilerplate outside text modalities.
 - `excluded_parameters`
-- `allowed_passthrough_parameters` — provider-specific parameters that may pass through unchanged;
-  especially meaningful for image and video styling.
+- `allowed_passthrough_parameters` — provider-specific parameters, including image and video styling.
 - `supported_image_parameters` — ⚠️ interpretation depends on modality.
-- `supported_video_parameters` — ⚠️ interpretation depends on modality and the field also occurs on
-  non-video endpoints.
+- `supported_video_parameters` — ⚠️ interpretation depends on modality and the field also occurs on non-video endpoints.
 - `features` — ⚠️ capability flags include cross-modality boilerplate.
 
 ### `features`
@@ -77,8 +75,7 @@ Feature-key presence varies by endpoint.
 - `supports_native_apply_patch`
 - `supports_native_web_fetch`
 - `supports_native_web_search`
-- `supports_tool_choice` — ⚠️ universal in the 2026-07-24 observation, including non-text endpoints;
-  contains `literal_auto`, `literal_none`, `literal_required`, and `type_function`.
+- `supports_tool_choice` — contains `literal_auto`, `literal_none`, `literal_required`, and `type_function`.
 - `supports_video_urls`
 
 ## Commercial and operational state
@@ -94,8 +91,6 @@ Feature-key presence varies by endpoint.
 
 ## Data policy
 
-⚠️ Endpoint policy is authoritative for behavioral claims; provider policy can be overridden.
-
 - `data_policy`
 - `data_policy.canPublish`
 - `data_policy.retainsPrompts`
@@ -105,18 +100,3 @@ Feature-key presence varies by endpoint.
 - `data_policy.trainingOpenRouter`
 - `data_policy.privacyPolicyURL`
 - `data_policy.termsOfServiceURL`
-
-## Pricing
-
-See [[pricing.md]]
-
-## Telemetry
-
-See [[telemetry.md]]
-
-## Embedded records
-
-⚠️ These are repeated denormalized copies, not additional entities.
-
-- `model`
-- `provider_info`

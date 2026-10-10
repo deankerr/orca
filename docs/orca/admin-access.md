@@ -1,7 +1,7 @@
 # Administrator access
 
 `/admin` and protected Convex entry points authorize the user selected by
-`ORCA_ADMIN_USER_ID`. Each protected entry point calls `requireAdmin`.
+`ORCA_ADMIN_USER_ID`.
 
 ## Development login
 
@@ -13,25 +13,22 @@ the header menu to resume anonymous work.
 ## Environments
 
 Dev/preview share users and login policy. Use a separate WorkOS environment for
-experiments that change these. Provisioning is covered in [setup](setup.md).
+experiments that change these.
 
 Convex registers callbacks and CORS. WorkOS owns login methods, signup policy, and
 logout destinations. Production GitHub OAuth uses the provider callback shown by
 WorkOS and its default `user:email` scope.
 
-The shared logout allowlist contains:
-
-- `https://orca.localhost/`
-- `https://*.orca.localhost/`
-- `https://orca-git-*-deank.vercel.app/`
-
-Update it when changing the hostname scheme or Vercel project/team. Preview sessions
-belong to the branch hostname; sign-in redirects unique deployment URLs there.
+Preview sessions belong to the branch hostname; sign-in redirects unique deployment
+URLs there. An unlisted tailnet logout destination falls back to WorkOS's default
+sign-out URL.
 
 ## Local callbacks
 
-For direct Convex pushes, supply `PORTLESS_URL` from `portless get orca`. Login must
-begin and finish on that external origin. Restart failed attempts at `/admin`;
+Web startup registers the callback for Portless's selected browser URL. For direct
+Convex pushes, supply `ORCA_DEV_URL` from the root `bun run --silent dev:origin` for local access, or
+the running server's printed Tailscale URL for remote access. Login must begin and
+finish on that external origin. Restart failed attempts at `/admin`;
 callback codes and PKCE state are single-use.
 
 ## Verify auth changes

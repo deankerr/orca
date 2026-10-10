@@ -21,17 +21,18 @@ Provider extraction chooses one representative observation per identity. Its pur
 is a useful base display name and a coherent provider record, not reconciliation of
 every inconsistent upstream copy. Google Vertex and Google AI Studio remain distinct
 providers; an internal `name` such as "Google" cannot substitute for their display
-names. Evidence and the limitations of the public provider list live in
-`docs/openrouter/providers.md`.
+names.
 
 Selection uses only raw slug, display name, and source endpoint UUID:
 
-- Prefer observations whose raw slug equals the normalized identity; fall back to
-  all observations for that identity when none match.
-- Choose the most frequent `displayName` in that pool, breaking equal counts by
-  lexical display-name order. Each embedded endpoint observation contributes a vote.
-- Among observations with the winning name, take the one with the lexically smallest
-  endpoint UUID. Retain its complete cleaned provider record.
+Prefer observations whose raw slug equals the normalized identity; fall back to all observations for
+that identity when none match.
+
+Choose the most frequent `displayName` in that pool, breaking equal counts by lexical display-name
+order. Each embedded endpoint observation contributes a vote.
+
+Among observations with the winning name, take the one with the lexically smallest endpoint UUID.
+Retain its complete cleaned provider record.
 
 The UUID is an arbitrary stable tie-break, not an authority or freshness signal.
 This keeps source traversal order out of selection. All retained metadata besides
@@ -62,5 +63,3 @@ future fields survive extraction. The organization-level `byokEnabled` flag is d
 from endpoint `is_byok`. Missing values, explicit nulls, and empty policy objects remain
 distinct. Adding an omission is a deliberate policy change; new fields remain visible
 until evidence supports discarding them.
-
-Historical evidence for the repairs is recorded in `docs/openrouter/providers.md`.

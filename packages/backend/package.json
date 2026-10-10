@@ -23,10 +23,12 @@
     "./scan/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
-    "dev": "PORTLESS_URL=$(portless get orca) convex dev"
+    "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev"
   },
   "dependencies": {
     "@discordjs/builders": "^1.14.1",
+    "@noble/hashes": "^1.8.0",
+    "@orca/discord-sender": "workspace:*",
     "@orca/json-profile": "workspace:*",
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",
@@ -42,6 +44,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
+    "convex-test": "0.0.54",
     "typescript": "catalog:"
   }
 }

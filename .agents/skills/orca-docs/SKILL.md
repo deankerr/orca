@@ -5,26 +5,48 @@ description: Write, review, and maintain ORCA documentation, including deciding 
 
 # ORCA documentation
 
-Except for the root README, write for agents and project/technology experts.
-Assume they can inspect code and locate information with ripgrep.
+Write for agents and project/technology experts unless the project specifies another audience.
+Assume readers can inspect code, search the repository, and already have related documentation in context.
 
-- Document durable decisions, reasons, external evidence, and operational constraints.
-  Let code explain implementation, types, and control flow. Prefer a clearer name
-  or a nearby comment when the information belongs with the code.
-- Update docs when a documented fact becomes wrong or a durable decision changes.
-  A code change alone is insufficient reason to add prose.
-- When code is removed or redesigned, delete guidance tied to the old design.
-  Describe the resulting system; never turn a discarded implementation into a new
-  prohibition. Readers should need no knowledge of the previous design.
-- State what is. Scrutinize “not”, “does not”, and “should not” clauses; retain
-  exclusions only for critical constraints or likely misunderstandings.
-- Give each fact one home. Remove repetition across docs and instructions.
-- Let directory listings and search provide navigation. Omit documentation indexes
-  and Markdown links. Use plain paths or searchable names when references help.
-  AGENTS.md may point to essential documentation or the relevant area.
-- Prefer short bullets with one useful point each. Make policy explicit rather
-  than burying it in prose. Use tables for compact references and comparisons.
+## Content
+
+- Document durable decisions, reasons, operational constraints, and surprising limitations.
+- Preserve useful observations about the system, its data, and upstream behavior.
+- Scope measurements by date, population, and denominator when needed to interpret them.
+- Distinguish observations from policy.
+- Record uncertainty when it changes interpretation or a decision.
+- Omit task-, worktree-, and PR-specific reports, including demo results and temporary overrides.
+- Let code explain implementation, types, and control flow.
+- Prefer a clearer name or nearby comment when information belongs with the code.
+- Update documented facts and conclusions when new evidence or durable decisions change them.
+- Add prose only when it contributes useful knowledge beyond the code change itself.
+- Delete guidance tied to removed or redesigned code.
+- Describe the resulting system without requiring knowledge of discarded designs.
+- State what is, retaining exclusions only for critical constraints or likely misunderstandings.
 - Keep operational instructions to prerequisites, commands, and meaningful consequences.
-  File names and their uses can help; implementation walkthroughs rarely do.
-- Preserve surprising limitations and the evidence behind decisions. Distinguish
-  observations from policy and scope measurements by date and population.
+
+## Organization
+
+- Keep writing rules in this skill and project-specific responsibilities and constraints in project instructions.
+- Give each fact one home across documentation and instructions.
+- Group sections by reader question or responsibility.
+- Use headings or introductory prose to establish shared scope for related instructions.
+- Split distinct responsibilities into separate files when they can be understood and maintained independently.
+- Prefer an existing document that owns the subject before creating a new one.
+- Preserve conditions and scope when splitting or moving content.
+
+## References
+
+- Do not use Markdown links.
+- Omit documentation indexes and references whose only purpose is navigation.
+- Refer to files only when their identity helps explain the subject or locate an operational change.
+- Format filenames as inline code, including a path only when the filename is ambiguous.
+- Refer to skills by name.
+
+## Form and review
+
+- Use one bullet per coherent instruction or fact, keeping brief, closely related clauses together.
+- Keep each bullet on one physical line, at most 120 characters including its marker.
+- Use prose for explanations that need connected sentences.
+- Use tables for compact references and comparisons.
+- Review the finished document for relevance, duplication, scope, and compliance with these rules.

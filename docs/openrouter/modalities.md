@@ -26,11 +26,13 @@ roughly 1.0–1.3 for other groups in this observation.
 
 Shared fields are not universally meaningful:
 
-- `supported_parameters` advertised `temperature`, `top_p`, and `max_tokens` even for embeddings
-  and reranking endpoints.
+`supported_parameters` advertised `temperature`, `top_p`, and `max_tokens` even for embeddings and
+reranking endpoints.
+
 - `features.supports_tool_choice` appeared on every endpoint in the observation.
-- `supported_video_parameters` appeared on text, embedding, and reranking endpoints as well as
-  actual video-generation endpoints, with different meanings.
+
+`supported_video_parameters` appeared on text, embedding, and reranking endpoints as well as actual
+video-generation endpoints, with different meanings.
 
 Capability claims should therefore always be qualified by modality.
 

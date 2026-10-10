@@ -9,9 +9,11 @@
   "scripts": {
     "build": "turbo run build --filter=@orca/web",
     "check": "ultracite check",
-    "dev": "turbo run dev",
+    "dev": "portless run bun run dev:tasks",
     "dev:backend": "turbo run dev --filter=@orca/backend",
-    "dev:web": "turbo run dev --filter=@orca/web",
+    "dev:origin": "portless get \"$(bun -p 'require(\"./portless.json\").name')\"",
+    "dev:tasks": "ORCA_DEV_URL=${PORTLESS_TAILSCALE_URL:-${PORTLESS_URL:-$(bun run --silent dev:origin)}} turbo run dev",
+    "dev:web": "portless run bun run dev:tasks --filter=@orca/web",
     "fix": "ultracite fix",
     "format:spacing": "bun run packages/scripts/space-multiline-statements.ts",
     "generate:logos": "bun run --cwd apps/logos generate",

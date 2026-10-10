@@ -34,5 +34,3 @@ GET /events/feed?limit=20&cursor=<opaque_cursor>
 - Restart at the head to read new activity.
 - Late processing inserts events at their observation time; a completed traversal can precede older events arriving.
 - The feed does not expose processor completion; polling from the head alone cannot guarantee discovery of late events.
-
-See [Events](events.md) for historical identity and selection semantics.

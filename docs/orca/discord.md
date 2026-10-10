@@ -1,38 +1,88 @@
 # Discord alerts
 
-One webhook per deployment. Dev/preview share a private development channel;
-production has its own destination. Variables and defaults live in [configuration](config.md).
+## Admission and routing
 
-## Delivery
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules alert preparation after fresh
+ingestion events have committed. Preparation renders the events and submits once
+to the sender's `ingestion` topic; each eligible subscriber receives the same
+ordered batch.
 
-Disable `ORCA_DISCORD_AUTO_SEND_ENABLED` before historical replay or catch-up;
-automatic delivery has no age cutoff. Queued batches check the switch when starting.
-Running batches continue independently. Re-enable it when ingestion is current.
+Preparation failures leave committed events intact. Scheduling from the ingestion
+action is best-effort: a failure between event commit and scheduling can leave
+alerts unqueued. Inspect scheduling/preparation failures in logs and use
+`sendIngestion` for an intentional send after fixing the cause.
+Event-only `retry:events` recovery does not broadcast alerts.
 
-Fresh event commits trigger best-effort delivery. Processor retries never broadcast.
-A scheduling failure can lose a broadcast after its events have committed. Delivery
-has no automatic retry or deduplication; a failed send abandons the rest of its batch.
-Batches may interleave, so a missing message does not prove ingestion failed.
+The switch is checked before scheduling and again when preparation starts. Already
+submitted sender jobs continue independently. No eligible messages or matching
+webhooks produces no jobs.
 
-## Manual delivery
+The submission key is `ingestion:<scan_at>`. Historical backfill can submit jobs
+that expire before sending.
 
-These internal functions bypass the switch and can duplicate messages. Run from
-`packages/backend` with an explicit deployment:
+## Registration
 
-| Function                               | Arguments              |
-| -------------------------------------- | ---------------------- |
-| `alerts/discord/delivery:send`         | `{"event_id":"…"}`     |
-| `alerts/discord/delivery:sendExamples` | `{"event_ids":["…"]}`  |
-| `alerts/discord/delivery:sendLatest`   | `{}` or `{"limit":15}` |
+Each deployment needs an eligible webhook subscribed to `ingestion` before alerts
+can produce delivery jobs. Webhook URLs and subscriptions live in the component.
+Run operator commands from `packages/backend`, selecting the deployment explicitly.
+
+```sh
+bunx convex run api:registerWebhook '{"name":"Ingestion alerts","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>
+bunx convex run api:listWebhooks '{}' --component discordSender --deployment <deployment>
+```
+
+For development, use the worktree's deployment and private development webhooks.
+
+## Prepare and send an ingestion
+
+To prepare one completed ingestion with current filtering and card rendering,
+without enqueueing or sending anything:
+
+```sh
+bunx convex run alerts/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+```
+
+The query returns `scan_at`, ordered `messages` (each with a stable `key`,
+serialized JSON `payload`, and source `event_ids`), and `skippedEvents` with
+filtering reasons. It uses current rendering and available history, regardless of
+auto-send, observation age or registered webhooks.
+
+To manually send that ingestion:
+
+```sh
+bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+```
+
+Each invocation intentionally sends again to eligible `ingestion` subscribers,
+with a fresh deadline based on the configured age limit. Cards and filtering
+retain the original observation time. The command works with auto-send disabled
+and returns `jobIds` and `messageCount`; a positive count with no jobs means there
+were rendered messages but no eligible subscribers. Both operator commands require
+completed event processing.
+
+## Inspect delivered output
+
+To investigate output, convert the requested time window and timezone to epoch
+milliseconds. `listJobs` uses submission time, which can differ from the source's
+`scan_at`; job keys retain that observation time.
+
+```sh
+bunx convex run api:listJobs '{"from":<start-ms>,"to":<end-ms>}' --component discordSender --deployment <deployment>
+bunx convex run api:getJob '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
+bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
+```
+
+If `hasMore` is true, narrow the discovery window. Use stored jobs and results for
+historical evidence; `prepareIngestion` rerenders with current code and history.
 
 ## Presentation
 
-Apply shared [alert eligibility](pricing.md#alert-eligibility), then the frequency
-rule below, before grouping identical changes. Monitor and Feed remain unbatched;
+Apply shared alert eligibility, then the frequency rule below, before grouping identical changes.
+Monitor and Feed remain unbatched;
 query pages do not define meaningful batch membership.
 
 Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language. See [event meaning](events.md).
+availability; unclassified arrivals use neutral language.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 ## Frequent pricing changes

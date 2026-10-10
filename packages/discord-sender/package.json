@@ -1,0 +1,27 @@
+{
+  "name": "@orca/discord-sender",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./convex.config.js": "./src/component/convex.config.ts",
+    "./_generated/component.js": "./src/component/_generated/component.ts",
+    "./schema": "./src/component/schema.ts"
+  },
+  "scripts": {
+    "test": "bun test src"
+  },
+  "dependencies": {
+    "@convex-dev/workpool": "0.4.13",
+    "@discordjs/rest": "2.6.3",
+    "convex": "catalog:",
+    "convex-helpers": "catalog:",
+    "remeda": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "convex-test": "0.0.54",
+    "typescript": "catalog:"
+  }
+}
