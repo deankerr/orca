@@ -13,6 +13,13 @@ import { readFrequency } from './frequency'
 import { prepareBatch } from './prepare'
 import { renderDiscordBatch } from './renderers/index'
 
+const operationOrder = { ADD: 0, UPDATE: 1, REMOVE: 2 } satisfies Record<EventRow['type'], number>
+const entityOrder = {
+  ADD: { provider: 0, model: 1, endpoint: 2 },
+  UPDATE: { provider: 0, model: 1, endpoint: 2 },
+  REMOVE: { endpoint: 0, model: 1, provider: 2 },
+} satisfies Record<EventRow['type'], Record<EventRow['entity_kind'], number>>
+
 /** Stable across JSON object insertion order; arrays intentionally retain display order. */
 export function canonicalJson(value: unknown): string {
   return JSON.stringify(value, (_key, item: unknown) => {
@@ -57,10 +64,13 @@ export async function renderIngestion(ctx: QueryCtx, ingestionId: Id<typeof INGE
 }
 
 export async function renderRows(ctx: QueryCtx, rows: (EventRow & { _id: string })[]) {
+  // Introduce parents before endpoints; announce endpoint unlistings before parent departures.
+  // Sort before batching so grouped unlistings retain the same lifecycle order.
   const ordered = rows.toSorted(
     (a, b) =>
       a.scan_at.localeCompare(b.scan_at) ||
-      a.entity_kind.localeCompare(b.entity_kind) ||
+      operationOrder[a.type] - operationOrder[b.type] ||
+      entityOrder[a.type][a.entity_kind] - entityOrder[b.type][b.entity_kind] ||
       a.entity_id.localeCompare(b.entity_id) ||
       a.change_json.localeCompare(b.change_json) ||
       a._id.localeCompare(b._id),

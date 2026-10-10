@@ -85,6 +85,10 @@ Only model discoveries receive introductory cards. Known arrivals describe renew
 availability; unclassified arrivals use neutral language.
 Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
+Within each scan, lifecycle ordering introduces parents before endpoints and announces
+endpoint unlistings before messages about losing the last listed endpoint. Ordering applies
+before batching; `docs/orca/config.md` records the sort priorities.
+
 ## Frequent pricing changes
 
 Discord suppresses ordinary pricing fields after **two prior quote entries within
