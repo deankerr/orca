@@ -1,10 +1,10 @@
 import { v } from 'convex/values'
-import { isDeepEqual } from 'remeda'
 
 import { internalMutation } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 import type { Scan, ScanPair } from '#scan/model'
 
+import { compare } from '../../compare'
 import { encodePricing, normalizePricing } from '../../entities'
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './table'
@@ -20,10 +20,9 @@ export async function write(ctx: MutationCtx, rows: EndpointPriceRow[]): Promise
 export function prepare(pair: ScanPair) {
   return [...pair.next.endpoints.values()].flatMap((endpoint) => {
     const before = pair.previous.endpoints.get(endpoint.id)
-    const pricing = encodePricing(normalizePricing(endpoint.pricing))
-    return before === undefined ||
-      !isDeepEqual(encodePricing(normalizePricing(before.pricing)), pricing)
-      ? [{ endpoint_id: endpoint.id, scan_at: pair.next.scan_at, ...pricing }]
+    const pricing = normalizePricing(endpoint.pricing)
+    return before === undefined || compare(normalizePricing(before.pricing), pricing).length > 0
+      ? [{ endpoint_id: endpoint.id, scan_at: pair.next.scan_at, ...encodePricing(pricing) }]
       : []
   })
 }

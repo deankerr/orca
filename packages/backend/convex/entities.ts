@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { ScannedEndpoint, ScannedModel, ScannedProvider } from '#scan/model'
 
 import { isoDate } from './fields'
-import { canonicalJson, JsonObject } from './json'
+import { JsonObject } from './json'
 
 /** ORCA model fields shared by Catalog and Events; remaining source fields belong to metadata. */
 export const Model = z.object({
@@ -140,5 +140,5 @@ export function normalizePricing(value: ScannedEndpoint['pricing']): z.infer<typ
 /** Encode arbitrary override keys only when crossing into storage. */
 export function encodePricing(value: ReturnType<typeof normalizePricing>) {
   const { overrides, ...fields } = value
-  return overrides === undefined ? fields : { ...fields, overrides_json: canonicalJson(overrides) }
+  return overrides === undefined ? fields : { ...fields, overrides_json: JSON.stringify(overrides) }
 }

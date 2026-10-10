@@ -6,13 +6,12 @@ import type { Scan, ScanPair } from '#scan/model'
 
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { changedRows } from '../changes'
-import { projectModel } from '../project'
+import { encodeModel, projectModel } from '../project'
 import { CURRENT_MODELS_TABLE, currentModelsTable } from './table'
 import type { CurrentModelRow } from './table'
 
 export function prepare(pair: ScanPair) {
-  const project = (scan: Scan) => new Map(initialRows(scan).map((row) => [row.model_id, row]))
-  return changedRows(project(pair.previous), project(pair.next))
+  return changedRows(project(pair.previous), project(pair.next)).map(encodeModel)
 }
 
 /** Write inside the caller's acceptance transaction. */
@@ -36,7 +35,11 @@ export async function write(ctx: MutationCtx, rows: CurrentModelRow[]): Promise<
 }
 
 export function initialRows(scan: Scan) {
-  return [...scan.models.values()].map((model) => projectModel(model, scan.scan_at))
+  return [...project(scan).values()].map(encodeModel)
+}
+
+function project(scan: Scan) {
+  return new Map([...scan.models].map(([id, model]) => [id, projectModel(model, scan.scan_at)]))
 }
 
 export const initialize = internalMutation({

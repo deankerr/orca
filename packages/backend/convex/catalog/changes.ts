@@ -1,14 +1,17 @@
 import { omit } from 'convex-helpers'
-import { isDeepEqual } from 'remeda'
+
+import { compare } from '../compare'
+import type { JsonValue } from '../json'
 
 /** Observation time alone does not change a Catalog row. */
-export function changedRows<T extends { scan_at: string }>(
+export function changedRows<T extends { scan_at: string; [key: string]: JsonValue }>(
   previous: Map<string, T>,
   next: Map<string, T>,
 ): T[] {
   return [...next.entries()].flatMap(([id, row]) => {
     const before = previous.get(id)
-    return before === undefined || !isDeepEqual(omit(before, ['scan_at']), omit(row, ['scan_at']))
+    return before === undefined ||
+      compare(omit(before, ['scan_at']), omit(row, ['scan_at'])).length > 0
       ? [row]
       : []
   })

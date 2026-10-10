@@ -6,7 +6,7 @@ import type { Scan, ScanPair } from '#scan/model'
 
 import { assertInitialTableEmpty } from '../../ingestion/initialization'
 import { changedRows, departedRows } from '../changes'
-import { projectEndpoints, projectModel } from '../project'
+import { encodeEndpoint, projectEndpoints, projectModel } from '../project'
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './table'
 import type { CurrentEndpointRow } from './table'
 
@@ -17,7 +17,7 @@ export function prepare(pair: ScanPair) {
   return [
     ...changedRows(before, after),
     ...departedRows(before, after).map((row) => ({ ...row, unlisted_at: pair.next.scan_at })),
-  ]
+  ].map(encodeEndpoint)
 }
 
 /** Write inside the caller's acceptance transaction. */
@@ -41,7 +41,7 @@ export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promi
 }
 
 export function initialRows(scan: Scan) {
-  return [...project(scan).values()]
+  return [...project(scan).values()].map(encodeEndpoint)
 }
 
 function project(scan: Scan) {
