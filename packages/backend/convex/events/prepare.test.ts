@@ -143,7 +143,7 @@ test('joint additions and removals carry full values and resolve all identities 
   expect(removed).toHaveLength(3)
   for (const rows of [added, removed]) {
     for (const row of rows) {
-      expect(row).not.toHaveProperty('from_scan_at')
+      expect(row).not.toHaveProperty('first_scan_at')
       expect(row.context).not.toHaveProperty('pricing')
       expect(row.scan_at).toBe(to)
       expect(row.type).toBe(rows === added ? 'ADD' : 'REMOVE')

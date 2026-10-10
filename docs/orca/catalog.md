@@ -19,13 +19,12 @@ Current records express knowledge at the ORCA clock. An unchanged entity can hav
 | Stored field    | Interpretation in current entity records                                |
 | --------------- | ----------------------------------------------------------------------- |
 | `scan_at`       | Source scan for retained facts, independent of ingestion or write time. |
-| `from_scan_at`  | First retained observation of this identity; absence means unknown.     |
+| `first_scan_at` | First retained observation of this identity.                            |
 | `or_created_at` | Upstream creation time, when supplied.                                  |
 | `unlisted_at`   | Endpoint disappearance observed after the last retained facts.          |
 
-Catalog's `from_scan_at` has a different meaning from the same field on an ingestion, where it
-identifies the pair's predecessor. Replacements and reappearances preserve Catalog's first
-observation, including an unknown value. A later update cannot establish a missing earlier date.
+Replacements and reappearances preserve `first_scan_at`. Every retained entity has a first
+observation; initialization establishes it at the baseline scan.
 
 ## Availability
 

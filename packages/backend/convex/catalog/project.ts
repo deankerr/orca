@@ -64,14 +64,14 @@ export function projectEndpoint(args: {
 export function encodeModel({
   metadata,
   ...facts
-}: ReturnType<typeof projectModel>): CurrentModelRow {
+}: ReturnType<typeof projectModel>): Omit<CurrentModelRow, 'first_scan_at'> {
   return { ...facts, metadata_json: JSON.stringify(metadata) }
 }
 
 export function encodeProvider({
   metadata,
   ...facts
-}: ReturnType<typeof projectProvider>): CurrentProviderRow {
+}: ReturnType<typeof projectProvider>): Omit<CurrentProviderRow, 'first_scan_at'> {
   return { ...facts, metadata_json: JSON.stringify(metadata) }
 }
 
@@ -79,6 +79,9 @@ export function encodeEndpoint({
   metadata,
   pricing,
   ...facts
-}: ReturnType<typeof projectEndpoint> & { unlisted_at?: string }): CurrentEndpointRow {
+}: ReturnType<typeof projectEndpoint> & { unlisted_at?: string }): Omit<
+  CurrentEndpointRow,
+  'first_scan_at'
+> {
   return { ...facts, pricing: encodePricing(pricing), metadata_json: JSON.stringify(metadata) }
 }

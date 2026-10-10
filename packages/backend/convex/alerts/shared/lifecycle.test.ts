@@ -335,44 +335,20 @@ test('baseline, historical models, discoveries and repeated returns survive dela
     ['v4_endpoints', 'endpoint_id', 'vintage', 1],
     ['v4_endpoints', 'endpoint_id', 'new', 1],
   ] as const) {
-    expect(rows(table).find((row) => row[idField] === identity)?.from_scan_at).toBe(
+    expect(rows(table).find((row) => row[idField] === identity)?.first_scan_at).toBe(
       timeline[firstHour]?.scan_at,
     )
   }
 
-  // Existing rows without a first-observation date stay unknown; incoming rows cannot invent it.
-  const legacy = ['v4_models', 'v4_providers', 'v4_endpoints'].map((table) => {
-    const [row] = rows(table)
-
-    if (row === undefined) {
-      throw new Error('Missing baseline row')
-    }
-
-    Reflect.deleteProperty(row, 'from_scan_at')
-    return row._id
-  })
-
   const newer = { ...baseline, scan_at: '2026-09-30T07:00:00.000Z' }
 
-  await models.write(
-    ctx,
-    models.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
-  )
+  await models.write(ctx, models.initialRows(newer))
+  await providers.write(ctx, providers.initialRows(newer))
+  await endpoints.write(ctx, endpoints.initialRows(newer))
 
-  await providers.write(
-    ctx,
-    providers.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
-  )
-
-  await endpoints.write(
-    ctx,
-    endpoints.initialRows(newer).map((row) => ({ ...row, from_scan_at: newer.scan_at })),
-  )
-
-  for (const [i, table] of ['v4_models', 'v4_providers', 'v4_endpoints'].entries()) {
-    expect(rows(table)[0]?._id).toBe(legacy[i])
+  for (const table of ['v4_models', 'v4_providers', 'v4_endpoints']) {
     expect(rows(table)[0]?.scan_at).toBe(newer.scan_at)
-    expect(rows(table)[0]?.from_scan_at).toBeUndefined()
+    expect(rows(table)[0]?.first_scan_at).toBe(baseline.scan_at)
   }
 })
 

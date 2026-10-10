@@ -21,17 +21,19 @@ export function prepare(pair: ScanPair) {
 }
 
 /** Write inside the caller's acceptance transaction. */
-export async function write(ctx: MutationCtx, rows: CurrentEndpointRow[]): Promise<void> {
+export async function write(
+  ctx: MutationCtx,
+  rows: Omit<CurrentEndpointRow, 'first_scan_at'>[],
+): Promise<void> {
   for (const row of rows) {
     const existing = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
       .unique()
 
-    // Preserve unknown legacy dates too; a later update cannot establish first observation.
     const next: CurrentEndpointRow = {
       ...row,
-      from_scan_at: existing === null ? row.scan_at : existing.from_scan_at,
+      first_scan_at: existing === null ? row.scan_at : existing.first_scan_at,
     }
 
     await (existing === null
@@ -52,12 +54,12 @@ function project(scan: Scan) {
 }
 
 export const initialize = internalMutation({
-  args: { rows: v.array(currentEndpointsTable.validator) },
+  args: { rows: v.array(currentEndpointsTable.validator.omit('first_scan_at')) },
   returns: v.null(),
   handler: async (ctx, { rows }) => {
     await assertInitialTableEmpty(ctx, CURRENT_ENDPOINTS_TABLE)
     for (const row of rows) {
-      await ctx.db.insert(CURRENT_ENDPOINTS_TABLE, { ...row, from_scan_at: row.scan_at })
+      await ctx.db.insert(CURRENT_ENDPOINTS_TABLE, { ...row, first_scan_at: row.scan_at })
     }
     return null
   },

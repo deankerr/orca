@@ -29,7 +29,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
   let processor = 'events'
   let failInsert = false
   let modelScanAt = pair.from_scan_at
-  let modelFromScanAt: string | undefined
+  let modelFirstScanAt = pair.from_scan_at
   let earlierListing = false
   const writes: EventRow[] = []
 
@@ -40,7 +40,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
           first: async () => (earlierListing ? {} : null),
           unique: async () => {
             expect(table).toBe('v4_models')
-            return { scan_at: modelScanAt, from_scan_at: modelFromScanAt }
+            return { scan_at: modelScanAt, first_scan_at: modelFirstScanAt }
           },
         }),
       }),
@@ -114,7 +114,7 @@ test('event commits bind both pair times, complete empty work, and make retries 
   expect(state).toBe('complete')
   expect(writes).toHaveLength(1)
 
-  // Same-scan or later metadata updates erase Catalog's evidence of historical-only knowledge.
+  // First observation survives same-scan and later metadata updates.
   for (const scanAt of [pair.scan_at, '2026-09-28T12:00:00.000Z']) {
     modelScanAt = scanAt
 
@@ -122,19 +122,19 @@ test('event commits bind both pair times, complete empty work, and make retries 
       state = 'pending'
       earlierListing = listedBefore
       await commitHandler(ctx, args)
-      expect(writes.at(-1)?.previously_known).toBe(listedBefore)
+      expect(writes.at(-1)?.previously_known).toBe(true)
     }
   }
 
   // Immutable first observation survives later metadata updates and delayed event processing.
   earlierListing = false
 
-  for (const [fromScanAt, known] of [
+  for (const [firstScanAt, known] of [
     [pair.from_scan_at, true],
     [pair.scan_at, false],
   ] as const) {
     state = 'pending'
-    modelFromScanAt = fromScanAt
+    modelFirstScanAt = firstScanAt
     await commitHandler(ctx, args)
     expect(writes.at(-1)?.previously_known).toBe(known)
   }

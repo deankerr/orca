@@ -123,9 +123,9 @@ export const run = internalAction({
 export const commitIngestion = internalMutation({
   args: {
     ...ingestionsTable.validator.fields,
-    models: v.array(currentModelsTable.validator),
-    providers: v.array(currentProvidersTable.validator),
-    endpoints: v.array(currentEndpointsTable.validator),
+    models: v.array(currentModelsTable.validator.omit('first_scan_at')),
+    providers: v.array(currentProvidersTable.validator.omit('first_scan_at')),
+    endpoints: v.array(currentEndpointsTable.validator.omit('first_scan_at')),
     listings: v.array(endpointListingsTable.validator),
     pricing: v.array(endpointPricesTable.validator),
     stats: currentStatsTable.validator.fields.rows,
