@@ -70,6 +70,10 @@ Discord batching requires **3 distinct entities** with the same change at one ob
 including endpoint unlistings. The threshold is hardcoded in
 `packages/backend/convex/alerts/shared/batch.ts`.
 
+Discord message ordering is hardcoded in `packages/backend/convex/alerts/discord/render.ts`:
+within each scan, additions and updates each use provider → model → endpoint, followed by
+removals in endpoint → model → provider order. Entity IDs break ties within each category.
+
 ### Developer login storage: project defaults and deployment environment
 
 Retrieve through the authenticated Convex CLI for browser login.
