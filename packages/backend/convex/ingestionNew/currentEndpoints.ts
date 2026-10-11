@@ -10,8 +10,15 @@ import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../catalogNew/ta
 import type { CurrentEndpointRow } from '../catalogNew/tables/current'
 import { compare } from '../compare'
 import { endpointEntity } from './lenses'
+import { checkpoint } from './progress'
+import type { Ownership } from './progress'
+import { ownership } from './table'
 
-export async function ingest(ctx: ActionCtx, { previous, next }: ScanPair): Promise<void> {
+export async function ingest(
+  ctx: ActionCtx,
+  { previous, next }: ScanPair,
+  owner: Ownership,
+): Promise<void> {
   const rows: Omit<CurrentEndpointRow, 'first_scan_at'>[] = []
 
   for (const [id, { endpoint }] of next.endpoints) {
@@ -51,13 +58,20 @@ export async function ingest(ctx: ActionCtx, { previous, next }: ScanPair): Prom
     })
   }
 
-  await ctx.runMutation(internal.ingestionNew.currentEndpoints.write, { rows })
+  await ctx.runMutation(internal.ingestionNew.currentEndpoints.write, { ...owner, rows })
 }
 
 export const write = internalMutation({
-  args: { rows: v.array(currentEndpointsTable.validator.omit('first_scan_at')) },
+  args: {
+    ...ownership.fields,
+    rows: v.array(currentEndpointsTable.validator.omit('first_scan_at')),
+  },
   returns: v.null(),
-  handler: async (ctx, { rows }) => {
+  handler: async (ctx, { rows, ...owner }) => {
+    if (!(await checkpoint(ctx, owner, 'currentEndpoints'))) {
+      return null
+    }
+
     for (const row of rows) {
       const existing = await ctx.db
         .query(CURRENT_ENDPOINTS_TABLE)

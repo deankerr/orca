@@ -40,6 +40,10 @@ import {
   ingestionsTable,
   processorWorkTable,
 } from './ingestion/table'
+import {
+  INGESTIONS_TABLE as SCAN_INGESTIONS_TABLE,
+  ingestionsTable as scanIngestionsTable,
+} from './ingestionNew/table'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v2/table'
@@ -58,6 +62,8 @@ export default defineSchema(
     [CATALOG_PRICES_TABLE]: catalogPricingHistoryTable,
     [CATALOG_STATS_TABLE]: catalogStatsHistoryTable,
     [CATALOG_EVENTS_TABLE]: catalogEventsTable,
+
+    [SCAN_INGESTIONS_TABLE]: scanIngestionsTable,
 
     [INGESTIONS_TABLE]: ingestionsTable,
     [PROCESSOR_WORK_TABLE]: processorWorkTable,

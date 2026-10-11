@@ -89,6 +89,7 @@
     "packages/backend": {
       "name": "@orca/backend",
       "dependencies": {
+        "@convex-dev/workpool": "0.4.13",
         "@discordjs/builders": "^1.14.1",
         "@noble/hashes": "^1.8.0",
         "@orca/discord-sender": "workspace:*",

@@ -13,20 +13,23 @@ import type { EventRow } from '../catalogNew/tables/events'
 import { EVENTS_TABLE, eventsTable } from '../catalogNew/tables/events'
 import { compare } from '../compare'
 import { modelEntity, providerEntity, endpointEntity } from './lenses'
+import { checkpoint } from './progress'
+import type { Ownership } from './progress'
+import { ownership } from './table'
 
-export async function ingest(ctx: ActionCtx, pair: ScanPair): Promise<void> {
-  if (pair.previous.scan_at === '') {
-    return
-  }
-
-  const rows = projectRows(pair)
-  await ctx.runMutation(internal.ingestionNew.events.write, { rows })
+export async function ingest(ctx: ActionCtx, pair: ScanPair, owner: Ownership): Promise<void> {
+  const rows = pair.previous.scan_at === '' ? [] : projectRows(pair)
+  await ctx.runMutation(internal.ingestionNew.events.write, { ...owner, rows })
 }
 
 export const write = internalMutation({
-  args: { rows: v.array(eventsTable.validator) },
+  args: { ...ownership.fields, rows: v.array(eventsTable.validator) },
   returns: v.null(),
-  handler: async (ctx, { rows }) => {
+  handler: async (ctx, { rows, ...owner }) => {
+    if (!(await checkpoint(ctx, owner, 'events'))) {
+      return null
+    }
+
     for (const row of rows) {
       await ctx.db.insert(EVENTS_TABLE, row)
     }

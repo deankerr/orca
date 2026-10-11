@@ -8,8 +8,11 @@ import type { ScannedEndpoint, ScanPair } from '#scanNew/model'
 import type { EndpointListingRow } from '../catalogNew/tables/listings'
 import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from '../catalogNew/tables/listings'
 import { compare } from '../compare'
+import { checkpoint } from './progress'
+import type { Ownership } from './progress'
+import { ownership } from './table'
 
-export async function ingest(ctx: ActionCtx, pair: ScanPair): Promise<void> {
+export async function ingest(ctx: ActionCtx, pair: ScanPair, owner: Ownership): Promise<void> {
   const rows: EndpointListingRow[] = []
 
   for (const [id, { endpoint }] of pair.next.endpoints) {
@@ -32,13 +35,17 @@ export async function ingest(ctx: ActionCtx, pair: ScanPair): Promise<void> {
     }
   }
 
-  await ctx.runMutation(internal.ingestionNew.listingHistory.write, { rows })
+  await ctx.runMutation(internal.ingestionNew.listingHistory.write, { ...owner, rows })
 }
 
 export const write = internalMutation({
-  args: { rows: v.array(endpointListingsTable.validator) },
+  args: { ...ownership.fields, rows: v.array(endpointListingsTable.validator) },
   returns: v.null(),
-  handler: async (ctx, { rows }) => {
+  handler: async (ctx, { rows, ...owner }) => {
+    if (!(await checkpoint(ctx, owner, 'listingHistory'))) {
+      return null
+    }
+
     for (const row of rows) {
       await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, row)
     }

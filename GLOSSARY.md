@@ -170,8 +170,7 @@ It does not certify that every projection or product has progressed to that hori
 _Avoid_: Wall clock, latest collected scan time
 
 **Projection progress**:
-The record of which source inputs have had their output retained for a particular projection, including inputs producing no output.
-Progress is independent of whether another projection has processed those inputs.
+_replace this_
 
 **Readiness**:
 A product's assessment that its required projections are sufficient for a chosen observation horizon.

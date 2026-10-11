@@ -97,9 +97,13 @@ import type * as ingestionNew_currentStats from "../ingestionNew/currentStats.js
 import type * as ingestionNew_events from "../ingestionNew/events.js";
 import type * as ingestionNew_lenses from "../ingestionNew/lenses.js";
 import type * as ingestionNew_listingHistory from "../ingestionNew/listingHistory.js";
+import type * as ingestionNew_pool from "../ingestionNew/pool.js";
 import type * as ingestionNew_pricingHistory from "../ingestionNew/pricingHistory.js";
+import type * as ingestionNew_progress from "../ingestionNew/progress.js";
 import type * as ingestionNew_run from "../ingestionNew/run.js";
+import type * as ingestionNew_state from "../ingestionNew/state.js";
 import type * as ingestionNew_statsHistory from "../ingestionNew/statsHistory.js";
+import type * as ingestionNew_table from "../ingestionNew/table.js";
 import type * as init from "../init.js";
 import type * as isodatetime from "../isodatetime.js";
 import type * as json from "../json.js";
@@ -232,9 +236,13 @@ declare const fullApi: ApiFromModules<{
   "ingestionNew/events": typeof ingestionNew_events;
   "ingestionNew/lenses": typeof ingestionNew_lenses;
   "ingestionNew/listingHistory": typeof ingestionNew_listingHistory;
+  "ingestionNew/pool": typeof ingestionNew_pool;
   "ingestionNew/pricingHistory": typeof ingestionNew_pricingHistory;
+  "ingestionNew/progress": typeof ingestionNew_progress;
   "ingestionNew/run": typeof ingestionNew_run;
+  "ingestionNew/state": typeof ingestionNew_state;
   "ingestionNew/statsHistory": typeof ingestionNew_statsHistory;
+  "ingestionNew/table": typeof ingestionNew_table;
   init: typeof init;
   isodatetime: typeof isodatetime;
   json: typeof json;
@@ -300,4 +308,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   discordSender: import("@orca/discord-sender/_generated/component.js").ComponentApi<"discordSender">;
+  ingestionPool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"ingestionPool">;
 };

@@ -7,8 +7,11 @@ import type { ScannedEndpointStats, ScanPair } from '#scanNew/model'
 
 import { CURRENT_STATS_TABLE, currentStatsTable } from '../catalogNew/tables/current'
 import type { CurrentStatsRow } from '../catalogNew/tables/current'
+import { checkpoint } from './progress'
+import type { Ownership } from './progress'
+import { ownership } from './table'
 
-export async function ingest(ctx: ActionCtx, { next }: ScanPair): Promise<void> {
+export async function ingest(ctx: ActionCtx, { next }: ScanPair, owner: Ownership): Promise<void> {
   const rows: CurrentStatsRow[] = []
 
   for (const sample of next.stats) {
@@ -19,13 +22,21 @@ export async function ingest(ctx: ActionCtx, { next }: ScanPair): Promise<void> 
     }
   }
 
-  await ctx.runMutation(internal.ingestionNew.currentStats.write, { scan_at: next.scan_at, rows })
+  await ctx.runMutation(internal.ingestionNew.currentStats.write, {
+    ...owner,
+    scan_at: next.scan_at,
+    rows,
+  })
 }
 
 export const write = internalMutation({
-  args: currentStatsTable.validator.fields,
+  args: { ...ownership.fields, ...currentStatsTable.validator.fields },
   returns: v.null(),
-  handler: async (ctx, snapshot) => {
+  handler: async (ctx, { ingestion_id, work_id, ...snapshot }) => {
+    if (!(await checkpoint(ctx, { ingestion_id, work_id }, 'currentStats'))) {
+      return null
+    }
+
     const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
 
     if (existing === null) {

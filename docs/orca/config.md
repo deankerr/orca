@@ -72,6 +72,13 @@ Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
 `packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
 `scan_at`; manual `sendIngestion` deadlines use invocation time.
 
+Projection ingestion uses a dedicated `ingestionPool` with concurrency **1** and automatic
+action retries using Workpool's defaults. Record ownership and input admission enforce ordering
+independently of pool concurrency. A **five-minute** recovery cron resumes already registered
+unfinished inputs, independently of the legacy ingestion cron switch. Manual
+`ingestionNew/run:run` starts the new timeline; successful finalization schedules discovery
+of its next input. The legacy hourly ingestion entry point remains unchanged.
+
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
 `packages/backend/convex/alerts/shared/batch.ts`.
