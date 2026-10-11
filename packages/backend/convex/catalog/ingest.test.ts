@@ -6,8 +6,10 @@ import * as events from '../events/prepare'
 import * as pricing from '../history/pricing/ingest'
 import type { JsonValue } from '../json'
 import * as endpoints from './endpoints/ingest'
+import { omittedMetadataKeys } from './metadata'
 import * as models from './models/ingest'
 import * as providers from './providers/ingest'
+import { metadataFromScan } from './refresh'
 
 const from = '2026-09-28T10:00:00.000Z'
 const to = '2026-09-28T11:00:00.000Z'
@@ -251,4 +253,53 @@ test('pricing retains override order and distinguishes absent overrides from an 
     expect(pricing.prepare(pair)).toHaveLength(1)
     expect(endpoints.prepare(pair)).toHaveLength(1)
   }
+})
+
+test('Catalog omissions suppress current writes but preserve Events and restorable source facts', () => {
+  const previous = observation(
+    from,
+    { ...model, extra: 'before' },
+    { ...provider, extra: 'before' },
+    { ...endpoint, extra: 'before' },
+  )
+  const next = observation(
+    to,
+    { ...model, extra: 'after' },
+    { ...provider, extra: 'after' },
+    { ...endpoint, extra: 'after' },
+  )
+  const pair = { previous, next }
+  const original = structuredClone(pair)
+
+  for (const keys of Object.values(omittedMetadataKeys)) {
+    keys.push('extra')
+  }
+
+  try {
+    expect(models.prepare(pair)).toEqual([])
+    expect(providers.prepare(pair)).toEqual([])
+    expect(endpoints.prepare(pair)).toEqual([])
+    expect(events.prepare(pair)).toHaveLength(3)
+
+    for (const rows of [
+      models.initialRows(next),
+      providers.initialRows(next),
+      endpoints.initialRows(next),
+    ]) {
+      expect(JSON.parse(rows[0]?.metadata_json ?? 'null')).not.toHaveProperty('extra')
+    }
+
+    expect(
+      JSON.parse(metadataFromScan(next, { entity_kind: 'model', entity_id: model.id }) ?? 'null'),
+    ).not.toHaveProperty('extra')
+    expect(pair).toEqual(original)
+  } finally {
+    for (const keys of Object.values(omittedMetadataKeys)) {
+      keys.pop()
+    }
+  }
+
+  expect(
+    JSON.parse(metadataFromScan(next, { entity_kind: 'model', entity_id: model.id }) ?? 'null'),
+  ).toHaveProperty('extra', 'after')
 })

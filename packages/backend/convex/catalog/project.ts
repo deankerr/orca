@@ -4,6 +4,7 @@ import type { ScannedEndpoint, ScannedModel, ScannedProvider, Scan } from '#scan
 
 import { encodePricing, normalizeEndpoint, normalizeModel, normalizeProvider } from '../entities'
 import type { CurrentEndpointRow } from './endpoints/table'
+import { currentMetadata } from './metadata'
 import type { CurrentModelRow } from './models/table'
 import type { CurrentProviderRow } from './providers/table'
 
@@ -33,12 +34,20 @@ export function projectEndpoints(scan: Scan, models: Map<string, ReturnType<type
 
 /** Project observed model facts at a scan time. */
 export function projectModel(model: ScannedModel, scanAt: string) {
-  return { ...normalizeModel(model), scan_at: scanAt }
+  const normalized = normalizeModel(model)
+
+  return { ...normalized, metadata: currentMetadata('model', normalized.metadata), scan_at: scanAt }
 }
 
 /** Project observed provider facts at a scan time. */
 export function projectProvider(provider: ScannedProvider, scanAt: string) {
-  return { ...normalizeProvider(provider), scan_at: scanAt }
+  const normalized = normalizeProvider(provider)
+
+  return {
+    ...normalized,
+    metadata: currentMetadata('provider', normalized.metadata),
+    scan_at: scanAt,
+  }
 }
 
 /** Project one endpoint from its raw value and the related rows already resolved for this context. */
@@ -51,6 +60,7 @@ export function projectEndpoint(args: {
 
   return {
     ...endpoint,
+    metadata: currentMetadata('endpoint', endpoint.metadata),
     scan_at: args.scan_at,
     model_display_name: args.model.display_name,
     model_permaslug: args.model.permaslug,
