@@ -161,22 +161,53 @@ the sign-out allowlist is managed separately.
 
 ### Analytics and build inputs
 
-| Variable                            | Flags    | Consumer / fallback / relationship                                                                                                                           |
-| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_POSTHOG_KEY`           | ◇ 🌐     | Browser ingestion key. Missing/blank disables analytics; also requires `NEXT_PUBLIC_VERCEL_ENV=production`.                                                  |
-| `POSTHOG_API_KEY`                   | 🔒 ◇     | Build integration's personal API credential for source-map uploads. Upload integration is enabled only when this and `POSTHOG_PROJECT_ID` are defined.       |
-| `POSTHOG_PROJECT_ID`                | ◇        | Destination project for source-map uploads; pair with the matching PostHog credential.                                                                       |
-| `VERCEL_ENV`                        | ◇ ⚙ ⇄    | Server/build deployment tier. Selects callback defaults and the preview title prefix. Must describe the same tier as the browser's `NEXT_PUBLIC_VERCEL_ENV`. |
-| `NEXT_PUBLIC_VERCEL_ENV`            | ◇ 🌐 ⚙ ⇄ | Browser deployment tier, supplied by Vercel alongside `VERCEL_ENV`. Analytics runs only for `production`.                                                    |
-| `VERCEL_BRANCH_URL`                 | ◇ 🌐 ⚙ ⇄ | Preview callback hostname shared with Convex's build-time registration.                                                                                      |
-| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | ◇ 🌐 ⚙   | Invalidates the persisted public query cache and tags analytics. Defaults to `development`.                                                                  |
-| `NODE_ENV`                          | ⚙        | Runtime mode. Development enables the local title prefix, breakpoint indicator, and detailed error UI.                                                       |
+| Variable                            | Flags    | Consumer / fallback / relationship                                                                                                                              |
+| ----------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_POSTHOG_KEY`           | ◇ 🌐     | Browser ingestion key. Missing/blank disables analytics; enabled in production and previews.                                                                    |
+| `NEXT_PUBLIC_POSTHOG_DEV`           | ◇ 🌐     | Set to `true` when developing analytics locally. Development capture is disabled by default.                                                                    |
+| `POSTHOG_API_KEY`                   | 🔒 ◇     | Build integration's personal API credential for source-map uploads. Upload integration is enabled only when this and `POSTHOG_PROJECT_ID` are defined.          |
+| `POSTHOG_PROJECT_ID`                | ◇        | Destination project for source-map uploads; pair with the matching PostHog credential.                                                                          |
+| `VERCEL_ENV`                        | ◇ ⚙ ⇄    | Server/build deployment tier. Selects callback defaults and the preview title prefix. Must describe the same tier as the browser's `NEXT_PUBLIC_VERCEL_ENV`.    |
+| `NEXT_PUBLIC_VERCEL_ENV`            | ◇ 🌐 ⚙ ⇄ | Browser deployment tier, supplied by Vercel alongside `VERCEL_ENV`. Analytics is enabled in production and preview; local development requires explicit opt-in. |
+| `VERCEL_BRANCH_URL`                 | ◇ 🌐 ⚙ ⇄ | Preview callback hostname shared with Convex's build-time registration.                                                                                         |
+| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | ◇ 🌐 ⚙   | Invalidates the persisted public query cache and tags analytics. Defaults to `development`.                                                                     |
+| `NODE_ENV`                          | ⚙        | Runtime mode. Development enables the local title prefix, breakpoint indicator, and detailed error UI.                                                          |
 
 `next.config.ts` hardcodes PostHog proxy destinations
 **`us-assets.i.posthog.com`** and **`us.i.posthog.com`**;
 `instrumentation-client.ts` uses
 **`https://us.posthog.com`** as the UI host. EU or self-hosted PostHog needs endpoint
 changes as well as different credentials.
+
+Every browser event carries `app_environment` (`NEXT_PUBLIC_VERCEL_ENV`, default `development`).
+Dashboards default to `app_environment=production`; change that filter to inspect preview or development activity.
+The Vercel project shares its browser ingestion key with production and preview builds.
+Signed-in users are identified centrally by WorkOS user ID, with name and email on the PostHog person profile.
+Sign-out and account switches reset analytics identity.
+Each query-analytics event carries its schema revision, starting at `event_version=1`.
+`query completed` records independent successful fetches for grid endpoints, grid stats, and model/provider overviews. Select `client_cache_hit=false`
+and `consumer_active=true` for server-response waits with an active consumer. Failed fetches have no
+completion event; completions after all consumers leave are explicitly marked inactive.
+
+`duration_ms` spans TanStack fetch start to success. `connection_wait_ms` is the overlapping observed
+initial/reconnection wait; `connected_ms` is time with the socket connected, including backend work
+and transfer. These are client observations, not server execution timings. Client cache sources are
+TanStack memory/storage and Convex client cache; server-side cache status remains unknown.
+TanStack cache reads have zero fetch duration. They do not assert server freshness.
+`result_count` describes returned rows; `data_scan_at`, where available, identifies the source
+observation. Compare these with `app_version` when studying data or query changes.
+
+`convex connected` measures observed connection intervals separately. Tracking begins at the first
+measured query and does not assume a grid precedes an overview. A dashboard can include connection
+cost for direct entry or focus on queries with an already-connected client.
+
+Every event carries `client_id`; query completions have `query_run_id`. `query consumed` links a result
+to `view_load_id` and the view's start timestamp. Grid starts at mount; overview starts at open action.
+`grid ready` is a small content-commit signal, not a combined query timing. Parallel query durations
+must not be summed. Monotonic timestamps are comparable only within one client lifetime.
+
+`query updated` records later subscription arrivals without duration: the browser has no request-start
+boundary for these updates. Each subsequent actual fetch receives a fresh run ID and duration.
 
 ### Local dev server
 
