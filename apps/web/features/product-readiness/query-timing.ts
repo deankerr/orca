@@ -172,17 +172,19 @@ export function queryName(key: QueryKey) {
 }
 
 export function resultProperties(data: unknown) {
-  const array = z.array(z.unknown()).safeParse(data)
-  if (array.success) {
-    return { result_count: array.data.length }
+  if (Array.isArray(data)) {
+    return { result_count: data.length }
   }
+
   const object = z
     .object({
-      rows: z.array(z.unknown()).optional(),
+      // Only the array length is needed; parsing elements would copy the full result.
+      rows: z.custom<unknown[]>(Array.isArray).optional(),
       as_of: z.string().nullable().optional(),
       scan_at: z.string().optional(),
     })
     .safeParse(data)
+
   return object.success
     ? {
         result_count: object.data.rows?.length ?? 1,

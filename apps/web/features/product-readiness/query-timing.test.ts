@@ -2,9 +2,31 @@ import { expect, test } from 'bun:test'
 
 import { dehydrate, hashKey, hydrate, QueryClient } from '@tanstack/react-query'
 
-import { ReadinessQueryTimings } from './query-timing'
+import { ReadinessQueryTimings, resultProperties } from './query-timing'
 
 const key = ['convexQuery', 'catalog/endpoints/query:grid', {}] as const
+
+test('result metadata counts rows without reading their contents', () => {
+  const rows: unknown[] = []
+  rows.length = 100_000
+
+  Object.defineProperty(rows, '0', {
+    get() {
+      throw new Error('Telemetry must not visit row contents')
+    },
+  })
+
+  expect(resultProperties(rows)).toEqual({ result_count: 100_000 })
+  expect(resultProperties({ rows, as_of: '2026-10-11T00:00:00Z' })).toEqual({
+    result_count: 100_000,
+    data_scan_at: '2026-10-11T00:00:00Z',
+  })
+  expect(resultProperties({ scan_at: '2026-10-11T00:00:00Z' })).toEqual({
+    result_count: 1,
+    data_scan_at: '2026-10-11T00:00:00Z',
+  })
+  expect(resultProperties(null)).toEqual({ result_count: 0 })
+})
 
 function setup(localResult = false) {
   let now = 100
