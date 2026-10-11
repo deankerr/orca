@@ -1,5 +1,14 @@
 # Catalog projection implementation plan
 
+- Do not write tests, remove existing implementations, or update documentation.
+
+## Updates
+
+- `catalogNew/`, `ingestionNew`, `scanNew/` are temporary module names until the existing implementations are removed.
+- `processor_work` is removed.
+- Baseline will use an ingestion with an empty previous scan.
+- Ingestion preparation and commit per table are combined and will be performed in sequence.
+
 ## Authority and scope
 
 This plan implements the language of `GLOSSARY.md`. For this restructure, its architectural

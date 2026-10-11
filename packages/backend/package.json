@@ -7,7 +7,9 @@
     "#objects": "./convex/objects/storage.ts",
     "#scan": "./convex/scan/access.ts",
     "#scan/collection": "./convex/scan/collected.ts",
-    "#scan/model": "./convex/scan/model.ts"
+    "#scan/model": "./convex/scan/model.ts",
+    "#scanNew": "./convex/scanNew/access.ts",
+    "#scanNew/model": "./convex/scanNew/model.ts"
   },
   "exports": {
     "./api": "./convex/_generated/api.js",
