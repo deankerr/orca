@@ -10,7 +10,9 @@ documentation describe the starting point rather than constraints on the target 
 Implementation will regenerate the affected Catalog representations from retained scans.
 There is no migration of existing Catalog rows into the new tables. Collectors and Objects
 remain unchanged. Scan continues to bridge collection and ingestion, with its responsibilities
-adjusted as described below. The public API's frozen contract and independent capture-based
+adjusted as described below. This rewrite retains the existing ingestion orchestration,
+including scheduling, acceptance, recovery, and observation-clock behavior. Advanced orchestration
+is deferred to potential next steps. The public API's frozen contract and independent capture-based
 path remain intact.
 
 The responsibility split and projection semantics are the intended direction. Table names and
@@ -25,8 +27,8 @@ replaceable materialized view with its own metadata selection, rather than the d
 Catalog or the source from which all other projections must be derived.
 
 Ingestion owns the production of Catalog knowledge: extraction, projection, retention,
-progress, backfill, and reprojection. Products own interpretation, presentation, delivery,
-and any product-specific retained state. Neither side calls the other to access Catalog data;
+and progress. Future backfill and reprojection capabilities also belong here. Products own
+interpretation, presentation, delivery, and any product-specific retained state. Neither side calls the other to access Catalog data;
 both depend on shared definitions and use `ctx.db` directly where appropriate.
 
 The shared interface includes validators, identities, and the meaning of retained facts.
@@ -34,14 +36,9 @@ For example, Listing state continues, a price quote replaces a complete quote, a
 reading does not carry forward. Shared pure helpers can embody these meanings. A generic
 repository or a wrapper around every table read is unnecessary.
 
-Coordination belongs to ingestion, but pure projections remain independent modules. A runner
-can load source data once and compose them directly. Keeping them in one execution sequence
-does not require one transaction, one progress record, or a generic processor registry.
-
-Routine hourly writes are expected to be small. The exceptional workload of concern is a
-broad change to large current entity records. Historical table size alone is not a reason to
-introduce batching or cross-projection barriers. Start with simple separate commits and give
-large current-view updates particular attention when defining mutation limits and recovery.
+Coordination belongs to ingestion, but pure projections remain independent modules. The existing
+runner composes them while retaining its transaction boundaries and progress tracking. Separating
+responsibilities does not require replacing that orchestration in this rewrite.
 
 ## Proposed layout
 
@@ -66,11 +63,11 @@ catalog/
     stats.ts                      Stats history definition
     events.ts                     Events definition
     observations.ts               historical entity knowledge, if separately retained
-    inputs.ts                     exact source-input definitions
-    progress.ts                   per-projection progress definition
+    inputs.ts                     existing ingestion-record definitions
+    progress.ts                   existing processor-work definitions
 ingestion/
   run.ts                          forward orchestration and scheduling
-  inputs.ts                       input selection and registration
+  inputs.ts                       existing input selection
   extraction/
     observations.ts               pure assembly of scoped entity observations
     providers.ts                  provider identity and representative selection
@@ -81,15 +78,13 @@ ingestion/
     stats.ts                      current/history projections of scan readings
     events.ts                     pure scan-pair projection
   retention/
-    current.ts                    current-view writes and forward/source-time rules
-    listings.ts                   retained Listing output and completion
-    pricing.ts                    retained Pricing output and completion
-    stats.ts                      retained readings, current stats, and completion
+    current.ts                    current-view writes
+    listings.ts                   retained Listing output
+    pricing.ts                    retained Pricing output
+    stats.ts                      retained readings and current stats
     events.ts                     retained Event output and completion
   baseline.ts                     initial state composition
-  backfill.ts                     earlier adjacent input processing
-  reproject.ts                    explicit replacement of selected retained output
-  progress.ts                     completion and recovery operations
+  progress.ts                     existing completion and recovery operations
 products/
   grid/                           product queries and interpretation
   entity_overview/                product queries and interpretation
@@ -116,43 +111,29 @@ an observation-oriented name rather than using "model" for an architectural abst
 ## Proposed table names
 
 Use semantic names without generation prefixes. Catalog tables describe shared retained
-knowledge; processing tables describe source inputs and progress. Their exact columns and
-indexes will be established in the relevant focused work.
+knowledge; processing tables retain their existing acceptance and work-tracking meanings.
+Catalog columns and indexes will be established in the relevant focused work.
 
-| Existing table                | Proposed table              | Meaning                                                    |
-| ----------------------------- | --------------------------- | ---------------------------------------------------------- |
-| `v4_models`                   | `catalog_current_models`    | Current or last-known model facts                          |
-| `v4_providers`                | `catalog_current_providers` | Current or last-known provider facts                       |
-| `v4_endpoints`                | `catalog_current_endpoints` | Current or last-known endpoint facts                       |
-| `v4_current_stats_snapshot`   | `catalog_current_stats`     | Latest processed endpoint readings                         |
-| `v4_endpoint_listing_history` | `catalog_listing_history`   | Endpoint availability and relationship transitions         |
-| `v4_endpoint_pricing_history` | `catalog_pricing_history`   | Complete endpoint quote transitions                        |
-| `v4_endpoint_stats`           | `catalog_stats_history`     | Endpoint readings at source scan times                     |
-| `v4_events`                   | `catalog_events`            | Self-contained scan-pair Entity events                     |
-| `v4_scan_ingestions`          | `projection_inputs`         | Exact source scans for a pair or initial/single-scan input |
-| `v4_processor_work`           | `projection_progress`       | Processing progress for each projection and input          |
+| Existing table                | Proposed table              | Meaning                                              |
+| ----------------------------- | --------------------------- | ---------------------------------------------------- |
+| `v4_models`                   | `catalog_current_models`    | Current or last-known model facts                    |
+| `v4_providers`                | `catalog_current_providers` | Current or last-known provider facts                 |
+| `v4_endpoints`                | `catalog_current_endpoints` | Current or last-known endpoint facts                 |
+| `v4_current_stats_snapshot`   | `catalog_current_stats`     | Latest processed endpoint readings                   |
+| `v4_endpoint_listing_history` | `catalog_listing_history`   | Endpoint availability and relationship transitions   |
+| `v4_endpoint_pricing_history` | `catalog_pricing_history`   | Complete endpoint quote transitions                  |
+| `v4_endpoint_stats`           | `catalog_stats_history`     | Endpoint readings at source scan times               |
+| `v4_events`                   | `catalog_events`            | Self-contained scan-pair Entity events               |
+| `v4_scan_ingestions`          | `scan_ingestions`           | Accepted scan pairs under the existing release rules |
+| `v4_processor_work`           | `processor_work`            | Existing downstream processing obligations           |
 
 Reserve `catalog_entity_observations` as the proposed name if historical entity knowledge
 needs its own retained series. Whether that series is necessary, and what it contains, remains
 open. Do not create it merely to replace the current Events lookup with another lookup.
 
-The two processing tables replace the meaning of their predecessors rather than merely
-renaming them: registering an input is not acceptance of all its projections. Baseline and
-single-scan inputs must not be disguised as artificial scan pairs. Table renaming does not
-imply a new storage shape for every existing projection.
-
-## Design prerequisite: ingestion orchestration
-
-Redesign ingestion orchestration before implementation. This outstanding design task covers
-forward ingestion, baseline initialization, backfill, and reprojection together. Its decisions
-inform the implementation sequence below, including input registration, projection progress,
-recovery, and observation-horizon advancement.
-
-Use locking to prevent concurrent operations from modifying the same data. Resolve lock scope,
-ownership, and recovery after interruption as part of this design. Define how partial completion
-is resumed and which work may proceed while a projection remains unfinished. Planned historical
-coverage stays contiguous; arbitrary gaps are outside this plan. Temporary incomplete work
-remains a recoverable processing condition.
+Processing-table renames preserve existing storage shapes and behavior. Independent projection
+input registration and progress are deferred with the orchestration redesign. Table renaming
+does not imply a new storage shape for every existing projection.
 
 ## Implementation sequence
 
@@ -166,7 +147,7 @@ schema fields such as identifiers. Value normalization belongs to extraction.
 
 Extraction semantics, especially provider representative selection and alias normalization,
 are stable constraints rather than freely configurable projection policy. Changes to these
-semantics require separate design; selective reprojection assumes compatible extraction semantics.
+semantics require separate design.
 
 Classify existing omissions and normalizations by their intended scope. An extraction omission
 affects all projections using that extraction; a Current-view omission affects only that view.
@@ -209,66 +190,23 @@ facts and serving-availability transitions are represented without conflating th
 silently inheriting alert selection policy.
 
 Focused questions: historical entity observation representation, first-observation maintenance,
-and model/provider Event lifecycle semantics. Products needing historical classification
-must acknowledge that additional dependency in their readiness decisions.
+and model/provider Event lifecycle semantics. Historical classification must work within the
+existing ingestion lifecycle; product-specific readiness policies are deferred.
 
-### 4. Separate projection commits and progress
+### 4. Integrate projections with the existing ingestion lifecycle
 
-Replace the shared acceptance mutation in `ingest.ts` and the acceptance gate in
-`ingestion/release.ts` with exact input identity and independent projection progress. Each
-projection's output and completion commit together, including empty output. A failed projection
-does not undo another's completed work, and retries skip completed work unless reprojection
-was explicitly requested.
+Adapt the existing runner and retention calls to the new module boundaries and shared definitions.
+Preserve the acceptance mutation, release gate, processor work, retries, and clock advancement.
+Events can become a pure projection while retaining its existing downstream execution position.
+Pure projection independence does not require independent commits or completion records.
 
-Implement the prerequisite orchestration design using direct composition. Independent retention
-does not require independent crons. Remove the special status of Events as work released only
-after a different set of tables has constituted "the ingestion."
+Keep existing initialization and metadata refresh behavior working with the new representations.
+Regenerating the affected tables from retained scans is part of this rewrite; it does not require
+an operator-facing replacement or historical-extension system. Retain the current product cutoffs
+and follow-up triggers, including Discord preparation, while moving their implementation to the
+appropriate owners.
 
-Recovery must identify unfinished work after interruption. If current-view output needs multiple
-mutations, establish resumable progress and mark completion only after all of that output is
-retained. Do not impose that machinery on small writes without need.
-
-The orchestration design must establish progress granularity, interrupted-current-write recovery,
-ordinary retry scheduling, and the trigger for follow-up product work such as Discord preparation.
-
-### 5. Support historical extension and deliberate reprojection
-
-Add selection of earlier adjacent pairs for backfill. Each pair remains ordered previous-to-next
-even when pairs are processed backwards.
-
-Define explicit retention versus replacement for an input's projected output. Replacement must
-also remove obsolete rows that the new projection no longer produces. Preserve exact source
-references so identity is not inferred from an assumed hourly interval. Reprojection has a
-selected projection and input scope, and does not automatically prepare or send alerts.
-
-Current stats advances only with newer scans. Current view requires separate source-time and
-first-observation handling: the existing writers replace rows unconditionally and preserve
-`first_scan_at`, which is insufficient for earlier-history extension. Earlier-only entities,
-departed entities, and baseline replacement need explicit treatment before backfill is complete.
-
-Focused questions: baseline extension and replacement, current-view reconstruction, removal of
-superseded baseline rows, and recovery if a selected reprojection requires more than one mutation.
-
-### 6. Derive readiness and horizons where products need them
-
-Decouple `clock.ts` from the old acceptance record. Keep an ORCA reference horizon while exposing
-projection progress as a separate fact. Revisit the universal clock cutoff in historical readers;
-one product's horizon must not silently certify another projection's completeness.
-
-Grid and entity overview primarily depend on current entity facts and current stats. Pricing
-History combines Listings and Pricing. Monitor's core input is Events; historical enrichment
-can add dependencies. Mixed results ("tearing") are acceptable, including partially updated
-current views during writes spanning multiple mutations. Products can display independently
-advancing data or wait for relevant dependencies according to their own requirements.
-
-Use small product queries or composition functions for these choices. A global ready flag or
-general dependency engine is not a prerequisite. Query-time interpretation is the default place
-to start; additional product materialization requires a concrete product need.
-
-Focused questions: what advances the reference clock, which products need an explicit horizon,
-and the limited readiness policies each product actually requires.
-
-### 7. Separate alert product policy and lifecycle
+### 5. Separate alert product policy and lifecycle
 
 Retain shared pure alert helpers where meanings agree. Make Monitor, Feed, and Discord selection
 and interpretation explicit so changes for one product do not automatically become universal
@@ -277,10 +215,79 @@ Catalog production.
 
 Discord prepares messages and submits them to its sender; its durable user-facing output is in
 Discord. Sender persistence is not a Catalog alert history. Monitor and Feed can remain
-query-derived until their own requirements justify retained derived state. Remove automatic
-delivery assumptions from ingestion entry points used for backfill and reprojection.
+query-derived until their own requirements justify retained derived state. Regeneration must
+not cause unintended Discord delivery.
 
-### 8. Preserve retained output across changes to projection rules
+## Verification and completion
+
+Verify behavior through projection interfaces and product queries. Preserve tests for existing
+transaction and lifecycle guarantees; update tests coupled only to the previous file layout.
+
+- The same scan pair and rules produce the same historical output regardless of previously retained pairs.
+- Current-view metadata selection does not change Events or source captures.
+- Existing acceptance, retry, completion, and clock behavior survives the module and table changes.
+- Initialization and metadata refresh continue to work with the new representations.
+- Endpointless model observation remains distinct from serving availability and historical alert classification.
+- Products remain usable with existing ingestion cutoffs and processing order.
+- Historical computation does not cause unintended Discord delivery.
+
+Regenerate the affected tables from scans and verify the resulting products against those
+representations. Run the repository's `bun run fix` and relevant backend tests as implementation
+lands. Collection, Objects, and the independent public API keep their existing contracts.
+
+Update conflicting `docs/orca/` documents and repository guidance as each responsibility moves.
+In particular, table ownership guidance must reflect shared Catalog definitions and separate
+ingestion and product behavior. Preserve upstream observations in `docs/openrouter/`. This plan
+remains the implementation direction until its decisions are reflected in the maintained
+documentation; unresolved questions should be resolved in focused work, not hidden in file moves.
+
+## Potential next steps
+
+These capabilities are deferred and are not prerequisites or completion criteria for this rewrite.
+Design them together when historical extension, selective replacement, or independently advancing
+products justify a new ingestion orchestration system.
+
+### Independent projection progress and recovery
+
+Separate exact input registration from projection completion. Baseline and single-scan inputs
+need their own identities rather than artificial scan pairs. Each projection's output and
+completion should commit together, including empty output, with retries skipping completed work.
+Independent retention can use direct composition without independent crons or a processor registry.
+
+Resolve lock scope, ownership, interrupted-work recovery, retry scheduling, and follow-up product
+triggers. Large current-view updates may require resumable writes across mutations; historical
+table size alone does not justify imposing that machinery on every projection. Planned historical
+coverage should remain contiguous, with temporary incomplete work recoverable.
+
+### Historical extension and selective replacement
+
+Support earlier adjacent pairs for backfill, preserving previous-to-next ordering within each pair.
+Retain exact source references rather than inferring identity from an assumed hourly interval.
+Reprojection needs an explicit projection and input scope, removal of obsolete output, and recovery
+when replacement spans mutations. It must not automatically prepare or send alerts.
+
+Define baseline extension and replacement, current-view reconstruction, and removal of superseded
+baseline rows. Current stats must advance only with newer scans. Current-view source-time and
+first-observation handling must account for earlier-only and departed entities; the existing
+unconditional row replacement and preservation of `first_scan_at` are insufficient for backfill.
+Selective reprojection assumes compatible extraction semantics.
+
+Verify reverse backfill against forward projection over the same source range, replacement against
+obsolete output, and interrupted operations against the chosen locking and recovery design.
+
+### Product-specific readiness and horizons
+
+Decouple the ORCA reference horizon from projection progress and revisit universal historical-reader
+cutoffs. Grid and entity overview primarily depend on current facts and stats; Pricing History
+combines Listings and Pricing; Monitor uses Events and may need historical knowledge for enrichment.
+One product's horizon must not silently certify another projection's completeness.
+
+Decide which products can display independently advancing or partially updated data and which must
+wait for relevant dependencies. Define reference-clock advancement and any explicit product horizons.
+Start with small product queries or composition functions; a global ready flag or dependency engine
+is not required. Verify products against the differences in progress their policies permit.
+
+### Changes to projection rules and retained representations
 
 Changing projection rules affects subsequent computation, not previously retained output.
 Generalize the explicit scope of current metadata refresh into projection-appropriate
@@ -293,29 +300,3 @@ in shape also needs consideration. Shared validators alone cannot communicate th
 
 Focused questions: which changes require representation identification, and which historical
 differences each product can interpret, omit, or leave for later reprojection.
-
-## Verification and completion
-
-Verify behavior through projection interfaces and product queries, rather than preserving
-tests whose only purpose was to enforce the previous shared transaction or file layout.
-
-- The same scan pair and rules produce the same historical output regardless of previously retained pairs.
-- Current-view metadata selection does not change Events or source captures.
-- Output and its completion agree, including empty output, repeated attempts, and interrupted processing.
-- Locking prevents concurrent modification of the same data, including during recovery after interruption.
-- Reverse backfill matches forward historical projection over the same contiguous source range.
-- Older inputs cannot regress current stats; current-view and baseline behavior follows the focused design.
-- Endpointless model observation remains distinct from serving availability and historical alert classification.
-- Reprojection removes obsolete output in its selected scope while leaving other retained projections intact.
-- Products remain usable under the differences in projection progress that their policies allow.
-- Historical computation does not cause unintended Discord delivery.
-
-Regenerate the affected tables from scans and verify the resulting products against those
-representations. Run the repository's `bun run fix` and relevant backend tests as implementation
-lands. Collection, Objects, and the independent public API keep their existing contracts.
-
-Update conflicting `docs/orca/` documents and repository guidance as each responsibility moves.
-In particular, table ownership guidance must reflect shared Catalog definitions and separate
-ingestion and product behavior. Preserve upstream observations in `docs/openrouter/`. This plan
-remains the implementation direction until its decisions are reflected in the maintained
-documentation; unresolved questions should be resolved in focused work, not hidden in file moves.
