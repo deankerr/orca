@@ -1,13 +1,9 @@
-'use client'
-
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/api'
-import { useQuery } from '@tanstack/react-query'
 
-export function useEndpoints() {
-  return useQuery(convexQuery(api.catalog.endpoints.query.grid, {}))
-}
-
-export function useStats() {
-  return useQuery(convexQuery(api.catalog.stats.query.grid, {}))
+export function gridQueryOptions() {
+  return {
+    endpoints: convexQuery(api.catalog.endpoints.query.grid, {}),
+    stats: convexQuery(api.catalog.stats.query.grid, {}),
+  }
 }

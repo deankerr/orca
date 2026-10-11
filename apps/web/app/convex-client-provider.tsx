@@ -7,9 +7,13 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { makeFunctionReference } from 'convex/server'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useKeys } from 'rooks'
+import { z } from 'zod'
+
+import { readinessQueryTimings } from '@/features/product-readiness/query-timing'
 
 // oxlint-disable-next-line typescript/no-non-null-assertion -- The Convex client requires this environment variable.
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -33,6 +37,38 @@ const queryClient = new QueryClient({
     },
   },
 })
+if (typeof window !== 'undefined') {
+  let observingConnection = false
+
+  readinessQueryTimings.observe(
+    queryClient.getQueryCache(),
+    (key) => {
+      // Only public queries used by measured product views reach this observer.
+      const reference = makeFunctionReference<'query'>(String(key[1]))
+      const args = z.record(z.string(), z.string()).parse(key[2])
+
+      try {
+        return convex.watchQuery(reference, args).localQueryResult() !== undefined
+      } catch {
+        // A cached query error is not a cached successful result.
+        return false
+      }
+    },
+    () => {
+      if (observingConnection) {
+        return
+      }
+
+      observingConnection = true
+      // Subscribe when a measured query is added, not earlier just to gather telemetry.
+      readinessQueryTimings.connection.update(convex.connectionState())
+      convex.subscribeToConnectionState((state) => {
+        readinessQueryTimings.connection.update(state)
+      })
+    },
+  )
+}
+
 convexQueryClient.connect(queryClient)
 
 const browserStorage = typeof window === 'undefined' ? undefined : window.localStorage
@@ -41,6 +77,17 @@ const asyncStoragePersister = createAsyncStoragePersister({
   storage: browserStorage,
   key: 'ORCA_QUERY_CACHE',
 })
+
+const persister = {
+  ...asyncStoragePersister,
+  restoreClient: async () => {
+    const restored = await asyncStoragePersister.restoreClient()
+    readinessQueryTimings.markRestored(
+      restored?.clientState.queries.map((query) => query.queryHash) ?? [],
+    )
+    return restored
+  },
+}
 
 // Persisted queries hydrate from storage and refresh; gcTime must cover the default 24h maxAge.
 
@@ -56,7 +103,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{
-            persister: asyncStoragePersister,
+            persister,
             // Discard queries from older builds before hydration starts Convex subscriptions.
             buster: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development',
           }}

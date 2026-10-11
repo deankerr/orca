@@ -1,16 +1,26 @@
 import posthogClient from 'posthog-js'
 
-const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim()
+import { analyticsConfig } from '@/lib/analytics/config'
 
-// Keep preview and local activity out of production analytics, even if a key is present.
-if (
-  process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' &&
-  posthogKey !== undefined &&
-  posthogKey !== ''
-) {
-  posthogClient.init(posthogKey, {
+const analytics = analyticsConfig({
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV,
+  key: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  developmentEnabled: process.env.NEXT_PUBLIC_POSTHOG_DEV,
+})
+
+if (analytics.key !== undefined) {
+  posthogClient.init(analytics.key, {
     api_host: '/snarf',
     ui_host: 'https://us.posthog.com',
+    before_send: (event) => {
+      if (event) {
+        event.properties.app_environment = analytics.environment
+        event.properties.app_version =
+          process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development'
+      }
+
+      return event
+    },
     defaults: '2026-01-30',
     capture_exceptions: true,
     loaded: (posthog) => {

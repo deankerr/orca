@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 type AnalyticsUser = { id: string; email: string; name: string } | null
 
 export function syncPostHogIdentity(user: AnalyticsUser) {
-  // Instrumentation only initializes PostHog in production with a configured key.
+  // Identity follows the same environment and key policy as all browser analytics.
   if (!posthog.config.token) {
     return
   }
