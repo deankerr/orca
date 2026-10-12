@@ -13,11 +13,11 @@ import { ENDPOINT_LISTINGS_TABLE } from '../catalogNew/tables/listings'
 import type { EndpointListingRow } from '../catalogNew/tables/listings'
 import { fromCollected } from '../scanNew/extract'
 import schema from '../schema'
-import { lastEndpointScan } from './source'
 import { INGESTIONS_TABLE } from './table'
 
 function setup() {
   const root = path.resolve(import.meta.dir, '..')
+
   const modules = Object.fromEntries(
     [...new Bun.Glob('**/*.{ts,js}').scanSync({ absolute: true, cwd: root })]
       .filter((file) => !file.endsWith('.test.ts') && !file.endsWith('.d.ts'))
@@ -30,6 +30,7 @@ const first = '2026-10-01T10:00:00.000Z'
 const lastSeen = '2026-10-02T14:07:00.000Z'
 const departure = '2026-10-02T16:13:00.000Z'
 const horizon = '2026-10-03T10:00:00.000Z'
+
 const listed: EndpointListingRow = {
   scan_at: first,
   endpoint_id: 'endpoint',
@@ -38,61 +39,6 @@ const listed: EndpointListingRow = {
   provider_tag: 'provider/tag',
   state: 'listed',
 }
-
-test('source follows identity transitions outside the model/provider index and uses the actual previous scan', async () => {
-  const t = setup()
-  await t.run(async (ctx) => {
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, listed)
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, {
-      ...listed,
-      scan_at: departure,
-      model_id: 'author/renamed',
-      provider_id: 'other',
-    })
-    await ctx.db.insert(INGESTIONS_TABLE, {
-      progress: { kind: 'complete' },
-      from_scan_at: lastSeen,
-      scan_at: departure,
-    })
-    expect(await lastEndpointScan(ctx, 'model', listed.model_id, horizon)).toBe(lastSeen)
-    expect(await lastEndpointScan(ctx, 'provider', listed.provider_id, horizon)).toBe(lastSeen)
-    expect(await lastEndpointScan(ctx, 'endpoint', listed.endpoint_id, horizon)).toBe(horizon)
-    expect(await lastEndpointScan(ctx, 'model', listed.model_id, lastSeen)).toBe(lastSeen)
-    expect(await lastEndpointScan(ctx, 'model', 'never-listed', horizon)).toBeNull()
-  })
-})
-
-test('source selects the last membership across endpoints, including unlisting and reappearance', async () => {
-  const t = setup()
-  await t.run(async (ctx) => {
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, listed)
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, {
-      ...listed,
-      scan_at: lastSeen,
-      state: 'unlisted',
-    })
-    await ctx.db.insert(INGESTIONS_TABLE, {
-      progress: { kind: 'complete' },
-      from_scan_at: first,
-      scan_at: lastSeen,
-    })
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, { ...listed, endpoint_id: 'second' })
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, {
-      ...listed,
-      endpoint_id: 'second',
-      scan_at: departure,
-      state: 'unlisted',
-    })
-    await ctx.db.insert(INGESTIONS_TABLE, {
-      progress: { kind: 'complete' },
-      from_scan_at: lastSeen,
-      scan_at: departure,
-    })
-    expect(await lastEndpointScan(ctx, 'model', listed.model_id, horizon)).toBe(lastSeen)
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, { ...listed, scan_at: horizon })
-    expect(await lastEndpointScan(ctx, 'model', listed.model_id, horizon)).toBe(horizon)
-  })
-})
 
 const model = {
   model_id: listed.model_id,
@@ -132,19 +78,48 @@ function capture(scan_at: string, present: boolean): RawScan {
   }
 }
 
-test('refresh restores a never-listed model from its stored source without producing history or Events', async () => {
+test('refresh restores a departed endpointless model from its final capture without producing history or Events', async () => {
   const t = setup()
+
   const id = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
     })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
+    })
+
+    await ctx.db.insert(INGESTIONS_TABLE, {
+      progress: { kind: 'complete' },
+      from_scan_at: lastSeen,
+      scan_at: departure,
+    })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: departure,
+      detected: false,
+      endpoint_count: 0,
+    })
     return await ctx.db.insert(CURRENT_MODELS_TABLE, model)
   })
+
+  const loaded: string[] = []
+
   const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
     ...originalReader(ctx),
-    loadScan: async (at) => fromCollected(capture(at, at === first)),
+    loadScan: async (at) => {
+      loaded.push(at)
+      return fromCollected(capture(at, at === lastSeen))
+    },
   }))
 
   try {
@@ -153,23 +128,30 @@ test('refresh restores a never-listed model from its stored source without produ
         entity_kind: 'model',
         entity_id: model.model_id,
       }),
-    ).toMatchObject({ changed: true, source_scan_at: first, source_basis: 'catalog' })
+    ).toMatchObject({ changed: true, source_scan_at: lastSeen, source_basis: 'departure' })
+
     await t.run(async (ctx) => {
       const row = await ctx.db.get(id)
+
       expect(row).toMatchObject({
         ...model,
+        scan_at: lastSeen,
         display_name: 'Refreshed name',
         metadata_json: '{"description":"Restored from capture"}',
       })
+
       expect(await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()).toEqual([])
       expect(await ctx.db.query('catalog_events').collect()).toEqual([])
     })
+
     expect(
       await t.action(internal.ingestionNew.refresh.refreshCurrentEntity, {
         entity_kind: 'model',
         entity_id: model.model_id,
       }),
     ).toMatchObject({ changed: false })
+
+    expect(loaded).toEqual([lastSeen, lastSeen])
   } finally {
     source.mockRestore()
   }
@@ -179,14 +161,43 @@ const originalReader = scans.reader
 
 test('refresh prefers the latest capture for models still present after losing their endpoints', async () => {
   const t = setup()
+
   await t.run(async (ctx) => {
     await ctx.db.insert(CURRENT_MODELS_TABLE, model)
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
+    })
+
     await ctx.db.insert(INGESTIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
     })
   })
+
+  await t.run(async (ctx) => {
+    const future = '2026-10-04T00:00:00.000Z'
+
+    await ctx.db.insert(INGESTIONS_TABLE, {
+      from_scan_at: horizon,
+      scan_at: future,
+      progress: { kind: 'pending', completed: ['observations'] },
+    })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: future,
+      detected: false,
+      endpoint_count: 0,
+    })
+  })
+
   const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
     ...originalReader(ctx),
     loadScan: async (at) => fromCollected(capture(at, true)),
@@ -206,28 +217,49 @@ test('refresh prefers the latest capture for models still present after losing t
 
 test('refresh refuses to overwrite a Catalog update that arrived during source loading', async () => {
   const t = setup()
+
   const id = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
     })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
+    })
     return await ctx.db.insert(CURRENT_MODELS_TABLE, model)
   })
-  const before = await t.query(internal.ingestionNew.refresh.read, {
-    entity_kind: 'model',
-    entity_id: model.model_id,
-  })
-  await t.run(async (ctx) => {
-    await ctx.db.patch(id, { display_name: 'Concurrent ingestion' })
-  })
-  await rejects(
-    t.mutation(internal.ingestionNew.refresh.replaceCurrentEntity, {
-      before,
-      after: { ...before.row, metadata_json: '{}', scan_at: horizon },
-    }),
-    /Entity changed during current view refresh/,
-  )
+
+  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
+    ...originalReader(ctx),
+    loadScan: async (at) => {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(id, { display_name: 'Concurrent ingestion' })
+      })
+      return fromCollected(capture(at, true))
+    },
+  }))
+
+  try {
+    await rejects(
+      t.action(internal.ingestionNew.refresh.refreshCurrentEntity, {
+        entity_kind: 'model',
+        entity_id: model.model_id,
+      }),
+      /Entity changed during current view refresh/,
+    )
+
+    expect(await t.run(async (ctx) => await ctx.db.get(id))).toMatchObject({
+      display_name: 'Concurrent ingestion',
+    })
+  } finally {
+    source.mockRestore()
+  }
 })
 
 test('refresh rebuilds provider and endpoint fields while preserving first observation and unlisting', async () => {
@@ -235,6 +267,7 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
   const raw = capture(lastSeen, true)
   const [entry] = raw.entries
   ok(entry?.endpoints)
+
   entry.endpoints.push({
     id: 'endpoint',
     model_variant_slug: model.slug,
@@ -245,19 +278,41 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
     pricing: { discount: 0, prompt: '2' },
     context_length: 32_000,
   })
+
   const observed = fromCollected(raw)
+
   const endpointId = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       from_scan_at: lastSeen,
       scan_at: departure,
       progress: { kind: 'complete' },
     })
+
     await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, listed)
+
     await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, {
       ...listed,
       scan_at: departure,
       state: 'unlisted',
     })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'provider',
+      entity_id: 'provider',
+      scan_at: departure,
+      endpoint_count: 0,
+    })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'endpoint',
+      entity_id: 'endpoint',
+      scan_at: departure,
+      detected: false,
+      model_id: model.model_id,
+      provider_id: 'provider',
+      provider_tag: 'provider',
+    })
+
     await ctx.db.insert('catalog_current_providers', {
       provider_id: 'provider',
       display_name: 'Old provider',
@@ -284,9 +339,10 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
       metadata_json: '{"obsolete":true}',
     })
   })
+
   const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
     ...originalReader(ctx),
-    loadScan: async (at) => (at === lastSeen ? observed : fromCollected(capture(at, false))),
+    loadScan: async (at) => ({ ...observed, scan_at: at }),
   }))
 
   try {
@@ -299,7 +355,7 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
           entity_kind,
           entity_id,
         }),
-      ).toMatchObject({ changed: true, source_basis: 'membership', source_scan_at: lastSeen })
+      ).toMatchObject({ changed: true, source_basis: 'departure', source_scan_at: lastSeen })
     }
 
     await t.run(async (ctx) => {
@@ -311,12 +367,15 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
         provider_display_name: 'New endpoint label',
         pricing: { discount: 0, meters: { prompt: '2' } },
       })
+
       const provider = await ctx.db.query('catalog_current_providers').unique()
+
       expect(provider).toMatchObject({
         first_scan_at: first,
         scan_at: lastSeen,
         display_name: 'New provider',
       })
+
       ok(provider)
       expect(JSON.parse(provider.metadata_json)).toEqual({ description: 'New details' })
       expect(await ctx.db.query('catalog_events').collect()).toEqual([])
@@ -326,6 +385,50 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
       expect(await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()).toHaveLength(2)
       expect(await ctx.db.query(INGESTIONS_TABLE).collect()).toHaveLength(1)
     })
+    // Reappearance and reassignment retain endpoint identity, but refresh its new relationships.
+    const endpoint = observed.endpoints.get('endpoint')
+    ok(endpoint)
+    endpoint.endpoint.model_id = 'author/renamed'
+    endpoint.endpoint.provider_id = 'other'
+    endpoint.endpoint.provider_tag = 'other/new'
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert(INGESTIONS_TABLE, {
+        from_scan_at: departure,
+        scan_at: horizon,
+        progress: { kind: 'complete' },
+      })
+
+      await ctx.db.patch(endpointId, { unlisted_at: undefined })
+
+      await ctx.db.insert('catalog_observations', {
+        entity_kind: 'endpoint',
+        entity_id: 'endpoint',
+        scan_at: horizon,
+        detected: true,
+        model_id: 'author/renamed',
+        provider_id: 'other',
+        provider_tag: 'other/new',
+      })
+    })
+
+    expect(
+      await t.action(internal.ingestionNew.refresh.refreshCurrentEntity, {
+        entity_kind: 'endpoint',
+        entity_id: 'endpoint',
+      }),
+    ).toMatchObject({ changed: true, source_basis: 'latest', source_scan_at: horizon })
+
+    const refreshed = await t.run(async (ctx) => await ctx.db.get(endpointId))
+
+    expect(refreshed).toMatchObject({
+      endpoint_id: 'endpoint',
+      model_id: 'author/renamed',
+      provider_id: 'other',
+      first_scan_at: first,
+    })
+
+    expect(refreshed?.unlisted_at).toBeUndefined()
   } finally {
     source.mockRestore()
   }
@@ -333,25 +436,43 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
 
 test('refresh waits when current facts or endpoint availability are ahead of the completion clock', async () => {
   const t = setup()
+
   const id = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       from_scan_at: null,
       scan_at: first,
       progress: { kind: 'complete' },
     })
+
     await ctx.db.insert(INGESTIONS_TABLE, {
       from_scan_at: first,
       scan_at: lastSeen,
       progress: { kind: 'pending', completed: ['currentModels'] },
     })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
+    })
     return await ctx.db.insert(CURRENT_MODELS_TABLE, { ...model, scan_at: lastSeen })
   })
-  const args = { entity_kind: 'model' as const, entity_id: model.model_id }
-  await rejects(t.query(internal.ingestionNew.refresh.read, args), /pending ingestion changes/)
+
+  await rejects(
+    t.query(internal.ingestionNew.refresh.models.read, { model_id: model.model_id }),
+    /pending ingestion changes/,
+  )
+
   await t.run(async (ctx) => {
     await ctx.db.patch(id, { scan_at: first })
   })
-  expect(await t.query(internal.ingestionNew.refresh.read, args)).toMatchObject({ as_of: first })
+
+  expect(
+    await t.query(internal.ingestionNew.refresh.models.read, { model_id: model.model_id }),
+  ).toMatchObject({ as_of: first })
+
   await t.run(async (ctx) => {
     await ctx.db.insert('catalog_current_endpoints', {
       endpoint_id: 'endpoint',
@@ -372,25 +493,35 @@ test('refresh waits when current facts or endpoint availability are ahead of the
       metadata_json: '{}',
     })
   })
+
   await rejects(
-    t.query(internal.ingestionNew.refresh.read, {
-      entity_kind: 'endpoint',
-      entity_id: 'endpoint',
+    t.query(internal.ingestionNew.refresh.endpoints.read, {
+      endpoint_id: 'endpoint',
     }),
     /pending ingestion changes/,
   )
 })
 
-test('missing observations fail without clearing retained facts', async () => {
+test('missing source entities fail without clearing retained facts', async () => {
   const t = setup()
+
   const id = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       from_scan_at: first,
       scan_at: horizon,
       progress: { kind: 'complete' },
     })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
+    })
     return await ctx.db.insert(CURRENT_MODELS_TABLE, model)
   })
+
   const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
     ...originalReader(ctx),
     loadScan: async (at) => fromCollected(capture(at, false)),
@@ -404,6 +535,7 @@ test('missing observations fail without clearing retained facts', async () => {
       }),
       /Entity is absent/,
     )
+
     expect(await t.run(async (ctx) => await ctx.db.get(id))).toMatchObject(model)
   } finally {
     source.mockRestore()
@@ -412,29 +544,43 @@ test('missing observations fail without clearing retained facts', async () => {
 
 test('refresh targets paginate retained entities, including departed identities', async () => {
   const t = setup()
+
   await t.run(async (ctx) => {
     await ctx.db.insert(CURRENT_MODELS_TABLE, model)
     await ctx.db.insert(CURRENT_MODELS_TABLE, { ...model, model_id: 'second' })
   })
+
   const firstPage = await t.query(internal.ingestionNew.refresh.targets, {
     entity_kind: 'model',
     paginationOpts: { numItems: 1, cursor: null },
   })
+
   expect(firstPage.page).toEqual([{ entity_kind: 'model', entity_id: model.model_id }])
+
   const nextPage = await t.query(internal.ingestionNew.refresh.targets, {
     entity_kind: 'model',
     paginationOpts: { numItems: 1, cursor: firstPage.continueCursor },
   })
+
   expect(nextPage.page).toEqual([{ entity_kind: 'model', entity_id: 'second' }])
 })
 
 test('an unchanged projection keeps its source date even when refreshed from a newer capture', async () => {
   const t = setup()
+
   const id = await t.run(async (ctx) => {
     await ctx.db.insert(INGESTIONS_TABLE, {
       from_scan_at: first,
       scan_at: horizon,
       progress: { kind: 'complete' },
+    })
+
+    await ctx.db.insert('catalog_observations', {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+      scan_at: first,
+      detected: true,
+      endpoint_count: 0,
     })
     return await ctx.db.insert(CURRENT_MODELS_TABLE, {
       ...model,
@@ -442,6 +588,7 @@ test('an unchanged projection keeps its source date even when refreshed from a n
       metadata_json: '{"license":"mit","description":"Restored from capture"}',
     })
   })
+
   const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
     ...originalReader(ctx),
     loadScan: async (at) => {
@@ -460,8 +607,80 @@ test('an unchanged projection keeps its source date even when refreshed from a n
         entity_id: model.model_id,
       }),
     ).toMatchObject({ changed: false, source_scan_at: horizon })
+
     expect(await t.run(async (ctx) => await ctx.db.get(id))).toMatchObject({ scan_at: first })
   } finally {
     source.mockRestore()
+  }
+})
+
+test('missing presence history fails before loading a capture', async () => {
+  const t = setup()
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert(CURRENT_MODELS_TABLE, model)
+
+    await ctx.db.insert(INGESTIONS_TABLE, {
+      from_scan_at: null,
+      scan_at: first,
+      progress: { kind: 'complete' },
+    })
+  })
+
+  await rejects(
+    t.action(internal.ingestionNew.refresh.refreshCurrentEntity, {
+      entity_kind: 'model',
+      entity_id: model.model_id,
+    }),
+    (error: unknown) => {
+      expect(error).toMatchObject({
+        data: {
+          message: 'Catalog model has no observation at the completed cutoff',
+          entity_kind: 'model',
+          entity_id: model.model_id,
+        },
+      })
+      return true
+    },
+  )
+})
+
+test('invalid departure inputs fail without loading or replacing current facts', async () => {
+  for (const input of ['missing', 'baseline', 'pending'] as const) {
+    const t = setup()
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert(CURRENT_MODELS_TABLE, model)
+
+      await ctx.db.insert(INGESTIONS_TABLE, {
+        from_scan_at: departure,
+        scan_at: horizon,
+        progress: { kind: 'complete' },
+      })
+
+      await ctx.db.insert('catalog_observations', {
+        entity_kind: 'model',
+        entity_id: model.model_id,
+        scan_at: departure,
+        detected: false,
+        endpoint_count: 0,
+      })
+
+      if (input !== 'missing') {
+        await ctx.db.insert(INGESTIONS_TABLE, {
+          from_scan_at: input === 'baseline' ? null : lastSeen,
+          scan_at: departure,
+          progress: input === 'pending' ? { kind: 'pending', completed: [] } : { kind: 'complete' },
+        })
+      }
+    })
+
+    await rejects(
+      t.action(internal.ingestionNew.refresh.refreshCurrentEntity, {
+        entity_kind: 'model',
+        entity_id: model.model_id,
+      }),
+      /Departure observation requires a completed input/,
+    )
   }
 })
