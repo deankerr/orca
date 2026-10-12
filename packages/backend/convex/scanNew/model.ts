@@ -61,4 +61,7 @@ export type Scan = {
   stats: readonly ScannedEndpointStats[]
 }
 
-export type ScanPair = { previous: Scan; next: Scan }
+export type ScanPair = {
+  previous: Omit<Scan, 'scan_at'> & { scan_at: string | null }
+  next: Scan
+}

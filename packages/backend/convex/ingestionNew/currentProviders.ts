@@ -9,14 +9,14 @@ import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from '../catalogNew/ta
 import type { CurrentProviderRow } from '../catalogNew/tables/current'
 import { compare } from '../compare'
 import { providerEntity } from './lenses'
-import { checkpoint } from './progress'
-import type { Ownership } from './progress'
-import { ownership } from './table'
+import { commitStage } from './progress'
+import type { InputId } from './table'
+import { ingestionId } from './table'
 
 export async function ingest(
   ctx: ActionCtx,
   { previous, next }: ScanPair,
-  owner: Ownership,
+  ingestion_id: InputId,
 ): Promise<void> {
   const rows: Omit<CurrentProviderRow, 'first_scan_at'>[] = []
 
@@ -36,36 +36,34 @@ export async function ingest(
     rows.push({ ...facts, scan_at: next.scan_at, metadata_json: JSON.stringify(metadata) })
   }
 
-  await ctx.runMutation(internal.ingestionNew.currentProviders.write, { ...owner, rows })
+  await ctx.runMutation(internal.ingestionNew.currentProviders.write, { ingestion_id, rows })
 }
 
 export const write = internalMutation({
   args: {
-    ...ownership.fields,
+    ingestion_id: ingestionId,
     rows: v.array(currentProvidersTable.validator.omit('first_scan_at')),
   },
   returns: v.null(),
-  handler: async (ctx, { rows, ...owner }) => {
-    if (!(await checkpoint(ctx, owner, 'currentProviders'))) {
-      return null
-    }
+  handler: async (ctx, { rows, ingestion_id }) => {
+    await commitStage(ctx, ingestion_id, 'currentProviders', async () => {
+      for (const row of rows) {
+        const existing = await ctx.db
+          .query(CURRENT_PROVIDERS_TABLE)
+          .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
+          .unique()
 
-    for (const row of rows) {
-      const existing = await ctx.db
-        .query(CURRENT_PROVIDERS_TABLE)
-        .withIndex('by_provider_id', (q) => q.eq('provider_id', row.provider_id))
-        .unique()
+        if (existing !== null && row.scan_at <= existing.scan_at) {
+          continue
+        }
 
-      if (existing !== null && row.scan_at <= existing.scan_at) {
-        continue
+        const next = { ...row, first_scan_at: existing?.first_scan_at ?? row.scan_at }
+
+        await (existing === null
+          ? ctx.db.insert(CURRENT_PROVIDERS_TABLE, next)
+          : ctx.db.replace(CURRENT_PROVIDERS_TABLE, existing._id, next))
       }
-
-      const next = { ...row, first_scan_at: existing?.first_scan_at ?? row.scan_at }
-
-      await (existing === null
-        ? ctx.db.insert(CURRENT_PROVIDERS_TABLE, next)
-        : ctx.db.replace(CURRENT_PROVIDERS_TABLE, existing._id, next))
-    }
+    })
 
     return null
   },

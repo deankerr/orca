@@ -5,22 +5,30 @@ import type { RawScan, ScanEntry } from '#scan/collection'
 
 import { IsoDateTime } from '../isodatetime'
 import { fromCollected } from './extract'
-import type { Scan, ScanPair } from './model'
+import type { ScanPair } from './model'
 
 /** Read the existing JSONL captures directly, without legacy Scan's entity filtering. */
 export function createScanReader(objects: ObjectReader) {
-  async function nextInput(after: string | null) {
+  async function firstInput(atOrAfter: string | null) {
     const names = await objects.namesAtOrAfter({
       path: 'scans',
-      atOrAfter: after === null ? '' : `scan.${after}.jsonl`,
-      limit: after === null ? 1 : 2,
+      atOrAfter: atOrAfter === null ? '' : `scan.${atOrAfter}.jsonl`,
+      limit: 1,
+      order: 'asc',
+    })
+    const [first] = names.map(scanAtFromName)
+
+    return first === undefined ? null : { from_scan_at: null, scan_at: first }
+  }
+
+  async function nextInput(after: string) {
+    const names = await objects.namesAtOrAfter({
+      path: 'scans',
+      atOrAfter: `scan.${after}.jsonl`,
+      limit: 2,
       order: 'asc',
     })
     const [first, next] = names.map(scanAtFromName)
-
-    if (after === null) {
-      return first === undefined ? null : { from_scan_at: null, scan_at: first }
-    }
 
     if (first !== after) {
       throw new ConvexError({ message: 'Previous scan is no longer available', scan_at: after })
@@ -52,8 +60,8 @@ export function createScanReader(objects: ObjectReader) {
     const texts = await objects.loadMany(
       times.map((time) => ({ path: 'scans', name: `scan.${time}.jsonl` })),
     )
-    const empty: Scan = {
-      scan_at: '',
+    const empty: ScanPair['previous'] = {
+      scan_at: null,
       models: new Map(),
       providers: new Map(),
       endpoints: new Map(),
@@ -67,7 +75,7 @@ export function createScanReader(objects: ObjectReader) {
     }
   }
 
-  return { nextInput, loadPair }
+  return { firstInput, nextInput, loadPair }
 }
 
 function scanAtFromName(name: string): string {

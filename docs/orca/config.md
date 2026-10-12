@@ -72,12 +72,20 @@ Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
 `packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
 `scan_at`; manual `sendIngestion` deadlines use invocation time.
 
-Projection ingestion uses a dedicated `ingestionPool` with concurrency **1** and automatic
-action retries using Workpool's defaults. Record ownership and input admission enforce ordering
-independently of pool concurrency. A **five-minute** recovery cron resumes already registered
-unfinished inputs, independently of the legacy ingestion cron switch. Manual
-`ingestionNew/run:run` starts the new timeline; successful finalization schedules discovery
-of its next input. The legacy hourly ingestion entry point remains unchanged.
+Projection ingestion uses a dedicated `ingestionPool` with worker concurrency **4** and automatic
+action retries using Workpool's defaults. Each worker runs all unfinished stages concurrently.
+Repeated triggers can enqueue overlapping attempts at the same input; committed stage progress
+prevents duplicate output. A **five-minute** recovery cron requeues already registered unfinished
+inputs independently of the legacy ingestion cron switch. Manual `ingestionNew/run:enqueueNextInput` starts
+the new timeline, and input completion schedules discovery of its next input. The cron entry
+point `ingestionNew/run:scheduled` admits work only when `ORCA_INGESTION_CRON_ENABLED` is `true`;
+manual invocations and continuations bypass that flag. Hourly discovery for the new runner is
+not wired yet; the legacy hourly ingestion entry point remains unchanged.
+
+Preview `init` bootstraps the new projection timeline from the first capture at or after
+**two days before initialization**, or resumes any existing registered input. A fresh manual
+invocation without `start_at` starts at the earliest available capture. Baseline selection
+requires only one capture; legacy product tables are not seeded by preview initialization.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in

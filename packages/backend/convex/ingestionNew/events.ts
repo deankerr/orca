@@ -6,33 +6,31 @@ import type { IChange } from 'json-diff-ts'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import type { ScanPair, Scan } from '#scanNew/model'
+import type { ScanPair } from '#scanNew/model'
 
 import { encodePricing } from '../catalogNew/pricing'
 import type { EventRow } from '../catalogNew/tables/events'
 import { EVENTS_TABLE, eventsTable } from '../catalogNew/tables/events'
 import { compare } from '../compare'
 import { modelEntity, providerEntity, endpointEntity } from './lenses'
-import { checkpoint } from './progress'
-import type { Ownership } from './progress'
-import { ownership } from './table'
+import { commitStage } from './progress'
+import type { InputId } from './table'
+import { ingestionId } from './table'
 
-export async function ingest(ctx: ActionCtx, pair: ScanPair, owner: Ownership): Promise<void> {
-  const rows = pair.previous.scan_at === '' ? [] : projectRows(pair)
-  await ctx.runMutation(internal.ingestionNew.events.write, { ...owner, rows })
+export async function ingest(ctx: ActionCtx, pair: ScanPair, ingestion_id: InputId): Promise<void> {
+  const rows = pair.previous.scan_at === null ? [] : projectRows(pair)
+  await ctx.runMutation(internal.ingestionNew.events.write, { ingestion_id, rows })
 }
 
 export const write = internalMutation({
-  args: { ...ownership.fields, rows: v.array(eventsTable.validator) },
+  args: { ingestion_id: ingestionId, rows: v.array(eventsTable.validator) },
   returns: v.null(),
-  handler: async (ctx, { rows, ...owner }) => {
-    if (!(await checkpoint(ctx, owner, 'events'))) {
-      return null
-    }
-
-    for (const row of rows) {
-      await ctx.db.insert(EVENTS_TABLE, row)
-    }
+  handler: async (ctx, { rows, ingestion_id }) => {
+    await commitStage(ctx, ingestion_id, 'events', async () => {
+      for (const row of rows) {
+        await ctx.db.insert(EVENTS_TABLE, row)
+      }
+    })
 
     return null
   },
@@ -62,7 +60,7 @@ function projectRows(pair: ScanPair): EventRow[] {
   )
 }
 
-function eventEntities(scan: Scan) {
+function eventEntities(scan: ScanPair['previous']) {
   return {
     models: Object.fromEntries([...scan.models].map(([id, model]) => [id, modelEntity(model)])),
     providers: Object.fromEntries(

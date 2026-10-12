@@ -1,8 +1,9 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
+import { z } from 'zod'
 
 import { internal } from '#generated/api'
 import type { Doc, Id } from '#generated/dataModel'
-import { internalAction } from '#generated/server'
+import { env, internalAction, internalMutation } from '#generated/server'
 import * as scans from '#scanNew'
 
 import * as currentEndpoints from './currentEndpoints'
@@ -15,22 +16,42 @@ import * as pricingHistory from './pricingHistory'
 import * as statsHistory from './statsHistory'
 import { INGESTIONS_TABLE, ingestKeys } from './table'
 
-/** Resume the registered input before discovering the next one. */
-export const run = internalAction({
-  args: {},
+/** Choose a baseline on a fresh timeline; otherwise resume before discovering the next input. */
+export const enqueueNextInput = internalAction({
+  args: { start_at: v.optional(v.string()) },
   returns: v.union(v.null(), v.id(INGESTIONS_TABLE)),
-  handler: async (ctx): Promise<Id<typeof INGESTIONS_TABLE> | null> => {
+  handler: async (ctx, { start_at }): Promise<Id<typeof INGESTIONS_TABLE> | null> => {
     const latest: Doc<typeof INGESTIONS_TABLE> | null = await ctx.runQuery(
       internal.ingestionNew.state.latest,
       {},
     )
 
-    if (latest !== null && latest.stage !== 'complete') {
+    if (latest !== null && start_at !== undefined) {
+      throw new ConvexError('start_at requires a fresh timeline; omit it to resume')
+    }
+
+    if (latest !== null && latest.progress.kind !== 'complete') {
       await ctx.runMutation(internal.ingestionNew.state.recover, {})
       return latest._id
     }
 
-    const input = await scans.reader(ctx).nextInput(latest?.scan_at ?? null)
+    const startAt =
+      start_at === undefined
+        ? null
+        : z
+            .union([z.iso.date(), z.iso.datetime({ offset: true })])
+            .transform((value) => new Date(value).toISOString())
+            .parse(start_at)
+    const reader = scans.reader(ctx)
+    const input =
+      latest === null ? await reader.firstInput(startAt) : await reader.nextInput(latest.scan_at)
+
+    if (input === null && startAt !== null) {
+      throw new ConvexError({
+        message: 'No baseline capture at or after start_at; retry when available',
+        start_at: startAt,
+      })
+    }
 
     return input === null
       ? null
@@ -49,8 +70,8 @@ const ingests = {
   events: events.ingest,
 }
 
-/** Only Workpool calls this action. A retry loads the same source input and committed prefix. */
-export const apply = internalAction({
+/** Only Workpool calls this action. Retries load the same input and run only unfinished stages. */
+export const ingestInput = internalAction({
   args: { ingestion_id: v.id(INGESTIONS_TABLE) },
   returns: v.null(),
   handler: async (ctx, { ingestion_id }) => {
@@ -59,23 +80,37 @@ export const apply = internalAction({
       { ingestion_id },
     )
 
-    if (ingestion === null || ingestion.stage === 'complete' || ingestion.work_id === undefined) {
+    if (ingestion === null || ingestion.progress.kind === 'complete') {
       return null
     }
 
-    const owner = { ingestion_id, work_id: ingestion.work_id }
-    const remaining = ingestKeys.slice(
-      ingestion.stage === null ? 0 : ingestKeys.indexOf(ingestion.stage) + 1,
-    )
-
-    if (remaining.length === 0) {
-      return null
-    }
+    const { completed } = ingestion.progress
+    const remaining = ingestKeys.filter((key) => !completed.includes(key))
 
     const pair = await scans.reader(ctx).loadPair(ingestion)
 
-    for (const key of remaining) {
-      await ingests[key](ctx, pair, owner)
+    const results = await Promise.allSettled(
+      remaining.map(async (key) => {
+        await ingests[key](ctx, pair, ingestion_id)
+      }),
+    )
+    const failure = results.find((result) => result.status === 'rejected')
+
+    if (failure !== undefined) {
+      throw failure.reason
+    }
+
+    return null
+  },
+})
+
+/** Gate cron admission; manual invocations and continuations proceed independently. */
+export const scheduled = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    if (env.ORCA_INGESTION_CRON_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.ingestionNew.run.enqueueNextInput, {})
     }
 
     return null

@@ -1,9 +1,9 @@
-import { vWorkId } from '@convex-dev/workpool'
 import { literals } from 'convex-helpers/validators'
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
-/** Execution order minimizes visible differences between the retained projections. */
+import type { Id } from '#generated/dataModel'
+
 export const ingestKeys = [
   'currentModels',
   'currentProviders',
@@ -18,6 +18,8 @@ export const ingestKeys = [
 export type IngestKey = (typeof ingestKeys)[number]
 
 export const INGESTIONS_TABLE = 'scan_ingestions' as const
+export const ingestionId = v.id(INGESTIONS_TABLE)
+export type InputId = Id<typeof INGESTIONS_TABLE>
 
 export const sourceInput = v.object({
   from_scan_at: v.union(v.string(), v.null()),
@@ -26,12 +28,10 @@ export const sourceInput = v.object({
 
 export const ingestionsTable = defineTable({
   ...sourceInput.fields,
-  /** Last committed ingest key; completed records retain no implementation-specific stage. */
-  stage: v.union(v.null(), literals(...ingestKeys), v.literal('complete')),
-  /** Ownership includes queuing, retry backoff and awaiting the completion callback. */
-  work_id: v.optional(vWorkId),
+  progress: v.union(
+    v.object({ kind: v.literal('pending'), completed: v.array(literals(...ingestKeys)) }),
+    v.object({ kind: v.literal('complete') }),
+  ),
 })
   .index('by_scan_at', ['scan_at'])
-  .index('by_stage_and_scan_at', ['stage', 'scan_at'])
-
-export const ownership = v.object({ ingestion_id: v.id(INGESTIONS_TABLE), work_id: vWorkId })
+  .index('by_progress_kind_and_scan_at', ['progress.kind', 'scan_at'])

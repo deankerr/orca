@@ -7,11 +7,15 @@ import type { ScannedEndpointStats, ScanPair } from '#scanNew/model'
 
 import { CURRENT_STATS_TABLE, currentStatsTable } from '../catalogNew/tables/current'
 import type { CurrentStatsRow } from '../catalogNew/tables/current'
-import { checkpoint } from './progress'
-import type { Ownership } from './progress'
-import { ownership } from './table'
+import { commitStage } from './progress'
+import type { InputId } from './table'
+import { ingestionId } from './table'
 
-export async function ingest(ctx: ActionCtx, { next }: ScanPair, owner: Ownership): Promise<void> {
+export async function ingest(
+  ctx: ActionCtx,
+  { next }: ScanPair,
+  ingestion_id: InputId,
+): Promise<void> {
   const rows: CurrentStatsRow[] = []
 
   for (const sample of next.stats) {
@@ -23,27 +27,25 @@ export async function ingest(ctx: ActionCtx, { next }: ScanPair, owner: Ownershi
   }
 
   await ctx.runMutation(internal.ingestionNew.currentStats.write, {
-    ...owner,
+    ingestion_id,
     scan_at: next.scan_at,
     rows,
   })
 }
 
 export const write = internalMutation({
-  args: { ...ownership.fields, ...currentStatsTable.validator.fields },
+  args: { ingestion_id: ingestionId, ...currentStatsTable.validator.fields },
   returns: v.null(),
-  handler: async (ctx, { ingestion_id, work_id, ...snapshot }) => {
-    if (!(await checkpoint(ctx, { ingestion_id, work_id }, 'currentStats'))) {
-      return null
-    }
+  handler: async (ctx, { ingestion_id, ...snapshot }) => {
+    await commitStage(ctx, ingestion_id, 'currentStats', async () => {
+      const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
 
-    const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
-
-    if (existing === null) {
-      await ctx.db.insert(CURRENT_STATS_TABLE, snapshot)
-    } else if (snapshot.scan_at > existing.scan_at) {
-      await ctx.db.replace(CURRENT_STATS_TABLE, existing._id, snapshot)
-    }
+      if (existing === null) {
+        await ctx.db.insert(CURRENT_STATS_TABLE, snapshot)
+      } else if (snapshot.scan_at > existing.scan_at) {
+        await ctx.db.replace(CURRENT_STATS_TABLE, existing._id, snapshot)
+      }
+    })
 
     return null
   },

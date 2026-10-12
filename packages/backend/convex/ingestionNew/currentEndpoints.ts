@@ -10,14 +10,14 @@ import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../catalogNew/ta
 import type { CurrentEndpointRow } from '../catalogNew/tables/current'
 import { compare } from '../compare'
 import { endpointEntity } from './lenses'
-import { checkpoint } from './progress'
-import type { Ownership } from './progress'
-import { ownership } from './table'
+import { commitStage } from './progress'
+import type { InputId } from './table'
+import { ingestionId } from './table'
 
 export async function ingest(
   ctx: ActionCtx,
   { previous, next }: ScanPair,
-  owner: Ownership,
+  ingestion_id: InputId,
 ): Promise<void> {
   const rows: Omit<CurrentEndpointRow, 'first_scan_at'>[] = []
 
@@ -42,55 +42,55 @@ export async function ingest(
     })
   }
 
-  for (const [id, { endpoint }] of previous.endpoints) {
-    if (next.endpoints.has(id)) {
-      continue
+  if (previous.scan_at !== null) {
+    for (const [id, { endpoint }] of previous.endpoints) {
+      if (next.endpoints.has(id)) {
+        continue
+      }
+
+      const { metadata, pricing, ...facts } = currentEndpoint(endpoint)
+
+      rows.push({
+        ...facts,
+        scan_at: previous.scan_at,
+        unlisted_at: next.scan_at,
+        pricing: encodePricing(pricing),
+        metadata_json: JSON.stringify(metadata),
+      })
     }
-
-    const { metadata, pricing, ...facts } = currentEndpoint(endpoint)
-
-    rows.push({
-      ...facts,
-      scan_at: previous.scan_at,
-      unlisted_at: next.scan_at,
-      pricing: encodePricing(pricing),
-      metadata_json: JSON.stringify(metadata),
-    })
   }
 
-  await ctx.runMutation(internal.ingestionNew.currentEndpoints.write, { ...owner, rows })
+  await ctx.runMutation(internal.ingestionNew.currentEndpoints.write, { ingestion_id, rows })
 }
 
 export const write = internalMutation({
   args: {
-    ...ownership.fields,
+    ingestion_id: ingestionId,
     rows: v.array(currentEndpointsTable.validator.omit('first_scan_at')),
   },
   returns: v.null(),
-  handler: async (ctx, { rows, ...owner }) => {
-    if (!(await checkpoint(ctx, owner, 'currentEndpoints'))) {
-      return null
-    }
+  handler: async (ctx, { rows, ingestion_id }) => {
+    await commitStage(ctx, ingestion_id, 'currentEndpoints', async () => {
+      for (const row of rows) {
+        const existing = await ctx.db
+          .query(CURRENT_ENDPOINTS_TABLE)
+          .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
+          .unique()
 
-    for (const row of rows) {
-      const existing = await ctx.db
-        .query(CURRENT_ENDPOINTS_TABLE)
-        .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', row.endpoint_id))
-        .unique()
+        if (
+          existing !== null &&
+          (row.unlisted_at ?? row.scan_at) <= (existing.unlisted_at ?? existing.scan_at)
+        ) {
+          continue
+        }
 
-      if (
-        existing !== null &&
-        (row.unlisted_at ?? row.scan_at) <= (existing.unlisted_at ?? existing.scan_at)
-      ) {
-        continue
+        const next = { ...row, first_scan_at: existing?.first_scan_at ?? row.scan_at }
+
+        await (existing === null
+          ? ctx.db.insert(CURRENT_ENDPOINTS_TABLE, next)
+          : ctx.db.replace(CURRENT_ENDPOINTS_TABLE, existing._id, next))
       }
-
-      const next = { ...row, first_scan_at: existing?.first_scan_at ?? row.scan_at }
-
-      await (existing === null
-        ? ctx.db.insert(CURRENT_ENDPOINTS_TABLE, next)
-        : ctx.db.replace(CURRENT_ENDPOINTS_TABLE, existing._id, next))
-    }
+    })
 
     return null
   },

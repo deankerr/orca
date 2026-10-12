@@ -1,32 +1,38 @@
 import { ConvexError } from 'convex/values'
-import type { Infer } from 'convex/values'
 
+import { internal } from '#generated/api'
 import type { MutationCtx } from '#generated/server'
 
 import { INGESTIONS_TABLE, ingestKeys } from './table'
-import type { IngestKey, ownership } from './table'
+import type { IngestKey, InputId } from './table'
 
-export type Ownership = Infer<typeof ownership>
+/** Output, progress and the final continuation commit in the same transaction. */
+export async function commitStage(
+  ctx: MutationCtx,
+  inputId: InputId,
+  key: IngestKey,
+  write: () => Promise<void>,
+): Promise<void> {
+  const input = await ctx.db.get(INGESTIONS_TABLE, inputId)
 
-/** Advance with the projection's writes in the same transaction; any failure rolls both back. */
-export async function checkpoint(ctx: MutationCtx, owner: Ownership, key: IngestKey) {
-  const record = await ctx.db.get(INGESTIONS_TABLE, owner.ingestion_id)
-
-  if (record === null || record.work_id !== owner.work_id || record.stage === 'complete') {
-    throw new ConvexError('Ingestion work no longer owns this input')
+  if (input === null) {
+    throw new ConvexError({ message: 'Source input is not registered', ingestion_id: inputId })
   }
 
-  const previous = record.stage === null ? -1 : ingestKeys.indexOf(record.stage)
-  const next = ingestKeys.indexOf(key)
-
-  if (next <= previous) {
-    return false
+  if (input.progress.kind === 'complete' || input.progress.completed.includes(key)) {
+    return
   }
 
-  if (next !== previous + 1) {
-    throw new ConvexError('Ingest does not follow the committed stage')
-  }
+  await write()
 
-  await ctx.db.patch(INGESTIONS_TABLE, record._id, { stage: key })
-  return true
+  const completed = [...input.progress.completed, key]
+  const isComplete = ingestKeys.every((stage) => completed.includes(stage))
+
+  await ctx.db.patch(INGESTIONS_TABLE, inputId, {
+    progress: isComplete ? { kind: 'complete' } : { kind: 'pending', completed },
+  })
+
+  if (isComplete) {
+    await ctx.scheduler.runAfter(0, internal.ingestionNew.run.enqueueNextInput, {})
+  }
 }
