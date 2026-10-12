@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { CURRENT_ENDPOINTS_TABLE } from '../../catalogNew/tables/current'
+import { CURRENT_ENDPOINTS_TABLE } from '../../catalog/tables/current'
 import { clock } from '../shared/clock'
 import { Endpoint } from '../shared/endpoint'
 

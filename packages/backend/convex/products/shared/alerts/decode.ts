@@ -2,10 +2,10 @@ import { ConvexError } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
-import { Endpoint, Model, Provider } from '../../../catalogNew/entities'
-import { Pricing } from '../../../catalogNew/pricing'
-import type { pricing } from '../../../catalogNew/pricing'
-import type { EventRow } from '../../../catalogNew/tables/events'
+import { Endpoint, Model, Provider } from '../../../catalog/entities'
+import { Pricing } from '../../../catalog/pricing'
+import type { pricing } from '../../../catalog/pricing'
+import type { EventRow } from '../../../catalog/tables/events'
 
 const CapturedChange = z.object({
   key: z.string(),

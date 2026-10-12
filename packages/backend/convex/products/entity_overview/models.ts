@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { query } from '#generated/server'
 
-import { CURRENT_MODELS_TABLE, currentModelsTable } from '../../catalogNew/tables/current'
+import { CURRENT_MODELS_TABLE, currentModelsTable } from '../../catalog/tables/current'
 import { textOrNull, flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 

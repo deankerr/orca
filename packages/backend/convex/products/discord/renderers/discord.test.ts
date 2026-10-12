@@ -2,13 +2,13 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { ComponentType } from 'discord-api-types/v10'
 
-import type { EventRow as CatalogEvent } from '../../../catalogNew/tables/events'
+import type { EventRow as CatalogEvent } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
 import {
   modelEntity as normalizeModel,
   providerEntity as normalizeProvider,
   endpointEntity as normalizeEndpoint,
-} from '../../../ingestionNew/lenses'
+} from '../../../ingestion/lenses'
 import type { JsonValue } from '../../../json'
 import { render as renderPrepared } from '../../feed/render'
 import { curate } from '../../shared/alerts/curate'

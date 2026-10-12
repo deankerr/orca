@@ -59,7 +59,7 @@ projection refresh, continue to use Listing history until their individual cutov
 
 ## Current projection refresh
 
-The current model, provider, and endpoint stages in `ingestionNew` own their metadata omission
+The current model, provider, and endpoint stages in `ingestion` own their metadata omission
 lists and current-field projections. Refresh uses those same projections to rebuild all retained
 entity fields, including endpoint pricing and model context, from stored captures. Missing fields
 are removed under the current rules. Identity, first observation, and endpoint availability remain
@@ -83,10 +83,10 @@ reports missing entities or captures rather than replacing their facts with empt
 From `packages/backend`, refresh an entity against the configured deployment:
 
 ```sh
-bunx convex run ingestionNew/refresh:refreshCurrentEntity '{"entity_kind":"model","entity_id":"author/model"}'
+bunx convex run ingestion/refresh:refreshCurrentEntity '{"entity_kind":"model","entity_id":"author/model"}'
 ```
 
-For bulk work, `ingestionNew/refresh:targets` accepts `entity_kind` and Convex `paginationOpts`,
+For bulk work, `ingestion/refresh:targets` accepts `entity_kind` and Convex `paginationOpts`,
 returning targets to pass independently to `refreshCurrentEntity`. These are internal operator
 functions. Each refresh reads complete source captures for one entity.
 

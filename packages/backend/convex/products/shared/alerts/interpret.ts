@@ -1,9 +1,9 @@
 import type { QueryCtx } from '#generated/server'
 
-import { EVENTS_TABLE } from '../../../catalogNew/tables/events'
-import { OBSERVATIONS_TABLE } from '../../../catalogNew/tables/observations'
-import type { ObservationRow } from '../../../catalogNew/tables/observations'
-import { INGESTIONS_TABLE } from '../../../ingestionNew/table'
+import { EVENTS_TABLE } from '../../../catalog/tables/events'
+import { OBSERVATIONS_TABLE } from '../../../catalog/tables/observations'
+import type { ObservationRow } from '../../../catalog/tables/observations'
+import { INGESTIONS_TABLE } from '../../../ingestion/table'
 import type { EntityAlert } from './curate'
 import { interpretEvent } from './prepare'
 import type { AlertSource } from './read'

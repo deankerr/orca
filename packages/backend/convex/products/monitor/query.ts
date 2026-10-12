@@ -4,8 +4,8 @@ import type { Infer } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { CURRENT_MODELS_TABLE, CURRENT_PROVIDERS_TABLE } from '../../catalogNew/tables/current'
-import { OBSERVATIONS_TABLE } from '../../catalogNew/tables/observations'
+import { CURRENT_MODELS_TABLE, CURRENT_PROVIDERS_TABLE } from '../../catalog/tables/current'
+import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
 import { entityAlert } from '../shared/alerts/curate'
 import { interpret } from '../shared/alerts/interpret'
 import { selectDefault } from '../shared/alerts/prepare'

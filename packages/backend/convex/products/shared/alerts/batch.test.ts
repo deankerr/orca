@@ -3,7 +3,7 @@ import { deepEqual } from 'node:assert/strict'
 
 import type { PaginationResult } from 'convex/server'
 
-import type { EventRow } from '../../../catalogNew/tables/events'
+import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
 import type { JsonValue } from '../../../json'
 import { prepareBatch as prepareDiscordBatch } from '../../discord/prepare'

@@ -1,6 +1,6 @@
 import type { z } from 'zod'
 
-import type { Pricing } from '../../../catalogNew/pricing'
+import type { Pricing } from '../../../catalog/pricing'
 import { priceMeters as meters } from '../../../priceMeters'
 
 /** Alert paths and labels use the shared meter units and decimal scaling. */

@@ -7,8 +7,8 @@ import { z } from 'zod'
 import type { Doc } from '#generated/dataModel'
 import type { QueryCtx } from '#generated/server'
 
-import { EVENTS_TABLE } from '../../../catalogNew/tables/events'
-import { OBSERVATIONS_TABLE } from '../../../catalogNew/tables/observations'
+import { EVENTS_TABLE } from '../../../catalog/tables/events'
+import { OBSERVATIONS_TABLE } from '../../../catalog/tables/observations'
 import schema from '../../../schema'
 import { cappedCutoff } from '../pagination'
 

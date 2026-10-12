@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import type { EventRow } from '../../../catalogNew/tables/events'
+import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
 import type { JsonValue } from '../../../json'
 import { curate } from './curate'

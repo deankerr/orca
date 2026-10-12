@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { query } from '#generated/server'
 
-import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from '../../catalogNew/tables/current'
+import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from '../../catalog/tables/current'
 import { textOrNull, stringsOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 

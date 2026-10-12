@@ -5,7 +5,7 @@ import { getFunctionName } from 'convex/server'
 
 import type { MutationCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE } from './ingestionNew/table'
+import { INGESTIONS_TABLE } from './ingestion/table'
 import init from './init'
 
 test('preview init schedules a short baseline, then resumes without resetting it', async () => {
@@ -40,7 +40,7 @@ test('preview init schedules a short baseline, then resumes without resetting it
   const before = Date.now() - 2 * 86_400_000
   await handler(ctx, {})
   const after = Date.now() - 2 * 86_400_000
-  expect(calls[0]).toMatchObject({ delay: 0, name: 'ingestionNew/run:enqueueNextInput' })
+  expect(calls[0]).toMatchObject({ delay: 0, name: 'ingestion/run:enqueueNextInput' })
   const start = Date.parse(calls[0].args.start_at ?? '')
   expect(start).toBeGreaterThanOrEqual(before)
   expect(start).toBeLessThanOrEqual(after)
@@ -48,5 +48,5 @@ test('preview init schedules a short baseline, then resumes without resetting it
   latest = { scan_at: '2026-09-26T15:40:04.139Z' }
   await handler(ctx, {})
   expect(calls).toHaveLength(2)
-  expect(calls[1]).toEqual({ delay: 0, name: 'ingestionNew/run:enqueueNextInput', args: {} })
+  expect(calls[1]).toEqual({ delay: 0, name: 'ingestion/run:enqueueNextInput', args: {} })
 })

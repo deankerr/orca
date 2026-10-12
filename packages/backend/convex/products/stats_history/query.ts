@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { ENDPOINT_STATS_TABLE, endpointStatsTable } from '../../catalogNew/tables/stats'
+import { ENDPOINT_STATS_TABLE, endpointStatsTable } from '../../catalog/tables/stats'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../shared/pagination'
 
 /** Page retained samples across tiers through the completed observation horizon. */

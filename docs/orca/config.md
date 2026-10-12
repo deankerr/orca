@@ -2,7 +2,7 @@
 
 Variables and deployment defaults, grouped by package and scope.
 
-The current entity stages in `ingestionNew` own metadata omission lists for models, providers,
+The current entity stages in `ingestion` own metadata omission lists for models, providers,
 and endpoints. Unlisted keys remain included. Changing a current projection does not rewrite
 existing rows automatically; `catalog.md` describes reprojecting them from retained captures.
 
@@ -51,7 +51,7 @@ and preview; “unset” means the code fallback applies.
 Dev/preview have no R2 access. They read canonical objects through the source
 deployment’s object API and store local writes in Convex.
 
-Keep the object source fixed while a timeline or pending processor work exists.
+Keep the object source fixed while a timeline or unfinished ingestion exists.
 
 #### Collection, ingestion, and Discord
 
@@ -75,16 +75,15 @@ Projection ingestion uses a dedicated `ingestionPool` with worker concurrency **
 action retries using Workpool's defaults. Each worker runs all unfinished stages concurrently.
 Repeated triggers can enqueue overlapping attempts at the same input; committed stage progress
 prevents duplicate output. A **five-minute** recovery cron requeues already registered unfinished
-inputs independently of the legacy ingestion cron switch. Manual `ingestionNew/run:enqueueNextInput` starts
-the new timeline, and input completion schedules discovery of its next input. The cron entry
-point `ingestionNew/run:scheduled` admits work only when `ORCA_INGESTION_CRON_ENABLED` is `true`;
-manual invocations and continuations bypass that flag. Hourly discovery for the new runner is
-not wired yet; the legacy hourly ingestion entry point remains unchanged.
+inputs independently of the ingestion cron switch. Manual `ingestion/run:enqueueNextInput` starts
+the timeline, and input completion schedules discovery of its next input. Hourly discovery runs
+at minute **43** through `ingestion/run:scheduled`, admitting work only when
+`ORCA_INGESTION_CRON_ENABLED` is `true`; manual invocations and continuations bypass that flag.
 
-Preview `init` bootstraps the new projection timeline from the first capture at or after
+Preview `init` bootstraps the projection timeline from the first capture at or after
 **two days before initialization**, or resumes any existing registered input. A fresh manual
 invocation without `start_at` starts at the earliest available capture. Baseline selection
-requires only one capture; legacy product tables are not seeded by preview initialization.
+requires only one capture.
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in

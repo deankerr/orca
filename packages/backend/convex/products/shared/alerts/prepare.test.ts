@@ -2,10 +2,10 @@ import { expect, spyOn, test } from 'bun:test'
 
 import type { PaginationResult } from 'convex/server'
 
-import { encodePricing } from '../../../catalogNew/pricing'
-import type { EventRow } from '../../../catalogNew/tables/events'
+import { encodePricing } from '../../../catalog/pricing'
+import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
-import { prepare } from '../../../ingestionNew/events'
+import { prepare } from '../../../ingestion/events'
 import type { JsonValue } from '../../../json'
 import { fromCollected } from '../../../scanNew/extract'
 import { prepareBatch as prepareDiscordBatch } from '../../discord/prepare'

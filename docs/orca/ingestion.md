@@ -22,23 +22,9 @@ same complete quote. Alert eligibility does not affect quote retention.
 Accepted comparator limitations are omitted `__proto__` string-set members and positional
 comparison of arrays directly nested in arrays. Supported entity shapes avoid the latter case.
 
-## Acceptance and completion
-
-Catalog, Listings, Pricing, and current stats commit together before the ORCA clock advances.
-Consumers can rely on those projections through the accepted scan even while downstream work
-is pending.
-
-- Initialization seeds baseline knowledge without generating creation events for already-present facts.
-- Downstream processors use historical context bounded to their accepted scan pair.
-- Each processor's output and completion commit together, including empty output.
-- Later successful work leaves earlier incomplete obligations outstanding.
-
-Advancing current knowledge does not establish that all historical Events or stats have been
-produced. Acceptance and downstream completion are separate guarantees.
-
 ## Projection ingestion
 
-`ingestionNew` registers exact source inputs, with a null predecessor for baseline. Each stage
+`ingestion` registers exact source inputs, with a null predecessor for baseline. Each stage
 derives its output from the scan pair and runs concurrently with the other unfinished stages.
 Stage definitions and source contents must remain stable while an input is incomplete.
 
@@ -73,5 +59,5 @@ can exceed function argument, transaction, or document limits, and retries canno
 output. Current entity writes also perform one indexed lookup per row. Introduce bounded batches
 and batch progress when supported input sizes need to exceed those limits.
 
-The new clock and progress are available through `ingestionNew/state`. Existing product queries
-and the legacy runner continue to use their existing tables and clock until their cutover.
+The clock and progress are available through `ingestion/state`. Product readers use the
+Catalog tables and the latest completed input as their observation horizon.

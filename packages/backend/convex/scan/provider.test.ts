@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test'
 
-import { normalizeProvider } from '../entities'
-import { prepare } from '../events/prepare'
+import { prepare } from '../ingestion/events'
+import { providerEntity } from '../ingestion/lenses'
+import { fromCollected as extract } from '../scanNew/extract'
 import type { RawScan } from './collected'
 import { fromCollected } from './model'
 import { assembleProviders, extractProvider, providerId } from './provider'
@@ -90,7 +91,7 @@ test('omits internal configuration and endpoint defaults while preserving unknow
       futurePolicy: { disclosure: true },
     },
   })
-  expect(normalizeProvider(provider).metadata).toHaveProperty('futureFact', input.futureFact)
+  expect(providerEntity(provider).metadata).toHaveProperty('futureFact', input.futureFact)
   expect(input).toEqual(before)
   expect(extractProvider({ slug: 'p', displayName: 'Provider' }).provider).not.toHaveProperty(
     'dataPolicy',
@@ -204,8 +205,8 @@ test('extraction preserves endpoint facts and raw inputs while grouping provider
   expect(scan.endpoints.get('regional')).not.toHaveProperty('provider_info')
   expect(raw).toEqual(before)
 
-  const next = fromCollected(captured([base], '2026-10-08T01:00:00.000Z'))
-  const events = prepare({ previous: scan, next })
+  const next = extract(captured([base], '2026-10-08T01:00:00.000Z'))
+  const events = prepare({ previous: extract(raw), next })
   expect(
     events.map(({ entity_kind, entity_id, type }) => ({ entity_kind, entity_id, type })),
   ).toEqual([{ entity_kind: 'endpoint', entity_id: 'regional', type: 'REMOVE' }])
@@ -213,8 +214,8 @@ test('extraction preserves endpoint facts and raw inputs while grouping provider
 
 test('Nebius tag repair keeps endpoint and provider identity continuous', () => {
   const base = endpoint('base', 'nebius', { displayName: 'Nebius' })
-  const previous = fromCollected(captured([base, endpoint('fast', 'nebius-fast')]))
-  const next = fromCollected(
+  const previous = extract(captured([base, endpoint('fast', 'nebius-fast')]))
+  const next = extract(
     captured([base, endpoint('fast', 'nebius/fast')], '2026-10-08T01:00:00.000Z'),
   )
   const events = prepare({ previous, next })
@@ -263,7 +264,7 @@ test('Claude on AWS repairs precede prefix grouping without merging its ordinary
 })
 
 test('ModelRun metadata transitions remain updates to one provider', () => {
-  const previous = fromCollected(
+  const previous = extract(
     captured([
       endpoint('modelrun-endpoint', 'model-run', {
         displayName: 'ModelRun',
@@ -271,7 +272,7 @@ test('ModelRun metadata transitions remain updates to one provider', () => {
       }),
     ]),
   )
-  const next = fromCollected(
+  const next = extract(
     captured(
       [
         endpoint('modelrun-endpoint', 'modelrun', {
@@ -289,7 +290,7 @@ test('ModelRun metadata transitions remain updates to one provider', () => {
   expect(providers[0]).toMatchObject({ entity_id: 'modelrun', type: 'UPDATE' })
   expect(providers[0].change_json).toContain('https://old.example/privacy')
   expect(providers[0].change_json).toContain('https://new.example/privacy')
-  expect(next.endpoints.get('modelrun-endpoint')?.provider_id).toBe('modelrun')
+  expect(next.endpoints.get('modelrun-endpoint')?.endpoint.provider_id).toBe('modelrun')
 })
 
 function captured(

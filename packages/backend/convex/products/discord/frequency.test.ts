@@ -4,9 +4,9 @@ import { rejects } from 'node:assert/strict'
 
 import type { QueryCtx } from '#generated/server'
 
-import type { EventRow } from '../../catalogNew/tables/events'
+import { encodePricing } from '../../catalog/pricing'
+import type { EventRow } from '../../catalog/tables/events'
 import { compare } from '../../compare'
-import { encodePricing } from '../../entities'
 import type { JsonValue } from '../../json'
 import { prepare as prepareShared } from '../shared/alerts/prepare'
 import { readFrequency, PRICE_CHANGE_COUNT, PRICE_CHANGE_WINDOW_HOURS } from './frequency'

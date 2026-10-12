@@ -1,13 +1,18 @@
 # Catalog projection implementation plan
 
+- We have diverged from this plan but its high level concepts are still relevant.
 - Do not write tests, remove existing implementations, or update documentation.
 
 ## Updates
 
-- `catalogNew/`, `ingestionNew`, `scanNew/` are temporary module names until the existing implementations are removed.
+- Catalog and ingestion use `catalog/` and `ingestion/`; `scanNew/` remains temporary until the Scan review.
 - `processor_work` is removed.
 - Baseline will use an ingestion with an empty previous scan.
-- Ingestion preparation and commit per table are combined and will be performed in sequence.
+- Tables own their own `ingest` (prepare + commit) function, with no shared mutations.
+
+## Known Limitations
+
+- Ingest mutation inputs are unbounded.
 
 ## Authority and scope
 

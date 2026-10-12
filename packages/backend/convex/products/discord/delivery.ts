@@ -4,7 +4,7 @@ import { components } from '#generated/api'
 import { env, internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE } from '../../ingestionNew/table'
+import { INGESTIONS_TABLE } from '../../ingestion/table'
 import { renderIngestion } from './render'
 
 const ALERT_MAX_AGE_MS = 60 * 60 * 1000

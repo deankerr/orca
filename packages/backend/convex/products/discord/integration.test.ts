@@ -10,7 +10,7 @@ import type { GenericSchema, SchemaDefinition } from 'convex/server'
 
 import { components, internal } from '#generated/api'
 
-import { ingestKeys } from '../../ingestionNew/table'
+import { ingestKeys } from '../../ingestion/table'
 import schema from '../../schema'
 
 const componentRoot = path.dirname(
@@ -321,7 +321,7 @@ test('a rendering error cannot undo the committed ingestion', async () => {
 
 async function commit(t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
   const before = await t.run(async (ctx) => await ctx.db.get(input.ingestion_id))
-  await t.mutation(internal.ingestionNew.events.write, {
+  await t.mutation(internal.ingestion.events.write, {
     ingestion_id: input.ingestion_id,
     rows: input.rows,
   })
@@ -536,7 +536,7 @@ test('automatic preparation waits for every projection and is scheduled once whe
       },
     })
   })
-  await t.mutation(internal.ingestionNew.events.write, {
+  await t.mutation(internal.ingestion.events.write, {
     ingestion_id: input.ingestion_id,
     rows: input.rows,
   })
@@ -550,7 +550,7 @@ test('automatic preparation waits for every projection and is scheduled once whe
     /complete/,
   )
 
-  await t.mutation(internal.ingestionNew.observations.write, {
+  await t.mutation(internal.ingestion.observations.write, {
     ingestion_id: input.ingestion_id,
     rows: [],
   })
@@ -558,14 +558,14 @@ test('automatic preparation waits for every projection and is scheduled once whe
     async (ctx) => await ctx.db.system.query('_scheduled_functions').collect(),
   )
   expect(scheduled.map((row) => row.name).toSorted()).toEqual([
-    'ingestionNew/run:enqueueNextInput',
+    'ingestion/run:enqueueNextInput',
     'products/discord/delivery:sendIngestionAlerts',
   ])
-  await t.mutation(internal.ingestionNew.events.write, {
+  await t.mutation(internal.ingestion.events.write, {
     ingestion_id: input.ingestion_id,
     rows: input.rows,
   })
-  await t.mutation(internal.ingestionNew.observations.write, {
+  await t.mutation(internal.ingestion.observations.write, {
     ingestion_id: input.ingestion_id,
     rows: [],
   })

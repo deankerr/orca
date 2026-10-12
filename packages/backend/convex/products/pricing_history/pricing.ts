@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from '../../catalogNew/tables/pricing'
+import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from '../../catalog/tables/pricing'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../shared/pagination'
 
 /** Live endpoint history, oldest first; page dependencies exclude the moving observation clock. */

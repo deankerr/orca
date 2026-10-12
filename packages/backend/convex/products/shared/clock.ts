@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import { query } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE } from '../../ingestionNew/table'
+import { INGESTIONS_TABLE } from '../../ingestion/table'
 
 /** Product observation clock: latest completed scan time, or null before the first ingestion. */
 export async function clock(ctx: QueryCtx): Promise<string | null> {

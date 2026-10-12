@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from '../../catalogNew/tables/listings'
+import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from '../../catalog/tables/listings'
 import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../shared/pagination'
 
 /** Discover historical members, including endpoints that have since moved to another model. */

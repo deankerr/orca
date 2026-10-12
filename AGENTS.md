@@ -2,6 +2,8 @@
 
 **This branch is incompatible with current production data, and does not require consideration of transition during development. The locally associated dev deployment can be destroyed and a new instance provisioned when required. Do not merge without a migration plan.**
 
+@docs/catalog-projection-plan.md
+
 ## Development
 
 - When dependencies are missing, run `bun install --frozen-lockfile` from the repository root.

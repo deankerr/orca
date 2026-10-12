@@ -1,4 +1,4 @@
-import type { EventRow } from '../../../catalogNew/tables/events'
+import type { EventRow } from '../../../catalog/tables/events'
 import { curate } from './curate'
 import type { EntityAlert } from './curate'
 import { isEligible } from './filter'

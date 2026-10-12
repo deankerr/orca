@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
-import { INGESTIONS_TABLE } from './ingestionNew/table'
+import { INGESTIONS_TABLE } from './ingestion/table'
 
 /** Preview bootstrap: seed two days of history, or resume an existing timeline. */
 const init = internalMutation({
@@ -17,7 +17,7 @@ const init = internalMutation({
       .first()
     await ctx.scheduler.runAfter(
       0,
-      internal.ingestionNew.run.enqueueNextInput,
+      internal.ingestion.run.enqueueNextInput,
       latest === null ? { start_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } : {},
     )
     return null

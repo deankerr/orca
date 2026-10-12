@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 
 import { query } from '#generated/server'
 
-import { CURRENT_STATS_TABLE, currentStatsTable } from '../../catalogNew/tables/current'
+import { CURRENT_STATS_TABLE, currentStatsTable } from '../../catalog/tables/current'
 
 /** The grid consumes the complete published snapshot. */
 export const grid = query({

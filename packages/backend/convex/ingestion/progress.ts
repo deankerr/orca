@@ -1,22 +1,44 @@
-import { docValidator, paginationOptsValidator, paginationResultValidator } from 'convex/server'
+import { ConvexError } from 'convex/values'
 
-import { internalQuery } from '#generated/server'
+import { internal } from '#generated/api'
+import { env } from '#generated/server'
+import type { MutationCtx } from '#generated/server'
 
-import { storedProcessorName, processorWorkTable, PROCESSOR_WORK_TABLE, workState } from './table'
+import { INGESTIONS_TABLE, ingestKeys } from './table'
+import type { IngestKey, InputId } from './table'
 
-/** Inspect outstanding or completed work; later successes do not hide earlier failures. */
-export const listProcessorWork = internalQuery({
-  args: {
-    processor: storedProcessorName,
-    state: workState,
-    paginationOpts: paginationOptsValidator,
-  },
-  returns: paginationResultValidator(docValidator(PROCESSOR_WORK_TABLE, processorWorkTable)),
-  handler: async (ctx, args) =>
-    await ctx.db
-      .query(PROCESSOR_WORK_TABLE)
-      .withIndex('by_processor_and_state_and_scan_at', (q) =>
-        q.eq('processor', args.processor).eq('state', args.state),
-      )
-      .paginate(args.paginationOpts),
-})
+/** Output, progress and the final continuation commit in the same transaction. */
+export async function commitStage(
+  ctx: MutationCtx,
+  inputId: InputId,
+  key: IngestKey,
+  write: () => Promise<void>,
+): Promise<void> {
+  const input = await ctx.db.get(INGESTIONS_TABLE, inputId)
+
+  if (input === null) {
+    throw new ConvexError({ message: 'Source input is not registered', ingestion_id: inputId })
+  }
+
+  if (input.progress.kind === 'complete' || input.progress.completed.includes(key)) {
+    return
+  }
+
+  await write()
+
+  const completed = [...input.progress.completed, key]
+  const isComplete = ingestKeys.every((stage) => completed.includes(stage))
+
+  await ctx.db.patch(INGESTIONS_TABLE, inputId, {
+    progress: isComplete ? { kind: 'complete' } : { kind: 'pending', completed },
+  })
+
+  if (isComplete) {
+    if (input.from_scan_at !== null && env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.products.discord.delivery.sendIngestionAlerts, {
+        ingestion_id: inputId,
+      })
+    }
+    await ctx.scheduler.runAfter(0, internal.ingestion.run.enqueueNextInput, {})
+  }
+}

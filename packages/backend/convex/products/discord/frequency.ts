@@ -1,6 +1,6 @@
 import type { QueryCtx } from '#generated/server'
 
-import { ENDPOINT_PRICES_TABLE } from '../../catalogNew/tables/pricing'
+import { ENDPOINT_PRICES_TABLE } from '../../catalog/tables/pricing'
 
 /** Discord tolerates occasional repricing, but not sustained quote changes. */
 export const PRICE_CHANGE_COUNT = 2

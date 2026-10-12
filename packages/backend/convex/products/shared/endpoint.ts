@@ -2,7 +2,7 @@ import { convexToZod } from 'convex-helpers/server/zod4'
 import { docValidator } from 'convex/server'
 import { z } from 'zod'
 
-import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../../catalogNew/tables/current'
+import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../../catalog/tables/current'
 import { flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 
