@@ -53,8 +53,3 @@ export type Scan = {
   endpoints: ReadonlyMap<string, ExtractedEndpoint>
   stats: readonly ExtractedStats[]
 }
-
-export type ScanPair = {
-  previous: Omit<Scan, 'scan_at'> & { scan_at: string | null }
-  next: Scan
-}

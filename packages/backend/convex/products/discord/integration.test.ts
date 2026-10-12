@@ -10,7 +10,7 @@ import type { GenericSchema, SchemaDefinition } from 'convex/server'
 
 import { components, internal } from '#generated/api'
 
-import { ingestKeys } from '../../ingestion/table'
+import { ingestionProcesses } from '../../ingestion/table'
 import schema from '../../schema'
 
 const componentRoot = path.dirname(
@@ -94,17 +94,20 @@ async function registerWebhook(t: Harness, name: string, topics = ['ingestion'])
 }
 
 async function pendingCommit(t: Harness, input = pair, eligible = true) {
-  const ingestion_id = await t.run(
+  const registration_id = await t.run(
     async (ctx) =>
-      await ctx.db.insert('scan_ingestions', {
+      await ctx.db.insert('scan_registrations', {
         ...input,
-        progress: { kind: 'pending', completed: ingestKeys.filter((key) => key !== 'events') },
+        progress: {
+          kind: 'pending',
+          completed: ingestionProcesses.filter((key) => key !== 'events'),
+        },
       }),
   )
 
   return {
     ...input,
-    ingestion_id,
+    registration_id,
     rows: [
       {
         scan_at: input.scan_at,
@@ -165,8 +168,8 @@ async function commitAndPrepareAlerts(
   input: Awaited<ReturnType<typeof pendingCommit>>,
 ) {
   const source_ids = await commit(t, input)
-  await t.mutation(internal.products.discord.delivery.sendIngestionAlerts, {
-    ingestion_id: input.ingestion_id,
+  await t.mutation(internal.products.discord.delivery.sendRegistrationAlerts, {
+    registration_id: input.registration_id,
   })
   return source_ids
 }
@@ -179,11 +182,11 @@ test('events complete before separate alert delivery queues subscribed jobs; rep
   const input = await pendingCommit(t)
   const eventIds = await commit(t, input)
   expect(await jobs(t)).toEqual([])
-  expect(await t.run(async (ctx) => await ctx.db.get(input.ingestion_id))).toMatchObject({
+  expect(await t.run(async (ctx) => await ctx.db.get(input.registration_id))).toMatchObject({
     progress: { kind: 'complete' },
   })
-  await t.mutation(internal.products.discord.delivery.sendIngestionAlerts, {
-    ingestion_id: input.ingestion_id,
+  await t.mutation(internal.products.discord.delivery.sendRegistrationAlerts, {
+    registration_id: input.registration_id,
   })
   const queued = await jobs(t)
 
@@ -206,7 +209,7 @@ test('events complete before separate alert delivery queues subscribed jobs; rep
   expect(await commitAndPrepareAlerts(t, input)).toEqual([])
   expect(await jobs(t)).toEqual(queued)
   expect(await t.run(async (ctx) => await ctx.db.query('catalog_events').collect())).toHaveLength(1)
-  expect(await t.run(async (ctx) => await ctx.db.get(input.ingestion_id))).toMatchObject({
+  expect(await t.run(async (ctx) => await ctx.db.get(input.registration_id))).toMatchObject({
     progress: { kind: 'complete' },
   })
 })
@@ -244,7 +247,7 @@ for (const scenario of ['disabled', 'no webhooks', 'filtered', 'empty'] as const
 
     expect(ids).toHaveLength(scenario === 'empty' ? 0 : 1)
     expect(await jobs(t)).toEqual([])
-    expect(await t.run(async (ctx) => await ctx.db.get(input.ingestion_id))).toMatchObject({
+    expect(await t.run(async (ctx) => await ctx.db.get(input.registration_id))).toMatchObject({
       progress: { kind: 'complete' },
     })
   })
@@ -284,19 +287,19 @@ test('a rejected alert submission rolls back fanout but preserves committed even
   })
   const before = await jobs(t)
   await commit(t, input)
-  const committed = await ingestionState(t)
+  const committed = await registrationState(t)
 
   await rejects(
-    t.mutation(internal.products.discord.delivery.sendIngestionAlerts, {
-      ingestion_id: input.ingestion_id,
+    t.mutation(internal.products.discord.delivery.sendRegistrationAlerts, {
+      registration_id: input.registration_id,
     }),
     /different input/,
   )
 
   expect(await jobs(t)).toEqual(before)
-  expect(await ingestionState(t)).toEqual(committed)
+  expect(await registrationState(t)).toEqual(committed)
   expect(committed.events).toHaveLength(1)
-  expect(committed.ingestions[0]?.progress.kind).toBe('complete')
+  expect(committed.registrations[0]?.progress.kind).toBe('complete')
 })
 
 test('a rendering error cannot undo the committed ingestion', async () => {
@@ -305,24 +308,24 @@ test('a rendering error cannot undo the committed ingestion', async () => {
   const input = await pendingCommit(t)
   process.env.ORCA_WEB_ORIGIN = 'not-a-url'
   await commit(t, input)
-  const committed = await ingestionState(t)
+  const committed = await registrationState(t)
 
   await rejects(
-    t.mutation(internal.products.discord.delivery.sendIngestionAlerts, {
-      ingestion_id: input.ingestion_id,
+    t.mutation(internal.products.discord.delivery.sendRegistrationAlerts, {
+      registration_id: input.registration_id,
     }),
   )
 
   expect(await jobs(t)).toEqual([])
-  expect(await ingestionState(t)).toEqual(committed)
+  expect(await registrationState(t)).toEqual(committed)
   expect(committed.events).toHaveLength(1)
-  expect(committed.ingestions[0]?.progress.kind).toBe('complete')
+  expect(committed.registrations[0]?.progress.kind).toBe('complete')
 })
 
 async function commit(t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
-  const before = await t.run(async (ctx) => await ctx.db.get(input.ingestion_id))
+  const before = await t.run(async (ctx) => await ctx.db.get(input.registration_id))
   await t.mutation(internal.ingestion.events.write, {
-    ingestion_id: input.ingestion_id,
+    registration_id: input.registration_id,
     rows: input.rows,
   })
   if (before?.progress.kind === 'complete') {
@@ -337,13 +340,13 @@ async function commit(t: Harness, input: Awaited<ReturnType<typeof pendingCommit
   })
 }
 
-async function ingestionFor(_t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
-  return input.ingestion_id
+async function registrationFor(_t: Harness, input: Awaited<ReturnType<typeof pendingCommit>>) {
+  return input.registration_id
 }
 
-async function ingestionState(t: Harness) {
+async function registrationState(t: Harness) {
   return await t.run(async (ctx) => ({
-    ingestions: await ctx.db.query('scan_ingestions').collect(),
+    registrations: await ctx.db.query('scan_registrations').collect(),
     events: await ctx.db.query('catalog_events').collect(),
   }))
 }
@@ -356,8 +359,8 @@ test('preparing historical alerts is read-only without destinations and matches 
     scan_at: '2026-09-30T01:00:00.000Z',
   })
   const eventIds = await commit(t, input)
-  const ingestion_id = await ingestionFor(t, input)
-  const before = await ingestionState(t)
+  const registration_id = await registrationFor(t, input)
+  const before = await registrationState(t)
   const scheduled = await t.run(
     async (ctx) => await ctx.db.system.query('_scheduled_functions').collect(),
   )
@@ -365,8 +368,8 @@ test('preparing historical alerts is read-only without destinations and matches 
     new Error('Preparation must never contact Discord'),
   )
 
-  const prepared = await t.query(internal.products.discord.delivery.prepareIngestion, {
-    ingestion_id,
+  const prepared = await t.query(internal.products.discord.delivery.prepareRegistration, {
+    registration_id,
   })
 
   expect(prepared.scan_at).toBe(input.scan_at)
@@ -375,14 +378,16 @@ test('preparing historical alerts is read-only without destinations and matches 
   expect(prepared.messages[0]?.payload).toContain(input.scan_at)
   expect(prepared.skippedEvents).toEqual([])
   expect(await jobs(t)).toEqual([])
-  expect(await ingestionState(t)).toEqual(before)
+  expect(await registrationState(t)).toEqual(before)
   expect(
     await t.run(async (ctx) => await ctx.db.system.query('_scheduled_functions').collect()),
   ).toEqual(scheduled)
   expect(request).not.toHaveBeenCalled()
 
   await registerWebhook(t, 'first')
-  const sent = await t.mutation(internal.products.discord.delivery.sendIngestion, { ingestion_id })
+  const sent = await t.mutation(internal.products.discord.delivery.sendRegistration, {
+    registration_id,
+  })
   const queued = await jobs(t)
 
   expect(sent.jobIds).toHaveLength(1)
@@ -390,7 +395,7 @@ test('preparing historical alerts is read-only without destinations and matches 
   expect(queued[0]?.messages).toEqual(
     prepared.messages.map(({ key, payload }) => ({ kind: 'send', key, payload })),
   )
-  expect(await ingestionState(t)).toEqual(before)
+  expect(await registrationState(t)).toEqual(before)
   expect(request).not.toHaveBeenCalled()
 })
 
@@ -403,16 +408,16 @@ test('manual historical alerts render the original events with a fresh deadline 
     scan_at: '2026-09-30T01:00:00.000Z',
   })
   await commitAndPrepareAlerts(t, input)
-  const ingestion_id = await ingestionFor(t, input)
-  const prepared = await t.query(internal.products.discord.delivery.prepareIngestion, {
-    ingestion_id,
+  const registration_id = await registrationFor(t, input)
+  const prepared = await t.query(internal.products.discord.delivery.prepareRegistration, {
+    registration_id,
   })
   const originalJobs = await jobs(t)
-  const originalState = await ingestionState(t)
+  const originalState = await registrationState(t)
 
   for (let iteration = 1; iteration <= 2; iteration += 1) {
-    const result = await t.mutation(internal.products.discord.delivery.sendIngestion, {
-      ingestion_id,
+    const result = await t.mutation(internal.products.discord.delivery.sendRegistration, {
+      registration_id,
     })
     const queued = await jobs(t)
     const manualJobs = queued.filter((job) => result.jobIds.includes(job._id))
@@ -435,7 +440,7 @@ test('manual historical alerts render the original events with a fresh deadline 
     expect(
       queued.filter((job) => originalJobs.some((original) => original._id === job._id)),
     ).toEqual(originalJobs)
-    expect(await ingestionState(t)).toEqual(originalState)
+    expect(await registrationState(t)).toEqual(originalState)
   }
 })
 
@@ -447,8 +452,8 @@ test('manual alerts send while automatic ingestion alerts are disabled', async (
   await commitAndPrepareAlerts(t, input)
   expect(await jobs(t)).toEqual([])
 
-  const result = await t.mutation(internal.products.discord.delivery.sendIngestion, {
-    ingestion_id: await ingestionFor(t, input),
+  const result = await t.mutation(internal.products.discord.delivery.sendRegistration, {
+    registration_id: await registrationFor(t, input),
   })
 
   expect(result.jobIds).toHaveLength(1)
@@ -456,31 +461,35 @@ test('manual alerts send while automatic ingestion alerts are disabled', async (
   expect(await jobs(t)).toHaveLength(1)
 })
 
-for (const scenario of ['pending stages', 'missing ingestion'] as const) {
+for (const scenario of ['pending processes', 'missing registration'] as const) {
   test(`manual alerts reject ${scenario} without creating jobs`, async () => {
     const t = setup()
     await registerWebhook(t, 'first')
     const input = await pendingCommit(t)
-    const ingestion_id = await ingestionFor(t, input)
+    const registration_id = await registrationFor(t, input)
 
-    if (scenario === 'missing ingestion') {
+    if (scenario === 'missing registration') {
       await t.run(async (ctx) => {
-        await ctx.db.delete(ingestion_id)
+        await ctx.db.delete(registration_id)
       })
     }
-    const before = await ingestionState(t)
+    const before = await registrationState(t)
 
     await rejects(
-      t.mutation(internal.products.discord.delivery.sendIngestion, { ingestion_id }),
-      /ingestion|events|complete/i,
+      t.mutation(internal.products.discord.delivery.sendRegistration, { registration_id }),
+      scenario === 'missing registration'
+        ? /Registration not found/
+        : /Registration must be complete/,
     )
     await rejects(
-      t.query(internal.products.discord.delivery.prepareIngestion, { ingestion_id }),
-      /ingestion|events|complete/i,
+      t.query(internal.products.discord.delivery.prepareRegistration, { registration_id }),
+      scenario === 'missing registration'
+        ? /Registration not found/
+        : /Registration must be complete/,
     )
 
     expect(await jobs(t)).toEqual([])
-    expect(await ingestionState(t)).toEqual(before)
+    expect(await registrationState(t)).toEqual(before)
   })
 }
 
@@ -498,10 +507,10 @@ for (const scenario of ['filtered', 'empty', 'no webhooks'] as const) {
       input.rows = []
     }
     await commitAndPrepareAlerts(t, input)
-    const before = await ingestionState(t)
-    const ingestion_id = await ingestionFor(t, input)
-    const prepared = await t.query(internal.products.discord.delivery.prepareIngestion, {
-      ingestion_id,
+    const before = await registrationState(t)
+    const registration_id = await registrationFor(t, input)
+    const prepared = await t.query(internal.products.discord.delivery.prepareRegistration, {
+      registration_id,
     })
 
     expect(prepared.scan_at).toBe(input.scan_at)
@@ -512,16 +521,16 @@ for (const scenario of ['filtered', 'empty', 'no webhooks'] as const) {
         : [],
     )
     expect(await jobs(t)).toEqual([])
-    expect(await ingestionState(t)).toEqual(before)
+    expect(await registrationState(t)).toEqual(before)
 
-    const result = await t.mutation(internal.products.discord.delivery.sendIngestion, {
-      ingestion_id,
+    const result = await t.mutation(internal.products.discord.delivery.sendRegistration, {
+      registration_id,
     })
 
     expect(result.jobIds).toEqual([])
     expect(result.messageCount).toBe(scenario === 'no webhooks' ? 1 : 0)
     expect(await jobs(t)).toEqual([])
-    expect(await ingestionState(t)).toEqual(before)
+    expect(await registrationState(t)).toEqual(before)
   })
 }
 
@@ -529,44 +538,44 @@ test('automatic preparation waits for every projection and is scheduled once whe
   const t = setup()
   const input = await pendingCommit(t)
   await t.run(async (ctx) => {
-    await ctx.db.patch(input.ingestion_id, {
+    await ctx.db.patch(input.registration_id, {
       progress: {
         kind: 'pending',
-        completed: ingestKeys.filter((key) => key !== 'events' && key !== 'observations'),
+        completed: ingestionProcesses.filter((key) => key !== 'events' && key !== 'observations'),
       },
     })
   })
   await t.mutation(internal.ingestion.events.write, {
-    ingestion_id: input.ingestion_id,
+    registration_id: input.registration_id,
     rows: input.rows,
   })
   expect(
     await t.run(async (ctx) => await ctx.db.system.query('_scheduled_functions').collect()),
   ).toEqual([])
   await rejects(
-    t.query(internal.products.discord.delivery.prepareIngestion, {
-      ingestion_id: input.ingestion_id,
+    t.query(internal.products.discord.delivery.prepareRegistration, {
+      registration_id: input.registration_id,
     }),
     /complete/,
   )
 
   await t.mutation(internal.ingestion.observations.write, {
-    ingestion_id: input.ingestion_id,
+    registration_id: input.registration_id,
     rows: [],
   })
   const scheduled = await t.run(
     async (ctx) => await ctx.db.system.query('_scheduled_functions').collect(),
   )
   expect(scheduled.map((row) => row.name).toSorted()).toEqual([
-    'ingestion/run:enqueueNextInput',
-    'products/discord/delivery:sendIngestionAlerts',
+    'ingestion/register:next',
+    'products/discord/delivery:sendRegistrationAlerts',
   ])
   await t.mutation(internal.ingestion.events.write, {
-    ingestion_id: input.ingestion_id,
+    registration_id: input.registration_id,
     rows: input.rows,
   })
   await t.mutation(internal.ingestion.observations.write, {
-    ingestion_id: input.ingestion_id,
+    registration_id: input.registration_id,
     rows: [],
   })
   expect(

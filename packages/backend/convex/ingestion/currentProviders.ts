@@ -3,20 +3,21 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import type { ScannedProvider, ScanPair } from '#scanNew/model'
+import type { ExtractedProvider } from '#scans/extraction'
 
 import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from '../catalog/tables/current'
 import type { CurrentProviderRow } from '../catalog/tables/current'
 import { compare } from '../compare'
+import type { ScanPair } from './input'
 import { providerEntity } from './lenses'
-import { commitStage } from './progress'
-import type { InputId } from './table'
-import { ingestionId } from './table'
+import { commitProcess } from './progress'
+import type { RegistrationId } from './table'
+import { registrationId } from './table'
 
 export async function ingest(
   ctx: ActionCtx,
   { previous, next }: ScanPair,
-  ingestion_id: InputId,
+  registration_id: RegistrationId,
 ): Promise<void> {
   const rows: Omit<CurrentProviderRow, 'first_scan_at'>[] = []
 
@@ -36,17 +37,17 @@ export async function ingest(
     rows.push({ ...facts, scan_at: next.scan_at, metadata_json: JSON.stringify(metadata) })
   }
 
-  await ctx.runMutation(internal.ingestion.currentProviders.write, { ingestion_id, rows })
+  await ctx.runMutation(internal.ingestion.currentProviders.write, { registration_id, rows })
 }
 
 export const write = internalMutation({
   args: {
-    ingestion_id: ingestionId,
+    registration_id: registrationId,
     rows: v.array(currentProvidersTable.validator.omit('first_scan_at')),
   },
   returns: v.null(),
-  handler: async (ctx, { rows, ingestion_id }) => {
-    await commitStage(ctx, ingestion_id, 'currentProviders', async () => {
+  handler: async (ctx, { rows, registration_id }) => {
+    await commitProcess(ctx, registration_id, 'currentProviders', async () => {
       for (const row of rows) {
         const existing = await ctx.db
           .query(CURRENT_PROVIDERS_TABLE)
@@ -88,7 +89,7 @@ const omittedMetadataKeys = new Set([
   'icon',
 ])
 
-export function currentProvider(provider: ScannedProvider) {
+export function currentProvider(provider: ExtractedProvider) {
   const { metadata, ...fields } = providerEntity(provider)
 
   return {

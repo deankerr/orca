@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
-import { INGESTIONS_TABLE } from './ingestion/table'
+import { REGISTRATIONS_TABLE } from './ingestion/table'
 
 /** Preview bootstrap: seed two days of history, or resume an existing timeline. */
 const init = internalMutation({
@@ -11,13 +11,13 @@ const init = internalMutation({
   returns: v.null(),
   handler: async (ctx) => {
     const latest = await ctx.db
-      .query(INGESTIONS_TABLE)
+      .query(REGISTRATIONS_TABLE)
       .withIndex('by_scan_at')
       .order('desc')
       .first()
     await ctx.scheduler.runAfter(
       0,
-      internal.ingestion.run.enqueueNextInput,
+      internal.ingestion.register.next,
       latest === null ? { start_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } : {},
     )
     return null

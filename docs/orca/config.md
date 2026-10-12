@@ -69,15 +69,15 @@ missing/`false` disables it.
 Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
 `packages/backend/convex/products/discord/delivery.ts`. Automatic deadlines use
 `scan_at`; scans already outside that window submit no automatic jobs. Manual
-`sendIngestion` deadlines use invocation time.
+`sendRegistration` deadlines use invocation time.
 
-Projection ingestion uses a dedicated `ingestionPool` with worker concurrency **4** and automatic
-action retries using Workpool's defaults. Each worker runs all unfinished stages concurrently.
+Ingestion uses a dedicated `ingestionPool` with worker concurrency **4** and automatic
+action retries using Workpool's defaults. Each worker runs all unfinished ingestion processes concurrently.
 Repeated triggers can enqueue overlapping attempts at the same input; committed stage progress
 prevents duplicate output. A **five-minute** recovery cron requeues already registered unfinished
-inputs independently of the ingestion cron switch. Manual `ingestion/run:enqueueNextInput` starts
+inputs independently of the ingestion cron switch. Manual `ingestion/register:next` starts
 the timeline, and input completion schedules discovery of its next input. Hourly discovery runs
-at minute **43** through `ingestion/run:scheduled`, admitting work only when
+at minute **43** through `ingestion/register:scheduled`, admitting work only when
 `ORCA_INGESTION_CRON_ENABLED` is `true`; manual invocations and continuations bypass that flag.
 
 Preview `init` bootstraps the projection timeline from the first capture at or after

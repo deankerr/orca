@@ -4,41 +4,41 @@ import { internal } from '#generated/api'
 import { env } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE, ingestKeys } from './table'
-import type { IngestKey, InputId } from './table'
+import { REGISTRATIONS_TABLE, ingestionProcesses } from './table'
+import type { IngestionProcess, RegistrationId } from './table'
 
 /** Output, progress and the final continuation commit in the same transaction. */
-export async function commitStage(
+export async function commitProcess(
   ctx: MutationCtx,
-  inputId: InputId,
-  key: IngestKey,
+  registrationId: RegistrationId,
+  key: IngestionProcess,
   write: () => Promise<void>,
 ): Promise<void> {
-  const input = await ctx.db.get(INGESTIONS_TABLE, inputId)
+  const registration = await ctx.db.get(REGISTRATIONS_TABLE, registrationId)
 
-  if (input === null) {
-    throw new ConvexError({ message: 'Source input is not registered', ingestion_id: inputId })
+  if (registration === null) {
+    throw new ConvexError({ message: 'Registration not found', registration_id: registrationId })
   }
 
-  if (input.progress.kind === 'complete' || input.progress.completed.includes(key)) {
+  if (registration.progress.kind === 'complete' || registration.progress.completed.includes(key)) {
     return
   }
 
   await write()
 
-  const completed = [...input.progress.completed, key]
-  const isComplete = ingestKeys.every((stage) => completed.includes(stage))
+  const completed = [...registration.progress.completed, key]
+  const isComplete = ingestionProcesses.every((process) => completed.includes(process))
 
-  await ctx.db.patch(INGESTIONS_TABLE, inputId, {
+  await ctx.db.patch(REGISTRATIONS_TABLE, registrationId, {
     progress: isComplete ? { kind: 'complete' } : { kind: 'pending', completed },
   })
 
   if (isComplete) {
-    if (input.from_scan_at !== null && env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true') {
-      await ctx.scheduler.runAfter(0, internal.products.discord.delivery.sendIngestionAlerts, {
-        ingestion_id: inputId,
+    if (registration.from_scan_at !== null && env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.products.discord.delivery.sendRegistrationAlerts, {
+        registration_id: registrationId,
       })
     }
-    await ctx.scheduler.runAfter(0, internal.ingestion.run.enqueueNextInput, {})
+    await ctx.scheduler.runAfter(0, internal.ingestion.register.next, {})
   }
 }

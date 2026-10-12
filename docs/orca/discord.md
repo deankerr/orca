@@ -3,11 +3,11 @@
 ## Admission and routing
 
 `ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules preparation atomically with completion of all
-projection stages. Preparation reads the completed scan's Events and observations, applies alert
+ingestion processes. Preparation reads the completed scan's Events and observations, applies alert
 interpretation, and submits an ordered batch to the sender's `ingestion` topic.
 
 Retries cannot schedule another preparation after completion. Preparation and submission run
-separately from ingestion; failures leave Catalog facts intact. Use `sendIngestion` for an
+separately from ingestion; failures leave Catalog facts intact. Use `sendRegistration` for an
 intentional send after fixing a preparation failure. The legacy ingestion path does not send alerts.
 
 The switch is checked before scheduling and again when preparation starts. Already submitted
@@ -29,13 +29,13 @@ bunx convex run api:listWebhooks '{}' --component discordSender --deployment <de
 
 For development, use the worktree's deployment and private development webhooks.
 
-## Prepare and send an ingestion
+## Prepare and send alerts for a registration
 
-To prepare one completed ingestion with current filtering and card rendering,
+To prepare alerts for one completed registration with current filtering and card rendering,
 without enqueueing or sending anything:
 
 ```sh
-bunx convex run products/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:prepareRegistration '{"registration_id":"<registration-id>"}' --deployment <deployment>
 ```
 
 The query returns `scan_at`, ordered `messages` (each with a stable `key`,
@@ -43,10 +43,10 @@ serialized JSON `payload`, and `source_ids` referencing Catalog Events or observ
 filtering reasons. It uses current rendering and available history, regardless of
 auto-send, observation age or registered webhooks.
 
-To manually send that ingestion:
+To manually send those alerts:
 
 ```sh
-bunx convex run products/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:sendRegistration '{"registration_id":"<registration-id>"}' --deployment <deployment>
 ```
 
 Each invocation intentionally sends again to eligible `ingestion` subscribers,
@@ -54,7 +54,7 @@ with a fresh deadline based on the configured age limit. Cards and filtering
 retain the original observation time. The command works with auto-send disabled
 and returns `jobIds` and `messageCount`; a positive count with no jobs means there
 were rendered messages but no eligible subscribers. Both operator commands require
-a completed `scan_ingestions` record. Baselines render no messages.
+a completed `scan_registrations` record. Baselines render no messages.
 
 ## Inspect delivered output
 
@@ -69,7 +69,7 @@ bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender
 ```
 
 If `hasMore` is true, narrow the discovery window. Use stored jobs and results for
-historical evidence; `prepareIngestion` rerenders with current code and history.
+historical evidence; `prepareRegistration` rerenders with current code and history.
 
 ## Presentation
 

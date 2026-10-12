@@ -3,7 +3,7 @@ import type { QueryCtx } from '#generated/server'
 import { EVENTS_TABLE } from '../../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../../catalog/tables/observations'
 import type { ObservationRow } from '../../../catalog/tables/observations'
-import { INGESTIONS_TABLE } from '../../../ingestion/table'
+import { REGISTRATIONS_TABLE } from '../../../ingestion/table'
 import type { EntityAlert } from './curate'
 import { interpretEvent } from './prepare'
 import type { AlertSource } from './read'
@@ -59,7 +59,7 @@ export async function interpret(ctx: QueryCtx, source: AlertSource): Promise<Ent
   }
 
   const ingestion = await ctx.db
-    .query(INGESTIONS_TABLE)
+    .query(REGISTRATIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', scan_at))
     .unique()
 

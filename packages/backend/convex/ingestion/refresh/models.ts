@@ -4,7 +4,7 @@ import type { Infer } from 'convex/values'
 import { internal } from '#generated/api'
 import type { ActionCtx } from '#generated/server'
 import { internalMutation, internalQuery } from '#generated/server'
-import * as scans from '#scanNew'
+import * as scans from '#scans'
 
 import { CURRENT_MODELS_TABLE } from '../../catalog/tables/current'
 import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
@@ -62,7 +62,7 @@ export async function refresh(ctx: ActionCtx, model_id: string): Promise<Refresh
     model_id,
   })
 
-  const scan = await scans.reader(ctx).loadScan(before.source.scan_at)
+  const scan = await scans.load(ctx, before.source.scan_at)
   const observed = scan.models.get(model_id)
 
   if (observed === undefined) {

@@ -1,17 +1,15 @@
 import { z } from 'zod'
 
-import { ScannedEndpoint, ScannedModel, ScannedProvider } from '#scanNew/model'
+import { ExtractedEndpoint } from '#scans/extraction'
+import type { ExtractedModel, ExtractedProvider } from '#scans/extraction'
 
 import type { Endpoint, Model, Provider } from '../catalog/entities'
 import type { Pricing } from '../catalog/pricing'
-import { isoDate } from '../fields'
 
-const ModelInput = ScannedModel.extend({ short_name: z.string(), created_at: isoDate })
-const ProviderInput = ScannedProvider.extend({ displayName: z.string() })
-const EndpointInput = ScannedEndpoint.extend({ provider_display_name: z.string() })
+const EndpointInput = ExtractedEndpoint.extend({ provider_display_name: z.string() })
 
 /** Shared entity fields and unfiltered metadata; each consumer owns its retention policy. */
-export function modelEntity(model: ScannedModel): z.infer<typeof Model> {
+export function modelEntity(model: ExtractedModel): z.infer<typeof Model> {
   const {
     id,
     slug,
@@ -22,7 +20,7 @@ export function modelEntity(model: ScannedModel): z.infer<typeof Model> {
     input_modalities,
     output_modalities,
     ...metadata
-  } = ModelInput.parse(model)
+  } = model
 
   return {
     model_id: id,
@@ -31,18 +29,18 @@ export function modelEntity(model: ScannedModel): z.infer<typeof Model> {
     variant,
     display_name: short_name,
     or_created_at: created_at,
-    input_modalities: input_modalities.toSorted(),
-    output_modalities: output_modalities.toSorted(),
+    input_modalities,
+    output_modalities,
     metadata,
   }
 }
 
-export function providerEntity(provider: ScannedProvider): z.infer<typeof Provider> {
-  const { provider_id, displayName, ...metadata } = ProviderInput.parse(provider)
+export function providerEntity(provider: ExtractedProvider): z.infer<typeof Provider> {
+  const { provider_id, displayName, ...metadata } = provider
   return { provider_id, display_name: displayName, metadata }
 }
 
-export function endpointEntity(endpoint: ScannedEndpoint): z.infer<typeof Endpoint> {
+export function endpointEntity(endpoint: ExtractedEndpoint): z.infer<typeof Endpoint> {
   const {
     id,
     model_id,
@@ -84,7 +82,7 @@ const PricingInput = z
   .catchall(z.json())
 
 /** Complete observed quote shared by current endpoints, pricing history, and Events. */
-export function endpointPricing(value: ScannedEndpoint['pricing']): z.infer<typeof Pricing> {
+export function endpointPricing(value: ExtractedEndpoint['pricing']): z.infer<typeof Pricing> {
   const { discount, overrides, display_pricing: _display, ...source } = PricingInput.parse(value)
   const meters = Object.fromEntries(
     Object.entries(source).filter(

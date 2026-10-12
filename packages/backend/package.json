@@ -5,11 +5,10 @@
   "imports": {
     "#generated/*": "./convex/_generated/*.js",
     "#objects": "./convex/objects/storage.ts",
-    "#scan": "./convex/scan/access.ts",
-    "#scan/collection": "./convex/scan/collected.ts",
-    "#scan/model": "./convex/scan/model.ts",
-    "#scanNew": "./convex/scanNew/access.ts",
-    "#scanNew/model": "./convex/scanNew/model.ts"
+    "#scans": "./convex/scans/access.ts",
+    "#scans/collection": "./convex/scans/collected.ts",
+    "#scans/extraction": "./convex/scans/extraction/schema.ts",
+    "#scans/extract": "./convex/scans/extraction/extract.ts"
   },
   "exports": {
     "./api": "./convex/_generated/api.js",
@@ -21,8 +20,8 @@
     "./alerts/pricing": "./convex/products/shared/alerts/pricing.ts",
     "./monitor": "./convex/products/monitor/query.ts",
     "./public-api/v2/schema": "./convex/public_api/v2/schema.ts",
-    "./scan/collection": "./convex/scan/collected.ts",
-    "./scan/analysis": "./convex/scan_analysis/profile.ts"
+    "./scans/collection": "./convex/scans/collected.ts",
+    "./scans/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
     "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev"

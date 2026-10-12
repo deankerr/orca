@@ -4,33 +4,33 @@ import { components } from '#generated/api'
 import { env, internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE } from '../../ingestion/table'
-import { renderIngestion } from './render'
+import { REGISTRATIONS_TABLE } from '../../ingestion/table'
+import { renderRegistration } from './render'
 
 const ALERT_MAX_AGE_MS = 60 * 60 * 1000
 
 /** Scheduled after ingestion completion; preparation failures leave source events intact. */
-export const sendIngestionAlerts = internalMutation({
-  args: { ingestion_id: v.id(INGESTIONS_TABLE) },
+export const sendRegistrationAlerts = internalMutation({
+  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
   returns: v.null(),
-  handler: async (ctx, { ingestion_id }) => {
+  handler: async (ctx, { registration_id }) => {
     if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
       return null
     }
 
-    const input = await ctx.db.get(INGESTIONS_TABLE, ingestion_id)
+    const registration = await ctx.db.get(REGISTRATIONS_TABLE, registration_id)
     if (
-      input === null ||
-      input.from_scan_at === null ||
-      Date.parse(input.scan_at) + ALERT_MAX_AGE_MS <= Date.now()
+      registration === null ||
+      registration.from_scan_at === null ||
+      Date.parse(registration.scan_at) + ALERT_MAX_AGE_MS <= Date.now()
     ) {
       return null
     }
-    const rendered = await renderIngestion(ctx, ingestion_id)
+    const rendered = await renderRegistration(ctx, registration_id)
 
     // Rendering and fan-out share this alert transaction, independently of the
-    // completed ingestion. Backfills retain their original source-time deadline.
-    await submitIngestionAlerts(ctx, {
+    // completed registration. Backfills retain their original source-time deadline.
+    await submitAlerts(ctx, {
       messages: rendered.messages,
       key: `ingestion:${rendered.scan_at}`,
       expiresAt: Date.parse(rendered.scan_at) + ALERT_MAX_AGE_MS,
@@ -40,8 +40,8 @@ export const sendIngestionAlerts = internalMutation({
 })
 
 /** Read-only operator preview: current cards and filtering, without sender admission. */
-export const prepareIngestion = internalQuery({
-  args: { ingestion_id: v.id(INGESTIONS_TABLE) },
+export const prepareRegistration = internalQuery({
+  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
   returns: v.object({
     scan_at: v.string(),
     messages: v.array(
@@ -54,21 +54,21 @@ export const prepareIngestion = internalQuery({
       }),
     ),
   }),
-  handler: async (ctx, { ingestion_id }) => await renderIngestion(ctx, ingestion_id),
+  handler: async (ctx, { registration_id }) => await renderRegistration(ctx, registration_id),
 })
 
-/** Explicit operator send: rerender one completed ingestion with a fresh delivery window. */
-export const sendIngestion = internalMutation({
-  args: { ingestion_id: v.id(INGESTIONS_TABLE) },
+/** Explicit operator send: rerender one completed registration with a fresh delivery window. */
+export const sendRegistration = internalMutation({
+  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
   returns: v.object({ jobIds: v.array(v.string()), messageCount: v.number() }),
-  handler: async (ctx, { ingestion_id }) => {
-    const rendered = await renderIngestion(ctx, ingestion_id)
+  handler: async (ctx, { registration_id }) => {
+    const rendered = await renderRegistration(ctx, registration_id)
 
-    // Each invocation is an intentional new send, even if this ingestion was sent
+    // Each invocation is an intentional new send, even if this registration was sent
     // already. Convex keeps Math.random stable across transaction retries. No old
     // job, receipt, event or processor work is changed to make repetition possible.
     const run = `${Math.random().toString(36).slice(2)}:${Math.random().toString(36).slice(2)}`
-    const jobIds = await submitIngestionAlerts(ctx, {
+    const jobIds = await submitAlerts(ctx, {
       messages: rendered.messages,
       key: `manual-ingestion:${rendered.scan_at}:${run}`,
       expiresAt: Date.now() + ALERT_MAX_AGE_MS,
@@ -78,7 +78,7 @@ export const sendIngestion = internalMutation({
   },
 })
 
-async function submitIngestionAlerts(
+async function submitAlerts(
   ctx: MutationCtx,
   input: {
     messages: { key: string; payload: string }[]

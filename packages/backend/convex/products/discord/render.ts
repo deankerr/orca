@@ -8,7 +8,7 @@ import type { QueryCtx } from '#generated/server'
 
 import { EVENTS_TABLE } from '../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
-import { INGESTIONS_TABLE } from '../../ingestion/table'
+import { REGISTRATIONS_TABLE } from '../../ingestion/table'
 import { interpret } from '../shared/alerts/interpret'
 import { selectDefault } from '../shared/alerts/prepare'
 import type { AlertSource } from '../shared/alerts/read'
@@ -31,33 +31,36 @@ export function contentKey(value: unknown): string {
 }
 
 /** Preparation and manual sending read the same complete observation. */
-export async function renderIngestion(ctx: QueryCtx, ingestionId: Id<typeof INGESTIONS_TABLE>) {
-  const ingestion = await ctx.db.get(INGESTIONS_TABLE, ingestionId)
+export async function renderRegistration(
+  ctx: QueryCtx,
+  registrationId: Id<typeof REGISTRATIONS_TABLE>,
+) {
+  const registration = await ctx.db.get(REGISTRATIONS_TABLE, registrationId)
 
-  if (ingestion === null) {
-    throw new ConvexError('Ingestion not found')
+  if (registration === null) {
+    throw new ConvexError('Registration not found')
   }
 
-  if (ingestion.progress.kind !== 'complete') {
-    throw new ConvexError('Ingestion must be complete before preparing alerts')
+  if (registration.progress.kind !== 'complete') {
+    throw new ConvexError('Registration must be complete before preparing alerts')
   }
 
-  if (ingestion.from_scan_at === null) {
-    return { scan_at: ingestion.scan_at, messages: [], skippedEvents: [] }
+  if (registration.from_scan_at === null) {
+    return { scan_at: registration.scan_at, messages: [], skippedEvents: [] }
   }
 
   // Filtering and batching must not depend on a caller-selected event subset.
   // Keep the original observation time even when previewing historical data.
   const rows = await ctx.db
     .query(EVENTS_TABLE)
-    .withIndex('by_scan_at', (q) => q.eq('scan_at', ingestion.scan_at))
+    .withIndex('by_scan_at', (q) => q.eq('scan_at', registration.scan_at))
     .collect()
 
   const observations = await ctx.db
     .query(OBSERVATIONS_TABLE)
-    .withIndex('by_scan_at', (q) => q.eq('scan_at', ingestion.scan_at))
+    .withIndex('by_scan_at', (q) => q.eq('scan_at', registration.scan_at))
     .collect()
-  return { scan_at: ingestion.scan_at, ...(await renderRows(ctx, [...rows, ...observations])) }
+  return { scan_at: registration.scan_at, ...(await renderRows(ctx, [...rows, ...observations])) }
 }
 
 export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {

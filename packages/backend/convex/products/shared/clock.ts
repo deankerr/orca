@@ -3,12 +3,12 @@ import { v } from 'convex/values'
 import { query } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
-import { INGESTIONS_TABLE } from '../../ingestion/table'
+import { REGISTRATIONS_TABLE } from '../../ingestion/table'
 
 /** Product observation clock: latest completed scan time, or null before the first ingestion. */
 export async function clock(ctx: QueryCtx): Promise<string | null> {
   const latest = await ctx.db
-    .query(INGESTIONS_TABLE)
+    .query(REGISTRATIONS_TABLE)
     .withIndex('by_progress_kind_and_scan_at', (q) => q.eq('progress.kind', 'complete'))
     .order('desc')
     .first()

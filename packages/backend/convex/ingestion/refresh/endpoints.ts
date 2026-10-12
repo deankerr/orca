@@ -4,7 +4,7 @@ import type { Infer } from 'convex/values'
 import { internal } from '#generated/api'
 import type { ActionCtx } from '#generated/server'
 import { internalMutation, internalQuery } from '#generated/server'
-import * as scans from '#scanNew'
+import * as scans from '#scans'
 
 import { encodePricing } from '../../catalog/pricing'
 import { CURRENT_ENDPOINTS_TABLE } from '../../catalog/tables/current'
@@ -64,7 +64,7 @@ export async function refresh(ctx: ActionCtx, endpoint_id: string): Promise<Refr
     endpoint_id,
   })
 
-  const scan = await scans.reader(ctx).loadScan(before.source.scan_at)
+  const scan = await scans.load(ctx, before.source.scan_at)
   const observed = scan.endpoints.get(endpoint_id)
 
   if (observed === undefined) {
@@ -76,7 +76,7 @@ export async function refresh(ctx: ActionCtx, endpoint_id: string): Promise<Refr
     })
   }
 
-  const { metadata, pricing, ...fields } = currentEndpoint(observed.endpoint)
+  const { metadata, pricing, ...fields } = currentEndpoint(observed)
 
   const after = {
     ...fields,

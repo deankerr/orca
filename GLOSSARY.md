@@ -156,6 +156,14 @@ The process of deriving and retaining projections from source scans.
 The term describes an activity, without implying a single acceptance event or simultaneous completion of all projections.
 _Avoid_: An ingestion (when referring to a scan pair, its output, or its processing progress)
 
+**Scan registration**:
+The record of a scan accepted for ingestion, identifying its scan time and preceding scan where applicable.
+Its progress records which ingestion processes have completed.
+
+**Registration**:
+The acceptance and recording of a scan for ingestion.
+Registration fixes the selected scan times without implying that ingestion processes have completed.
+
 **Backfill**:
 The addition of projections from earlier source observations to extend retained history.
 Scan-pair projections can be produced in reverse chronological order while each pair retains its previous-to-next meaning.
@@ -169,8 +177,9 @@ The observation horizon used as ORCA's reference for current knowledge.
 It does not certify that every projection or product has progressed to that horizon.
 _Avoid_: Wall clock, latest collected scan time
 
-**Projection progress**:
-_replace this_
+**Ingestion process**:
+An operation that derives and retains a particular part of Catalog knowledge from selected scans.
+Completion includes retaining its results, even when there are no resulting changes.
 
 **Readiness**:
 A product's assessment that its required projections are sufficient for a chosen observation horizon.

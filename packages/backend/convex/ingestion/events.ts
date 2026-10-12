@@ -6,27 +6,31 @@ import type { IChange } from 'json-diff-ts'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import type { ScanPair } from '#scanNew/model'
 
 import { encodePricing } from '../catalog/pricing'
 import type { EventRow } from '../catalog/tables/events'
 import { EVENTS_TABLE, eventsTable } from '../catalog/tables/events'
 import { compare } from '../compare'
+import type { ScanPair } from './input'
 import { modelEntity, providerEntity, endpointEntity } from './lenses'
-import { commitStage } from './progress'
-import type { InputId } from './table'
-import { ingestionId } from './table'
+import { commitProcess } from './progress'
+import type { RegistrationId } from './table'
+import { registrationId } from './table'
 
-export async function ingest(ctx: ActionCtx, pair: ScanPair, ingestion_id: InputId): Promise<void> {
+export async function ingest(
+  ctx: ActionCtx,
+  pair: ScanPair,
+  registration_id: RegistrationId,
+): Promise<void> {
   const rows = pair.previous.scan_at === null ? [] : prepare(pair)
-  await ctx.runMutation(internal.ingestion.events.write, { ingestion_id, rows })
+  await ctx.runMutation(internal.ingestion.events.write, { registration_id, rows })
 }
 
 export const write = internalMutation({
-  args: { ingestion_id: ingestionId, rows: v.array(eventsTable.validator) },
+  args: { registration_id: registrationId, rows: v.array(eventsTable.validator) },
   returns: v.null(),
-  handler: async (ctx, { rows, ingestion_id }) => {
-    await commitStage(ctx, ingestion_id, 'events', async () => {
+  handler: async (ctx, { rows, registration_id }) => {
+    await commitProcess(ctx, registration_id, 'events', async () => {
       for (const row of rows) {
         await ctx.db.insert(EVENTS_TABLE, row)
       }
@@ -67,7 +71,7 @@ function eventEntities(scan: ScanPair['previous']) {
       [...scan.providers].map(([id, provider]) => [id, providerEntity(provider)]),
     ),
     endpoints: Object.fromEntries(
-      [...scan.endpoints].map(([id, { endpoint }]) => [id, endpointEntity(endpoint)]),
+      [...scan.endpoints].map(([id, endpoint]) => [id, endpointEntity(endpoint)]),
     ),
   }
 }

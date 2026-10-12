@@ -1,6 +1,6 @@
 import * as R from 'remeda'
 
-import type { RawScan, ScanEntry } from '#scan/collection'
+import type { RawScan, ScanEntry } from '#scans/collection'
 
 import { assembleProviders, providerId, ProviderInput } from './providers'
 import { ExtractedEndpoint, ExtractedModel } from './schema'

@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test'
+import { ok } from 'node:assert/strict'
 
 import { prepare } from '../ingestion/events'
 import { providerEntity } from '../ingestion/lenses'
-import { fromCollected as extract } from '../scanNew/extract'
 import type { RawScan } from './collected'
-import { fromCollected } from './model'
-import { assembleProviders, extractProvider, providerId } from './provider'
+import { extractScan as extract, extractScan as fromCollected } from './extraction/extract'
+import { assembleProviders, ProviderInput, providerId } from './extraction/providers'
 
 test('provider identity uses slash prefixes and explicit historical repairs, without names', () => {
   for (const [slug, id] of [
@@ -26,14 +26,16 @@ test('provider identity uses slash prefixes and explicit historical repairs, wit
   ]) {
     expect(providerId(slug)).toBe(id)
     expect(providerId(id)).toBe(id)
-    expect(extractProvider({ slug, displayName: 'Provider' }).provider).toEqual({
+    expect(
+      assembleProviders([ProviderInput.parse({ slug, displayName: 'Provider' })]).get(id),
+    ).toEqual({
       provider_id: id,
       displayName: 'Provider',
     })
   }
 })
 
-test('omits internal configuration and endpoint defaults while preserving unknown provider facts', () => {
+test('omits endpoint policy defaults while preserving other provider facts', () => {
   const input = {
     slug: 'provider',
     name: 'Provider',
@@ -73,9 +75,13 @@ test('omits internal configuration and endpoint defaults while preserving unknow
     },
   }
   const before = structuredClone(input)
-  const { provider } = extractProvider(input)
+  const provider = assembleProviders([ProviderInput.parse(input)]).get('provider')
+  ok(provider)
 
   expect(provider).toEqual({
+    ...Object.fromEntries(
+      Object.entries(input).filter(([key]) => key !== 'slug' && key !== 'dataPolicy'),
+    ),
     provider_id: 'provider',
     name: 'Provider',
     displayName: 'Provider',
@@ -93,16 +99,15 @@ test('omits internal configuration and endpoint defaults while preserving unknow
   })
   expect(providerEntity(provider).metadata).toHaveProperty('futureFact', input.futureFact)
   expect(input).toEqual(before)
-  expect(extractProvider({ slug: 'p', displayName: 'Provider' }).provider).not.toHaveProperty(
+  expect(ProviderInput.parse({ slug: 'p', displayName: 'Provider' })).not.toHaveProperty(
     'dataPolicy',
   )
   expect(
-    extractProvider({ slug: 'p', displayName: 'Provider', dataPolicy: null }).provider.dataPolicy,
-  ).toBeNull()
+    ProviderInput.parse({ slug: 'p', displayName: 'Provider', dataPolicy: null }),
+  ).toMatchObject({ dataPolicy: null })
   expect(
-    extractProvider({ slug: 'p', displayName: 'Provider', dataPolicy: { training: true } }).provider
-      .dataPolicy,
-  ).toEqual({})
+    ProviderInput.parse({ slug: 'p', displayName: 'Provider', dataPolicy: { training: true } }),
+  ).toHaveProperty('dataPolicy', {})
 })
 
 test('canonical observations outrank variants; name frequency and ties ignore input order', () => {
@@ -110,17 +115,17 @@ test('canonical observations outrank variants; name frequency and ties ignore in
     { slug: 'azure/eu', displayName: 'Azure EU', headquarters: 'EU' },
     { slug: 'azure/eu', displayName: 'Azure EU', headquarters: 'EU' },
     { slug: 'azure', displayName: 'Azure (BYOK Only)', headquarters: 'US' },
-    { slug: 'azure', displayName: 'Azure', headquarters: 'US', adapterName: 'A' },
-    { slug: 'azure', displayName: 'Azure', headquarters: 'US', adapterName: 'B' },
-  ].map((body, index) => ({ ...extractProvider(body), endpoint_id: String(index) }))
+    { slug: 'azure', displayName: 'Azure', headquarters: 'US' },
+    { slug: 'azure', displayName: 'Azure', headquarters: 'US' },
+  ].map((body) => ProviderInput.parse(body))
 
   const expected = { provider_id: 'azure', displayName: 'Azure', headquarters: 'US' }
   expect(assembleProviders(observations).get('azure')).toEqual(expected)
   expect(assembleProviders(observations.toReversed()).get('azure')).toEqual(expected)
 
   const fallback = [
-    { ...extractProvider({ slug: 'azure/us', displayName: 'Azure US' }), endpoint_id: 'a' },
-    { ...extractProvider({ slug: 'azure/eu', displayName: 'Azure EU' }), endpoint_id: 'z' },
+    ProviderInput.parse({ slug: 'azure/us', displayName: 'Azure US' }),
+    ProviderInput.parse({ slug: 'azure/eu', displayName: 'Azure EU' }),
   ]
   expect(assembleProviders(fallback).get('azure')).toEqual({
     provider_id: 'azure',
@@ -250,7 +255,11 @@ test('Claude on AWS repairs precede prefix grouping without merging its ordinary
     ]),
   )
 
-  expect([...scan.providers.keys()]).toEqual(['anthropic', 'amazon-bedrock', 'claude-on-aws'])
+  expect([...scan.providers.keys()].toSorted()).toEqual([
+    'amazon-bedrock',
+    'anthropic',
+    'claude-on-aws',
+  ])
   expect(scan.endpoints.size).toBe(6)
   expect(scan.endpoints.get('old-two')?.provider_id).toBe('claude-on-aws')
   expect(scan.endpoints.get('old-bedrock')?.provider_tag).toBe('amazon-bedrock/claude-on-aws')
@@ -290,7 +299,7 @@ test('ModelRun metadata transitions remain updates to one provider', () => {
   expect(providers[0]).toMatchObject({ entity_id: 'modelrun', type: 'UPDATE' })
   expect(providers[0].change_json).toContain('https://old.example/privacy')
   expect(providers[0].change_json).toContain('https://new.example/privacy')
-  expect(next.endpoints.get('modelrun-endpoint')?.endpoint.provider_id).toBe('modelrun')
+  expect(next.endpoints.get('modelrun-endpoint')?.provider_id).toBe('modelrun')
 })
 
 function captured(

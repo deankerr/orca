@@ -4,7 +4,7 @@ import { v } from 'convex/values'
 
 import type { Id } from '#generated/dataModel'
 
-export const ingestKeys = [
+export const ingestionProcesses = [
   'currentModels',
   'currentProviders',
   'currentEndpoints',
@@ -16,21 +16,21 @@ export const ingestKeys = [
   'events',
 ] as const
 
-export type IngestKey = (typeof ingestKeys)[number]
+export type IngestionProcess = (typeof ingestionProcesses)[number]
 
-export const INGESTIONS_TABLE = 'scan_ingestions' as const
-export const ingestionId = v.id(INGESTIONS_TABLE)
-export type InputId = Id<typeof INGESTIONS_TABLE>
+export const REGISTRATIONS_TABLE = 'scan_registrations' as const
+export const registrationId = v.id(REGISTRATIONS_TABLE)
+export type RegistrationId = Id<typeof REGISTRATIONS_TABLE>
 
-export const sourceInput = v.object({
+export const scanSelection = v.object({
   from_scan_at: v.union(v.string(), v.null()),
   scan_at: v.string(),
 })
 
-export const ingestionsTable = defineTable({
-  ...sourceInput.fields,
+export const registrationsTable = defineTable({
+  ...scanSelection.fields,
   progress: v.union(
-    v.object({ kind: v.literal('pending'), completed: v.array(literals(...ingestKeys)) }),
+    v.object({ kind: v.literal('pending'), completed: v.array(literals(...ingestionProcesses)) }),
     v.object({ kind: v.literal('complete') }),
   ),
 })

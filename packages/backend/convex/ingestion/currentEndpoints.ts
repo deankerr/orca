@@ -3,31 +3,32 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import type { ScannedEndpoint, ScanPair } from '#scanNew/model'
+import type { ExtractedEndpoint } from '#scans/extraction'
 
 import { encodePricing } from '../catalog/pricing'
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../catalog/tables/current'
 import type { CurrentEndpointRow } from '../catalog/tables/current'
 import { compare } from '../compare'
+import type { ScanPair } from './input'
 import { endpointEntity } from './lenses'
-import { commitStage } from './progress'
-import type { InputId } from './table'
-import { ingestionId } from './table'
+import { commitProcess } from './progress'
+import type { RegistrationId } from './table'
+import { registrationId } from './table'
 
 export async function ingest(
   ctx: ActionCtx,
   { previous, next }: ScanPair,
-  ingestion_id: InputId,
+  registration_id: RegistrationId,
 ): Promise<void> {
   const rows: Omit<CurrentEndpointRow, 'first_scan_at'>[] = []
 
-  for (const [id, { endpoint }] of next.endpoints) {
+  for (const [id, endpoint] of next.endpoints) {
     const previousEndpoint = previous.endpoints.get(id)
     const after = currentEndpoint(endpoint)
 
     if (
       previousEndpoint !== undefined &&
-      compare(currentEndpoint(previousEndpoint.endpoint), after).length === 0
+      compare(currentEndpoint(previousEndpoint), after).length === 0
     ) {
       continue
     }
@@ -43,7 +44,7 @@ export async function ingest(
   }
 
   if (previous.scan_at !== null) {
-    for (const [id, { endpoint }] of previous.endpoints) {
+    for (const [id, endpoint] of previous.endpoints) {
       if (next.endpoints.has(id)) {
         continue
       }
@@ -60,17 +61,17 @@ export async function ingest(
     }
   }
 
-  await ctx.runMutation(internal.ingestion.currentEndpoints.write, { ingestion_id, rows })
+  await ctx.runMutation(internal.ingestion.currentEndpoints.write, { registration_id, rows })
 }
 
 export const write = internalMutation({
   args: {
-    ingestion_id: ingestionId,
+    registration_id: registrationId,
     rows: v.array(currentEndpointsTable.validator.omit('first_scan_at')),
   },
   returns: v.null(),
-  handler: async (ctx, { rows, ingestion_id }) => {
-    await commitStage(ctx, ingestion_id, 'currentEndpoints', async () => {
+  handler: async (ctx, { rows, registration_id }) => {
+    await commitProcess(ctx, registration_id, 'currentEndpoints', async () => {
       for (const row of rows) {
         const existing = await ctx.db
           .query(CURRENT_ENDPOINTS_TABLE)
@@ -128,7 +129,7 @@ const omittedMetadataKeys = new Set([
   'supports_tool_parameters',
 ])
 
-export function currentEndpoint(endpoint: ScannedEndpoint) {
+export function currentEndpoint(endpoint: ExtractedEndpoint) {
   const { metadata, ...fields } = endpointEntity(endpoint)
 
   return {

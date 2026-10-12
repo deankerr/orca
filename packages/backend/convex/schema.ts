@@ -15,7 +15,7 @@ import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './catalog/tables
 import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observations'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
-import { INGESTIONS_TABLE, ingestionsTable } from './ingestion/table'
+import { REGISTRATIONS_TABLE, registrationsTable } from './ingestion/table'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v2/table'
@@ -36,7 +36,7 @@ export default defineSchema(
     [ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [EVENTS_TABLE]: eventsTable,
 
-    [INGESTIONS_TABLE]: ingestionsTable,
+    [REGISTRATIONS_TABLE]: registrationsTable,
   },
   {
     strictTableNameTypes: true,

@@ -2,12 +2,13 @@ import { expect, spyOn, test } from 'bun:test'
 
 import type { PaginationResult } from 'convex/server'
 
+import { extractScan as fromCollected } from '#scans/extract'
+
 import { encodePricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
 import { prepare } from '../../../ingestion/events'
 import type { JsonValue } from '../../../json'
-import { fromCollected } from '../../../scanNew/extract'
 import { prepareBatch as prepareDiscordBatch } from '../../discord/prepare'
 import type { DiscordUrls } from '../../discord/renderers/card'
 import { renderDiscordBatch } from '../../discord/renderers/index'
@@ -445,7 +446,7 @@ test('lifecycle values for all entity kinds use native keys and captured context
 
   const scheduled = structuredClone(present)
 
-  for (const { endpoint } of scheduled.endpoints.values()) {
+  for (const endpoint of scheduled.endpoints.values()) {
     endpoint.pricing = {
       discount: 0,
       prompt: '0.0000001',

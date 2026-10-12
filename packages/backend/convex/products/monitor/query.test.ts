@@ -17,14 +17,14 @@ const modules = Object.fromEntries(
 const scan_at = '2026-10-10T00:00:00.000Z'
 const paginationOpts = { numItems: 100, cursor: null }
 
-test('Monitor and Feed return empty pages before the first completed ingestion', async () => {
+test('Monitor and Feed return empty pages before the first completed registration', async () => {
   const t = convexTest({ schema, modules })
   const empty = { page: [], isDone: true, continueCursor: '' }
 
   for (const pending of [false, true]) {
     if (pending) {
       await t.run(async (ctx) => {
-        await ctx.db.insert('scan_ingestions', {
+        await ctx.db.insert('scan_registrations', {
           from_scan_at: null,
           scan_at,
           progress: { kind: 'pending', completed: [] },
@@ -42,7 +42,7 @@ test('Monitor and Feed return empty pages before the first completed ingestion',
 test('Monitor scopes use captured relationships and exclude incomplete scans', async () => {
   const t = convexTest({ schema, modules })
   await t.run(async (ctx) => {
-    await ctx.db.insert('scan_ingestions', {
+    await ctx.db.insert('scan_registrations', {
       from_scan_at: null,
       scan_at,
       progress: { kind: 'complete' },

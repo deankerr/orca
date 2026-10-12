@@ -5,7 +5,7 @@ import type { QueryCtx } from '#generated/server'
 
 import { compare } from '../../compare'
 import type { JsonValue } from '../../json'
-import { INGESTIONS_TABLE } from '../table'
+import { REGISTRATIONS_TABLE } from '../table'
 
 export const source = v.object({
   scan_at: v.string(),
@@ -25,13 +25,13 @@ export async function completedCutoff(
   row: { scan_at: string; unlisted_at?: string },
 ) {
   const complete = await ctx.db
-    .query(INGESTIONS_TABLE)
+    .query(REGISTRATIONS_TABLE)
     .withIndex('by_progress_kind_and_scan_at', (q) => q.eq('progress.kind', 'complete'))
     .order('desc')
     .first()
 
   if (complete === null) {
-    throw new ConvexError('Current view refresh requires a completed input')
+    throw new ConvexError('Current view refresh requires a completed registration')
   }
 
   if (row.scan_at > complete.scan_at || (row.unlisted_at ?? '') > complete.scan_at) {
@@ -53,13 +53,13 @@ export async function locateSource(
   }
 
   const departure = await ctx.db
-    .query(INGESTIONS_TABLE)
+    .query(REGISTRATIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', observedAt))
     .unique()
 
   if (departure?.progress.kind !== 'complete' || departure.from_scan_at === null) {
     throw new ConvexError(
-      'Departure observation requires a completed input with a preceding capture',
+      'Departure observation requires a completed registration with a preceding capture',
     )
   }
 

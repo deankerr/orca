@@ -4,7 +4,7 @@ import { gzipSync } from 'fflate'
 
 import { internal } from '#generated/api'
 import { internalAction, internalMutation, internalQuery } from '#generated/server'
-import * as scans from '#scan'
+import * as scans from '#scans'
 
 import { buildSnapshot } from './snapshot'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './table'
@@ -51,7 +51,7 @@ export const refresh = internalAction({
   handler: async (ctx): Promise<null> => {
     const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
     const cachedScanAt = cached?.scan_at ?? null
-    const scanAt = (await scans.reader(ctx).latest({ atOrAfter: cachedScanAt })) ?? cachedScanAt
+    const scanAt = (await scans.latest(ctx, { atOrAfter: cachedScanAt })) ?? cachedScanAt
 
     if (scanAt === null || scanAt === cachedScanAt) {
       return null

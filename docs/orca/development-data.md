@@ -5,10 +5,10 @@ produce observed changes.
 
 ```sh
 # Fresh timeline: select the first capture on or after a recent date.
-bunx convex run --deployment '<dev-deployment>' ingestion/run:enqueueNextInput '{"start_at":"<YYYY-MM-DD>"}'
+bunx convex run --deployment '<dev-deployment>' ingestion/register:next '{"start_at":"<YYYY-MM-DD>"}'
 
 # Existing timeline: catch up from its current position.
-bunx convex run --deployment '<dev-deployment>' ingestion/run:enqueueNextInput '{}'
+bunx convex run --deployment '<dev-deployment>' ingestion/register:next '{}'
 ```
 
 `start_at` accepts an ISO date or timestamp with an offset. It requires a fresh

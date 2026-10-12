@@ -14,7 +14,7 @@ const modules = Object.fromEntries(
     .map((file) => [file, async (): Promise<unknown> => await import(file)]),
 )
 
-test('products read the new catalog and cap history at completed ingestion, not pending work', async () => {
+test('products read the new catalog and cap history at completed registration, not pending work', async () => {
   const t = convexTest({ schema, modules })
   const a = '2026-10-10T10:00:00.000Z'
   const b = '2026-10-10T11:00:00.000Z'
@@ -23,12 +23,12 @@ test('products read the new catalog and cap history at completed ingestion, not 
   expect(await t.query(api.products.shared.clock.observe, {})).toBeNull()
 
   await t.run(async (ctx) => {
-    await ctx.db.insert('scan_ingestions', {
+    await ctx.db.insert('scan_registrations', {
       from_scan_at: null,
       scan_at: a,
       progress: { kind: 'complete' },
     })
-    await ctx.db.insert('scan_ingestions', {
+    await ctx.db.insert('scan_registrations', {
       from_scan_at: a,
       scan_at: b,
       progress: { kind: 'pending', completed: ['pricingHistory'] },

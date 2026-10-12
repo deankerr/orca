@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { ScanEntry } from '#scan/collection'
+import type { ScanEntry } from '#scans/collection'
 
 import type { OrcaPublicApiV2Endpoint, OrcaPublicApiV2Model } from './schema'
 

@@ -22,7 +22,7 @@ test('observation-only lifecycles preserve baseline knowledge, serving transitio
   const t = convexTest({ schema, modules })
   await t.run(async (ctx) => {
     for (const [hour, scan_at] of times.entries()) {
-      await ctx.db.insert('scan_ingestions', {
+      await ctx.db.insert('scan_registrations', {
         from_scan_at: hour === 0 ? null : at(hour - 1),
         scan_at,
         progress:

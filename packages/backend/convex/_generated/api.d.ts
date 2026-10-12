@@ -30,6 +30,7 @@ import type * as ingestion_currentModels from "../ingestion/currentModels.js";
 import type * as ingestion_currentProviders from "../ingestion/currentProviders.js";
 import type * as ingestion_currentStats from "../ingestion/currentStats.js";
 import type * as ingestion_events from "../ingestion/events.js";
+import type * as ingestion_input from "../ingestion/input.js";
 import type * as ingestion_lenses from "../ingestion/lenses.js";
 import type * as ingestion_listingHistory from "../ingestion/listingHistory.js";
 import type * as ingestion_observations from "../ingestion/observations.js";
@@ -41,7 +42,8 @@ import type * as ingestion_refresh_endpoints from "../ingestion/refresh/endpoint
 import type * as ingestion_refresh_models from "../ingestion/refresh/models.js";
 import type * as ingestion_refresh_providers from "../ingestion/refresh/providers.js";
 import type * as ingestion_refresh_shared from "../ingestion/refresh/shared.js";
-import type * as ingestion_run from "../ingestion/run.js";
+import type * as ingestion_register from "../ingestion/register.js";
+import type * as ingestion_ingest from "../ingestion/ingest.js";
 import type * as ingestion_state from "../ingestion/state.js";
 import type * as ingestion_statsHistory from "../ingestion/statsHistory.js";
 import type * as ingestion_table from "../ingestion/table.js";
@@ -105,19 +107,13 @@ import type * as public_api_v2_compatibility from "../public_api/v2/compatibilit
 import type * as public_api_v2_http from "../public_api/v2/http.js";
 import type * as public_api_v2_snapshot from "../public_api/v2/snapshot.js";
 import type * as public_api_v2_table from "../public_api/v2/table.js";
-import type * as scan_access from "../scan/access.js";
-import type * as scan_collected from "../scan/collected.js";
-import type * as scan_model from "../scan/model.js";
-import type * as scan_provider from "../scan/provider.js";
-import type * as scan_reader from "../scan/reader.js";
-import type * as scanNew_access from "../scanNew/access.js";
-import type * as scanNew_extract from "../scanNew/extract.js";
-import type * as scanNew_model from "../scanNew/model.js";
-import type * as scanNew_provider from "../scanNew/provider.js";
-import type * as scanNew_reader from "../scanNew/reader.js";
-import type * as scanNew_stats from "../scanNew/stats.js";
 import type * as scan_analysis_index from "../scan_analysis/index.js";
 import type * as scan_analysis_profile from "../scan_analysis/profile.js";
+import type * as scans_access from "../scans/access.js";
+import type * as scans_collected from "../scans/collected.js";
+import type * as scans_extraction_extract from "../scans/extraction/extract.js";
+import type * as scans_extraction_providers from "../scans/extraction/providers.js";
+import type * as scans_extraction_stats from "../scans/extraction/stats.js";
 
 import type {
   ApiFromModules,
@@ -148,6 +144,7 @@ declare const fullApi: ApiFromModules<{
   "ingestion/currentProviders": typeof ingestion_currentProviders;
   "ingestion/currentStats": typeof ingestion_currentStats;
   "ingestion/events": typeof ingestion_events;
+  "ingestion/input": typeof ingestion_input;
   "ingestion/lenses": typeof ingestion_lenses;
   "ingestion/listingHistory": typeof ingestion_listingHistory;
   "ingestion/observations": typeof ingestion_observations;
@@ -159,7 +156,8 @@ declare const fullApi: ApiFromModules<{
   "ingestion/refresh/models": typeof ingestion_refresh_models;
   "ingestion/refresh/providers": typeof ingestion_refresh_providers;
   "ingestion/refresh/shared": typeof ingestion_refresh_shared;
-  "ingestion/run": typeof ingestion_run;
+  "ingestion/register": typeof ingestion_register;
+  "ingestion/ingest": typeof ingestion_ingest;
   "ingestion/state": typeof ingestion_state;
   "ingestion/statsHistory": typeof ingestion_statsHistory;
   "ingestion/table": typeof ingestion_table;
@@ -223,19 +221,13 @@ declare const fullApi: ApiFromModules<{
   "public_api/v2/http": typeof public_api_v2_http;
   "public_api/v2/snapshot": typeof public_api_v2_snapshot;
   "public_api/v2/table": typeof public_api_v2_table;
-  "scan/access": typeof scan_access;
-  "scan/collected": typeof scan_collected;
-  "scan/model": typeof scan_model;
-  "scan/provider": typeof scan_provider;
-  "scan/reader": typeof scan_reader;
-  "scanNew/access": typeof scanNew_access;
-  "scanNew/extract": typeof scanNew_extract;
-  "scanNew/model": typeof scanNew_model;
-  "scanNew/provider": typeof scanNew_provider;
-  "scanNew/reader": typeof scanNew_reader;
-  "scanNew/stats": typeof scanNew_stats;
   "scan_analysis/index": typeof scan_analysis_index;
   "scan_analysis/profile": typeof scan_analysis_profile;
+  "scans/access": typeof scans_access;
+  "scans/collected": typeof scans_collected;
+  "scans/extraction/extract": typeof scans_extraction_extract;
+  "scans/extraction/providers": typeof scans_extraction_providers;
+  "scans/extraction/stats": typeof scans_extraction_stats;
 }>;
 
 /**

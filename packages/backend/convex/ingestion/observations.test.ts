@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 
-import { fromCollected } from '../scanNew/extract'
+import { extractScan as fromCollected } from '#scans/extract'
+
 import { prepare } from './observations'
 
 const a = '2026-10-10T10:00:00.000Z'
@@ -52,9 +53,9 @@ test('baseline retains endpointless models and counts endpoints across models an
   const rows = prepare({ previous, next })
   expect(rows).toHaveLength(8)
   expect(rows.filter((row) => row.entity_kind !== 'endpoint')).toEqual([
+    { entity_kind: 'model', entity_id: 'empty', scan_at: b, detected: true, endpoint_count: 0 },
     { entity_kind: 'model', entity_id: 'model', scan_at: b, detected: true, endpoint_count: 2 },
     { entity_kind: 'model', entity_id: 'shared', scan_at: b, detected: true, endpoint_count: 1 },
-    { entity_kind: 'model', entity_id: 'empty', scan_at: b, detected: true, endpoint_count: 0 },
     { entity_kind: 'provider', entity_id: 'provider', scan_at: b, endpoint_count: 2 },
     { entity_kind: 'provider', entity_id: 'other', scan_at: b, endpoint_count: 1 },
   ])

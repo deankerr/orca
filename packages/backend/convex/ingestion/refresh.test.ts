@@ -5,15 +5,15 @@ import path from 'node:path'
 import { convexTest } from 'convex-test'
 
 import { internal } from '#generated/api'
-import type { RawScan } from '#scan/collection'
-import * as scans from '#scanNew'
+import * as scans from '#scans'
+import type { RawScan } from '#scans/collection'
+import { extractScan as fromCollected } from '#scans/extract'
 
 import { CURRENT_MODELS_TABLE } from '../catalog/tables/current'
 import { ENDPOINT_LISTINGS_TABLE } from '../catalog/tables/listings'
 import type { EndpointListingRow } from '../catalog/tables/listings'
-import { fromCollected } from '../scanNew/extract'
 import schema from '../schema'
-import { INGESTIONS_TABLE } from './table'
+import { REGISTRATIONS_TABLE } from './table'
 
 function setup() {
   const root = path.resolve(import.meta.dir, '..')
@@ -82,7 +82,7 @@ test('refresh restores a departed endpointless model from its final capture with
   const t = setup()
 
   const id = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
@@ -96,7 +96,7 @@ test('refresh restores a departed endpointless model from its final capture with
       endpoint_count: 0,
     })
 
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: lastSeen,
       scan_at: departure,
@@ -114,13 +114,10 @@ test('refresh restores a departed endpointless model from its final capture with
 
   const loaded: string[] = []
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => {
-      loaded.push(at)
-      return fromCollected(capture(at, at === lastSeen))
-    },
-  }))
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) => {
+    loaded.push(at)
+    return fromCollected(capture(at, at === lastSeen))
+  })
 
   try {
     expect(
@@ -157,8 +154,6 @@ test('refresh restores a departed endpointless model from its final capture with
   }
 })
 
-const originalReader = scans.reader
-
 test('refresh prefers the latest capture for models still present after losing their endpoints', async () => {
   const t = setup()
 
@@ -173,7 +168,7 @@ test('refresh prefers the latest capture for models still present after losing t
       endpoint_count: 0,
     })
 
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
@@ -183,7 +178,7 @@ test('refresh prefers the latest capture for models still present after losing t
   await t.run(async (ctx) => {
     const future = '2026-10-04T00:00:00.000Z'
 
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: horizon,
       scan_at: future,
       progress: { kind: 'pending', completed: ['observations'] },
@@ -198,10 +193,9 @@ test('refresh prefers the latest capture for models still present after losing t
     })
   })
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => fromCollected(capture(at, true)),
-  }))
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) =>
+    fromCollected(capture(at, true)),
+  )
 
   try {
     expect(
@@ -219,7 +213,7 @@ test('refresh refuses to overwrite a Catalog update that arrived during source l
   const t = setup()
 
   const id = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       progress: { kind: 'complete' },
       from_scan_at: departure,
       scan_at: horizon,
@@ -235,15 +229,12 @@ test('refresh refuses to overwrite a Catalog update that arrived during source l
     return await ctx.db.insert(CURRENT_MODELS_TABLE, model)
   })
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => {
-      await t.run(async (ctx) => {
-        await ctx.db.patch(id, { display_name: 'Concurrent ingestion' })
-      })
-      return fromCollected(capture(at, true))
-    },
-  }))
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) => {
+    await t.run(async (ctx) => {
+      await ctx.db.patch(id, { display_name: 'Concurrent ingestion' })
+    })
+    return fromCollected(capture(at, true))
+  })
 
   try {
     await rejects(
@@ -282,7 +273,7 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
   const observed = fromCollected(raw)
 
   const endpointId = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: lastSeen,
       scan_at: departure,
       progress: { kind: 'complete' },
@@ -340,9 +331,9 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
     })
   })
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => ({ ...observed, scan_at: at }),
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) => ({
+    ...observed,
+    scan_at: at,
   }))
 
   try {
@@ -383,17 +374,17 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
       expect(await ctx.db.query('catalog_stats_history').collect()).toEqual([])
       expect(await ctx.db.query('catalog_current_stats').collect()).toEqual([])
       expect(await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()).toHaveLength(2)
-      expect(await ctx.db.query(INGESTIONS_TABLE).collect()).toHaveLength(1)
+      expect(await ctx.db.query(REGISTRATIONS_TABLE).collect()).toHaveLength(1)
     })
     // Reappearance and reassignment retain endpoint identity, but refresh its new relationships.
     const endpoint = observed.endpoints.get('endpoint')
     ok(endpoint)
-    endpoint.endpoint.model_id = 'author/renamed'
-    endpoint.endpoint.provider_id = 'other'
-    endpoint.endpoint.provider_tag = 'other/new'
+    endpoint.model_id = 'author/renamed'
+    endpoint.provider_id = 'other'
+    endpoint.provider_tag = 'other/new'
 
     await t.run(async (ctx) => {
-      await ctx.db.insert(INGESTIONS_TABLE, {
+      await ctx.db.insert(REGISTRATIONS_TABLE, {
         from_scan_at: departure,
         scan_at: horizon,
         progress: { kind: 'complete' },
@@ -438,13 +429,13 @@ test('refresh waits when current facts or endpoint availability are ahead of the
   const t = setup()
 
   const id = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: null,
       scan_at: first,
       progress: { kind: 'complete' },
     })
 
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: first,
       scan_at: lastSeen,
       progress: { kind: 'pending', completed: ['currentModels'] },
@@ -506,7 +497,7 @@ test('missing source entities fail without clearing retained facts', async () =>
   const t = setup()
 
   const id = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: first,
       scan_at: horizon,
       progress: { kind: 'complete' },
@@ -522,10 +513,9 @@ test('missing source entities fail without clearing retained facts', async () =>
     return await ctx.db.insert(CURRENT_MODELS_TABLE, model)
   })
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => fromCollected(capture(at, false)),
-  }))
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) =>
+    fromCollected(capture(at, false)),
+  )
 
   try {
     await rejects(
@@ -569,7 +559,7 @@ test('an unchanged projection keeps its source date even when refreshed from a n
   const t = setup()
 
   const id = await t.run(async (ctx) => {
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: first,
       scan_at: horizon,
       progress: { kind: 'complete' },
@@ -589,16 +579,13 @@ test('an unchanged projection keeps its source date even when refreshed from a n
     })
   })
 
-  const source = spyOn(scans, 'reader').mockImplementation((ctx) => ({
-    ...originalReader(ctx),
-    loadScan: async (at) => {
-      const scan = fromCollected(capture(at, true))
-      const observed = scan.models.get(model.model_id)
-      ok(observed)
-      observed.license = 'mit'
-      return scan
-    },
-  }))
+  const source = spyOn(scans, 'load').mockImplementation(async (_, at) => {
+    const scan = fromCollected(capture(at, true))
+    const observed = scan.models.get(model.model_id)
+    ok(observed)
+    observed.license = 'mit'
+    return scan
+  })
 
   try {
     expect(
@@ -620,7 +607,7 @@ test('missing presence history fails before loading a capture', async () => {
   await t.run(async (ctx) => {
     await ctx.db.insert(CURRENT_MODELS_TABLE, model)
 
-    await ctx.db.insert(INGESTIONS_TABLE, {
+    await ctx.db.insert(REGISTRATIONS_TABLE, {
       from_scan_at: null,
       scan_at: first,
       progress: { kind: 'complete' },
@@ -652,7 +639,7 @@ test('invalid departure inputs fail without loading or replacing current facts',
     await t.run(async (ctx) => {
       await ctx.db.insert(CURRENT_MODELS_TABLE, model)
 
-      await ctx.db.insert(INGESTIONS_TABLE, {
+      await ctx.db.insert(REGISTRATIONS_TABLE, {
         from_scan_at: departure,
         scan_at: horizon,
         progress: { kind: 'complete' },
@@ -667,7 +654,7 @@ test('invalid departure inputs fail without loading or replacing current facts',
       })
 
       if (input !== 'missing') {
-        await ctx.db.insert(INGESTIONS_TABLE, {
+        await ctx.db.insert(REGISTRATIONS_TABLE, {
           from_scan_at: input === 'baseline' ? null : lastSeen,
           scan_at: departure,
           progress: input === 'pending' ? { kind: 'pending', completed: [] } : { kind: 'complete' },
@@ -680,7 +667,7 @@ test('invalid departure inputs fail without loading or replacing current facts',
         entity_kind: 'model',
         entity_id: model.model_id,
       }),
-      /Departure observation requires a completed input/,
+      /Departure observation requires a completed registration/,
     )
   }
 })

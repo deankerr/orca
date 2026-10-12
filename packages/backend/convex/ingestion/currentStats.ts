@@ -3,18 +3,19 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import type { ScannedEndpointStats, ScanPair } from '#scanNew/model'
+import type { ExtractedStats } from '#scans/extraction'
 
 import { CURRENT_STATS_TABLE, currentStatsTable } from '../catalog/tables/current'
 import type { CurrentStatsRow } from '../catalog/tables/current'
-import { commitStage } from './progress'
-import type { InputId } from './table'
-import { ingestionId } from './table'
+import type { ScanPair } from './input'
+import { commitProcess } from './progress'
+import type { RegistrationId } from './table'
+import { registrationId } from './table'
 
 export async function ingest(
   ctx: ActionCtx,
   { next }: ScanPair,
-  ingestion_id: InputId,
+  registration_id: RegistrationId,
 ): Promise<void> {
   const rows: CurrentStatsRow[] = []
 
@@ -27,17 +28,17 @@ export async function ingest(
   }
 
   await ctx.runMutation(internal.ingestion.currentStats.write, {
-    ingestion_id,
+    registration_id,
     scan_at: next.scan_at,
     rows,
   })
 }
 
 export const write = internalMutation({
-  args: { ingestion_id: ingestionId, ...currentStatsTable.validator.fields },
+  args: { registration_id: registrationId, ...currentStatsTable.validator.fields },
   returns: v.null(),
-  handler: async (ctx, { ingestion_id, ...snapshot }) => {
-    await commitStage(ctx, ingestion_id, 'currentStats', async () => {
+  handler: async (ctx, { registration_id, ...snapshot }) => {
+    await commitProcess(ctx, registration_id, 'currentStats', async () => {
       const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
 
       if (existing === null) {
@@ -56,7 +57,7 @@ function endpointCurrentStats({
   endpoint_id,
   tier,
   sample,
-}: ScannedEndpointStats): CurrentStatsRow | null {
+}: ExtractedStats): CurrentStatsRow | null {
   if (tier !== 'default') {
     return null
   }

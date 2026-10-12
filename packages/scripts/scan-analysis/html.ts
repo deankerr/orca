@@ -1,4 +1,4 @@
-import type { ScanReport } from '@orca/backend/scan/analysis'
+import type { ScanReport } from '@orca/backend/scans/analysis'
 
 import { escapeHtml } from './summary'
 

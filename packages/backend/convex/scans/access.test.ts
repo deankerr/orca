@@ -7,11 +7,11 @@ import { rejects } from 'node:assert/strict'
 import type { ActionCtx } from '#generated/server'
 import * as objects from '#objects'
 
-import { reader, store } from './access'
+import * as scans from './access'
+import { store } from './access'
 
-test('scan storage round-trips collected entries and loads exact pairs in one batch', async () => {
+test('scan storage round-trips collected entries and loads one extracted scan', async () => {
   const ctx = {} as ActionCtx
-  const scans = reader(ctx)
   const scan_at = '2026-10-02T10:40:04.272Z'
 
   const entry = {
@@ -42,26 +42,17 @@ test('scan storage round-trips collected entries and loads exact pairs in one ba
     })
 
     batch.mockResolvedValue([text])
-    expect(await scans.loadCollected(scan_at)).toEqual(scan)
+    expect(await scans.loadCollected(ctx, scan_at)).toEqual(scan)
 
-    const nextAt = '2026-10-02T11:40:04.272Z'
-    batch.mockResolvedValue([text, text.replaceAll(scan_at, nextAt)])
-
-    expect(await scans.loadPair({ from_scan_at: scan_at, scan_at: nextAt })).toEqual({
-      previous: { scan_at, models: new Map(), providers: new Map(), endpoints: new Map() },
-      next: { scan_at: nextAt, models: new Map(), providers: new Map(), endpoints: new Map() },
+    expect(await scans.load(ctx, scan_at)).toEqual({
+      scan_at,
+      models: new Map(),
+      providers: new Map(),
+      endpoints: new Map(),
+      stats: [],
     })
-
-    expect(batch).toHaveBeenCalledWith(ctx, [
-      { path: 'scans', name: `scan.${scan_at}.jsonl` },
-      { path: 'scans', name: `scan.${nextAt}.jsonl` },
-    ])
-
-    await rejects(scans.loadPair({ from_scan_at: scan_at, scan_at }), /must move forward/)
-    await rejects(scans.loadPair({ from_scan_at: nextAt, scan_at }), /must move forward/)
-
-    batch.mockResolvedValue([text, null])
-    await rejects(scans.loadPair({ from_scan_at: scan_at, scan_at: nextAt }), /Scan not found/)
+    batch.mockResolvedValue([null])
+    await rejects(scans.load(ctx, scan_at), /Scan not found/)
     await rejects(store(ctx, { ...scan, entries: [] }))
     expect(saved).toHaveBeenCalledTimes(1)
   } finally {
@@ -70,9 +61,8 @@ test('scan storage round-trips collected entries and loads exact pairs in one ba
   }
 })
 
-test('loading the next pair discovers scans, scopes text models and derives entity identities', async () => {
+test('navigation selects scans independently of loading and extraction', async () => {
   const ctx = {} as ActionCtx
-  const scans = reader(ctx)
   const times = ['2026-10-01T00:00:00.000Z', '2026-10-02T00:00:00.000Z', '2026-10-03T00:00:00.000Z']
 
   const entry = (id: string, output = 'text') => ({
@@ -81,6 +71,8 @@ test('loading the next pair discovers scans, scopes text models and derives enti
     model: {
       slug: id,
       permaslug: `${id}-v1`,
+      short_name: id,
+      created_at: times[0],
       input_modalities: ['text'],
       output_modalities: [output],
     },
@@ -119,15 +111,14 @@ test('loading the next pair discovers scans, scopes text models and derives enti
   )
 
   try {
-    const first = await scans.loadNextPair()
-    const following = await scans.loadNextPair({ atOrAfter: '2026-10-01T12:00:00.000Z' })
+    expect(await scans.firstAtOrAfter(ctx)).toBe(times[0])
+    expect(await scans.firstAtOrAfter(ctx, '2026-10-01T12:00:00.000Z')).toBe(times[1])
+    expect(await scans.nextAfter(ctx, times[0])).toBe(times[1])
+    expect(await scans.nextAfter(ctx, '2026-10-01T12:00:00.000Z')).toBe(times[1])
+    expect(batch).not.toHaveBeenCalled()
 
-    expect(first?.previous.scan_at).toBe(times[0])
-    expect(first?.next.scan_at).toBe(times[1])
-    expect(following?.previous).toEqual(first?.next)
-    expect(following?.next.scan_at).toBe(times[2])
-
-    for (const [index, scan] of [first?.previous, first?.next, following?.next].entries()) {
+    for (const [index, time] of times.entries()) {
+      const scan = await scans.load(ctx, time)
       const id = `author/text-${index}:free`
 
       expect(scan).toBeDefined()
@@ -138,7 +129,7 @@ test('loading the next pair discovers scans, scopes text models and derives enti
         { provider_id: 'provider', name: 'Provider', displayName: 'Provider' },
       ])
 
-      expect([...(scan?.endpoints.values() ?? [])]).toEqual([
+      expect([...(scan?.endpoints.values() ?? [])]).toMatchObject([
         {
           id: `${id}-endpoint`,
           model_variant_slug: id,
@@ -157,9 +148,8 @@ test('loading the next pair discovers scans, scopes text models and derives enti
   }
 })
 
-test('discovery finds the newest capture in one read and keeps inclusive pair selection', async () => {
+test('discovery finds the newest capture in one read and handles exhausted navigation', async () => {
   const ctx = {} as ActionCtx
-  const scans = reader(ctx)
 
   const times = Array.from({ length: 205 }, (_, index) =>
     new Date(Date.UTC(2026, 0, 1, index)).toISOString(),
@@ -174,7 +164,7 @@ test('discovery finds the newest capture in one read and keeps inclusive pair se
   })
 
   try {
-    expect(await scans.latest()).toBe(times.at(-1) ?? null)
+    expect(await scans.latest(ctx)).toBe(times.at(-1) ?? null)
     expect(discovery).toHaveBeenCalledTimes(1)
 
     expect(discovery).toHaveBeenLastCalledWith(ctx, {
@@ -185,20 +175,20 @@ test('discovery finds the newest capture in one read and keeps inclusive pair se
     })
 
     discovery.mockClear()
-    expect(await scans.latest({ atOrAfter: times.at(-1) })).toBe(times.at(-1) ?? null)
+    expect(await scans.latest(ctx, { atOrAfter: times.at(-1) })).toBe(times.at(-1) ?? null)
     expect(discovery).toHaveBeenCalledTimes(1)
-    expect(await scans.latest({ atOrAfter: times[200] })).toBe(times.at(-1) ?? null)
-    expect(await scans.loadNextPair({ atOrAfter: times[204] })).toBeNull()
+    expect(await scans.latest(ctx, { atOrAfter: times[200] })).toBe(times.at(-1) ?? null)
+    expect(await scans.nextAfter(ctx, times[204])).toBeNull()
 
     discovery.mockResolvedValue([])
-    expect(await scans.latest()).toBeNull()
-    expect(await scans.latest({ atOrAfter: times[204] })).toBeNull()
-    expect(await scans.loadNextPair()).toBeNull()
+    expect(await scans.latest(ctx)).toBeNull()
+    expect(await scans.latest(ctx, { atOrAfter: times[204] })).toBeNull()
+    expect(await scans.firstAtOrAfter(ctx)).toBeNull()
 
     for (const name of ['bad-name', 'scan.bad-time.jsonl', 'scan.2026-02-30T00:00:00.000Z.jsonl']) {
       discovery.mockResolvedValue([name])
-      await rejects(scans.latest())
-      await rejects(scans.loadNextPair())
+      await rejects(scans.latest(ctx))
+      await rejects(scans.firstAtOrAfter(ctx))
     }
   } finally {
     discovery.mockRestore()
@@ -207,7 +197,6 @@ test('discovery finds the newest capture in one read and keeps inclusive pair se
 
 test('collected reads normalize references once and reject invalid references before storage access', async () => {
   const ctx = {} as ActionCtx
-  const scans = reader(ctx)
   const time = '2026-10-03T00:00:00.000Z'
   const batch = spyOn(objects, 'loadMany').mockResolvedValue([''])
   const discovery = spyOn(objects, 'namesAtOrAfter').mockResolvedValue([])
@@ -219,7 +208,7 @@ test('collected reads normalize references once and reject invalid references be
       '2026-10-03T00:00:00Z',
       '2026-10-03T10:00:00+10:00',
     ]) {
-      expect(await scans.loadCollected(reference)).toEqual({ scan_at: time, entries: [] })
+      expect(await scans.loadCollected(ctx, reference)).toEqual({ scan_at: time, entries: [] })
       expect(batch).toHaveBeenLastCalledWith(ctx, [{ path: 'scans', name: `scan.${time}.jsonl` }])
     }
 
@@ -233,7 +222,7 @@ test('collected reads normalize references once and reject invalid references be
       'scan.bad-time.jsonl',
       'scan.invalid',
     ]) {
-      await rejects(scans.loadCollected(invalid))
+      await rejects(scans.loadCollected(ctx, invalid))
     }
 
     expect(batch).not.toHaveBeenCalled()
