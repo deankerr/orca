@@ -15,10 +15,19 @@ remain descriptive: they can span distinct services or reflect historical brandi
 One complete observation supplies each provider's facts. This preserves an observed combination
 of metadata instead of assembling a synthetic record from conflicting copies.
 
+Extraction sorts scan entries by ascending model ID and each entry's endpoints by ascending
+endpoint ID, regardless of their stored order. Provider candidates follow that traversal order.
+
+Within each provider identity, selection prefers observations whose source slug matches the
+normalized provider ID, falling back to all observations when no base-slug observation exists.
+The most frequent display name wins within that pool; tied names use ascending lexical order.
+The first observation with the winning name in model-ID then endpoint-ID order supplies the
+complete provider record.
+
 Base-slug preference and display-name voting favor a useful service label over incidental
 serving variants. Other metadata is opaque to selection, so a URL or an unknown field cannot
-split a label's votes. Stable tie-breaking makes selection independent of source traversal order;
-it conveys no authority or freshness.
+split a label's votes. Sorting during extraction makes selection independent of stored array
+order; this ordering conveys no authority or freshness.
 
 A conflicting change in an unselected observation can disappear. Changes in candidate membership
 or labels can instead replace the representative and its metadata. Both are accepted consequences
