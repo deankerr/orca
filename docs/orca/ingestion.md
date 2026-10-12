@@ -43,8 +43,8 @@ derives its output from the scan pair and runs concurrently with the other unfin
 Stage definitions and source contents must remain stable while an input is incomplete.
 
 The baseline is a registered input requiring only its selected capture. It establishes current
-entities, listings, complete price quotes, and current and historical stats without generating
-creation events. First-observation times refer to this capture, not upstream creation. Only
+entities, observations, listings, complete price quotes, and current and historical stats without
+generating creation events. First-observation times refer to this capture, not upstream creation. Only
 the previous scan in a loaded pair may have a null scan time; its collections are then empty.
 A real empty scan retains its timestamp and participates in ordinary change detection.
 
@@ -61,6 +61,12 @@ The last outstanding stage marks the input complete and schedules discovery of t
 in its write transaction. Completed records retain no stage list. Admission permits the next
 source input only after the current input is complete. This timeline's reference clock advances
 with completion, independently of execution acknowledgements and partial visibility.
+
+The observations stage commits all entity kinds together. Its sparse states and endpoint counts
+are derived solely from the input scan pair, without historical enrichment or mutable counters.
+Adding a stage does not reopen completed inputs. Observation history requires a fresh baseline
+and replay of retained captures to cover an existing timeline; subsequent deltas alone do not
+establish the state of unchanged entities.
 
 Stages retain their entire output in one mutation. This is an accepted size limit: large inputs
 can exceed function argument, transaction, or document limits, and retries cannot reduce that

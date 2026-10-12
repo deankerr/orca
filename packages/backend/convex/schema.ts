@@ -22,6 +22,7 @@ import {
   ENDPOINT_LISTINGS_TABLE as CATALOG_LISTINGS_TABLE,
   endpointListingsTable as catalogListingHistoryTable,
 } from './catalogNew/tables/listings'
+import { OBSERVATIONS_TABLE, observationsTable } from './catalogNew/tables/observations'
 import {
   ENDPOINT_PRICES_TABLE as CATALOG_PRICES_TABLE,
   endpointPricesTable as catalogPricingHistoryTable,
@@ -59,6 +60,7 @@ export default defineSchema(
     [CATALOG_CURRENT_ENDPOINTS_TABLE]: catalogCurrentEndpointsTable,
     [CATALOG_CURRENT_STATS_TABLE]: catalogCurrentStatsTable,
     [CATALOG_LISTINGS_TABLE]: catalogListingHistoryTable,
+    [OBSERVATIONS_TABLE]: observationsTable,
     [CATALOG_PRICES_TABLE]: catalogPricingHistoryTable,
     [CATALOG_STATS_TABLE]: catalogStatsHistoryTable,
     [CATALOG_EVENTS_TABLE]: catalogEventsTable,

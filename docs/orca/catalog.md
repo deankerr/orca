@@ -34,6 +34,29 @@ source `scan_at`; relisting replaces the facts and clears `unlisted_at`.
 Model/provider record presence is distinct from serving availability. ORCA represents their
 availability through associated endpoints, while retaining their own facts independently.
 
+## Observation history
+
+`catalog_observations` retains sparse, typed states for models, providers, and endpoints.
+Baseline establishes detected entities; subsequent rows record changes in the selected facts.
+An unchanged scan produces no row. Missing history before the baseline means unknown, not absent.
+
+Models retain independent detection and endpoint count: a detected model may have zero endpoints.
+Providers are discovered through endpoints, so their detection is derived from a positive count.
+Counts are computed from each extracted scan's distinct endpoint identities. Zero counts and
+non-detection are recorded on departure; continued absence produces no further rows.
+
+Endpoint states retain detection, model ID, provider ID, and provider tag. A disappearance keeps
+the last-known relationship context without implying active membership. Reappearance records a
+new state even when the context matches the previous episode. Count changes produce parent rows;
+replacing endpoints at the same count is represented by the endpoint rows alone.
+
+Historical membership queries must resolve each candidate endpoint's latest state at the requested
+time. A model/provider index discovers candidates but cannot establish continued membership:
+the endpoint's later departure may be recorded under another model or provider.
+
+Observation history is an independent projection. Existing Listing consumers, including current
+projection refresh, continue to use Listing history until their individual cutovers.
+
 ## Current projection refresh
 
 The current model, provider, and endpoint stages in `ingestionNew` own their metadata omission

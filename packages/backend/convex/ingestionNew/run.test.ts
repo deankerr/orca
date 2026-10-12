@@ -150,6 +150,7 @@ test('one selected capture establishes baseline state and stats without creation
     providers: await ctx.db.query('catalog_current_providers').collect(),
     endpoints: await ctx.db.query('catalog_current_endpoints').collect(),
     listings: await ctx.db.query('catalog_listing_history').collect(),
+    observations: await ctx.db.query('catalog_observations').collect(),
     pricing: await ctx.db.query('catalog_pricing_history').collect(),
     stats: await ctx.db.query('catalog_stats_history').collect(),
     currentStats: await ctx.db.query('catalog_current_stats').unique(),
@@ -167,6 +168,25 @@ test('one selected capture establishes baseline state and stats without creation
   }
 
   expect(rows.listings[0]?.state).toBe('listed')
+  expect(rows.observations).toMatchObject([
+    {
+      entity_kind: 'model',
+      entity_id: 'author/model',
+      scan_at: b,
+      detected: true,
+      endpoint_count: 1,
+    },
+    { entity_kind: 'provider', entity_id: 'provider', scan_at: b, endpoint_count: 1 },
+    {
+      entity_kind: 'endpoint',
+      entity_id: 'endpoint',
+      scan_at: b,
+      detected: true,
+      model_id: 'author/model',
+      provider_id: 'provider',
+      provider_tag: 'provider',
+    },
+  ])
   expect(rows.currentStats).toMatchObject({
     scan_at: b,
     rows: [{ endpoint_id: 'endpoint', p50_latency: 1 }],
@@ -331,6 +351,9 @@ test('overlapping Workpool attempts complete a baseline and exact successor with
   expect(rows.stats.map((row) => row.scan_at)).toEqual([a, b])
   expect(rows.events).toHaveLength(1)
   expect(rows.events[0]?.scan_at).toBe(b)
+  expect(
+    await t.run(async (ctx) => await ctx.db.query('catalog_observations').collect()),
+  ).toHaveLength(3)
 })
 
 test('independent stages commit in any order and repeated stage calls retain output once', async () => {
@@ -366,6 +389,33 @@ test('independent stages commit in any order and repeated stage calls retain out
   expect(
     await t.run(async (ctx) => await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()),
   ).toHaveLength(1)
+})
+
+test('empty observation output completes the final stage exactly once', async () => {
+  const t = setup()
+  const ingestion_id = await t.mutation(internal.ingestionNew.state.register, {
+    from_scan_at: null,
+    scan_at: a,
+  })
+  await t.run(async (ctx) => {
+    await ctx.db.patch(INGESTIONS_TABLE, ingestion_id, {
+      progress: { kind: 'pending', completed: ingestKeys.filter((key) => key !== 'observations') },
+    })
+  })
+  expect(await t.query(internal.ingestionNew.state.clock, {})).toBeNull()
+  const args = { ingestion_id, rows: [] }
+  await Promise.all([
+    t.mutation(internal.ingestionNew.observations.write, args),
+    t.mutation(internal.ingestionNew.observations.write, args),
+  ])
+  expect(await record(t, ingestion_id)).toMatchObject({ progress: { kind: 'complete' } })
+  expect(await t.query(internal.ingestionNew.state.clock, {})).toBe(a)
+  const scheduled = await t.run(
+    async (ctx) => await ctx.db.system.query('_scheduled_functions').collect(),
+  )
+  expect(scheduled.filter((job) => job.name === 'ingestionNew/run:enqueueNextInput')).toHaveLength(
+    1,
+  )
 })
 
 test('failed writes roll back rows and completion without disturbing other stages', async () => {

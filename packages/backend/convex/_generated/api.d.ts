@@ -58,6 +58,7 @@ import type * as catalogNew_pricing from "../catalogNew/pricing.js";
 import type * as catalogNew_tables_current from "../catalogNew/tables/current.js";
 import type * as catalogNew_tables_events from "../catalogNew/tables/events.js";
 import type * as catalogNew_tables_listings from "../catalogNew/tables/listings.js";
+import type * as catalogNew_tables_observations from "../catalogNew/tables/observations.js";
 import type * as catalogNew_tables_pricing from "../catalogNew/tables/pricing.js";
 import type * as catalogNew_tables_stats from "../catalogNew/tables/stats.js";
 import type * as clock from "../clock.js";
@@ -97,6 +98,7 @@ import type * as ingestionNew_currentStats from "../ingestionNew/currentStats.js
 import type * as ingestionNew_events from "../ingestionNew/events.js";
 import type * as ingestionNew_lenses from "../ingestionNew/lenses.js";
 import type * as ingestionNew_listingHistory from "../ingestionNew/listingHistory.js";
+import type * as ingestionNew_observations from "../ingestionNew/observations.js";
 import type * as ingestionNew_pool from "../ingestionNew/pool.js";
 import type * as ingestionNew_pricingHistory from "../ingestionNew/pricingHistory.js";
 import type * as ingestionNew_progress from "../ingestionNew/progress.js";
@@ -210,6 +212,7 @@ declare const fullApi: ApiFromModules<{
   "catalogNew/tables/current": typeof catalogNew_tables_current;
   "catalogNew/tables/events": typeof catalogNew_tables_events;
   "catalogNew/tables/listings": typeof catalogNew_tables_listings;
+  "catalogNew/tables/observations": typeof catalogNew_tables_observations;
   "catalogNew/tables/pricing": typeof catalogNew_tables_pricing;
   "catalogNew/tables/stats": typeof catalogNew_tables_stats;
   clock: typeof clock;
@@ -249,6 +252,7 @@ declare const fullApi: ApiFromModules<{
   "ingestionNew/events": typeof ingestionNew_events;
   "ingestionNew/lenses": typeof ingestionNew_lenses;
   "ingestionNew/listingHistory": typeof ingestionNew_listingHistory;
+  "ingestionNew/observations": typeof ingestionNew_observations;
   "ingestionNew/pool": typeof ingestionNew_pool;
   "ingestionNew/pricingHistory": typeof ingestionNew_pricingHistory;
   "ingestionNew/progress": typeof ingestionNew_progress;

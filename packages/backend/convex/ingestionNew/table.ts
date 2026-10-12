@@ -10,6 +10,7 @@ export const ingestKeys = [
   'currentEndpoints',
   'currentStats',
   'listingHistory',
+  'observations',
   'pricingHistory',
   'statsHistory',
   'events',
