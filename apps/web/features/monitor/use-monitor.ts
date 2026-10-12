@@ -6,7 +6,7 @@ const PAGE_SIZE = 50
 
 export function useMonitor(scope: MonitorScope) {
   const { results, status, loadMore } = usePaginatedQuery(
-    api.alerts.monitor.query.feed,
+    api.products.monitor.query.feed,
     { scope },
     { initialNumItems: PAGE_SIZE },
   )

@@ -1,6 +1,6 @@
 import { httpRouter } from 'convex/server'
 
-import { serve as serveFeed } from './alerts/feed/http'
+import { serve as serveFeed } from './products/feed/http'
 import {
   serve as servePublicApiV2,
   serveCached as servePublicApiV2Cached,

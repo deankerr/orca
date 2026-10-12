@@ -4,7 +4,9 @@ import type { PaginatedQueryArgs } from 'convex/react'
 import { useEffect } from 'react'
 
 export function useEntityChoices<
-  Query extends typeof api.alerts.monitor.query.models | typeof api.alerts.monitor.query.providers,
+  Query extends
+    | typeof api.products.monitor.query.models
+    | typeof api.products.monitor.query.providers,
 >(query: Query, args: PaginatedQueryArgs<Query>) {
   const result = usePaginatedQuery(query, args, { initialNumItems: 1000 })
   const { status, loadMore } = result

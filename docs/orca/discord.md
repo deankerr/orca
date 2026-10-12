@@ -2,23 +2,19 @@
 
 ## Admission and routing
 
-`ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules alert preparation after fresh
-ingestion events have committed. Preparation renders the events and submits once
-to the sender's `ingestion` topic; each eligible subscriber receives the same
-ordered batch.
+`ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules preparation atomically with completion of all
+projection stages. Preparation reads the completed scan's Events and observations, applies alert
+interpretation, and submits an ordered batch to the sender's `ingestion` topic.
 
-Preparation failures leave committed events intact. Scheduling from the ingestion
-action is best-effort: a failure between event commit and scheduling can leave
-alerts unqueued. Inspect scheduling/preparation failures in logs and use
-`sendIngestion` for an intentional send after fixing the cause.
-Event-only `retry:events` recovery does not broadcast alerts.
+Retries cannot schedule another preparation after completion. Preparation and submission run
+separately from ingestion; failures leave Catalog facts intact. Use `sendIngestion` for an
+intentional send after fixing a preparation failure. The legacy ingestion path does not send alerts.
 
-The switch is checked before scheduling and again when preparation starts. Already
-submitted sender jobs continue independently. No eligible messages or matching
-webhooks produces no jobs.
+The switch is checked before scheduling and again when preparation starts. Already submitted
+sender jobs continue independently. Baselines and scans outside the automatic age window submit
+no jobs. No eligible messages or matching webhooks also produces no jobs.
 
-The submission key is `ingestion:<scan_at>`. Historical backfill can submit jobs
-that expire before sending.
+The submission key is `ingestion:<scan_at>`. Regenerating historical scans does not submit expired jobs.
 
 ## Registration
 
@@ -39,18 +35,18 @@ To prepare one completed ingestion with current filtering and card rendering,
 without enqueueing or sending anything:
 
 ```sh
-bunx convex run alerts/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
 ```
 
 The query returns `scan_at`, ordered `messages` (each with a stable `key`,
-serialized JSON `payload`, and source `event_ids`), and `skippedEvents` with
+serialized JSON `payload`, and `source_ids` referencing Catalog Events or observations), and `skippedEvents` with
 filtering reasons. It uses current rendering and available history, regardless of
 auto-send, observation age or registered webhooks.
 
 To manually send that ingestion:
 
 ```sh
-bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
 ```
 
 Each invocation intentionally sends again to eligible `ingestion` subscribers,
@@ -58,7 +54,7 @@ with a fresh deadline based on the configured age limit. Cards and filtering
 retain the original observation time. The command works with auto-send disabled
 and returns `jobIds` and `messageCount`; a positive count with no jobs means there
 were rendered messages but no eligible subscribers. Both operator commands require
-completed event processing.
+a completed `scan_ingestions` record. Baselines render no messages.
 
 ## Inspect delivered output
 
@@ -90,7 +86,7 @@ Provider alerts cover identity, locations, status, and terms/privacy URLs.
 
 Discord suppresses ordinary pricing fields after **two prior quote entries within
 24 hours**. These defaults are calibrated below; the constants live in
-`alerts/discord/frequency.ts`. Lifecycle alerts and schedule-definition changes bypass
+`products/discord/frequency.ts`. Lifecycle alerts and schedule-definition changes bypass
 this rule. Other selected changes remain visible.
 
 The count measures observed quotes, including small changes and relistings, rather

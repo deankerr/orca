@@ -5,8 +5,9 @@ Events retain observed changes; alerts interpret those facts for Monitor, Feed, 
 ## Event scope
 
 - Endpoint ADD/REMOVE events describe listing and unlisting, including relisting.
-- Model/provider ADD/REMOVE events describe gaining listed endpoints or losing the last listed endpoint.
-- Models without endpoints remain known in Catalog, but their metadata changes do not produce Events.
+- Model/provider ADD/REMOVE events describe detection changes in the extracted entities.
+- Models without endpoints remain in Event scope, including their metadata changes.
+- Observations retain model detection, model/provider endpoint counts, and endpoint detection and relationships.
 
 Events exclude `stats`, `statsByTier`, and `status`, while retaining `capacity_tpm`.
 Capability flags retain their upstream shapes, including true-or-absent signals and potentially
@@ -14,8 +15,8 @@ empty selected containers.
 
 ## Historical context
 
-ADD classification uses knowledge strictly earlier than the event's observation, including
-baseline knowledge. An absent `previously_known` value is unclassified. A known model gaining
+Alert arrival classification reads observations strictly earlier than the scan, including baseline knowledge.
+Classification is derived by products and is not retained on Events. An absent `previously_known` value is unclassified. A known model gaining
 endpoints is not proof that ORCA previously observed it serving through endpoints.
 
 Identity context comes from the next observation for ADD/UPDATE events and the previous
@@ -40,9 +41,23 @@ before/after pricing context on new endpoint pricing updates. That context is op
 records. Other unchanged surrounding state is absent; explanations must not fill those gaps from
 today's Catalog.
 
+## Alert lifecycle
+
+Model/provider lifecycle alerts follow endpoint counts crossing zero. Endpoint lifecycle follows
+listing and unlisting. Detection alone does not announce model serving availability. Baseline
+observations establish knowledge without producing lifecycle alerts.
+
+An observation can produce a lifecycle alert without a corresponding Event. When a lifecycle
+transition coincides with metadata changes, the lifecycle alert takes precedence. Parent metadata
+updates are selected only while endpoints remain present on both sides.
+
+Observation-only lifecycle alerts use identity context from Events at or before their scan, falling
+back to the identifier. Details require a matching lifecycle Event snapshot; current Catalog facts
+are not substituted for missing historical details.
+
 ## Alert selection
 
-Monitor, Feed, and Discord share selection of product-relevant facts and pricing eligibility.
+Monitor, Feed, and Discord explicitly apply the shared default selection and pricing eligibility policy.
 Valid unselected changes are omitted. Malformed selected changes log their event identity and
 error, then omit the event while other events continue. Metadata remains arbitrary at capture;
 products interpret only the facts they need. Endpoint telemetry is excluded from alerts.
@@ -82,6 +97,7 @@ Model/provider activity includes that entity and related endpoints. Their inters
 only endpoint events. Selection uses captured relationships independently of current Catalog.
 Departed identities remain selectable; model choices require endpoint history and exclude `openrouter/*`.
 
+Queries merge indexed Events and observations before pagination and cap reads at completed ingestion.
 Curation and compound filtering can produce empty pages. The viewport continues requesting until
 filled or exhausted. Time headings are presentation only: pages can split an observation and rows
 retain stable event addresses.

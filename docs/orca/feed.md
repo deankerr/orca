@@ -1,12 +1,12 @@
 # Experimental feed
 
-- Native paginated queries also support experiments and reactive clients.
+- Paginated product queries also support experiments and reactive clients.
 - Feed uses the shared Monitor/Discord alert content, without batching; its output format remains experimental.
 
 ## HTTP requests
 
 - `GET /events/feed` returns JSON in observation order, newest first.
-- `limit` defaults to 20 and accepts 1–100 source events, before curation.
+- `limit` defaults to 20 and accepts 1–100 source Event or observation rows, before curation.
 - Choose one scope: exact entity, model activity, or provider activity; omitting scope returns the complete feed.
 - Exact entity selects its own changes; model/provider activity also includes related endpoint changes.
 
@@ -30,7 +30,7 @@ GET /events/feed?limit=20&cursor=<opaque_cursor>
 ## Pagination over growing history
 
 - Follow `next` with its preserved filters and limit until null, including after an empty curated page.
-- Native seek cursors preserve position as new head events arrive and distinguish events sharing an observation time.
+- Merged-stream seek cursors preserve position as new head rows arrive and distinguish rows sharing a scan time.
 - Restart at the head to read new activity.
 - Late processing inserts events at their observation time; a completed traversal can precede older events arriving.
-- The feed does not expose processor completion; polling from the head alone cannot guarantee discovery of late events.
+- Reads are capped at the latest completed ingestion; polling the head alone cannot discover backfilled older activity.

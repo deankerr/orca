@@ -52,7 +52,7 @@ test('ingestion validates and normalizes operator start_at before selecting scan
   }
 })
 
-test('ingestion schedules alerts after event commit, continues after failures, and keeps retries event-only', async () => {
+test('legacy ingestion continues after event failures without scheduling product alerts', async () => {
   const scan = (scan_at: string): Scan => ({
     scan_at,
     models: new Map(),
@@ -73,7 +73,6 @@ test('ingestion schedules alerts after event commit, continues after failures, a
   const calls: string[] = []
   let eventIds = ['fresh-event']
   let failEvents = false
-  let failAlertScheduling = false
   const previousAutoSend = process.env.ORCA_DISCORD_AUTO_SEND_ENABLED
   let failAcceptance = false
   let duplicate = false
@@ -117,27 +116,17 @@ test('ingestion schedules alerts after event commit, continues after failures, a
         calls.push(name)
         expect(delay).toBe(0)
 
-        if (name === 'alerts/discord/delivery:sendIngestionAlerts') {
-          expect(calls.indexOf('events/ingest:commit')).toBeLessThan(calls.length - 1)
-          expect(args).toEqual({ scan_at: pair.next.scan_at, event_ids: eventIds })
-
-          if (failAlertScheduling) {
-            throw new Error('Alert scheduling failed')
-          }
-        } else {
-          expect(name).toBe('ingest:run')
-          expect(args).toEqual({})
-        }
+        expect(name).toBe('ingest:run')
+        expect(args).toEqual({})
       },
     },
   } as unknown as ActionCtx
 
   try {
-    for (const mode of ['empty', 'event-error', 'live', 'alert-error', 'disabled', 'duplicate']) {
+    for (const mode of ['empty', 'event-error', 'live', 'disabled', 'duplicate']) {
       calls.length = 0
       eventIds = mode === 'empty' ? [] : ['fresh-event']
       failEvents = mode === 'event-error'
-      failAlertScheduling = mode === 'alert-error'
       process.env.ORCA_DISCORD_AUTO_SEND_ENABLED = mode === 'disabled' ? 'false' : 'true'
       errors.mockClear()
       duplicate = mode === 'duplicate'
@@ -146,16 +135,9 @@ test('ingestion schedules alerts after event commit, continues after failures, a
       expect(calls).toEqual(
         duplicate
           ? ['ingest:commitIngestion']
-          : [
-              'ingest:commitIngestion',
-              'events/ingest:commit',
-              ...(['live', 'alert-error'].includes(mode)
-                ? ['alerts/discord/delivery:sendIngestionAlerts']
-                : []),
-              'ingest:run',
-            ],
+          : ['ingest:commitIngestion', 'events/ingest:commit', 'ingest:run'],
       )
-      expect(errors).toHaveBeenCalledTimes(mode === 'event-error' || mode === 'alert-error' ? 1 : 0)
+      expect(errors).toHaveBeenCalledTimes(mode === 'event-error' ? 1 : 0)
     }
 
     calls.length = 0

@@ -18,7 +18,7 @@ import type { InputId } from './table'
 import { ingestionId } from './table'
 
 export async function ingest(ctx: ActionCtx, pair: ScanPair, ingestion_id: InputId): Promise<void> {
-  const rows = pair.previous.scan_at === null ? [] : projectRows(pair)
+  const rows = pair.previous.scan_at === null ? [] : prepare(pair)
   await ctx.runMutation(internal.ingestionNew.events.write, { ingestion_id, rows })
 }
 
@@ -37,7 +37,7 @@ export const write = internalMutation({
 })
 
 /** Compare all observed entities; availability and historical classification are separate concerns. */
-function projectRows(pair: ScanPair): EventRow[] {
+export function prepare(pair: ScanPair): EventRow[] {
   const previous = eventEntities(pair.previous)
   const next = eventEntities(pair.next)
 

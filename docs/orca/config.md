@@ -64,11 +64,12 @@ missing/`false` disables it.
 | `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.       | Unset → disabled    |
 | `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                            | Unset → disabled    |
 | `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                             | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Enables automatic alerts after fresh event commits; manual sends bypass it. | `false`             |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Enables alerts after all ingestion stages complete; manual sends bypass it. | `false`             |
 
 Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
-`packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
-`scan_at`; manual `sendIngestion` deadlines use invocation time.
+`packages/backend/convex/products/discord/delivery.ts`. Automatic deadlines use
+`scan_at`; scans already outside that window submit no automatic jobs. Manual
+`sendIngestion` deadlines use invocation time.
 
 Projection ingestion uses a dedicated `ingestionPool` with worker concurrency **4** and automatic
 action retries using Workpool's defaults. Each worker runs all unfinished stages concurrently.
@@ -87,7 +88,7 @@ requires only one capture; legacy product tables are not seeded by preview initi
 
 Discord batching requires **3 distinct entities** with the same change at one observation,
 including endpoint unlistings. The threshold is hardcoded in
-`packages/backend/convex/alerts/shared/batch.ts`.
+`packages/backend/convex/products/shared/alerts/batch.ts`.
 
 ### Developer login storage: project defaults and deployment environment
 

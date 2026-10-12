@@ -1,6 +1,7 @@
 import { ConvexError } from 'convex/values'
 
 import { internal } from '#generated/api'
+import { env } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
 import { INGESTIONS_TABLE, ingestKeys } from './table'
@@ -33,6 +34,11 @@ export async function commitStage(
   })
 
   if (isComplete) {
+    if (input.from_scan_at !== null && env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true') {
+      await ctx.scheduler.runAfter(0, internal.products.discord.delivery.sendIngestionAlerts, {
+        ingestion_id: inputId,
+      })
+    }
     await ctx.scheduler.runAfter(0, internal.ingestionNew.run.enqueueNextInput, {})
   }
 }
