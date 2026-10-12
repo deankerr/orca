@@ -34,43 +34,41 @@ source `scan_at`; relisting replaces the facts and clears `unlisted_at`.
 Model/provider record presence is distinct from serving availability. ORCA represents their
 availability through associated endpoints, while retaining their own facts independently.
 
-## Metadata selection and refresh
+## Current projection refresh
 
-`catalog/metadata.ts` owns top-level metadata omission lists for models, providers, and
-endpoints. These lists apply before Catalog comparison and storage. An omitted field changing
-alone does not rewrite a current record. Explicit entity properties are outside this policy.
+The current model, provider, and endpoint stages in `ingestionNew` own their metadata omission
+lists and current-field projections. Refresh uses those same projections to rebuild all retained
+entity fields, including endpoint pricing and model context, from stored captures. Missing fields
+are removed under the current rules. Identity, first observation, and endpoint availability remain
+intact. A changed projection records its selected source date; a no-op preserves the existing date.
 
-This policy is independent of Scan normalization and Events: omissions neither suppress nor
-create Events, and do not change `scan_analysis`. Provider omissions in `scan/provider.ts`
-and the endpoint `status` exclusion in `scan/model.ts` define the shared normalized observation;
-Catalog cannot restore those fields by changing its own policy.
+Refresh is independent of ingestion progress and does not produce Events, listings, price history,
+or stats. Changing current projection rules can therefore change current facts without rewriting
+their historical projections. This is an operator maintenance operation, not a page-loading API.
 
-Changing a Catalog omission list does not automatically rewrite existing records. Refresh reads
-stored captures and reapplies the current normalization and metadata policy, allowing fields to
-be removed or restored without altering history or replaying Events. It preserves explicit
-properties, identity, first observation, and endpoint availability. When metadata changes,
-`scan_at` records the selected source date.
-
-Refresh first tries the latest accepted capture. If the entity is absent, it uses the more
+Refresh first tries the latest completed input's capture. If the entity is absent, it uses the more
 recent of its Catalog source date and the last scan with endpoint membership. Membership
 transitions are resolved through endpoint identity, including reassignment to another model or
-provider; the closing ingestion's `from_scan_at` identifies the actual preceding capture.
+provider; the closing input's `from_scan_at` identifies the actual preceding capture.
 Models still observed without endpoints therefore use their newer source observations.
 
 For a disappeared model with no Listing history, Catalog's source date is a known observation,
 not necessarily its final one. Finding the final endpointless observation requires searching
 captures. Source loading also requires that the selected capture remains available. Refresh
-reports missing entities or captures rather than replacing metadata with an empty object.
+reports missing entities or captures rather than replacing their facts with empty values.
 
 From `packages/backend`, refresh an entity against the configured deployment:
 
 ```sh
-bunx convex run catalog/refresh:run '{"entity_kind":"model","entity_id":"author/model"}'
+bunx convex run ingestionNew/refresh:refreshCurrentEntity '{"entity_kind":"model","entity_id":"author/model"}'
 ```
 
-For bulk work, `catalog/refresh:targets` accepts `entity_kind` and Convex `paginationOpts`,
-returning targets to pass independently to `run`. These are internal operator functions.
-Refresh reads complete source captures per entity; this is an occasional maintenance path,
-not a page-loading API. A concurrent Catalog change causes a retryable failure rather than
-being overwritten. Changing policy during an in-progress bulk refresh requires rerunning
-that refresh with the final policy.
+For bulk work, `ingestionNew/refresh:targets` accepts `entity_kind` and Convex `paginationOpts`,
+returning targets to pass independently to `refreshCurrentEntity`. These are internal operator
+functions. Each refresh reads complete source captures for one entity.
+
+A current row ahead of the completion clock requires waiting for that input to complete. Any
+concurrent change to the selected row causes a retryable failure rather than being overwritten.
+Refresh does not reopen committed ingestion stages. Projection rules must remain stable while
+inputs are incomplete; changing policy during a bulk refresh requires rerunning it with the
+final policy.

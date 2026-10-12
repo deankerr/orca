@@ -1,8 +1,8 @@
 import type { api } from '@orca/backend/api'
 import type { FunctionReturnType } from 'convex/server'
 
-type Listings = FunctionReturnType<typeof api.history.listings.query.forEndpoint>
-type PricingPage = FunctionReturnType<typeof api.history.pricing.query.observe>
+type Listings = FunctionReturnType<typeof api.products.pricing_history.listings.forEndpoint>
+type PricingPage = FunctionReturnType<typeof api.products.pricing_history.pricing.observe>
 type Prices = PricingPage['page'][number][]
 export type PricingHistory = {
   modelId: string

@@ -88,7 +88,7 @@ const omittedMetadataKeys = new Set([
   'icon',
 ])
 
-function currentProvider(provider: ScannedProvider) {
+export function currentProvider(provider: ScannedProvider) {
   const { metadata, ...fields } = providerEntity(provider)
 
   return {

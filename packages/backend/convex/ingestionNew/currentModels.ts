@@ -103,7 +103,7 @@ const omittedMetadataKeys = new Set([
   'warning_message',
 ])
 
-function currentModel(model: ScannedModel) {
+export function currentModel(model: ScannedModel) {
   const { metadata, ...fields } = modelEntity(model)
 
   return {

@@ -128,7 +128,7 @@ const omittedMetadataKeys = new Set([
   'supports_tool_parameters',
 ])
 
-function currentEndpoint(endpoint: ScannedEndpoint) {
+export function currentEndpoint(endpoint: ScannedEndpoint) {
   const { metadata, ...fields } = endpointEntity(endpoint)
 
   return {

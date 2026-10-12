@@ -135,7 +135,9 @@ export function PricingHistoryOverlay() {
 }
 
 function Identity({ modelId }: { modelId: string }) {
-  const { data } = useQuery(convexQuery(api.catalog.models.query.get, { model_id: modelId }))
+  const { data } = useQuery(
+    convexQuery(api.products.entity_overview.models.get, { model_id: modelId }),
+  )
   const name = data?.display_name
 
   return (

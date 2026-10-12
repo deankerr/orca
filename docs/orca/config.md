@@ -2,11 +2,9 @@
 
 Variables and deployment defaults, grouped by package and scope.
 
-Provider identity repairs and shared observation omissions are maintained in `scan/provider.ts`;
-`scan/model.ts` excludes endpoint `status`. Current Catalog metadata has independent top-level
-omission lists in `catalog/metadata.ts`. Model and endpoint omissions remove fields unused by
-current Catalog views; provider omissions are empty. Unlisted keys remain included. Reapplying a
-changed Catalog policy to stored entities requires the refresh described in `catalog.md`.
+The current entity stages in `ingestionNew` own metadata omission lists for models, providers,
+and endpoints. Unlisted keys remain included. Changing a current projection does not rewrite
+existing rows automatically; `catalog.md` describes reprojecting them from retained captures.
 
 ## Legend
 

@@ -5,9 +5,9 @@ import { api } from '@orca/backend/api'
 import { useQuery } from '@tanstack/react-query'
 
 export function useEndpoints() {
-  return useQuery(convexQuery(api.catalog.endpoints.query.grid, {}))
+  return useQuery(convexQuery(api.products.grid.endpoints.grid, {}))
 }
 
 export function useStats() {
-  return useQuery(convexQuery(api.catalog.stats.query.grid, {}))
+  return useQuery(convexQuery(api.products.grid.stats.grid, {}))
 }

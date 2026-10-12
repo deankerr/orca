@@ -5,7 +5,7 @@ import type { RawScan, ScanEntry } from '#scan/collection'
 
 import { IsoDateTime } from '../isodatetime'
 import { fromCollected } from './extract'
-import type { ScanPair } from './model'
+import type { Scan, ScanPair } from './model'
 
 /** Read the existing JSONL captures directly, without legacy Scan's entity filtering. */
 export function createScanReader(objects: ObjectReader) {
@@ -49,6 +49,11 @@ export function createScanReader(objects: ObjectReader) {
     return { from_scan_at: after, scan_at: next }
   }
 
+  async function loadScan(scan_at: string): Promise<Scan> {
+    const [text] = await objects.loadMany([{ path: 'scans', name: `scan.${scan_at}.jsonl` }])
+    return fromCollected(decodeScan(scan_at, text ?? null))
+  }
+
   async function loadPair({
     from_scan_at,
     scan_at,
@@ -75,7 +80,7 @@ export function createScanReader(objects: ObjectReader) {
     }
   }
 
-  return { firstInput, nextInput, loadPair }
+  return { firstInput, nextInput, loadScan, loadPair }
 }
 
 function scanAtFromName(name: string): string {
