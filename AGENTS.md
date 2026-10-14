@@ -1,8 +1,8 @@
 # ORCA (OpenRouter Capability Analysis)
 
-**This branch is incompatible with current production data, and does not require consideration of transition during development. The locally associated dev deployment can be destroyed and a new instance provisioned when required. Do not merge without a migration plan.**
+**This branch contains a backend rewrite which is incompatible with the current production deployment. Transition considerations are not requirement during development and will be handled together as the final task. Do not merge without a migration plan.**
 
-@docs/catalog-projection-plan.md
+**The locally associated dev deployment can be destroyed and a new instance provisioned when required.**
 
 ## Development
 

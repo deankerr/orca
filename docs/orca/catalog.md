@@ -1,97 +1,84 @@
 # Catalog policy
 
-## Retained facts
+Catalog retains current entity knowledge, sparse observations, complete price quotes, stats readings,
+and Events. Each projection selects its own facts from extracted scans. Current-view metadata omission
+lists do not constrain Events or source captures; alert eligibility does not constrain retention.
 
-Explicit entity properties represent selected, durable domain concepts. Open metadata retains
-less constrained upstream facts selected by the current projection, accepting changes that have no
-visible product effect. Endpoint projections also carry selected model context for consumers.
+## Current facts
 
-- Missing fields in a newer observation remove the corresponding retained facts.
-- An entity's disappearance preserves its last-known facts.
-- Catalog writes and Events are independent; product relevance does not determine which facts Catalog retains.
-- Endpoint stats have separate storage so volatile metrics do not trigger entity-record updates.
+Current rows preserve last-known facts when an entity disappears. A newer observation replaces its
+selected facts, including removal of fields no longer supplied. Metadata selection lives with the
+current entity projections in `ingestion/`; changing it requires explicit refresh of existing rows.
 
-## Observation dates
-
-Current records express knowledge at the ORCA clock. An unchanged entity can have an old
-`scan_at` while still representing current knowledge; replay preserves its source observation date.
-
-| Stored field    | Interpretation in current entity records                                |
+| Date            | Meaning                                                                 |
 | --------------- | ----------------------------------------------------------------------- |
-| `scan_at`       | Source scan for retained facts, independent of ingestion or write time. |
-| `first_scan_at` | First retained observation of this identity.                            |
-| `or_created_at` | Upstream creation time, when supplied.                                  |
-| `unlisted_at`   | Endpoint disappearance observed after the last retained facts.          |
+| `scan_at`       | Source of the retained facts; unchanged facts can keep an older date.   |
+| `first_scan_at` | First retained observation, preserved across updates and reappearances. |
+| `or_created_at` | Upstream creation time.                                                 |
+| `unlisted_at`   | Endpoint disappearance; relisting clears it.                            |
 
-Replacements and reappearances preserve `first_scan_at`. Every retained entity has a first
-observation; initialization establishes it at the baseline scan.
+- Model/provider record presence does not establish serving availability.
+- Endpoint unlisting retains its facts and last source date.
+- Grid includes listed endpoints and a recent-unlisting window, configured in `config.md`.
+- Older rows remain available to entity and history queries.
 
-## Availability
+### Current stats
 
-Endpoint UUIDs provide continuity across temporary absences. Unlisting preserves the last
-source `scan_at`; relisting replaces the facts and clears `unlisted_at`.
+Current stats replace the default-tier snapshot only for a newer scan. Missing, negative, or nonfinite
+readings are omitted.
 
-Model/provider record presence is distinct from serving availability. ORCA represents their
-availability through associated endpoints, while retaining their own facts independently.
+Snapshot capacity is 1 MiB or 8,192 rows in one document. Reassess sharding as usage approaches either limit.
+
+- 🔭 2026-10-14 prod `v4_current_stats_snapshot`: 121,309 Convex bytes / 1,253 rows (11.6% / 15.3% of limits).
 
 ## Observation history
 
-`catalog_observations` retains sparse, typed states for models, providers, and endpoints.
-Baseline establishes detected entities; subsequent rows record changes in the selected facts.
-An unchanged scan produces no row. Missing history before the baseline means unknown, not absent.
+`catalog_observations` establishes baseline states and records changes to these facts:
 
-Models retain independent detection and endpoint count: a detected model may have zero endpoints.
-Providers are discovered through endpoints, so their detection is derived from a positive count.
-Counts are computed from each extracted scan's distinct endpoint identities. Zero counts and
-non-detection are recorded on departure; continued absence produces no further rows.
+| Entity   | Retained state                                                             |
+| -------- | -------------------------------------------------------------------------- |
+| Model    | Detection and endpoint count, including detected models with no endpoints. |
+| Provider | Endpoint count; provider observation is derived from endpoint presence.    |
+| Endpoint | Detection, model, provider, and provider tag.                              |
 
-Endpoint states retain detection, model ID, provider ID, and provider tag. A disappearance keeps
-the last-known relationship context without implying active membership. Reappearance records a
-new state even when the context matches the previous episode. Count changes produce parent rows;
-replacing endpoints at the same count is represented by the endpoint rows alone.
+- Counts use distinct endpoint identities; replacing endpoints without changing a parent's count adds no parent row.
+- Unchanged states produce no row; reappearance records a new state even when it matches a prior episode.
+- Departures retain zero counts or non-detection; endpoint departures keep their last relationship context.
+- Missing pre-baseline history is unknown.
+- Observation rows contain no metadata snapshot.
 
-Historical membership queries must resolve each candidate endpoint's latest state at the requested
-time. A model/provider index discovers candidates but cannot establish continued membership:
-the endpoint's later departure may be recorded under another model or provider.
+## Current-view refresh
 
-Observation history is an independent projection. Existing Listing consumers, including current
-projection refresh, continue to use Listing history until their individual cutovers.
+Refresh rebuilds one retained entity with the current projection rules.
 
-## Current projection refresh
+- Preserve identity, first observation, and endpoint availability.
+- Leave histories, Events, ingestion progress, and delivery untouched.
+- Changed facts take the selected capture's date; unchanged facts retain their existing date.
 
-The current model, provider, and endpoint stages in `ingestion` own their metadata omission
-lists and current-field projections. Refresh uses those same projections to rebuild all retained
-entity fields, including endpoint pricing and model context, from stored captures. Missing fields
-are removed under the current rules. Identity, first observation, and endpoint availability remain
-intact. A changed projection records its selected source date; a no-op preserves the existing date.
+### Source selection
 
-Refresh is independent of ingestion progress and does not produce Events, listings, price history,
-or stats. Changing current projection rules can therefore change current facts without rewriting
-their historical projections. This is an operator maintenance operation, not a page-loading API.
+The entity's latest observation through the completed horizon selects its source:
 
-Refresh first tries the latest completed input's capture. If the entity is absent, it uses the more
-recent of its Catalog source date and the last scan with endpoint membership. Membership
-transitions are resolved through endpoint identity, including reassignment to another model or
-provider; the closing input's `from_scan_at` identifies the actual preceding capture.
-Models still observed without endpoints therefore use their newer source observations.
+- A detected model or endpoint uses the horizon's capture; a provider does so when its endpoint count is positive.
+- A departed entity uses the predecessor capture recorded by its departure registration.
+- Sparse observation dates are transitions, not last-seen dates; subtracting an assumed scan interval is incorrect.
 
-For a disappeared model with no Listing history, Catalog's source date is a known observation,
-not necessarily its final one. Finding the final endpointless observation requires searching
-captures. Source loading also requires that the selected capture remains available. Refresh
-reports missing entities or captures rather than replacing their facts with empty values.
+This also locates departed endpointless models without searching intervening captures.
 
-From `packages/backend`, refresh an entity against the configured deployment:
+- Missing source captures or entities fail explicitly.
+- Rows ahead of the completed horizon must wait.
+- A concurrent row change aborts replacement; retry the entity.
+
+### Operator commands
+
+Run from `packages/backend` against the intended deployment:
 
 ```sh
-bunx convex run ingestion/refresh:refreshCurrentEntity '{"entity_kind":"model","entity_id":"author/model"}'
+bunx convex run ingestion/refresh:refreshCurrentEntity '{"entity_kind":"model","entity_id":"author/model"}' --deployment <deployment>
 ```
 
-For bulk work, `ingestion/refresh:targets` accepts `entity_kind` and Convex `paginationOpts`,
-returning targets to pass independently to `refreshCurrentEntity`. These are internal operator
-functions. Each refresh reads complete source captures for one entity.
+For bulk refresh, page `ingestion/refresh:targets` with `entity_kind` and `paginationOpts`, then refresh
+those targets individually.
 
-A current row ahead of the completion clock requires waiting for that input to complete. Any
-concurrent change to the selected row causes a retryable failure rather than being overwritten.
-Refresh does not reopen committed ingestion stages. Projection rules must remain stable while
-inputs are incomplete; changing policy during a bulk refresh requires rerunning it with the
-final policy.
+- Each refresh loads a complete source capture.
+- Keep projection rules stable throughout the operation; rerun if the rules change.

@@ -1,12 +1,15 @@
 ---
 name: orca-data-study
-description: Conduct and document detailed studies of ORCA production data using read-only Convex queries or temporary table dumps. Use when collecting, analyzing, or restructuring evidence; not for simply reading documentation or evidence.
+description: Conduct and document detailed studies of ORCA production data using read-only Convex queries or temporary table dumps. Use for collecting, analyzing, or restructuring study evidence; excludes simple inline observations and reading-only tasks.
 ---
 
 # ORCA production-data studies
 
 Follow orca-docs for writing style. The rules here override its maintenance and organization rules for dated studies.
-Keep product decisions in `docs/orca`; keep measurements and executable methods in `docs/evidence`.
+Keep product decisions in `docs/orca`; keep detailed study measurements and executable methods in `docs/evidence`.
+
+Simple one-line observations of production data use orca-docs and the note convention in `docs/orca/AGENTS.md`.
+They do not require a study directory or supporting artifacts.
 
 ## Collect
 

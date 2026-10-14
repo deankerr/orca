@@ -1,25 +1,27 @@
 # Development data
 
-Run from `packages/backend`. The ingestion runner builds Catalog from existing captures. One capture establishes baseline state; subsequent captures
-produce observed changes.
+The runner derives Catalog from retained captures. Use the worktree's deployment and keep its object
+source fixed for the timeline. Shared-source reads and local writes are configured independently in
+`config.md`; newly collected local captures are not read while a remote source is selected.
+
+Run from `packages/backend`:
 
 ```sh
-# Fresh timeline: select the first capture on or after a recent date.
-bunx convex run --deployment '<dev-deployment>' ingestion/register:next '{"start_at":"<YYYY-MM-DD>"}'
+# Fresh timeline: first capture at or after the selected date.
+bunx convex run ingestion/register:next '{"start_at":"<YYYY-MM-DD>"}' --deployment <dev-deployment>
 
-# Existing timeline: catch up from its current position.
-bunx convex run --deployment '<dev-deployment>' ingestion/register:next '{}'
+# Resume pending work or continue an existing timeline.
+bunx convex run ingestion/register:next '{}' --deployment <dev-deployment>
+
+# Inspect the latest registration and completed horizon.
+bunx convex run ingestion/state:latest '{}' --deployment <dev-deployment>
+bunx convex run ingestion/state:clock '{}' --deployment <dev-deployment>
 ```
 
-`start_at` accepts an ISO date or timestamp with an offset. It requires a fresh
-timeline and at least one capture at or after that time. Once an input is registered,
-omit `start_at` to resume, including after partial baseline failure.
+`start_at` accepts an ISO date or offset-bearing timestamp and requires a fresh timeline plus an available
+capture at or after it. Omit it after any registration, including a partially completed baseline. A fresh
+manual invocation without it begins at the earliest available capture.
 
-Without `start_at`, a fresh manual replay begins at the earliest source history.
-Replay continues in the background until caught up. Preview initialization applies
-the two-day starting window recorded in `config.md` to the runner and resumes
-any existing input, even when its baseline has not completed.
-
-Projections are available in `catalog_*` tables and their progress and clock
-through `ingestion/state:latest` and `ingestion/state:clock`. Product readers use these
-projections through the latest completed input.
+One capture establishes baseline state; continuation runs in the background until caught up. Preview
+initialization uses the recent-history window in `config.md` or resumes an existing timeline. It does
+not collect source captures. Keep automatic Discord sending disabled for silent replay.

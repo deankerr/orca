@@ -1,48 +1,46 @@
 # ORCA setup
 
-Requires GitHub access, Bun, Node.js 24+, and a global Portless installation.
-The backend runs on Convex; the web app deploys through Vercel.
+Requires repository access, Bun, Node.js 24+, and a global Portless installation. Convex hosts the backend;
+Vercel deploys the web app. `config.md` records environment values and defaults.
 
-## Project setup
+## Services
 
-Provision AuthKit through the Convex dashboard with a shared dev/preview environment and a
-separate production environment. Set project defaults from `config.md` before creating deployments.
+Provision AuthKit through Convex with shared dev/preview and separate production environments. Apply
+the maintained project defaults before creating deployments. Configure WorkOS login policy and sign-out
+allowlists for those environments.
 
-Enable password login in shared AuthKit. Create a verified development administrator with
-external ID `orca-development-admin`, using the email recorded in `config.md`. Store its email,
-password, and user ID in the admin defaults. Password rotation must update WorkOS and every
-stored copy. WorkOS MCP can use the Convex-provided credentials for provisioning.
+For development password login, create a verified administrator with external ID `orca-development-admin`.
+Store the matching email, password, and user ID in the dev/preview defaults. Password rotation must update
+WorkOS and every stored copy. Convex-provided WorkOS credentials can be used for provisioning.
 
-Enable production GitHub OAuth, set the production administrator's ID, and disable signups.
-Register the WorkOS sign-out URIs recorded in `config.md`.
+For each Vercel scope, configure its Convex deploy credential, matching WorkOS client/API credentials,
+and cookie secret. The build deploys the backend before building the web app and supplies its URL.
+Preview deployment also schedules Catalog initialization from existing captures.
 
-In each Vercel scope, set the Convex deploy credential, matching WorkOS client/API credentials,
-and a generated cookie secret. Verify authentication in a preview before production.
+An independently collecting deployment must read its own objects: clear `ORCA_OBJECTS_SOURCE_DEPLOYMENT`,
+choose storage, and enable the required collection/ingestion schedules. Shared dev/preview defaults instead
+read canonical remote captures. Source selection must be established before starting a timeline.
 
-## Machine and checkout setup
+## Local checkout
 
-Install dependencies from the repository root:
+Install dependencies and authorize the Convex CLI:
 
 ```sh
 bun install --frozen-lockfile
+bun run --cwd packages/backend convex login
 ```
 
-Authorize the CLI with `bun run --cwd packages/backend convex login`
-(`--no-open` for a remote terminal). Use `orca-worktree-setup` when a fresh worktree needs its
-own backend or running app.
+Use `--no-open` for remote CLI login. Use `orca-worktree-setup` when a fresh worktree needs its own backend
+or running app. Start from the root so Next.js and Convex receive the same browser origin:
 
 ```sh
 bun run dev          # Web and backend
-bun run dev:web      # Web, with a backend push before startup
+bun run dev:web      # Web, including a backend push before startup
 bun run dev:backend  # Backend
-bun run fix          # Repository validation and formatting; mutates files
 ```
 
 ## Remote development host
 
-Connect Tailscale, enable tailnet HTTPS, and grant the development user permission to manage
-Tailscale Serve. Set `export PORTLESS_TAILSCALE=1` in the host's shell startup configuration.
-For an agent server running as a systemd service, also set `Environment=PORTLESS_TAILSCALE=1`
-in its service override and restart it to inherit the setting.
-
-Web startup prints the tailnet URL that the browser can open.
+Connect Tailscale, enable tailnet HTTPS, and permit the development user to manage Tailscale Serve.
+Set `PORTLESS_TAILSCALE=1` in shell startup. An agent server running under systemd also needs
+`Environment=PORTLESS_TAILSCALE=1` in its service override and a restart. Web startup prints the browser URL.

@@ -23,8 +23,9 @@ export function providerId(slug: string): string {
 
 // provider_info mixes provider facts with endpoint defaults. These behavioral claims
 // belong to endpoint.data_policy, never the selected provider. Keep provider URLs,
-// unknown facts, and their upstream camelCase names. See docs/orca/provider-identity.md.
+// unknown facts, and their upstream camelCase names. See docs/orca/providers.md.
 const omittedDataPolicyKeys = [
+  'freeModels',
   'paidModels',
   'training',
   'trainingOpenRouter',
@@ -44,7 +45,7 @@ export const ProviderInput = z
 
 export type ProviderInput = z.infer<typeof ProviderInput>
 
-/** Inputs follow model-ID then endpoint-ID order; see docs/orca/provider-identity.md. */
+/** Inputs follow model-ID then endpoint-ID order; see docs/orca/providers.md. */
 export function assembleProviders(providers: ProviderInput[]): Map<string, ExtractedProvider> {
   const groups = R.groupBy(providers, ({ slug }) => providerId(slug))
 

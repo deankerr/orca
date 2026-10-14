@@ -1,36 +1,32 @@
 # Experimental feed
 
-- Paginated product queries also support experiments and reactive clients.
-- Feed uses the shared Monitor/Discord alert content, without batching; its output format remains experimental.
+Feed renders the shared alert content as individual JSON items with text descriptions. Its output format
+is experimental; it has neither Discord batching nor Discord's pricing-frequency suppression.
 
-## HTTP requests
+## HTTP interface
 
-- `GET /events/feed` returns JSON in observation order, newest first.
-- `limit` defaults to 20 and accepts 1–100 source Event or observation rows, before curation.
-- Choose one scope: exact entity, model activity, or provider activity; omitting scope returns the complete feed.
-- Exact entity selects its own changes; model/provider activity also includes related endpoint changes.
+`GET /events/feed` is served on the Convex HTTP origin. Results are newest first through completed
+ingestion. `limit` counts source Events/observations before selection; defaults and bounds are in `config.md`.
 
-```text
-GET /events/feed?limit=20
-GET /events/feed?entity_kind=endpoint&entity_id=<endpoint_id>
-GET /events/feed?entity_kind=model&entity_id=deepseek%2Fdeepseek-v4-flash-0731
-GET /events/feed?entity_kind=provider&entity_id=inceptron
-GET /events/feed?model_id=deepseek%2Fdeepseek-v4-flash-0731
-GET /events/feed?provider_id=inceptron
-GET /events/feed?limit=20&cursor=<opaque_cursor>
-```
+| Parameters                    | Scope                                                            |
+| ----------------------------- | ---------------------------------------------------------------- |
+| None                          | All activity.                                                    |
+| `entity_kind` and `entity_id` | One entity's own changes; both parameters are required together. |
+| `model_id`                    | Model activity, including related endpoints.                     |
+| `provider_id`                 | Provider activity, including related endpoints.                  |
 
-- Invalid parameters or cursors return HTTP 400; restart without a cursor when continuation becomes invalid.
-- `next` is an absolute continuation URL or null; the HTTP `Link` header repeats continuation with `rel="next"`.
+Choose one scope. The response is `{ "events": [...], "next": <URL or null> }`.
 
-```json
-{ "events": [], "next": "<absolute continuation URL>" }
-```
+- The `Link` header also supplies the continuation as `rel="next"`.
+- Invalid parameters or cursors return HTTP 400; query failures return HTTP 500.
+- Successful responses use `Cache-Control: no-store`.
 
-## Pagination over growing history
+## Continuation
 
-- Follow `next` with its preserved filters and limit until null, including after an empty curated page.
-- Merged-stream seek cursors preserve position as new head rows arrive and distinguish rows sharing a scan time.
-- Restart at the head to read new activity.
-- Late processing inserts events at their observation time; a completed traversal can precede older events arriving.
-- Reads are capped at the latest completed ingestion; polling the head alone cannot discover backfilled older activity.
+- Follow `next` until null, including after empty selected pages; it preserves scope and limit.
+- Cursors seek by observation order and distinguish rows sharing a scan time.
+- New head rows do not shift the cursor position.
+- Restart without a cursor to read new activity or recover an invalid continuation.
+
+⚠️ A traversal can miss history inserted behind its cursor. Polling the head alone cannot
+discover older inserted activity.

@@ -32,6 +32,8 @@ Assume readers can inspect code, search the repository, and already have related
 - Describe the resulting system without requiring knowledge of discarded designs.
 - State what is, retaining exclusions only for critical constraints or likely misunderstandings.
 - Keep operational instructions to prerequisites, commands, and meaningful consequences.
+- Document operator commands in the owning subject's docs, regardless of Convex function type or visibility.
+- Include runnable invocations, required inputs, and meaningful results or side effects; use `discord.md` as an example.
 
 ## Organization
 
