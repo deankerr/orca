@@ -9,6 +9,7 @@ const FAMILY_LOGO_KEYS_BY_PREFIX: Record<string, readonly string[]> = {
   meituan: ['longcat'],
   moonshotai: ['kimi'],
   'x-ai': ['grok'],
+  xiaomi: ['mimo'],
 }
 
 const ENTITY_LOGO_KEY_OVERRIDES: Record<string, string> = {

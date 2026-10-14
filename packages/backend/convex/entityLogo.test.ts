@@ -12,6 +12,11 @@ test('entity logos prefer family brands and fall back for provider suffixes', ()
     ['amazon-bedrock/claude-on-aws', 'anthropic'],
     ['wandb-legacy/fp4', 'wandb'],
     ['amazon-nova', 'nova'],
+    ['xiaomi', 'xiaomi'],
+    ['xiaomi/fp4', 'xiaomi'],
+    ['Xiaomi/MiMo-V2.5-Pro', 'mimo'],
+    ['xiaomi/mimo-v2-flash:free', 'mimo'],
+    ['unknown/mimo', 'unknown'],
     ['unknown/gemini', 'unknown'],
     ['', 'fallback'],
   ]) {
