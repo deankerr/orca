@@ -11,7 +11,6 @@ import * as currentProviders from './currentProviders'
 import * as currentStats from './currentStats'
 import * as events from './events'
 import type { ScanPair } from './input'
-import * as listingHistory from './listingHistory'
 import * as observations from './observations'
 import * as pricingHistory from './pricingHistory'
 import * as statsHistory from './statsHistory'
@@ -22,7 +21,6 @@ const processes = {
   currentProviders: currentProviders.ingest,
   currentEndpoints: currentEndpoints.ingest,
   currentStats: currentStats.ingest,
-  listingHistory: listingHistory.ingest,
   observations: observations.ingest,
   pricingHistory: pricingHistory.ingest,
   statsHistory: statsHistory.ingest,

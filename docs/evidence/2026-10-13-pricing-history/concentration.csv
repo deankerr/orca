@@ -1,0 +1,13 @@
+metric,top_n,count,fraction
+endpoint_price_rows,1,580,0.029292929292929294
+endpoint_price_rows,5,2534,0.12797979797979797
+endpoint_price_rows,10,3836,0.19373737373737374
+endpoint_price_rows,20,5483,0.2769191919191919
+endpoint_text_price_steps,1,577,0.045627075755179505
+endpoint_text_price_steps,5,2518,0.19911434445674522
+endpoint_text_price_steps,10,3796,0.30017396805313934
+endpoint_text_price_steps,20,5377,0.42519373715008696
+model_price_rows_during_membership,1,2103,0.10621212121212122
+model_price_rows_during_membership,5,6917,0.34934343434343434
+model_price_rows_during_membership,10,10798,0.5453535353535354
+model_price_rows_during_membership,20,12528,0.6327272727272727

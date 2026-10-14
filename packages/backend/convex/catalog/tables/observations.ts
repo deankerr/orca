@@ -6,6 +6,15 @@ export const OBSERVATIONS_TABLE = 'catalog_observations' as const
 
 const fields = { entity_id: v.string(), scan_at: v.string() }
 
+export const endpointObservation = v.object({
+  ...fields,
+  entity_kind: v.literal('endpoint'),
+  detected: v.boolean(),
+  model_id: v.string(),
+  provider_id: v.string(),
+  provider_tag: v.string(),
+})
+
 export const observationsTable = defineTable(
   v.union(
     v.object({
@@ -19,14 +28,7 @@ export const observationsTable = defineTable(
       entity_kind: v.literal('provider'),
       endpoint_count: v.number(),
     }),
-    v.object({
-      ...fields,
-      entity_kind: v.literal('endpoint'),
-      detected: v.boolean(),
-      model_id: v.string(),
-      provider_id: v.string(),
-      provider_tag: v.string(),
-    }),
+    endpointObservation,
   ),
 )
   .index('by_entity_kind_and_entity_id_and_scan_at', ['entity_kind', 'entity_id', 'scan_at'])

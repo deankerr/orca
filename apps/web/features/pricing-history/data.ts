@@ -1,13 +1,14 @@
 import type { api } from '@orca/backend/api'
 import type { FunctionReturnType } from 'convex/server'
 
-type Listings = FunctionReturnType<typeof api.products.pricing_history.listings.forEndpoint>
-type PricingPage = FunctionReturnType<typeof api.products.pricing_history.pricing.observe>
-type Prices = PricingPage['page'][number][]
+type ObservedEndpoint = FunctionReturnType<
+  typeof api.products.pricing_history.query.observations
+>[number]
+type PricedEndpoint = FunctionReturnType<typeof api.products.pricing_history.query.prices>[number]
 export type PricingHistory = {
   modelId: string
   asOf: number
-  endpoints: { id: string; listings: Listings; prices: Prices }[]
+  endpoints: (ObservedEndpoint & PricedEndpoint)[]
 }
 
 export const DAY = 86_400_000
@@ -21,27 +22,27 @@ export type Trace = {
   current: boolean
 }
 
-/** Listed, positively metered spans. Never carry a quote across a listing gap. */
+/** Detected, positively metered spans. Never carry a quote across a detection gap. */
 export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: string): Trace[] {
   const traces: Trace[] = []
 
   for (const endpoint of pricingHistory.endpoints) {
     let trace: Trace | undefined
-    let context: Listings[number] | undefined
-    let quote: PricingPage['page'][number] | undefined
-    const listings = new Map(endpoint.listings.map((row) => [Date.parse(row.scan_at), row]))
+    let context: ObservedEndpoint['observations'][number] | undefined
+    let quote: PricedEndpoint['prices'][number] | undefined
+    const observations = new Map(endpoint.observations.map((row) => [Date.parse(row.scan_at), row]))
     const prices = new Map(endpoint.prices.map((row) => [Date.parse(row.scan_at), row]))
-    const times = [...new Set([...listings.keys(), ...prices.keys()])].toSorted((a, b) => a - b)
+    const times = [...new Set([...observations.keys(), ...prices.keys()])].toSorted((a, b) => a - b)
 
     for (const at of times) {
       if (at > pricingHistory.asOf) {
         break
       }
-      const listing = listings.get(at)
+      const observation = observations.get(at)
 
-      if (listing !== undefined) {
-        context = listing
-        if (listing.state === 'unlisted') {
+      if (observation !== undefined) {
+        context = observation
+        if (!observation.detected) {
           quote = undefined
         }
         if (trace) {
@@ -52,14 +53,14 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
       }
 
       const row = prices.get(at)
-      if (context?.state === 'listed' && row) {
+      if (context?.detected === true && row) {
         quote = row
       }
 
       const value = Number(quote?.meters[meter])
 
       if (
-        context?.state !== 'listed' ||
+        context?.detected !== true ||
         context.model_id !== pricingHistory.modelId ||
         !Number.isFinite(value) ||
         value <= 0

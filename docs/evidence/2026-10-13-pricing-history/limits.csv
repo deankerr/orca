@@ -1,0 +1,6 @@
+constraint,limit,checked_on,source
+documents_read,32000,2026-10-14,https://docs.convex.dev/production/state/limits
+bytes_read,16777216,2026-10-14,https://docs.convex.dev/production/state/limits
+return_value_bytes,16777216,2026-10-14,https://docs.convex.dev/production/state/limits
+database_queries,4096,2026-10-14,https://docs.convex.dev/production/state/limits
+array_elements,8192,2026-10-14,https://docs.convex.dev/production/state/limits

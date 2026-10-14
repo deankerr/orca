@@ -9,7 +9,6 @@ export const ingestionProcesses = [
   'currentProviders',
   'currentEndpoints',
   'currentStats',
-  'listingHistory',
   'observations',
   'pricingHistory',
   'statsHistory',

@@ -11,7 +11,6 @@ import {
   currentStatsTable,
 } from './catalog/tables/current'
 import { EVENTS_TABLE, eventsTable } from './catalog/tables/events'
-import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './catalog/tables/listings'
 import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observations'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
@@ -30,7 +29,6 @@ export default defineSchema(
     [CURRENT_PROVIDERS_TABLE]: currentProvidersTable,
     [CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
     [CURRENT_STATS_TABLE]: currentStatsTable,
-    [ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,
     [OBSERVATIONS_TABLE]: observationsTable,
     [ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [ENDPOINT_STATS_TABLE]: endpointStatsTable,

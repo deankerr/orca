@@ -13,7 +13,7 @@ import * as objects from '#objects'
 import type { RawScan } from '#scans/collection'
 
 import { CURRENT_MODELS_TABLE } from '../catalog/tables/current'
-import { ENDPOINT_LISTINGS_TABLE } from '../catalog/tables/listings'
+import { OBSERVATIONS_TABLE } from '../catalog/tables/observations'
 import schema from '../schema'
 import { REGISTRATIONS_TABLE, ingestionProcesses } from './table'
 
@@ -141,7 +141,6 @@ test('one selected capture establishes baseline state and stats without creation
     models: await ctx.db.query('catalog_current_models').collect(),
     providers: await ctx.db.query('catalog_current_providers').collect(),
     endpoints: await ctx.db.query('catalog_current_endpoints').collect(),
-    listings: await ctx.db.query('catalog_listing_history').collect(),
     observations: await ctx.db.query('catalog_observations').collect(),
     pricing: await ctx.db.query('catalog_pricing_history').collect(),
     stats: await ctx.db.query('catalog_stats_history').collect(),
@@ -154,12 +153,11 @@ test('one selected capture establishes baseline state and stats without creation
     expect(entities[0]).toMatchObject({ scan_at: b, first_scan_at: b })
   }
 
-  for (const history of [rows.listings, rows.pricing, rows.stats]) {
+  for (const history of [rows.pricing, rows.stats]) {
     expect(history).toHaveLength(1)
     expect(history[0]?.scan_at).toBe(b)
   }
 
-  expect(rows.listings[0]?.state).toBe('listed')
   expect(rows.observations).toMatchObject([
     {
       entity_kind: 'model',
@@ -336,12 +334,10 @@ test('overlapping Workpool attempts complete a baseline and exact successor with
     scan_at: b,
   })
   const rows = await t.run(async (ctx) => ({
-    listings: await ctx.db.query('catalog_listing_history').collect(),
     pricing: await ctx.db.query('catalog_pricing_history').collect(),
     stats: await ctx.db.query('catalog_stats_history').collect(),
     events: await ctx.db.query('catalog_events').collect(),
   }))
-  expect(rows.listings).toHaveLength(1)
   expect(rows.pricing.map((row) => row.scan_at)).toEqual([a, b])
   expect(rows.stats.map((row) => row.scan_at)).toEqual([a, b])
   expect(rows.events).toHaveLength(1)
@@ -358,22 +354,23 @@ test('independent processes commit in any order and repeated process calls retai
     from_scan_at: null,
     scan_at: a,
   })
-  const listing = {
+  const observation = {
     scan_at: a,
-    endpoint_id: 'endpoint',
+    entity_id: 'endpoint',
     model_id: 'author/model',
     provider_id: 'provider',
     provider_tag: 'provider',
-    state: 'listed' as const,
+    detected: true,
+    entity_kind: 'endpoint' as const,
   }
   await Promise.all([
     t.mutation(internal.ingestion.events.write, { registration_id, rows: [] }),
-    t.mutation(internal.ingestion.listingHistory.write, { registration_id, rows: [listing] }),
-    t.mutation(internal.ingestion.listingHistory.write, { registration_id, rows: [listing] }),
+    t.mutation(internal.ingestion.observations.write, { registration_id, rows: [observation] }),
+    t.mutation(internal.ingestion.observations.write, { registration_id, rows: [observation] }),
   ])
   const registration = await record(t, registration_id)
   ok(registration.progress.kind === 'pending')
-  expect(registration.progress.completed.toSorted()).toEqual(['events', 'listingHistory'])
+  expect(registration.progress.completed.toSorted()).toEqual(['events', 'observations'])
   expect(await t.query(internal.ingestion.state.clock, {})).toBeNull()
   await Promise.all([
     t.action(internal.ingestion.ingest.run, { registration_id }),
@@ -381,9 +378,9 @@ test('independent processes commit in any order and repeated process calls retai
   ])
   expect(await record(t, registration_id)).toMatchObject({ progress: { kind: 'complete' } })
   expect(await t.query(internal.ingestion.state.clock, {})).toBe(a)
-  expect(
-    await t.run(async (ctx) => await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()),
-  ).toHaveLength(1)
+  expect(await t.run(async (ctx) => await ctx.db.query(OBSERVATIONS_TABLE).collect())).toHaveLength(
+    1,
+  )
 })
 
 test('empty observation output completes the final process exactly once', async () => {
@@ -571,9 +568,9 @@ test('exhausted Workpool retries preserve successful processes and recovery comp
   })
   expect(await record(t, id)).toMatchObject({ progress: { kind: 'complete' } })
   expect(await t.query(internal.ingestion.state.clock, {})).toBe(a)
-  expect(
-    await t.run(async (ctx) => await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()),
-  ).toHaveLength(1)
+  expect(await t.run(async (ctx) => await ctx.db.query(OBSERVATIONS_TABLE).collect())).toHaveLength(
+    3,
+  )
 })
 
 test('scheduled admission requires the cron flag while continuations remain independent', async () => {

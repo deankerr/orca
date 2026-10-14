@@ -14,7 +14,7 @@ const modules = Object.fromEntries(
     .map((file) => [file, async (): Promise<unknown> => await import(file)]),
 )
 
-test('products read the new catalog and cap history at completed registration, not pending work', async () => {
+test('products expose live pricing histories with an independent completed-ingestion clock', async () => {
   const t = convexTest({ schema, modules })
   const a = '2026-10-10T10:00:00.000Z'
   const b = '2026-10-10T11:00:00.000Z'
@@ -82,13 +82,14 @@ test('products read the new catalog and cap history at completed registration, n
         discount: 0,
         meters: { prompt: '0' },
       })
-      await ctx.db.insert('catalog_listing_history', {
-        endpoint_id: 'endpoint',
+      await ctx.db.insert('catalog_observations', {
+        entity_id: 'endpoint',
         scan_at,
         model_id: 'model',
         provider_id: 'provider',
         provider_tag: 'provider',
-        state: 'listed',
+        detected: true,
+        entity_kind: 'endpoint',
       })
       await ctx.db.insert('catalog_stats_history', {
         endpoint_id: 'endpoint',
@@ -104,9 +105,11 @@ test('products read the new catalog and cap history at completed registration, n
     as_of: a,
     rows: [{ endpoint_id: 'endpoint', p50_latency: 1 }],
   })
-  expect(
-    await t.query(api.products.pricing_history.listings.endpoints, { model_id: 'model' }),
-  ).toEqual(['endpoint'])
+  const observations = await t.query(api.products.pricing_history.query.observations, {
+    model_id: 'model',
+  })
+  expect(observations.map((endpoint) => endpoint.id)).toEqual(['endpoint'])
+  expect(observations[0]?.observations.map((row) => row.scan_at)).toEqual([a, b])
 
   expect(
     await t.query(api.products.entity_overview.models.get, { model_id: 'model' }),
@@ -122,19 +125,13 @@ test('products read the new catalog and cap history at completed registration, n
   ).toEqual(grid[0])
 
   const args = { endpoint_id: 'endpoint', cutoff: b, paginationOpts }
-  const prices = await t.query(api.products.pricing_history.pricing.list, args)
-  const listings = await t.query(api.products.pricing_history.listings.list, args)
   const stats = await t.query(api.products.stats_history.query.list, args)
+  expect(stats.as_of).toBe(a)
+  expect(stats.page.map((row) => row.scan_at)).toEqual([a])
 
-  for (const result of [prices, listings, stats]) {
-    expect(result.as_of).toBe(a)
-    expect(result.page.map((row) => row.scan_at)).toEqual([a])
-  }
-
-  const live = await t.query(api.products.pricing_history.pricing.observe, {
-    endpoint_id: 'endpoint',
-    paginationOpts,
+  const live = await t.query(api.products.pricing_history.query.prices, {
+    model_id: 'model',
   })
-  expect(live.page.map((row) => row.scan_at)).toEqual([a, b])
-  expect(live.page[0]?.meters.prompt).toBe('0')
+  expect(live[0]?.prices.map((row) => row.scan_at)).toEqual([a, b])
+  expect(live[0]?.prices[0]?.meters.prompt).toBe('0')
 })

@@ -10,8 +10,6 @@ import type { RawScan } from '#scans/collection'
 import { extractScan as fromCollected } from '#scans/extract'
 
 import { CURRENT_MODELS_TABLE } from '../catalog/tables/current'
-import { ENDPOINT_LISTINGS_TABLE } from '../catalog/tables/listings'
-import type { EndpointListingRow } from '../catalog/tables/listings'
 import schema from '../schema'
 import { REGISTRATIONS_TABLE } from './table'
 
@@ -31,20 +29,11 @@ const lastSeen = '2026-10-02T14:07:00.000Z'
 const departure = '2026-10-02T16:13:00.000Z'
 const horizon = '2026-10-03T10:00:00.000Z'
 
-const listed: EndpointListingRow = {
-  scan_at: first,
-  endpoint_id: 'endpoint',
-  model_id: 'author/model',
-  provider_id: 'provider',
-  provider_tag: 'provider/tag',
-  state: 'listed',
-}
-
 const model = {
-  model_id: listed.model_id,
+  model_id: 'author/model',
   scan_at: first,
   first_scan_at: first,
-  slug: listed.model_id,
+  slug: 'author/model',
   permaslug: 'author/model-permanent',
   variant: 'standard',
   display_name: 'Example',
@@ -137,7 +126,6 @@ test('refresh restores a departed endpointless model from its final capture with
         metadata_json: '{"description":"Restored from capture"}',
       })
 
-      expect(await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()).toEqual([])
       expect(await ctx.db.query('catalog_events').collect()).toEqual([])
     })
 
@@ -279,14 +267,6 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
       progress: { kind: 'complete' },
     })
 
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, listed)
-
-    await ctx.db.insert(ENDPOINT_LISTINGS_TABLE, {
-      ...listed,
-      scan_at: departure,
-      state: 'unlisted',
-    })
-
     await ctx.db.insert('catalog_observations', {
       entity_kind: 'provider',
       entity_id: 'provider',
@@ -373,7 +353,6 @@ test('refresh rebuilds provider and endpoint fields while preserving first obser
       expect(await ctx.db.query('catalog_pricing_history').collect()).toEqual([])
       expect(await ctx.db.query('catalog_stats_history').collect()).toEqual([])
       expect(await ctx.db.query('catalog_current_stats').collect()).toEqual([])
-      expect(await ctx.db.query(ENDPOINT_LISTINGS_TABLE).collect()).toHaveLength(2)
       expect(await ctx.db.query(REGISTRATIONS_TABLE).collect()).toHaveLength(1)
     })
     // Reappearance and reassignment retain endpoint identity, but refresh its new relationships.

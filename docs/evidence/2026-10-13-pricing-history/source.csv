@@ -1,0 +1,14 @@
+field,value
+deployment,dependable-husky-550
+cli_version,1.45.0
+started_at,2026-10-13T16:22:56Z
+finished_at,2026-10-13T16:23:39Z
+scan_horizon_before,2026-10-13T15:40:43.170Z
+scan_horizon_after,2026-10-13T15:40:43.170Z
+read_method,CLI sandboxed readonly inline queries; all tables paginated to isDone
+requested_page_size,1000
+maximum_bytes_read_per_page,2000000
+percentiles,nearest rank; p50 is not the mean of two middle values
+bytes,sum of compact UTF-8 JSON rows without Convex system fields; excludes framing and protocol
+model_population,model IDs present in retained listing history; full histories count moved endpoints under each historical model
+text_price_steps,"quote timestamp with a positive-to-positive numeric change to prompt or completion during continuous listing, excluding simultaneous context boundaries; earlier context changes carry the prior quote"

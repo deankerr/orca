@@ -1,0 +1,5 @@
+strategy,description,subscriptions,client_stages,indexed_collections,logical_rows,single_append_logical_rows,single_append_prior_result_json_bytes
+context_then_prices,"Model context, then endpoint price pages",59,2,117,2373,581,118572
+endpoint,"Membership, then endpoint context and price pages together",117,2,117,2373,581,118572
+two_model,Independent model context and price aggregates,2,1,118,2508,2239,423095
+one_model,One model aggregate containing context and prices,1,1,117,2373,2374,448377
