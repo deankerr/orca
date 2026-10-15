@@ -14,6 +14,7 @@ import { EVENTS_TABLE, eventsTable } from './catalog/tables/events'
 import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observations'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
+import { COMMITS_TABLE, commitsTable } from './ingestion/commits'
 import { REGISTRATIONS_TABLE, registrationsTable } from './ingestion/table'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
@@ -35,6 +36,7 @@ export default defineSchema(
     [EVENTS_TABLE]: eventsTable,
 
     [REGISTRATIONS_TABLE]: registrationsTable,
+    [COMMITS_TABLE]: commitsTable,
   },
   {
     strictTableNameTypes: true,

@@ -61,7 +61,6 @@ Backend paths below are relative to `packages/backend/convex`.
 | Setting                      | Value                                                                            | Owner                              |
 | ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
 | Ingestion worker concurrency | 4; automatic action retries use Workpool defaults                                | `ingestion/pool.ts`                |
-| Preview baseline window      | First capture at/after 2 days before initialization; existing timelines resume   | `init.ts`                          |
 | Grid unlisting window        | 30 days before the completed observation clock                                   | `products/grid/endpoints.ts`       |
 | Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
 | Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |

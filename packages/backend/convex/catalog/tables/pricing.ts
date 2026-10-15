@@ -11,6 +11,8 @@ export const endpointPricesTable = defineTable({
   endpoint_id: v.string(),
   scan_at: v.string(),
   ...pricing.fields,
-}).index('by_endpoint_id_and_scan_at', ['endpoint_id', 'scan_at'])
+})
+  .index('by_endpoint_id_and_scan_at', ['endpoint_id', 'scan_at'])
+  .index('by_scan_at', ['scan_at'])
 
 export type EndpointPriceRow = Infer<typeof endpointPricesTable.validator>

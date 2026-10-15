@@ -37,7 +37,6 @@ test('products expose live pricing histories with an independent completed-inges
       model_id: 'model',
       display_name: 'Model',
       scan_at: a,
-      first_scan_at: a,
       slug: 'model',
       permaslug: 'model',
       variant: 'standard',
@@ -50,7 +49,6 @@ test('products expose live pricing histories with an independent completed-inges
       provider_id: 'provider',
       display_name: 'Provider',
       scan_at: a,
-      first_scan_at: a,
       metadata_json: '{}',
     })
     await ctx.db.insert('catalog_current_endpoints', {
@@ -61,7 +59,6 @@ test('products expose live pricing histories with an independent completed-inges
       provider_display_name: 'Provider',
       variant: 'standard',
       scan_at: a,
-      first_scan_at: a,
       model_display_name: 'Model',
       model_permaslug: 'model',
       model_or_created_at: a,

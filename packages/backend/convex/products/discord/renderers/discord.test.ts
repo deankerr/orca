@@ -4,11 +4,6 @@ import { ComponentType } from 'discord-api-types/v10'
 
 import type { EventRow as CatalogEvent } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
-import {
-  modelEntity as normalizeModel,
-  providerEntity as normalizeProvider,
-  endpointEntity as normalizeEndpoint,
-} from '../../../ingestion/lenses'
 import type { JsonValue } from '../../../json'
 import { render as renderPrepared } from '../../feed/render'
 import { curate } from '../../shared/alerts/curate'
@@ -36,21 +31,21 @@ const context = {
 }
 
 const snapshots = {
-  model: normalizeModel({
-    id: 'abcdef-123',
+  model: {
+    model_id: 'abcdef-123',
     variant: 'standard',
     slug: 'author/model',
     permaslug: 'author/model',
-    short_name: 'Model',
-    created_at: '2026-09-30T01:00:00Z',
+    display_name: 'Model',
+    or_created_at: '2026-09-30T01:00:00Z',
     input_modalities: ['text'],
     output_modalities: ['text'],
-  }),
-  provider: normalizeProvider({ provider_id: 'provider', displayName: 'Provider' }),
-  endpoint: normalizeEndpoint({
-    id: 'abcdef-123',
+    metadata: {},
+  },
+  provider: { provider_id: 'provider', display_name: 'Provider', metadata: {} },
+  endpoint: {
+    endpoint_id: 'abcdef-123',
     model_id: 'author/model',
-    model_variant_slug: 'author/model',
     model_display_name: 'Model',
     model_permaslug: 'author/model',
     model_or_created_at: '2026-09-30T01:00:00Z',
@@ -60,8 +55,9 @@ const snapshots = {
     provider_tag: 'provider/fp8',
     provider_display_name: 'Regional offering',
     variant: 'standard',
-    pricing: { discount: 0 },
-  }),
+    pricing: { discount: 0, meters: {} },
+    metadata: { model_variant_slug: 'author/model' },
+  },
 }
 
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {

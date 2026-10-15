@@ -10,15 +10,18 @@ Current rows preserve last-known facts when an entity disappears. A newer observ
 selected facts, including removal of fields no longer supplied. Metadata selection lives with the
 current entity projections in `ingestion/`; changing it requires explicit refresh of existing rows.
 
-| Date            | Meaning                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `scan_at`       | Source of the retained facts; unchanged facts can keep an older date.   |
-| `first_scan_at` | First retained observation, preserved across updates and reappearances. |
-| `or_created_at` | Upstream creation time.                                                 |
-| `unlisted_at`   | Endpoint disappearance; relisting clears it.                            |
+| Date            | Meaning                                               |
+| --------------- | ----------------------------------------------------- |
+| `scan_at`       | Scan at which the retained entity state was assessed. |
+| `or_created_at` | Upstream creation time.                               |
+| `unlisted_at`   | Endpoint disappearance; relisting clears it.          |
+
+For a pair A → B, every projected row uses B's `scan_at`, including departures whose last-known
+facts come from A. Current rows use this timestamp alone to reject older or equal writes.
+Events record changes; `scan_at` does not establish when an entity's facts last changed.
 
 - Model/provider record presence does not establish serving availability.
-- Endpoint unlisting retains its facts and last source date.
+- Endpoint unlisting retains its facts and records the disappearance scan in both `scan_at` and `unlisted_at`.
 - Grid includes listed endpoints and a recent-unlisting window, configured in `config.md`.
 - Older rows remain available to entity and history queries.
 
@@ -51,9 +54,9 @@ Snapshot capacity is 1 MiB or 8,192 rows in one document. Reassess sharding as u
 
 Refresh rebuilds one retained entity with the current projection rules.
 
-- Preserve identity, first observation, and endpoint availability.
+- Preserve identity and endpoint availability.
 - Leave histories, Events, ingestion progress, and delivery untouched.
-- Changed facts take the selected capture's date; unchanged facts retain their existing date.
+- Use the assessed scan's date even when retained facts are unchanged.
 
 ### Source selection
 

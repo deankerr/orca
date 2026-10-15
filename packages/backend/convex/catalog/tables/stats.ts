@@ -10,6 +10,8 @@ export const endpointStatsTable = defineTable({
   scan_at: v.string(),
   tier: v.string(),
   sample: v.record(v.string(), v.union(v.number(), v.string(), v.null())),
-}).index('by_endpoint_id_and_scan_at_and_tier', ['endpoint_id', 'scan_at', 'tier'])
+})
+  .index('by_endpoint_id_and_scan_at_and_tier', ['endpoint_id', 'scan_at', 'tier'])
+  .index('by_scan_at', ['scan_at'])
 
 export type EndpointStatsRow = Infer<typeof endpointStatsTable.validator>

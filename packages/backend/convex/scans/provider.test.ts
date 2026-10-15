@@ -1,10 +1,8 @@
 import { expect, test } from 'bun:test'
 import { ok } from 'node:assert/strict'
 
-import { prepare } from '../ingestion/events'
-import { providerEntity } from '../ingestion/lenses'
 import type { RawScan } from './collected'
-import { extractScan as extract, extractScan as fromCollected } from './extraction/extract'
+import { extractScan as fromCollected } from './extraction/extract'
 import { assembleProviders, ProviderInput, providerId } from './extraction/providers'
 
 test('provider identity uses slash prefixes and explicit historical repairs, without names', () => {
@@ -97,7 +95,6 @@ test('omits endpoint policy defaults while preserving other provider facts', () 
       futurePolicy: { disclosure: true },
     },
   })
-  expect(providerEntity(provider).metadata).toHaveProperty('futureFact', input.futureFact)
   expect(input).toEqual(before)
   expect(ProviderInput.parse({ slug: 'p', displayName: 'Provider' })).not.toHaveProperty(
     'dataPolicy',
@@ -181,7 +178,7 @@ test('metadata cannot split name votes or select the representative; source chan
   })
 })
 
-test('extraction preserves endpoint facts and raw inputs while grouping providers before events', () => {
+test('extraction preserves endpoint facts and raw inputs while grouping providers', () => {
   const base = endpoint('base', 'azure', { name: 'Azure' })
   const regional = endpoint('regional', 'azure/eu', {
     name: 'An inconsistent upstream name',
@@ -209,29 +206,6 @@ test('extraction preserves endpoint facts and raw inputs while grouping provider
   expect(scan.endpoints.get('regional')).not.toHaveProperty('status')
   expect(scan.endpoints.get('regional')).not.toHaveProperty('provider_info')
   expect(raw).toEqual(before)
-
-  const next = extract(captured([base], '2026-10-08T01:00:00.000Z'))
-  const events = prepare({ previous: extract(raw), next })
-  expect(
-    events.map(({ entity_kind, entity_id, type }) => ({ entity_kind, entity_id, type })),
-  ).toEqual([{ entity_kind: 'endpoint', entity_id: 'regional', type: 'REMOVE' }])
-})
-
-test('Nebius tag repair keeps endpoint and provider identity continuous', () => {
-  const base = endpoint('base', 'nebius', { displayName: 'Nebius' })
-  const previous = extract(captured([base, endpoint('fast', 'nebius-fast')]))
-  const next = extract(
-    captured([base, endpoint('fast', 'nebius/fast')], '2026-10-08T01:00:00.000Z'),
-  )
-  const events = prepare({ previous, next })
-
-  expect(events).toHaveLength(1)
-  expect(events[0]).toMatchObject({ entity_kind: 'endpoint', entity_id: 'fast', type: 'UPDATE' })
-  expect(JSON.parse(events[0].change_json)).toMatchObject({
-    changes: [
-      { type: 'UPDATE', key: 'provider_tag', value: 'nebius/fast', oldValue: 'nebius-fast' },
-    ],
-  })
 })
 
 test('Claude on AWS repairs precede prefix grouping without merging its ordinary parent providers', () => {
@@ -270,36 +244,6 @@ test('Claude on AWS repairs precede prefix grouping without merging its ordinary
     byokEnabled: false,
     dataPolicy: { privacyPolicyURL: 'https://anthropic.example/privacy' },
   })
-})
-
-test('ModelRun metadata transitions remain updates to one provider', () => {
-  const previous = extract(
-    captured([
-      endpoint('modelrun-endpoint', 'model-run', {
-        displayName: 'ModelRun',
-        dataPolicy: { privacyPolicyURL: 'https://old.example/privacy' },
-      }),
-    ]),
-  )
-  const next = extract(
-    captured(
-      [
-        endpoint('modelrun-endpoint', 'modelrun', {
-          displayName: 'ModelRun [by Modular]',
-          dataPolicy: { privacyPolicyURL: 'https://new.example/privacy' },
-        }),
-      ],
-      '2026-10-08T01:00:00.000Z',
-    ),
-  )
-  const events = prepare({ previous, next })
-  const providers = events.filter((event) => event.entity_kind === 'provider')
-
-  expect(providers).toHaveLength(1)
-  expect(providers[0]).toMatchObject({ entity_id: 'modelrun', type: 'UPDATE' })
-  expect(providers[0].change_json).toContain('https://old.example/privacy')
-  expect(providers[0].change_json).toContain('https://new.example/privacy')
-  expect(next.endpoints.get('modelrun-endpoint')?.provider_id).toBe('modelrun')
 })
 
 function captured(

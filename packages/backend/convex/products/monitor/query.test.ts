@@ -97,7 +97,6 @@ test('Monitor choices retain departed models with endpoint history and omit virt
         model_id,
         display_name: model_id,
         scan_at,
-        first_scan_at: scan_at,
         slug: model_id,
         permaslug: model_id,
         variant: 'standard',

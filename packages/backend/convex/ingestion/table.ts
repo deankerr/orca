@@ -1,21 +1,7 @@
-import { literals } from 'convex-helpers/validators'
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 import type { Id } from '#generated/dataModel'
-
-export const ingestionProcesses = [
-  'currentModels',
-  'currentProviders',
-  'currentEndpoints',
-  'currentStats',
-  'observations',
-  'pricingHistory',
-  'statsHistory',
-  'events',
-] as const
-
-export type IngestionProcess = (typeof ingestionProcesses)[number]
 
 export const REGISTRATIONS_TABLE = 'scan_registrations' as const
 export const registrationId = v.id(REGISTRATIONS_TABLE)
@@ -29,7 +15,7 @@ export const scanSelection = v.object({
 export const registrationsTable = defineTable({
   ...scanSelection.fields,
   progress: v.union(
-    v.object({ kind: v.literal('pending'), completed: v.array(literals(...ingestionProcesses)) }),
+    v.object({ kind: v.literal('pending'), completed: v.array(v.string()) }),
     v.object({ kind: v.literal('complete') }),
   ),
 })

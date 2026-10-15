@@ -11,8 +11,6 @@ export const CURRENT_MODELS_TABLE = 'catalog_current_models' as const
 export const currentModelsTable = defineTable({
   ...modelIdentity.fields,
   scan_at: v.string(),
-  /** First retained observation of this identity. */
-  first_scan_at: v.string(),
   slug: v.string(),
   permaslug: v.string(),
   variant: v.string(),
@@ -30,8 +28,6 @@ export const CURRENT_PROVIDERS_TABLE = 'catalog_current_providers' as const
 export const currentProvidersTable = defineTable({
   ...providerIdentity.fields,
   scan_at: v.string(),
-  /** First retained observation of this identity. */
-  first_scan_at: v.string(),
   metadata_json: v.string(),
 }).index('by_provider_id', ['provider_id'])
 
@@ -46,8 +42,6 @@ export const currentEndpointsTable = defineTable({
   provider_id: v.string(),
   variant: v.string(),
   scan_at: v.string(),
-  /** First retained observation of this identity. */
-  first_scan_at: v.string(),
   unlisted_at: v.optional(v.string()),
   model_display_name: v.string(),
   model_permaslug: v.string(),
