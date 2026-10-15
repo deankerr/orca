@@ -3,9 +3,9 @@ import { v } from 'convex/values'
 import { internalAction } from '#generated/server'
 
 import { IsoDateTime } from '../isodatetime'
-import { removalResult } from './ingestor'
-import type { RemovalResult } from './ingestor'
 import { ingestors } from './ingestors'
+import { removalResult } from './results'
+import type { RemovalResult } from './results'
 
 /** Demo cleanup: wait for ingestion to finish first; this does not cancel in-flight work. */
 export const run = internalAction({

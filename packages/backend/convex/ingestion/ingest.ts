@@ -3,11 +3,11 @@ import { v } from 'convex/values'
 import { internalAction } from '#generated/server'
 import * as scans from '#scans'
 
-import { ingestResult } from './ingestor'
-import type { IngestResult } from './ingestor'
 import { ingestors } from './ingestors'
 import { ingestArgs } from './input'
 import type { ScanPair } from './input'
+import { ingestResult } from './results'
+import type { IngestResult } from './results'
 
 /** Load a supplied pair once; each process independently commits any outstanding output. */
 export const run = internalAction({

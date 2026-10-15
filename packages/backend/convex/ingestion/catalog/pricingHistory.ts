@@ -7,15 +7,10 @@ import { encodePricing } from '../../catalog/pricing'
 import type { EndpointPriceRow } from '../../catalog/tables/pricing'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from '../../catalog/tables/pricing'
 import { compare } from '../../compare'
-import {
-  commitProcess,
-  commitResult,
-  createIngestor,
-  removeProcess,
-  removeResult,
-} from '../ingestor'
+import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
 import { endpointPricing } from '../lenses'
+import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'pricingHistory',

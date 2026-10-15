@@ -14,8 +14,16 @@ import { EVENTS_TABLE, eventsTable } from './catalog/tables/events'
 import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observations'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
-import { COMMITS_TABLE, commitsTable } from './ingestion/commits'
-import { REGISTRATIONS_TABLE, registrationsTable } from './ingestion/table'
+import {
+  PROCESS_COMMITS_TABLE,
+  processCommitsTable,
+  SCAN_PAIRS_TABLE,
+  scanPairsTable,
+  SCAN_REGISTRATIONS_TABLE,
+  scanRegistrationsTable,
+  INGESTION_TARGET_TABLE,
+  ingestionTargetTable,
+} from './ingestion/tables'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v2/table'
@@ -35,8 +43,10 @@ export default defineSchema(
     [ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [EVENTS_TABLE]: eventsTable,
 
-    [REGISTRATIONS_TABLE]: registrationsTable,
-    [COMMITS_TABLE]: commitsTable,
+    [SCAN_REGISTRATIONS_TABLE]: scanRegistrationsTable,
+    [PROCESS_COMMITS_TABLE]: processCommitsTable,
+    [SCAN_PAIRS_TABLE]: scanPairsTable,
+    [INGESTION_TARGET_TABLE]: ingestionTargetTable,
   },
   {
     strictTableNameTypes: true,

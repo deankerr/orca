@@ -6,8 +6,9 @@ import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
 import { CURRENT_STATS_TABLE, currentStatsTable } from '../../catalog/tables/current'
-import { commitProcess, commitResult, createIngestor } from '../ingestor'
+import { commitProcess, createIngestor } from '../ingestor'
 import type { Ingestor } from '../ingestor'
+import { commitResult } from '../results'
 
 const Metric = z.number().nonnegative().optional().catch(undefined)
 const CurrentSample = z

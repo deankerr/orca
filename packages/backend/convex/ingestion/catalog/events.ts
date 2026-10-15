@@ -10,16 +10,11 @@ import { encodePricing } from '../../catalog/pricing'
 import type { EventRow } from '../../catalog/tables/events'
 import { EVENTS_TABLE, eventsTable } from '../../catalog/tables/events'
 import { compare } from '../../compare'
-import {
-  commitProcess,
-  commitResult,
-  createIngestor,
-  removeProcess,
-  removeResult,
-} from '../ingestor'
+import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
 import type { ScanPair } from '../input'
 import { modelEntity, providerEntity, endpointEntity } from '../lenses'
+import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'events',

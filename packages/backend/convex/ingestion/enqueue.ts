@@ -6,9 +6,9 @@ import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
 import { IsoDateTime } from '../isodatetime'
-import { ingestResult } from './ingestor'
 import { ingestArgs } from './input'
 import { pool } from './pool'
+import { ingestResult } from './results'
 
 /** Queue explicit pairs, including duplicates; each process owns its completion check. */
 export const run = internalMutation({
@@ -28,14 +28,14 @@ export const run = internalMutation({
         const args = { ...pair, from_scan_at, scan_at }
 
         return await pool.enqueueAction(ctx, internal.ingestion.ingest.run, args, {
-          onComplete: internal.ingestion.enqueue.onComplete,
+          onComplete: internal.ingestion.enqueue.logIngestResult,
           context: args,
         })
       }),
     ),
 })
 
-export const onComplete = internalMutation({
+export const logIngestResult = internalMutation({
   args: vOnCompleteArgs(ingestArgs, v.array(ingestResult)),
   returns: v.null(),
   handler: (_ctx, { workId, context, result }) => {

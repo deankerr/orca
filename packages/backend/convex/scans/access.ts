@@ -23,6 +23,11 @@ export async function nextAfter(ctx: ActionCtx, time: string): Promise<string | 
   return times.find((scanAt) => scanAt > after) ?? null
 }
 
+/** Up to 100 capture times, starting at an inclusive discovery cursor. */
+export async function listAtOrAfter(ctx: ActionCtx, time: string): Promise<string[]> {
+  return await discover(ctx, time, 100, 'asc')
+}
+
 export async function latest(
   ctx: ActionCtx,
   { atOrAfter = null }: { atOrAfter?: string | null } = {},

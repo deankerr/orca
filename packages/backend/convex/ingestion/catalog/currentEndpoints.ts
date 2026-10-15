@@ -7,9 +7,10 @@ import { internalMutation } from '#generated/server'
 import { encodePricing } from '../../catalog/pricing'
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../../catalog/tables/current'
 import type { CurrentEndpointRow } from '../../catalog/tables/current'
-import { commitProcess, commitResult, createIngestor } from '../ingestor'
+import { commitProcess, createIngestor } from '../ingestor'
 import type { Ingestor } from '../ingestor'
 import { endpointEntity } from '../lenses'
+import { commitResult } from '../results'
 
 const omittedMetadataKeys = [
   'adapter_name',

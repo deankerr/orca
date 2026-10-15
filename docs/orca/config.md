@@ -37,22 +37,21 @@ Convex, without R2 access.
 Each switch accepts `true` or `false`; only `true` enables the entry point named below.
 Collection switches guard cron invocation, leaving manual collection available.
 
-| Variable                         | Guarded entry point                  | Dev/preview default |
-| -------------------------------- | ------------------------------------ | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | Scan collection                      | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | New ingestion discovery              | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | Analytics collection                 | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | Top-apps collection                  | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | Alerts after registration completion | `false`             |
+| Variable                         | Guarded entry point                               | Dev/preview default |
+| -------------------------------- | ------------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | Scan collection                                   | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | Reserved; ingestion is currently manual           | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | Analytics collection                              | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | Top-apps collection                               | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | Automatic Discord delivery; currently unscheduled | `false`             |
 
 `crons.ts` owns the schedules; wall-clock schedules use UTC.
 
-| Job                                     | Schedule                 |
-| --------------------------------------- | ------------------------ |
-| Analytics / top apps                    | Daily at 00:05 / 00:15   |
-| Scan collection / ingestion discovery   | Hourly at minute 40 / 43 |
-| Pending ingestion recovery              | Every 5 minutes          |
-| Independent public API V2 cache refresh | Every 5 minutes          |
+| Job                                     | Schedule               |
+| --------------------------------------- | ---------------------- |
+| Analytics / top apps                    | Daily at 00:05 / 00:15 |
+| Scan collection                         | Hourly at minute 40    |
+| Independent public API V2 cache refresh | Every 5 minutes        |
 
 ### Maintained limits and defaults
 
@@ -61,6 +60,8 @@ Backend paths below are relative to `packages/backend/convex`.
 | Setting                      | Value                                                                            | Owner                              |
 | ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
 | Ingestion worker concurrency | 4; automatic action retries use Workpool defaults                                | `ingestion/pool.ts`                |
+| Ingestion discovery batch    | Up to 100 scan names, followed by successor lookahead                            | `scans/access.ts`                  |
+| Ingestion pair page          | 50 pairs per pending enqueue mutation                                            | `ingestion/sync.ts`                |
 | Grid unlisting window        | 30 days before the completed observation clock                                   | `products/grid/endpoints.ts`       |
 | Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
 | Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |

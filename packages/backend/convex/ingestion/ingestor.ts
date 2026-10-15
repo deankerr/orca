@@ -1,51 +1,9 @@
-import { literals } from 'convex-helpers/validators'
-import { v } from 'convex/values'
-import type { Infer } from 'convex/values'
-
 import type { ActionCtx, MutationCtx } from '#generated/server'
 
-import { COMMITS_TABLE } from './commits'
 import type { ScanPair } from './input'
+import type { CommitResult, RemoveResult, IngestResult, RemovalResult } from './results'
+import { PROCESS_COMMITS_TABLE } from './tables'
 
-export const commitResult = literals('committed', 'already_committed')
-export const removeResult = literals('removed', 'already_removed')
-
-const error = v.object({
-  name: v.string(),
-  message: v.string(),
-  stack: v.optional(v.string()),
-})
-
-export const ingestResult = v.union(
-  v.object({
-    process: v.string(),
-    kind: commitResult,
-  }),
-  v.object({
-    process: v.string(),
-    kind: v.literal('failed'),
-    stage: literals('prepare', 'write'),
-    error,
-  }),
-)
-
-export const removalResult = v.union(
-  v.object({
-    process: v.string(),
-    kind: v.union(removeResult, v.literal('unsupported')),
-  }),
-  v.object({
-    process: v.string(),
-    kind: v.literal('failed'),
-    stage: v.literal('remove'),
-    error,
-  }),
-)
-
-type CommitResult = Infer<typeof commitResult>
-type RemoveResult = Infer<typeof removeResult>
-export type IngestResult = Infer<typeof ingestResult>
-export type RemovalResult = Infer<typeof removalResult>
 export type Ingestor = {
   (ctx: ActionCtx, args: ScanPair): Promise<IngestResult>
   readonly process: string
@@ -113,7 +71,7 @@ export async function commitProcess(
   write: () => Promise<void>,
 ): Promise<CommitResult> {
   const committed = await ctx.db
-    .query(COMMITS_TABLE)
+    .query(PROCESS_COMMITS_TABLE)
     .withIndex('by_scan_at_and_process', (q) => q.eq('scan_at', scan_at).eq('process', process))
     .unique()
 
@@ -124,8 +82,8 @@ export async function commitProcess(
   await write()
 
   await (committed === null
-    ? ctx.db.insert(COMMITS_TABLE, { scan_at, process })
-    : ctx.db.patch(COMMITS_TABLE, committed._id, { removed_at: undefined }))
+    ? ctx.db.insert(PROCESS_COMMITS_TABLE, { scan_at, process })
+    : ctx.db.patch(PROCESS_COMMITS_TABLE, committed._id, { removed_at: undefined }))
 
   return 'committed'
 }
@@ -138,7 +96,7 @@ export async function removeProcess(
   remove: () => Promise<void>,
 ): Promise<RemoveResult> {
   const committed = await ctx.db
-    .query(COMMITS_TABLE)
+    .query(PROCESS_COMMITS_TABLE)
     .withIndex('by_scan_at_and_process', (q) => q.eq('scan_at', scan_at).eq('process', process))
     .unique()
 
@@ -148,7 +106,7 @@ export async function removeProcess(
 
   await remove()
 
-  await ctx.db.patch(COMMITS_TABLE, committed._id, { removed_at: Date.now() })
+  await ctx.db.patch(PROCESS_COMMITS_TABLE, committed._id, { removed_at: Date.now() })
 
   return 'removed'
 }

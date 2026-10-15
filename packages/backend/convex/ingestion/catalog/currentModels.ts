@@ -6,9 +6,10 @@ import { internalMutation } from '#generated/server'
 
 import { CURRENT_MODELS_TABLE, currentModelsTable } from '../../catalog/tables/current'
 import type { CurrentModelRow } from '../../catalog/tables/current'
-import { commitProcess, commitResult, createIngestor } from '../ingestor'
+import { commitProcess, createIngestor } from '../ingestor'
 import type { Ingestor } from '../ingestor'
 import { modelEntity } from '../lenses'
+import { commitResult } from '../results'
 
 const omittedMetadataKeys = [
   'author',

@@ -5,14 +5,9 @@ import { internalMutation } from '#generated/server'
 
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from '../../catalog/tables/stats'
 import type { EndpointStatsRow } from '../../catalog/tables/stats'
-import {
-  commitProcess,
-  commitResult,
-  createIngestor,
-  removeProcess,
-  removeResult,
-} from '../ingestor'
+import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
+import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'statsHistory',

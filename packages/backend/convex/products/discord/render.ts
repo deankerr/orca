@@ -8,7 +8,7 @@ import type { QueryCtx } from '#generated/server'
 
 import { EVENTS_TABLE } from '../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
-import { REGISTRATIONS_TABLE } from '../../ingestion/table'
+import { SCAN_REGISTRATIONS_TABLE } from '../../ingestion/tables'
 import { interpret } from '../shared/alerts/interpret'
 import { selectDefault } from '../shared/alerts/prepare'
 import type { AlertSource } from '../shared/alerts/read'
@@ -33,9 +33,9 @@ export function contentKey(value: unknown): string {
 /** Preparation and manual sending read the same complete observation. */
 export async function renderRegistration(
   ctx: QueryCtx,
-  registrationId: Id<typeof REGISTRATIONS_TABLE>,
+  registrationId: Id<typeof SCAN_REGISTRATIONS_TABLE>,
 ) {
-  const registration = await ctx.db.get(REGISTRATIONS_TABLE, registrationId)
+  const registration = await ctx.db.get(SCAN_REGISTRATIONS_TABLE, registrationId)
 
   if (registration === null) {
     throw new ConvexError('Registration not found')

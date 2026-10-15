@@ -8,14 +8,9 @@ import type { Scan, ExtractedEndpoint } from '#scans/extraction'
 import type { ObservationRow } from '../../catalog/tables/observations'
 import { OBSERVATIONS_TABLE, observationsTable } from '../../catalog/tables/observations'
 import { compare } from '../../compare'
-import {
-  commitProcess,
-  commitResult,
-  createIngestor,
-  removeProcess,
-  removeResult,
-} from '../ingestor'
+import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
+import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'observations',

@@ -6,9 +6,10 @@ import { internalMutation } from '#generated/server'
 
 import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from '../../catalog/tables/current'
 import type { CurrentProviderRow } from '../../catalog/tables/current'
-import { commitProcess, commitResult, createIngestor } from '../ingestor'
+import { commitProcess, createIngestor } from '../ingestor'
 import type { Ingestor } from '../ingestor'
 import { providerEntity } from '../lenses'
+import { commitResult } from '../results'
 
 const omittedMetadataKeys = [
   'slug',

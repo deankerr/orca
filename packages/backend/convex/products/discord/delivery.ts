@@ -4,21 +4,21 @@ import { components } from '#generated/api'
 import { env, internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { REGISTRATIONS_TABLE } from '../../ingestion/table'
+import { SCAN_REGISTRATIONS_TABLE } from '../../ingestion/tables'
 import { renderRegistration } from './render'
 
 const ALERT_MAX_AGE_MS = 60 * 60 * 1000
 
 /** Scheduled after ingestion completion; preparation failures leave source events intact. */
 export const sendRegistrationAlerts = internalMutation({
-  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
+  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
   returns: v.null(),
   handler: async (ctx, { registration_id }) => {
     if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
       return null
     }
 
-    const registration = await ctx.db.get(REGISTRATIONS_TABLE, registration_id)
+    const registration = await ctx.db.get(SCAN_REGISTRATIONS_TABLE, registration_id)
     if (
       registration === null ||
       registration.from_scan_at === null ||
@@ -41,7 +41,7 @@ export const sendRegistrationAlerts = internalMutation({
 
 /** Read-only operator preview: current cards and filtering, without sender admission. */
 export const prepareRegistration = internalQuery({
-  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
+  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
   returns: v.object({
     scan_at: v.string(),
     messages: v.array(
@@ -59,7 +59,7 @@ export const prepareRegistration = internalQuery({
 
 /** Explicit operator send: rerender one completed registration with a fresh delivery window. */
 export const sendRegistration = internalMutation({
-  args: { registration_id: v.id(REGISTRATIONS_TABLE) },
+  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
   returns: v.object({ jobIds: v.array(v.string()), messageCount: v.number() }),
   handler: async (ctx, { registration_id }) => {
     const rendered = await renderRegistration(ctx, registration_id)
