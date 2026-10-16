@@ -12,13 +12,10 @@ export const PROCESS_COMMITS_TABLE = 'ingestion_commits' as const
 export const SCAN_REGISTRATIONS_TABLE = 'scan_registrations' as const
 
 export const ingestionTargetRange = v.object({ start_at: v.string(), end_at: v.string() })
-export const incompletePairStates = ['pending', 'queued', 'failed'] as const
+export const incompletePairStates = ['queued', 'failed'] as const
 
 /** One timeline: the beginning is fixed and the requested end can advance. */
-export const ingestionTargetTable = defineTable({
-  ...ingestionTargetRange.fields,
-  discovered_end_at: v.optional(v.string()),
-})
+export const ingestionTargetTable = defineTable(ingestionTargetRange)
 
 export const scanPairsTable = defineTable({
   ...ingestArgs.fields,

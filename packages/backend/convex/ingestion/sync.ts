@@ -1,13 +1,9 @@
-import type { WorkId } from '@convex-dev/workpool'
-import { pick } from 'convex-helpers'
 import { docValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { internal } from '#generated/api'
-import type { Doc } from '#generated/dataModel'
 import { internalAction, internalMutation, internalQuery } from '#generated/server'
-import type { MutationCtx } from '#generated/server'
 import * as scans from '#scans'
 
 import { ingestArgs } from './input'
@@ -19,16 +15,9 @@ import {
   SCAN_PAIRS_TABLE,
 } from './tables'
 
-const PENDING_PAIR_PAGE_SIZE = 50
-const pendingEnqueueResult = v.object({
-  isDone: v.boolean(),
-  continueCursor: v.string(),
-  requeued: v.number(),
-})
 const syncResult = v.object({
   ...ingestionTargetRange.fields,
   registered: v.number(),
-  requeued: v.number(),
   last_scan_at: v.union(v.string(), v.null()),
 })
 
@@ -42,68 +31,39 @@ export const run = internalAction({
       {},
     )
     const { start_at, end_at } = target
-    const counts = { registered: 0, requeued: 0 }
-    let cursor: string | null = null
-
-    for (;;) {
-      const enqueued: Infer<typeof pendingEnqueueResult> = await ctx.runMutation(
-        internal.ingestion.sync.enqueuePending,
-        {
-          end_at,
-          cursor,
-        },
-      )
-
-      counts.requeued += enqueued.requeued
-
-      if (enqueued.isDone) {
-        break
-      }
-
-      cursor = enqueued.continueCursor
-    }
-
+    let registered = 0
     let previous = last_scan_at
 
     for (;;) {
       const from = previous
-      const names = await scans.listAtOrAfter(ctx, from ?? start_at)
-      const selected = names.filter(
-        (scan_at) => (from === null || scan_at > from) && scan_at <= end_at,
-      )
-      const last = selected.at(-1)
+      const { times, has_more } = await scans.pageInRange(ctx, {
+        start_at,
+        end_at,
+        after: from,
+      })
+      const last = times.at(-1)
 
       if (last === undefined) {
         break
       }
 
-      // Establish the last pair's flag before committing any jobs from this page.
-      const following =
-        names.find((scan_at) => scan_at > last) ?? (await scans.nextAfter(ctx, last))
-      const hasLater = following !== null && following <= end_at
-      const pairs = selected.map((scan_at, index) => ({
-        from_scan_at: index === 0 ? from : selected[index - 1],
+      const pairs = times.map((scan_at, index) => ({
+        from_scan_at: index === 0 ? from : times[index - 1],
         scan_at,
-        has_later_scan: index < selected.length - 1 || hasLater,
+        has_later_scan: index < times.length - 1 || has_more,
       }))
 
-      counts.registered += await ctx.runMutation(internal.ingestion.sync.registerAndEnqueuePairs, {
-        target_id: target._id,
+      registered += await ctx.runMutation(internal.ingestion.sync.registerAndEnqueuePairs, {
         pairs,
       })
       previous = last
 
-      if (!hasLater) {
+      if (!has_more) {
         break
       }
     }
 
-    await ctx.runMutation(internal.ingestion.target.recordDiscoveryProgress, {
-      target_id: target._id,
-      end_at,
-    })
-
-    return { start_at, end_at, ...counts, last_scan_at: previous }
+    return { start_at, end_at, registered, last_scan_at: previous }
   },
 })
 
@@ -129,15 +89,9 @@ export const getTargetAndLastRegisteredScan = internalQuery({
 
 /** Register pairs and enqueue their ingest workers atomically; concurrent sync workers reuse existing pairs. */
 export const registerAndEnqueuePairs = internalMutation({
-  args: { target_id: v.id(INGESTION_TARGET_TABLE), pairs: v.array(ingestArgs) },
+  args: { pairs: v.array(ingestArgs) },
   returns: v.number(),
-  handler: async (ctx, { target_id, pairs }): Promise<number> => {
-    const target = await ctx.db.get(INGESTION_TARGET_TABLE, target_id)
-
-    if (target === null) {
-      throw new ConvexError('Ingestion target not found')
-    }
-
+  handler: async (ctx, { pairs }): Promise<number> => {
     const last = await ctx.db.query(SCAN_PAIRS_TABLE).withIndex('by_scan_at').order('desc').first()
     let previous = last?.scan_at ?? null
     const newPairs: Infer<typeof ingestArgs>[] = []
@@ -149,29 +103,25 @@ export const registerAndEnqueuePairs = internalMutation({
         .unique()
 
       if (existing !== null) {
-        if (existing.from_scan_at !== pair.from_scan_at) {
-          throw new ConvexError('A registered scan cannot change its predecessor')
-        }
-
         continue
       }
 
-      if (
-        pair.from_scan_at !== previous ||
-        (previous !== null && pair.scan_at <= previous) ||
-        pair.scan_at < target.start_at ||
-        pair.scan_at > target.end_at
-      ) {
-        throw new ConvexError(
-          'New scan pairs must extend the registered timeline within its target',
-        )
+      if (pair.from_scan_at !== previous) {
+        throw new ConvexError('New scan pairs must extend the registered timeline')
       }
 
       newPairs.push(pair)
       previous = pair.scan_at
     }
 
-    const ids = await enqueueIngestWorkers(ctx, newPairs)
+    if (newPairs.length === 0) {
+      return 0
+    }
+
+    const ids = await pool.enqueueActionBatch(ctx, internal.ingestion.ingest.run, newPairs, {
+      onComplete: internal.ingestion.pairs.onIngestComplete,
+      context: null,
+    })
 
     for (const [index, pair] of newPairs.entries()) {
       await ctx.db.insert(SCAN_PAIRS_TABLE, { ...pair, state: 'queued', work_id: ids[index] })
@@ -180,46 +130,3 @@ export const registerAndEnqueuePairs = internalMutation({
     return newPairs.length
   },
 })
-
-/** Only pending pairs are eligible; terminal failures remain failed. */
-export const enqueuePending = internalMutation({
-  args: { end_at: v.string(), cursor: v.union(v.string(), v.null()) },
-  returns: pendingEnqueueResult,
-  handler: async (ctx, { end_at, cursor }): Promise<Infer<typeof pendingEnqueueResult>> => {
-    const page = await ctx.db
-      .query(SCAN_PAIRS_TABLE)
-      .withIndex('by_state_and_scan_at', (q) => q.eq('state', 'pending').lte('scan_at', end_at))
-      .paginate({ numItems: PENDING_PAIR_PAGE_SIZE, cursor })
-    const ids = await enqueueIngestWorkers(ctx, page.page.map(pairArgs))
-
-    for (const [index, pair] of page.page.entries()) {
-      await ctx.db.patch(SCAN_PAIRS_TABLE, pair._id, {
-        state: 'queued',
-        work_id: ids[index],
-        result: undefined,
-      })
-    }
-
-    return {
-      isDone: page.isDone,
-      continueCursor: page.continueCursor,
-      requeued: page.page.length,
-    }
-  },
-})
-
-function pairArgs(pair: Doc<typeof SCAN_PAIRS_TABLE>): Infer<typeof ingestArgs> {
-  return pick(pair, ['from_scan_at', 'scan_at', 'has_later_scan'])
-}
-
-async function enqueueIngestWorkers(
-  ctx: MutationCtx,
-  pairs: Infer<typeof ingestArgs>[],
-): Promise<WorkId[]> {
-  return pairs.length === 0
-    ? []
-    : await pool.enqueueActionBatch(ctx, internal.ingestion.ingest.run, pairs, {
-        onComplete: internal.ingestion.pairs.onIngestComplete,
-        context: null,
-      })
-}

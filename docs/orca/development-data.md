@@ -18,23 +18,25 @@ accepted. The first available scan within the range establishes the baseline. Ke
 when setting the target again and repeat or increase `end_at`. Setting the target does not start sync.
 An empty range registers no pairs; running sync without a target throws.
 
-The sync worker reads the stored target and resume position together, enqueues pending registered
-pairs, then discovers and registers new pairs in batches. It implements the target read at startup;
-advances made during a run are picked up by the next invocation. It returns registration and requeue
-counts; ingest workers continue independently. Rerun `ingestion/sync:run` after a sync-worker failure.
+The sync worker reads the stored target and resume position together, then discovers, registers,
+and enqueues new pairs in batches. It implements the target read at startup;
+advances made during a run are picked up by the next invocation. It returns the registration count
+and last scan time; ingest workers continue independently. Rerun `ingestion/sync:run` after a sync-worker failure.
 Queued jobs are retained and terminal failures stay failed.
 
-Inspect discovery and pair results:
+Every invocation checks for scans after the registered tail through the current target end.
+Empty or previously exhausted ranges can be checked again; completed pairs are reused unchanged.
+
+Inspect the target and pair results:
 
 ```sh
 bunx convex run ingestion/target:get '{}' --deployment <dev-deployment>
 bunx convex run ingestion/pairs:list '{"paginationOpts":{"numItems":50,"cursor":null}}' --deployment <dev-deployment>
 ```
 
-Continue listing with the returned `continueCursor` until `isDone`. The range is fulfilled when
-`discovered_end_at` equals the target's `end_at` and every pair is `complete`. Discovery describes
-the available source inventory at that time; keep it stable while work is pending. The latest pair
-finishing does not establish that earlier pairs have finished.
+Continue listing with the returned `continueCursor` until `isDone`. A successful sync has exhausted
+the available captures within the target it read. Wait for every pair to become `complete` for ingestion
+to finish; the latest pair finishing does not establish that earlier pairs have finished.
 
 Pair arguments and their initial enqueue commit atomically. One-scan lookahead determines
 `has_later_scan` before registration; retries preserve that decision and the selected predecessor.

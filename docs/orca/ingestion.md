@@ -47,10 +47,16 @@ the range it read before registering a pair. Every registered pair fixes its pre
 and `has_later_scan`; its record and initial Workpool enqueue commit in the same transaction.
 
 - Discovery can run ahead of ingestion; ingest workers do not wait for earlier pairs to finish.
-- Concurrent producers reuse registered pairs. Resuming starts discovery after the latest registered scan.
-- `discovered_end_at` records discovery coverage, independently of worker completion.
+- Concurrent producers reuse registered pairs unchanged. Resuming starts after the latest registered scan.
 - Keep source selection, capture contents, and projection rules stable while work is pending.
 - An empty range registers no pairs. Extending the end can register captures later.
+
+The target and registered pairs are the durable resume state. Each invocation checks the source after
+the latest registered scan through the current target end, even if an earlier run exhausted that range.
+An interrupted run retains every committed batch and resumes on the next invocation.
+
+Scan owns bounded discovery and successor lookahead; ingestion chooses the target and registers pairs.
+Existing registrations win without comparing incoming arguments. New pairs must extend the registered timeline.
 
 ### Current projections
 
@@ -73,23 +79,22 @@ false flag intact.
 - Workpool completion records the attempt result for diagnostics and assesses the pair's process receipts.
 - Completion requires an unremoved receipt for every currently registered ingestor, regardless of the attempt result.
 
-Pair state caches this assessment for indexed scheduling and product reads:
+Pair state caches this assessment for indexed product reads:
 
 | State      | Meaning                                                                                               |
 | ---------- | ----------------------------------------------------------------------------------------------------- |
-| `pending`  | Eligible for enqueue by the sync worker.                                                              |
 | `queued`   | Entrusted to Workpool, including waiting, execution, retries, and outstanding completion bookkeeping. |
 | `complete` | All required process receipts exist.                                                                  |
 | `failed`   | The attempt ended without all required receipts.                                                      |
 
-Ordinary sync runs enqueue only `pending` pairs; terminal failures remain `failed`. Reassessment
-and terminal-failure retry tooling are deferred. Changing a process's implementation does not
+Sync enqueues newly registered pairs; existing jobs remain entrusted to Workpool and terminal failures
+remain `failed`. Reassessment and terminal-failure retry tooling are deferred. Changing a process's implementation does not
 invalidate its receipts.
 
 Replaced work IDs reject callbacks from older attempts. Repairing missing completion bookkeeping
 is deferred.
 
-The target is fulfilled when discovery covers its end and every registered pair is `complete`.
+Successful sync exhausts the available scans within its target snapshot; workers finish independently.
 There is no automatic recovery schedule, earlier-history extension, or undo operation.
 
 Concurrency and batch sizes are maintained in `config.md`; manual commands are in `development-data.md`.

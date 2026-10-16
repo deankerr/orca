@@ -156,6 +156,10 @@ The process of deriving and retaining projections from source scans.
 The term describes an activity, without implying a single acceptance event or simultaneous completion of all projections.
 _Avoid_: An ingestion (when referring to a scan pair, its output, or its processing progress)
 
+**Ingestion target**:
+The inclusive range of source scan times from which a deployment is requested to derive Catalog knowledge.
+It expresses requested coverage, independently of processing progress or product readiness.
+
 **Scan registration**:
 The record of a scan accepted for ingestion, identifying its scan time and preceding scan where applicable.
 Its progress records which ingestion processes have completed.

@@ -40,24 +40,6 @@ export const set = internalMutation({
   },
 })
 
-export const recordDiscoveryProgress = internalMutation({
-  args: { target_id: v.id(INGESTION_TARGET_TABLE), end_at: v.string() },
-  returns: v.null(),
-  handler: async (ctx, { target_id, end_at }) => {
-    const target = await ctx.db.get(INGESTION_TARGET_TABLE, target_id)
-
-    if (target === null || end_at > target.end_at) {
-      throw new ConvexError('Ingestion target does not cover the discovered range')
-    }
-
-    if (target.discovered_end_at === undefined || end_at > target.discovered_end_at) {
-      await ctx.db.patch(INGESTION_TARGET_TABLE, target_id, { discovered_end_at: end_at })
-    }
-
-    return null
-  },
-})
-
 export const get = internalQuery({
   args: {},
   returns: v.union(v.null(), docValidator(INGESTION_TARGET_TABLE, ingestionTargetTable)),

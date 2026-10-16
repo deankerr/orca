@@ -12,7 +12,7 @@ export async function firstAtOrAfter(
   ctx: ActionCtx,
   time: string | null = null,
 ): Promise<string | null> {
-  const times = await discover(ctx, time, 1, 'asc')
+  const times = await discover(ctx, time === null ? null : IsoDateTime.parse(time), 1, 'asc')
   return times[0] ?? null
 }
 
@@ -23,23 +23,44 @@ export async function nextAfter(ctx: ActionCtx, time: string): Promise<string | 
   return times.find((scanAt) => scanAt > after) ?? null
 }
 
-/** Up to 100 capture times, starting at an inclusive discovery cursor. */
-export async function listAtOrAfter(ctx: ActionCtx, time: string): Promise<string[]> {
-  return await discover(ctx, time, 100, 'asc')
+/** Page an inclusive range of canonical ISO times, continuing strictly after the supplied cursor. */
+export async function pageInRange(
+  ctx: ActionCtx,
+  { start_at, end_at, after }: { start_at: string; end_at: string; after: string | null },
+): Promise<{ times: string[]; has_more: boolean }> {
+  const from = after !== null && after > start_at ? after : start_at
+  const discovered = await discover(ctx, from, 100, 'asc')
+  const times = discovered.filter(
+    (scan_at) => (after === null || scan_at > after) && scan_at <= end_at,
+  )
+  const last = times.at(-1)
+
+  if (last === undefined) {
+    return { times, has_more: false }
+  }
+
+  const following = discovered.find((scan_at) => scan_at > last) ?? (await nextAfter(ctx, last))
+
+  return { times, has_more: following !== null && following <= end_at }
 }
 
 export async function latest(
   ctx: ActionCtx,
   { atOrAfter = null }: { atOrAfter?: string | null } = {},
 ): Promise<string | null> {
-  const times = await discover(ctx, atOrAfter, 1, 'desc')
+  const times = await discover(
+    ctx,
+    atOrAfter === null ? null : IsoDateTime.parse(atOrAfter),
+    1,
+    'desc',
+  )
   return times[0] ?? null
 }
 
 async function discover(ctx: ActionCtx, time: string | null, limit: number, order: 'asc' | 'desc') {
   const names = await objects.namesAtOrAfter(ctx, {
     path: 'scans',
-    atOrAfter: time === null ? '' : identity(IsoDateTime.parse(time)).name,
+    atOrAfter: time === null ? '' : identity(time).name,
     limit,
     order,
   })
