@@ -1,17 +1,19 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/api'
 import { useQuery } from '@tanstack/react-query'
 
+import { useQueryResult } from '@/features/product-readiness/use-query-result'
+
+import type { OverviewRequest } from './context'
 import { DataValue, DataLink, DataDate, DataDescription } from './data'
 import { OverviewHeader, OverviewActions, PricingHistoryAction, OverviewStatus } from './layout'
+import { modelOverviewQuery } from './query-options'
 import { reasoningLabel, orderEfforts } from './reasoning'
 
-export function ModelOverview({ slug }: { slug: string }) {
-  const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.products.entity_overview.models.get, { model_id: slug }),
-  )
+export function ModelOverview({ request }: { request: OverviewRequest }) {
+  const { slug } = request
+  const { data, isPending, error, refetch, isSuccess } = useQuery(modelOverviewQuery(slug))
+  useQueryResult(request.measurement, isSuccess && data !== null && data !== undefined)
 
   if (!data) {
     return (

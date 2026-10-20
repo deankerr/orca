@@ -19,8 +19,10 @@ export function EntityOverviewSheet() {
       }}
     >
       <SheetContent className="overflow-y-auto sm:max-w-[420px]" aria-describedby={undefined}>
-        {entity?.type === 'model' && <ModelOverview key={entity.slug} slug={entity.slug} />}
-        {entity?.type === 'provider' && <ProviderOverview key={entity.slug} slug={entity.slug} />}
+        {entity?.type === 'model' && <ModelOverview key={entity.measurement.id} request={entity} />}
+        {entity?.type === 'provider' && (
+          <ProviderOverview key={entity.measurement.id} request={entity} />
+        )}
       </SheetContent>
     </Sheet>
   )

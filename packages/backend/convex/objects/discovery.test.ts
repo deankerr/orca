@@ -9,8 +9,9 @@ import type { ActionCtx, QueryCtx } from '#generated/server'
 import { findLocalNames } from './local'
 import { namesAtOrAfter } from './storage'
 
-test('local discovery applies direction before limiting and preserves the inclusive lower bound', async () => {
+test('local discovery applies direction before limiting and preserves both bounds', async () => {
   let lowerBound = ''
+  let upperBound: string | null = null
   let direction = 'asc'
   const range = {
     eq: (_field: string, value: string) => {
@@ -19,6 +20,11 @@ test('local discovery applies direction before limiting and preserves the inclus
     },
     gte: (_field: string, value: string) => {
       lowerBound = value
+      upperBound = null
+      return range
+    },
+    lt: (_field: string, value: string) => {
+      upperBound = value
       return range
     },
   }
@@ -32,7 +38,9 @@ test('local discovery applies direction before limiting and preserves the inclus
               direction = order
               return {
                 take: (limit: number) => {
-                  const names = ['a', 'b', 'c'].filter((name) => name >= lowerBound)
+                  const names = ['a', 'b', 'c'].filter(
+                    (name) => name >= lowerBound && (upperBound === null || name < upperBound),
+                  )
                   return (direction === 'desc' ? names.toReversed() : names)
                     .slice(0, limit)
                     .map((name) => ({ name }))
@@ -51,6 +59,19 @@ test('local discovery applies direction before limiting and preserves the inclus
   expect(await findLocalNames(ctx, { ...selection, order: 'desc' })).toEqual(['c', 'b'])
   expect(await findLocalNames(ctx, { ...selection, order: 'desc', limit: 1 })).toEqual(['c'])
   expect(await findLocalNames(ctx, { ...selection, atOrAfter: 'z', order: 'desc' })).toEqual([])
+  expect(await findLocalNames(ctx, { ...selection, atOrAfter: '', before: 'c' })).toEqual([
+    'a',
+    'b',
+  ])
+  expect(
+    await findLocalNames(ctx, {
+      ...selection,
+      atOrAfter: '',
+      before: 'c',
+      order: 'desc',
+      limit: 1,
+    }),
+  ).toEqual(['b'])
 })
 
 test('remote discovery forwards direction and rejects unordered, duplicate and out-of-range names', async () => {
@@ -84,6 +105,13 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
     await rejects(namesAtOrAfter(ctx, { ...selection, order: undefined }), /order\/range/)
     query.mockResolvedValue([])
     expect(await namesAtOrAfter(ctx, selection)).toEqual([])
+
+    const bounded = { ...selection, before: 'c' }
+    query.mockResolvedValue(['b'])
+    expect(await namesAtOrAfter(ctx, bounded)).toEqual(['b'])
+    expect(query.mock.lastCall?.[1]).toEqual({ ...bounded, apiKey: 'test-key' })
+    query.mockResolvedValue(['c', 'b'])
+    await rejects(namesAtOrAfter(ctx, bounded), /order\/range/)
   } finally {
     query.mockRestore()
 

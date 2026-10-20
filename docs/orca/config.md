@@ -64,6 +64,7 @@ Backend paths below are relative to `packages/backend/convex`.
 | Grid unlisting window        | 30 days before the completed observation clock                                   | `products/grid/endpoints.ts`       |
 | Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
 | Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |
+| Discord message order        | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`       |
 | Discord frequent pricing     | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
 | Ordinary pricing eligibility | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
 | Feed page request            | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
@@ -131,8 +132,9 @@ Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_U
 | ----------------------------------- | --------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                   |
 | `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                  |
-| `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key; blank/missing disables browser analytics.                               |
-| `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics requires `production`.                                                |
+| `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.      |
+| `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.           |
+| `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.     |
 | `VERCEL_ENV`                        | Server/build tier; selects preview callback/title behavior. Must agree with the browser tier. |
 | `VERCEL_BRANCH_URL`                 | Preview branch hostname used by both backend and web builds.                                  |
 | `POSTHOG_API_KEY`                   | **Secret** source-map upload credential; requires `POSTHOG_PROJECT_ID`.                       |
@@ -146,6 +148,24 @@ builds' entries before hydration. Browser and Discord logo origins are configure
 PostHog proxy destinations are `us-assets.i.posthog.com` and `us.i.posthog.com`; the UI host is
 `https://us.posthog.com`. EU or self-hosted installations require endpoint changes as well as credentials.
 `turbo.json` declares the PostHog/Vercel build inputs.
+
+### Analytics events
+
+- Every event carries `app_environment` (default `development`) and `client_id`; dashboards filter to production.
+- Signed-in users are identified by WorkOS user ID, with name and email; sign-out and account switches reset identity.
+- Query-analytics events carry their schema revision, starting at `event_version=1`.
+- `query completed` covers successful fetches for grid endpoints, grid stats, and model/provider overviews.
+- Select `client_cache_hit=false` and `consumer_active=true` for server-response waits with an active consumer.
+- Failed fetches have no completion event; completions after all consumers leave are marked inactive.
+- `duration_ms` spans TanStack fetch start to success; TanStack cache reads have zero duration.
+- `connection_wait_ms` is the overlapping connection wait; `connected_ms` includes backend work and transfer.
+- These are client observations, not server timings; server-side cache status is unknown.
+- `result_count` describes returned rows; `data_scan_at`, where available, identifies the source observation.
+- `convex connected` measures connection intervals from the first measured query, whatever view comes first.
+- `query consumed` links a `query_run_id` to `view_load_id`; grids start at mount, overviews at open action.
+- `grid ready` is a content-commit signal; never sum parallel query durations.
+- Monotonic timestamps are comparable only within one client lifetime.
+- `query updated` records later subscription arrivals without duration; each actual fetch gets a fresh run ID.
 
 ## Logo service
 

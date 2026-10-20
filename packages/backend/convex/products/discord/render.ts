@@ -2,7 +2,7 @@ import { sha256 } from '@noble/hashes/sha2'
 import { bytesToHex } from '@noble/hashes/utils'
 import { ConvexError } from 'convex/values'
 
-import type { Id } from '#generated/dataModel'
+import type { Doc, Id } from '#generated/dataModel'
 import { env } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
@@ -15,6 +15,15 @@ import type { AlertSource } from '../shared/alerts/read'
 import { readFrequency } from './frequency'
 import { prepareBatch } from './prepare'
 import { renderDiscordBatch } from './renderers/index'
+
+type Operation = Doc<typeof EVENTS_TABLE>['type']
+
+const operationOrder = { ADD: 0, UPDATE: 1, REMOVE: 2 } satisfies Record<Operation, number>
+const entityOrder = {
+  ADD: { provider: 0, model: 1, endpoint: 2 },
+  UPDATE: { provider: 0, model: 1, endpoint: 2 },
+  REMOVE: { endpoint: 0, model: 1, provider: 2 },
+} satisfies Record<Operation, Record<AlertSource['entity_kind'], number>>
 
 /** Stable across JSON object insertion order; arrays intentionally retain display order. */
 export function canonicalJson(value: unknown): string {
@@ -63,11 +72,24 @@ export async function renderRegistration(
   return { scan_at: registration.scan_at, ...(await renderRows(ctx, [...rows, ...observations])) }
 }
 
+/** Observations carry lifecycle as presence: listed or serving rows arrive, others depart. */
+function operation(row: AlertSource): Operation {
+  if ('change_json' in row) {
+    return row.type
+  }
+
+  const present = row.entity_kind === 'endpoint' ? row.detected : row.endpoint_count > 0
+  return present ? 'ADD' : 'REMOVE'
+}
+
 export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {
+  // Introduce parents before endpoints; announce endpoint unlistings before parent departures.
+  // Sort before batching so grouped unlistings retain the same lifecycle order.
   const ordered = rows.toSorted(
     (a, b) =>
       a.scan_at.localeCompare(b.scan_at) ||
-      a.entity_kind.localeCompare(b.entity_kind) ||
+      operationOrder[operation(a)] - operationOrder[operation(b)] ||
+      entityOrder[operation(a)][a.entity_kind] - entityOrder[operation(b)][b.entity_kind] ||
       a.entity_id.localeCompare(b.entity_id) ||
       a._id.localeCompare(b._id),
   )

@@ -16,6 +16,8 @@ alerts. Recent replay can still send: disable automatic sending for a silent reb
 
 Preparation applies shared eligibility and Discord's frequency rule to the complete scan, then batches
 equivalent changes within one scan and entity kind. Residual changes keep their individual identities.
+Within each scan, ordering introduces parents before endpoints and announces endpoint unlistings before a
+parent's last-endpoint departure. Ordering applies before batching; `config.md` records the priorities.
 
 | Arrival         | Presentation                                               |
 | --------------- | ---------------------------------------------------------- |

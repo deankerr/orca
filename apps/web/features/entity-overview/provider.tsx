@@ -1,16 +1,18 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '@orca/backend/api'
 import { useQuery } from '@tanstack/react-query'
 
+import { useQueryResult } from '@/features/product-readiness/use-query-result'
+
+import type { OverviewRequest } from './context'
 import { DataValue, DataLink } from './data'
 import { OverviewHeader, OverviewActions, OverviewStatus } from './layout'
+import { providerOverviewQuery } from './query-options'
 
-export function ProviderOverview({ slug }: { slug: string }) {
-  const { data, isPending, error, refetch } = useQuery(
-    convexQuery(api.products.entity_overview.providers.get, { provider_id: slug }),
-  )
+export function ProviderOverview({ request }: { request: OverviewRequest }) {
+  const { slug } = request
+  const { data, isPending, error, refetch, isSuccess } = useQuery(providerOverviewQuery(slug))
+  useQueryResult(request.measurement, isSuccess && data !== null && data !== undefined)
 
   if (!data) {
     return (

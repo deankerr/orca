@@ -14,7 +14,10 @@ export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promis
   assertReadCount(args.limit)
   const rows = await ctx.db
     .query(OBJECTS_LOCATORS_TABLE)
-    .withIndex('by_path_name', (q) => q.eq('path', args.path).gte('name', args.atOrAfter))
+    .withIndex('by_path_name', (q) => {
+      const range = q.eq('path', args.path).gte('name', args.atOrAfter)
+      return args.before === undefined ? range : range.lt('name', args.before)
+    })
     .order(args.order ?? 'asc')
     .take(args.limit)
   return rows.map((row) => row.name)
