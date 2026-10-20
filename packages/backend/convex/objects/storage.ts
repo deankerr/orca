@@ -95,7 +95,7 @@ export async function loadMany(
   return await Promise.all(objects.map(async (identity) => decode(await readLocal(ctx, identity))))
 }
 
-/** Names at/after an inclusive lower bound, ascending by default. Descending returns greatest names first. */
+/** Names in `[atOrAfter, before)`, ascending by default. Descending returns greatest names first. */
 export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): Promise<string[]> {
   assertReadCount(selection.limit)
   const source = await readSource(ctx)

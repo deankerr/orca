@@ -9,6 +9,8 @@ export type ObjectIdentity = Infer<typeof objectIdentity>
 export const nameSelection = v.object({
   path: v.string(),
   atOrAfter: v.string(),
+  /** Exclusive upper bound; omitted means unbounded. */
+  before: v.optional(v.string()),
   limit: v.number(),
   order: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
 })
@@ -18,7 +20,7 @@ export type NameSelection = Infer<typeof nameSelection>
 export interface ObjectReader {
   /** Read 1–100 identities in input order; missing identities return null. */
   loadMany: (identities: ObjectIdentity[]) => Promise<(string | null)[]>
-  /** Return up to 100 names within the inclusive range, in the requested order. */
+  /** Return up to 100 names in `[atOrAfter, before)`, in the requested order. */
   namesAtOrAfter: (selection: NameSelection) => Promise<string[]>
 }
 
@@ -44,7 +46,10 @@ export function validateNames(names: unknown, selection: NameSelection): string[
     const outOfOrder =
       previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
 
-    if (name < selection.atOrAfter || outOfOrder) {
+    const outOfRange =
+      name < selection.atOrAfter || (selection.before !== undefined && name >= selection.before)
+
+    if (outOfRange || outOfOrder) {
       throw new ConvexError('Object source returned names outside the requested order/range')
     }
   }
