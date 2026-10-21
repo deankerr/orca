@@ -9,7 +9,6 @@ import type { MutationCtx } from '#generated/server'
 import * as scans from '#scans'
 
 import { ingestors } from './ingestors'
-import { scheduleQueue } from './queue'
 import { writeRecords } from './records'
 import type { RecordWrites } from './records'
 import { ingestResult, removalResult } from './results'
@@ -116,7 +115,8 @@ async function settle(
     }
   })
 
-  await scheduleQueue(ctx)
+  // Commit the wakeup with settlement, but keep the shared schedule out of this transaction.
+  await ctx.scheduler.runAfter(0, internal.ingestion.queue.wake, {})
 }
 
 function succeeded<Result extends IngestResult | RemovalResult>(
