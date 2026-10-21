@@ -1,45 +1,58 @@
-import { vRunResult, vWorkId } from '@convex-dev/workpool'
+import { vWorkId } from '@convex-dev/workpool'
 import { literals } from 'convex-helpers/validators'
 import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
-
-import { ingestArgs } from './input'
-import { ingestResult } from './results'
+import type { Infer } from 'convex/values'
 
 export const INGESTION_TARGET_TABLE = 'ingestion_target' as const
-export const SCAN_PAIRS_TABLE = 'ingestion_pairs' as const
+export const INGESTION_RECORDS_TABLE = 'ingestion_records' as const
 export const PROCESS_COMMITS_TABLE = 'ingestion_commits' as const
-export const SCAN_REGISTRATIONS_TABLE = 'scan_registrations' as const
+export const QUEUE_SCHEDULE_TABLE = 'ingestion_queue_schedule' as const
 
 export const ingestionTargetRange = v.object({ start_at: v.string(), end_at: v.string() })
-export const incompletePairStates = ['queued', 'failed'] as const
 
-/** One timeline: the beginning is fixed and the requested end can advance. */
+/** One timeline; the range can widen in either direction but never shrinks. */
 export const ingestionTargetTable = defineTable(ingestionTargetRange)
 
-export const scanPairsTable = defineTable({
-  ...ingestArgs.fields,
-  state: literals(...incompletePairStates, 'complete'),
-  work_id: vWorkId,
-  result: v.optional(vRunResult(v.array(ingestResult))),
+export const recordKind = literals('pair', 'baseline')
+export const recordState = literals('pending', 'queued', 'complete', 'failed', 'withdrawing')
+export const currentScope = literals('full', 'changes', 'departures')
+
+export type RecordKind = Infer<typeof recordKind>
+export type RecordState = Infer<typeof recordState>
+
+/**
+ * One registration from `docs/orca/ingestion-workers.md`. `kind` mirrors whether
+ * `from_scan_at` is null, so indexes can separate pairs from baselines.
+ */
+export const ingestionRecordsTable = defineTable({
+  kind: recordKind,
+  from_scan_at: v.union(v.string(), v.null()),
+  scan_at: v.string(),
+  alerts: v.boolean(),
+  state: recordState,
+  /** Assigned when queued; meaningful only for the request that received it. */
+  current_scope: v.optional(currentScope),
+  current_stats: v.optional(v.boolean()),
+  work_id: v.optional(vWorkId),
+  error: v.optional(v.string()),
 })
   .index('by_scan_at', ['scan_at'])
-  .index('by_state_and_scan_at', ['state', 'scan_at'])
+  .index('by_kind_and_scan_at', ['kind', 'scan_at'])
+  .index('by_kind_and_state_and_scan_at', ['kind', 'state', 'scan_at'])
+  .index('by_current_scope_and_state_and_scan_at', ['current_scope', 'state', 'scan_at'])
   .index('by_work_id', ['work_id'])
 
-/** A process's output is retained unless removed_at is set, including intentionally empty output. */
+export type IngestionRecord = Infer<typeof ingestionRecordsTable.validator>
+
+/** A process's output at a scan is committed exactly while its receipt exists. */
 export const processCommitsTable = defineTable({
   scan_at: v.string(),
   process: v.string(),
-  removed_at: v.optional(v.number()),
 }).index('by_scan_at_and_process', ['scan_at', 'process'])
 
-export const scanRegistrationsTable = defineTable({
-  ...ingestArgs.pick('from_scan_at', 'scan_at').fields,
-  progress: v.union(
-    v.object({ kind: v.literal('pending'), completed: v.array(v.string()) }),
-    v.object({ kind: v.literal('complete') }),
-  ),
-})
-  .index('by_scan_at', ['scan_at'])
-  .index('by_progress_kind_and_scan_at', ['progress.kind', 'scan_at'])
+/**
+ * The queue worker's next scheduled step. Completions arrive concurrently; at most one pending
+ * step keeps them from stacking queue steps that conflict on the same registry reads.
+ */
+export const queueScheduleTable = defineTable({ scheduled_id: v.id('_scheduled_functions') })

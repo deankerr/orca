@@ -1,8 +1,11 @@
 import { docValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
+import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
+import type { Id } from '#generated/dataModel'
 import { internalMutation, internalQuery } from '#generated/server'
+import type { MutationCtx } from '#generated/server'
 
 import { IsoDateTime } from '../isodatetime'
 import { INGESTION_TARGET_TABLE, ingestionTargetRange, ingestionTargetTable } from './tables'
@@ -16,29 +19,32 @@ const IngestionTargetRange = z
     message: 'Ingestion range must move forward in time',
   })
 
-/** Set the requested range independently of running the sync worker. */
+/** Set or widen the requested range; the next sync registers toward it. */
 export const set = internalMutation({
   args: ingestionTargetRange.fields,
   returns: v.id(INGESTION_TARGET_TABLE),
-  handler: async (ctx, args) => {
-    const range = IngestionTargetRange.parse(args)
-    const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
-
-    if (target === null) {
-      return await ctx.db.insert(INGESTION_TARGET_TABLE, range)
-    }
-
-    if (target.start_at !== range.start_at || target.end_at > range.end_at) {
-      throw new ConvexError('Keep the ingestion beginning fixed and only advance its end')
-    }
-
-    if (target.end_at < range.end_at) {
-      await ctx.db.patch(INGESTION_TARGET_TABLE, target._id, { end_at: range.end_at })
-    }
-
-    return target._id
-  },
+  handler: async (ctx, args) => await setTarget(ctx, args),
 })
+
+export async function setTarget(
+  ctx: MutationCtx,
+  args: Infer<typeof ingestionTargetRange>,
+): Promise<Id<typeof INGESTION_TARGET_TABLE>> {
+  const range = IngestionTargetRange.parse(args)
+  const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
+
+  if (target !== null && (range.start_at > target.start_at || range.end_at < target.end_at)) {
+    throw new ConvexError('The ingestion range can widen but never shrink')
+  }
+
+  const id = target === null ? await ctx.db.insert(INGESTION_TARGET_TABLE, range) : target._id
+
+  if (target !== null) {
+    await ctx.db.patch(INGESTION_TARGET_TABLE, id, range)
+  }
+
+  return id
+}
 
 export const get = internalQuery({
   args: {},

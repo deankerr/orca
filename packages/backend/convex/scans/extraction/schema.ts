@@ -46,6 +46,7 @@ export type ExtractedProvider = z.infer<typeof ExtractedProvider>
 export type ExtractedEndpoint = z.infer<typeof ExtractedEndpoint>
 export type ExtractedStats = z.infer<typeof ExtractedStats>
 
+/** Every model and provider has at least one endpoint, and every endpoint's parents are present. */
 export type Scan = {
   scan_at: string
   models: ReadonlyMap<string, ExtractedModel>

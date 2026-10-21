@@ -2,11 +2,11 @@
 
 ## Admission
 
-Completed non-baseline registrations can submit alerts to the sender's `ingestion` topic.
+Completed pairs can submit alerts to the sender's `ingestion` topic; automatic sending requires an alerting record.
 
-- Automatic sending requires its switch at both scheduling and preparation; submitted jobs continue when disabled.
+- Completing an alerting record schedules delivery; delivery checks the switch, and submitted jobs continue when disabled.
 - No eligible messages or matching webhooks means no jobs.
-- Completion schedules preparation once; rendering/submission failures leave Catalog facts and progress intact.
+- Rendering/submission failures leave Catalog facts intact.
 - Repair preparation failures before an intentional manual send.
 
 Automatic deadlines use source scan time, so delayed ingestion can retain history without delivering
@@ -41,16 +41,16 @@ bunx convex run api:listWebhooks '{}' --component discordSender --deployment <de
 Preview current filtering and cards without submitting jobs:
 
 ```sh
-bunx convex run products/discord/delivery:prepareRegistration '{"registration_id":"<registration-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:prepareRecord '{"record_id":"<record-id>"}' --deployment <deployment>
 ```
 
 This returns ordered serialized messages, source IDs, and filtering reasons. It requires a completed
-registration but ignores age, auto-send, and subscriptions. Baselines produce no messages.
+record but ignores age, auto-send, and subscriptions. Baselines produce no messages.
 
 Send intentionally, including with auto-send disabled:
 
 ```sh
-bunx convex run products/discord/delivery:sendRegistration '{"registration_id":"<registration-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:sendRecord '{"record_id":"<record-id>"}' --deployment <deployment>
 ```
 
 Every invocation sends again with a fresh invocation-time deadline and the original observation time.

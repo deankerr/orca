@@ -17,17 +17,9 @@ export const endpointObservation = v.object({
 
 export const observationsTable = defineTable(
   v.union(
-    v.object({
-      ...fields,
-      entity_kind: v.literal('model'),
-      detected: v.boolean(),
-      endpoint_count: v.number(),
-    }),
-    v.object({
-      ...fields,
-      entity_kind: v.literal('provider'),
-      endpoint_count: v.number(),
-    }),
+    // A parent is present exactly while it has listed endpoints; zero means absent.
+    v.object({ ...fields, entity_kind: v.literal('model'), endpoint_count: v.number() }),
+    v.object({ ...fields, entity_kind: v.literal('provider'), endpoint_count: v.number() }),
     endpointObservation,
   ),
 )

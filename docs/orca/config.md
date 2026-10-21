@@ -17,6 +17,7 @@ are optional. Object writes use the selected backend, while existing locators re
 | `ORCA_ADMIN_USER_ID`                | Authorized WorkOS subject; unset denies everyone.                    | `user_01M45DYDABT9537G38YC4Q1BK3` |
 | `ORCA_WEB_ORIGIN`                   | Discord link origin.                                                 | `https://orca.orb.town/`          |
 | `ORCA_LOGO_ORIGIN`                  | Discord image origin.                                                | `https://logos.orb.town`          |
+| `ORCA_INGESTION_PARALLELISM`        | Concurrent ingestion actions, 1–100; read per enqueue.               | Unset → 16                        |
 | `ORCA_OBJECTS_BACKEND`              | Storage for new objects: `convex` or `r2`.                           | Unset → `convex`                  |
 | `ORCA_OBJECTS_SOURCE_DEPLOYMENT`    | Remote read source; unset/empty reads locally.                       | `dependable-husky-550`            |
 | `ORCA_OBJECTS_API_KEY`              | **Secret** shared by source and readers.                             | Configured secret                 |
@@ -37,13 +38,13 @@ Convex, without R2 access.
 Each switch accepts `true` or `false`; only `true` enables the entry point named below.
 Collection switches guard cron invocation, leaving manual collection available.
 
-| Variable                         | Guarded entry point                               | Dev/preview default |
-| -------------------------------- | ------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | Scan collection                                   | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | Reserved; ingestion is currently manual           | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | Analytics collection                              | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | Top-apps collection                               | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | Automatic Discord delivery; currently unscheduled | `false`             |
+| Variable                         | Guarded entry point                             | Dev/preview default |
+| -------------------------------- | ----------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | Scan collection                                 | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | Ingestion sync kickoff                          | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | Analytics collection                            | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | Top-apps collection                             | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | Automatic Discord delivery for alerting records | `false`             |
 
 `crons.ts` owns the schedules; wall-clock schedules use UTC.
 
@@ -51,6 +52,7 @@ Collection switches guard cron invocation, leaving manual collection available.
 | --------------------------------------- | ---------------------- |
 | Analytics / top apps                    | Daily at 00:05 / 00:15 |
 | Scan collection                         | Hourly at minute 40    |
+| Ingestion sync                          | Hourly at minute 50    |
 | Independent public API V2 cache refresh | Every 5 minutes        |
 
 ### Maintained limits and defaults
@@ -59,9 +61,13 @@ Backend paths below are relative to `packages/backend/convex`.
 
 | Setting                      | Value                                                                            | Owner                              |
 | ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
-| Ingestion worker concurrency | 4; automatic action retries use Workpool defaults                                | `ingestion/pool.ts`                |
-| Ingestion discovery batch    | Up to 100 scan names, followed by successor lookahead                            | `scans/access.ts`                  |
-| Grid unlisting window        | 30 days before the completed observation clock                                   | `products/grid/endpoints.ts`       |
+| Ingestion register batch     | 24 new pairs per register step                                                   | `ingestion/register.ts`            |
+| Ingestion queue batch        | 24 pairs accepted per queue step                                                 | `ingestion/queue.ts`               |
+| Ingestion queue capacity     | 4 × concurrency queued or withdrawing; soft, from stale aggregate counts         | `ingestion/queue.ts`               |
+| Ingestion histogram buckets  | At most 240 per request                                                          | `ingestion/admin.ts`               |
+| Ingestion retry-all batch    | 256 failed records reopened per call                                             | `ingestion/queue.ts`               |
+| Preview ingestion lookback   | 24 hours before initialization; only when no target exists                       | `init.ts`                          |
+| Grid unlisting window        | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`       |
 | Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
 | Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |
 | Discord message order        | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`       |

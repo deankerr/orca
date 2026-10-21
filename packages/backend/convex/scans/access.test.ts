@@ -96,25 +96,39 @@ test('navigation selects scans independently of loading and extraction', async (
         entry('author/image', 'image'),
         entry('google/lyria-3-clip-preview'),
         { ...entry('author/unlisted'), endpoints: null },
+        { ...entry('author/unserved'), endpoints: [] },
       ]
         .map((value) => JSON.stringify({ ...value, scan_at }))
         .join('\n'),
     ]),
   )
 
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) =>
-    [...stored.keys()].filter((name) => name >= args.atOrAfter).slice(0, args.limit),
-  )
+  const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
+    const selected = [...stored.keys()].filter(
+      (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
+    )
+    return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
+  })
 
   const batch = spyOn(objects, 'loadMany').mockImplementation(async (_, identities) =>
     identities.map(({ name }) => stored.get(name) ?? null),
   )
 
   try {
-    expect(await scans.firstAtOrAfter(ctx)).toBe(times[0])
-    expect(await scans.firstAtOrAfter(ctx, '2026-10-01T12:00:00.000Z')).toBe(times[1])
-    expect(await scans.nextAfter(ctx, times[0])).toBe(times[1])
-    expect(await scans.nextAfter(ctx, '2026-10-01T12:00:00.000Z')).toBe(times[1])
+    const [first, second, third] = times
+    const between = '2026-10-01T12:00:00.000Z'
+    expect(await scans.times(ctx, { limit: 2, order: 'asc' })).toEqual([first, second])
+    expect(await scans.times(ctx, { atOrAfter: between, limit: 5, order: 'asc' })).toEqual([
+      second,
+      third,
+    ])
+    expect(await scans.times(ctx, { before: third, limit: 5, order: 'desc' })).toEqual([
+      second,
+      first,
+    ])
+    expect(
+      await scans.times(ctx, { atOrAfter: between, before: third, limit: 5, order: 'asc' }),
+    ).toEqual([second])
     expect(batch).not.toHaveBeenCalled()
 
     for (const [index, time] of times.entries()) {
@@ -122,7 +136,8 @@ test('navigation selects scans independently of loading and extraction', async (
       const id = `author/text-${index}:free`
 
       expect(scan).toBeDefined()
-      expect([...(scan?.models.keys() ?? [])]).toEqual([id, 'author/unlisted'])
+      // Models are discovered only through endpoints.
+      expect([...(scan?.models.keys() ?? [])]).toEqual([id])
       expect(scan?.models.get(id)).toEqual({ ...entry(id).model, id, variant: 'free' })
 
       expect([...(scan?.providers.values() ?? [])]).toEqual([
@@ -159,7 +174,9 @@ test('discovery finds the newest capture in one read and handles exhausted navig
 
   const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
     expect(args.path).toBe('scans')
-    const selected = names.filter((name) => name >= args.atOrAfter)
+    const selected = names.filter(
+      (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
+    )
     return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
   })
 
@@ -178,17 +195,17 @@ test('discovery finds the newest capture in one read and handles exhausted navig
     expect(await scans.latest(ctx, { atOrAfter: times.at(-1) })).toBe(times.at(-1) ?? null)
     expect(discovery).toHaveBeenCalledTimes(1)
     expect(await scans.latest(ctx, { atOrAfter: times[200] })).toBe(times.at(-1) ?? null)
-    expect(await scans.nextAfter(ctx, times[204])).toBeNull()
+    expect(await scans.times(ctx, { before: times[0], limit: 1, order: 'desc' })).toEqual([])
 
     discovery.mockResolvedValue([])
     expect(await scans.latest(ctx)).toBeNull()
     expect(await scans.latest(ctx, { atOrAfter: times[204] })).toBeNull()
-    expect(await scans.firstAtOrAfter(ctx)).toBeNull()
+    expect(await scans.times(ctx, { limit: 1, order: 'asc' })).toEqual([])
 
     for (const name of ['bad-name', 'scan.bad-time.jsonl', 'scan.2026-02-30T00:00:00.000Z.jsonl']) {
       discovery.mockResolvedValue([name])
       await rejects(scans.latest(ctx))
-      await rejects(scans.firstAtOrAfter(ctx))
+      await rejects(scans.times(ctx, { limit: 1, order: 'asc' }))
     }
   } finally {
     discovery.mockRestore()

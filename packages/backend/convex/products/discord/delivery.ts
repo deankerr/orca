@@ -4,32 +4,32 @@ import { components } from '#generated/api'
 import { env, internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { SCAN_REGISTRATIONS_TABLE } from '../../ingestion/tables'
-import { renderRegistration } from './render'
+import { INGESTION_RECORDS_TABLE } from '../../ingestion/tables'
+import { renderRecord } from './render'
 
 const ALERT_MAX_AGE_MS = 60 * 60 * 1000
 
 /** Scheduled after ingestion completion; preparation failures leave source events intact. */
-export const sendRegistrationAlerts = internalMutation({
-  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
+export const sendRecordAlerts = internalMutation({
+  args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
   returns: v.null(),
-  handler: async (ctx, { registration_id }) => {
+  handler: async (ctx, { record_id }) => {
     if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
       return null
     }
 
-    const registration = await ctx.db.get(SCAN_REGISTRATIONS_TABLE, registration_id)
+    const record = await ctx.db.get(INGESTION_RECORDS_TABLE, record_id)
     if (
-      registration === null ||
-      registration.from_scan_at === null ||
-      Date.parse(registration.scan_at) + ALERT_MAX_AGE_MS <= Date.now()
+      record === null ||
+      !record.alerts ||
+      Date.parse(record.scan_at) + ALERT_MAX_AGE_MS <= Date.now()
     ) {
       return null
     }
-    const rendered = await renderRegistration(ctx, registration_id)
+    const rendered = await renderRecord(ctx, record_id)
 
     // Rendering and fan-out share this alert transaction, independently of the
-    // completed registration. Backfills retain their original source-time deadline.
+    // completed record. Delayed records retain their original source-time deadline.
     await submitAlerts(ctx, {
       messages: rendered.messages,
       key: `ingestion:${rendered.scan_at}`,
@@ -40,8 +40,8 @@ export const sendRegistrationAlerts = internalMutation({
 })
 
 /** Read-only operator preview: current cards and filtering, without sender admission. */
-export const prepareRegistration = internalQuery({
-  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
+export const prepareRecord = internalQuery({
+  args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
   returns: v.object({
     scan_at: v.string(),
     messages: v.array(
@@ -54,17 +54,17 @@ export const prepareRegistration = internalQuery({
       }),
     ),
   }),
-  handler: async (ctx, { registration_id }) => await renderRegistration(ctx, registration_id),
+  handler: async (ctx, { record_id }) => await renderRecord(ctx, record_id),
 })
 
-/** Explicit operator send: rerender one completed registration with a fresh delivery window. */
-export const sendRegistration = internalMutation({
-  args: { registration_id: v.id(SCAN_REGISTRATIONS_TABLE) },
+/** Explicit operator send: rerender one completed record with a fresh delivery window. */
+export const sendRecord = internalMutation({
+  args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
   returns: v.object({ jobIds: v.array(v.string()), messageCount: v.number() }),
-  handler: async (ctx, { registration_id }) => {
-    const rendered = await renderRegistration(ctx, registration_id)
+  handler: async (ctx, { record_id }) => {
+    const rendered = await renderRecord(ctx, record_id)
 
-    // Each invocation is an intentional new send, even if this registration was sent
+    // Each invocation is an intentional new send, even if this record was sent
     // already. Convex keeps Math.random stable across transaction retries. No old
     // job, receipt, event or processor work is changed to make repetition possible.
     const run = `${Math.random().toString(36).slice(2)}:${Math.random().toString(36).slice(2)}`

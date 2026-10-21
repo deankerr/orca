@@ -13,6 +13,10 @@ import type { GenericSchema, SchemaDefinition } from 'convex/server'
 import schema from './schema'
 
 const senderRoot = path.dirname(fileURLToPath(import.meta.resolve('@orca/discord-sender/schema')))
+const aggregateRoot = path.join(
+  path.dirname(fileURLToPath(import.meta.resolve('@convex-dev/aggregate/package.json'))),
+  'src/component',
+)
 const workpoolRoot = path.join(
   path.dirname(fileURLToPath(import.meta.resolve('@convex-dev/workpool/package.json'))),
   'src/component',
@@ -32,8 +36,20 @@ async function loadSchema(root: string) {
   return (loaded as { default: SchemaDefinition<GenericSchema, boolean> }).default
 }
 
+const aggregateSchema = await loadSchema(aggregateRoot)
+/** The aggregate pins a different batch worker version from Workpool's. */
+const aggregateBatchRoot = path.join(
+  path.dirname(
+    createRequire(path.join(aggregateRoot, 'schema.ts')).resolve(
+      '@convex-dev/batch-worker/package.json',
+    ),
+  ),
+  'src/component',
+)
+
 const workpoolSchema = await loadSchema(workpoolRoot)
 const batchSchema = await loadSchema(batchRoot)
+const aggregateBatchSchema = await loadSchema(aggregateBatchRoot)
 
 function modules(root: string) {
   return Object.fromEntries(
@@ -49,6 +65,12 @@ export function setup() {
 
   t.registerComponent('ingestionPool', workpoolSchema, modules(workpoolRoot))
   t.registerComponent('ingestionPool/batchWorker', batchSchema, modules(batchRoot))
+  t.registerComponent('ingestionRecordCounts', aggregateSchema, modules(aggregateRoot))
+  t.registerComponent(
+    'ingestionRecordCounts/batchWorker',
+    aggregateBatchSchema,
+    modules(aggregateBatchRoot),
+  )
   t.registerComponent('discordSender', componentSchema, modules(senderRoot))
   t.registerComponent('discordSender/workpool', workpoolSchema, modules(workpoolRoot))
   t.registerComponent('discordSender/workpool/batchWorker', batchSchema, modules(batchRoot))

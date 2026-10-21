@@ -25,10 +25,10 @@ selection do not affect them.
 Monitor, Feed, and Discord derive alerts from Events and observations using shared default selection.
 Retained lifecycle Events and presented lifecycle alerts have different meanings:
 
-| Entity         | Retained ADD/REMOVE | Lifecycle alert             |
-| -------------- | ------------------- | --------------------------- |
-| Model/provider | Detection changes   | Endpoint count crosses zero |
-| Endpoint       | Listing/unlisting   | Listing/unlisting           |
+| Entity         | Retained ADD/REMOVE         | Lifecycle alert             |
+| -------------- | --------------------------- | --------------------------- |
+| Model/provider | Endpoint count crosses zero | Endpoint count crosses zero |
+| Endpoint       | Listing/unlisting           | Listing/unlisting           |
 
 - Baseline establishes knowledge without lifecycle alerts.
 - Parent metadata updates require endpoints on both sides; a serving transition takes precedence.
@@ -37,7 +37,6 @@ Retained lifecycle Events and presented lifecycle alerts have different meanings
 ### Prior knowledge
 
 - Arrival classification uses observations strictly before the scan, including baseline knowledge.
-- A previously known model need not have served through endpoints before.
 - Missing classification means unclassified.
 - Observation-only lifecycle alerts use historical Event identity, falling back to the ID.
 - Metadata details require a matching lifecycle Event snapshot.

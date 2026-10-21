@@ -7,60 +7,46 @@ import { IsoDateTime } from '../isodatetime'
 import type { RawScan, ScanEntry } from './collected'
 import { extractScan } from './extraction/extract'
 
-/** First stored capture at or after the inclusive starting time. */
-export async function firstAtOrAfter(
+/** Up to `limit` capture times in `[atOrAfter, before)`, nearest the requested end first. */
+export async function times(
   ctx: ActionCtx,
-  time: string | null = null,
-): Promise<string | null> {
-  const times = await discover(ctx, time === null ? null : IsoDateTime.parse(time), 1, 'asc')
-  return times[0] ?? null
-}
-
-/** Successor of a time, whether or not that time still has a stored capture. */
-export async function nextAfter(ctx: ActionCtx, time: string): Promise<string | null> {
-  const after = IsoDateTime.parse(time)
-  const times = await discover(ctx, after, 2, 'asc')
-  return times.find((scanAt) => scanAt > after) ?? null
-}
-
-/** Page an inclusive range of canonical ISO times, continuing strictly after the supplied cursor. */
-export async function pageInRange(
-  ctx: ActionCtx,
-  { start_at, end_at, after }: { start_at: string; end_at: string; after: string | null },
-): Promise<{ times: string[]; has_more: boolean }> {
-  const from = after !== null && after > start_at ? after : start_at
-  const discovered = await discover(ctx, from, 100, 'asc')
-  const times = discovered.filter(
-    (scan_at) => (after === null || scan_at > after) && scan_at <= end_at,
-  )
-  const last = times.at(-1)
-
-  if (last === undefined) {
-    return { times, has_more: false }
-  }
-
-  const following = discovered.find((scan_at) => scan_at > last) ?? (await nextAfter(ctx, last))
-
-  return { times, has_more: following !== null && following <= end_at }
+  {
+    atOrAfter = null,
+    before = null,
+    limit,
+    order,
+  }: { atOrAfter?: string | null; before?: string | null; limit: number; order: 'asc' | 'desc' },
+): Promise<string[]> {
+  return await discover(ctx, {
+    atOrAfter: atOrAfter === null ? null : IsoDateTime.parse(atOrAfter),
+    before: before === null ? null : IsoDateTime.parse(before),
+    limit,
+    order,
+  })
 }
 
 export async function latest(
   ctx: ActionCtx,
   { atOrAfter = null }: { atOrAfter?: string | null } = {},
 ): Promise<string | null> {
-  const times = await discover(
-    ctx,
-    atOrAfter === null ? null : IsoDateTime.parse(atOrAfter),
-    1,
-    'desc',
-  )
-  return times[0] ?? null
+  const [scanAt] = await times(ctx, { atOrAfter, limit: 1, order: 'desc' })
+  return scanAt ?? null
 }
 
-async function discover(ctx: ActionCtx, time: string | null, limit: number, order: 'asc' | 'desc') {
+async function discover(
+  ctx: ActionCtx,
+  selection: {
+    atOrAfter: string | null
+    before: string | null
+    limit: number
+    order: 'asc' | 'desc'
+  },
+) {
+  const { atOrAfter, before, limit, order } = selection
   const names = await objects.namesAtOrAfter(ctx, {
     path: 'scans',
-    atOrAfter: time === null ? '' : identity(time).name,
+    atOrAfter: atOrAfter === null ? '' : identity(atOrAfter).name,
+    ...(before === null ? {} : { before: identity(before).name }),
     limit,
     order,
   })

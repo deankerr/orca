@@ -177,7 +177,8 @@ test('transient HTTP failure retries without recording duplicate terminal receip
 
 test('exhausted outage leaves a resumable prefix and public recovery runs through Workpool', async () => {
   const t = setup()
-  const failed = await job(t, await webhook(t), 'outage')
+  // Recovery advances fake time by minutes to reach Workpool's armed monitors.
+  const failed = await job(t, await webhook(t), 'outage', START + 3_600_000)
   const independent = await job(t, await webhook(t, 2), 'independent')
   let unavailable = true
   const sent = requests(async (content) =>
@@ -196,7 +197,7 @@ test('exhausted outage leaves a resumable prefix and public recovery runs throug
   unavailable = false
   await t.mutation(api.api.resume, {})
   await t.finishAllScheduledFunctions(() => {
-    jest.advanceTimersByTime(10)
+    jest.advanceTimersByTime(60_000)
   })
 
   expect(sent).toEqual(['outage:1'])

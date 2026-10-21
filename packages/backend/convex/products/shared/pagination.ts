@@ -10,7 +10,7 @@ import { clock } from './clock'
 /** All History reads retain native pagination options and pin an observation cutoff. */
 export const pageArgs = { cutoff: v.optional(v.string()), paginationOpts: paginationOptsValidator }
 
-/** The completed registration clock bounds historical reads. */
+/** The ingestion clock bounds historical reads. */
 export async function cappedCutoff(ctx: QueryCtx, requested?: string): Promise<string | null> {
   const cutoff = requested === undefined ? undefined : IsoDateTime.parse(requested)
 

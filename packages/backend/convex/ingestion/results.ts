@@ -27,7 +27,7 @@ export const ingestResult = v.union(
 export const removalResult = v.union(
   v.object({
     process: v.string(),
-    kind: v.union(removeResult, v.literal('unsupported')),
+    kind: removeResult,
   }),
   v.object({
     process: v.string(),

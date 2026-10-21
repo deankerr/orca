@@ -52,6 +52,6 @@ regenerated observations can differ, so the study establishes capacity for its r
 The public clock supplies this chart's observation horizon. Interpretation excludes later observations and prices,
 so a clock-only advance can reveal already-loaded rows. Query failures use the application's error recovery.
 
-- Before any completed registration, a null clock gives the chart its empty state.
+- Before any complete ingestion record, a null clock gives the chart its empty state.
 - Completed forward ingestion supplies histories through that scan; older retained gaps can still affect charts.
 - The public history interface exposes no explicit timeline baseline.

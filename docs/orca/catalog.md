@@ -20,7 +20,7 @@ For a pair A → B, every projected row uses B's `scan_at`, including departures
 facts come from A. Current rows use this timestamp alone to reject older or equal writes.
 Events record changes; `scan_at` does not establish when an entity's facts last changed.
 
-- Model/provider record presence does not establish serving availability.
+- Model and provider presence means serving: each exists in a scan only through its listed endpoints.
 - Endpoint unlisting retains its facts and records the disappearance scan in both `scan_at` and `unlisted_at`.
 - Grid includes listed endpoints and a recent-unlisting window, configured in `config.md`.
 - Older rows remain available to entity and history queries.
@@ -38,11 +38,11 @@ Snapshot capacity is 1 MiB or 8,192 rows in one document. Reassess sharding as u
 
 `catalog_observations` establishes baseline states and records changes to these facts:
 
-| Entity   | Retained state                                                             |
-| -------- | -------------------------------------------------------------------------- |
-| Model    | Detection and endpoint count, including detected models with no endpoints. |
-| Provider | Endpoint count; provider observation is derived from endpoint presence.    |
-| Endpoint | Detection, model, provider, and provider tag.                              |
+| Entity   | Retained state                                |
+| -------- | --------------------------------------------- |
+| Model    | Endpoint count; zero means absent.            |
+| Provider | Endpoint count; zero means absent.            |
+| Endpoint | Detection, model, provider, and provider tag. |
 
 - Counts use distinct endpoint identities; replacing endpoints without changing a parent's count adds no parent row.
 - Unchanged states produce no row; reappearance records a new state even when it matches a prior episode.
@@ -62,11 +62,9 @@ Refresh rebuilds one retained entity with the current projection rules.
 
 The entity's latest observation through the completed horizon selects its source:
 
-- A detected model or endpoint uses the horizon's capture; a provider does so when its endpoint count is positive.
-- A departed entity uses the predecessor capture recorded by its departure registration.
+- A detected endpoint, or a model or provider with a positive endpoint count, uses the horizon's capture.
+- A departed entity uses the predecessor capture of the pair recording its departure.
 - Sparse observation dates are transitions, not last-seen dates; subtracting an assumed scan interval is incorrect.
-
-This also locates departed endpointless models without searching intervening captures.
 
 - Missing source captures or entities fail explicitly.
 - Rows ahead of the completed horizon must wait.

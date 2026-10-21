@@ -2,21 +2,18 @@
 import { expect, spyOn, test } from 'bun:test'
 import { ok } from 'node:assert/strict'
 
-import type { WorkId } from '@convex-dev/workpool'
-
 import type { Doc, Id } from '#generated/dataModel'
 import type { QueryCtx } from '#generated/server'
-
 
 import type { EventRow } from '../../catalog/tables/events'
 import { EVENTS_TABLE } from '../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
 import type { ObservationRow } from '../../catalog/tables/observations'
 import { compare } from '../../compare'
-import { SCAN_PAIRS_TABLE } from '../../ingestion/tables'
 import { setup } from '../../harness.testing'
-import type { AlertSource } from '../shared/alerts/read'
+import { INGESTION_RECORDS_TABLE } from '../../ingestion/tables'
 import type { JsonValue } from '../../json'
+import type { AlertSource } from '../shared/alerts/read'
 import { canonicalJson, contentKey, renderRows } from './render'
 
 function row(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
@@ -104,14 +101,13 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
           type === 'REMOVE' ? { [id]: snapshot } : {},
           type === 'ADD' ? { [id]: snapshot } : {},
         )
-  const event: EventRow = {
-    entity_kind: kind,
-    entity_id: id,
-    type,
-    scan_at,
-    context,
-    change_json: JSON.stringify(change),
-  }
+  const fields = { entity_id: id, type, scan_at, change_json: JSON.stringify(change) }
+  const event: EventRow =
+    kind === 'endpoint'
+      ? { ...fields, entity_kind: kind, context }
+      : kind === 'model'
+        ? { ...fields, entity_kind: kind, context: { model: context.model } }
+        : { ...fields, entity_kind: kind, context: { provider: context.provider } }
 
   return { previous, row: { table: EVENTS_TABLE, value: event } } as const
 }
@@ -122,12 +118,12 @@ async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
 
   return await t.run(async (ctx) => {
     for (const scan_at of new Set(sources.map(({ row }) => row.value.scan_at))) {
-      await ctx.db.insert(SCAN_PAIRS_TABLE, {
+      await ctx.db.insert(INGESTION_RECORDS_TABLE, {
+        kind: 'pair',
         from_scan_at: PREVIOUS_SCAN_AT,
         scan_at,
-        has_later_scan: false,
+        alerts: true,
         state: 'complete',
-        work_id: `work-${scan_at}` as WorkId,
       })
     }
 
@@ -251,7 +247,12 @@ test('individual and batched endpoint unlistings precede last-endpoint departure
         lifecycleSource('model', 'REMOVE'),
       ])
 
-      expect(order).toEqual([['unrelated-update'], unlistings, ['model-REMOVE'], ['provider-REMOVE']])
+      expect(order).toEqual([
+        ['unrelated-update'],
+        unlistings,
+        ['model-REMOVE'],
+        ['provider-REMOVE'],
+      ])
       expect(rendered.messages.at(-1)?.payload).toContain('has no more listed endpoints')
     }
   })

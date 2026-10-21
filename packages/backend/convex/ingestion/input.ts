@@ -1,15 +1,10 @@
-import { v } from 'convex/values'
+import type { CurrentScope } from './operators/current'
+import type { Source } from './operators/source'
 
-import type { Scan } from '#scans/extraction'
-
-export const ingestArgs = v.object({
-  from_scan_at: v.union(v.string(), v.null()),
-  scan_at: v.string(),
-  has_later_scan: v.boolean(),
-})
-
-export type ScanPair = {
-  previous: Omit<Scan, 'scan_at'> & { scan_at: string | null }
-  next: Scan
-  has_later_scan: boolean
+/** Everything one request hands its processes; the queue worker decided scope and stats. */
+export type IngestInput = {
+  source: Source
+  scope: CurrentScope
+  /** Whether this request carries the current-stats snapshot. */
+  current_stats: boolean
 }

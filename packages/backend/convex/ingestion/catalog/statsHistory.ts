@@ -4,21 +4,17 @@ import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from '../../catalog/tables/stats'
-import type { EndpointStatsRow } from '../../catalog/tables/stats'
 import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
+import * as operator from '../operators/statsHistory'
 import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'statsHistory',
-  prepare(_ctx, { next }) {
-    const rows: EndpointStatsRow[] = next.stats.map((stats) => ({
-      ...stats,
-      scan_at: next.scan_at,
-    }))
-
-    return { scan_at: next.scan_at, rows }
-  },
+  prepare: (_ctx, input) => ({
+    scan_at: input.source.next.scan_at,
+    rows: operator.derive(input.source),
+  }),
   write: async (ctx, args) =>
     await ctx.runMutation(internal.ingestion.catalog.statsHistory.write, args),
   remove: async (ctx, args) =>

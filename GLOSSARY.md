@@ -58,8 +58,8 @@ The facts recorded for one entity in a scan, including its identity and relation
 Its scan time dates observation, independently of discovery or the upstream change itself.
 
 **Baseline**:
-The source observation establishing initial state for a retained history or view.
-It describes what was already present at that starting point, rather than when those facts first became true upstream.
+A scan registration without a preceding scan, establishing complete history state at the earliest retained scan.
+It describes observed state without establishing when those facts first became true upstream.
 
 **First observation**:
 The earliest scan from which an entity's data was derived in a deployment's retained history.
@@ -75,7 +75,7 @@ The same entity can be known to production and unknown to a development deployme
 
 **Previously known**:
 An identity observed in retained knowledge before the scan under consideration, including identities known at the baseline.
-A model can be previously known without any earlier serving endpoints; this classification requires historical context beyond a scan pair.
+This classification requires historical context beyond a scan pair.
 
 ### Transformations and projections
 
@@ -138,11 +138,11 @@ A cumulative series of projected observations or transitions ordered by source s
 Its interpretation depends on what its entries represent: continuing state, individual readings, or observed changes.
 
 **Listing history**:
-Endpoint availability and relationship state established at a baseline and subsequent transitions.
-Each state continues until the next transition.
+Entity presence and endpoint relationship state over retained observation time.
+State continues between observed transitions within the supported history.
 
 **Pricing history**:
-Complete endpoint price quotes established at a baseline and subsequent quote changes.
+Complete endpoint price quotes over retained observation time.
 Quote continuity is interpreted together with historical endpoint availability and relationships.
 
 **Stats history**:
@@ -158,11 +158,10 @@ _Avoid_: An ingestion (when referring to a scan pair, its output, or its process
 
 **Ingestion target**:
 The inclusive range of source scan times from which a deployment is requested to derive Catalog knowledge.
-It expresses requested coverage, independently of processing progress or product readiness.
+It expresses requested coverage independently of progress or readiness; reducing it does not remove retained knowledge.
 
 **Scan registration**:
-The record of a scan accepted for ingestion, identifying its scan time and preceding scan where applicable.
-Its progress records which ingestion processes have completed.
+The record of a scan introduced for projection, together with its preceding scan unless it is a baseline.
 
 **Registration**:
 The acceptance and recording of a scan for ingestion.
@@ -192,8 +191,8 @@ It is derived from those dependencies and the product's tolerance for difference
 ### Availability
 
 **Listing**:
-An endpoint's observed availability together with its associated model, provider, and provider tag at a scan time.
-Models and providers have listed endpoints rather than listing states of their own.
+An entity's observed presence in a scan, including the associated model, provider, and provider tag for an endpoint.
+Models and providers are present exactly while they have listed endpoints.
 
 ### Changes and their presentation
 

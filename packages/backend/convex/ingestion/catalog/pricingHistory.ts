@@ -3,36 +3,18 @@ import { v } from 'convex/values'
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
 
-import { encodePricing } from '../../catalog/pricing'
-import type { EndpointPriceRow } from '../../catalog/tables/pricing'
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from '../../catalog/tables/pricing'
-import { compare } from '../../compare'
 import { commitProcess, createIngestor, removeProcess } from '../ingestor'
 import type { Ingestor } from '../ingestor'
-import { endpointPricing } from '../lenses'
+import * as operator from '../operators/pricingHistory'
 import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
   process: 'pricingHistory',
-  prepare(_ctx, pair) {
-    const rows: EndpointPriceRow[] = []
-
-    for (const [id, endpoint] of pair.next.endpoints) {
-      const previous = pair.previous.endpoints.get(id)
-      const pricing = endpointPricing(endpoint.pricing)
-
-      if (
-        previous !== undefined &&
-        compare(endpointPricing(previous.pricing), pricing).length === 0
-      ) {
-        continue
-      }
-
-      rows.push({ endpoint_id: id, scan_at: pair.next.scan_at, ...encodePricing(pricing) })
-    }
-
-    return { scan_at: pair.next.scan_at, rows }
-  },
+  prepare: (_ctx, input) => ({
+    scan_at: input.source.next.scan_at,
+    rows: operator.derive(input.source),
+  }),
   write: async (ctx, args) =>
     await ctx.runMutation(internal.ingestion.catalog.pricingHistory.write, args),
   remove: async (ctx, args) =>

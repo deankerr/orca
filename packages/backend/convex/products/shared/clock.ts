@@ -3,29 +3,32 @@ import { v } from 'convex/values'
 import { query } from '#generated/server'
 import type { QueryCtx } from '#generated/server'
 
-import { incompletePairStates, SCAN_PAIRS_TABLE } from '../../ingestion/tables'
+import { INGESTION_RECORDS_TABLE } from '../../ingestion/tables'
 
-/** End of the complete prefix of registered pairs. */
+/**
+ * Latest scan with committed output. Backfill and forward work complete independently,
+ * so earlier scans may still be in progress; readers tolerate that.
+ */
 export async function clock(ctx: QueryCtx): Promise<string | null> {
-  const incomplete = await Promise.all(
-    incompletePairStates.map(
-      async (state) =>
+  const latest = await Promise.all(
+    (['pair', 'baseline'] as const).map(
+      async (kind) =>
         await ctx.db
-          .query(SCAN_PAIRS_TABLE)
-          .withIndex('by_state_and_scan_at', (q) => q.eq('state', state))
+          .query(INGESTION_RECORDS_TABLE)
+          .withIndex('by_kind_and_state_and_scan_at', (q) =>
+            q.eq('kind', kind).eq('state', 'complete'),
+          )
+          .order('desc')
           .first(),
     ),
   )
-  const [first] = incomplete
-    .filter((pair) => pair !== null)
-    .toSorted((a, b) => a.scan_at.localeCompare(b.scan_at))
 
-  if (first !== undefined) {
-    return first.from_scan_at
-  }
-
-  const latest = await ctx.db.query(SCAN_PAIRS_TABLE).withIndex('by_scan_at').order('desc').first()
-  return latest?.scan_at ?? null
+  return (
+    latest
+      .flatMap((record) => (record === null ? [] : [record.scan_at]))
+      .toSorted()
+      .at(-1) ?? null
+  )
 }
 
 /** Product horizon, subscribed separately so advancing time does not invalidate history pages. */

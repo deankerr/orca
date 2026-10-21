@@ -3,7 +3,7 @@ import type { QueryCtx } from '#generated/server'
 import { EVENTS_TABLE } from '../../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../../catalog/tables/observations'
 import type { ObservationRow } from '../../../catalog/tables/observations'
-import { SCAN_PAIRS_TABLE } from '../../../ingestion/tables'
+import { INGESTION_RECORDS_TABLE } from '../../../ingestion/tables'
 import type { EntityAlert } from './curate'
 import { interpretEvent } from './prepare'
 import type { AlertSource } from './read'
@@ -58,12 +58,13 @@ export async function interpret(ctx: QueryCtx, source: AlertSource): Promise<Ent
     return null
   }
 
-  const ingestion = await ctx.db
-    .query(SCAN_PAIRS_TABLE)
-    .withIndex('by_scan_at', (q) => q.eq('scan_at', scan_at))
-    .unique()
+  // Lifecycle needs a comparison: a scan introduced only by a baseline has none.
+  const pair = await ctx.db
+    .query(INGESTION_RECORDS_TABLE)
+    .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair').eq('scan_at', scan_at))
+    .first()
 
-  if (ingestion === null || ingestion.from_scan_at === null) {
+  if (pair === null) {
     return null
   }
 

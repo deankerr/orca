@@ -13,7 +13,7 @@ export function extractScan({ scan_at, entries }: RawScan): Scan {
   const stats = new Map<string, ExtractedStats[]>()
   const providers: ProviderInput[] = []
 
-  for (const entry of R.sortBy(entries.filter(filterModelScope), R.prop('model_id'))) {
+  for (const entry of R.sortBy(entries.filter(inScope), R.prop('model_id'))) {
     const model = extractModel(entry)
     models.set(model.id, model)
 
@@ -36,9 +36,11 @@ export function extractScan({ scan_at, entries }: RawScan): Scan {
   }
 }
 
-function filterModelScope(entry: ScanEntry): boolean {
+/** ORCA discovers models and providers only through endpoints; an unserved model is out of scope. */
+function inScope(entry: ScanEntry): boolean {
   // Lyria reports text input/output for lyrics, but remains outside ORCA's model scope.
   return (
+    (entry.endpoints?.length ?? 0) > 0 &&
     !entry.model_id.startsWith('google/lyria') &&
     entry.model.input_modalities.includes('text') &&
     entry.model.output_modalities.includes('text')

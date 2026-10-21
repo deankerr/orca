@@ -15,14 +15,14 @@ import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observat
 import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
 import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
 import {
-  PROCESS_COMMITS_TABLE,
-  processCommitsTable,
-  SCAN_PAIRS_TABLE,
-  scanPairsTable,
-  SCAN_REGISTRATIONS_TABLE,
-  scanRegistrationsTable,
+  INGESTION_RECORDS_TABLE,
+  ingestionRecordsTable,
   INGESTION_TARGET_TABLE,
   ingestionTargetTable,
+  QUEUE_SCHEDULE_TABLE,
+  queueScheduleTable,
+  PROCESS_COMMITS_TABLE,
+  processCommitsTable,
 } from './ingestion/tables'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
@@ -43,10 +43,10 @@ export default defineSchema(
     [ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [EVENTS_TABLE]: eventsTable,
 
-    [SCAN_REGISTRATIONS_TABLE]: scanRegistrationsTable,
-    [PROCESS_COMMITS_TABLE]: processCommitsTable,
-    [SCAN_PAIRS_TABLE]: scanPairsTable,
     [INGESTION_TARGET_TABLE]: ingestionTargetTable,
+    [INGESTION_RECORDS_TABLE]: ingestionRecordsTable,
+    [QUEUE_SCHEDULE_TABLE]: queueScheduleTable,
+    [PROCESS_COMMITS_TABLE]: processCommitsTable,
   },
   {
     strictTableNameTypes: true,

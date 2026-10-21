@@ -1,3 +1,4 @@
+import aggregate from '@convex-dev/aggregate/convex.config.js'
 import workpool from '@convex-dev/workpool/convex.config.js'
 import discordSender from '@orca/discord-sender/convex.config.js'
 import { defineApp } from 'convex/server'
@@ -19,6 +20,7 @@ const app = defineApp({
     ORCA_LOGO_ORIGIN: v.string(),
 
     ORCA_INGESTION_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_INGESTION_PARALLELISM: v.optional(v.string()),
     ORCA_SCAN_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_ANALYTICS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_TOP_APPS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
@@ -27,5 +29,6 @@ const app = defineApp({
 
 app.use(discordSender)
 app.use(workpool, { name: 'ingestionPool' })
+app.use(aggregate, { name: 'ingestionRecordCounts' })
 
 export default app
