@@ -5,10 +5,11 @@ import type { PricingHistory } from './data'
 
 const iso = (at: number) => new Date(at).toISOString()
 type Endpoint = PricingHistory['endpoints'][number]
-const listing = (at: number, changes: Partial<Endpoint['listings'][number]> = {}) => ({
-  endpoint_id: 'one',
+const observation = (at: number, changes: Partial<Endpoint['observations'][number]> = {}) => ({
+  entity_id: 'one',
   scan_at: iso(at),
-  state: 'listed' as const,
+  entity_kind: 'endpoint' as const,
+  detected: true,
   model_id: 'model',
   provider_id: 'provider',
   provider_tag: 'provider',
@@ -21,14 +22,14 @@ const price = (at: number, meters: Record<string, string>) => ({
   meters,
 })
 
-test('steps normalize unmetered values and never carry quotes across a relisting', () => {
+test('steps normalize unmetered values and never carry quotes across a reappearance', () => {
   const pricingHistory: PricingHistory = {
     modelId: 'model',
     asOf: 4 * DAY,
     endpoints: [
       {
         id: 'one',
-        listings: [listing(0), listing(DAY, { state: 'unlisted' }), listing(2 * DAY)],
+        observations: [observation(0), observation(DAY, { detected: false }), observation(2 * DAY)],
         prices: [
           price(0, { prompt: '1' }),
           price(DAY / 2, { prompt: '2' }),
@@ -90,10 +91,10 @@ test('daily sampling retains the last price before tag and model boundaries', ()
     endpoints: [
       {
         id: 'one',
-        listings: [
-          listing(0),
-          listing(2.75 * DAY, { provider_tag: 'new' }),
-          listing(4.75 * DAY, { provider_tag: 'new', model_id: 'other' }),
+        observations: [
+          observation(0),
+          observation(2.75 * DAY, { provider_tag: 'new' }),
+          observation(4.75 * DAY, { provider_tag: 'new', model_id: 'other' }),
         ],
         prices: [
           price(0, { prompt: '1' }),
@@ -122,7 +123,10 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
       endpoints: [
         {
           id: 'one',
-          listings: [listing(0), ...(unlisted ? [listing(DAY, { state: 'unlisted' })] : [])],
+          observations: [
+            observation(0),
+            ...(unlisted ? [observation(DAY, { detected: false })] : []),
+          ],
           prices: [price(0, { prompt: '1' }), ...(unlisted ? [] : [price(DAY, { prompt: '0' })])],
         },
       ],
@@ -146,10 +150,10 @@ test('historical membership retains moves away and carries quotes through tag an
   const endpoints = [
     {
       id: 'one',
-      listings: [
-        listing(2 * DAY, { model_id: 'model:free', provider_tag: 'provider/bf16' }),
-        listing(DAY, { provider_tag: 'provider/bf16' }),
-        listing(0),
+      observations: [
+        observation(2 * DAY, { model_id: 'model:free', provider_tag: 'provider/bf16' }),
+        observation(DAY, { provider_tag: 'provider/bf16' }),
+        observation(0),
       ],
       prices: [price(0, { prompt: '1' })],
     },
@@ -173,11 +177,11 @@ test('same-price reappearance retains a gap; missing meters replace rather than 
     endpoints: [
       {
         id: 'one',
-        listings: [
-          listing(0),
-          listing(DAY, { state: 'unlisted' }),
-          listing(2 * DAY),
-          listing(4 * DAY, { provider_tag: 'new' }),
+        observations: [
+          observation(0),
+          observation(DAY, { detected: false }),
+          observation(2 * DAY),
+          observation(4 * DAY, { provider_tag: 'new' }),
         ],
         prices: [
           price(0, { prompt: '1' }),

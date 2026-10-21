@@ -1,4 +1,4 @@
-import type { RawScan } from '@orca/backend/scan/collection'
+import type { RawScan } from '@orca/backend/scans/collection'
 
 /** Synthetic data for report verification; never presented as a real source observation. */
 export function sampleScan(): RawScan {
@@ -30,11 +30,13 @@ export function sampleScan(): RawScan {
     })),
     model: {
       context_length: 200_000,
+      created_at: '2026-10-01T00:00:00.000Z',
       description: 'Synthetic model for scan report verification.',
       input_modalities: ['text'],
       name: `Example model ${index + 1}`,
       output_modalities: [index === 2 ? 'image' : 'text'],
       permaslug: `${id}-v1`,
+      short_name: `Example model ${index + 1}`,
       slug: id,
     },
     model_id: id,
@@ -47,9 +49,11 @@ export function sampleScan(): RawScan {
       {
         endpoints: null,
         model: {
+          created_at: '2026-10-01T00:00:00.000Z',
           input_modalities: ['text'],
           output_modalities: ['text'],
           permaslug: 'example/unlisted-v1',
+          short_name: 'Unlisted',
           slug: 'example/unlisted',
         },
         model_id: 'example/unlisted',

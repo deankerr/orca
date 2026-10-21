@@ -1,9 +1,15 @@
 ---
 name: orca-docs
-description: Write, review, and maintain ORCA documentation, including deciding what to remove or update after code changes.
+description: Write, review, and maintain ORCA documentation after code or policy changes. Excludes reading-only tasks, detailed production-data studies, and GLOSSARY.md.
 ---
 
 # ORCA documentation
+
+`GLOSSARY.md` is excluded from this skill. Use the domain-modeling skill and its
+`GLOSSARY-FORMAT.md` guidance for that file.
+
+Use orca-data-study when collecting or restructuring detailed production-data evidence.
+Its study-specific rules override this skill where they differ.
 
 Write for agents and project/technology experts unless the project specifies another audience.
 Assume readers can inspect code, search the repository, and already have related documentation in context.
@@ -18,12 +24,16 @@ Assume readers can inspect code, search the repository, and already have related
 - Omit task-, worktree-, and PR-specific reports, including demo results and temporary overrides.
 - Let code explain implementation, types, and control flow.
 - Prefer a clearer name or nearby comment when information belongs with the code.
-- Update documented facts and conclusions when new evidence or durable decisions change them.
+- Update maintained facts and conclusions when new evidence or durable decisions change them.
+- Preserve dated studies when code changes; their measurements describe the recorded population and procedure.
+- Use UTC for study dates and timestamps; write dates as YYYY-MM-DD without a timezone qualifier.
 - Add prose only when it contributes useful knowledge beyond the code change itself.
 - Delete guidance tied to removed or redesigned code.
 - Describe the resulting system without requiring knowledge of discarded designs.
 - State what is, retaining exclusions only for critical constraints or likely misunderstandings.
 - Keep operational instructions to prerequisites, commands, and meaningful consequences.
+- Document operator commands in the owning subject's docs, regardless of Convex function type or visibility.
+- Include runnable invocations, required inputs, and meaningful results or side effects; use `discord.md` as an example.
 
 ## Organization
 

@@ -1,4 +1,4 @@
-import type { ScanReport } from '@orca/backend/scan/analysis'
+import type { ScanReport } from '@orca/backend/scans/analysis'
 import { Command } from 'commander'
 
 import { renderHtml } from './html'

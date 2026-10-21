@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import type { ScanEntry } from '#scan/collection'
+import type { ScanEntry } from '#scans/collection'
 
 import { transformScanToV2Models } from './compatibility'
 import { OrcaPublicApiV2Schema } from './schema'

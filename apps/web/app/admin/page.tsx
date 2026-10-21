@@ -22,9 +22,14 @@ export default function AdminPage() {
           or change application data.
         </p>
         <p className="font-mono text-xs">{result.userId}</p>
-        <Link href="/admin/resources" className="text-xs underline">
-          Open resources
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/admin/ingestion" className="text-xs underline">
+            Open ingestion
+          </Link>
+          <Link href="/admin/resources" className="text-xs underline">
+            Open resources
+          </Link>
+        </div>
       </PageHeader>
     </PageContainer>
   )

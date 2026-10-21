@@ -1,18 +1,33 @@
 # Pricing History
 
-Pricing observations belong to endpoint UUIDs. A model's chart combines those quotes with
-historical availability and model/provider/tag relationships from Listings. Today's Catalog
-membership cannot reconstruct that history.
+A model's chart combines endpoint quotes with historical availability and relationships.
+Today's Catalog membership cannot reconstruct those histories.
 
 ## Historical membership
 
-An endpoint can change model while retaining its UUID, including moves to or from a `:free`
-variant. Discover endpoints through a model's historical listings, then consider each endpoint's
-complete listing history: the row ending membership in model A can be indexed under model B.
+- Endpoint UUIDs retain identity across model moves, including moves to or from a `:free` variant.
+- Discover endpoints through historical model membership, then read their complete context and quote histories.
+- The observation ending membership in model A can be indexed under model B.
+- Filter quotes into the selected model's membership spans when assembling the chart.
+- Tags label endpoints; grouping by tag must not collapse distinct endpoint quotes.
 
-Pricing retrieval remains endpoint-scoped. Model grouping and membership interpretation belong
-to this product. Fetching quotes outside the selected model's membership is acceptable; filtering
-them into the correct spans happens when the chart is assembled.
+## Loading decision
+
+Use two independent model-wide queries: endpoint observations and prices, each grouped by endpoint UUID.
+Complete results keep the consumer simple; both subscriptions start alongside the shared public clock.
+
+The production study in `docs/evidence/2026-10-13-pricing-history/README.md` supports this choice.
+Its largest measured model fit within transaction and return limits. Legacy listings supplied the context proxy;
+regenerated observations can differ, so the study establishes capacity for its recorded population.
+
+- Accept repeated membership reads and broader price-query invalidation in exchange for two ordinary subscriptions.
+- Keep the clock out of history query arguments and reads; clock-only advances need not reread unchanged histories.
+- Derive the join from query results and wait for initial results before rendering.
+- New observations remain reactive, including discovery of additional historical endpoints.
+- Collect complete histories without a silent row cap.
+- Reassess pagination as model membership, history size, or payload size approaches transaction or per-array limits.
+- Reassess measured read/return budgets against current platform limits; the dated study is not a growth bound.
+- Stats has a different retention scale and needs its own capacity evidence.
 
 ## Quote continuity
 
@@ -27,20 +42,16 @@ them into the correct spans happens when the chart is assembled.
 | Missing/invalid meter  | End that meter's trace; do not carry an older meter forward.                 |
 | Zero meter             | Preserve the observation but omit it from positive-rate traces.              |
 
-Apply listings and quotes at a shared timestamp together. Closed spans are half-open
-`[start, end)`; a still-current span may include the chart horizon. Tags are labels, not unique
-identities, so grouping by tag must not collapse distinct endpoint quotes.
-
-The chart plots daily samples over long ranges but inspects exact observations. Conditional-price
-visualization is outside its current scope.
+- Apply endpoint observations and quotes at a shared timestamp together.
+- Closed spans are half-open `[start, end)`; a still-current span may include the chart horizon.
+- Long ranges plot daily samples while inspection uses exact observations.
+- Conditional-price visualization is outside the chart's current scope.
 
 ## Completeness and recovery
 
-History is complete through the accepted scan for new ingestions. Gaps in older retained history
-can still affect charts.
+The public clock supplies this chart's observation horizon. Interpretation excludes later observations and prices,
+so a clock-only advance can reveal already-loaded rows. Query failures use the application's error recovery.
 
-Per-endpoint pagination protects against large histories. Empty partial pages require continuation,
-and any endpoint query error blocks presentation of a partial chart.
-
-Retry currently remounts pagination with the same cache identity. A cached query error can survive
-until the subscription updates or expires. Public history exposes no explicit timeline baseline.
+- Before any complete ingestion record, a null clock gives the chart its empty state.
+- Completed forward ingestion supplies histories through that scan; older retained gaps can still affect charts.
+- The public history interface exposes no explicit timeline baseline.

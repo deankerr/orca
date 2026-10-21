@@ -1,248 +1,180 @@
 # Configuration
 
-Variables and deployment defaults, grouped by package and scope.
+Local inputs live in `packages/backend/.env.local` and `apps/web/.env.local`; deployed web inputs live
+in Vercel's Production/Preview settings. Convex runtime variables live on each deployment. Project
+defaults initialize new deployments; existing deployments need separate updates.
 
-## Legend
+`NEXT_PUBLIC_*` values are public. Entries marked **secret** must stay out of Git, output, and browser
+bundles. Dev/preview defaults below are maintained project settings; unset means the code fallback applies.
 
-| Symbol | Meaning                                                             |
-| ------ | ------------------------------------------------------------------- |
-| 🔒     | Secret; keep out of Git, tool output, and browser bundles.          |
-| ◇      | Environment-specific.                                               |
-| 🌐     | Public.                                                             |
-| ⚙      | Generated or supplied by a platform/tool.                           |
-| ◆      | ORCA-defined variable.                                              |
-| ⇄      | Must agree across locations or processes; the row identifies which. |
+## Backend runtime
 
-`NEXT_PUBLIC_*` values are public web build configuration. Local `.env*` files are
-ignored by Git.
+`convex.config.ts` parses these deployment variables. Web and logo origins are required; the others
+are optional. Object writes use the selected backend, while existing locators retain their storage type.
 
-## Backend — `packages/backend`
+| Variable                            | Meaning                                                              | Dev/preview default               |
+| ----------------------------------- | -------------------------------------------------------------------- | --------------------------------- |
+| `ORCA_ADMIN_USER_ID`                | Authorized WorkOS subject; unset denies everyone.                    | `user_01M45DYDABT9537G38YC4Q1BK3` |
+| `ORCA_WEB_ORIGIN`                   | Discord link origin.                                                 | `https://orca.orb.town/`          |
+| `ORCA_LOGO_ORIGIN`                  | Discord image origin.                                                | `https://logos.orb.town`          |
+| `ORCA_INGESTION_PARALLELISM`        | Concurrent ingestion actions, 1–100; read per enqueue.               | Unset → 16                        |
+| `ORCA_OBJECTS_BACKEND`              | Storage for new objects: `convex` or `r2`.                           | Unset → `convex`                  |
+| `ORCA_OBJECTS_SOURCE_DEPLOYMENT`    | Remote read source; unset/empty reads locally.                       | `dependable-husky-550`            |
+| `ORCA_OBJECTS_API_KEY`              | **Secret** shared by source and readers.                             | Configured secret                 |
+| `ORCA_OBJECTS_R2_ACCOUNT_ID`        | Cloudflare account owning the bucket.                                | Unset                             |
+| `ORCA_OBJECTS_R2_BUCKET`            | R2 bucket.                                                           | Unset                             |
+| `ORCA_OBJECTS_R2_ACCESS_KEY_ID`     | **Secret** R2 credential.                                            | Unset                             |
+| `ORCA_OBJECTS_R2_SECRET_ACCESS_KEY` | **Secret** signing key, including for existing-object reads/removal. | Unset                             |
 
-### Convex runtime: `convex.config.ts`
+Dev/preview read canonical objects through the source deployment's object API and keep local writes in
+Convex, without R2 access.
 
-Set these in the **Convex deployment environment**, parsed by `convex.config.ts`.
-Project defaults initialize new deployments. The defaults below are shared by dev
-and preview; “unset” means the code fallback applies.
+- Remote reads do not fall back to local objects.
+- Keep source selection fixed while a timeline exists.
+- A deployment collecting its own source must leave the override unset.
 
-#### Administrator access and public links
+### Scheduled entry points
 
-| Variable             | Flags  | Consumer / fallback / relationship                                               | Dev/preview default               |
-| -------------------- | ------ | -------------------------------------------------------------------------------- | --------------------------------- |
-| `ORCA_ADMIN_USER_ID` | ◆ ◇ ⇄  | One authorized WorkOS user; unset denies everyone. Production uses its own user. | `user_01M45DYDABT9537G38YC4Q1BK3` |
-| `ORCA_WEB_ORIGIN`    | ◆ ◇ 🌐 | Web origin for Discord links.                                                    | `https://orca.orb.town/`          |
-| `ORCA_LOGO_ORIGIN`   | ◆ ◇ 🌐 | Logo origin for Discord images.                                                  | `https://logos.orb.town`          |
+Each switch accepts `true` or `false`; only `true` enables the entry point named below.
+Collection switches guard cron invocation, leaving manual collection available.
 
-#### Object storage and shared source data
+| Variable                         | Guarded entry point                             | Dev/preview default |
+| -------------------------------- | ----------------------------------------------- | ------------------- |
+| `ORCA_SCAN_CRON_ENABLED`         | Scan collection                                 | `false`             |
+| `ORCA_INGESTION_CRON_ENABLED`    | Ingestion sync kickoff                          | Unset → disabled    |
+| `ORCA_ANALYTICS_CRON_ENABLED`    | Analytics collection                            | Unset → disabled    |
+| `ORCA_TOP_APPS_CRON_ENABLED`     | Top-apps collection                             | Unset → disabled    |
+| `ORCA_DISCORD_AUTO_SEND_ENABLED` | Automatic Discord delivery for alerting records | `false`             |
 
-| Variable                            | Flags    | Consumer / fallback / relationship                                   | Dev/preview default    |
-| ----------------------------------- | -------- | -------------------------------------------------------------------- | ---------------------- |
-| `ORCA_OBJECTS_BACKEND`              | ◆ ◇      | Storage for new objects. Existing objects retain their backend.      | Unset → `convex`       |
-| `ORCA_OBJECTS_SOURCE_DEPLOYMENT`    | ◆ ◇      | Canonical read source; unset reads locally. Writes remain local.     | `dependable-husky-550` |
-| `ORCA_OBJECTS_API_KEY`              | ◆ 🔒 ◇ ⇄ | Shared credential; source and consuming deployments must agree.      | Configured secret      |
-| `ORCA_OBJECTS_R2_ACCOUNT_ID`        | ◆ ◇      | Cloudflare account owning the bucket.                                | Unset                  |
-| `ORCA_OBJECTS_R2_BUCKET`            | ◆ ◇      | Bucket for R2 objects.                                               | Unset                  |
-| `ORCA_OBJECTS_R2_ACCESS_KEY_ID`     | ◆ 🔒 ◇   | R2 access credential.                                                | Unset                  |
-| `ORCA_OBJECTS_R2_SECRET_ACCESS_KEY` | ◆ 🔒 ◇   | R2 signing secret, required even for existing-object reads/removals. | Unset                  |
+`crons.ts` owns the schedules; wall-clock schedules use UTC.
 
-Dev/preview have no R2 access. They read canonical objects through the source
-deployment’s object API and store local writes in Convex.
+| Job                                     | Schedule               |
+| --------------------------------------- | ---------------------- |
+| Analytics / top apps                    | Daily at 00:05 / 00:15 |
+| Scan collection                         | Hourly at minute 40    |
+| Ingestion sync                          | Hourly at minute 50    |
+| Independent public API V2 cache refresh | Every 5 minutes        |
 
-Keep the object source fixed while a timeline or pending processor work exists.
+### Maintained limits and defaults
 
-#### Collection, ingestion, and Discord
+Backend paths below are relative to `packages/backend/convex`.
 
-Switches below enable their guarded entry point only for the exact string `true`;
-missing/`false` disables it.
+| Setting                      | Value                                                                            | Owner                              |
+| ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
+| Ingestion register batch     | 24 new pairs per register step                                                   | `ingestion/register.ts`            |
+| Ingestion queue batch        | 24 pairs accepted per queue step                                                 | `ingestion/queue.ts`               |
+| Ingestion queue capacity     | 4 × concurrency queued or withdrawing; soft, from stale aggregate counts         | `ingestion/queue.ts`               |
+| Ingestion histogram buckets  | At most 240 per request                                                          | `ingestion/admin.ts`               |
+| Ingestion retry-all batch    | 256 failed records reopened per call                                             | `ingestion/queue.ts`               |
+| Preview ingestion lookback   | 24 hours before initialization; only when no target exists                       | `init.ts`                          |
+| Grid unlisting window        | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`       |
+| Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
+| Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |
+| Discord message order        | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`       |
+| Discord frequent pricing     | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
+| Ordinary pricing eligibility | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
+| Feed page request            | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
 
-| Variable                         | Flags | Consumer / fallback                                                         | Dev/preview default |
-| -------------------------------- | ----- | --------------------------------------------------------------------------- | ------------------- |
-| `ORCA_SCAN_CRON_ENABLED`         | ◆ ◇   | Enables scheduled scan capture; manual runs bypass it.                      | `false`             |
-| `ORCA_INGESTION_CRON_ENABLED`    | ◆ ◇   | Enables scheduled ingestion; manual runs and continuations bypass it.       | Unset → disabled    |
-| `ORCA_ANALYTICS_CRON_ENABLED`    | ◆ ◇   | Enables scheduled upstream analytics collection.                            | Unset → disabled    |
-| `ORCA_TOP_APPS_CRON_ENABLED`     | ◆ ◇   | Enables scheduled upstream top-apps collection.                             | Unset → disabled    |
-| `ORCA_DISCORD_AUTO_SEND_ENABLED` | ◆ ◇   | Enables automatic alerts after fresh event commits; manual sends bypass it. | `false`             |
+## WorkOS and deployment tooling
 
-Discord alert maximum age is **3,600,000 ms (one hour)**, defined in
-`packages/backend/convex/alerts/discord/delivery.ts`. Automatic deadlines use
-`scan_at`; manual `sendIngestion` deadlines use invocation time.
+`WORKOS_CLIENT_ID` must agree across deployed `auth.config.ts`, the backend CLI, and the web app.
+Use matching credentials from the selected WorkOS environment. Production has its own environment,
+credentials, and administrator; development login credentials are absent there.
 
-Discord batching requires **3 distinct entities** with the same change at one observation,
-including endpoint unlistings. The threshold is hardcoded in
-`packages/backend/convex/alerts/shared/batch.ts`.
+| Variable                  | Location and meaning                                                                  | Dev/preview default                      |
+| ------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `WORKOS_CLIENT_ID`        | Deployment auth, backend CLI, and web AuthKit client                                  | `client_01M41R06GBGE6K7FC2NX1EXFC7`      |
+| `WORKOS_API_KEY`          | **Secret** backend CLI and web server credential                                      | Managed environment credential           |
+| `WORKOS_ENVIRONMENT_ID`   | Backend CLI managed AuthKit selection                                                 | `environment_01M41R065TB5P1NN7FXF4500A5` |
+| `ORCA_DEV_ADMIN_EMAIL`    | Deployment/default storage for browser login                                          | `admin@orca.test`                        |
+| `ORCA_DEV_ADMIN_PASSWORD` | **Secret** login storage; must match WorkOS and existing deployments                  | Configured secret                        |
+| `CONVEX_DEPLOYMENT`       | Backend CLI deployment selection                                                      | Per checkout                             |
+| `CONVEX_DEPLOY_KEY`       | **Secret** Vercel deploy credential, scoped separately for production/preview         | Per scope                                |
+| `WORKOS_COOKIE_PASSWORD`  | **Secret** web session key, at least 32 characters; shared sessions need the same key | Per scope                                |
 
-Discord message ordering is hardcoded in `packages/backend/convex/alerts/discord/render.ts`:
-within each scan, additions and updates each use provider → model → endpoint, followed by
-removals in endpoint → model → provider order. Entity IDs break ties within each category.
+`ORCA_ADMIN_USER_ID` identifies the development login account. Retrieve login secrets through the
+authenticated Convex CLI. WorkOS owns login policy and sign-out allowlists outside Git.
 
-### Developer login storage: project defaults and deployment environment
+### Browser origins
 
-Retrieve through the authenticated Convex CLI for browser login.
+`convex.json` registers callbacks/CORS; `next.config.ts` derives the matching callback URL.
 
-| Variable                  | Flags    | Consumer / relationship                                            | Dev/preview default |
-| ------------------------- | -------- | ------------------------------------------------------------------ | ------------------- |
-| `ORCA_DEV_ADMIN_EMAIL`    | ◆ ◇ ⇄    | Shared dev/preview browser login; absent in production.            | `admin@orca.test`   |
-| `ORCA_DEV_ADMIN_PASSWORD` | ◆ 🔒 ◇ ⇄ | Must match WorkOS, dev/preview defaults, and existing deployments. | Configured secret   |
+| Environment | Browser origin                                                                |
+| ----------- | ----------------------------------------------------------------------------- |
+| Development | `ORCA_DEV_URL` from root startup                                              |
+| Preview     | `https://${VERCEL_BRANCH_URL}`; Vercel supplies the hostname without a scheme |
+| Production  | `https://orca.orb.town`                                                       |
 
-`ORCA_ADMIN_USER_ID` identifies the same account.
+- Callbacks append `/callback`; `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is derived and stays unset in Vercel.
+- Keep production origins aligned across Convex registration, Next.js, and `ORCA_WEB_ORIGIN`.
+- `ORCA_DEV_URL` is a process input, not a project default.
+- Root startup prefers `PORTLESS_TAILSCALE_URL`, then `PORTLESS_URL`, then `dev:origin`.
+- Backend-only startup falls back to `dev:origin`.
 
-### Convex authentication: `auth.config.ts`
+`portless.json` owns the app name. Portless allocates ports and forwarding; `turbo.json` passes the port,
+host, CA certificate, and browser origin to dev tasks. `PORTLESS_TAILSCALE=1` enables tailnet sharing.
+Web startup runs `convex dev --once` before Next.js, pushing code and registering the callback.
 
-`auth.config.ts` configures the trusted WorkOS issuer and JWKS.
+The maintained shared dev/preview WorkOS sign-out allowlist is:
 
-| Variable           | Flags    | Consumer / relationship                                                                                                                            | Dev/preview default                 |
-| ------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `WORKOS_CLIENT_ID` | ◇ 🌐 ⚙ ⇄ | Must match the web app's AuthKit client ID and the selected managed WorkOS environment. Shared across dev/preview; production uses its own client. | `client_01M41R06GBGE6K7FC2NX1EXFC7` |
+| URI                                                       | Scope                           |
+| --------------------------------------------------------- | ------------------------------- |
+| `https://orca.localhost/`                                 | Main checkout                   |
+| `https://*.orca.localhost/`                               | Worktrees                       |
+| `https://orca-git-*-deank.vercel.app/`                    | Branch previews                 |
+| `https://fserv.bleak-scala.ts.net/`                       | Default Tailscale HTTPS port    |
+| `https://fserv.bleak-scala.ts.net:8443/` through `:8450/` | Eight additional explicit ports |
 
-### Local CLI, dev server, and managed AuthKit: `convex.json`
+- Keep trailing slashes; update entries when hostnames or the Vercel project/team change.
+- Tailnet entries cover Portless's nine preferred ports; additional ports need explicit entries.
+- WorkOS wildcard logout ports are limited to localhost/loopback.
+- Sign-out registration is separate from callbacks/CORS.
 
-Local inputs live in **`packages/backend/.env.local`** or the dev process environment.
-Vercel supplies build inputs for deployed apps.
+## Web assets and analytics
 
-| Variable                          | Flags    | Consumer / relationship                                                                                                                                                                                                 |
-| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONVEX_DEPLOYMENT`               | ◇ ⚙      | Local Convex CLI deployment selection.                                                                                                                                                                                  |
-| `CONVEX_DEPLOY_KEY`               | 🔒 ◇     | Convex deploy credential supplied by Vercel for automated builds, scoped separately for production and previews.                                                                                                        |
-| `WORKOS_CLIENT_ID`                | ◇ 🌐 ⚙ ⇄ | Managed auth environment's client ID; must agree with the deployed auth config and web app.                                                                                                                             |
-| `WORKOS_API_KEY`                  | 🔒 ◇ ⚙   | WorkOS environment credential used by managed AuthKit configuration. The web app also needs a server credential for this same environment.                                                                              |
-| `WORKOS_ENVIRONMENT_ID`           | ◇ ⚙      | Managed WorkOS environment selection. Dev/preview default: `environment_01M41R065TB5P1NN7FXF4500A5`.                                                                                                                    |
-| `ORCA_DEV_URL`                    | ◇ 🌐 ⚙ ⇄ | Browser-facing dev URL supplied by root startup to Next.js and Convex. Backend-only commands fall back to the root local URL lookup. Process input; derived per checkout rather than stored in Convex project defaults. |
-| `VERCEL_BRANCH_URL`               | ◇ 🌐 ⚙ ⇄ | Vercel preview branch hostname, without a scheme. Both Convex registration and Next.js callback selection use it for the same build.                                                                                    |
-| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.                                                                                                                                     |
+Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_URL` for that backend.
 
-`convex.json` registers `${ORCA_DEV_URL}/callback`
-and its origin for dev, and `https://${VERCEL_BRANCH_URL}/callback` and its origin for
-previews. Production callback, homepage, and CORS registration instead hardcode
-**`https://orca.orb.town`**.
+| Variable                            | Behavior                                                                                      |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                   |
+| `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                  |
+| `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.      |
+| `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.           |
+| `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.     |
+| `VERCEL_ENV`                        | Server/build tier; selects preview callback/title behavior. Must agree with the browser tier. |
+| `VERCEL_BRANCH_URL`                 | Preview branch hostname used by both backend and web builds.                                  |
+| `POSTHOG_API_KEY`                   | **Secret** source-map upload credential; requires `POSTHOG_PROJECT_ID`.                       |
+| `POSTHOG_PROJECT_ID`                | Source-map upload destination; requires `POSTHOG_API_KEY`.                                    |
+| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | Query-cache invalidation and analytics version; defaults to `development`.                    |
+| `NODE_ENV`                          | Development enables local title prefix, breakpoint display, and detailed errors.              |
 
-## Web — `apps/web`
+The public query cache persists for 24 hours in browser local storage; its build key discards older
+builds' entries before hydration. Browser and Discord logo origins are configured separately.
 
-Set local values in **`apps/web/.env.local`** and deployed values in **Vercel
-Production / Preview settings**. Vercel runs Convex deployment before building
-Next.js and supplies the selected backend URL to that build.
+PostHog proxy destinations are `us-assets.i.posthog.com` and `us.i.posthog.com`; the UI host is
+`https://us.posthog.com`. EU or self-hosted installations require endpoint changes as well as credentials.
+`turbo.json` declares the PostHog/Vercel build inputs.
 
-### Backend connection and public assets
+### Analytics events
 
-| Variable                       | Flags    | Consumer / fallback / relationship                           |
-| ------------------------------ | -------- | ------------------------------------------------------------ |
-| `NEXT_PUBLIC_CONVEX_URL`       | ◇ 🌐 ⚙ ⇄ | Cloud URL of the backend selected by the CLI/build.          |
-| `NEXT_PUBLIC_ORCA_LOGO_ORIGIN` | ◆ ◇ 🌐   | Browser avatar origin; default **`https://logos.orb.town`**. |
+- Every event carries `app_environment` (default `development`) and `client_id`; dashboards filter to production.
+- Signed-in users are identified by WorkOS user ID, with name and email; sign-out and account switches reset identity.
+- Query-analytics events carry their schema revision, starting at `event_version=1`.
+- `query completed` covers successful fetches for grid endpoints, grid stats, and model/provider overviews.
+- Select `client_cache_hit=false` and `consumer_active=true` for server-response waits with an active consumer.
+- Failed fetches have no completion event; completions after all consumers leave are marked inactive.
+- `duration_ms` spans TanStack fetch start to success; TanStack cache reads have zero duration.
+- `connection_wait_ms` is the overlapping connection wait; `connected_ms` includes backend work and transfer.
+- These are client observations, not server timings; server-side cache status is unknown.
+- `result_count` describes returned rows; `data_scan_at`, where available, identifies the source observation.
+- `convex connected` measures connection intervals from the first measured query, whatever view comes first.
+- `query consumed` links a `query_run_id` to `view_load_id`; grids start at mount, overviews at open action.
+- `grid ready` is a content-commit signal; never sum parallel query durations.
+- Monotonic timestamps are comparable only within one client lifetime.
+- `query updated` records later subscription arrivals without duration; each actual fetch gets a fresh run ID.
 
-### AuthKit server and callback configuration
+## Logo service
 
-| Variable                          | Flags    | Consumer / fallback / relationship                                                                |
-| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `WORKOS_CLIENT_ID`                | ◇ 🌐 ⚙ ⇄ | AuthKit application ID; must match the backend's trusted client and selected managed environment. |
-| `WORKOS_API_KEY`                  | 🔒 ◇ ⚙   | AuthKit server credential for that WorkOS environment, read by the integration.                   |
-| `WORKOS_COOKIE_PASSWORD`          | 🔒 ◇     | At least 32 characters. Instances sharing sessions need the same secret.                          |
-| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | ◇ 🌐 ⚙ ⇄ | Callback origin must agree with Convex registration. Next.js selects the final URL.               |
-
-Next.js derives the callback from `ORCA_DEV_URL` during development,
-`VERCEL_BRANCH_URL` for preview builds, and **`https://orca.orb.town`** for other
-builds. `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is a derived output; keep it unset in
-Vercel.
-
-### WorkOS sign-out URIs
-
-The shared dev/preview environment has these entries in WorkOS Applications → Redirects → Sign-out URIs:
-
-| URI                                                       | Scope                             |
-| --------------------------------------------------------- | --------------------------------- |
-| `https://orca.localhost/`                                 | Main local checkout               |
-| `https://*.orca.localhost/`                               | Local worktrees                   |
-| `https://orca-git-*-deank.vercel.app/`                    | Vercel branch previews            |
-| `https://fserv.bleak-scala.ts.net/`                       | Default Tailscale HTTPS port      |
-| `https://fserv.bleak-scala.ts.net:8443/` through `:8450/` | Eight explicit additional entries |
-
-Update these when changing the hostname scheme, development host, or Vercel project/team.
-The fserv entries cover Portless's nine preferred Tailscale HTTPS ports. Additional ports need
-explicit entries: WorkOS permits wildcard logout ports only on localhost/loopback. Keep trailing
-slashes to match the app's logout destination. Managed AuthKit registers callbacks and CORS;
-the sign-out allowlist is managed separately.
-
-### Analytics and build inputs
-
-| Variable                            | Flags    | Consumer / fallback / relationship                                                                                                                              |
-| ----------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_POSTHOG_KEY`           | ◇ 🌐     | Browser ingestion key. Missing/blank disables analytics; enabled in production and previews.                                                                    |
-| `NEXT_PUBLIC_POSTHOG_DEV`           | ◇ 🌐     | Set to `true` when developing analytics locally. Development capture is disabled by default.                                                                    |
-| `POSTHOG_API_KEY`                   | 🔒 ◇     | Build integration's personal API credential for source-map uploads. Upload integration is enabled only when this and `POSTHOG_PROJECT_ID` are defined.          |
-| `POSTHOG_PROJECT_ID`                | ◇        | Destination project for source-map uploads; pair with the matching PostHog credential.                                                                          |
-| `VERCEL_ENV`                        | ◇ ⚙ ⇄    | Server/build deployment tier. Selects callback defaults and the preview title prefix. Must describe the same tier as the browser's `NEXT_PUBLIC_VERCEL_ENV`.    |
-| `NEXT_PUBLIC_VERCEL_ENV`            | ◇ 🌐 ⚙ ⇄ | Browser deployment tier, supplied by Vercel alongside `VERCEL_ENV`. Analytics is enabled in production and preview; local development requires explicit opt-in. |
-| `VERCEL_BRANCH_URL`                 | ◇ 🌐 ⚙ ⇄ | Preview callback hostname shared with Convex's build-time registration.                                                                                         |
-| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | ◇ 🌐 ⚙   | Invalidates the persisted public query cache and tags analytics. Defaults to `development`.                                                                     |
-| `NODE_ENV`                          | ⚙        | Runtime mode. Development enables the local title prefix, breakpoint indicator, and detailed error UI.                                                          |
-
-`next.config.ts` hardcodes PostHog proxy destinations
-**`us-assets.i.posthog.com`** and **`us.i.posthog.com`**;
-`instrumentation-client.ts` uses
-**`https://us.posthog.com`** as the UI host. EU or self-hosted PostHog needs endpoint
-changes as well as different credentials.
-
-Every browser event carries `app_environment` (`NEXT_PUBLIC_VERCEL_ENV`, default `development`).
-Dashboards default to `app_environment=production`; change that filter to inspect preview or development activity.
-The Vercel project shares its browser ingestion key with production and preview builds.
-Signed-in users are identified centrally by WorkOS user ID, with name and email on the PostHog person profile.
-Sign-out and account switches reset analytics identity.
-Each query-analytics event carries its schema revision, starting at `event_version=1`.
-`query completed` records independent successful fetches for grid endpoints, grid stats, and model/provider overviews. Select `client_cache_hit=false`
-and `consumer_active=true` for server-response waits with an active consumer. Failed fetches have no
-completion event; completions after all consumers leave are explicitly marked inactive.
-
-`duration_ms` spans TanStack fetch start to success. `connection_wait_ms` is the overlapping observed
-initial/reconnection wait; `connected_ms` is time with the socket connected, including backend work
-and transfer. These are client observations, not server execution timings. Client cache sources are
-TanStack memory/storage and Convex client cache; server-side cache status remains unknown.
-TanStack cache reads have zero fetch duration. They do not assert server freshness.
-`result_count` describes returned rows; `data_scan_at`, where available, identifies the source
-observation. Compare these with `app_version` when studying data or query changes.
-
-`convex connected` measures observed connection intervals separately. Tracking begins at the first
-measured query and does not assume a grid precedes an overview. A dashboard can include connection
-cost for direct entry or focus on queries with an already-connected client.
-
-Every event carries `client_id`; query completions have `query_run_id`. `query consumed` links a result
-to `view_load_id` and the view's start timestamp. Grid starts at mount; overview starts at open action.
-`grid ready` is a small content-commit signal, not a combined query timing. Parallel query durations
-must not be summed. Monotonic timestamps are comparable only within one client lifetime.
-
-`query updated` records later subscription arrivals without duration: the browser has no request-start
-boundary for these updates. Each subsequent actual fetch receives a fresh run ID and duration.
-
-### Local dev server
-
-| Variable                 | Flags  | Consumer / relationship                                                                                             |
-| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `PORTLESS_URL`           | ◇ 🌐 ⚙ | Portless's local URL; root startup uses it when no Tailscale URL is supplied.                                       |
-| `PORTLESS_TAILSCALE`     | ◇      | Set to `1` in the host's shell or service environment to enable tailnet sharing. Leave unset for local development. |
-| `PORTLESS_TAILSCALE_URL` | ◇ 🌐 ⚙ | Portless's tailnet URL, including the allocated HTTPS port; preferred by root startup.                              |
-
-Root `portless.json` owns the app name. Root dev commands resolve the browser URL
-once and pass `ORCA_DEV_URL` through Turbo. Next.js derives the callback and allowed
-dev hostname from it; Convex registers that same callback and origin with WorkOS.
-Use the root dev commands so the URL and server port come from the same launch.
-
-Backend-only commands use the local URL from `dev:origin`. Web startup runs
-`convex dev --once` against the selected backend before Next.js, synchronizing
-backend code and registering the callback even when starting only the web app.
-Portless owns worktree prefixes, port allocation, and forwarding cleanup.
-
-## Logos — `apps/logos`
-
-`wrangler.jsonc` names the Worker **`entity-logo-service`** within the selected Cloudflare account.
-`ASSETS` is its static-assets object binding.
-
-`OUTPUT_IMAGE_SIZE_PX` in `apps/logos/src/build.ts` sets the generated image canvas to **128×128**.
-`run_worker_first` is unset, so static asset hits do not invoke the Worker.
-
-## Root tooling
-
-`turbo.json` passes the allocated port, host, CA certificate and `ORCA_DEV_URL`
-to dev tasks and declares PostHog/Vercel build inputs.
-
-## Configuration ownership
-
-Production origin **`https://orca.orb.town`** is repeated in Convex AuthKit registration,
-Next.js callback defaults, and the backend web-origin setting. Keep them aligned.
-Logo origins are configured separately for web and Discord. WorkOS login policy and
-logout allowlists are managed outside Git.
+`apps/logos/wrangler.jsonc` names Worker `entity-logo-service` and static binding `ASSETS`. Static asset
+hits bypass the Worker because `run_worker_first` is unset. `OUTPUT_IMAGE_SIZE_PX` in
+`apps/logos/src/build.ts` sets generated canvases to 128×128.

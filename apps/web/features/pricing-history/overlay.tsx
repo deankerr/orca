@@ -3,12 +3,10 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/api'
 import { formatPrice } from '@orca/backend/numbers'
-import { priceMeters } from '@orca/backend/price-meters'
 import { useQuery } from '@tanstack/react-query'
-import { ConvexError } from 'convex/values'
 import dynamic from 'next/dynamic'
-import { Activity, startTransition, useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import { startTransition, useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import {
@@ -47,11 +45,12 @@ import { cn } from '@/lib/utils'
 
 import { providerColor } from './colors'
 import { usePricingHistory } from './context'
-import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
+import { tagPrices } from './data'
 import type { PricingHistory, Trace } from './data'
 import { HistoryData } from './history-data'
-import type { HistoryDataState } from './history-data'
 import { preloadPricingHistoryPlot } from './preload'
+import { pricingHistoryView } from './view'
+import type { Meter } from './view'
 
 const Plot = dynamic(
   async () => await import('./plot').then((module) => module.PricingHistoryPlot),
@@ -65,25 +64,6 @@ const Plot = dynamic(
   },
 )
 
-const METERS = (
-  [
-    { value: 'prompt', label: 'Input' },
-    { value: 'completion', label: 'Output' },
-    { value: 'input_cache_read', label: 'Cache read' },
-    { value: 'input_cache_write', label: 'Cache write' },
-    { value: 'input_cache_write_1h', label: 'Cache write · 1h' },
-    { value: 'audio', label: 'Audio input' },
-    { value: 'input_audio_cache', label: 'Audio cache' },
-    { value: 'image', label: 'Image input' },
-    { value: 'image_output', label: 'Image output' },
-  ] satisfies { value: keyof typeof priceMeters; label: string }[]
-).map(({ value, label }) => ({
-  value,
-  label,
-  scale: 10 ** priceMeters[value].scale,
-  unit: `$/${priceMeters[value].unit}`,
-}))
-type Meter = (typeof METERS)[number]
 const dateLabel = (at: number) =>
   new Date(at).toLocaleString(undefined, {
     year: 'numeric',
@@ -124,9 +104,7 @@ export function PricingHistoryOverlay() {
         {open ? (
           <>
             <Identity modelId={modelId} />
-            <HistoryData key={modelId} modelId={modelId}>
-              {(state) => <Loader {...state} />}
-            </HistoryData>
+            <History key={modelId} modelId={modelId} />
           </>
         ) : null}
       </DialogContent>
@@ -135,7 +113,9 @@ export function PricingHistoryOverlay() {
 }
 
 function Identity({ modelId }: { modelId: string }) {
-  const { data } = useQuery(convexQuery(api.catalog.models.query.get, { model_id: modelId }))
+  const { data } = useQuery(
+    convexQuery(api.products.entity_overview.models.get, { model_id: modelId }),
+  )
   const name = data?.display_name
 
   return (
@@ -155,39 +135,44 @@ function Identity({ modelId }: { modelId: string }) {
   )
 }
 
-function Loader({ data, isPending, error, refetch }: HistoryDataState) {
+type Preferences = {
+  requestedMeter: string
+  window: [number, number] | null
+  preset: string
+  hidden: Set<string>
+}
+
+type HistoryControls = {
+  preferences: Preferences
+  setPreferences: Dispatch<SetStateAction<Preferences>>
+}
+
+function History({ modelId }: { modelId: string }) {
+  const [preferences, setPreferences] = useState<Preferences>({
+    requestedMeter: 'prompt',
+    window: null,
+    preset: '30',
+    hidden: new Set(),
+  })
+
+  return (
+    <HistoryData modelId={modelId}>
+      {(data) => (
+        <LoadedHistory data={data} preferences={preferences} setPreferences={setPreferences} />
+      )}
+    </HistoryData>
+  )
+}
+
+function LoadedHistory({
+  data,
+  preferences,
+  setPreferences,
+}: { data: PricingHistory | null } & HistoryControls) {
   const { close } = usePricingHistory()
 
-  let status: ReactNode = null
-
-  if (isPending && !error) {
-    status = (
-      <output aria-live="polite" className="flex items-center justify-center gap-2 py-8">
-        <Spinner />
-        Loading pricing history…
-      </output>
-    )
-  } else if (error) {
-    status = (
-      <div role="alert" className="flex flex-col items-center justify-center gap-3 py-8">
-        <p>
-          {error instanceof ConvexError && typeof error.data === 'string'
-            ? error.data
-            : 'Could not load pricing history.'}
-        </p>
-        <Button
-          onClick={() => {
-            refetch().catch(() => {
-              /* The query error state displays retry failures. */
-            })
-          }}
-        >
-          Retry
-        </Button>
-      </div>
-    )
-  } else if (!data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
-    status = (
+  if (data === null || !data.endpoints.some((endpoint) => endpoint.prices.length > 0)) {
+    return (
       <Empty>
         <EmptyHeader>
           <EmptyTitle>No pricing history available</EmptyTitle>
@@ -204,80 +189,42 @@ function Loader({ data, isPending, error, refetch }: HistoryDataState) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {status}
-      {/* Preserve chart controls while endpoint subscriptions or additional pages load. */}
-      <Activity mode={status === null ? 'visible' : 'hidden'}>
-        <Content pricingHistory={data} />
-      </Activity>
+      <Content pricingHistory={data} preferences={preferences} setPreferences={setPreferences} />
     </div>
   )
 }
 
-function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
-  const [requestedMeter, setRequestedMeter] = useState('prompt')
-  const [window, setWindow] = useState<[number, number] | null>(null)
-  const [preset, setPreset] = useState('30')
-  const [hidden, setHidden] = useState<Set<string>>(new Set())
+function Content({
+  pricingHistory,
+  preferences,
+  setPreferences,
+}: {
+  pricingHistory: PricingHistory
+} & HistoryControls) {
+  const { requestedMeter, window, preset, hidden } = preferences
   const [plotTag, setPlotTag] = useState<string | null>(null)
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
   const [focusedTag, setFocusedTag] = useState<string | null>(null)
+  const [hoverAt, setHoverAt] = useState<number | null>(null)
   const activeTag = hoveredTag ?? plotTag ?? focusedTag
   const emphasis = activeTag !== null && !hidden.has(activeTag) ? activeTag : null
-  const [hoverAt, setHoverAt] = useState<number | null>(null)
 
-  const tracesByMeter = new Map(
-    METERS.map(({ value }) => [value, pricingHistoryTraces(pricingHistory, value)]),
-  )
-  const available = METERS.filter(({ value }) => (tracesByMeter.get(value)?.length ?? 0) > 0)
-
-  const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
-  const meters = available.length > 0 ? available : [meter]
-
-  const since = Math.min(
-    pricingHistory.asOf,
-    ...pricingHistory.endpoints.flatMap((endpoint) =>
-      endpoint.listings
-        .filter((row) => row.model_id === pricingHistory.modelId)
-        .map((row) => Date.parse(row.scan_at)),
-    ),
-  )
-
-  const range: [number, number] =
-    preset === '' && window !== null
-      ? window
-      : [
-          preset === 'all'
-            ? since
-            : Math.max(since, pricingHistory.asOf - Number(preset || '30') * DAY),
-          pricingHistory.asOf,
-        ]
-
-  const daily = range[1] - range[0] > 7 * DAY + 1
-  const exact = tracesByMeter.get(meter.value) ?? []
-  const exactScaled = exact.map((trace) => ({
-    ...trace,
-    samples: trace.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
-  }))
-
-  const traces = daily
-    ? exactScaled.map((trace) => dailyTrace(trace, pricingHistory.asOf))
-    : exactScaled
-
-  const tagSet = new Set<string>()
-  for (const trace of traces) {
-    if (trace.end >= range[0] && trace.start <= range[1]) {
-      tagSet.add(trace.tag)
-    }
-  }
-  const tags = [...tagSet].toSorted()
-  const shownCount = tags.filter((tag) => !hidden.has(tag)).length
-  const allShown = tags.length > 0 && shownCount === tags.length
-  const visible = traces.filter((trace) => tagSet.has(trace.tag) && !hidden.has(trace.tag))
-  const at = Math.max(range[0], Math.min(range[1], hoverAt ?? range[1]))
+  const {
+    available,
+    meter,
+    meters,
+    since,
+    range,
+    exactScaled,
+    tags,
+    shownCount,
+    allShown,
+    visible,
+    at,
+  } = pricingHistoryView(pricingHistory, { requestedMeter, window, preset, hidden, hoverAt })
 
   const changeRange = (next: [number, number]) => {
-    setWindow(next)
-    setPreset('')
+    setPreferences((current) => ({ ...current, window: next, preset: '' }))
     setHoverAt(null)
   }
 
@@ -288,8 +235,8 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
   }
 
   const toggle = (tag: string) => {
-    setHidden((current) => {
-      const next = new Set(current)
+    setPreferences((current) => {
+      const next = new Set(current.hidden)
 
       if (next.has(tag)) {
         next.delete(tag)
@@ -297,50 +244,48 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
         next.add(tag)
       }
 
-      return next
+      return { ...current, hidden: next }
     })
   }
 
   const showAllTime = () => {
-    changeRange([since, pricingHistory.asOf])
-    setPreset('all')
+    setPreferences((current) => ({ ...current, preset: 'all' }))
+    setHoverAt(null)
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      <ChartPane
-        traces={visible}
-        since={since}
-        asOf={pricingHistory.asOf}
-        range={range}
-        emphasis={emphasis}
-        inspectedAt={hoverAt === null ? null : at}
-        empty={
-          visible.length === 0 ? (
-            <ChartEmpty
-              hasProviders={tags.length > 0}
-              canWiden={preset !== 'all'}
-              onShowAll={showAllTime}
-            />
-          ) : null
-        }
-        onRange={changeRange}
-        onEmphasis={setPlotTag}
-        onInspect={inspect}
-      />
+      <div className="relative h-64 shrink-0 sm:h-96">
+        <Plot
+          traces={visible}
+          since={since}
+          asOf={pricingHistory.asOf}
+          range={range}
+          emphasis={emphasis}
+          inspectedAt={hoverAt === null ? null : at}
+          onRange={changeRange}
+          onEmphasis={setPlotTag}
+          onInspect={inspect}
+        />
+        {visible.length === 0 ? (
+          <ChartEmpty
+            hasProviders={tags.length > 0}
+            canWiden={preset !== 'all'}
+            onShowAll={showAllTime}
+          />
+        ) : null}
+      </div>
       <Toolbar
         meter={meter}
         meters={meters}
         disabled={available.length === 0}
         preset={preset}
-        onMeter={setRequestedMeter}
-        onPreset={(value) => {
-          changeRange([
-            value === 'all' ? since : Math.max(since, pricingHistory.asOf - Number(value) * DAY),
-            pricingHistory.asOf,
-          ])
-
-          setPreset(value)
+        onMeter={(requestedMeter) => {
+          setPreferences((current) => ({ ...current, requestedMeter }))
+        }}
+        onPreset={(preset) => {
+          setPreferences((current) => ({ ...current, preset }))
+          setHoverAt(null)
         }}
       />
       <Board
@@ -354,52 +299,14 @@ function Content({ pricingHistory }: { pricingHistory: PricingHistory }) {
         allShown={allShown}
         onToggle={toggle}
         onToggleAll={() => {
-          setHidden(allShown ? new Set(tags) : new Set())
+          setPreferences((current) => ({
+            ...current,
+            hidden: allShown ? new Set(tags) : new Set(),
+          }))
         }}
         onHover={setHoveredTag}
         onFocusVisible={setFocusedTag}
       />
-    </div>
-  )
-}
-
-function ChartPane({
-  traces,
-  since,
-  asOf,
-  range,
-  emphasis,
-  inspectedAt,
-  empty,
-  onRange,
-  onEmphasis,
-  onInspect,
-}: {
-  traces: Trace[]
-  since: number
-  asOf: number
-  range: [number, number]
-  emphasis: string | null
-  inspectedAt: number | null
-  empty: ReactNode
-  onRange: (range: [number, number]) => void
-  onEmphasis: (tag: string | null) => void
-  onInspect: (at: number | null) => void
-}) {
-  return (
-    <div className="relative h-64 shrink-0 sm:h-96">
-      <Plot
-        traces={traces}
-        since={since}
-        asOf={asOf}
-        range={range}
-        emphasis={emphasis}
-        inspectedAt={inspectedAt}
-        onRange={onRange}
-        onEmphasis={onEmphasis}
-        onInspect={onInspect}
-      />
-      {empty}
     </div>
   )
 }

@@ -1,91 +1,91 @@
 # Events and alerts
 
-Events retain observed changes; alerts interpret those facts for Monitor, Feed, and Discord.
+## Retained Events
 
-## Historical meaning
+A scan pair and its projection rules determine Events. Earlier retained pairs and current-view metadata
+selection do not affect them.
 
-- Models without endpoints remain known in Catalog, but their metadata changes do not produce Events.
-- Arrival classification uses knowledge strictly earlier than the event's observation, including baseline knowledge.
-- An absent `previously_known` value is unclassified; it must not become a discovery claim.
-- A known model gaining endpoints is not proof that ORCA previously observed it serving through endpoints.
-- The stable event address is `scan_at` + `entity_kind` + `entity_id`; ingestion fixes its predecessor scan.
+- Endpointless models and their metadata remain in scope.
+- Stats and endpoint `status` are excluded; `capacity_tpm` remains an entity fact.
+- Scan time, entity kind, and entity ID address an Event; registration fixes its predecessor.
 
-Projection changes can revise historical output. Delivered messages remain with recipients even if
-history is regenerated.
+| Type   | Payload                                                     | Identity and related names |
+| ------ | ----------------------------------------------------------- | -------------------------- |
+| ADD    | Complete projected facts                                    | Next scan                  |
+| UPDATE | Changed facts, including child-field additions and removals | Next scan                  |
+| REMOVE | Complete projected facts                                    | Previous scan              |
 
-Identity context comes from the next observation for arrivals/updates and the previous observation
-for departures. Related names come from that same observation, so headings remain meaningful as
-Catalog evolves. A model rename produces a model event; an endpoint price update can carry the
-new model name without becoming another rename event.
+- Endpoint pricing UPDATEs also retain complete before/after quotes.
+- Relationship updates use the next model/provider activity scope; departures use the last relationships.
+- A related rename does not itself create an endpoint rename Event.
+- Never fill unchanged surrounding facts from today's current view.
 
-An endpoint relationship change is selected under its next model/provider. Departures use their
-last relationships. The former relationship is not an additional activity scope for an update.
+## Shared alert interpretation
 
-## Comparison semantics and limitations
+Monitor, Feed, and Discord derive alerts from Events and observations using shared default selection.
+Retained lifecycle Events and presented lifecycle alerts have different meanings:
 
-Entity lifecycle and child-field operations are distinct: an entity UPDATE may contain field
-ADDs and REMOVEs. Absence, null, false, and zero remain distinct observed values.
+| Entity         | Retained ADD/REMOVE         | Lifecycle alert             |
+| -------------- | --------------------------- | --------------------------- |
+| Model/provider | Endpoint count crosses zero | Endpoint count crosses zero |
+| Endpoint       | Listing/unlisting           | Listing/unlisting           |
 
-String arrays compare as sets, ignoring order. Accepted `json-diff-ts` limitations:
+- Baseline establishes knowledge without lifecycle alerts.
+- Parent metadata updates require endpoints on both sides; a serving transition takes precedence.
+- Valid unselected facts remain retained.
 
-- Repeated strings collapse, so duplicate-count changes disappear.
-- Membership matching drops the literal string `__proto__`.
-- Object-to-scalar transitions can omit the new scalar or the entire change.
-- Arrays directly nested in arrays retain positional behavior; supported entity shapes avoid this case.
-- In version 4.10.4, `applyChangeset` skips UPDATEs to null. Rendering reads retained diff nodes directly.
+### Prior knowledge
 
-Lifecycle events carry complete projected facts. Updates retain changed facts, with complete
-before/after pricing context on new endpoint pricing updates. That context is optional for older
-records. Other unchanged surrounding state is absent; explanations must not fill those gaps from
-today's Catalog.
+- Arrival classification uses observations strictly before the scan, including baseline knowledge.
+- Missing classification means unclassified.
+- Observation-only lifecycle alerts use historical Event identity, falling back to the ID.
+- Metadata details require a matching lifecycle Event snapshot.
 
-## Alert policy
+### Field selection and failures
 
-Shared preparation selects product-relevant facts and applies pricing eligibility.
-Valid unselected changes disappear. Malformed selected changes log their event identity and error,
-then omit the event while other events continue. Metadata remains arbitrary at capture; products
-interpret only the facts they need.
+- Provider updates select identity, location, status-page, and terms/privacy URLs.
+- Reasoning belongs to model alerts; endpoint reasoning-only changes are omitted.
+- Malformed selected changes log the Event identity and error, then omit that Event while neighbors continue.
 
-Raw Events excludes `stats`, `statsByTier`, and `status`. `capacity_tpm` remains captured, while
-shared alert preparation excludes endpoint telemetry. Capability flags retain their upstream
-shapes, including true-or-absent signals and potentially empty selected containers.
+⚠️ Indexed-array diffs in selected object groups can silently lose numeric children.
+No upstream occurrence is known. If encountered, reject that group shape to avoid incomplete changes.
 
-Indexed-array diffs inside selected object groups such as `data_policy` can silently lose numeric
-child keys. No upstream occurrence is known. If observed, reject that group shape so preparation
-logs and skips the event; arbitrary object-array rendering is outside scope.
+## Pricing eligibility
 
-### Pricing eligibility
+### Scheduled pricing
 
-Monitor, Feed, and Discord use shared eligibility. Any `pricing.overrides` row with a key
-starting with `utc` establishes that a schedule is present. This deliberately accepts upstream
-extensions without parsing conditions, matching rate bands, or choosing an active band.
+- An override key starting with `utc` establishes schedule evidence; prompt-length overrides alone do not.
+- Detection neither interprets conditions nor selects an active band.
+- If either complete quote is scheduled, only override changes qualify, including introduction/removal.
+- Updates say “Price schedule changed” and omit current-band deltas; listings can say “Price schedule detected”.
+- Without complete quote context, ordinary numeric eligibility applies.
 
-For pricing scheduled on either side of an event, unchanged overrides suppress the pricing
-update. Changed overrides produce “Price schedule changed”, including schedule introduction
-or removal, even when the presented rates do not move. Current-band meter deltas are omitted
-from that alert. Endpoint arrivals with a schedule include “Price schedule detected”.
+### Ordinary pricing
 
-Schedule classification uses the event's observed before/after quotes. Older events
-without quote context retain the numeric eligibility rule below; today's Catalog
-cannot supply their historical schedule.
+Thresholds live in `products/shared/alerts/filter.ts` and are recorded in `config.md`.
 
-Other endpoint pricing updates first suppress numeric discount adjustments of at most two
-percentage points, then require an eligible meter movement of at least 2%, measured before
-rounding. A valid transition between zero/absence and a positive rate also qualifies. Invalid,
-negative, or non-string values do not. Discount alone does not qualify because presented rates
-already reflect it. Long-context overrides alone do not establish a schedule.
+1. Suppress small numeric discount adjustments.
+2. Require a qualifying meter movement; discount alone is insufficient because presented rates already include it.
 
-This coarse rule suppresses the whole event, including coincident non-pricing changes.
-Lifecycle events and updates without pricing changes are outside the rule; captured events
-remain intact. Other opaque pricing, presentation-only changes, and revision-only changes are
-not selected as standalone alert signals.
+- A valid transition between zero/absence and a positive rate qualifies.
+- Negative, invalid, or non-string meter values do not qualify.
+- Opaque pricing, presentation-only, and revision-only changes do not independently qualify.
+- Lifecycle and updates without pricing changes bypass this rule.
 
-## Monitor scope
+⚠️ Failed pricing eligibility suppresses the entire endpoint Event, including coincident
+metadata edits. Source Events remain retained.
 
-Model/provider activity includes that entity and related endpoints. Their intersection includes
-only endpoint events. Selection uses captured relationships independently of current Catalog.
-Departed identities remain selectable; model choices require endpoint history and exclude `openrouter/*`.
+## Monitor scopes and pagination
 
-Curation and compound filtering can produce empty pages. The viewport continues requesting until
-filled or exhausted. Time headings are presentation only: pages can split an observation and rows
-retain stable event addresses.
+### Activity scopes
+
+- Model/provider activity includes related endpoints; their intersection contains endpoint Events only.
+- Scopes use captured relationships, and departed identities remain selectable.
+- Model choices require endpoint history and exclude `openrouter/*`.
+
+### Pages
+
+- Queries merge Events and observations before pagination, capped at completed ingestion.
+- Selection can leave an empty page; the viewport continues until filled or exhausted.
+- Time headings do not define page boundaries; an observation can span pages.
+- Monitor shows individual alerts without Discord batching or frequency suppression.

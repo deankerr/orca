@@ -14,7 +14,7 @@
     "dev:origin": "portless get \"$(bun -p 'require(\"./portless.json\").name')\"",
     "dev:tasks": "ORCA_DEV_URL=${PORTLESS_TAILSCALE_URL:-${PORTLESS_URL:-$(bun run --silent dev:origin)}} turbo run dev",
     "dev:web": "portless run bun run dev:tasks --filter=@orca/web",
-    "fix": "ultracite fix",
+    "fix": "ultracite fix --no-error-on-unmatched-pattern",
     "format:spacing": "bun run packages/scripts/space-multiline-statements.ts",
     "generate:logos": "bun run --cwd apps/logos generate",
     "knip": "knip",
@@ -44,6 +44,6 @@
     "remeda": "2.48.0",
     "typescript": "7.0.2",
     "zod": "4.6.2",
-    "json-diff-ts": "4.10.4"
+    "json-diff-ts": "npm:@deankerr/json-diff-ts@4.10.5"
   }
 }

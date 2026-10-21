@@ -1,0 +1,13 @@
+field,value
+counts.deployment,dependable-husky-550
+counts.started_at,2026-10-13T17:37:36Z
+counts.finished_at,2026-10-13T17:37:38Z
+counts.model_id,z-ai/glm-5.2
+counts.scan_at_lte,2026-10-13T15:40:43.170Z
+counts.method,"One read-only inline query; complete indexed collections, no row limit"
+counts.reconciliation,"Membership, endpoint count, full context/price totals, maximum price history, and retained top-endpoint counts match baseline; bytes taken from baseline, not remeasured."
+capacity.deployment,dependable-husky-550
+capacity.model_id,z-ai/glm-5.2
+capacity.captured_at,2026-10-14T07:33:20.591Z
+capacity.scan_at_lte,2026-10-13T15:40:43.170Z
+capacity.method,Read-only inline aggregate queries; legacy listings mapped to endpoint observations. Actual transaction metrics read legacy documents; return sizes use Convex 1.45.0 getConvexSize.

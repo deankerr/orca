@@ -1,0 +1,16 @@
+field,value
+historical_endpoints,2973
+historical_models,842
+listed_endpoints,1370
+models_with_listed_endpoints,433
+current_model_rows,1026
+current_models_without_listing_history,184
+listing_states.listed,4125
+listing_states.unlisted,2204
+listing_transitions.model_id,19
+listing_transitions.provider_id,70
+listing_transitions.provider_tag,530
+listing_transitions.state,2805
+endpoints_with_multiple_models,19
+first_quotes,2973
+consecutive_identical_quotes,531

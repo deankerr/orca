@@ -6,8 +6,8 @@ import { z } from 'zod'
 
 import { internal } from '#generated/api'
 import { env, internalAction, internalMutation } from '#generated/server'
-import * as scans from '#scan'
-import { IdentifiedEndpoint, IdentifiedModel } from '#scan/collection'
+import * as scans from '#scans'
+import { IdentifiedEndpoint, IdentifiedModel } from '#scans/collection'
 
 const orFetch = up(fetch, () => ({
   baseUrl: 'https://openrouter.ai',

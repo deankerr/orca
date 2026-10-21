@@ -1,0 +1,6 @@
+field,value
+duplicate_listing_timestamps,0
+duplicate_price_timestamps,0
+prices_without_endpoint_listing,[]
+listings_without_endpoint_prices,[]
+price_rows_outside_listed_membership,0

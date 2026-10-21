@@ -1,0 +1,12 @@
+metric,observations_used,observations_remaining,prices_used,prices_remaining
+bytesRead,62444,16714772,554217,16222999
+bytesWritten,0,16777216,0,16777216
+databaseQueries,63,4033,63,4033
+documentsRead,270,31730,2238,29762
+documentsWritten,0,16000,0,16000
+fileReadBytes,0,16777216,0,16777216
+fileWriteBytes,0,16777216,0,16777216
+filesRead,0,10,0,10
+filesWritten,0,10,0,10
+functionsScheduled,0,1000,0,1000
+scheduledFunctionArgsBytes,0,16777216,0,16777216

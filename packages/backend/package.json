@@ -5,27 +5,30 @@
   "imports": {
     "#generated/*": "./convex/_generated/*.js",
     "#objects": "./convex/objects/storage.ts",
-    "#scan": "./convex/scan/access.ts",
-    "#scan/collection": "./convex/scan/collected.ts",
-    "#scan/model": "./convex/scan/model.ts"
+    "#scans": "./convex/scans/access.ts",
+    "#scans/collection": "./convex/scans/collected.ts",
+    "#scans/extraction": "./convex/scans/extraction/schema.ts",
+    "#scans/extract": "./convex/scans/extraction/extract.ts"
   },
   "exports": {
     "./api": "./convex/_generated/api.js",
     "./numbers": "./convex/numbers.ts",
     "./price-meters": "./convex/priceMeters.ts",
     "./entity-logo": "./convex/entityLogo.ts",
-    "./alerts/curate": "./convex/alerts/shared/curate.ts",
-    "./alerts/facts": "./convex/alerts/shared/facts.ts",
-    "./alerts/pricing": "./convex/alerts/shared/pricing.ts",
-    "./monitor": "./convex/alerts/monitor/query.ts",
+    "./alerts/curate": "./convex/products/shared/alerts/curate.ts",
+    "./alerts/facts": "./convex/products/shared/alerts/facts.ts",
+    "./alerts/pricing": "./convex/products/shared/alerts/pricing.ts",
+    "./monitor": "./convex/products/monitor/query.ts",
     "./public-api/v2/schema": "./convex/public_api/v2/schema.ts",
-    "./scan/collection": "./convex/scan/collected.ts",
-    "./scan/analysis": "./convex/scan_analysis/profile.ts"
+    "./scans/collection": "./convex/scans/collected.ts",
+    "./scans/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
     "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev"
   },
   "dependencies": {
+    "@convex-dev/aggregate": "0.3.3",
+    "@convex-dev/workpool": "0.4.13",
     "@discordjs/builders": "^1.14.1",
     "@noble/hashes": "^1.8.0",
     "@orca/discord-sender": "workspace:*",
@@ -44,7 +47,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "convex-test": "0.0.54",
+    "convex-test": "0.0.57",
     "typescript": "catalog:"
   }
 }

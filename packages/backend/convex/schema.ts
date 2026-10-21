@@ -1,19 +1,29 @@
 import { defineSchema } from 'convex/server'
 
-import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from './catalog/endpoints/table'
-import { CURRENT_MODELS_TABLE, currentModelsTable } from './catalog/models/table'
-import { CURRENT_PROVIDERS_TABLE, currentProvidersTable } from './catalog/providers/table'
-import { CURRENT_STATS_TABLE, currentStatsTable } from './catalog/stats/table'
-import { EVENTS_TABLE, eventsTable } from './events/table'
-import { ENDPOINT_LISTINGS_TABLE, endpointListingsTable } from './history/listings/table'
-import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './history/pricing/table'
-import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './history/stats/table'
 import {
-  INGESTIONS_TABLE,
-  PROCESSOR_WORK_TABLE,
-  ingestionsTable,
-  processorWorkTable,
-} from './ingestion/table'
+  CURRENT_MODELS_TABLE,
+  CURRENT_PROVIDERS_TABLE,
+  CURRENT_ENDPOINTS_TABLE,
+  CURRENT_STATS_TABLE,
+  currentModelsTable,
+  currentProvidersTable,
+  currentEndpointsTable,
+  currentStatsTable,
+} from './catalog/tables/current'
+import { EVENTS_TABLE, eventsTable } from './catalog/tables/events'
+import { OBSERVATIONS_TABLE, observationsTable } from './catalog/tables/observations'
+import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from './catalog/tables/pricing'
+import { ENDPOINT_STATS_TABLE, endpointStatsTable } from './catalog/tables/stats'
+import {
+  INGESTION_RECORDS_TABLE,
+  ingestionRecordsTable,
+  INGESTION_TARGET_TABLE,
+  ingestionTargetTable,
+  QUEUE_SCHEDULE_TABLE,
+  queueScheduleTable,
+  PROCESS_COMMITS_TABLE,
+  processCommitsTable,
+} from './ingestion/tables'
 // Always use direct imports for Convex tables in this file
 import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './objects/table'
 import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v2/table'
@@ -24,16 +34,19 @@ export default defineSchema(
 
     [PUBLIC_API_V2_CACHE_TABLE]: publicApiV2CacheTable,
 
-    [INGESTIONS_TABLE]: ingestionsTable,
-    [PROCESSOR_WORK_TABLE]: processorWorkTable,
-    [EVENTS_TABLE]: eventsTable,
-    [CURRENT_STATS_TABLE]: currentStatsTable,
-    [ENDPOINT_PRICES_TABLE]: endpointPricesTable,
-    [ENDPOINT_LISTINGS_TABLE]: endpointListingsTable,
-    [ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [CURRENT_MODELS_TABLE]: currentModelsTable,
     [CURRENT_PROVIDERS_TABLE]: currentProvidersTable,
     [CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
+    [CURRENT_STATS_TABLE]: currentStatsTable,
+    [OBSERVATIONS_TABLE]: observationsTable,
+    [ENDPOINT_PRICES_TABLE]: endpointPricesTable,
+    [ENDPOINT_STATS_TABLE]: endpointStatsTable,
+    [EVENTS_TABLE]: eventsTable,
+
+    [INGESTION_TARGET_TABLE]: ingestionTargetTable,
+    [INGESTION_RECORDS_TABLE]: ingestionRecordsTable,
+    [QUEUE_SCHEDULE_TABLE]: queueScheduleTable,
+    [PROCESS_COMMITS_TABLE]: processCommitsTable,
   },
   {
     strictTableNameTypes: true,

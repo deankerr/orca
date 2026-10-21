@@ -5,7 +5,7 @@ import type { RegisteredMutation } from 'convex/server'
 
 import type { Doc, Id } from '#generated/dataModel'
 import type { ActionCtx, MutationCtx } from '#generated/server'
-import * as scans from '#scan'
+import * as scans from '#scans'
 
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'
@@ -13,9 +13,7 @@ import type { PUBLIC_API_V2_CACHE_TABLE } from './table'
 
 test('refresh rebuilds legacy or older captures and skips an unchanged capture', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
-  const reader = scans.reader({} as ActionCtx)
-  const access = spyOn(scans, 'reader').mockReturnValue(reader)
-  const discovery = spyOn(reader, 'latest').mockResolvedValue(scanAt)
+  const discovery = spyOn(scans, 'latest').mockResolvedValue(scanAt)
 
   const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
     updated_at: scanAt,
@@ -48,7 +46,7 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
       build.mockClear()
       await handler(ctx, {})
 
-      expect(discovery).toHaveBeenLastCalledWith({ atOrAfter: key ?? null })
+      expect(discovery).toHaveBeenLastCalledWith(ctx, { atOrAfter: key ?? null })
 
       expect(build).toHaveBeenCalledTimes(key === scanAt ? 0 : 1)
       expect(replacements).toHaveLength(key === scanAt ? 0 : 1)
@@ -71,7 +69,6 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
     expect(build).not.toHaveBeenCalled()
     expect(replacements).toHaveLength(0)
   } finally {
-    access.mockRestore()
     discovery.mockRestore()
     build.mockRestore()
     logs.mockRestore()

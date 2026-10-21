@@ -165,21 +165,21 @@ export function PricingHistoryPlot({
   }, [])
 
   useEffect(() => {
-    const maximum = Math.max(
-      0,
-      ...traces.flatMap((trace) => {
-        if (trace.end < range[0] || trace.start > range[1]) {
-          return []
-        }
+    let maximum = 0
 
-        return [
-          sampleAt(trace.samples, range[0]) ?? 0,
-          ...trace.samples
-            .filter(([at]) => at >= range[0] && at <= range[1])
-            .map(([, price]) => price),
-        ]
-      }),
-    )
+    for (const trace of traces) {
+      if (trace.end < range[0] || trace.start > range[1]) {
+        continue
+      }
+
+      maximum = Math.max(maximum, sampleAt(trace.samples, range[0]) ?? 0)
+
+      for (const [at, price] of trace.samples) {
+        if (at >= range[0] && at <= range[1]) {
+          maximum = Math.max(maximum, price)
+        }
+      }
+    }
 
     const span = Math.max(1, asOf - since)
 

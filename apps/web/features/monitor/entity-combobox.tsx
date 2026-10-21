@@ -161,7 +161,7 @@ export function ModelCombobox({
   placeholder = 'Filter by model...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { results: models, status } = useEntityChoices(api.alerts.monitor.query.models, {})
+  const { results: models, status } = useEntityChoices(api.products.monitor.query.models, {})
 
   return (
     <EntityCombobox
@@ -179,7 +179,7 @@ export function ProviderCombobox({
   placeholder = 'Filter by provider...',
   ...props
 }: Omit<EntityComboboxProps, 'items' | 'isPending' | 'searchPlaceholder' | 'emptyMessage'>) {
-  const { results: providers, status } = useEntityChoices(api.alerts.monitor.query.providers, {})
+  const { results: providers, status } = useEntityChoices(api.products.monitor.query.providers, {})
 
   return (
     <EntityCombobox

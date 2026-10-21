@@ -1,38 +1,36 @@
 # Administrator access
 
-`/admin` and protected Convex entry points authorize the user selected by
-`ORCA_ADMIN_USER_ID`.
+`/admin` and protected Convex functions authorize only the WorkOS subject in `ORCA_ADMIN_USER_ID`.
+
+- An unset administrator denies access; dashboard membership grants no application access.
+- The public viewer query exposes only the caller's subject and admin status, identifying unapproved accounts.
 
 ## Development login
 
-Retrieve `ORCA_DEV_ADMIN_EMAIL` and `ORCA_DEV_ADMIN_PASSWORD` with `convex env get`
-from the selected deployment. Capture credentials into the login process without
-printing them. Sign in at `/admin`; `admin.demo` confirms access. Sign out through
-the header menu to resume anonymous work.
+Dev/preview share users and login policy. Experiments that change either need a separate WorkOS environment.
 
-## Environments
+1. Retrieve development credentials with `convex env get` against the intended deployment; keep secrets out of output.
+2. Sign in at `/admin`; use the account menu to sign out.
 
-Dev/preview share users and login policy. Use a separate WorkOS environment for
-experiments that change these.
+Credential variables are recorded in `config.md`. Restart failed authentication at `/admin` because
+callback codes and PKCE state are single-use. Unlisted logout destinations fall back to WorkOS's default URL.
 
-Convex registers callbacks and CORS. WorkOS owns login methods, signup policy, and
-logout destinations. Production GitHub OAuth uses the provider callback shown by
-WorkOS and its default `user:email` scope.
+## Browser origins
 
-Preview sessions belong to the branch hostname; sign-in redirects unique deployment
-URLs there. An unlisted tailnet logout destination falls back to WorkOS's default
-sign-out URL.
+Login starts on the configured callback origin so the host-only PKCE cookie returns to the same host.
 
-## Local callbacks
+| Context                | Browser origin                                   |
+| ---------------------- | ------------------------------------------------ |
+| Preview deployment URL | Sign-in redirects to the branch hostname.        |
+| Portless startup       | Supplies the local or tailnet origin.            |
+| Direct Convex push     | Set `ORCA_DEV_URL` to the browser-facing URL.    |
+| Local URL lookup       | Run `bun run --silent dev:origin` from the root. |
+| Remote access          | Use the running server's printed Tailscale URL.  |
 
-Web startup registers the callback for Portless's selected browser URL. For direct
-Convex pushes, supply `ORCA_DEV_URL` from the root `bun run --silent dev:origin` for local access, or
-the running server's printed Tailscale URL for remote access. Login must begin and
-finish on that external origin. Restart failed attempts at `/admin`;
-callback codes and PKCE state are single-use.
+## External configuration
 
-## Verify auth changes
-
-Check login, `admin.demo`, and logout locally and on two preview branches. Confirm
-anonymous and non-admin direct calls fail, including with `ORCA_ADMIN_USER_ID` unset.
-Repeat on production after deploying auth changes.
+- Convex manages callback and CORS registration.
+- WorkOS owns login methods, signup policy, and logout allowlists.
+- Production uses a separate WorkOS environment with GitHub OAuth and disabled signups.
+- GitHub uses WorkOS's provider callback and its default `user:email` scope.
+- Environment values and maintained sign-out origins live in `config.md`.

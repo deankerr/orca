@@ -1,9 +1,9 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { internalAction } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
-import * as scans from '#scan'
+import * as scans from '#scans'
 
 import { profileScan, viewScanReport } from './profile'
 import type { ScanReport, ScanReportView, Selection } from './profile'
@@ -42,7 +42,13 @@ async function analyze(
   ctx: ActionCtx,
   { scanAt, scope = 'orca', model, provider }: Infer<typeof selectionArgs>,
 ): Promise<ScanReport> {
-  const scan = await scans.reader(ctx).loadCollected(scanAt === 'latest' ? undefined : scanAt)
+  const selected = scanAt === undefined || scanAt === 'latest' ? await scans.latest(ctx) : scanAt
+
+  if (selected === null) {
+    throw new ConvexError('No stored scans')
+  }
+
+  const scan = await scans.loadCollected(ctx, selected)
   const selection: Selection = { scope }
 
   if (model !== undefined) {

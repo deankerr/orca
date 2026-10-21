@@ -1,6 +1,6 @@
 # apps/web
 
-- Dark theme, monochromatic palette. Dense, data-heavy UIs.
+- A single dark theme, taking design inspiration from shadcn/ui and Vercel. Dense, data-heavy UIs.
 - Desktop-first design.
 - nuqs requires the client component to be wrapped in a `Suspense` boundary.
 - Customise `shadcn` components via `className`, avoid direct modification.

@@ -3,7 +3,7 @@ import { api } from '@orca/backend/api'
 
 export function gridQueryOptions() {
   return {
-    endpoints: convexQuery(api.catalog.endpoints.query.grid, {}),
-    stats: convexQuery(api.catalog.stats.query.grid, {}),
+    endpoints: convexQuery(api.products.grid.endpoints.grid, {}),
+    stats: convexQuery(api.products.grid.stats.grid, {}),
   }
 }

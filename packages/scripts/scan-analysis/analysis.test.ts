@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import { profileScan, viewScanReport } from '@orca/backend/scan/analysis'
+import { profileScan, viewScanReport } from '@orca/backend/scans/analysis'
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { convexToJson } from 'convex/values'
 
@@ -95,7 +95,8 @@ test('profiles the same ORCA scope and identities, with explicit collected and f
   const scan = sampleScan()
   const orca = profileScan(scan, { scope: 'orca' })
   const collected = profileScan(scan, { scope: 'collected' })
-  expect(orca.models.profile.record_count).toBe(3)
+  // The image model's endpoints are out of scope, so ORCA never discovers that model.
+  expect(orca.models.profile.record_count).toBe(2)
   expect(orca.endpoints.profile.record_count).toBe(6)
   expect(orca.providers.profile.record_count).toBe(2)
   expect(collected.models.profile.record_count).toBe(5)

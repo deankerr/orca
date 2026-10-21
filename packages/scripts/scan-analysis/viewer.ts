@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import type { Population, ScanReport } from '@orca/backend/scan/analysis'
+import type { Population, ScanReport } from '@orca/backend/scans/analysis'
 import type { ValueProfile } from '@orca/json-profile'
 import { distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 

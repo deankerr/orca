@@ -1,70 +1,62 @@
 # Discord alerts
 
-## Admission and routing
+## Admission
 
-`ORCA_DISCORD_AUTO_SEND_ENABLED=true` schedules alert preparation after fresh
-ingestion events have committed. Preparation renders the events and submits once
-to the sender's `ingestion` topic; each eligible subscriber receives the same
-ordered batch.
+Completed pairs can submit alerts to the sender's `ingestion` topic; automatic sending requires an alerting record.
 
-Preparation failures leave committed events intact. Scheduling from the ingestion
-action is best-effort: a failure between event commit and scheduling can leave
-alerts unqueued. Inspect scheduling/preparation failures in logs and use
-`sendIngestion` for an intentional send after fixing the cause.
-Event-only `retry:events` recovery does not broadcast alerts.
+- Completing an alerting record schedules delivery; delivery checks the switch, and submitted jobs continue when disabled.
+- No eligible messages or matching webhooks means no jobs.
+- Rendering/submission failures leave Catalog facts intact.
+- Repair preparation failures before an intentional manual send.
 
-The switch is checked before scheduling and again when preparation starts. Already
-submitted sender jobs continue independently. No eligible messages or matching
-webhooks produces no jobs.
+Automatic deadlines use source scan time, so delayed ingestion can retain history without delivering
+alerts. Recent replay can still send: disable automatic sending for a silent rebuild.
 
-The submission key is `ingestion:<scan_at>`. Historical backfill can submit jobs
-that expire before sending.
+## Message policy
 
-## Registration
+Preparation applies shared eligibility and Discord's frequency rule to the complete scan, then batches
+equivalent changes within one scan and entity kind. Residual changes keep their individual identities.
+Within each scan, ordering introduces parents before endpoints and announces endpoint unlistings before a
+parent's last-endpoint departure. Ordering applies before batching; `config.md` records the priorities.
 
-Each deployment needs an eligible webhook subscribed to `ingestion` before alerts
-can produce delivery jobs. Webhook URLs and subscriptions live in the component.
-Run operator commands from `packages/backend`, selecting the deployment explicitly.
+| Arrival         | Presentation                                               |
+| --------------- | ---------------------------------------------------------- |
+| Model discovery | Introductory card.                                         |
+| Known entity    | Endpoint relisting or model/provider serving availability. |
+| Unclassified    | Neutral wording.                                           |
+
+- Batching threshold and delivery age are maintained in `config.md`.
+- Submitted payloads and sender receipts record output; later history or rendering changes do not update Discord.
+
+## Operator commands
+
+Run from `packages/backend`, selecting the intended deployment. Development uses private development
+webhooks. An eligible webhook must subscribe to `ingestion`:
 
 ```sh
 bunx convex run api:registerWebhook '{"name":"Ingestion alerts","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>
 bunx convex run api:listWebhooks '{}' --component discordSender --deployment <deployment>
 ```
 
-For development, use the worktree's deployment and private development webhooks.
-
-## Prepare and send an ingestion
-
-To prepare one completed ingestion with current filtering and card rendering,
-without enqueueing or sending anything:
+Preview current filtering and cards without submitting jobs:
 
 ```sh
-bunx convex run alerts/discord/delivery:prepareIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:prepareRecord '{"record_id":"<record-id>"}' --deployment <deployment>
 ```
 
-The query returns `scan_at`, ordered `messages` (each with a stable `key`,
-serialized JSON `payload`, and source `event_ids`), and `skippedEvents` with
-filtering reasons. It uses current rendering and available history, regardless of
-auto-send, observation age or registered webhooks.
+This returns ordered serialized messages, source IDs, and filtering reasons. It requires a completed
+record but ignores age, auto-send, and subscriptions. Baselines produce no messages.
 
-To manually send that ingestion:
+Send intentionally, including with auto-send disabled:
 
 ```sh
-bunx convex run alerts/discord/delivery:sendIngestion '{"ingestion_id":"<ingestion-id>"}' --deployment <deployment>
+bunx convex run products/discord/delivery:sendRecord '{"record_id":"<record-id>"}' --deployment <deployment>
 ```
 
-Each invocation intentionally sends again to eligible `ingestion` subscribers,
-with a fresh deadline based on the configured age limit. Cards and filtering
-retain the original observation time. The command works with auto-send disabled
-and returns `jobIds` and `messageCount`; a positive count with no jobs means there
-were rendered messages but no eligible subscribers. Both operator commands require
-completed event processing.
+Every invocation sends again with a fresh invocation-time deadline and the original observation time.
+The result contains `jobIds` and `messageCount`; messages with no jobs means no eligible subscribers.
 
-## Inspect delivered output
-
-To investigate output, convert the requested time window and timezone to epoch
-milliseconds. `listJobs` uses submission time, which can differ from the source's
-`scan_at`; job keys retain that observation time.
+Inspect submissions in an epoch-millisecond window `[from, to)`:
 
 ```sh
 bunx convex run api:listJobs '{"from":<start-ms>,"to":<end-ms>}' --component discordSender --deployment <deployment>
@@ -72,51 +64,35 @@ bunx convex run api:getJob '{"jobId":"<job-id>"}' --component discordSender --de
 bunx convex run api:listResults '{"jobId":"<job-id>"}' --component discordSender --deployment <deployment>
 ```
 
-If `hasMore` is true, narrow the discovery window. Use stored jobs and results for
-historical evidence; `prepareIngestion` rerenders with current code and history.
+Discovery uses submission time, not scan time; job keys retain the source time. Narrow the window when
+`hasMore` is true. Use stored jobs/results for historical evidence: preparation rerenders with current rules.
 
-## Presentation
+## Frequent pricing
 
-Apply shared alert eligibility, then the frequency rule below, before grouping identical changes.
-Monitor and Feed remain unbatched;
-query pages do not define meaningful batch membership.
+Discord suppresses ordinary pricing fields after the configured number of prior quotes in its lookback
+window.
 
-Only model discoveries receive introductory cards. Known arrivals describe renewed
-availability; unclassified arrivals use neutral language.
-Provider alerts cover identity, locations, status, and terms/privacy URLs.
-
-Within each scan, lifecycle ordering introduces parents before endpoints and announces
-endpoint unlistings before messages about losing the last listed endpoint. Ordering applies
-before batching; `docs/orca/config.md` records the sort priorities.
-
-## Frequent pricing changes
-
-Discord suppresses ordinary pricing fields after **two prior quote entries within
-24 hours**. These defaults are calibrated below; the constants live in
-`alerts/discord/frequency.ts`. Lifecycle alerts and schedule-definition changes bypass
-this rule. Other selected changes remain visible.
-
-The count measures observed quotes, including small changes and relistings, rather
-than delivered alerts. It excludes the event itself and later observations so replay
-uses the same rule as live delivery. Missing or backfilled history can change the
-result. Large movements receive no exception: repeated updates are the problem.
-Monitor, Feed, Events, and Pricing History retain their own behavior.
+- Count retained quotes, including small changes and relistings; exclude current/later observations.
+- Delivered alert counts do not affect this rule.
+- Schedule-definition changes and lifecycle alerts bypass it; other selected fields survive.
+- Large movements receive no exception.
+- Missing or extended history can change classification.
 
 ### Initial calibration
 
-Replaying the hourly captures from September 26–October 3, 2026, reserving the first 24 hours for
-lookback, produced 1,507 eligible endpoint pricing alerts over the remaining six days. These are
-alerts before Discord grouping, not message counts:
+The initial calibration replayed hourly captures from 2026-09-26 to 2026-10-03, reserving the first
+24 hours for lookback. The remaining six days had 1,507 eligible endpoint pricing alerts before batching:
 
-| Window   | Prior quote threshold | Alerts remaining |
-| -------- | --------------------- | ---------------- |
-| 6 hours  | 2                     | 708              |
-| 12 hours | 2                     | 505              |
-| 24 hours | 3                     | 445              |
-| 24 hours | 2                     | 314              |
+| Lookback | Prior quotes | Alerts remaining |
+| -------- | ------------ | ---------------- |
+| 6 hours  | 2            | 708              |
+| 12 hours | 2            | 505              |
+| 24 hours | 3            | 445              |
+| 24 hours | 2            | 314              |
 
-The initial 24-hour/two-quote policy removes 79% of these alerts while forgetting bursts much
-sooner than a week-long window. It does not attempt to identify unofficial discount schedules.
-Retaining the cheap magnitude gates avoids another 191 history candidates and 23 surviving
-small-change alerts in this sample. These defaults are an empirical starting point, not a
-guarantee of a fixed alert rate; sparse recurring changes can still pass.
+The selected 24-hour/two-quote policy removed 79% of that population while forgetting bursts sooner
+than a week-long window. Retaining magnitude gates avoided another 191 history candidates and 23
+surviving small-change alerts.
+
+This calibration does not guarantee an alert rate: sparse recurring changes can still pass, and the rule
+does not identify unofficial discount schedules.

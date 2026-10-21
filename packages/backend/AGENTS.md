@@ -19,6 +19,9 @@
 
 ## Code organization
 
+- `catalog/` owns shared definitions and retained semantics; `ingestion/` owns projection writes and progress.
+- Products read Catalog tables directly and own their interpretation, rendering, and delivery state.
+- Ingestion and products depend on shared definitions; neither calls the other to read or write Catalog.
 - Keep each product's queries, rendering, delivery, storage, and helpers together.
 - Put code shared by multiple products in the domain it belongs to.
 - Write domain logic as ordinary pure functions; Convex functions handle database access and scheduling.
