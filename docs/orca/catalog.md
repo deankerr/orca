@@ -8,7 +8,7 @@ lists do not constrain Events or source captures; alert eligibility does not con
 
 Current rows preserve last-known facts when an entity disappears. A newer observation replaces its
 selected facts, including removal of fields no longer supplied. Metadata selection lives with the
-current entity projections in `ingestion/`; changing it requires explicit refresh of existing rows.
+current entity projections in `ingestion/`; changing it affects only rows written afterwards.
 
 | Date            | Meaning                                               |
 | --------------- | ----------------------------------------------------- |
