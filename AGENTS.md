@@ -1,9 +1,5 @@
 # ORCA (OpenRouter Capability Analysis)
 
-**This branch contains a backend rewrite which is incompatible with the current production deployment. Transition considerations are not requirement during development and will be handled together as the final task. Do not merge without a migration plan.**
-
-**The locally associated dev deployment can be destroyed and a new instance provisioned when required.**
-
 ## Development
 
 - When dependencies are missing, run `bun install --frozen-lockfile` from the repository root.
