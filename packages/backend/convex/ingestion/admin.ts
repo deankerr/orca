@@ -1,3 +1,4 @@
+import { mergedStream, stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 
@@ -7,6 +8,7 @@ import * as scans from '#scans'
 
 import { requireAdmin } from '../admin'
 import { clock } from '../products/shared/clock'
+import schema from '../schema'
 import { ingestionParallelism } from './pool'
 import { queueCapacity, retryFailed } from './queue'
 import { recordCounts } from './records'
@@ -162,18 +164,25 @@ export const records = query({
   },
   handler: async (ctx, { state, before, paginationOpts }) => {
     await requireAdmin(ctx)
+    const records = stream(ctx.db, schema).query(INGESTION_RECORDS_TABLE)
+    // A state filter covers both kinds, so failed baselines stay visible and retryable.
     const page = await (
       state === undefined
-        ? ctx.db
-            .query(INGESTION_RECORDS_TABLE)
+        ? records
             .withIndex('by_scan_at', (q) => (before === undefined ? q : q.lt('scan_at', before)))
-        : ctx.db.query(INGESTION_RECORDS_TABLE).withIndex('by_kind_and_state_and_scan_at', (q) => {
-            const range = q.eq('kind', 'pair').eq('state', state)
-            return before === undefined ? range : range.lt('scan_at', before)
-          })
-    )
-      .order('desc')
-      .paginate(paginationOpts)
+            .order('desc')
+        : mergedStream(
+            recordKind.members.map(({ value: kind }) =>
+              records
+                .withIndex('by_kind_and_state_and_scan_at', (q) => {
+                  const range = q.eq('kind', kind).eq('state', state)
+                  return before === undefined ? range : range.lt('scan_at', before)
+                })
+                .order('desc'),
+            ),
+            ['scan_at', '_creationTime', '_id'],
+          )
+    ).paginate(paginationOpts)
 
     return {
       ...page,

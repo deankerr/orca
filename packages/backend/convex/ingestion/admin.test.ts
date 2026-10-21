@@ -113,12 +113,36 @@ test('records page newest first, filtered by state, from a chosen time', async (
   const all = await admin.query(api.ingestion.admin.records, { paginationOpts })
   expect(all.page.map(({ scan_at }) => scan_at)).toEqual([hour(40), hour(39), hour(38)])
 
+  await t.run(async (ctx) => {
+    await writeRecords(ctx, async (records) => {
+      await records.insert({
+        kind: 'baseline',
+        from_scan_at: null,
+        scan_at: hour(14),
+        alerts: false,
+        state: 'failed',
+      })
+    })
+  })
+
+  // A state filter includes baselines in scan order.
   const failed = await admin.query(api.ingestion.admin.records, {
     state: 'failed',
     before: hour(20),
     paginationOpts,
   })
-  expect(failed.page.map(({ scan_at }) => scan_at)).toEqual([hour(17), hour(12), hour(7)])
+  expect(failed.page.map(({ kind, scan_at }) => [kind, scan_at])).toEqual([
+    ['pair', hour(17)],
+    ['baseline', hour(14)],
+    ['pair', hour(12)],
+  ])
+
+  const next = await admin.query(api.ingestion.admin.records, {
+    state: 'failed',
+    before: hour(20),
+    paginationOpts: { numItems: 3, cursor: failed.continueCursor },
+  })
+  expect(next.page.map(({ scan_at }) => scan_at)).toEqual([hour(7), hour(2)])
 })
 
 test('retry reopens failed records and reports how many', async () => {
