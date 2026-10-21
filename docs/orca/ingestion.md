@@ -29,7 +29,7 @@ have limited positional comparison; supported entity shapes avoid that case.
 
 ## Target and registry
 
-The target is an inclusive range of scan times. It can widen in either direction but never shrinks.
+The target is an inclusive range of scan times. It can widen in either direction; its start can also advance while no record reads an earlier scan.
 Target edits do not start work; sync kickoff starts both workers. `ingestion-workers.md` owns the register and queue worker logic,
 current scopes, baseline moves, and resumption; `projections/model.md` owns record semantics.
 
