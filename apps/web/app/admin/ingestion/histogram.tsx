@@ -35,14 +35,16 @@ const MAX_BUCKETS = 180
 function bucketing({ start_at, end_at }: Range) {
   const start = Date.parse(start_at)
   const end = Date.parse(end_at)
-  const size = SIZES.find(({ ms }) => Math.ceil((end - start) / ms) <= MAX_BUCKETS) ?? SIZES.at(-1)
-  const ms = size?.ms ?? HOUR
+  const size = SIZES.find(({ ms }) => Math.ceil((end - start) / ms) <= MAX_BUCKETS)
+  // Beyond the largest size, widen whole days so the bar count stays within the server limit.
+  const day = 24 * HOUR
+  const ms = size?.ms ?? Math.ceil((end - start) / MAX_BUCKETS / day) * day
   const alignedStart = Math.floor(start / ms) * ms
   // An aligned end exactly on a boundary would add an empty bucket for that instant alone.
   const alignedEnd = Math.max(alignedStart + ms, Math.ceil((end + 1) / ms) * ms)
 
   return {
-    label: size?.label ?? '1 hour',
+    label: size?.label ?? `${ms / day} days`,
     ms,
     start_at: new Date(alignedStart).toISOString(),
     end_at: new Date(alignedEnd).toISOString(),

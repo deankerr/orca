@@ -106,6 +106,22 @@ function registryNote(
   return hours <= 0 ? 'Registry caught up' : `Registry ${hours.toFixed(1)} h behind`
 }
 
+type Range = { start_at: string; end_at: string }
+
+/** An open-ended target (e.g. 2099) ends the view at the latest registered pair instead. */
+function histogramRange(
+  target: Range | null,
+  pairs: { earliest: string | null; latest: string | null },
+): Range | null {
+  const start_at = target?.start_at ?? pairs.earliest
+  if (start_at === null) {
+    return null
+  }
+
+  const latest = pairs.latest !== null && pairs.latest > start_at ? pairs.latest : start_at
+  return { start_at, end_at: target !== null && target.end_at < latest ? target.end_at : latest }
+}
+
 export default function IngestionPage() {
   const overview = useQuery(api.ingestion.admin.overview)
   const source = useSourceScans()
@@ -119,11 +135,7 @@ export default function IngestionPage() {
   const pairCount = (state: string) => counts[`pair/${state}`] ?? 0
   const registered = STATES.reduce((sum, state) => sum + pairCount(state), 0)
   const unfinished = registered - pairCount('complete')
-  const range =
-    target ??
-    (pairs.earliest !== null && pairs.latest !== null
-      ? { start_at: pairs.earliest, end_at: pairs.latest }
-      : null)
+  const range = histogramRange(target, pairs)
   const sourceNote = registryNote(source.range?.latest, pairs.latest, target?.end_at ?? null)
   const eta = rate === null || rate <= 0 || unfinished === 0 ? null : unfinished / rate
 
