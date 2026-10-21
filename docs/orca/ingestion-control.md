@@ -16,9 +16,10 @@ optimization. The same core must serve production automatic ingestion, preview i
 development deployments with a selectable range whose end can advance.
 
 - Each administrator dashboard manages only its own deployment and has no knowledge of other deployments.
-- Keep the target beginning fixed; reducing its end is permitted but is not an intended operational workflow.
+- The target beginning may move earlier, or later only while no registration reads a scan before it.
+- Reducing the target end is permitted but is not an intended operational workflow.
 - Reducing the target neither removes retained output nor cancels already registered work.
-- Defer removal, replacement, reprojection, and moving the target start beyond the first slice.
+- Defer removal, replacement, reprojection, and moving the target start past registered work beyond the first slice.
 - Derive progress from retained state instead of maintaining redundant progress markers.
 - Resume interrupted register and queue workers on their next invocation; automatic restart is not a worker requirement.
 - Deliver a complete vertical slice before adding advanced capabilities.

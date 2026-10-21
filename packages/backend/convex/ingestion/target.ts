@@ -8,7 +8,12 @@ import { internalMutation, internalQuery } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
 import { IsoDateTime } from '../isodatetime'
-import { INGESTION_TARGET_TABLE, ingestionTargetRange, ingestionTargetTable } from './tables'
+import {
+  INGESTION_RECORDS_TABLE,
+  INGESTION_TARGET_TABLE,
+  ingestionTargetRange,
+  ingestionTargetTable,
+} from './tables'
 
 const RangeBoundary = z
   .union([z.iso.date(), IsoDateTime])
@@ -19,7 +24,10 @@ const IngestionTargetRange = z
     message: 'Ingestion range must move forward in time',
   })
 
-/** Set or widen the requested range; the next sync registers toward it. */
+/**
+ * Set or widen the requested range; the next sync registers toward it. The start may also
+ * advance while no registration reads a scan before it, since nothing would need withdrawing.
+ */
 export const set = internalMutation({
   args: ingestionTargetRange.fields,
   returns: v.id(INGESTION_TARGET_TABLE),
@@ -33,8 +41,17 @@ export async function setTarget(
   const range = IngestionTargetRange.parse(args)
   const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
 
-  if (target !== null && (range.start_at > target.start_at || range.end_at < target.end_at)) {
-    throw new ConvexError('The ingestion range can widen but never shrink')
+  if (target !== null && range.end_at < target.end_at) {
+    throw new ConvexError('The ingestion range end can extend but never retract')
+  }
+
+  if (target !== null && range.start_at > target.start_at) {
+    const earliest = await earliestRegisteredScan(ctx)
+    if (earliest !== null && earliest < range.start_at) {
+      throw new ConvexError(
+        `The ingestion range start cannot advance past the earliest registered scan at ${earliest}`,
+      )
+    }
   }
 
   const id = target === null ? await ctx.db.insert(INGESTION_TARGET_TABLE, range) : target._id
@@ -44,6 +61,21 @@ export async function setTarget(
   }
 
   return id
+}
+
+/** The earliest scan any registration reads, including a pair's source scan. */
+async function earliestRegisteredScan(ctx: MutationCtx): Promise<string | null> {
+  const record = await ctx.db.query(INGESTION_RECORDS_TABLE).withIndex('by_scan_at').first()
+  const pair = await ctx.db
+    .query(INGESTION_RECORDS_TABLE)
+    .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair'))
+    .first()
+  const from = pair?.from_scan_at ?? null
+  const scan = record?.scan_at ?? null
+  if (from === null || scan === null) {
+    return from ?? scan
+  }
+  return from < scan ? from : scan
 }
 
 export const get = internalQuery({

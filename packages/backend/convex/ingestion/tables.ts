@@ -11,7 +11,7 @@ export const QUEUE_SCHEDULE_TABLE = 'ingestion_queue_schedule' as const
 
 export const ingestionTargetRange = v.object({ start_at: v.string(), end_at: v.string() })
 
-/** One timeline; the range can widen in either direction but never shrinks. */
+/** One timeline; the range widens, and its start advances only ahead of all registrations. */
 export const ingestionTargetTable = defineTable(ingestionTargetRange)
 
 export const recordKind = literals('pair', 'baseline')

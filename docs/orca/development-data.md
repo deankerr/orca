@@ -13,7 +13,8 @@ bunx convex run ingestion/sync:run '{}' --deployment <dev-deployment>
 ```
 
 Bounds are inclusive UTC instants. ISO dates mean midnight UTC; offset-bearing timestamps are also
-accepted. The range can widen in either direction but never shrinks; moving the start back moves the
+accepted. The range can widen in either direction, and its start can advance while no record reads an
+earlier scan; moving the start back moves the
 baseline. An empty range registers nothing. Both workers repeat until idle; kick off sync again after
 new scans arrive or a worker invocation fails.
 

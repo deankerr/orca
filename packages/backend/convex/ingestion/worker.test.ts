@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
+import { rejects } from 'node:assert/strict'
 
 import type { WorkId } from '@convex-dev/workpool'
 import * as R from 'remeda'
@@ -271,6 +272,29 @@ test('moving the target start back withdraws the old baseline and installs one a
     registry.find(({ scan_at, from_scan_at }) => scan_at === hour(start) && from_scan_at !== null),
   ).toMatchObject({ from_scan_at: hour(start - 1), state: 'complete' })
   expect(await facts(t)).toEqual(expected(0, 35))
+})
+
+test('the target start advances only while no registration reads an earlier scan', async () => {
+  const t = setup()
+  await collect(t, range(5, 9))
+  await target(t, 0, 9)
+  await settle(t)
+
+  const [baseline] = await records(t)
+  expect(baseline).toMatchObject({ from_scan_at: null, scan_at: hour(5) })
+
+  await target(t, 5, 9)
+  await settle(t)
+  expect(await facts(t)).toEqual(expected(5, 9))
+
+  await rejects(
+    t.mutation(internal.ingestion.target.set, { start_at: hour(6), end_at: hour(9) }),
+    /earliest registered scan/,
+  )
+  await rejects(
+    t.mutation(internal.ingestion.target.set, { start_at: hour(5), end_at: hour(8) }),
+    /never retract/,
+  )
 })
 
 test('a failed request waits for an explicit retry, then completes without duplicating output', async () => {
