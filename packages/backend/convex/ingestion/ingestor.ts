@@ -78,19 +78,28 @@ export const release = internalMutation({
     }),
 })
 
-/** Output and its receipt commit together; write failures must escape to roll back both. */
+/**
+ * Output and its receipt commit together; write failures must escape to roll back both.
+ * A retry can be assigned more output than an earlier attempt committed, so a receipt with
+ * lower `coverage` is widened by writing again; such writes must be idempotent.
+ */
 export async function commitProcess(
   ctx: MutationCtx,
   scan_at: string,
   process: string,
   write: () => Promise<void>,
+  coverage = 0,
 ): Promise<CommitResult> {
-  if ((await receipt(ctx, scan_at, process)) !== null) {
+  const committed = await receipt(ctx, scan_at, process)
+
+  if (committed !== null && (committed.coverage ?? 0) >= coverage) {
     return 'already_committed'
   }
 
   await write()
-  await ctx.db.insert(PROCESS_COMMITS_TABLE, { scan_at, process })
+  await (committed === null
+    ? ctx.db.insert(PROCESS_COMMITS_TABLE, { scan_at, process, coverage })
+    : ctx.db.patch(PROCESS_COMMITS_TABLE, committed._id, { coverage }))
 
   return 'committed'
 }

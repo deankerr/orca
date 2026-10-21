@@ -52,6 +52,7 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - An ingest request loads its record's scans and runs every process with the assigned scope and stats flag.
 - Each process commits its output and a receipt per scan and process in one transaction, including empty output.
 - Retries skip committed processes; overlapping attempts cannot duplicate output.
+- A receipt records its coverage; a retry assigned a broader scope or the stats snapshot writes again.
 - Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`.
 - A failed record waits for `ingestion/queue:retry`, which returns one or all failed records to `pending` without a scope.
 - Withdrawal deletes history rows dated at the scan and releases every receipt; current rows stay.

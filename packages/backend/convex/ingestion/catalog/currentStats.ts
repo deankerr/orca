@@ -28,18 +28,24 @@ export const write = internalMutation({
   },
   returns: commitResult,
   handler: async (ctx, { scan_at, rows, process }) =>
-    await commitProcess(ctx, scan_at, process, async () => {
-      if (rows === null) {
-        return
-      }
+    await commitProcess(
+      ctx,
+      scan_at,
+      process,
+      async () => {
+        if (rows === null) {
+          return
+        }
 
-      const snapshot = { scan_at, rows }
-      const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
+        const snapshot = { scan_at, rows }
+        const existing = await ctx.db.query(CURRENT_STATS_TABLE).unique()
 
-      if (existing === null) {
-        await ctx.db.insert(CURRENT_STATS_TABLE, snapshot)
-      } else if (operator.supersedes(existing, snapshot)) {
-        await ctx.db.replace(CURRENT_STATS_TABLE, existing._id, snapshot)
-      }
-    }),
+        if (existing === null) {
+          await ctx.db.insert(CURRENT_STATS_TABLE, snapshot)
+        } else if (operator.supersedes(existing, snapshot)) {
+          await ctx.db.replace(CURRENT_STATS_TABLE, existing._id, snapshot)
+        }
+      },
+      rows === null ? 0 : 1,
+    ),
 })

@@ -49,6 +49,8 @@ export type IngestionRecord = Infer<typeof ingestionRecordsTable.validator>
 export const processCommitsTable = defineTable({
   scan_at: v.string(),
   process: v.string(),
+  // How much output the receipt covers; a retry requesting more writes again. Absent is 0.
+  coverage: v.optional(v.number()),
 }).index('by_scan_at_and_process', ['scan_at', 'process'])
 
 /**

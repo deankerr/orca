@@ -18,7 +18,9 @@ import { ENDPOINT_STATS_TABLE } from '../catalog/tables/stats'
 import { setup } from '../harness.testing'
 import type { Harness } from '../harness.testing'
 import { canonicalJson } from '../products/discord/render'
+import type { CurrentScope } from './operators/current'
 import { currentTables, expectedCurrent } from './operators/current.testing'
+import * as currentEndpoints from './operators/currentEndpoints'
 import * as currentStats from './operators/currentStats'
 import * as events from './operators/events'
 import * as observations from './operators/observations'
@@ -393,4 +395,25 @@ test('concurrent completions leave at most one queue step waiting', async () => 
     await scheduleQueue(ctx)
   })
   expect(await waiting()).toBe(1)
+})
+
+test('a retry assigned a broader scope writes past a narrower receipt', async () => {
+  const t = setup()
+  const source = { previous: scan(hour(0), SPECS[0]), next: scan(hour(1), SPECS[1]) }
+  const write = async (scope: CurrentScope) =>
+    await t.mutation(internal.ingestion.catalog.currentEndpoints.write, {
+      process: 'currentEndpoints',
+      scan_at: source.next.scan_at,
+      scope,
+      rows: currentEndpoints.derive(source, scope),
+    })
+
+  expect(await write('departures')).toBe('committed')
+  expect(await write('departures')).toBe('already_committed')
+  expect(await write('full')).toBe('committed')
+  expect(await write('changes')).toBe('already_committed')
+
+  const rows = await t.run(async (ctx) => await ctx.db.query(CURRENT_ENDPOINTS_TABLE).collect())
+  const listed = rows.filter(({ unlisted_at }) => unlisted_at === undefined)
+  expect(listed).toHaveLength(source.next.endpoints.size)
 })
