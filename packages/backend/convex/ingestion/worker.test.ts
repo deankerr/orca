@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
 
+import type { WorkId } from '@convex-dev/workpool'
 import * as R from 'remeda'
 
 import { internal } from '#generated/api'
@@ -29,7 +30,13 @@ import * as statsHistory from './operators/statsHistory'
 import { hour, rawScan, scan, specs } from './operators/testing'
 import { RETRY_BATCH, scheduleQueue } from './queue'
 import { recordCounts, writeRecords } from './records'
-import { INGESTION_RECORDS_TABLE, PROCESS_COMMITS_TABLE, recordKind, recordState } from './tables'
+import {
+  INGESTION_RECORDS_TABLE,
+  PROCESS_COMMITS_TABLE,
+  QUEUE_SCHEDULE_TABLE,
+  recordKind,
+  recordState,
+} from './tables'
 
 const RETIRED_AT = 20
 
@@ -373,7 +380,51 @@ test('retry-all reopens a full batch within one transaction', async () => {
   expect(await t.mutation(internal.ingestion.queue.retry, {})).toBe(1)
 })
 
-test('concurrent completions leave at most one queue step waiting', async () => {
+test('completion commits before queue coordination and its wakeup survives until drained', async () => {
+  const t = setup()
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Synthetic work ID isolates settlement from Workpool execution.
+  const workId = 'completed-work' as WorkId
+  const id = await t.run(
+    async (ctx) =>
+      await writeRecords(
+        ctx,
+        async (records) =>
+          await records.insert({
+            kind: 'pair',
+            from_scan_at: hour(0),
+            scan_at: hour(1),
+            alerts: false,
+            state: 'queued',
+            work_id: workId,
+          }),
+      ),
+  )
+
+  await t.mutation(internal.ingestion.execute.onIngested, {
+    workId,
+    context: undefined,
+    result: { kind: 'success', returnValue: [] },
+  })
+
+  await t.run(async (ctx) => {
+    const record = await ctx.db.get(INGESTION_RECORDS_TABLE, id)
+    expect(record?.state).toBe('complete')
+    expect(await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()).toBeNull()
+    const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
+    expect(
+      scheduled.some(
+        ({ name, state }) => name === 'ingestion/queue:wake' && state.kind === 'pending',
+      ),
+    ).toBe(true)
+  })
+
+  await settle(t)
+  expect(
+    await t.run(async (ctx) => await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()),
+  ).not.toBeNull()
+})
+
+test('repeated wakeups leave at most one queue step waiting', async () => {
   const t = setup()
   const waiting = async () =>
     await t.run(async (ctx) => {
@@ -384,9 +435,7 @@ test('concurrent completions leave at most one queue step waiting', async () => 
     })
 
   for (const _ of range(1, 5)) {
-    await t.run(async (ctx) => {
-      await scheduleQueue(ctx)
-    })
+    await t.mutation(internal.ingestion.queue.wake, {})
   }
   expect(await waiting()).toBe(1)
 

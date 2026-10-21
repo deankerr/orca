@@ -33,6 +33,16 @@ export const RETRY_BATCH = 256
 /** More would be an invalid registry; the queue worker then waits rather than guessing. */
 const BASELINE_LIMIT = 8
 
+/** Coordinate wakeups separately so queue contention cannot roll back a completion. */
+export const wake = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await scheduleQueue(ctx)
+    return null
+  },
+})
+
 /** Schedule a queue step unless one is already waiting to start; a running step does not count. */
 export async function scheduleQueue(ctx: MutationCtx) {
   const schedule = await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()
