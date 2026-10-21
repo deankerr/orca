@@ -6,6 +6,12 @@ export const OBSERVATIONS_TABLE = 'catalog_observations' as const
 
 const fields = { entity_id: v.string(), scan_at: v.string() }
 
+const parentCounts = {
+  endpoint_count: v.number(),
+  // The count at the pair's earlier scan, so lifecycle needs no other record; null for a baseline.
+  previous_endpoint_count: v.union(v.number(), v.null()),
+}
+
 export const endpointObservation = v.object({
   ...fields,
   entity_kind: v.literal('endpoint'),
@@ -18,8 +24,8 @@ export const endpointObservation = v.object({
 export const observationsTable = defineTable(
   v.union(
     // A parent is present exactly while it has listed endpoints; zero means absent.
-    v.object({ ...fields, entity_kind: v.literal('model'), endpoint_count: v.number() }),
-    v.object({ ...fields, entity_kind: v.literal('provider'), endpoint_count: v.number() }),
+    v.object({ ...fields, entity_kind: v.literal('model'), ...parentCounts }),
+    v.object({ ...fields, entity_kind: v.literal('provider'), ...parentCounts }),
     endpointObservation,
   ),
 )

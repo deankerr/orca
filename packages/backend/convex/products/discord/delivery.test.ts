@@ -65,7 +65,15 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
   const previous: ObservationRow[] =
     kind === 'endpoint' || type === 'ADD'
       ? []
-      : [{ entity_kind: kind, entity_id: id, scan_at: PREVIOUS_SCAN_AT, endpoint_count: 1 }]
+      : [
+          {
+            entity_kind: kind,
+            entity_id: id,
+            scan_at: PREVIOUS_SCAN_AT,
+            endpoint_count: 1,
+            previous_endpoint_count: null,
+          },
+        ]
 
   if (kind !== 'endpoint' && type !== 'UPDATE') {
     const observation: ObservationRow = {
@@ -73,6 +81,7 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
       entity_id: id,
       scan_at,
       endpoint_count: type === 'ADD' ? 1 : 0,
+      previous_endpoint_count: type === 'ADD' ? 0 : 1,
     }
     return { previous, row: { table: OBSERVATIONS_TABLE, value: observation } } as const
   }

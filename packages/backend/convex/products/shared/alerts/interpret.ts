@@ -3,7 +3,6 @@ import type { QueryCtx } from '#generated/server'
 import { EVENTS_TABLE } from '../../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../../catalog/tables/observations'
 import type { ObservationRow } from '../../../catalog/tables/observations'
-import { INGESTION_RECORDS_TABLE } from '../../../ingestion/tables'
 import type { EntityAlert } from './curate'
 import { interpretEvent } from './prepare'
 import type { AlertSource } from './read'
@@ -51,23 +50,15 @@ export async function interpret(ctx: QueryCtx, source: AlertSource): Promise<Ent
     return serving(before) && serving(at ?? before) ? interpretEvent(source) : null
   }
 
-  const before = await history().order('desc').first()
-  const added = serving(source)
+  // The pair's own counts decide the transition; earlier pairs may still be ingesting.
+  // A baseline row has no comparison, so it announces nothing.
+  const { endpoint_count, previous_endpoint_count } = source
 
-  if (added === serving(before)) {
+  if (previous_endpoint_count === null || endpoint_count > 0 === previous_endpoint_count > 0) {
     return null
   }
 
-  // Lifecycle needs a comparison: a scan introduced only by a baseline has none.
-  const pair = await ctx.db
-    .query(INGESTION_RECORDS_TABLE)
-    .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair').eq('scan_at', scan_at))
-    .first()
-
-  if (pair === null) {
-    return null
-  }
-
+  const added = endpoint_count > 0
   const event = await ctx.db
     .query(EVENTS_TABLE)
     .withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>

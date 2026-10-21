@@ -8,6 +8,11 @@ const listed = scan(hour(0), {
   endpoints: { e1: { model: 'm1', provider: 'p1' }, e2: { model: 'm1', provider: 'p2' } },
 })
 
+const counts = (endpoint_count: number, previous_endpoint_count: number | null) => ({
+  endpoint_count,
+  previous_endpoint_count,
+})
+
 const endpoint = (scan_at: string, detected: boolean, model_id: string, provider_id: string) => ({
   entity_kind: 'endpoint' as const,
   scan_at,
@@ -19,9 +24,9 @@ const endpoint = (scan_at: string, detected: boolean, model_id: string, provider
 
 test('a baseline states every listed endpoint and the endpoint count of each parent', () => {
   expect(derive({ previous: null, next: listed })).toEqual([
-    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(0), endpoint_count: 2 },
-    { entity_kind: 'provider', entity_id: 'p1', scan_at: hour(0), endpoint_count: 1 },
-    { entity_kind: 'provider', entity_id: 'p2', scan_at: hour(0), endpoint_count: 1 },
+    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(0), ...counts(2, null) },
+    { entity_kind: 'provider', entity_id: 'p1', scan_at: hour(0), ...counts(1, null) },
+    { entity_kind: 'provider', entity_id: 'p2', scan_at: hour(0), ...counts(1, null) },
     { entity_id: 'e1', ...endpoint(hour(0), true, 'm1', 'p1') },
     { entity_id: 'e2', ...endpoint(hour(0), true, 'm1', 'p2') },
   ])
@@ -35,8 +40,8 @@ test('a pair emits only changed state, dated at its introduced scan', () => {
   })
 
   expect(derive({ previous: listed, next: moved })).toEqual([
-    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(1), endpoint_count: 1 },
-    { entity_kind: 'model', entity_id: 'm2', scan_at: hour(1), endpoint_count: 1 },
+    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(1), ...counts(1, 2) },
+    { entity_kind: 'model', entity_id: 'm2', scan_at: hour(1), ...counts(1, 0) },
     { entity_id: 'e1', ...endpoint(hour(1), true, 'm2', 'p1') },
   ])
 })
@@ -45,8 +50,8 @@ test('a parent departs with its last endpoint, which retains its last relationsh
   const departed = scan(hour(1), { endpoints: { e2: { model: 'm1', provider: 'p2' } } })
 
   expect(derive({ previous: listed, next: departed })).toEqual([
-    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(1), endpoint_count: 1 },
-    { entity_kind: 'provider', entity_id: 'p1', scan_at: hour(1), endpoint_count: 0 },
+    { entity_kind: 'model', entity_id: 'm1', scan_at: hour(1), ...counts(1, 2) },
+    { entity_kind: 'provider', entity_id: 'p1', scan_at: hour(1), ...counts(0, 1) },
     { entity_id: 'e1', ...endpoint(hour(1), false, 'm1', 'p1') },
   ])
 })
@@ -62,7 +67,14 @@ function stateAt(rows: readonly ObservationRow[], at: string) {
   return new Map(
     [...latest]
       .filter(([, row]) => (row.entity_kind === 'endpoint' ? row.detected : row.endpoint_count > 0))
-      .map(([key, { scan_at: _scanAt, ...state }]) => [key, state]),
+      .map(([key, row]) => {
+        const { scan_at: _scanAt, ...state } = row
+        // A pair's previous count describes the comparison, not the state at the scan.
+        return [
+          key,
+          'previous_endpoint_count' in state ? { ...state, previous_endpoint_count: null } : state,
+        ]
+      }),
   )
 }
 

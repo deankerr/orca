@@ -30,6 +30,7 @@ export function derive(source: Source): ObservationRow[] {
         entity_id,
         scan_at,
         endpoint_count: after[entity_id] ?? 0,
+        previous_endpoint_count: source.previous === null ? null : (before[entity_id] ?? 0),
       })),
       R.filter(({ entity_id, endpoint_count }) => endpoint_count !== (before[entity_id] ?? 0)),
     )
