@@ -1,10 +1,17 @@
-import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import type * as fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+import { expect, test, vi } from 'vitest'
+
 import { writeReport } from './output'
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof fs>()
+  return { ...actual, writeFile: vi.fn(actual.writeFile) }
+})
 
 test('report replacement preserves the previous file when the new write fails partway through', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-'))
@@ -13,23 +20,20 @@ test('report replacement preserves the previous file when the new write fails pa
 
   await writeFile(output, 'previous report')
 
-  const write = spyOn(Bun, 'write').mockImplementationOnce(async (file) => {
-    if (typeof file !== 'string') {
-      throw new TypeError('Expected a report path')
-    }
-
-    await writeFile(file, 'partial')
+  const { writeFile: originalWrite } = await vi.importActual<typeof fs>('node:fs/promises')
+  const write = vi.mocked(writeFile).mockImplementationOnce(async (file) => {
+    await originalWrite(file, 'partial')
     throw new Error('Simulated failed write')
   })
 
   try {
     await rejects(writeReport('replacement report', destination), /Simulated failed write/u)
-    expect(await Bun.file(output).text()).toBe('previous report')
+    expect(await readFile(output, 'utf-8')).toBe('previous report')
     expect(await readdir(directory)).toEqual(['report.json'])
     write.mockRestore()
 
     expect(await writeReport('complete replacement', destination)).toBe(output)
-    expect(await Bun.file(output).text()).toBe('complete replacement')
+    expect(await readFile(output, 'utf-8')).toBe('complete replacement')
     expect(await readdir(directory)).toEqual(['report.json'])
   } finally {
     write.mockRestore()

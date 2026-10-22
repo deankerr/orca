@@ -1,8 +1,8 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts exercise discovery without a deployment or stored blobs. */
-import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import { ConvexHttpClient } from 'convex/browser'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts exercise discovery without a deployment or stored blobs. */
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx, QueryCtx } from '#generated/server'
 
@@ -80,7 +80,7 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
   process.env.ORCA_OBJECTS_SOURCE_DEPLOYMENT = 'source-deployment'
   process.env.ORCA_OBJECTS_API_KEY = 'test-key'
 
-  const query = spyOn(ConvexHttpClient.prototype, 'query').mockResolvedValue(['c', 'b'])
+  const query = vi.spyOn(ConvexHttpClient.prototype, 'query').mockResolvedValue(['c', 'b'])
   const ctx = {
     meta: { getDeploymentMetadata: () => ({ name: 'consumer-deployment' }) },
   } as unknown as ActionCtx

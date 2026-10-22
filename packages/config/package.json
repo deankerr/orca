@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./tsconfig.base.json": "./tsconfig.base.json"
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./testing": "./testing.ts"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
   }
 }

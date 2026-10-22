@@ -24,7 +24,8 @@
     "./scans/analysis": "./convex/scan_analysis/profile.ts"
   },
   "scripts": {
-    "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev"
+    "dev": "ORCA_DEV_URL=${ORCA_DEV_URL:-$(bun run --silent --cwd ../.. dev:origin)} convex dev",
+    "test": "bun run --cwd ../.. test --project backend"
   },
   "dependencies": {
     "@convex-dev/aggregate": "0.3.4",
@@ -44,9 +45,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
+    "@convex-dev/batch-worker": "0.3.3",
+    "@orca/config": "workspace:*",
     "@types/node": "catalog:",
     "convex-test": "0.0.64",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

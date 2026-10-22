@@ -1,6 +1,5 @@
-import { expect, test } from 'bun:test'
-
 import { Operation } from 'json-diff-ts'
+import { expect, test } from 'vitest'
 
 import { compare } from './compare'
 import type { JsonValue } from './json'

@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, expect, jest, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
+
+import { drainScheduledFunctions } from '@orca/config/testing'
+import { afterEach, beforeEach, expect, vi, test } from 'vitest'
 
 import { api } from '#generated/api'
 
@@ -10,23 +12,18 @@ import { writeRecords } from './records'
 import type { RecordState } from './tables'
 
 const ADMIN = 'user_admin'
-let previous: string | undefined
 
 beforeEach(() => {
-  jest.useFakeTimers()
-  previous = process.env.ORCA_ADMIN_USER_ID
-  process.env.ORCA_ADMIN_USER_ID = ADMIN
+  vi.useFakeTimers()
+  vi.setSystemTime(Date.parse(hour(48)))
+  vi.stubEnv('ORCA_ADMIN_USER_ID', ADMIN)
 })
 
 afterEach(() => {
-  jest.clearAllTimers()
-  jest.useRealTimers()
+  vi.clearAllTimers()
+  vi.useRealTimers()
 
-  if (previous === undefined) {
-    Reflect.deleteProperty(process.env, 'ORCA_ADMIN_USER_ID')
-  } else {
-    process.env.ORCA_ADMIN_USER_ID = previous
-  }
+  vi.unstubAllEnvs()
 })
 
 const STATES: RecordState[] = ['complete', 'complete', 'failed', 'pending', 'queued']
@@ -46,9 +43,7 @@ async function seed(t: Harness) {
       }
     })
   })
-  await t.finishAllScheduledFunctions(() => {
-    jest.advanceTimersByTime(60_000)
-  }, 1000)
+  await drainScheduledFunctions(t)
 }
 
 test('every operation requires the configured administrator', async () => {

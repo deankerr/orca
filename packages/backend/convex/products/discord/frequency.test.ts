@@ -1,6 +1,7 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- An indexed database double exercises historical filtering without deploying test mutations. */
-import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
+
+/* oxlint-disable typescript/no-unsafe-type-assertion -- An indexed database double exercises historical filtering without deploying test mutations. */
+import { expect, test } from 'vitest'
 
 import type { QueryCtx } from '#generated/server'
 

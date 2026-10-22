@@ -30,7 +30,7 @@ const FALLBACK_THEME = {
 // Read the branding source on each build so artwork tweaks flow into every fallback.
 export async function emitFallbackAsset(args: FallbackAssetOptions): Promise<void> {
   const source = await readFile(
-    nodePath.resolve(import.meta.dir, '../../../branding/svg/orb-ring-mark.svg'),
+    nodePath.resolve(import.meta.dirname, '../../../branding/svg/orb-ring-mark.svg'),
     'utf-8',
   )
   const theme = FALLBACK_THEME[args.group]

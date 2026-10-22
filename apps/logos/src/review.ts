@@ -190,7 +190,7 @@ function assertSafeKey(key: string): void {
 }
 
 if (import.meta.main) {
-  const [key] = Bun.argv.slice(2)
+  const [key] = process.argv.slice(2)
   if (key === undefined) {
     throw new Error('Usage: bun run review <logo-key>')
   }

@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import { derive } from './events'
 import { hour, scan } from './testing'

@@ -1,6 +1,7 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Snapshot tests need only the mocked Objects retrieval seam. */
-import { spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
+
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Snapshot tests need only the mocked Objects retrieval seam. */
+import { vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 import * as objects from '#objects'
@@ -23,7 +24,7 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
     variant: 'standard',
   }
 
-  const source = spyOn(objects, 'loadMany').mockResolvedValue([null])
+  const source = vi.spyOn(objects, 'loadMany').mockResolvedValue([null])
   const ctx = {} as ActionCtx
 
   try {

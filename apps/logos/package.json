@@ -7,16 +7,16 @@
     "generate": "bun run src/build.ts",
     "generate:types": "wrangler types",
     "review": "bun run src/review.ts",
-    "test": "bun test"
+    "test": "bun run --cwd ../.. test --project logos"
   },
   "devDependencies": {
     "@lobehub/icons-static-avatar": "1.15.0",
     "@lobehub/icons-static-webp": "1.94.1",
     "@orca/config": "workspace:*",
-    "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "sharp": "^0.35.5",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "^4.151.3",
     "zod": "catalog:"
   }

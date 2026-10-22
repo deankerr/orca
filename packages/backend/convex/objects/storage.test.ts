@@ -1,8 +1,9 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- The context implements only the storage operations exercised by this test. */
-import { expect, spyOn, test } from 'bun:test'
+import { gzipSync, gunzipSync } from 'node:zlib'
 
 import { ConvexHttpClient } from 'convex/browser'
 import { getFunctionName } from 'convex/server'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- The context implements only the storage operations exercised by this test. */
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 
@@ -17,9 +18,9 @@ test('a configured remote read source never redirects local writes', async () =>
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   Object.assign(process.env, settings)
 
-  const remote = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
-    { bytes: Bun.gzipSync('source text').buffer, codec: 'gzip' },
-  ])
+  const remote = vi
+    .spyOn(ConvexHttpClient.prototype, 'action')
+    .mockResolvedValue([{ bytes: Uint8Array.from(gzipSync('source text')).buffer, codec: 'gzip' }])
   const writes: unknown[] = []
   const identity = { name: 'one', path: 'test' }
   const ctx = {
@@ -30,7 +31,7 @@ test('a configured remote read source never redirects local writes', async () =>
     runQuery: async () => null,
     storage: {
       store: async (blob: Blob) => {
-        expect(new TextDecoder().decode(Bun.gunzipSync(await blob.arrayBuffer()))).toBe(
+        expect(new TextDecoder().decode(gunzipSync(new Uint8Array(await blob.arrayBuffer())))).toBe(
           'local text',
         )
         return 'local-storage-id'

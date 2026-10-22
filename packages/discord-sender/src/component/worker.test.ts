@@ -1,48 +1,23 @@
-import { afterEach, beforeEach, expect, jest, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
-import { createRequire } from 'node:module'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
+import * as workpool from '@convex-dev/workpool/test'
+import { drainScheduledFunctions } from '@orca/config/testing'
 import { convexTest } from 'convex-test'
-import type { GenericSchema, SchemaDefinition } from 'convex/server'
+import { afterEach, beforeEach, expect, vi, test } from 'vitest'
 import { z } from 'zod'
 
+import sender from '../test'
 import { api, internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
-import schema from './schema'
 
 const START = Date.UTC(2026, 9, 9)
-const workpoolPackage = fileURLToPath(import.meta.resolve('@convex-dev/workpool/package.json'))
-const workpoolRoot = path.join(path.dirname(workpoolPackage), 'src/component')
-const batchRoot = path.join(
-  path.dirname(createRequire(workpoolPackage).resolve('@convex-dev/batch-worker/package.json')),
-  'src/component',
-)
-
-function modules(root: string) {
-  return Object.fromEntries(
-    [...new Bun.Glob('**/*.ts').scanSync({ absolute: true, cwd: root })]
-      .filter((file) => !file.endsWith('.test.ts') && !file.endsWith('.d.ts'))
-      .map((file) => [file, async (): Promise<unknown> => await import(file)]),
-  )
-}
-
-async function loadSchema(root: string) {
-  const loaded: unknown = await import(path.join(root, 'schema.ts'))
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Installed component test helpers require Vite; Bun loads their actual schemas directly.
-  return (loaded as { default: SchemaDefinition<GenericSchema, boolean> }).default
-}
-
-const workpoolSchema = await loadSchema(workpoolRoot)
-const batchSchema = await loadSchema(batchRoot)
 
 function setup() {
-  const t = convexTest({ modules: modules(import.meta.dir), schema, transactionLimits: true })
-  t.registerComponent('workpool', workpoolSchema, modules(workpoolRoot))
-  t.registerComponent('workpool/batchWorker', batchSchema, modules(batchRoot))
+  const t = convexTest({ modules: sender.modules, schema: sender.schema, transactionLimits: true })
+  workpool.register(t)
   return t
 }
+
 type Harness = ReturnType<typeof setup>
 
 async function webhook(t: Harness, index = 1) {
@@ -74,20 +49,14 @@ function receipt() {
   return Response.json({ channel_id: '100000000000000098', id: '100000000000000099' })
 }
 
-const originalFetch = globalThis.fetch
-
 function requests(handler: (content: string) => Promise<Response>) {
   const sent: string[] = []
-  // convex-test installs accessors on globals, which spyOn cannot wrap.
-  globalThis.fetch = Object.assign(
-    async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-      const request = new Request(input, init)
-      const { content } = z.object({ content: z.string() }).parse(await request.json())
-      sent.push(content)
-      return await handler(content)
-    },
-    { preconnect: originalFetch.preconnect },
-  )
+  vi.stubGlobal('fetch', async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const request = new Request(input, init)
+    const { content } = z.object({ content: z.string() }).parse(await request.json())
+    sent.push(content)
+    return await handler(content)
+  })
   return sent
 }
 
@@ -101,15 +70,15 @@ async function outcome(t: Harness, jobId: Id<'jobs'>) {
 }
 
 beforeEach(() => {
-  jest.useFakeTimers()
-  jest.setSystemTime(START)
+  vi.useFakeTimers()
+  vi.setSystemTime(START)
 })
 
 afterEach(() => {
-  globalThis.fetch = originalFetch
-  jest.restoreAllMocks()
-  jest.clearAllTimers()
-  jest.useRealTimers()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  vi.clearAllTimers()
+  vi.useRealTimers()
 })
 
 test('jobs and messages stay ordered per webhook while another webhook progresses independently', async () => {
@@ -179,9 +148,7 @@ test('transient HTTP failure retries without recording duplicate terminal receip
 
 test('exhausted outage leaves a resumable prefix and public recovery runs through Workpool', async () => {
   const t = setup()
-  // Draining advances fake time a minute per event-loop turn while work runs, so elapsed fake time
-  // depends on machine speed; expiry is far enough away that recovery never races it.
-  const failed = await job(t, await webhook(t), 'outage', START + 365 * 86_400_000)
+  const failed = await job(t, await webhook(t), 'outage')
   const independent = await job(t, await webhook(t, 2), 'independent')
   let unavailable = true
   const sent = requests(async (content) =>
@@ -199,12 +166,12 @@ test('exhausted outage leaves a resumable prefix and public recovery runs throug
   sent.length = 0
   unavailable = false
   await t.mutation(api.api.resume, {})
-  await t.finishAllScheduledFunctions(() => {
-    jest.advanceTimersByTime(60_000)
-  })
+  await drainScheduledFunctions(t)
 
   expect(sent).toEqual(['outage:1'])
   expect(await outcome(t, failed)).toBe('succeeded')
+  const recoveredJob = await t.query(api.api.getJob, { jobId: failed })
+  expect(recoveredJob?.finishedAt).toBeLessThan(START + 60_000)
   const recovered = await results(t, failed)
   expect(recovered.map((result) => result.messageKey)).toEqual(['outage:0', 'outage:1'])
 })
@@ -242,7 +209,7 @@ test('expiry after a request begins retains its receipt but prevents further HTT
   const active = await job(t, destination, 'active', START + 100)
   const expired = await job(t, destination, 'expired', START - 1)
   const sent = requests(async () => {
-    jest.setSystemTime(START + 101)
+    vi.setSystemTime(START + 101)
     return receipt()
   })
 
@@ -259,7 +226,7 @@ test('expiry between SDK attempts prevents retrying HTTP and leaves no transient
   const t = setup()
   const jobId = await job(t, await webhook(t), 'retry-expiry', START + 100)
   const sent = requests(async () => {
-    jest.setSystemTime(START + 101)
+    vi.setSystemTime(START + 101)
     return new Response('Unavailable', { status: 503 })
   })
 

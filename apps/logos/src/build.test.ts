@@ -1,10 +1,10 @@
-import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import nodePath from 'node:path'
 
 import sharp from 'sharp'
+import { expect, test } from 'vitest'
 import { z } from 'zod'
 
 import { assertValidOutputDimensions, buildLogos } from './build'
@@ -66,6 +66,11 @@ test('builds reviewable static output through the build module interface', async
   const logs: string[] = []
 
   try {
+    // Bun.Glob only returned files; matching directories must remain excluded.
+    await mkdir(nodePath.join(fixture.sourcePackageRoots.webp, 'light', 'directory.svg'))
+    await mkdir(nodePath.join(fixture.sourcePackageRoots.avatar, 'avatars', 'directory.webp'))
+    await mkdir(nodePath.join(fixture.appRoot, 'sources', 'base', 'directory.svg'))
+
     const result = await buildLogos({
       appRoot: fixture.appRoot,
       log: (message) => {
@@ -236,12 +241,12 @@ async function createBuildFixture(args: {
 
 async function writeJson(path: string, value: unknown): Promise<void> {
   await mkdir(nodePath.dirname(path), { recursive: true })
-  await Bun.write(path, `${JSON.stringify(value, null, 2)}\n`)
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`)
 }
 
 async function writeSvg(path: string, fill: string): Promise<void> {
   await mkdir(nodePath.dirname(path), { recursive: true })
-  await Bun.write(path, createSvg(fill))
+  await writeFile(path, createSvg(fill))
 }
 
 async function writeWebp(path: string, fill: string): Promise<void> {
@@ -264,7 +269,7 @@ function createSvg(fill: string): string {
 
 async function readManifest(appRoot: string): Promise<TestManifest> {
   return TestManifestSchema.parse(
-    JSON.parse(await Bun.file(nodePath.join(appRoot, 'dist', 'v1', 'manifest.json')).text()),
+    JSON.parse(await readFile(nodePath.join(appRoot, 'dist', 'v1', 'manifest.json'), 'utf-8')),
   )
 }
 

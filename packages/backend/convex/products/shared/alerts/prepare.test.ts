@@ -1,6 +1,5 @@
-import { expect, spyOn, test } from 'bun:test'
-
 import type { PaginationResult } from 'convex/server'
+import { expect, vi, test } from 'vitest'
 
 import { encodePricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
@@ -458,7 +457,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
     }),
   }
   const bad = [unsupported, malformed, missingValue]
-  const log = spyOn(console, 'error').mockImplementation(() => {})
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {})
 
   try {
     const input = [...good.slice(0, 1), ...bad, ...good.slice(1)]

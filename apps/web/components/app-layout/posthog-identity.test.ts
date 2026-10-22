@@ -1,13 +1,12 @@
-import { afterEach, expect, it, mock, spyOn } from 'bun:test'
-
 import { posthog } from 'posthog-js'
+import { afterEach, expect, it, vi } from 'vitest'
 
 import { syncPostHogIdentity } from './posthog-identity'
 
 const originalToken = posthog.config.token
 
 afterEach(() => {
-  mock.restore()
+  vi.restoreAllMocks()
   posthog.config.token = originalToken
 })
 
@@ -16,15 +15,15 @@ it('keeps anonymous sessions, identifies login, and clears identity on logout or
 
   let userId: string | undefined
   const user = { email: 'admin@example.com', id: 'workos-user', name: 'Admin' }
-  const identify = spyOn(posthog, 'identify').mockImplementation((id) => {
+  const identify = vi.spyOn(posthog, 'identify').mockImplementation((id) => {
     userId = id
   })
-  const reset = spyOn(posthog, 'reset').mockImplementation(() => {
+  const reset = vi.spyOn(posthog, 'reset').mockImplementation(() => {
     userId = undefined
   })
-  const register = spyOn(posthog, 'register_for_session').mockImplementation(() => {})
+  const register = vi.spyOn(posthog, 'register_for_session').mockImplementation(() => {})
 
-  spyOn(posthog, 'get_property').mockImplementation((key) =>
+  vi.spyOn(posthog, 'get_property').mockImplementation((key) =>
     key === '$user_id' ? userId : 'build-sha',
   )
 

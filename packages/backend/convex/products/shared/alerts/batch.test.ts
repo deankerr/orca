@@ -1,7 +1,7 @@
-import { expect, spyOn, test } from 'bun:test'
 import { deepEqual } from 'node:assert/strict'
 
 import type { PaginationResult } from 'convex/server'
+import { expect, vi, test } from 'vitest'
 
 import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
@@ -138,7 +138,9 @@ test('batches five endpoint unlistings at one observation and renders their prov
   expect(embed?.author?.url).toBe('https://orca.orb.town/?q=nextbit')
   expect(embed?.author?.icon_url).toContain('nextbit')
   expect(embed?.color).toBe(0xef_44_44)
-  expect(embed?.description).toStartWith('− Provider **NextBit** unlisted 5 endpoints.\n\n')
+  expect(embed?.description?.startsWith('− Provider **NextBit** unlisted 5 endpoints.\n\n')).toBe(
+    true,
+  )
   expect(embed?.description).not.toContain('**`nextbit`**')
   expect(embed?.description).not.toContain('nextbit/fp8')
 
@@ -519,7 +521,7 @@ test('provider URL batches pass shared selection and retain individual changes',
 })
 
 test('oversized batch details and identity fields truncate without losing members or UUID prefixes', () => {
-  const errors = spyOn(console, 'error').mockImplementation(() => {})
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
 
   try {
     const members = Array.from({ length: 50 }, (_, index) => {

@@ -1,15 +1,18 @@
-import { expect, test } from 'bun:test'
 import { deepStrictEqual, throws } from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { text } from 'node:stream/consumers'
+import { fileURLToPath } from 'node:url'
 
 import { profileScan, viewScanReport } from '@orca/backend/scans/analysis'
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { convexToJson } from 'convex/values'
+import { expect, test } from 'vitest'
 
 import { sampleScan } from './fixtures'
-import { renderHtml } from './html'
 
 test('collected reports retain endpoints without usable provider bodies and preserve filter meaning', () => {
   const scan = sampleScan()
@@ -205,7 +208,7 @@ test('numeric summaries weight frequencies and keep nested absence, array occurr
   expect(rows.find(({ value }) => value.path === '$[*]["tags"][*]')?.value.population).toBe(2)
 })
 
-test('embeds observed values as inert JSON and escapes visible selection in the standalone report', async () => {
+test('the Bun HTML CLI escapes report data and preserves output on invalid input', async () => {
   const scan = sampleScan()
   const [first] = scan.entries
 
@@ -215,46 +218,41 @@ test('embeds observed values as inert JSON and escapes visible selection in the 
 
   first.model_id = '</script><script>alert(1)</script>'
   const report = profileScan(scan, { model: first.model_id, scope: 'orca' })
-  const html = await renderHtml(report)
-  expect(html).not.toContain('</script><script>alert(1)</script>')
-  expect(html).toContain('\\u003c/script>')
-  expect(html).toContain('&lt;/script&gt;')
-  expect(html).not.toContain('<script src=')
-
-  const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/su.exec(
-    html,
-  )?.groups?.payload
-
-  expect(payload === undefined ? null : JSON.parse(payload)).toEqual(report)
-})
-
-test('the HTML CLI consumes a Convex-encoded report and preserves output on invalid input', async () => {
-  const report = profileScan(sampleScan(), { scope: 'collected' })
   const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-cli-'))
   const output = path.join(directory, 'report.html')
 
   async function render(input: string) {
-    const child = Bun.spawn(
-      [process.execPath, new URL('index.ts', import.meta.url).pathname, '--output', output],
-      { stderr: 'pipe', stdin: new Blob([input]), stdout: 'pipe' },
+    const child = spawn(
+      'bun',
+      [fileURLToPath(new URL('index.ts', import.meta.url)), '--output', output],
+      { stdio: ['pipe', 'ignore', 'pipe'], timeout: 5000 },
     )
-
-    const stderr = await new Response(child.stderr).text()
-    return { code: await child.exited, stderr }
+    const completed = once(child, 'close')
+    child.stdin.end(input)
+    const [, stderr] = await Promise.all([completed, text(child.stderr)])
+    return { code: child.exitCode, stderr }
   }
 
   try {
     const rendered = await render(JSON.stringify(convexToJson(JSON.stringify(report))))
-    expect(rendered.code).toBe(0)
-    const html = await Bun.file(output).text()
-    expect(html).toContain(JSON.stringify(report))
+    expect(rendered.code, rendered.stderr).toBe(0)
+    const html = await readFile(output, 'utf-8')
     expect(html).toContain(report.scan_at)
+    expect(html).not.toContain('</script><script>alert(1)</script>')
+    expect(html).toContain('\\u003c/script>')
+    expect(html).toContain('&lt;/script&gt;')
+    expect(html).not.toContain('<script src=')
+
+    const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/su.exec(
+      html,
+    )?.groups?.payload
+    expect(payload === undefined ? null : JSON.parse(payload)).toEqual(report)
 
     const invalid = await render(JSON.stringify(viewScanReport(report)))
     expect(invalid.code).toBe(1)
     expect(invalid.stderr).toContain('Expected output from scan_analysis/index:report')
-    expect(await Bun.file(output).text()).toBe(html)
+    expect(await readFile(output, 'utf-8')).toBe(html)
   } finally {
     await rm(directory, { force: true, recursive: true })
   }
-})
+}, 15_000)

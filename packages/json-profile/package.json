@@ -3,10 +3,14 @@
   "private": true,
   "type": "module",
   "exports": "./index.ts",
+  "scripts": {
+    "test": "bun run --cwd ../.. test --project json-profile"
+  },
   "devDependencies": {
     "@orca/config": "workspace:*",
     "@swaggerexpert/jsonpath": "^4.0.5",
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -1,6 +1,5 @@
-import { expect, test } from 'bun:test'
-
 import { dehydrate, hashKey, hydrate, QueryClient } from '@tanstack/react-query'
+import { expect, test } from 'vitest'
 
 import { ReadinessQueryTimings, resultProperties } from './query-timing'
 

@@ -1,8 +1,9 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Remote reads only use deployment metadata from this context. */
-import { expect, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
+import { gzipSync } from 'node:zlib'
 
 import { ConvexHttpClient } from 'convex/browser'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Remote reads only use deployment metadata from this context. */
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 
@@ -24,10 +25,12 @@ test('standalone and deployment readers share ordered remote batches and propaga
     { name: 'missing', path: 'other' },
   ]
 
-  const action = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
-    { bytes: Bun.gzipSync('logical text ✓').buffer, codec: 'gzip' },
-    null,
-  ])
+  const action = vi
+    .spyOn(ConvexHttpClient.prototype, 'action')
+    .mockResolvedValue([
+      { bytes: Uint8Array.from(gzipSync('logical text ✓')).buffer, codec: 'gzip' },
+      null,
+    ])
 
   const standalone = connect({ apiKey: 'test-key', deployment: 'source-deployment' })
 

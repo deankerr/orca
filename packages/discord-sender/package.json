@@ -6,10 +6,10 @@
   "exports": {
     "./convex.config.js": "./src/component/convex.config.ts",
     "./_generated/component.js": "./src/component/_generated/component.ts",
-    "./schema": "./src/component/schema.ts"
+    "./test": "./src/test.ts"
   },
   "scripts": {
-    "test": "bun test src"
+    "test": "bun run --cwd ../.. test --project discord-sender"
   },
   "dependencies": {
     "@convex-dev/workpool": "0.4.14",
@@ -20,8 +20,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
+    "@orca/config": "workspace:*",
+    "@types/node": "catalog:",
     "convex-test": "0.0.64",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -1,4 +1,4 @@
-import { rename, rm } from 'node:fs/promises'
+import { rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 /** Publish only completed reports; each implicit destination belongs to one invocation. */
@@ -17,7 +17,7 @@ export async function writeReport(
   )
 
   try {
-    await Bun.write(temporary, contents)
+    await writeFile(temporary, contents)
     await rename(temporary, output)
   } finally {
     await rm(temporary, { force: true })
