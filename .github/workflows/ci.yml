@@ -10,9 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run fix
       - run: git diff --exit-code
       - run: bun run knip
-      - run: bun test
+      - run: bun run test
+      - name: Repeat scheduler scenarios serially
+        run: >-
+          bun run test --project backend --project discord-sender
+          ingestion/worker.test.ts ingestion/admin.test.ts src/component/worker.test.ts
+          --maxWorkers 1 --repeats 2

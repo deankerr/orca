@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "scan-analysis": "bun run scan-analysis/index.ts"
+    "scan-analysis": "bun run scan-analysis/index.ts",
+    "test": "bun run --cwd ../.. test --project scripts"
   },
   "dependencies": {
     "@orca/backend": "workspace:*",
@@ -16,6 +17,7 @@
     "@types/bun": "catalog:",
     "convex": "catalog:",
     "oxc-parser": "0.155.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

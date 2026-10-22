@@ -1,8 +1,7 @@
-/// <reference types="bun" />
+import { rejects } from 'node:assert/strict'
 
 /* oxlint-disable typescript/no-unsafe-type-assertion -- Tests replace Objects operations; no other action context is used. */
-import { expect, spyOn, test } from 'bun:test'
-import { rejects } from 'node:assert/strict'
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 import * as objects from '#objects'
@@ -27,8 +26,8 @@ test('scan storage round-trips collected entries and loads one extracted scan', 
   }
 
   const scan = { entries: [entry], scan_at }
-  const saved = spyOn(objects, 'store').mockResolvedValue()
-  const batch = spyOn(objects, 'loadMany').mockResolvedValue([])
+  const saved = vi.spyOn(objects, 'store').mockResolvedValue()
+  const batch = vi.spyOn(objects, 'loadMany').mockResolvedValue([])
 
   try {
     await store(ctx, scan)
@@ -103,16 +102,18 @@ test('navigation selects scans independently of loading and extraction', async (
     ]),
   )
 
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
+  const discovery = vi.spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
     const selected = [...stored.keys()].filter(
       (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
     )
     return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
   })
 
-  const batch = spyOn(objects, 'loadMany').mockImplementation(async (_, identities) =>
-    identities.map(({ name }) => stored.get(name) ?? null),
-  )
+  const batch = vi
+    .spyOn(objects, 'loadMany')
+    .mockImplementation(async (_, identities) =>
+      identities.map(({ name }) => stored.get(name) ?? null),
+    )
 
   try {
     const [first, second, third] = times
@@ -172,7 +173,7 @@ test('discovery finds the newest capture in one read and handles exhausted navig
 
   const names = times.map((at) => `scan.${at}.jsonl`)
 
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
+  const discovery = vi.spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
     expect(args.path).toBe('scans')
     const selected = names.filter(
       (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
@@ -215,8 +216,8 @@ test('discovery finds the newest capture in one read and handles exhausted navig
 test('collected reads normalize references once and reject invalid references before storage access', async () => {
   const ctx = {} as ActionCtx
   const time = '2026-10-03T00:00:00.000Z'
-  const batch = spyOn(objects, 'loadMany').mockResolvedValue([''])
-  const discovery = spyOn(objects, 'namesAtOrAfter').mockResolvedValue([])
+  const batch = vi.spyOn(objects, 'loadMany').mockResolvedValue([''])
+  const discovery = vi.spyOn(objects, 'namesAtOrAfter').mockResolvedValue([])
 
   try {
     for (const reference of [

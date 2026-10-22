@@ -1,8 +1,8 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal auth contexts exercise the registered query handlers without a deployment. */
-import { afterEach, expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import type { UserIdentity } from 'convex/server'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal auth contexts exercise the registered query handlers without a deployment. */
+import { afterEach, expect, test } from 'vitest'
 
 import type { QueryCtx } from '#generated/server'
 

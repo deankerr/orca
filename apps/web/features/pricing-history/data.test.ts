@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
 import type { PricingHistory } from './data'

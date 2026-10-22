@@ -1,18 +1,13 @@
-import { expect, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import { convexTest } from 'convex-test'
+import { expect, test } from 'vitest'
 
+import sender from '../test'
 import { api } from './_generated/api'
-import schema from './schema'
 
 function setup() {
-  const modules = Object.fromEntries(
-    [...new Bun.Glob('**/*.ts').scanSync({ absolute: true, cwd: import.meta.dir })]
-      .filter((file) => !file.endsWith('.test.ts') && !file.endsWith('.d.ts'))
-      .map((file) => [file, async (): Promise<unknown> => await import(file)]),
-  )
-  return convexTest({ modules, schema })
+  return convexTest({ modules: sender.modules, schema: sender.schema })
 }
 
 // JSON.parse accepts this as Infinity, but the Discord boundary requires finite

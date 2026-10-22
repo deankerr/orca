@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import type { EndpointPriceRow } from '../../catalog/tables/pricing'
 import { derive } from './pricingHistory'

@@ -8,6 +8,7 @@
 - The main checkout owns the personal dev deployment.
 - Worktrees must use their own deployment for code pushes, including `convex run --push`.
 - A code push replaces the deployment's functions and auth configuration.
+- Run tests with `bun run test` (Vitest on Node 24); `bun test` invokes a different runner.
 - Use `bun run fix` for all validation and formatting instead of `tsc`.
 - Lint suppression requires an explanation: default to `// oxlint-disable-next-line rule -- Reason.`.
 

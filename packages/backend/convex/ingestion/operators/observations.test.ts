@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import type { ObservationRow } from '../../catalog/tables/observations'
 import { derive } from './observations'

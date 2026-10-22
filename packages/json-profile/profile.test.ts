@@ -1,8 +1,7 @@
 // oxlint-disable sort-keys -- Expected objects mirror the serialized JSON profile format.
 
-import { describe, expect, test } from 'bun:test'
-
 import { evaluate, test as isValidJsonPath } from '@swaggerexpert/jsonpath'
+import { describe, expect, test } from 'vitest'
 
 import type {
   FieldProfile,

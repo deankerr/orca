@@ -1,8 +1,8 @@
-import { expect, spyOn, test } from 'bun:test'
 import assert from 'node:assert/strict'
 
 /* eslint-disable typescript/no-unsafe-type-assertion -- Minimal mutation double exercises deletion order and failure handling. */
 import { AwsClient } from 'aws4fetch'
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx, MutationCtx } from '#generated/server'
 
@@ -72,9 +72,9 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
   process.env.ORCA_OBJECTS_R2_ACCOUNT_ID = 'test'
   process.env.ORCA_OBJECTS_R2_BUCKET = 'test'
 
-  const request = spyOn(AwsClient.prototype, 'fetch').mockResolvedValue(
-    new Response(null, { status: 403 }),
-  )
+  const request = vi
+    .spyOn(AwsClient.prototype, 'fetch')
+    .mockResolvedValue(new Response(null, { status: 403 }))
 
   let removed = false
 

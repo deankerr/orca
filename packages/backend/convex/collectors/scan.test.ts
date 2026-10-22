@@ -1,18 +1,15 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts verify cron admission and manual capture without live storage or upstream requests. */
-import { expect, jest, spyOn, test } from 'bun:test'
-
 import { getFunctionName } from 'convex/server'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts verify cron admission and manual capture without live storage or upstream requests. */
+import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx, MutationCtx } from '#generated/server'
 import * as scans from '#scans'
 
 test('scan flag gates cron admission while manual capture remains available', async () => {
   const previous = process.env.ORCA_SCAN_CRON_ENABLED
-  // convex-test installs accessors on globals, which spyOn cannot wrap.
-  const originalFetch = globalThis.fetch
-  const fetch = jest.fn(async () => Response.json({ data: [] }))
-  globalThis.fetch = Object.assign(fetch, { preconnect: originalFetch.preconnect })
-  const store = spyOn(scans, 'store').mockResolvedValue(undefined)
+  const fetch = vi.fn(async () => Response.json({ data: [] }))
+  vi.stubGlobal('fetch', fetch)
+  const store = vi.spyOn(scans, 'store').mockResolvedValue(undefined)
   const { run, scheduled } = await import('./scan')
   const scheduledHandler = (
     scheduled as unknown as { _handler: (ctx: MutationCtx, args: object) => Promise<null> }
@@ -46,7 +43,7 @@ test('scan flag gates cron admission while manual capture remains available', as
     expect(store).toHaveBeenCalledTimes(1)
     expect(store.mock.calls[0]?.[1]).toMatchObject({ entries: [] })
   } finally {
-    globalThis.fetch = originalFetch
+    vi.unstubAllGlobals()
     store.mockRestore()
 
     if (previous === undefined) {

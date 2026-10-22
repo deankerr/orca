@@ -1,7 +1,6 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal Convex contexts exercise cache transitions without a deployment. */
-import { expect, spyOn, test } from 'bun:test'
-
 import type { RegisteredMutation } from 'convex/server'
+/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal Convex contexts exercise cache transitions without a deployment. */
+import { expect, vi, test } from 'vitest'
 
 import type { Doc, Id } from '#generated/dataModel'
 import type { ActionCtx, MutationCtx } from '#generated/server'
@@ -13,14 +12,14 @@ import type { PUBLIC_API_V2_CACHE_TABLE } from './table'
 
 test('refresh rebuilds legacy or older captures and skips an unchanged capture', async () => {
   const scanAt = '2026-10-02T10:40:04.272Z'
-  const discovery = spyOn(scans, 'latest').mockResolvedValue(scanAt)
+  const discovery = vi.spyOn(scans, 'latest').mockResolvedValue(scanAt)
 
-  const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
+  const build = vi.spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
     models: [],
     updated_at: scanAt,
   })
 
-  const logs = spyOn(console, 'log').mockImplementation(() => {})
+  const logs = vi.spyOn(console, 'log').mockImplementation(() => {})
   let cachedScanAt: string | undefined
   const replacements: unknown[] = []
 

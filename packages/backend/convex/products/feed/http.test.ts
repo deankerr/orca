@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/no-unsafe-type-assertion -- The HTTP handler only needs runQuery; this minimal action double checks parsing and continuation without a deployment. */
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 

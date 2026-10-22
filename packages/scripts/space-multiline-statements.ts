@@ -119,8 +119,8 @@ async function sourceFiles(paths: string[]): Promise<string[]> {
 }
 
 async function main(): Promise<void> {
-  const write = Bun.argv.includes('--write')
-  const paths = Bun.argv.slice(2).filter((argument) => argument !== '--write')
+  const write = process.argv.includes('--write')
+  const paths = process.argv.slice(2).filter((argument) => argument !== '--write')
   if (paths.length === 0) {
     throw new Error('Usage: bun space-multiline-statements.ts [--write] <file-or-directory> [...]')
   }

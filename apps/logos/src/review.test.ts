@@ -1,9 +1,9 @@
-import { expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import nodePath from 'node:path'
 
 import sharp from 'sharp'
+import { expect, test } from 'vitest'
 
 import { ASSET_GROUPS } from './contract'
 import { createLogoReviewSheet } from './review'

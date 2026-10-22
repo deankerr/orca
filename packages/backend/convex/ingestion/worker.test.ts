@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 
 import type { WorkId } from '@convex-dev/workpool'
+import { drainScheduledFunctions } from '@orca/config/testing'
 import * as R from 'remeda'
+import { afterEach, beforeEach, expect, vi, test } from 'vitest'
 
 import { internal } from '#generated/api'
 import * as scans from '#scans'
@@ -53,29 +54,21 @@ const environment = [
   'ORCA_INGESTION_CRON_ENABLED',
   'ORCA_DISCORD_AUTO_SEND_ENABLED',
 ] as const
-let previous: Record<string, string | undefined>
 
 beforeEach(() => {
-  jest.useFakeTimers()
-  jest.setSystemTime(Date.parse(hour(48)))
-  previous = Object.fromEntries(environment.map((key) => [key, process.env[key]]))
+  vi.useFakeTimers()
+  vi.setSystemTime(Date.parse(hour(48)))
   for (const key of environment) {
-    Reflect.deleteProperty(process.env, key)
+    vi.stubEnv(key, undefined)
   }
 })
 
 afterEach(() => {
-  jest.restoreAllMocks()
-  jest.clearAllTimers()
-  jest.useRealTimers()
+  vi.restoreAllMocks()
+  vi.clearAllTimers()
+  vi.useRealTimers()
 
-  for (const [key, value] of Object.entries(previous)) {
-    if (value === undefined) {
-      Reflect.deleteProperty(process.env, key)
-    } else {
-      process.env[key] = value
-    }
-  }
+  vi.unstubAllEnvs()
 })
 
 /** Collect scans through the real object store. */
@@ -98,10 +91,7 @@ async function target(t: Harness, from: number, to: number) {
 
 /** Run registration, queueing, Workpool execution, and completions until nothing is scheduled. */
 async function settle(t: Harness) {
-  // Workpool and the aggregate's batch worker keep monitors armed minutes ahead.
-  await t.finishAllScheduledFunctions(() => {
-    jest.advanceTimersByTime(60_000)
-  }, 1000)
+  await drainScheduledFunctions(t)
   await expectCountsMatch(t)
 }
 
@@ -302,7 +292,7 @@ test('a failed request waits for an explicit retry, then completes without dupli
   await collect(t, range(0, 8))
 
   const { load } = scans
-  const broken = spyOn(scans, 'load').mockImplementation(async (ctx, scanAt) => {
+  const broken = vi.spyOn(scans, 'load').mockImplementation(async (ctx, scanAt) => {
     if (scanAt === hour(4)) {
       throw new Error('Source unavailable')
     }

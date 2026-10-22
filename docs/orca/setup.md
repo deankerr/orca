@@ -1,6 +1,6 @@
 # ORCA setup
 
-Requires repository access, Bun, Node.js 24+, and a global Portless installation. Convex hosts the backend;
+Requires repository access, Bun, Node.js 24.2+, and a global Portless installation. Convex hosts the backend;
 Vercel deploys the web app. `config.md` records environment values and defaults.
 
 ## Services

@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, expect, test } from 'vitest'
 
 import { ingestionParallelism } from './pool'
 import { queueCapacity } from './queue'

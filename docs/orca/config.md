@@ -7,6 +7,27 @@ defaults initialize new deployments; existing deployments need separate updates.
 `NEXT_PUBLIC_*` values are public. Entries marked **secret** must stay out of Git, output, and browser
 bundles. Dev/preview defaults below are maintained project settings; unset means the code fallback applies.
 
+## Tests and tooling
+
+Bun remains the package manager and report bundler. `.node-version` selects Node 24 for local tooling
+and CI; the minimum is 24.2 for `import.meta.main`. `bun run test` runs Vitest on Node. Use
+`bun run test:watch` for watch mode and `--project backend` (or another workspace name) to select a suite.
+
+`vitest.config.ts` owns six projects. Backend and Discord sender use `edge-runtime`; the other four use
+Node. Test files stay isolated, and spies restore automatically. `bun run test:coverage` uses V8 coverage;
+it does not instrument the Bun subprocess that builds HTML reports. That CLI is exercised with real
+bundling and output assertions.
+
+Convex tests use installed component helpers. Aggregate 0.3.4 omits nested registration, so the backend's
+batch-worker test dependency must match Aggregate's pinned 0.3.3 dependency. Workpool registers its own
+nested worker through its helper.
+
+Scheduler scenarios advance to the next timer and await started Convex invocations before advancing
+again. The shared drain stops after 1000 timer turns. It assumes handlers do not await fake-timer sleeps;
+tests of such waits must drive the clock explicitly. This avoids advancing watchdogs and expiry while
+module loading or other asynchronous work is still running. CI also runs the three scheduler suites
+serially with two repeats per test.
+
 ## Backend runtime
 
 `convex.config.ts` parses these deployment variables. Web and logo origins are required; the others

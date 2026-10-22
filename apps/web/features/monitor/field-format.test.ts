@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, test } from 'vitest'
 
 import { fieldLabel, formatChangeDelta, formatChangeUnit, formatChangeValue } from './field-format'
 

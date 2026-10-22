@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'vitest'
 
 import { providerColor, providerSrgbColor } from './colors'
 
@@ -33,9 +33,11 @@ describe('providerColor', () => {
       expect(color).toMatch(/^oklch\(0\.\d+ 0\.\d+ \d+(?:\.\d+)?\)$/u)
 
       const [lightness, chroma, hue] = color.slice('oklch('.length, -1).split(' ').map(Number)
-      expect(lightness).toBeWithin(0.66, 0.7601)
+      expect(lightness).toBeGreaterThanOrEqual(0.66)
+      expect(lightness).toBeLessThan(0.7601)
       expect(chroma).toBeGreaterThan(0)
-      expect(hue).toBeWithin(0, 360)
+      expect(hue).toBeGreaterThanOrEqual(0)
+      expect(hue).toBeLessThan(360)
     }
   })
 

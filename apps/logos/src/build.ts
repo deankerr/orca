@@ -1,4 +1,4 @@
-import { access, mkdir, rm } from 'node:fs/promises'
+import { access, glob, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import nodePath from 'node:path'
 
@@ -259,7 +259,7 @@ async function readSourcePackage(root: string): Promise<SourcePackage> {
 }
 
 async function readJsonFile(path: string): Promise<unknown> {
-  return JSON.parse(await Bun.file(path).text()) as unknown
+  return JSON.parse(await readFile(path, 'utf-8')) as unknown
 }
 
 async function pathExists(path: string): Promise<boolean> {
@@ -292,10 +292,17 @@ async function collectLobehubThemeAssets(args: {
   sourcePackage: SourcePackage
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
-  const glob = new Bun.Glob('*.{avif,png,jpg,jpeg,svg,webp}')
   const sourceDir = nodePath.join(args.sourcePackage.root, args.group)
 
-  for await (const file of glob.scan({ cwd: sourceDir })) {
+  for await (const entry of glob('*.{avif,png,jpg,jpeg,svg,webp}', {
+    cwd: sourceDir,
+    withFileTypes: true,
+  })) {
+    if (!entry.isFile()) {
+      continue
+    }
+
+    const file = entry.name
     const variant = parseLobehubThemeVariant(file)
     if (variant === undefined) {
       continue
@@ -333,10 +340,14 @@ async function collectLobehubAvatars(
   sourcePackage: SourcePackage,
 ): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
-  const glob = new Bun.Glob('*.webp')
   const sourceDir = nodePath.join(sourcePackage.root, 'avatars')
 
-  for await (const file of glob.scan({ cwd: sourceDir })) {
+  for await (const entry of glob('*.webp', { cwd: sourceDir, withFileTypes: true })) {
+    if (!entry.isFile()) {
+      continue
+    }
+
+    const file = entry.name
     const key = normalizeLogoKey(file)
     if (assets.has(key)) {
       throw new Error(`Duplicate avatar asset for ${key}`)
@@ -371,14 +382,21 @@ async function collectManualGroup(args: {
   group: ManualSourceGroup
 }): Promise<Map<string, SourceAsset>> {
   const assets = new Map<string, SourceAsset>()
-  const glob = new Bun.Glob('*.{avif,png,jpg,jpeg,svg,webp}')
   const sourceDir = nodePath.join(args.context.manualSourceDir, args.group)
 
   if (!(await pathExists(sourceDir))) {
     return assets
   }
 
-  for await (const file of glob.scan({ cwd: sourceDir })) {
+  for await (const entry of glob('*.{avif,png,jpg,jpeg,svg,webp}', {
+    cwd: sourceDir,
+    withFileTypes: true,
+  })) {
+    if (!entry.isFile()) {
+      continue
+    }
+
+    const file = entry.name
     const key = normalizeLogoKey(file)
     if (assets.has(key)) {
       throw new Error(`Duplicate manual asset for ${args.group}/${key}`)
@@ -766,7 +784,7 @@ async function emitFallback(context: BuildContext): Promise<void> {
 }
 
 async function writeManifest(args: { context: BuildContext; manifest: Manifest }): Promise<void> {
-  await Bun.write(
+  await writeFile(
     nodePath.join(args.context.publicDir, 'manifest.json'),
     `${JSON.stringify(args.manifest, null, 2)}\n`,
   )

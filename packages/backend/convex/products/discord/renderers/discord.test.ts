@@ -1,6 +1,5 @@
-import { expect, spyOn, test } from 'bun:test'
-
 import { ComponentType } from 'discord-api-types/v10'
+import { expect, vi, test } from 'vitest'
 
 import type { EventRow as CatalogEvent } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
@@ -541,7 +540,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
   )
 
   expect(oversized?.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096)
-  expect(oversized?.embeds?.[0]?.description).toEndWith('...')
+  expect(oversized?.embeds?.[0]?.description?.endsWith('...')).toBe(true)
 })
 
 test('entity templates use captured model and endpoint facts with one timestamp and safe links', async () => {
@@ -680,7 +679,7 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
   const oversized = await renderDiscord({ ...row(before, after), entity_kind: 'model' }, urls)
 
   expect(oversized?.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096)
-  expect(oversized?.embeds?.[0]?.description).toEndWith('...')
+  expect(oversized?.embeds?.[0]?.description?.endsWith('...')).toBe(true)
 })
 
 test('provider discoveries are announced and departures only announce endpoint absence', async () => {
@@ -1056,12 +1055,14 @@ test('pricing label widths include external addition and removal markers', () =>
     })
 
     expect(new Set(widths).size).toBe(1)
-    expect(lines[1]).toStartWith(change === 'added' ? '+ `cache_read:`' : '− ~~`cache_read:`~~')
+    expect(
+      lines[1]?.startsWith(change === 'added' ? '+ `cache_read:`' : '− ~~`cache_read:`~~'),
+    ).toBe(true)
   }
 })
 
 test('oversized card text logs and respects individual and total Discord limits', () => {
-  const errors = spyOn(console, 'error').mockImplementation(() => {})
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
 
   try {
     const message = embedCard('x'.repeat(10_000), {
@@ -1079,7 +1080,7 @@ test('oversized card text logs and respects individual and total Discord limits'
         (embed?.footer?.text.length ?? 0) +
         (embed?.description?.length ?? 0),
     ).toBe(6000)
-    expect(embed?.description).toEndWith('...')
+    expect(embed?.description?.endsWith('...')).toBe(true)
 
     const component = componentCard('x'.repeat(10_000), {
       color: 0,

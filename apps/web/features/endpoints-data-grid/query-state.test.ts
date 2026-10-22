@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'bun:test'
-
 import { createSerializer } from 'nuqs/server'
+import { describe, expect, it } from 'vitest'
 
 import {
   endpointGridParsers,
@@ -12,12 +11,12 @@ import {
 describe('endpoint grid query helpers', () => {
   it('treats whitespace-only input as empty', () => {
     expect(normalizeEndpointGridQuery('    ')).toBe('')
-    expect(hasEndpointGridQuery('    ')).toBeFalse()
+    expect(hasEndpointGridQuery('    ')).toBe(false)
   })
 
   it('trims surrounding whitespace', () => {
     expect(normalizeEndpointGridQuery('  openai/gpt-5.4  ')).toBe('openai/gpt-5.4')
-    expect(hasEndpointGridQuery('  openai/gpt-5.4  ')).toBeTrue()
+    expect(hasEndpointGridQuery('  openai/gpt-5.4  ')).toBe(true)
   })
 
   it('preserves internal whitespace when normalized', () => {

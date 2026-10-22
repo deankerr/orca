@@ -1,5 +1,6 @@
-import { expect, test } from 'bun:test'
 import { ok } from 'node:assert/strict'
+
+import { expect, test } from 'vitest'
 
 import type { Scan } from '#scans/extraction'
 
