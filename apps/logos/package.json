@@ -10,8 +10,8 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "@lobehub/icons-static-avatar": "1.14.0",
-    "@lobehub/icons-static-webp": "1.94.0",
+    "@lobehub/icons-static-avatar": "1.15.0",
+    "@lobehub/icons-static-webp": "1.94.1",
     "@orca/config": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",

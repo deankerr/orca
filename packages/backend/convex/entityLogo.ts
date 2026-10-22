@@ -27,7 +27,8 @@ export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 // through to the provider prefix (apart from explicit overrides like claude-on-aws).
 // ponytail: relies on that suffix convention; add entity-aware matching if it changes.
 function entityLogoKey(slug: string): string {
-  const normalizedSlug = slug.toLowerCase()
+  // A leading "~" marks an OpenRouter router alias that shares its author's brand.
+  const normalizedSlug = slug.toLowerCase().replace(/^~/, '')
   const [prefix = '', suffix = ''] = normalizedSlug.split('/')
   const familyKey = FAMILY_LOGO_KEYS_BY_PREFIX[prefix]?.find((key) => suffix.includes(key))
 

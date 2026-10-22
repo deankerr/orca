@@ -57,19 +57,19 @@ assets.
 **Why it failed:** The official website publishes only the `enfer.ai` text wordmark and no usable
 standalone mark. The only compact owner-published candidate failed visual review.
 
-## ModelRun
+## XingChen
 
-- **Key:** `modelrun`
-- **Last searched:** 2026-07-24 UTC
+- **Key:** `xingchen-agi` (author of `xingchen-agi/xing4.0-29b-a4b`)
+- **Last searched:** 2026-10-22 UTC
+- **Identity evidence:** The OpenRouter model description attributes the model to China Telecom's
+  AI team (TeleAI), and the `XingChen-AGI` Hugging Face and GitHub organizations describe it as
+  the open-source home of Xing4.0.
 
-**Provider evidence:** The provider policies pointed to `https://modelrun.org`; the site's support
-address and redirects also established `https://www.runmodelrun.com` as owner-controlled.
+**Sources checked:** The official Hugging Face and GitHub organization avatars, installed LobeHub
+assets, aliases, and existing source assets.
 
-**Sources checked:** Both official websites and their HTML, conventional favicon and application
-icon paths, the official API hosts identified by OpenRouter, OpenRouter provider metadata, web
-search, installed LobeHub assets, aliases, and existing source assets.
+**Candidates rejected:** Both organization avatars are the TeleAI "天翼AI" wordmark inside a
+shield-and-text lockup, which is illegible at ORCA's display sizes.
 
-**Why it failed:** The marketing sites publish no logo, favicon, app icon, structured image, or
-standalone embedded mark. OpenRouter referenced a favicon lookup for an official API host, but the
-asset was unavailable; the API hosts either timed out or required authorization. No independent
-owner-published asset was found.
+**Why it failed:** No standalone mark was found. Revisit when XingChen publishes its own site or
+brand assets.

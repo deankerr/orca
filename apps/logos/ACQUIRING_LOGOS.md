@@ -16,6 +16,10 @@ For a provider, inspect the current backend's `GET /providers` record before sea
 The `privacy_policy_url`, `terms_of_service_url`, and `status_page_url` fields can identify the
 owner's domain when search coverage is sparse. A similar company name does not establish identity.
 
+Some models have a logo distinct from their author's, such as Claude, Gemini, and Kimi. These are
+uncommon. When a model family's brand differs from its author's, look for a model-specific logo
+as well and register it in `FAMILY_LOGO_KEYS_BY_PREFIX` in `packages/backend/convex/entityLogo.ts`.
+
 ## Choose a source
 
 Use the first viable source in this order:
