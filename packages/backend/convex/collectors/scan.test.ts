@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts verify cron admission and manual capture without live storage or upstream requests. */
-import { expect, spyOn, test } from 'bun:test'
+import { expect, jest, spyOn, test } from 'bun:test'
 
 import { getFunctionName } from 'convex/server'
 
@@ -8,7 +8,10 @@ import * as scans from '#scans'
 
 test('scan flag gates cron admission while manual capture remains available', async () => {
   const previous = process.env.ORCA_SCAN_CRON_ENABLED
-  const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ data: [] }))
+  // convex-test installs accessors on globals, which spyOn cannot wrap.
+  const originalFetch = globalThis.fetch
+  const fetch = jest.fn(async () => Response.json({ data: [] }))
+  globalThis.fetch = Object.assign(fetch, { preconnect: originalFetch.preconnect })
   const store = spyOn(scans, 'store').mockResolvedValue(undefined)
   const { run, scheduled } = await import('./scan')
   const scheduledHandler = (
@@ -43,7 +46,7 @@ test('scan flag gates cron admission while manual capture remains available', as
     expect(store).toHaveBeenCalledTimes(1)
     expect(store.mock.calls[0]?.[1]).toMatchObject({ entries: [] })
   } finally {
-    fetch.mockRestore()
+    globalThis.fetch = originalFetch
     store.mockRestore()
 
     if (previous === undefined) {
