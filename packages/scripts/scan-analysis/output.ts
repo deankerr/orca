@@ -1,4 +1,4 @@
-import { rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 /** Publish only completed reports; each implicit destination belongs to one invocation. */
@@ -15,6 +15,8 @@ export async function writeReport(
     path.dirname(output),
     `.${path.basename(output)}.${crypto.randomUUID()}.tmp`,
   )
+
+  await mkdir(path.dirname(output), { recursive: true })
 
   try {
     await writeFile(temporary, contents)

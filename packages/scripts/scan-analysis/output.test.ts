@@ -13,6 +13,25 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   return { ...actual, writeFile: vi.fn(actual.writeFile) }
 })
 
+test('reports create missing parent directories', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-'))
+  const output = path.join(directory, 'reports', 'new', 'report.json')
+
+  try {
+    expect(
+      await writeReport('complete report', {
+        format: 'json',
+        output,
+        scanAt: '2026-10-03T00:00:00.000Z',
+      }),
+    ).toBe(output)
+    expect(await readFile(output, 'utf-8')).toBe('complete report')
+    expect(await readdir(path.dirname(output))).toEqual(['report.json'])
+  } finally {
+    await rm(directory, { force: true, recursive: true })
+  }
+})
+
 test('report replacement preserves the previous file when the new write fails partway through', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-'))
   const output = path.join(directory, 'report.json')
