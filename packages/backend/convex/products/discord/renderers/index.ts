@@ -16,7 +16,7 @@ export function renderDiscordBatch(alerts: Alert[], urls: DiscordUrls): Notifica
   )
 }
 
-export function renderDiscord(event: EntityAlert, urls: DiscordUrls): Card {
+function renderDiscord(event: EntityAlert, urls: DiscordUrls): Card {
   const card =
     event.entity_kind === 'model'
       ? modelCard(event, urls)

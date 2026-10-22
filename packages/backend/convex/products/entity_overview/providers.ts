@@ -15,7 +15,7 @@ const url = z
   .catch(null)
 
 /** Interpret provider-owned overview facts. */
-export const Provider = convexToZod(docValidator(CURRENT_PROVIDERS_TABLE, currentProvidersTable))
+const Provider = convexToZod(docValidator(CURRENT_PROVIDERS_TABLE, currentProvidersTable))
   .extend({
     metadata_json: JsonObjectFromString.pipe(
       z.object({

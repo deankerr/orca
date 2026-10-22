@@ -5,7 +5,7 @@ import type { Scan } from '#scans/extraction'
 type Sample = Record<string, number | string | null>
 
 /** Endpoint facts used by tests; identity follows the endpoint ID. */
-export type EndpointSpec = {
+type EndpointSpec = {
   model: string
   provider: string
   /** Offering suffix of the provider slug; omitted means the bare provider slug. */

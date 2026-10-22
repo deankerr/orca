@@ -24,7 +24,7 @@ import type { RecordKind, RecordState } from './tables'
 import { setTarget } from './target'
 
 /** Most histogram buckets per request: buckets × states bounded counts. */
-export const HISTOGRAM_BUCKETS_LIMIT = 240
+const HISTOGRAM_BUCKETS_LIMIT = 240
 
 const BASELINE_LIMIT = 8
 

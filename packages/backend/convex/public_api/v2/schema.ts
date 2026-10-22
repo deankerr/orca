@@ -60,7 +60,7 @@ const OrcaPublicApiV2EndpointSchema = z.object({
 
 export type OrcaPublicApiV2Endpoint = z.infer<typeof OrcaPublicApiV2EndpointSchema>
 
-export const OrcaPublicApiV2ModelSchema = z.object({
+const OrcaPublicApiV2ModelSchema = z.object({
   id: z.string(),
   version_id: z.string(),
   name: z.string(),

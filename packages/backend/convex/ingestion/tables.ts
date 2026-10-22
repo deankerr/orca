@@ -43,8 +43,6 @@ export const ingestionRecordsTable = defineTable({
   .index('by_current_scope_and_state_and_scan_at', ['current_scope', 'state', 'scan_at'])
   .index('by_work_id', ['work_id'])
 
-export type IngestionRecord = Infer<typeof ingestionRecordsTable.validator>
-
 /** A process's output at a scan is committed exactly while its receipt exists. */
 export const processCommitsTable = defineTable({
   scan_at: v.string(),

@@ -10,7 +10,7 @@ import { textOrNull, flagOrNull, stringsOrNull, isoDate } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 
 /** Interpret the model facts consumed by overview products. */
-export const Model = convexToZod(docValidator(CURRENT_MODELS_TABLE, currentModelsTable))
+const Model = convexToZod(docValidator(CURRENT_MODELS_TABLE, currentModelsTable))
   .extend({
     or_created_at: isoDate,
     metadata_json: JsonObjectFromString.pipe(
