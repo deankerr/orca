@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" color="#000000">
+  <title>Pareto Alpha Inference — white border</title>
+  <rect width="512" height="512" rx="64" fill="#ffffff"/>
+  <path d="M56.00 456.00V145.06A548.69 548.69 0 0 1 200.29 228.78A62.00 62.00 0 0 0 283.22 311.71A548.69 548.69 0 0 1 366.94 456.00ZM56.00 56.00H456.00V456.00H403.29A582.69 582.69 0 0 0 308.53 288.93A62.00 62.00 0 0 0 223.07 203.47A582.69 582.69 0 0 0 56.00 108.71Z" fill="currentColor"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="Reflection">
+  <title>Reflection</title>
+  <!-- Favicon: the Reflection ○● brand mark (see BrandGlyph in src/components/Logo.tsx),
+       rendered on the brand off-white tile with the dark foreground. The ring stroke is
+       deliberately bolder than the logo's so the ○ hole stays legible at 16px. -->
+  <rect width="100" height="100" rx="22" fill="#f8f6f0" />
+  <circle cx="32.51" cy="50" r="13.26" stroke="#1a1b1a" stroke-width="4.5" />
+  <circle cx="67.5" cy="50" r="15.51" fill="#1a1b1a" />
+</svg>
