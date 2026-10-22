@@ -13,11 +13,8 @@ if (analytics.key !== undefined) {
     api_host: '/snarf',
     ui_host: 'https://us.posthog.com',
     before_send: (event) => {
-      if (event) {
-        event.properties.app_environment = analytics.environment
-        event.properties.app_version =
-          process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development'
-      }
+      event.properties.app_environment = analytics.environment
+      event.properties.app_version = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development'
 
       return event
     },

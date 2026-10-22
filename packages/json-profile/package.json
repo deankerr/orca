@@ -5,7 +5,7 @@
   "exports": "./index.ts",
   "devDependencies": {
     "@orca/config": "workspace:*",
-    "@swaggerexpert/jsonpath": "^4.0.4",
+    "@swaggerexpert/jsonpath": "^4.0.5",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

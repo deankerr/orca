@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, jest, spyOn, test } from 'bun:test'
+import { afterEach, beforeEach, expect, jest, test } from 'bun:test'
 import { rejects } from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -74,18 +74,19 @@ function receipt() {
   return Response.json({ channel_id: '100000000000000098', id: '100000000000000099' })
 }
 
+const originalFetch = globalThis.fetch
+
 function requests(handler: (content: string) => Promise<Response>) {
   const sent: string[] = []
-  spyOn(globalThis, 'fetch').mockImplementation(
-    Object.assign(
-      async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-        const request = new Request(input, init)
-        const { content } = z.object({ content: z.string() }).parse(await request.json())
-        sent.push(content)
-        return await handler(content)
-      },
-      { preconnect: fetch.preconnect },
-    ),
+  // convex-test installs accessors on globals, which spyOn cannot wrap.
+  globalThis.fetch = Object.assign(
+    async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const request = new Request(input, init)
+      const { content } = z.object({ content: z.string() }).parse(await request.json())
+      sent.push(content)
+      return await handler(content)
+    },
+    { preconnect: originalFetch.preconnect },
   )
   return sent
 }
@@ -105,6 +106,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  globalThis.fetch = originalFetch
   jest.restoreAllMocks()
   jest.clearAllTimers()
   jest.useRealTimers()

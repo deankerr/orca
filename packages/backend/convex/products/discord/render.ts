@@ -1,5 +1,5 @@
-import { sha256 } from '@noble/hashes/sha2'
-import { bytesToHex } from '@noble/hashes/utils'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import { ConvexError } from 'convex/values'
 
 import type { Doc, Id } from '#generated/dataModel'
@@ -36,7 +36,7 @@ export function canonicalJson(value: unknown): string {
 }
 
 export function contentKey(value: unknown): string {
-  return bytesToHex(sha256(canonicalJson(value)))
+  return bytesToHex(sha256(utf8ToBytes(canonicalJson(value))))
 }
 
 /** Preparation and manual sending read the same complete observation. */

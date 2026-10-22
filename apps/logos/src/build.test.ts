@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { rejects } from 'node:assert/strict'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import nodePath from 'node:path'
@@ -153,23 +154,14 @@ test('fails fast when an alias target is missing', async () => {
   })
 
   try {
-    let thrown: unknown
-
-    try {
-      await buildLogos({
+    await rejects(
+      buildLogos({
         appRoot: fixture.appRoot,
         log: () => {},
         sourcePackageRoots: fixture.sourcePackageRoots,
-      })
-    } catch (error) {
-      thrown = error
-    }
-
-    if (!(thrown instanceof Error)) {
-      throw new Error('Expected missing alias target to throw')
-    }
-
-    expect(thrown.message).toBe('Alias missingalias points to missing source key missing')
+      }),
+      { message: 'Alias missingalias points to missing source key missing' },
+    )
   } finally {
     await rm(fixture.root, { force: true, recursive: true })
   }

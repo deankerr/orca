@@ -40,10 +40,7 @@ export const registerWebhook = mutation({
     const topics = zTopics.parse(args.topics)
     const existing = await ctx.db
       .query('webhooks')
-      .withIndex('by_url_and_invalidatedAt', (q) =>
-        // oxlint-disable-next-line unicorn/no-useless-undefined -- Match registrations that have never been invalidated.
-        q.eq('url', url).eq('invalidatedAt', undefined),
-      )
+      .withIndex('by_url_and_invalidatedAt', (q) => q.eq('url', url).eq('invalidatedAt', undefined))
       .unique()
 
     // Registration never edits an existing row. Replacing an invalidated URL

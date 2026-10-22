@@ -12,7 +12,7 @@
     "test": "bun test src"
   },
   "dependencies": {
-    "@convex-dev/workpool": "0.4.13",
+    "@convex-dev/workpool": "0.4.14",
     "@discordjs/rest": "2.6.3",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "convex-test": "0.0.57",
+    "convex-test": "0.0.64",
     "typescript": "catalog:"
   }
 }
