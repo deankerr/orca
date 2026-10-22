@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/no-unsafe-type-assertion -- Rendering fixtures provide only the read context used by these events. */
-import { expect, spyOn, test } from 'bun:test'
+import { expect, jest, test } from 'bun:test'
 import { ok } from 'node:assert/strict'
 
 import type { Doc, Id } from '#generated/dataModel'
@@ -196,9 +196,12 @@ test('rendering reports suppressed source events and preserves deterministic ord
   const ctx = {
     db: { get: async (_table: string, id: string) => rows.find((item) => item._id === id) ?? null },
   } as unknown as QueryCtx
-  const request = spyOn(globalThis, 'fetch').mockRejectedValue(
-    new Error('Rendering must never contact Discord'),
-  )
+  // convex-test installs accessors on globals, which spyOn cannot wrap.
+  const originalFetch = globalThis.fetch
+  const request = jest.fn(async () => {
+    throw new Error('Rendering must never contact Discord')
+  })
+  globalThis.fetch = Object.assign(request, { preconnect: originalFetch.preconnect })
   try {
     await withOrigins(async () => {
       const rendered = await renderRows(ctx, rows)
@@ -209,7 +212,7 @@ test('rendering reports suppressed source events and preserves deterministic ord
     })
     expect(request).not.toHaveBeenCalled()
   } finally {
-    request.mockRestore()
+    globalThis.fetch = originalFetch
   }
 })
 

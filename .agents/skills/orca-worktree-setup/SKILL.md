@@ -20,7 +20,7 @@ Choose a unique task slug and an expiration suited to the task, then create/sele
 
 ```sh
 bun run --cwd packages/backend convex deployment create \
-  deankerr:orca-b8162:dev/<task> --type dev --expiration '7 days' --select
+  deankerr:orca-b8162:dev/<task> --type dev --expiration 'in 7 days' --select
 bun run --cwd packages/backend dev --once
 ```
 

@@ -4,9 +4,11 @@ depth = 6
 [install]
 minimumReleaseAge = 86400 # 1 day
 minimumReleaseAgeExcludes = [
-  "@next/bundle-analyzer",
+  "@convex-dev/aggregate",
+  "@convex-dev/batch-worker",
+  "@convex-dev/react-query",
+  "@convex-dev/workpool",
   "@next/env",
-  "@next/eslint-plugin-next",
   "@next/swc-darwin-arm64",
   "@next/swc-darwin-x64",
   "@next/swc-linux-arm64-gnu",
@@ -18,14 +20,15 @@ minimumReleaseAgeExcludes = [
   "@swc/helpers",
   "@types/bun",
   "@types/node",
-  "@types/react-dom",
   "@types/react",
+  "@types/react-dom",
   "bun-types",
   "convex",
-  "eslint-plugin-react-hooks",
+  "convex-helpers",
+  "convex-test",
   "next",
-  "react-dom",
   "react",
+  "react-dom",
+  "scheduler",
   "ultracite",
-  "alchemy",
 ]
