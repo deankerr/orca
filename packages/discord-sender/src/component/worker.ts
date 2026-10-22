@@ -17,7 +17,6 @@ export const load = internalQuery({
   handler: async (ctx): Promise<Id<'jobs'>[][]> => {
     const jobs = await ctx.db
       .query('jobs')
-      // oxlint-disable-next-line unicorn/no-useless-undefined -- Convex requires an explicit value to query absent optional fields.
       .withIndex('by_finishedAt', (q) => q.eq('finishedAt', undefined))
       .collect()
     const destinations = await ctx.db.query('webhooks').collect()
@@ -137,7 +136,6 @@ export const recover = internalMutation({
   handler: async (ctx) => {
     const job = await ctx.db
       .query('jobs')
-      // oxlint-disable-next-line unicorn/no-useless-undefined -- Convex requires an explicit value to query absent optional fields.
       .withIndex('by_finishedAt', (q) => q.eq('finishedAt', undefined))
       .first()
 
