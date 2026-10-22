@@ -37,6 +37,9 @@ export function EntityOverviewProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      close: () => {
+        setEntity(null)
+      },
       entity,
       openOverview: (target: OverviewEntity) => {
         const options =
@@ -48,9 +51,6 @@ export function EntityOverviewProvider({ children }: { children: ReactNode }) {
           ...target,
           measurement: startReadiness(client, options.queryKey, 'overview_sheet'),
         })
-      },
-      close: () => {
-        setEntity(null)
       },
     }),
     [entity, client],

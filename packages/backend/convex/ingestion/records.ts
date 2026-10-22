@@ -47,12 +47,16 @@ export async function writeRecords<Result>(
 ): Promise<Result> {
   const operations: TableAggregateOperation<RecordCountsType>[] = []
   const result = await write({
+    delete: async (record) => {
+      await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
+      operations.push({ doc: record, type: 'delete' })
+    },
     insert: async (record) => {
       const id = await ctx.db.insert(INGESTION_RECORDS_TABLE, record)
       const doc = await ctx.db.get(INGESTION_RECORDS_TABLE, id)
 
       if (doc !== null) {
-        operations.push({ type: 'insert', doc })
+        operations.push({ doc, type: 'insert' })
       }
       return id
     },
@@ -61,12 +65,8 @@ export async function writeRecords<Result>(
 
       // The aggregate reads only kind, state and scan_at, so the patched document needs no read.
       if (patch.state !== undefined && patch.state !== previous.state) {
-        operations.push({ type: 'replace', oldDoc: previous, newDoc: { ...previous, ...patch } })
+        operations.push({ newDoc: { ...previous, ...patch }, oldDoc: previous, type: 'replace' })
       }
-    },
-    delete: async (record) => {
-      await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
-      operations.push({ type: 'delete', doc: record })
     },
   })
 
@@ -79,7 +79,6 @@ export async function writeRecords<Result>(
 /** Record totals by `kind/state`, from a stale snapshot that may trail queued writes. */
 export const counts = internalQuery({
   args: {},
-  returns: v.record(v.string(), v.number()),
   handler: async (ctx) => {
     const keys = recordKind.members.flatMap((kind) =>
       recordState.members.map((state): [RecordKind, RecordState] => [kind.value, state.value]),
@@ -91,4 +90,5 @@ export const counts = internalQuery({
     )
     return Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index] ?? 0]))
   },
+  returns: v.record(v.string(), v.number()),
 })

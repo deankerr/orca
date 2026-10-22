@@ -25,10 +25,10 @@ export function MonitorPage() {
   // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual owns mutable measurement state.
   const virtualizer = useVirtualizer({
     count: feedRows.length,
-    getScrollElement: () => viewportRef.current,
     estimateSize: (index) => (feedRows[index]?.kind === 'header' ? 44 : 160),
-    overscan: 8,
     getItemKey: useCallback((index: number) => feedRows[index]?.key ?? index, [feedRows]),
+    getScrollElement: () => viewportRef.current,
+    overscan: 8,
   })
 
   const virtualRows = virtualizer.getVirtualItems()

@@ -58,12 +58,12 @@ function providerChanges(changes: FieldChange[]): FieldChange[] {
         }
 
         if (after === undefined) {
-          return before === undefined ? [] : [{ type: 'field_removed', path, before }]
+          return before === undefined ? [] : [{ before, path, type: 'field_removed' }]
         }
 
         return before === undefined
-          ? [{ type: 'field_added', path, after }]
-          : [{ type: 'field_updated', path, before, after }]
+          ? [{ after, path, type: 'field_added' }]
+          : [{ after, before, path, type: 'field_updated' }]
       },
     )
   })

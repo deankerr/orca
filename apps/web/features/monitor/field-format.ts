@@ -29,8 +29,8 @@ export function formatChangeUnit(path: string, ...values: FieldValue[]): string 
     : ''
 }
 const fieldLabels: Record<string, string> = {
-  'pricing.overrides': 'Price schedule',
   max_completion_tokens: 'max_output',
+  'pricing.overrides': 'Price schedule',
 }
 
 export const fieldLabel = (path: string): string =>

@@ -75,14 +75,14 @@ function useEndpointGridRows({
   const endpointSearcher = useMemo(
     () =>
       createSlugSearcher(facetRows, {
-        getFields: (endpoint) => [
-          { name: 'model_id', value: endpoint.model_id },
-          { name: 'provider_tag', value: endpoint.provider_tag },
-        ],
         compareItems: (left, right) =>
           right.model_or_created_at.localeCompare(left.model_or_created_at) ||
           left.model_id.localeCompare(right.model_id) ||
           left.provider_tag.localeCompare(right.provider_tag),
+        getFields: (endpoint) => [
+          { name: 'model_id', value: endpoint.model_id },
+          { name: 'provider_tag', value: endpoint.provider_tag },
+        ],
       }),
     [facetRows],
   )
@@ -137,19 +137,19 @@ export function EndpointsDataGrid({
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library
   const table = useReactTable({
+    columnResizeMode: 'onChange',
     columns,
     data: rows,
-    state: {
-      sorting: sort.sorting,
-      columnPinning: isMobile === false ? { left: ['model', 'provider'] } : {},
-    },
-    columnResizeMode: 'onChange',
-    onSortingChange: sort.onSortingChange,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getRowId: (row) => row._id,
+    getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
+    onSortingChange: sort.onSortingChange,
+    state: {
+      columnPinning: isMobile === false ? { left: ['model', 'provider'] } : {},
+      sorting: sort.sorting,
+    },
   })
 
   return (
@@ -160,19 +160,19 @@ export function EndpointsDataGrid({
         emptyMessage={<EndpointsEmptyState />}
         rowDataAttributes={rowDataAttributes}
         tableLayout={{
-          headerSticky: true,
           cellBorder: true,
-          rowHeight: 48,
-          columnsResizable: true,
           columnsPinnable: true,
+          columnsResizable: true,
+          headerSticky: true,
+          rowHeight: 48,
         }}
         tableClassNames={{
-          headerRow: 'uppercase font-mono',
-          headerCell: 'text-center',
+          body: 'font-mono text-xs',
+          bodyCell: 'px-2.5 py-1.5',
           bodyRow:
             '[&>td]:bg-background hover:[&>td]:bg-muted-hover data-[row-status]:[&_td_>_*]:opacity-50 data-[row-status]:[&_td]:text-foreground/50',
-          bodyCell: 'px-2.5 py-1.5',
-          body: 'font-mono text-xs',
+          headerCell: 'text-center',
+          headerRow: 'uppercase font-mono',
         }}
       >
         <DataGridCard>

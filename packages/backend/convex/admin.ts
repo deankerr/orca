@@ -22,24 +22,24 @@ export async function requireAdmin(ctx: { auth: Auth }) {
 /** Exposes only the caller's identity so an unapproved administrator can finish setup. */
 export const viewer = query({
   args: {},
-  returns: v.object({ userId: v.union(v.string(), v.null()), isAdmin: v.boolean() }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity()
 
     return {
-      userId: identity?.subject ?? null,
       isAdmin: isAdmin(identity?.subject),
+      userId: identity?.subject ?? null,
     }
   },
+  returns: v.object({ isAdmin: v.boolean(), userId: v.union(v.string(), v.null()) }),
 })
 
 /** Harmless probe of the same authorization boundary future admin functions must use. */
 export const demo = query({
   args: {},
-  returns: v.object({ userId: v.string(), message: v.string() }),
   handler: async (ctx) => {
     const identity = await requireAdmin(ctx)
 
-    return { userId: identity.subject, message: 'Administrator access verified' }
+    return { message: 'Administrator access verified', userId: identity.subject }
   },
+  returns: v.object({ message: v.string(), userId: v.string() }),
 })

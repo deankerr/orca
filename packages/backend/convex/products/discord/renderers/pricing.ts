@@ -16,7 +16,7 @@ export function pricingFacts(facts: Record<string, FieldValue>): string {
 
       return after === null || (path === 'pricing.discount' && input === 0)
         ? []
-        : [{ path, after, annotation: '' }]
+        : [{ after, annotation: '', path }]
     }),
   )
 
@@ -41,12 +41,12 @@ export function pricingChanges(changes: FieldChange[]): string[] {
     if (row === null) {
       fallback.push(
         fieldChange(change, {
-          label: priceLabel(change.path),
-          formatValue: pricingValue,
           annotation:
             change.type === 'field_updated'
               ? priceDelta(change.before, change.after, change.path)
               : '',
+          formatValue: pricingValue,
+          label: priceLabel(change.path),
         }),
       )
     } else {
@@ -93,14 +93,14 @@ function pricingChange(change: FieldChange): PriceRow | null {
     (discount && change.type === 'field_updated' && change.before === 0)
 
   return {
-    path: change.path,
-    before: added ? undefined : before,
     after: removed ? undefined : after,
-    change: changeKind(removed, added),
     annotation:
       !removed && !added && change.type === 'field_updated'
         ? priceDelta(change.before, change.after, change.path)
         : '',
+    before: added ? undefined : before,
+    change: changeKind(removed, added),
+    path: change.path,
   }
 }
 
@@ -117,7 +117,7 @@ export function pricingTable(rows: PriceRow[]): string {
   // column as `$2.50`, rather than an outside ≈ shifting the code span right.
   const displayRows = rows.map((row) =>
     row.before !== undefined && row.before === row.after
-      ? { ...row, before: undefined, after: `≈ ${row.after}` }
+      ? { ...row, after: `≈ ${row.after}`, before: undefined }
       : row,
   )
 
@@ -136,12 +136,12 @@ export function pricingTable(rows: PriceRow[]): string {
     )
     .map((row) => {
       const cell = (value: string | undefined) =>
-        value === undefined ? undefined : code(value, { width: valueWidth, align: 'right' })
+        value === undefined ? undefined : code(value, { align: 'right', width: valueWidth })
 
       return field(
         priceLabel(row.path),
         valueChange(cell(row.before), cell(row.after), { annotation: row.annotation }),
-        { width: labelWidth - (row.change === undefined ? 0 : 2), change: row.change },
+        { change: row.change, width: labelWidth - (row.change === undefined ? 0 : 2) },
       )
     })
     .join('\n')

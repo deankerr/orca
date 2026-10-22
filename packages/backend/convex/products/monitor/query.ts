@@ -16,19 +16,18 @@ const scope = v.union(
   v.object({ kind: v.literal('model'), model_id: v.string() }),
   v.object({ kind: v.literal('provider'), provider_id: v.string() }),
   v.object({ kind: v.literal('pair'), model_id: v.string(), provider_id: v.string() }),
-  v.object({ kind: v.literal('endpoint'), endpoint_id: v.string() }),
+  v.object({ endpoint_id: v.string(), kind: v.literal('endpoint') }),
 )
 export type MonitorScope = Infer<typeof scope>
 
 /** Historical activity, selected using the relationships captured with each event. */
 export const feed = query({
-  args: { scope, paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(entityAlert),
+  args: { paginationOpts: paginationOptsValidator, scope },
   handler: async (ctx, { scope: selected, paginationOpts }) => {
     const result = await readPage(
       ctx,
       selected.kind === 'endpoint'
-        ? { kind: 'entity', entity_kind: 'endpoint', entity_id: selected.endpoint_id }
+        ? { entity_id: selected.endpoint_id, entity_kind: 'endpoint', kind: 'entity' }
         : selected,
       paginationOpts,
     )
@@ -38,6 +37,7 @@ export const feed = query({
     )
     return { ...result, page: alerts.filter((alert) => alert !== null) }
   },
+  returns: paginationResultValidator(entityAlert),
 })
 
 const choice = v.object({ id: v.string(), name: v.string() })
@@ -45,7 +45,6 @@ const choice = v.object({ id: v.string(), name: v.string() })
 /** Only models with observed endpoints; history keeps departed models selectable. */
 export const models = query({
   args: { paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(choice.extend({ permaslug: v.string(), variant: v.string() })),
   handler: async (ctx, { paginationOpts }) => {
     const result = await ctx.db
       .query(CURRENT_MODELS_TABLE)
@@ -79,12 +78,12 @@ export const models = query({
       page: choices.filter((entry) => entry !== null),
     }
   },
+  returns: paginationResultValidator(choice.extend({ permaslug: v.string(), variant: v.string() })),
 })
 
 /** Providers use their explicit identity, independently of endpoint tags. */
 export const providers = query({
   args: { paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(choice),
   handler: async (ctx, { paginationOpts }) => {
     const result = await ctx.db
       .query(CURRENT_PROVIDERS_TABLE)
@@ -95,4 +94,5 @@ export const providers = query({
       page: result.page.map((row) => ({ id: row.provider_id, name: row.display_name })),
     }
   },
+  returns: paginationResultValidator(choice),
 })

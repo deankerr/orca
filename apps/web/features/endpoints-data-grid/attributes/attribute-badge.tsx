@@ -67,7 +67,7 @@ function AttributeBadge({
   return (
     <PopoverCardTrigger
       nativeButton={false}
-      payload={{ type: 'attribute', label, description, badge, details }}
+      payload={{ badge, description, details, label, type: 'attribute' }}
       render={<ColorIconBadge icon={icon} color={color} aria-label={key} />}
       {...props}
     />

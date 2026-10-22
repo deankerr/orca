@@ -22,30 +22,31 @@ export const run = internalAction({
   args: {
     timestamp: v.number(),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const data = await orFetch('/api/frontend/v1/models/find', { schema: DataRecord })
     const path = 'analytics'
     const name = new Date(args.timestamp).toISOString().replace('T', '/')
 
     await objects.store(ctx, {
-      path,
       name,
+      path,
+      // oxlint-disable sort-keys -- Stored JSON key order is the stable on-disk object format.
       text: JSON.stringify({
         workflow: path,
         timestamp: args.timestamp,
         format_version: 1,
         data,
       }),
+      // oxlint-enable sort-keys
     })
 
     return null
   },
+  returns: v.null(),
 })
 
 export const scheduled = internalMutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     if (env.ORCA_ANALYTICS_CRON_ENABLED !== 'true') {
       return null
@@ -60,4 +61,5 @@ export const scheduled = internalMutation({
 
     return null
   },
+  returns: v.null(),
 })

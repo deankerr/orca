@@ -8,8 +8,7 @@ import { OBJECTS_LOCATORS_TABLE, locatorsTable } from './table'
 
 /** Manually delete one named object. Stop writers for this identity before removing it. */
 export const run = internalAction({
-  args: { path: v.string(), name: v.string() },
-  returns: v.null(),
+  args: { name: v.string(), path: v.string() },
   handler: async (ctx, args) => {
     const locator = await ctx.runQuery(internal.objects.locators.get, args)
 
@@ -24,12 +23,12 @@ export const run = internalAction({
     await ctx.runMutation(internal.objects.remove.finish, { locator })
     return null
   },
+  returns: v.null(),
 })
 
 /** Delete Convex bytes atomically with the locator; R2 bytes must already be deleted. */
 export const finish = internalMutation({
   args: { locator: locatorsTable.validator },
-  returns: v.null(),
   handler: async (ctx, { locator }) => {
     const row = await ctx.db
       .query(OBJECTS_LOCATORS_TABLE)
@@ -57,4 +56,5 @@ export const finish = internalMutation({
     await ctx.db.delete(row._id)
     return null
   },
+  returns: v.null(),
 })

@@ -51,8 +51,8 @@ export class ReadinessQueryTimings {
 
     // Storage can hydrate before the view's first render. Preserve that provenance once.
     return result?.source === 'tanstack_persisted' && !this.observed.has(queryHash)
-      ? { ...result, id: crypto.randomUUID(), available: started }
-      : { id: crypto.randomUUID(), source: 'tanstack_memory', available: started }
+      ? { ...result, available: started, id: crypto.randomUUID() }
+      : { available: started, id: crypto.randomUUID(), source: 'tanstack_memory' }
   }
 
   markObserved(queryHash: string) {
@@ -95,8 +95,8 @@ export class ReadinessQueryTimings {
 
     if (action?.type === 'fetch') {
       this.fetches.set(queryHash, {
-        started: this.connection.mark(),
         source: hasConvexResult(queryKey) ? 'convex_client' : 'server',
+        started: this.connection.mark(),
       })
     }
 
@@ -124,9 +124,9 @@ export class ReadinessQueryTimings {
       this.observed.add(queryHash)
       this.emit('query updated', {
         ...resultProperties(state.data),
+        consumer_active: event.query.getObserversCount() > 0,
         query_name: queryName(queryKey),
         query_run_id: previous.id,
-        consumer_active: event.query.getObserversCount() > 0,
         received_at_ms: this.connection.mark().at,
       })
       return
@@ -149,10 +149,10 @@ export class ReadinessQueryTimings {
     const { queryHash, state } = event.query
     const available = this.connection.mark()
     const result: ReadinessQueryTiming = {
+      available,
       id: crypto.randomUUID(),
       source:
         fetch?.source ?? (this.restored.has(queryHash) ? 'tanstack_persisted' : 'tanstack_memory'),
-      available,
       ...(fetch ? { fetchStarted: fetch.started } : {}),
     }
     this.results.set(queryHash, result)
@@ -170,9 +170,9 @@ export class ReadinessQueryTimings {
 export function queryName(key: QueryKey) {
   return {
     'catalog/endpoints/query:grid': 'grid endpoints',
-    'catalog/stats/query:grid': 'grid stats',
     'catalog/models/query:get': 'model overview',
     'catalog/providers/query:get': 'provider overview',
+    'catalog/stats/query:grid': 'grid stats',
   }[String(key[1])]
 }
 
@@ -183,17 +183,17 @@ export function resultProperties(data: unknown) {
 
   const object = z
     .object({
+      as_of: z.string().nullable().optional(),
       // Only the array length is needed; parsing elements would copy the full result.
       rows: z.custom<unknown[]>(Array.isArray).optional(),
-      as_of: z.string().nullable().optional(),
       scan_at: z.string().optional(),
     })
     .safeParse(data)
 
   return object.success
     ? {
-        result_count: object.data.rows?.length ?? 1,
         data_scan_at: object.data.as_of ?? object.data.scan_at,
+        result_count: object.data.rows?.length ?? 1,
       }
     : { result_count: 0 }
 }
@@ -202,16 +202,16 @@ export function queryProperties(key: QueryKey, result: ReadinessQueryTiming) {
   const start = result.fetchStarted ?? result.available
   const end = result.available
   return {
+    client_cache_hit: result.source !== 'server',
+    completed_at_ms: end.at,
+    connected_ms: end.connected - start.connected,
+    connection_state_at_start: start.phase,
+    connection_wait_ms: end.setup - start.setup + end.reconnect - start.reconnect,
+    duration_ms: end.at - start.at,
     query_name: queryName(key),
     query_run_id: result.id,
     source: result.source,
-    client_cache_hit: result.source !== 'server',
-    duration_ms: end.at - start.at,
-    connection_wait_ms: end.setup - start.setup + end.reconnect - start.reconnect,
-    connected_ms: end.connected - start.connected,
-    connection_state_at_start: start.phase,
     started_at_ms: start.at,
-    completed_at_ms: end.at,
   }
 }
 

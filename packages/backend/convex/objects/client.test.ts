@@ -20,16 +20,16 @@ test('standalone and deployment readers share ordered remote batches and propaga
   } as unknown as ActionCtx
 
   const identities = [
-    { path: 'arbitrary', name: 'some.metadata.1' },
-    { path: 'other', name: 'missing' },
+    { name: 'some.metadata.1', path: 'arbitrary' },
+    { name: 'missing', path: 'other' },
   ]
 
   const action = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
-    { codec: 'gzip', bytes: Bun.gzipSync('logical text ✓').buffer },
+    { bytes: Bun.gzipSync('logical text ✓').buffer, codec: 'gzip' },
     null,
   ])
 
-  const standalone = connect({ deployment: 'source-deployment', apiKey: 'test-key' })
+  const standalone = connect({ apiKey: 'test-key', deployment: 'source-deployment' })
 
   try {
     expect(await standalone.loadMany(identities)).toEqual(['logical text ✓', null])

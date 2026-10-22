@@ -1,7 +1,7 @@
 export const dot = ' • '
 
 const changeMarkers = { added: '+ ', removed: '− ' }
-const arrivalMarkers = { discovered: '✨ ', relisted: '↺ ', listed: '+ ' }
+const arrivalMarkers = { discovered: '✨ ', listed: '+ ', relisted: '↺ ' }
 
 /** Wrap preformatted children in a consistent field row or block; labels are plain text. */
 export function field(

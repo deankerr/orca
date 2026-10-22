@@ -71,10 +71,10 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
           : `**${code(truncateContent(group, 500, 'batch.group'))}**`
 
       return {
-        source_id: member.source_id,
         group,
         heading: group === '' || provider !== undefined ? '' : `\n${groupLabel}\n`,
         line: `${line}\n`,
+        source_id: member.source_id,
       }
     })
     .toSorted((a, b) => a.group.localeCompare(b.group) || a.line.localeCompare(b.line))
@@ -115,30 +115,30 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
   pages.push(page)
 
   return pages.map(({ description, source_ids }, index) => ({
-    source_ids,
     message: {
       allowed_mentions: { parse: [] },
       ...(provider === undefined
         ? {
             embeds: [
               {
-                title: `${batch.members.length} ${first.event.entity_kind}s ${removed ? 'unlisted' : 'updated'}${pages.length > 1 ? ` (${index + 1}/${pages.length})` : ''}`,
+                color: removed ? colors.removed : colors.updated,
                 description,
                 timestamp: first.event.observed_at,
-                color: removed ? colors.removed : colors.updated,
+                title: `${batch.members.length} ${first.event.entity_kind}s ${removed ? 'unlisted' : 'updated'}${pages.length > 1 ? ` (${index + 1}/${pages.length})` : ''}`,
               },
             ],
           }
         : embedCard(description, {
             author: {
+              iconURL: logoUrl(provider.provider_id, urls),
               name: `${truncateContent(provider.display_name, 120, 'batch.provider_name')}${dot}${truncateContent(provider.provider_id, 120, 'batch.provider_id')}`,
               url: gridUrl(provider.provider_id, urls),
-              iconURL: logoUrl(provider.provider_id, urls),
             },
-            timestamp: first.event.observed_at,
             color: colors.removed,
             footer: pages.length > 1 ? { text: `${index + 1}/${pages.length}` } : undefined,
+            timestamp: first.event.observed_at,
           })),
     },
+    source_ids,
   }))
 }

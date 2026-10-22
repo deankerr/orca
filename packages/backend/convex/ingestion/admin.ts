@@ -37,17 +37,6 @@ const scanAt = v.union(v.null(), v.string())
 /** Everything the dashboard header needs, from indexed edges and aggregate totals. */
 export const overview = query({
   args: {},
-  returns: v.object({
-    target: v.union(v.null(), ingestionTargetRange),
-    counts: v.record(v.string(), v.number()),
-    pairs: v.object({ earliest: scanAt, latest: scanAt }),
-    baselines: v.array(v.object({ scan_at: v.string(), state: recordState })),
-    frontier: scanAt,
-    latestCompleteFull: scanAt,
-    clock: scanAt,
-    automation: v.object({ cron: v.boolean(), discord: v.boolean() }),
-    execution: v.object({ parallelism: v.number(), capacity: v.number() }),
-  }),
   handler: async (ctx) => {
     await requireAdmin(ctx)
     const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
@@ -77,22 +66,33 @@ export const overview = query({
       .take(BASELINE_LIMIT)
 
     return {
-      target: target === null ? null : { start_at: target.start_at, end_at: target.end_at },
-      counts: Object.fromEntries(
-        namespaces.map((namespace, index) => [namespace.join('/'), totals[index] ?? 0]),
-      ),
-      pairs: { earliest: earliest?.scan_at ?? null, latest: newest?.scan_at ?? null },
-      baselines: baselines.map(({ scan_at, state }) => ({ scan_at, state })),
-      frontier: frontier?.scan_at ?? null,
-      latestCompleteFull: full?.scan_at ?? null,
-      clock: await clock(ctx),
       automation: {
         cron: env.ORCA_INGESTION_CRON_ENABLED === 'true',
         discord: env.ORCA_DISCORD_AUTO_SEND_ENABLED === 'true',
       },
-      execution: { parallelism: ingestionParallelism(), capacity: queueCapacity() },
+      baselines: baselines.map(({ scan_at, state }) => ({ scan_at, state })),
+      clock: await clock(ctx),
+      counts: Object.fromEntries(
+        namespaces.map((namespace, index) => [namespace.join('/'), totals[index] ?? 0]),
+      ),
+      execution: { capacity: queueCapacity(), parallelism: ingestionParallelism() },
+      frontier: frontier?.scan_at ?? null,
+      latestCompleteFull: full?.scan_at ?? null,
+      pairs: { earliest: earliest?.scan_at ?? null, latest: newest?.scan_at ?? null },
+      target: target === null ? null : { end_at: target.end_at, start_at: target.start_at },
     }
   },
+  returns: v.object({
+    automation: v.object({ cron: v.boolean(), discord: v.boolean() }),
+    baselines: v.array(v.object({ scan_at: v.string(), state: recordState })),
+    clock: scanAt,
+    counts: v.record(v.string(), v.number()),
+    execution: v.object({ capacity: v.number(), parallelism: v.number() }),
+    frontier: scanAt,
+    latestCompleteFull: scanAt,
+    pairs: v.object({ earliest: scanAt, latest: scanAt }),
+    target: v.union(v.null(), ingestionTargetRange),
+  }),
 })
 
 async function latest(ctx: QueryCtx, state: RecordState) {
@@ -108,11 +108,7 @@ async function latest(ctx: QueryCtx, state: RecordState) {
  * bounded aggregate read, so cost depends on bucket count, not on how many records exist.
  */
 export const histogram = query({
-  args: { start_at: v.string(), end_at: v.string(), buckets: v.number() },
-  returns: v.object({
-    edges: v.array(v.string()),
-    counts: v.record(v.string(), v.array(v.number())),
-  }),
+  args: { buckets: v.number(), end_at: v.string(), start_at: v.string() },
   handler: async (ctx, { start_at, end_at, buckets }) => {
     await requireAdmin(ctx)
     const start = Date.parse(start_at)
@@ -133,34 +129,38 @@ export const histogram = query({
     const states = recordState.members.map(({ value }) => value)
     const bounds = states.flatMap((state) =>
       edges.slice(0, -1).map((lower, index) => ({
-        namespace: ['pair', state] as [RecordKind, RecordState],
         bounds: {
-          lower: { key: lower, inclusive: true },
+          lower: { inclusive: true, key: lower },
           // The final bucket includes the range end.
-          upper: { key: edges[index + 1] ?? lower, inclusive: index === buckets - 1 },
+          upper: { inclusive: index === buckets - 1, key: edges[index + 1] ?? lower },
         },
+        namespace: ['pair', state] as [RecordKind, RecordState],
       })),
     )
     const totals = await recordCounts.countBatch(ctx, bounds, { stale: true })
 
     return {
-      edges,
       counts: Object.fromEntries(
         states.map((state, row) => [
           state,
           totals.slice(row * buckets, (row + 1) * buckets).map((count) => count ?? 0),
         ]),
       ),
+      edges,
     }
   },
+  returns: v.object({
+    counts: v.record(v.string(), v.array(v.number())),
+    edges: v.array(v.string()),
+  }),
 })
 
 /** Records newest first, optionally in one state, starting before a chosen scan time. */
 export const records = query({
   args: {
-    state: v.optional(recordState),
     before: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
+    state: v.optional(recordState),
   },
   handler: async (ctx, { state, before, paginationOpts }) => {
     await requireAdmin(ctx)
@@ -199,14 +199,14 @@ export const records = query({
           error,
         }) => ({
           _id,
-          kind,
-          from_scan_at,
-          scan_at,
-          state: rowState,
           alerts,
           current_scope: current_scope ?? null,
           current_stats: current_stats ?? null,
           error: error ?? null,
+          from_scan_at,
+          kind,
+          scan_at,
+          state: rowState,
         }),
       ),
     }
@@ -216,40 +216,40 @@ export const records = query({
 /** The object store's capture range: the earliest scan bounds a backfill, the latest shows lag. */
 export const sourceScans = action({
   args: {},
-  returns: v.object({ earliest: scanAt, latest: scanAt }),
   handler: async (ctx) => {
     await requireAdmin(ctx)
     const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
     return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
   },
+  returns: v.object({ earliest: scanAt, latest: scanAt }),
 })
 
 export const saveTarget = mutation({
   args: ingestionTargetRange.fields,
-  returns: v.null(),
   handler: async (ctx, range) => {
     await requireAdmin(ctx)
     await setTarget(ctx, range)
     return null
   },
+  returns: v.null(),
 })
 
 export const runSync = mutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     await requireAdmin(ctx)
     await kickoff(ctx)
     return null
   },
+  returns: v.null(),
 })
 
 /** Reopen one failed record, or the next batch of failed records. */
 export const retry = mutation({
   args: { record_id: v.optional(v.id(INGESTION_RECORDS_TABLE)) },
-  returns: v.number(),
   handler: async (ctx, { record_id }) => {
     await requireAdmin(ctx)
     return await retryFailed(ctx, record_id)
   },
+  returns: v.number(),
 })

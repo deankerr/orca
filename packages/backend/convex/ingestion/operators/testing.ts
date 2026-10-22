@@ -28,28 +28,28 @@ export function rawScan(scan_at: string, spec: ScanSpec = {}): RawScan {
 
   for (const [id, endpoint] of Object.entries(spec.endpoints ?? {})) {
     const entry = entries.get(endpoint.model) ?? {
-      model_id: endpoint.model,
-      variant: 'standard',
+      endpoints: [],
       model: {
-        slug: endpoint.model,
-        permaslug: endpoint.model,
-        short_name: name(endpoint.model),
         created_at: '2026-01-01T00:00:00.000Z',
         input_modalities: ['text'],
         output_modalities: ['text'],
+        permaslug: endpoint.model,
+        short_name: name(endpoint.model),
+        slug: endpoint.model,
       },
-      endpoints: [],
+      model_id: endpoint.model,
+      variant: 'standard',
     }
 
     entry.endpoints.push({
       id,
       model_variant_slug: endpoint.model,
-      variant: 'standard',
+      pricing: { discount: 0, prompt: endpoint.prompt ?? '0.000001' },
+      provider_display_name: name(endpoint.provider),
+      provider_info: { displayName: name(endpoint.provider), slug: endpoint.provider },
       provider_slug:
         endpoint.tag === undefined ? endpoint.provider : `${endpoint.provider}/${endpoint.tag}`,
-      provider_info: { slug: endpoint.provider, displayName: name(endpoint.provider) },
-      provider_display_name: name(endpoint.provider),
-      pricing: { discount: 0, prompt: endpoint.prompt ?? '0.000001' },
+      variant: 'standard',
       ...(endpoint.stats === undefined ? {} : { statsByTier: endpoint.stats }),
     })
     entries.set(endpoint.model, entry)
@@ -57,18 +57,18 @@ export function rawScan(scan_at: string, spec: ScanSpec = {}): RawScan {
 
   // Collection always lists some models; an unserved one is outside ORCA's scope.
   const unserved: ScanEntry = {
-    model_id: 'unserved',
-    variant: 'standard',
+    endpoints: null,
     model: {
-      slug: 'unserved',
-      permaslug: 'unserved',
       input_modalities: ['text'],
       output_modalities: ['text'],
+      permaslug: 'unserved',
+      slug: 'unserved',
     },
-    endpoints: null,
+    model_id: 'unserved',
+    variant: 'standard',
   }
 
-  return { scan_at, entries: [...entries.values(), unserved] }
+  return { entries: [...entries.values(), unserved], scan_at }
 }
 
 /** The extracted scan for a spec, through ORCA's real extraction. */
@@ -114,9 +114,9 @@ export function specs(seed: number, length: number): ScanSpec[] {
       if (draw() < 0.6) {
         endpoints[endpoint] = {
           model: pick(['m1', 'm2', 'm3']),
+          prompt: pick(['0.1', '0.2']),
           provider: pick(['p1', 'p2']),
           tag: pick(['a', 'b']),
-          prompt: pick(['0.1', '0.2']),
           ...(draw() < 0.7
             ? {
                 stats: { default: { p50_latency: Math.floor(draw() * 100), p50_throughput: null } },

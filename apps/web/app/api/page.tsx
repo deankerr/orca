@@ -30,9 +30,9 @@ function requestProtocol(forwardedProto: string | undefined, host: string) {
 }
 
 export const metadata: Metadata = {
-  title: 'ORCA API',
   description:
     'OpenRouter model and endpoint data with provider-level pricing, context lengths, and capabilities.',
+  title: 'ORCA API',
 }
 
 export default async function Page() {

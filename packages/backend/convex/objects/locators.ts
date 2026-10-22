@@ -11,8 +11,8 @@ const locator = locatorsTable.validator
 /** Local discovery step for the canonical object reader. */
 export const namesAtOrAfter = internalQuery({
   args: nameSelection.fields,
-  returns: v.array(v.string()),
   handler: findLocalNames,
+  returns: v.array(v.string()),
 })
 
 /**
@@ -22,10 +22,9 @@ export const namesAtOrAfter = internalQuery({
  */
 export const get = internalQuery({
   args: {
-    path: v.string(),
     name: v.string(),
+    path: v.string(),
   },
-  returns: v.union(v.null(), locator),
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query(OBJECTS_LOCATORS_TABLE)
@@ -38,12 +37,13 @@ export const get = internalQuery({
 
     if (doc.backend === 'r2') {
       const { path, name, backend, r2_key, codec, size } = doc
-      return { path, name, backend, r2_key, codec, size }
+      return { backend, codec, name, path, r2_key, size }
     }
 
     const { path, name, backend, storage_id, codec, size } = doc
-    return { path, name, backend, storage_id, codec, size }
+    return { backend, codec, name, path, size, storage_id }
   },
+  returns: v.union(v.null(), locator),
 })
 
 /**
@@ -53,7 +53,6 @@ export const get = internalQuery({
  */
 export const insert = internalMutation({
   args: { locator },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query(OBJECTS_LOCATORS_TABLE)
@@ -65,12 +64,13 @@ export const insert = internalMutation({
     if (existing !== null) {
       throw new ConvexError({
         message: 'object already exists',
-        path: args.locator.path,
         name: args.locator.name,
+        path: args.locator.path,
       })
     }
 
     await ctx.db.insert(OBJECTS_LOCATORS_TABLE, args.locator)
     return null
   },
+  returns: v.null(),
 })

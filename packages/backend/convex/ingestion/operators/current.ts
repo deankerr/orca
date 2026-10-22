@@ -10,7 +10,7 @@ import type { Collections, Source } from './source'
 export type CurrentScope = 'full' | 'changes' | 'departures'
 
 /** Receipt coverage per scope: each scope's output includes the narrower ones. */
-export const SCOPE_COVERAGE = { departures: 0, changes: 1, full: 2 } as const satisfies Record<
+export const SCOPE_COVERAGE = { changes: 1, departures: 0, full: 2 } as const satisfies Record<
   CurrentScope,
   number
 >

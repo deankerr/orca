@@ -12,14 +12,12 @@ import { JsonObjectFromString } from '../../json'
 /** Interpret the model facts consumed by overview products. */
 const Model = convexToZod(docValidator(CURRENT_MODELS_TABLE, currentModelsTable))
   .extend({
-    or_created_at: isoDate,
     metadata_json: JsonObjectFromString.pipe(
       z.object({
-        description: textOrNull,
         author_display_name: textOrNull,
+        description: textOrNull,
         hf_slug: textOrNull,
         knowledge_cutoff: textOrNull,
-        supports_reasoning: flagOrNull,
         reasoning_config: z
           .object({
             is_mandatory_reasoning: flagOrNull,
@@ -27,26 +25,27 @@ const Model = convexToZod(docValidator(CURRENT_MODELS_TABLE, currentModelsTable)
           })
           .nullable()
           .catch(null),
+        supports_reasoning: flagOrNull,
       }),
     ),
+    or_created_at: isoDate,
   })
   .transform(({ metadata_json: facts, ...identity }) => ({
     ...identity,
-    description: facts.description,
     author_display_name: facts.author_display_name,
+    description: facts.description,
     hf_slug: facts.hf_slug,
     knowledge_cutoff: facts.knowledge_cutoff,
-    supports_reasoning: facts.supports_reasoning,
     'reasoning_config.is_mandatory_reasoning':
       facts.reasoning_config?.is_mandatory_reasoning ?? null,
     'reasoning_config.supported_reasoning_efforts':
       facts.reasoning_config?.supported_reasoning_efforts ?? null,
+    supports_reasoning: facts.supports_reasoning,
   }))
 
 /** Current or last-known model. */
 export const get = query({
   args: { model_id: v.string() },
-  returns: v.union(v.null(), zodOutputToConvex(Model)),
   handler: async (ctx, args) => {
     const row = await ctx.db
       .query(CURRENT_MODELS_TABLE)
@@ -54,4 +53,5 @@ export const get = query({
       .unique()
     return row === null ? null : Model.parse(row)
   },
+  returns: v.union(v.null(), zodOutputToConvex(Model)),
 })

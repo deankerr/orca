@@ -30,23 +30,20 @@ import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './public_api/v
 
 export default defineSchema(
   {
-    [OBJECTS_LOCATORS_TABLE]: locatorsTable,
-
-    [PUBLIC_API_V2_CACHE_TABLE]: publicApiV2CacheTable,
-
+    [CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
     [CURRENT_MODELS_TABLE]: currentModelsTable,
     [CURRENT_PROVIDERS_TABLE]: currentProvidersTable,
-    [CURRENT_ENDPOINTS_TABLE]: currentEndpointsTable,
     [CURRENT_STATS_TABLE]: currentStatsTable,
-    [OBSERVATIONS_TABLE]: observationsTable,
     [ENDPOINT_PRICES_TABLE]: endpointPricesTable,
     [ENDPOINT_STATS_TABLE]: endpointStatsTable,
     [EVENTS_TABLE]: eventsTable,
-
-    [INGESTION_TARGET_TABLE]: ingestionTargetTable,
     [INGESTION_RECORDS_TABLE]: ingestionRecordsTable,
-    [QUEUE_SCHEDULE_TABLE]: queueScheduleTable,
+    [INGESTION_TARGET_TABLE]: ingestionTargetTable,
+    [OBJECTS_LOCATORS_TABLE]: locatorsTable,
+    [OBSERVATIONS_TABLE]: observationsTable,
     [PROCESS_COMMITS_TABLE]: processCommitsTable,
+    [PUBLIC_API_V2_CACHE_TABLE]: publicApiV2CacheTable,
+    [QUEUE_SCHEDULE_TABLE]: queueScheduleTable,
   },
   {
     strictTableNameTypes: true,

@@ -19,22 +19,22 @@ import { canonicalJson, contentKey, renderRows } from './render'
 function eventRow(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
   const [change] = compare({ [id]: before }, { [id]: after })
   return {
-    _id: id as Id<'catalog_events'>,
     _creationTime: 0,
-    entity_kind: 'endpoint',
-    entity_id: id,
-    type: 'UPDATE',
-    scan_at: '2026-09-30T01:00:00.000Z',
+    _id: id as Id<'catalog_events'>,
+    change_json: JSON.stringify(change),
     context: {
-      model: { model_id: 'author/model', display_name: 'Model' },
-      provider: { provider_id: 'provider', display_name: 'Provider' },
       endpoint: {
         endpoint_id: id,
-        provider_tag: 'provider/fp8',
         provider_display_name: 'Regional offering',
+        provider_tag: 'provider/fp8',
       },
+      model: { display_name: 'Model', model_id: 'author/model' },
+      provider: { display_name: 'Provider', provider_id: 'provider' },
     },
-    change_json: JSON.stringify(change),
+    entity_id: id,
+    entity_kind: 'endpoint',
+    scan_at: '2026-09-30T01:00:00.000Z',
+    type: 'UPDATE',
   }
 }
 const changed = (id: string) =>
@@ -49,15 +49,15 @@ type Operation = EventRow['type']
 /** Endpoint lifecycle and every update are Events; parent lifecycle is an endpoint-count observation. */
 function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, scan_at = SCAN_AT) {
   const context = {
-    model: { model_id: kind === 'model' ? id : 'author/model', display_name: 'Model' },
-    provider: {
-      provider_id: kind === 'provider' ? id : 'tenstorrent',
-      display_name: 'Tenstorrent',
-    },
     endpoint: {
       endpoint_id: id,
-      provider_tag: 'tenstorrent/fp8',
       provider_display_name: 'Tenstorrent',
+      provider_tag: 'tenstorrent/fp8',
+    },
+    model: { display_name: 'Model', model_id: kind === 'model' ? id : 'author/model' },
+    provider: {
+      display_name: 'Tenstorrent',
+      provider_id: kind === 'provider' ? id : 'tenstorrent',
     },
   }
 
@@ -67,39 +67,39 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
       ? []
       : [
           {
-            entity_kind: kind,
-            entity_id: id,
-            scan_at: PREVIOUS_SCAN_AT,
             endpoint_count: 1,
+            entity_id: id,
+            entity_kind: kind,
             previous_endpoint_count: null,
+            scan_at: PREVIOUS_SCAN_AT,
           },
         ]
 
   if (kind !== 'endpoint' && type !== 'UPDATE') {
     const observation: ObservationRow = {
-      entity_kind: kind,
-      entity_id: id,
-      scan_at,
       endpoint_count: type === 'ADD' ? 1 : 0,
+      entity_id: id,
+      entity_kind: kind,
       previous_endpoint_count: type === 'ADD' ? 0 : 1,
+      scan_at,
     }
     return { previous, row: { table: OBSERVATIONS_TABLE, value: observation } } as const
   }
 
   const snapshot = {
     ...context.endpoint,
-    model_id: context.model.model_id,
-    provider_id: context.provider.provider_id,
-    variant: 'standard',
-    model_display_name: context.model.display_name,
-    model_permaslug: context.model.model_id,
-    model_or_created_at: '2026-09-01T00:00:00.000Z',
     input_modalities: ['text'],
+    metadata: {},
+    model_display_name: context.model.display_name,
+    model_id: context.model.model_id,
+    model_or_created_at: '2026-09-01T00:00:00.000Z',
+    model_permaslug: context.model.model_id,
     output_modalities: ['text'],
     pricing: { discount: 0, meters: { prompt: '0.000001' } },
-    metadata: {},
+    provider_id: context.provider.provider_id,
+    variant: 'standard',
   }
-  const field = { provider: 'headquarters', model: 'description', endpoint: 'is_disabled' }[kind]
+  const field = { endpoint: 'is_disabled', model: 'description', provider: 'headquarters' }[kind]
   const [change] =
     type === 'UPDATE'
       ? compare(
@@ -110,13 +110,13 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
           type === 'REMOVE' ? { [id]: snapshot } : {},
           type === 'ADD' ? { [id]: snapshot } : {},
         )
-  const fields = { entity_id: id, type, scan_at, change_json: JSON.stringify(change) }
-  let event: EventRow = { ...fields, entity_kind: 'endpoint', context }
+  const fields = { change_json: JSON.stringify(change), entity_id: id, scan_at, type }
+  let event: EventRow = { ...fields, context, entity_kind: 'endpoint' }
 
   if (kind === 'model') {
-    event = { ...fields, entity_kind: kind, context: { model: context.model } }
+    event = { ...fields, context: { model: context.model }, entity_kind: kind }
   } else if (kind === 'provider') {
-    event = { ...fields, entity_kind: kind, context: { provider: context.provider } }
+    event = { ...fields, context: { provider: context.provider }, entity_kind: kind }
   }
 
   return { previous, row: { table: EVENTS_TABLE, value: event } } as const
@@ -129,10 +129,10 @@ async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
   return await t.run(async (ctx) => {
     for (const scan_at of new Set(sources.map(({ row }) => row.value.scan_at))) {
       await ctx.db.insert(INGESTION_RECORDS_TABLE, {
-        kind: 'pair',
-        from_scan_at: PREVIOUS_SCAN_AT,
-        scan_at,
         alerts: true,
+        from_scan_at: PREVIOUS_SCAN_AT,
+        kind: 'pair',
+        scan_at,
         state: 'complete',
       })
     }
@@ -159,15 +159,15 @@ async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
     const reversed = await renderRows(ctx, rows.toReversed())
 
     return {
+      order: rendered.messages.map(({ source_ids }) => source_ids.map((id) => labels.get(id))),
       rendered,
       reversed,
-      order: rendered.messages.map(({ source_ids }) => source_ids.map((id) => labels.get(id))),
     }
   })
 }
 
 async function withOrigins(run: () => Promise<void>) {
-  const before = { web: process.env.ORCA_WEB_ORIGIN, logo: process.env.ORCA_LOGO_ORIGIN }
+  const before = { logo: process.env.ORCA_LOGO_ORIGIN, web: process.env.ORCA_WEB_ORIGIN }
   process.env.ORCA_WEB_ORIGIN = 'https://orca.orb.town'
   process.env.ORCA_LOGO_ORIGIN = 'https://logos.orb.town'
   try {
@@ -207,7 +207,7 @@ test('rendering reports suppressed source events and preserves deterministic ord
     await withOrigins(async () => {
       const rendered = await renderRows(ctx, rows)
       expect(rendered.messages).toHaveLength(2)
-      expect(rendered.skippedEvents).toEqual([{ source_id: 'hidden', reason: 'ineligible' }])
+      expect(rendered.skippedEvents).toEqual([{ reason: 'ineligible', source_id: 'hidden' }])
       const reversed = await renderRows(ctx, rows.toReversed())
       expect(reversed).toEqual(rendered)
     })
@@ -218,9 +218,9 @@ test('rendering reports suppressed source events and preserves deterministic ord
 })
 
 test('content identities canonicalize objects but preserve message and array order', () => {
-  expect(contentKey({ b: 2, a: { d: 4, c: 3 } })).toBe(contentKey({ a: { c: 3, d: 4 }, b: 2 }))
+  expect(contentKey({ a: { c: 3, d: 4 }, b: 2 })).toBe(contentKey({ a: { c: 3, d: 4 }, b: 2 }))
   expect(contentKey([1, 2])).not.toBe(contentKey([2, 1]))
-  expect(canonicalJson({ embeds: [{ title: 'hello' }], content: 'header' })).toBe(
+  expect(canonicalJson({ content: 'header', embeds: [{ title: 'hello' }] })).toBe(
     '{"content":"header","embeds":[{"title":"hello"}]}',
   )
 })

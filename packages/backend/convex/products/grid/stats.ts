@@ -7,12 +7,12 @@ import { CURRENT_STATS_TABLE, currentStatsTable } from '../../catalog/tables/cur
 /** The grid consumes the complete published snapshot. */
 export const grid = query({
   args: {},
-  returns: v.object({
-    as_of: v.union(v.null(), v.string()),
-    rows: currentStatsTable.validator.fields.rows,
-  }),
   handler: async (ctx) => {
     const snapshot = await ctx.db.query(CURRENT_STATS_TABLE).unique()
     return { as_of: snapshot?.scan_at ?? null, rows: snapshot?.rows ?? [] }
   },
+  returns: v.object({
+    as_of: v.union(v.null(), v.string()),
+    rows: currentStatsTable.validator.fields.rows,
+  }),
 })

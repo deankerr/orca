@@ -34,6 +34,6 @@ export async function clock(ctx: QueryCtx): Promise<string | null> {
 /** Product horizon, subscribed separately so advancing time does not invalidate history pages. */
 export const observe = query({
   args: {},
-  returns: v.union(v.null(), v.string()),
   handler: clock,
+  returns: v.union(v.null(), v.string()),
 })

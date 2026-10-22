@@ -22,9 +22,9 @@ function eraseRowType<R extends Row>(definition: CurrentTable<R>): CurrentTable 
 }
 
 export const currentTables: CurrentTable[] = [
-  eraseRowType({ name: 'models', derive: models.derive, key: (row) => row.model_id }),
-  eraseRowType({ name: 'providers', derive: providers.derive, key: (row) => row.provider_id }),
-  eraseRowType({ name: 'endpoints', derive: endpoints.derive, key: (row) => row.endpoint_id }),
+  eraseRowType({ derive: models.derive, key: (row) => row.model_id, name: 'models' }),
+  eraseRowType({ derive: providers.derive, key: (row) => row.provider_id, name: 'providers' }),
+  eraseRowType({ derive: endpoints.derive, key: (row) => row.endpoint_id, name: 'endpoints' }),
 ]
 
 /** Retained rows keyed by identity, merged as commits do. */
@@ -58,10 +58,10 @@ export function expectedCurrent<R extends Row>(table: CurrentTable<R>, scans: Sc
   for (const [index, scan] of scans.entries()) {
     const following = scans[index + 1]
 
-    retained.commit({ previous: null, next: scan }, 'full')
+    retained.commit({ next: scan, previous: null }, 'full')
 
     if (following !== undefined) {
-      retained.commit({ previous: scan, next: following }, 'departures')
+      retained.commit({ next: following, previous: scan }, 'departures')
     }
   }
 

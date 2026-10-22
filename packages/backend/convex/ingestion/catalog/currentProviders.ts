@@ -12,12 +12,12 @@ import { commitResult } from '../results'
 import { currentScope } from '../tables'
 
 export const ingest: Ingestor = createIngestor({
-  process: 'currentProviders',
   prepare: (_ctx, input) => ({
+    rows: operator.derive(input.source, input.scope),
     scan_at: input.source.next.scan_at,
     scope: input.scope,
-    rows: operator.derive(input.source, input.scope),
   }),
+  process: 'currentProviders',
   write: async (ctx, args) =>
     await ctx.runMutation(internal.ingestion.catalog.currentProviders.write, args),
 })
@@ -25,11 +25,10 @@ export const ingest: Ingestor = createIngestor({
 export const write = internalMutation({
   args: {
     process: v.string(),
+    rows: v.array(currentProvidersTable.validator),
     scan_at: v.string(),
     scope: currentScope,
-    rows: v.array(currentProvidersTable.validator),
   },
-  returns: commitResult,
   handler: async (ctx, { rows, scan_at, scope, process }) =>
     await commitProcess(
       ctx,
@@ -53,4 +52,5 @@ export const write = internalMutation({
       },
       SCOPE_COVERAGE[scope],
     ),
+  returns: commitResult,
 })

@@ -15,18 +15,18 @@ test('scan storage round-trips collected entries and loads one extracted scan', 
   const scan_at = '2026-10-02T10:40:04.272Z'
 
   const entry = {
-    model_id: 'author/model',
-    variant: 'standard',
+    endpoints: null,
     model: {
-      slug: 'author/model',
-      permaslug: 'author/model-v1',
       input_modalities: ['text'],
       output_modalities: ['image'],
+      permaslug: 'author/model-v1',
+      slug: 'author/model',
     },
-    endpoints: null,
+    model_id: 'author/model',
+    variant: 'standard',
   }
 
-  const scan = { scan_at, entries: [entry] }
+  const scan = { entries: [entry], scan_at }
   const saved = spyOn(objects, 'store').mockResolvedValue()
   const batch = spyOn(objects, 'loadMany').mockResolvedValue([])
 
@@ -36,8 +36,8 @@ test('scan storage round-trips collected entries and loads one extracted scan', 
     const text = `${JSON.stringify({ ...entry, scan_at })}\n`
 
     expect(saved).toHaveBeenCalledWith(ctx, {
-      path: 'scans',
       name: `scan.${scan_at}.jsonl`,
+      path: 'scans',
       text,
     })
 
@@ -45,10 +45,10 @@ test('scan storage round-trips collected entries and loads one extracted scan', 
     expect(await scans.loadCollected(ctx, scan_at)).toEqual(scan)
 
     expect(await scans.load(ctx, scan_at)).toEqual({
-      scan_at,
+      endpoints: new Map(),
       models: new Map(),
       providers: new Map(),
-      endpoints: new Map(),
+      scan_at,
       stats: [],
     })
     batch.mockResolvedValue([null])
@@ -66,26 +66,26 @@ test('navigation selects scans independently of loading and extraction', async (
   const times = ['2026-10-01T00:00:00.000Z', '2026-10-02T00:00:00.000Z', '2026-10-03T00:00:00.000Z']
 
   const entry = (id: string, output = 'text') => ({
-    model_id: id,
-    variant: 'free',
-    model: {
-      slug: id,
-      permaslug: `${id}-v1`,
-      short_name: id,
-      created_at: times[0],
-      input_modalities: ['text'],
-      output_modalities: [output],
-    },
     endpoints: [
       {
         id: `${id}-endpoint`,
         model_variant_slug: id,
-        variant: 'free',
+        provider_info: { displayName: 'Provider', name: 'Provider', slug: 'provider' },
         provider_slug: 'provider/region',
-        provider_info: { slug: 'provider', name: 'Provider', displayName: 'Provider' },
         status: 'online',
+        variant: 'free',
       },
     ],
+    model: {
+      created_at: times[0],
+      input_modalities: ['text'],
+      output_modalities: [output],
+      permaslug: `${id}-v1`,
+      short_name: id,
+      slug: id,
+    },
+    model_id: id,
+    variant: 'free',
   })
 
   const stored = new Map(
@@ -141,17 +141,17 @@ test('navigation selects scans independently of loading and extraction', async (
       expect(scan?.models.get(id)).toEqual({ ...entry(id).model, id, variant: 'free' })
 
       expect([...(scan?.providers.values() ?? [])]).toEqual([
-        { provider_id: 'provider', name: 'Provider', displayName: 'Provider' },
+        { displayName: 'Provider', name: 'Provider', provider_id: 'provider' },
       ])
 
       expect([...(scan?.endpoints.values() ?? [])]).toMatchObject([
         {
           id: `${id}-endpoint`,
-          model_variant_slug: id,
-          variant: 'free',
           model_id: id,
+          model_variant_slug: id,
           provider_id: 'provider',
           provider_tag: 'provider/region',
+          variant: 'free',
         },
       ])
 
@@ -185,10 +185,10 @@ test('discovery finds the newest capture in one read and handles exhausted navig
     expect(discovery).toHaveBeenCalledTimes(1)
 
     expect(discovery).toHaveBeenLastCalledWith(ctx, {
-      path: 'scans',
       atOrAfter: '',
       limit: 1,
       order: 'desc',
+      path: 'scans',
     })
 
     discovery.mockClear()
@@ -225,8 +225,8 @@ test('collected reads normalize references once and reject invalid references be
       '2026-10-03T00:00:00Z',
       '2026-10-03T10:00:00+10:00',
     ]) {
-      expect(await scans.loadCollected(ctx, reference)).toEqual({ scan_at: time, entries: [] })
-      expect(batch).toHaveBeenLastCalledWith(ctx, [{ path: 'scans', name: `scan.${time}.jsonl` }])
+      expect(await scans.loadCollected(ctx, reference)).toEqual({ entries: [], scan_at: time })
+      expect(batch).toHaveBeenLastCalledWith(ctx, [{ name: `scan.${time}.jsonl`, path: 'scans' }])
     }
 
     expect(discovery).not.toHaveBeenCalled()

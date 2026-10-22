@@ -16,8 +16,8 @@ export async function highlightJson(code: string) {
   return jsonHighlighter.codeToHtml(code, {
     lang: 'json',
     themes: {
-      light: 'github-light',
       dark: 'github-dark-default',
+      light: 'github-light',
     },
   })
 }

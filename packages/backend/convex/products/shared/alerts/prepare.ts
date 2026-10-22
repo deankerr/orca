@@ -20,11 +20,11 @@ export function interpretEvent(row: EventRow): EntityAlert | null {
     return curate(row)
   } catch (error) {
     console.error('[alerts] could not prepare event', {
-      source_id: '_id' in row ? row._id : undefined,
-      entity_kind: row.entity_kind,
       entity_id: row.entity_id,
-      scan_at: row.scan_at,
+      entity_kind: row.entity_kind,
       error,
+      scan_at: row.scan_at,
+      source_id: '_id' in row ? row._id : undefined,
     })
 
     return null

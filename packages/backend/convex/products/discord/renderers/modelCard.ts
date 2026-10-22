@@ -25,14 +25,14 @@ export function modelCard(event: ModelAlert, urls: DiscordUrls): Card {
 
     return componentCard(content, {
       color: colors.added,
-      thumbnail: { url: logo, description: `${name} logo` },
+      thumbnail: { description: `${name} logo`, url: logo },
     })
   }
 
   return embedCard(lifecycleMarker(event) + compactContent(event).filter(Boolean).join('\n\n'), {
-    author: { name: slug, url, iconURL: logo },
-    timestamp: event.observed_at,
+    author: { iconURL: logo, name: slug, url },
     color: lifecycleColor(event),
+    timestamp: event.observed_at,
   })
 }
 

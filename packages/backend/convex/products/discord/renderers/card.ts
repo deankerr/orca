@@ -14,7 +14,7 @@ import type { EntityAlert } from '../../shared/alerts/curate'
 export type Card = RESTPostAPIWebhookWithTokenJSONBody
 export type DiscordUrls = { publicUrl: string; logoOrigin: string }
 
-export const colors = { added: 0x22_c5_5e, updated: 0x3b_82_f6, removed: 0xef_44_44 }
+export const colors = { added: 0x22_c5_5e, removed: 0xef_44_44, updated: 0x3b_82_f6 }
 
 /** Arrivals carry `after`, departures `before`, and updates `changes`. */
 export function lifecycleColor(event: EntityAlert): number {
@@ -83,7 +83,7 @@ export function componentCard(
     .setAccentColor(options.color)
     .addSectionComponents(section)
 
-  return { flags: MessageFlags.IsComponentsV2, components: [container.toJSON()] }
+  return { components: [container.toJSON()], flags: MessageFlags.IsComponentsV2 }
 }
 
 export function gridUrl(query: string, urls: DiscordUrls, uuid?: string): string {

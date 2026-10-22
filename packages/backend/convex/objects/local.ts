@@ -40,5 +40,5 @@ export async function readLocal(
   if (body === null) {
     throw new ConvexError({ message: 'object blob missing', ...identity })
   }
-  return { codec: locator.codec, bytes: new Uint8Array(body).buffer }
+  return { bytes: new Uint8Array(body).buffer, codec: locator.codec }
 }

@@ -36,11 +36,11 @@ const BASELINE_LIMIT = 8
 /** Coordinate wakeups separately so queue contention cannot roll back a completion. */
 export const wake = internalMutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     await scheduleQueue(ctx)
     return null
   },
+  returns: v.null(),
 })
 
 /** Schedule a queue step unless one is already waiting to start; a running step does not count. */
@@ -65,7 +65,6 @@ export async function scheduleQueue(ctx: MutationCtx) {
 /** One queue step: commit the first selection that finds work, then run again until idle. */
 export const run = internalMutation({
   args: {},
-  returns: literals('withdraw', 'ingest', 'baseline', 'idle'),
   handler: async (ctx) => {
     const decision = decideQueue(await readView(ctx), {
       batch: QUEUE_BATCH,
@@ -83,13 +82,14 @@ export const run = internalMutation({
         await ingest(ctx, records, decision.requests)
       } else {
         // A baseline's candidates are complete; it records no scope, so it never counts as a full pair.
-        await ingest(ctx, records, [{ id: decision.id, scope: 'full', current_stats: false }])
+        await ingest(ctx, records, [{ current_stats: false, id: decision.id, scope: 'full' }])
       }
     })
 
     await scheduleQueue(ctx)
     return decision.kind
   },
+  returns: literals('withdraw', 'ingest', 'baseline', 'idle'),
 })
 
 async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
@@ -111,14 +111,14 @@ async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
   const baselineRecords = await byKind('baseline').take(BASELINE_LIMIT)
   const baselines = await Promise.all(
     baselineRecords.map(async ({ _id, scan_at, state }) => ({
-      id: _id,
-      scan_at,
-      state,
       displaced:
         (await ctx.db
           .query(INGESTION_RECORDS_TABLE)
           .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair').eq('scan_at', scan_at))
           .first()) !== null,
+      id: _id,
+      scan_at,
+      state,
     })),
   )
   const latestQueuedFull = await latestFull('queued')
@@ -134,14 +134,14 @@ async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
 
   return {
     baselines,
-    pending: pending.map(({ _id, scan_at }) => ({ id: _id, scan_at })),
-    latestCompleteFull,
     hasFull: latestQueuedFull !== null || latestCompleteFull !== null,
+    inFlight: await inFlight(ctx),
+    latestCompleteFull,
     latestPair: scanAt(await byKind('pair').order('desc').first()),
     pairsUnsettled:
       (await byState(ctx, 'pair', 'pending').first()) !== null ||
       (await byState(ctx, 'pair', 'queued').first()) !== null,
-    inFlight: await inFlight(ctx),
+    pending: pending.map(({ _id, scan_at }) => ({ id: _id, scan_at })),
   }
 }
 
@@ -176,11 +176,11 @@ function scanAt(record: { scan_at: string } | null): string | null {
 async function load<Request extends { id: RecordId }>(ctx: QueryCtx, requests: Request[]) {
   const loaded = await Promise.all(
     requests.map(async (request) => ({
-      request,
       record: await ctx.db.get(INGESTION_RECORDS_TABLE, request.id),
+      request,
     })),
   )
-  return loaded.flatMap(({ request, record }) => (record === null ? [] : [{ request, record }]))
+  return loaded.flatMap(({ request, record }) => (record === null ? [] : [{ record, request }]))
 }
 
 /**
@@ -197,10 +197,10 @@ async function ingest(
     ctx,
     internal.ingestion.execute.ingest,
     accepted.map(({ request: { scope, current_stats }, record: { from_scan_at, scan_at } }) => ({
+      current_stats,
       from_scan_at,
       scan_at,
       scope,
-      current_stats,
     })),
     { onComplete: internal.ingestion.execute.onIngested },
   )
@@ -209,12 +209,12 @@ async function ingest(
   await Promise.all(
     accepted.map(async ({ request, record }, index) => {
       await records.patch(record, {
-        state: 'queued',
+        error: undefined,
         ...(record.kind === 'pair'
           ? { current_scope: request.scope, current_stats: request.current_stats }
           : {}),
+        state: 'queued',
         work_id: workIds[index],
-        error: undefined,
       })
     }),
   )
@@ -235,9 +235,9 @@ async function withdraw(ctx: MutationCtx, records: RecordWrites, ids: RecordId[]
   await Promise.all(
     accepted.map(async ({ record }, index) => {
       await records.patch(record, {
+        error: undefined,
         state: 'withdrawing',
         work_id: workIds[index],
-        error: undefined,
       })
     }),
   )
@@ -246,8 +246,8 @@ async function withdraw(ctx: MutationCtx, records: RecordWrites, ids: RecordId[]
 /** Return failed records to pending; each receives a fresh scope when queued again. */
 export const retry = internalMutation({
   args: { record_id: v.optional(v.id(INGESTION_RECORDS_TABLE)) },
-  returns: v.number(),
   handler: async (ctx, { record_id }) => await retryFailed(ctx, record_id),
+  returns: v.number(),
 })
 
 /** Reopen one failed record, or up to `RETRY_BATCH` of them; returns how many were reopened. */
@@ -267,9 +267,9 @@ export async function retryFailed(ctx: MutationCtx, record_id?: RecordId): Promi
       failed.map(async (record) => {
         if (record !== null) {
           await records.patch(record, {
-            state: 'pending',
             current_scope: undefined,
             current_stats: undefined,
+            state: 'pending',
             work_id: undefined,
           })
         }

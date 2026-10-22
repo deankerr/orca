@@ -44,11 +44,11 @@ async function discover(
 ) {
   const { atOrAfter, before, limit, order } = selection
   const names = await objects.namesAtOrAfter(ctx, {
-    path: 'scans',
     atOrAfter: atOrAfter === null ? '' : identity(atOrAfter).name,
     ...(before === null ? {} : { before: identity(before).name }),
     limit,
     order,
+    path: 'scans',
   })
 
   return names.map(timeFromName)
@@ -79,7 +79,7 @@ export async function loadCollected(ctx: ActionCtx, reference: string): Promise<
       return entry
     })
 
-  return { scan_at, entries }
+  return { entries, scan_at }
 }
 
 /** Objects owns compression, storage, and source selection. */
@@ -95,7 +95,7 @@ export async function store(ctx: ActionCtx, scan: RawScan): Promise<void> {
 }
 
 function identity(scanAt: string) {
-  return { path: 'scans', name: `scan.${scanAt}.jsonl` }
+  return { name: `scan.${scanAt}.jsonl`, path: 'scans' }
 }
 
 function timeFromName(name: string): string {

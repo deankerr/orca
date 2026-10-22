@@ -6,49 +6,49 @@ import type { OrcaPublicApiV2Endpoint, OrcaPublicApiV2Model } from './schema'
 
 const optionalNumber = z.number().nullish()
 const Endpoint = z.object({
-  provider_slug: z.string(),
-  provider_info: z.object({ displayName: z.string() }),
-  pricing: z.record(z.string(), z.unknown()),
-  stats: z
-    .object({ p50_latency: z.number().nullish(), p50_throughput: z.number().nullish() })
-    .optional(),
-  model_variant_slug: z.string(),
   context_length: z.number(),
-  provider_region: z.string().nullish(),
-  supported_parameters: z.array(z.string()),
-  quantization: z.string().nullish(),
-  supports_reasoning: z.boolean(),
-  has_completions: z.boolean(),
-  has_chat_completions: z.boolean(),
-  is_disabled: z.boolean(),
-  is_deranked: z.boolean(),
-  moderation_required: z.boolean(),
+  data_policy: z.object({
+    canPublish: z.boolean().optional(),
+    requiresUserIDs: z.boolean().optional(),
+    retainsPrompts: z.boolean().optional(),
+    retentionDays: z.number().optional(),
+    training: z.boolean().optional(),
+  }),
   features: z.object({
     supports_implicit_caching: z.boolean().optional(),
     supports_native_web_search: z.boolean().optional(),
   }),
-  data_policy: z.object({
-    canPublish: z.boolean().optional(),
-    retainsPrompts: z.boolean().optional(),
-    retentionDays: z.number().optional(),
-    training: z.boolean().optional(),
-    requiresUserIDs: z.boolean().optional(),
-  }),
-  max_prompt_tokens: optionalNumber,
-  max_completion_tokens: optionalNumber,
-  max_tokens_per_image: optionalNumber,
-  max_prompt_images: optionalNumber,
-  limit_rpm: optionalNumber,
+  has_chat_completions: z.boolean(),
+  has_completions: z.boolean(),
+  is_deranked: z.boolean(),
+  is_disabled: z.boolean(),
   limit_rpd: optionalNumber,
+  limit_rpm: optionalNumber,
+  max_completion_tokens: optionalNumber,
+  max_prompt_images: optionalNumber,
+  max_prompt_tokens: optionalNumber,
+  max_tokens_per_image: optionalNumber,
+  model_variant_slug: z.string(),
+  moderation_required: z.boolean(),
+  pricing: z.record(z.string(), z.unknown()),
+  provider_info: z.object({ displayName: z.string() }),
+  provider_region: z.string().nullish(),
+  provider_slug: z.string(),
+  quantization: z.string().nullish(),
+  stats: z
+    .object({ p50_latency: z.number().nullish(), p50_throughput: z.number().nullish() })
+    .optional(),
+  supported_parameters: z.array(z.string()),
+  supports_reasoning: z.boolean(),
 })
 const Model = z.object({
-  name: z.string(),
   author: z.string(),
-  short_name: z.string(),
-  permaslug: z.string(),
   created_at: z.string(),
   input_modalities: z.array(z.string()),
+  name: z.string(),
   output_modalities: z.array(z.string()),
+  permaslug: z.string(),
+  short_name: z.string(),
 })
 
 /**
@@ -71,6 +71,7 @@ export function transformScanToV2Models(entries: ScanEntry[]): OrcaPublicApiV2Mo
       let group = output.get(facts.model_variant_slug)
 
       if (group === undefined) {
+        // oxlint-disable sort-keys -- Published V2 model field order (matches the frozen schema and cached JSON blob).
         const model = Model.parse(entry.model)
         group = {
           id: facts.model_variant_slug,
@@ -84,6 +85,7 @@ export function transformScanToV2Models(entries: ScanEntry[]): OrcaPublicApiV2Mo
           reasoning: facts.supports_reasoning,
           providers: [],
         }
+        // oxlint-enable sort-keys
         output.set(group.id, group)
       }
 
@@ -101,13 +103,14 @@ function formatPrice(value: unknown): string | null {
     return null
   }
 
-  return price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 20 })
+  return price.toLocaleString('en-US', { maximumFractionDigits: 20, minimumFractionDigits: 0 })
 }
 
 function transformEndpoint(facts: z.infer<typeof Endpoint>): OrcaPublicApiV2Endpoint {
   const meters = facts.pricing
   const { stats } = facts
 
+  // oxlint-disable sort-keys -- Published V2 endpoint field order (matches the frozen schema and cached JSON blob).
   return {
     provider_id: facts.provider_slug,
     provider_name: facts.provider_info.displayName,
@@ -154,4 +157,5 @@ function transformEndpoint(facts: z.infer<typeof Endpoint>): OrcaPublicApiV2Endp
         ? { latency_ms_p50: stats.p50_latency, tokens_per_sec_p50: stats.p50_throughput }
         : null,
   }
+  // oxlint-enable sort-keys
 }

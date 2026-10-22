@@ -4,41 +4,41 @@ import { isoDate } from '../../fields'
 
 export const ExtractedModel = z
   .object({
-    id: z.string(),
-    variant: z.string(),
-    slug: z.string(),
-    permaslug: z.string(),
-    short_name: z.string(),
     created_at: isoDate,
+    id: z.string(),
     input_modalities: z.array(z.string()).transform((modalities) => modalities.toSorted()),
     output_modalities: z.array(z.string()).transform((modalities) => modalities.toSorted()),
+    permaslug: z.string(),
+    short_name: z.string(),
+    slug: z.string(),
+    variant: z.string(),
   })
   .catchall(z.json())
 
 export const ExtractedProvider = z
-  .object({ provider_id: z.string(), displayName: z.string() })
+  .object({ displayName: z.string(), provider_id: z.string() })
   .catchall(z.json())
 
 export const ExtractedEndpoint = z
   .object({
     id: z.string(),
-    variant: z.string(),
+    input_modalities: z.array(z.string()),
+    model_display_name: z.string(),
     model_id: z.string(),
+    model_or_created_at: z.string(),
+    model_permaslug: z.string(),
+    model_variant_slug: z.string(),
+    output_modalities: z.array(z.string()),
     provider_id: z.string(),
     provider_tag: z.string(),
-    model_variant_slug: z.string(),
-    model_display_name: z.string(),
-    model_permaslug: z.string(),
-    model_or_created_at: z.string(),
-    input_modalities: z.array(z.string()),
-    output_modalities: z.array(z.string()),
+    variant: z.string(),
   })
   .catchall(z.json())
 
 export const ExtractedStats = z.object({
   endpoint_id: z.string(),
-  tier: z.string(),
   sample: z.record(z.string(), z.union([z.number(), z.string(), z.null()])),
+  tier: z.string(),
 })
 
 export type ExtractedModel = z.infer<typeof ExtractedModel>

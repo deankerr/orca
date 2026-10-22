@@ -8,10 +8,10 @@ import type { FeedEvent } from './render'
 
 const parameters = z
   .strictObject({
-    limit: z.coerce.number().int().min(1).max(100).default(20),
     cursor: z.string().min(1).optional(),
-    entity_kind: z.enum(['model', 'provider', 'endpoint']).optional(),
     entity_id: z.string().min(1).optional(),
+    entity_kind: z.enum(['model', 'provider', 'endpoint']).optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
     model_id: z.string().min(1).optional(),
     provider_id: z.string().min(1).optional(),
   })
@@ -35,13 +35,13 @@ export const serve = httpAction(async (ctx, request) => {
     return Response.json({ error: z.prettifyError(parsed.error) }, { status: 400 })
   }
   const args = parsed.data
-  const paginationOpts = { numItems: args.limit, cursor: args.cursor ?? null }
+  const paginationOpts = { cursor: args.cursor ?? null, numItems: args.limit }
   let result: PaginationResult<FeedEvent>
   try {
     if (args.entity_kind !== undefined && args.entity_id !== undefined) {
       result = await ctx.runQuery(api.products.feed.query.byEntity, {
-        entity_kind: args.entity_kind,
         entity_id: args.entity_id,
+        entity_kind: args.entity_kind,
         paginationOpts,
       })
     } else if (args.model_id !== undefined) {
@@ -53,8 +53,8 @@ export const serve = httpAction(async (ctx, request) => {
       result = await ctx.runQuery(api.products.feed.query.list, { paginationOpts })
     } else {
       result = await ctx.runQuery(api.products.feed.query.byProvider, {
-        provider_id: args.provider_id,
         paginationOpts,
+        provider_id: args.provider_id,
       })
     }
   } catch (error) {

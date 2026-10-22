@@ -103,13 +103,13 @@ export function toAttributeFilters(has: string[], not: string[]): AttributeFilte
 
 export function toModalityFilters(has: string[], not: string[]): ModalityFilterState {
   return {
-    text_output: resolveFilterMode(has, not, 'text_output'),
-    image_input: resolveFilterMode(has, not, 'image_input'),
-    file_input: resolveFilterMode(has, not, 'file_input'),
     audio_input: resolveFilterMode(has, not, 'audio_input'),
-    video_input: resolveFilterMode(has, not, 'video_input'),
-    image_output: resolveFilterMode(has, not, 'image_output'),
     audio_output: resolveFilterMode(has, not, 'audio_output'),
+    file_input: resolveFilterMode(has, not, 'file_input'),
+    image_input: resolveFilterMode(has, not, 'image_input'),
+    image_output: resolveFilterMode(has, not, 'image_output'),
+    text_output: resolveFilterMode(has, not, 'text_output'),
+    video_input: resolveFilterMode(has, not, 'video_input'),
   }
 }
 

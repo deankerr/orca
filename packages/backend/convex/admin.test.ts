@@ -33,7 +33,7 @@ function context(subject: string | null): QueryCtx {
   const identity: UserIdentity | null =
     subject === null
       ? null
-      : { subject, issuer: 'https://issuer.example', tokenIdentifier: `test|${subject}` }
+      : { issuer: 'https://issuer.example', subject, tokenIdentifier: `test|${subject}` }
 
   return { auth: { getUserIdentity: async () => identity } } as unknown as QueryCtx
 }
@@ -43,7 +43,7 @@ test('anonymous and other signed-in users cannot call the admin demo directly', 
 
   for (const subject of [null, 'user_other']) {
     await rejects(demoHandler(context(subject), {}), /Administrator access required/u)
-    expect(await viewerHandler(context(subject), {})).toEqual({ userId: subject, isAdmin: false })
+    expect(await viewerHandler(context(subject), {})).toEqual({ isAdmin: false, userId: subject })
   }
 })
 
@@ -58,12 +58,12 @@ test('an unset or empty allowlist denies authenticated callers', async () => {
 test('only the configured identity can call the demo; replacing it revokes the old identity', async () => {
   process.env.ORCA_ADMIN_USER_ID = 'user_admin'
   expect(await demoHandler(context('user_admin'), {})).toEqual({
-    userId: 'user_admin',
     message: 'Administrator access verified',
+    userId: 'user_admin',
   })
   expect(await viewerHandler(context('user_admin'), {})).toEqual({
-    userId: 'user_admin',
     isAdmin: true,
+    userId: 'user_admin',
   })
 
   process.env.ORCA_ADMIN_USER_ID = 'user_replacement'

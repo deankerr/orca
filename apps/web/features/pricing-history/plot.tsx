@@ -22,12 +22,12 @@ function applyInspectedPointer(instance: ECharts, at: number | null, asOf: numbe
   instance.setOption({
     xAxis: {
       axisPointer: {
-        triggerEmphasis: false,
-        show: at !== null,
         label: { show: false },
-        value: at ?? asOf,
-        status: at === null ? 'hide' : 'show',
         lineStyle: { color: '#a1a1aa', type: 'dashed' },
+        show: at !== null,
+        status: at === null ? 'hide' : 'show',
+        triggerEmphasis: false,
+        value: at ?? asOf,
       },
     },
   })
@@ -57,10 +57,10 @@ export function PricingHistoryPlot({
   const container = useRef<HTMLDivElement>(null)
   const chart = useRef<ECharts | null>(null)
   const frame = useRef<DOMRect | null>(null)
-  const callbacks = useRef({ onRange, onInspect, onEmphasis, since, asOf })
+  const callbacks = useRef({ asOf, onEmphasis, onInspect, onRange, since })
 
   useEffect(() => {
-    callbacks.current = { onRange, onInspect, onEmphasis, since, asOf }
+    callbacks.current = { asOf, onEmphasis, onInspect, onRange, since }
   })
 
   useEffect(() => {
@@ -188,85 +188,85 @@ export function PricingHistoryPlot({
         animation: true,
         animationDuration: 0,
         animationDurationUpdate: 0,
+        dataZoom: [
+          {
+            end: ((range[1] - since) / span) * 100,
+            filterMode: 'none',
+            minValueSpan: Math.min(60_000, span),
+            moveOnMouseWheel: false,
+            start: ((range[0] - since) / span) * 100,
+            type: 'inside',
+            zoomOnMouseWheel: 'ctrl',
+          },
+          {
+            backgroundColor: '#0a0a0a',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderRadius: 4,
+            bottom: 12,
+            brushSelect: false,
+            end: ((range[1] - since) / span) * 100,
+            fillerColor: '#262626',
+            filterMode: 'none',
+            handleIcon: NAVIGATOR_HANDLE,
+            handleLabel: { show: false },
+            handleSize: 44,
+            handleStyle: {
+              borderWidth: 0,
+              color: '#e5e5e5',
+              shadowBlur: 4,
+              shadowColor: 'rgba(0,0,0,0.5)',
+            },
+            height: 24,
+            left: 16,
+            minValueSpan: Math.min(60_000, span),
+            moveHandleSize: 0,
+            realtime: true,
+            right: 16,
+            showDataShadow: false,
+            showDetail: false,
+            start: ((range[0] - since) / span) * 100,
+            textStyle: { color: '#a1a1aa' },
+            throttle: 50,
+            type: 'slider',
+          },
+        ],
+        grid: { bottom: 85, left: 58, right: 16, top: 20 },
+        series: traces.map((trace) => {
+          const color = providerSrgbColor(trace.tag)
+          return {
+            data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
+            emphasis: { focus: 'series', lineStyle: { width: 3 } },
+            id: trace.id,
+            itemStyle: { color },
+            lineStyle: { color, width: 1.5 },
+            name: trace.tag,
+            showSymbol: false,
+            step: 'end',
+            triggerEvent: 'line',
+            type: 'line',
+          }
+        }),
         stateAnimation: {
           duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 150,
           easing: 'cubicOut',
         },
-        grid: { left: 58, right: 16, top: 20, bottom: 85 },
         xAxis: {
-          type: 'time',
-          min: since,
-          max: asOf,
           axisLabel: { color: '#a1a1aa', hideOverlap: true },
           axisLine: { lineStyle: { color: '#3f3f46' } },
+          max: asOf,
+          min: since,
+          type: 'time',
         },
         yAxis: {
-          type: 'value',
-          min: 0,
-          max: maximum > 0 ? niceCeiling(maximum * 1.08) : 1,
           axisLabel: {
             color: '#a1a1aa',
             formatter: (price: number) => formatPrice(price) ?? '—',
           },
+          max: maximum > 0 ? niceCeiling(maximum * 1.08) : 1,
+          min: 0,
           splitLine: { lineStyle: { color: '#27272a' } },
+          type: 'value',
         },
-        dataZoom: [
-          {
-            type: 'inside',
-            start: ((range[0] - since) / span) * 100,
-            end: ((range[1] - since) / span) * 100,
-            filterMode: 'none',
-            zoomOnMouseWheel: 'ctrl',
-            moveOnMouseWheel: false,
-            minValueSpan: Math.min(60_000, span),
-          },
-          {
-            type: 'slider',
-            realtime: true,
-            throttle: 50,
-            start: ((range[0] - since) / span) * 100,
-            end: ((range[1] - since) / span) * 100,
-            filterMode: 'none',
-            bottom: 12,
-            left: 16,
-            right: 16,
-            height: 24,
-            brushSelect: false,
-            moveHandleSize: 0,
-            handleIcon: NAVIGATOR_HANDLE,
-            handleSize: 44,
-            handleLabel: { show: false },
-            handleStyle: {
-              color: '#e5e5e5',
-              borderWidth: 0,
-              shadowBlur: 4,
-              shadowColor: 'rgba(0,0,0,0.5)',
-            },
-            minValueSpan: Math.min(60_000, span),
-            showDetail: false,
-            showDataShadow: false,
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderRadius: 4,
-            backgroundColor: '#0a0a0a',
-            fillerColor: '#262626',
-            textStyle: { color: '#a1a1aa' },
-          },
-        ],
-        series: traces.map((trace) => {
-          const color = providerSrgbColor(trace.tag)
-          return {
-            id: trace.id,
-            name: trace.tag,
-            type: 'line',
-            triggerEvent: 'line',
-            step: 'end',
-            showSymbol: false,
-            data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
-            lineStyle: { width: 1.5, color },
-            itemStyle: { color },
-            emphasis: { focus: 'series', lineStyle: { width: 3 } },
-          }
-        }),
       },
       { replaceMerge: ['series'] },
     )
@@ -276,7 +276,7 @@ export function PricingHistoryPlot({
     chart.current?.dispatchAction({ type: 'downplay' })
 
     if (emphasis !== null) {
-      chart.current?.dispatchAction({ type: 'highlight', seriesName: emphasis })
+      chart.current?.dispatchAction({ seriesName: emphasis, type: 'highlight' })
     }
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Reapply highlighting after trace or range changes update the chart's series.
   }, [emphasis, traces, range])
@@ -307,8 +307,8 @@ export function PricingHistoryPlot({
         const next = {
           ArrowLeft: current - step,
           ArrowRight: current + step,
-          Home: range[0],
           End: range[1],
+          Home: range[0],
         }[event.key]
 
         if (next !== undefined) {
@@ -346,7 +346,7 @@ function zoomEvent(value: unknown): { start: number; end: number } | null {
     value.end <= 100 &&
     value.start <= value.end
   ) {
-    return { start: value.start, end: value.end }
+    return { end: value.end, start: value.start }
   }
 
   return null

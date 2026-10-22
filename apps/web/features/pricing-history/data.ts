@@ -76,12 +76,12 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
 
       if (!trace) {
         trace = {
-          id: `${endpoint.id}:${at}`,
-          tag: context.provider_tag,
-          start: at,
-          end: pricingHistory.asOf,
-          samples: [],
           current: true,
+          end: pricingHistory.asOf,
+          id: `${endpoint.id}:${at}`,
+          samples: [],
+          start: at,
+          tag: context.provider_tag,
         }
 
         traces.push(trace)

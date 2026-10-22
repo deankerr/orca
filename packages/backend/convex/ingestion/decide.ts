@@ -10,9 +10,9 @@ export type NewPair = { from_scan_at: string; scan_at: string; alerts: boolean }
 /** Pairs between adjacent ascending times; the first time is only the first pair's predecessor. */
 export function chain(times: readonly string[], alerts: boolean): NewPair[] {
   return times.slice(1).map((scan_at, index) => ({
+    alerts,
     from_scan_at: times[index] ?? '',
     scan_at,
-    alerts,
   }))
 }
 
@@ -141,7 +141,7 @@ export function decideQueue<Id>(
   )
 
   if (withdrawable.length > 0) {
-    return { kind: 'withdraw', ids: withdrawable.map(({ id }) => id) }
+    return { ids: withdrawable.map(({ id }) => id), kind: 'withdraw' }
   }
 
   // Withdrawals bypass the capacity: they are rare and must not wait behind ingestion.
@@ -161,7 +161,7 @@ export function decideQueue<Id>(
 
     const behindFull = view.latestCompleteFull !== null && view.latestCompleteFull > scan_at
     const scope = pairScope(behindFull, hasFull)
-    requests.push({ id, scope, current_stats: scan_at === view.latestPair })
+    requests.push({ current_stats: scan_at === view.latestPair, id, scope })
 
     // Pairs behind a queued full pair wait until it completes, then commit departures only.
     if (scope === 'full') {
@@ -185,6 +185,6 @@ export function decideQueue<Id>(
     only.state === 'pending' &&
     !only.displaced &&
     view.inFlight < capacity
-    ? { kind: 'baseline', id: only.id }
+    ? { id: only.id, kind: 'baseline' }
     : { kind: 'idle' }
 }

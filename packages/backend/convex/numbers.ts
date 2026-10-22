@@ -43,14 +43,14 @@ export function formatNumber(
 
 /** Money keeps cents for familiar prices ($1.40), without turning $0.000198 into $0.00. */
 export function formatPrice(value: Numeric, scale = 0): string | null {
-  const amount = formatNumber(value, { scale, minimumFractionDigits: 2 })
+  const amount = formatNumber(value, { minimumFractionDigits: 2, scale })
 
   return amount === null ? null : `$${amount}`
 }
 
 /** An absolute percentage, such as a discount, is independent of a relative change. */
 export function formatPercent(value: Numeric): string | null {
-  const amount = formatNumber(value, { scale: 2, fractionDigits: 1 })
+  const amount = formatNumber(value, { fractionDigits: 1, scale: 2 })
 
   return amount === null ? null : `${amount}%`
 }
@@ -115,9 +115,9 @@ function relativeDifference(before: Numeric, after: Numeric): (Ratio & { isUp: b
   }
 
   return {
+    denominator: abs(old.numerator) * next.denominator,
     isUp: difference > 0n,
     numerator: abs(difference) * 100n,
-    denominator: abs(old.numerator) * next.denominator,
   }
 }
 
@@ -151,8 +151,8 @@ function decimal(value: Numeric, scale = 0): Ratio | null {
   const coefficient = BigInt(`${parts.sign}${parts.whole}${fraction}`)
 
   return {
-    numerator: coefficient * power(Math.max(0, exponent)),
     denominator: power(Math.max(0, -exponent)),
+    numerator: coefficient * power(Math.max(0, exponent)),
   }
 }
 

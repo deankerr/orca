@@ -26,11 +26,11 @@ export function derive(source: Source): ObservationRow[] {
     return R.pipe(
       R.unique([...Object.keys(before), ...Object.keys(after)]),
       R.map((entity_id) => ({
-        entity_kind,
-        entity_id,
-        scan_at,
         endpoint_count: after[entity_id] ?? 0,
+        entity_id,
+        entity_kind,
         previous_endpoint_count: source.previous === null ? null : (before[entity_id] ?? 0),
+        scan_at,
       })),
       R.filter(({ entity_id, endpoint_count }) => endpoint_count !== (before[entity_id] ?? 0)),
     )
@@ -61,7 +61,7 @@ function endpointRow(
   detected: boolean,
   endpoint: Collections['endpoints'] extends ReadonlyMap<string, infer E> ? E : never,
 ): ObservationRow {
-  return { entity_kind: 'endpoint', entity_id, scan_at, detected, ...context(endpoint) }
+  return { detected, entity_id, entity_kind: 'endpoint', scan_at, ...context(endpoint) }
 }
 
 function context(endpoint: Pick<ExtractedEndpoint, 'model_id' | 'provider_id' | 'provider_tag'>) {

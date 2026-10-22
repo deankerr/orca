@@ -5,8 +5,8 @@ import { hour, scan } from './testing'
 
 const reading = (endpoint_id: string, p50_latency: number | null) => ({
   endpoint_id,
-  tier: 'default',
   sample: { p50_latency },
+  tier: 'default',
 })
 const listed = (p50_latency: number | null) => ({
   model: 'm1',
@@ -22,6 +22,6 @@ test("a record owns only its introduced scan's readings, including repeated valu
     { ...reading('e2', null), scan_at: hour(1) },
   ]
 
-  expect(derive({ previous, next })).toEqual(rows)
-  expect(derive({ previous: null, next })).toEqual(rows)
+  expect(derive({ next, previous })).toEqual(rows)
+  expect(derive({ next, previous: null })).toEqual(rows)
 })

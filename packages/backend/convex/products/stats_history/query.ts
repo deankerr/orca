@@ -9,7 +9,6 @@ import { cappedCutoff, emptyPage, pageArgs, pageResult } from '../shared/paginat
 /** Page retained samples across tiers through the completed observation horizon. */
 export const list = query({
   args: { endpoint_id: v.string(), ...pageArgs },
-  returns: pageResult(endpointStatsTable.validator),
   handler: async (ctx, args) => {
     const cutoff = await cappedCutoff(ctx, args.cutoff)
     if (cutoff === null) {
@@ -22,6 +21,7 @@ export const list = query({
       )
       .order('desc')
       .paginate(args.paginationOpts)
-    return { ...result, page: result.page.map(withoutSystemFields), as_of: cutoff }
+    return { ...result, as_of: cutoff, page: result.page.map(withoutSystemFields) }
   },
+  returns: pageResult(endpointStatsTable.validator),
 })

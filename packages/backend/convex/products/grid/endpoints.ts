@@ -15,7 +15,6 @@ const UNLISTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
  */
 export const grid = query({
   args: {},
-  returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx) => {
     const listed = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
@@ -35,4 +34,5 @@ export const grid = query({
 
     return [...listed, ...unlisted].map((row) => Endpoint.parse(row))
   },
+  returns: v.array(zodOutputToConvex(Endpoint)),
 })

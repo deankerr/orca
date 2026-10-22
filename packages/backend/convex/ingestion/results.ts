@@ -6,34 +6,34 @@ export const commitResult = literals('committed', 'already_committed')
 export const removeResult = literals('removed', 'already_removed')
 
 const error = v.object({
-  name: v.string(),
   message: v.string(),
+  name: v.string(),
   stack: v.optional(v.string()),
 })
 
 export const ingestResult = v.union(
   v.object({
-    process: v.string(),
     kind: commitResult,
+    process: v.string(),
   }),
   v.object({
-    process: v.string(),
-    kind: v.literal('failed'),
-    stage: literals('prepare', 'write'),
     error,
+    kind: v.literal('failed'),
+    process: v.string(),
+    stage: literals('prepare', 'write'),
   }),
 )
 
 export const removalResult = v.union(
   v.object({
-    process: v.string(),
     kind: removeResult,
+    process: v.string(),
   }),
   v.object({
-    process: v.string(),
-    kind: v.literal('failed'),
-    stage: v.literal('remove'),
     error,
+    kind: v.literal('failed'),
+    process: v.string(),
+    stage: v.literal('remove'),
   }),
 )
 

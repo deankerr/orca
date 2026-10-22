@@ -6,9 +6,9 @@ export type Source = { previous: Scan | null; next: Scan }
 export type Collections = Omit<Scan, 'scan_at'>
 
 const empty: Collections = {
+  endpoints: new Map(),
   models: new Map(),
   providers: new Map(),
-  endpoints: new Map(),
   stats: [],
 }
 

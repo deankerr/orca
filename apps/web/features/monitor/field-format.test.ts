@@ -7,9 +7,9 @@ test('Monitor formats native decimal prices and distinguishes null, false and ze
   expect(formatChangeValue('0.00000015', 'pricing.prompt')).toBe('$0.15')
 
   expect(formatChangeDelta('0.0000001', '0.00000015', 'pricing.prompt')).toEqual({
+    isGood: false,
     isUp: true,
     percent: '50%',
-    isGood: false,
   })
 
   expect(formatChangeValue('1e-400', 'pricing.prompt')).not.toBe('$0.00')

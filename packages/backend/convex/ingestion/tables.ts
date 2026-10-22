@@ -9,7 +9,7 @@ export const INGESTION_RECORDS_TABLE = 'ingestion_records' as const
 export const PROCESS_COMMITS_TABLE = 'ingestion_commits' as const
 export const QUEUE_SCHEDULE_TABLE = 'ingestion_queue_schedule' as const
 
-export const ingestionTargetRange = v.object({ start_at: v.string(), end_at: v.string() })
+export const ingestionTargetRange = v.object({ end_at: v.string(), start_at: v.string() })
 
 /** One timeline; the range widens, and its start advances only ahead of all registrations. */
 export const ingestionTargetTable = defineTable(ingestionTargetRange)
@@ -26,16 +26,16 @@ export type RecordState = Infer<typeof recordState>
  * `from_scan_at` is null, so indexes can separate pairs from baselines.
  */
 export const ingestionRecordsTable = defineTable({
-  kind: recordKind,
-  from_scan_at: v.union(v.string(), v.null()),
-  scan_at: v.string(),
   alerts: v.boolean(),
-  state: recordState,
   /** Assigned when queued; meaningful only for the request that received it. */
   current_scope: v.optional(currentScope),
   current_stats: v.optional(v.boolean()),
-  work_id: v.optional(vWorkId),
   error: v.optional(v.string()),
+  from_scan_at: v.union(v.string(), v.null()),
+  kind: recordKind,
+  scan_at: v.string(),
+  state: recordState,
+  work_id: v.optional(vWorkId),
 })
   .index('by_scan_at', ['scan_at'])
   .index('by_kind_and_scan_at', ['kind', 'scan_at'])
@@ -45,10 +45,10 @@ export const ingestionRecordsTable = defineTable({
 
 /** A process's output at a scan is committed exactly while its receipt exists. */
 export const processCommitsTable = defineTable({
-  scan_at: v.string(),
-  process: v.string(),
   // How much output the receipt covers; a retry requesting more writes again. Absent is 0.
   coverage: v.optional(v.number()),
+  process: v.string(),
+  scan_at: v.string(),
 }).index('by_scan_at_and_process', ['scan_at', 'process'])
 
 /**

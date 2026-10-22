@@ -30,9 +30,9 @@ export function useGridLoadTiming(
     }
     reported.current = true
     captureTiming('grid ready', {
-      view_load_id: load.endpoints.id,
       elapsed_ms: performance.now() - load.endpoints.started.at,
       signal: 'content_commit',
+      view_load_id: load.endpoints.id,
     })
   }, [load, endpoints.isSuccess, stats.isSuccess])
 }

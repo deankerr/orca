@@ -13,25 +13,25 @@ function getEndpointGridSorting({
   hasActiveQuery: boolean
 }): SortingState {
   if (sort === null) {
-    return hasActiveQuery ? [] : [{ id: 'modelAddedAt', desc: true }]
+    return hasActiveQuery ? [] : [{ desc: true, id: 'modelAddedAt' }]
   }
 
-  return [{ id: sort, desc: order === 'desc' }]
+  return [{ desc: order === 'desc', id: sort }]
 }
 
 export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boolean }) {
   const [params, setParams] = useQueryStates(
     {
-      sort: endpointGridParsers.sort,
       order: endpointGridParsers.order,
+      sort: endpointGridParsers.sort,
     },
     endpointGridStateOptions,
   )
 
   const sorting = getEndpointGridSorting({
-    sort: params.sort,
-    order: params.order,
     hasActiveQuery,
+    order: params.order,
+    sort: params.sort,
   })
 
   const onSortingChange = (
@@ -42,8 +42,8 @@ export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boole
 
     if (nextSorting.length === 0) {
       void setParams({
-        sort: null,
         order: null,
+        sort: null,
       })
       return
     }
@@ -54,14 +54,14 @@ export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boole
     }
 
     void setParams({
-      sort: nextSort.id,
       order: nextSort.desc ? 'desc' : 'asc',
+      sort: nextSort.id,
     })
   }
 
   return {
-    sorting,
     hasActiveSorting: params.sort !== null,
     onSortingChange,
+    sorting,
   }
 }

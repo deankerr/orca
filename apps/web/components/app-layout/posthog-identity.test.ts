@@ -15,7 +15,7 @@ it('keeps anonymous sessions, identifies login, and clears identity on logout or
   posthog.config.token = 'test'
 
   let userId: string | undefined
-  const user = { id: 'workos-user', email: 'admin@example.com', name: 'Admin' }
+  const user = { email: 'admin@example.com', id: 'workos-user', name: 'Admin' }
   const identify = spyOn(posthog, 'identify').mockImplementation((id) => {
     userId = id
   })

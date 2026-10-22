@@ -1,4 +1,5 @@
 /** Frozen published V2 contract. Preserve names, defaults and quirks; do not align with product schemas. */
+/* oxlint-disable sort-keys -- Published V2 response field order is frozen; zod parse emits keys in schema order into the cached JSON blob. */
 import { z } from 'zod'
 
 const DataPolicyOutputSchema = z.object({

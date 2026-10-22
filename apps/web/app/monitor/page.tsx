@@ -5,8 +5,8 @@ import { ClientOnly } from '@/components/shared/client-only'
 import { MonitorPage } from '@/features/monitor/monitor-page'
 
 export const metadata: Metadata = {
-  title: 'Monitor',
   description: 'Updates detected between OpenRouter API snapshots',
+  title: 'Monitor',
 }
 
 export default function Page() {

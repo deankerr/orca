@@ -52,12 +52,12 @@ test('local discovery applies direction before limiting and preserves both bound
       }),
     },
   } as unknown as QueryCtx
-  const selection = { path: 'scans', atOrAfter: 'b', limit: 2 }
+  const selection = { atOrAfter: 'b', limit: 2, path: 'scans' }
 
   expect(await findLocalNames(ctx, selection)).toEqual(['b', 'c'])
   expect(await findLocalNames(ctx, { ...selection, order: 'asc' })).toEqual(['b', 'c'])
   expect(await findLocalNames(ctx, { ...selection, order: 'desc' })).toEqual(['c', 'b'])
-  expect(await findLocalNames(ctx, { ...selection, order: 'desc', limit: 1 })).toEqual(['c'])
+  expect(await findLocalNames(ctx, { ...selection, limit: 1, order: 'desc' })).toEqual(['c'])
   expect(await findLocalNames(ctx, { ...selection, atOrAfter: 'z', order: 'desc' })).toEqual([])
   expect(await findLocalNames(ctx, { ...selection, atOrAfter: '', before: 'c' })).toEqual([
     'a',
@@ -68,8 +68,8 @@ test('local discovery applies direction before limiting and preserves both bound
       ...selection,
       atOrAfter: '',
       before: 'c',
-      order: 'desc',
       limit: 1,
+      order: 'desc',
     }),
   ).toEqual(['b'])
 })
@@ -84,7 +84,7 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
   const ctx = {
     meta: { getDeploymentMetadata: () => ({ name: 'consumer-deployment' }) },
   } as unknown as ActionCtx
-  const selection = { path: 'scans', atOrAfter: 'b', limit: 2, order: 'desc' as const }
+  const selection = { atOrAfter: 'b', limit: 2, order: 'desc' as const, path: 'scans' }
 
   try {
     expect(await namesAtOrAfter(ctx, selection)).toEqual(['c', 'b'])

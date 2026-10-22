@@ -17,8 +17,8 @@ import { INGESTION_RECORDS_TABLE, INGESTION_TARGET_TABLE, ingestionTargetRange }
 const REGISTER_BATCH = 24
 
 const edgesValidator = v.object({
-  latest: v.union(v.null(), v.string()),
   earliest: v.union(v.null(), v.object({ from_scan_at: v.string(), scan_at: v.string() })),
+  latest: v.union(v.null(), v.string()),
 })
 
 const step = literals('bootstrap', 'forward', 'backward', 'baseline', 'idle')
@@ -26,7 +26,6 @@ const step = literals('bootstrap', 'forward', 'backward', 'baseline', 'idle')
 /** One register step: select at most one batch, commit it, and finish. */
 export const run = internalAction({
   args: {},
-  returns: step,
   handler: async (ctx): Promise<Infer<typeof step>> => {
     const state = await ctx.runQuery(internal.ingestion.register.read, {})
     const plan = await planRegister(
@@ -52,16 +51,12 @@ export const run = internalAction({
 
     return registered ? plan.kind : 'idle'
   },
+  returns: step,
 })
 
 /** The target, registry edges, and whether a baseline already holds the earliest input scan. */
 export const read = internalQuery({
   args: {},
-  returns: v.object({
-    target: v.union(v.null(), ingestionTargetRange),
-    edges: edgesValidator,
-    baseline: v.boolean(),
-  }),
   handler: async (ctx) => {
     const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
     const edges = await readEdges(ctx)
@@ -75,11 +70,16 @@ export const read = internalQuery({
         .first()) !== null
 
     return {
-      target: target === null ? null : { start_at: target.start_at, end_at: target.end_at },
-      edges,
       baseline,
+      edges,
+      target: target === null ? null : { end_at: target.end_at, start_at: target.start_at },
     }
   },
+  returns: v.object({
+    baseline: v.boolean(),
+    edges: edgesValidator,
+    target: v.union(v.null(), ingestionTargetRange),
+  }),
 })
 
 /** Commit pairs only if the edges they extend are unchanged; an overtaken step registers nothing. */
@@ -87,10 +87,9 @@ export const commitPairs = internalMutation({
   args: {
     edges: edgesValidator,
     pairs: v.array(
-      v.object({ from_scan_at: v.string(), scan_at: v.string(), alerts: v.boolean() }),
+      v.object({ alerts: v.boolean(), from_scan_at: v.string(), scan_at: v.string() }),
     ),
   },
-  returns: v.boolean(),
   handler: async (ctx, { edges, pairs }) => {
     if (!sameEdges(await readEdges(ctx), edges)) {
       return false
@@ -108,11 +107,11 @@ export const commitPairs = internalMutation({
     await kickoff(ctx)
     return true
   },
+  returns: v.boolean(),
 })
 
 export const commitBaseline = internalMutation({
   args: { edges: edgesValidator, scan_at: v.string() },
-  returns: v.boolean(),
   handler: async (ctx, { edges, scan_at }) => {
     const current = await readEdges(ctx)
     const existing = await ctx.db
@@ -132,16 +131,17 @@ export const commitBaseline = internalMutation({
       ctx,
       async (records) =>
         await records.insert({
-          kind: 'baseline',
-          from_scan_at: null,
-          scan_at,
           alerts: false,
+          from_scan_at: null,
+          kind: 'baseline',
+          scan_at,
           state: 'pending',
         }),
     )
     await kickoff(ctx)
     return true
   },
+  returns: v.boolean(),
 })
 
 async function readEdges(ctx: QueryCtx): Promise<Edges> {
@@ -153,11 +153,11 @@ async function readEdges(ctx: QueryCtx): Promise<Edges> {
   const earliest = await pairs().order('asc').first()
 
   return {
-    latest: latest?.scan_at ?? null,
     earliest:
       earliest?.from_scan_at === null || earliest === null
         ? null
         : { from_scan_at: earliest.from_scan_at, scan_at: earliest.scan_at },
+    latest: latest?.scan_at ?? null,
   }
 }
 

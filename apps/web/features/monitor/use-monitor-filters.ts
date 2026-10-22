@@ -12,7 +12,7 @@ function monitorScope({
   endpoint: string
 }): MonitorScope {
   if (endpoint) {
-    return { kind: 'endpoint', endpoint_id: endpoint }
+    return { endpoint_id: endpoint, kind: 'endpoint' }
   }
   if (model && provider) {
     return { kind: 'pair', model_id: model, provider_id: provider }
@@ -26,9 +26,9 @@ function monitorScope({
 export function useMonitorFilters() {
   const [params, setParams] = useQueryStates(
     {
+      endpoint: parseAsString.withDefault(''),
       model: parseAsString.withDefault(''),
       provider: parseAsString.withDefault(''),
-      endpoint: parseAsString.withDefault(''),
     },
     { history: 'push', shallow: true },
   )
@@ -36,19 +36,19 @@ export function useMonitorFilters() {
   const scope = monitorScope(params)
 
   return {
-    scope,
+    endpointId: params.endpoint ?? '',
+    hasActiveFilters: scope.kind !== 'all',
     modelId: params.model ?? '',
     providerId: params.provider ?? '',
-    endpointId: params.endpoint ?? '',
-    setModelId: (id: string) => {
-      void setParams({ model: id || null, endpoint: null })
-    },
-    setProviderId: (id: string) => {
-      void setParams({ provider: id || null, endpoint: null })
-    },
+    scope,
     setEndpointId: (id: string) => {
       void setParams({ endpoint: id || null, model: null, provider: null })
     },
-    hasActiveFilters: scope.kind !== 'all',
+    setModelId: (id: string) => {
+      void setParams({ endpoint: null, model: id || null })
+    },
+    setProviderId: (id: string) => {
+      void setParams({ endpoint: null, provider: id || null })
+    },
   }
 }

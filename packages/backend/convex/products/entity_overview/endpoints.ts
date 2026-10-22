@@ -9,7 +9,6 @@ import { Endpoint } from '../shared/endpoint'
 /** Current or last-known endpoint. */
 export const get = query({
   args: { endpoint_id: v.string() },
-  returns: v.union(v.null(), zodOutputToConvex(Endpoint)),
   handler: async (ctx, args) => {
     const row = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
@@ -17,12 +16,12 @@ export const get = query({
       .unique()
     return row === null ? null : Endpoint.parse(row)
   },
+  returns: v.union(v.null(), zodOutputToConvex(Endpoint)),
 })
 
 /** Current endpoints for one model. */
 export const byModel = query({
   args: { model_id: v.string() },
-  returns: v.array(zodOutputToConvex(Endpoint)),
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
@@ -30,12 +29,12 @@ export const byModel = query({
       .collect()
     return rows.map((row) => Endpoint.parse(row))
   },
+  returns: v.array(zodOutputToConvex(Endpoint)),
 })
 
 /** Current endpoints for one provider and model. */
 export const byProviderModel = query({
-  args: { provider_id: v.string(), model_id: v.string() },
-  returns: v.array(zodOutputToConvex(Endpoint)),
+  args: { model_id: v.string(), provider_id: v.string() },
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
@@ -45,4 +44,5 @@ export const byProviderModel = query({
       .collect()
     return rows.map((row) => Endpoint.parse(row))
   },
+  returns: v.array(zodOutputToConvex(Endpoint)),
 })

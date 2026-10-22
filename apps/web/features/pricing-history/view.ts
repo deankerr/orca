@@ -5,21 +5,21 @@ import type { PricingHistory } from './data'
 
 const METERS = (
   [
-    { value: 'prompt', label: 'Input' },
-    { value: 'completion', label: 'Output' },
-    { value: 'input_cache_read', label: 'Cache read' },
-    { value: 'input_cache_write', label: 'Cache write' },
-    { value: 'input_cache_write_1h', label: 'Cache write · 1h' },
-    { value: 'audio', label: 'Audio input' },
-    { value: 'input_audio_cache', label: 'Audio cache' },
-    { value: 'image', label: 'Image input' },
-    { value: 'image_output', label: 'Image output' },
+    { label: 'Input', value: 'prompt' },
+    { label: 'Output', value: 'completion' },
+    { label: 'Cache read', value: 'input_cache_read' },
+    { label: 'Cache write', value: 'input_cache_write' },
+    { label: 'Cache write · 1h', value: 'input_cache_write_1h' },
+    { label: 'Audio input', value: 'audio' },
+    { label: 'Audio cache', value: 'input_audio_cache' },
+    { label: 'Image input', value: 'image' },
+    { label: 'Image output', value: 'image_output' },
   ] satisfies { value: keyof typeof priceMeters; label: string }[]
 ).map(({ value, label }) => ({
-  value,
   label,
   scale: 10 ** priceMeters[value].scale,
   unit: `$/${priceMeters[value].unit}`,
+  value,
 }))
 export type Meter = (typeof METERS)[number]
 
@@ -91,16 +91,16 @@ export function pricingHistoryView(
   const at = Math.max(range[0], Math.min(range[1], hoverAt ?? range[1]))
 
   return {
+    allShown,
+    at,
     available,
+    exactScaled,
     meter,
     meters,
-    since,
     range,
-    exactScaled,
-    tags,
     shownCount,
-    allShown,
+    since,
+    tags,
     visible,
-    at,
   }
 }

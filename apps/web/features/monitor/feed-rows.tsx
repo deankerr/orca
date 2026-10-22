@@ -15,14 +15,14 @@ export function flattenMonitorFeed(events: EntityAlert[]): MonitorFeedRow[] {
 
   for (const event of events) {
     if (event.observed_at !== previousTime) {
-      rows.push({ kind: 'header', key: `time:${event.observed_at}`, observedAt: event.observed_at })
+      rows.push({ key: `time:${event.observed_at}`, kind: 'header', observedAt: event.observed_at })
       previousTime = event.observed_at
     }
 
     rows.push({
-      kind: 'event',
-      key: `event:${event.observed_at}:${event.entity_kind}:${event.entity_id}`,
       event,
+      key: `event:${event.observed_at}:${event.entity_kind}:${event.entity_id}`,
+      kind: 'event',
     })
   }
 
@@ -48,11 +48,11 @@ export function MonitorFeedRowItem({
             title={row.observedAt}
           >
             {date.toLocaleString('en-US', {
-              month: 'short',
               day: 'numeric',
               hour: 'numeric',
-              minute: '2-digit',
               hour12: true,
+              minute: '2-digit',
+              month: 'short',
             })}
           </time>
           <span className="text-xs text-muted-foreground/50">

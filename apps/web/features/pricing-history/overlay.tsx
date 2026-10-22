@@ -55,23 +55,23 @@ import type { Meter } from './view'
 const Plot = dynamic(
   async () => await import('./plot').then((module) => module.PricingHistoryPlot),
   {
-    ssr: false,
     loading: () => (
       <div className="flex h-full items-center justify-center">
         <Spinner />
       </div>
     ),
+    ssr: false,
   },
 )
 
 const dateLabel = (at: number) =>
   new Date(at).toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    month: '2-digit',
     timeZoneName: 'short',
+    year: 'numeric',
   })
 
 const priceLabel = (price: number) => formatPrice(price) ?? '—'
@@ -149,10 +149,10 @@ type HistoryControls = {
 
 function History({ modelId }: { modelId: string }) {
   const [preferences, setPreferences] = useState<Preferences>({
+    hidden: new Set(),
+    preset: '30',
     requestedMeter: 'prompt',
     window: null,
-    preset: '30',
-    hidden: new Set(),
   })
 
   return (
@@ -221,10 +221,10 @@ function Content({
     allShown,
     visible,
     at,
-  } = pricingHistoryView(pricingHistory, { requestedMeter, window, preset, hidden, hoverAt })
+  } = pricingHistoryView(pricingHistory, { hidden, hoverAt, preset, requestedMeter, window })
 
   const changeRange = (next: [number, number]) => {
-    setPreferences((current) => ({ ...current, window: next, preset: '' }))
+    setPreferences((current) => ({ ...current, preset: '', window: next }))
     setHoverAt(null)
   }
 

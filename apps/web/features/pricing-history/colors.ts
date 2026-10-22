@@ -75,7 +75,7 @@ function providerColorCoordinates(providerId: string) {
   const hue = (MUD_BAND_END + hueFraction * usableHueRange) % 360
   const lightness = MIN_LIGHTNESS + lightnessFraction * LIGHTNESS_RANGE
   const chroma = findMaxSrgbChroma(lightness, hue) * CHROMA_FRACTION
-  const coordinates = { lightness, chroma, hue }
+  const coordinates = { chroma, hue, lightness }
   coordinatesById.set(providerId, coordinates)
   return coordinates
 }

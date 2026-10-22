@@ -18,46 +18,46 @@ import { priceLabel, pricingChanges, pricingTable } from './pricing'
 
 type EventRow = CatalogEvent & { previously_known?: boolean }
 
-const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
 const context = {
-  model: { model_id: 'author/model', display_name: 'Model' },
-  provider: { provider_id: 'provider', display_name: 'Provider' },
   endpoint: {
     endpoint_id: 'abcdef-123',
-    provider_tag: 'provider/fp8',
     provider_display_name: 'Regional offering',
+    provider_tag: 'provider/fp8',
   },
+  model: { display_name: 'Model', model_id: 'author/model' },
+  provider: { display_name: 'Provider', provider_id: 'provider' },
 }
 
 const snapshots = {
-  model: {
-    model_id: 'abcdef-123',
-    variant: 'standard',
-    slug: 'author/model',
-    permaslug: 'author/model',
-    display_name: 'Model',
-    or_created_at: '2026-09-30T01:00:00Z',
-    input_modalities: ['text'],
-    output_modalities: ['text'],
-    metadata: {},
-  },
-  provider: { provider_id: 'provider', display_name: 'Provider', metadata: {} },
   endpoint: {
     endpoint_id: 'abcdef-123',
-    model_id: 'author/model',
-    model_display_name: 'Model',
-    model_permaslug: 'author/model',
-    model_or_created_at: '2026-09-30T01:00:00Z',
     input_modalities: ['text'],
+    metadata: { model_variant_slug: 'author/model' },
+    model_display_name: 'Model',
+    model_id: 'author/model',
+    model_or_created_at: '2026-09-30T01:00:00Z',
+    model_permaslug: 'author/model',
     output_modalities: ['text'],
+    pricing: { discount: 0, meters: {} },
+    provider_display_name: 'Regional offering',
     provider_id: 'provider',
     provider_tag: 'provider/fp8',
-    provider_display_name: 'Regional offering',
     variant: 'standard',
-    pricing: { discount: 0, meters: {} },
-    metadata: { model_variant_slug: 'author/model' },
   },
+  model: {
+    display_name: 'Model',
+    input_modalities: ['text'],
+    metadata: {},
+    model_id: 'abcdef-123',
+    or_created_at: '2026-09-30T01:00:00Z',
+    output_modalities: ['text'],
+    permaslug: 'author/model',
+    slug: 'author/model',
+    variant: 'standard',
+  },
+  provider: { display_name: 'Provider', metadata: {}, provider_id: 'provider' },
 }
 
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
@@ -68,7 +68,7 @@ test('delta symbols distinguish favorable changes from unfavorable changes like 
     ['pricing.prompt', '0.000001', '0.000002', '🔺'],
     ['pricing.prompt', '0.000002', '0.000001', '▼'],
   ] as const) {
-    expect(pricingChanges([{ type: 'field_updated', path, before, after }]).join('\n')).toContain(
+    expect(pricingChanges([{ after, before, path, type: 'field_updated' }]).join('\n')).toContain(
       symbol,
     )
   }
@@ -112,7 +112,7 @@ test('update headings are sentences for every entity', async () => {
 
 test('prices and other numeric fields share precision and reveal changes hidden by rounding', async () => {
   expect(
-    fieldChange({ type: 'field_updated', path: 'limit_rpm', before: 0.141953, after: 0.142 }),
+    fieldChange({ after: 0.142, before: 0.141953, path: 'limit_rpm', type: 'field_updated' }),
   ).toBe('`limit_rpm:` ≈`0.142` ▲')
   expect(delta(1_000_000, 1_000_001)).toBe('▲')
   expect(delta(1_000_001, 1_000_000)).toBe('🔻')
@@ -124,10 +124,12 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   expect(delta('100', '108.5')).toBe('▲ 9%')
   expect(delta('100', '81.4')).toBe('🔻 19%')
 
+  // oxlint-disable sort-keys -- Fixture key order sets the order of the rendered and compared price changes.
   const event = row(
     { pricing: { meters: { prompt: '0.000000141953', input_cache_read: '0.00000001708' } } },
     { pricing: { meters: { prompt: '0.000000142', input_cache_read: '0.000000016156' } } },
   )
+  // oxlint-enable sort-keys
   const captured = event.change_json
   const card = await renderDiscord(event, urls)
   const description = card?.embeds?.[0]?.description ?? ''
@@ -140,8 +142,8 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   expect(event.change_json).toBe(captured)
   expect(render(event)).toMatchObject({
     changes: [
-      { before: '0.000000141953', after: '0.000000142' },
-      { before: '0.00000001708', after: '0.000000016156' },
+      { after: '0.000000142', before: '0.000000141953' },
+      { after: '0.000000016156', before: '0.00000001708' },
     ],
   })
 })
@@ -152,15 +154,15 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
   expect(field('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
 
   expect(
-    fieldChange({ type: 'field_updated', path: 'quantization', before: 'fp8', after: 'fp16' }),
+    fieldChange({ after: 'fp16', before: 'fp8', path: 'quantization', type: 'field_updated' }),
   ).toBe(field('quantization', change))
 
   expect(factsText({ quantization: 'fp16' }, ['quantization'])).toBe('`quantization:` `fp16`')
 
   expect(
     pricingTable([
-      { path: 'pricing.prompt', before: '$1', after: '$0.5', annotation: '▼ 50%' },
-      { path: 'pricing.input_cache_read', after: '$0.1', change: 'added', annotation: '' },
+      { after: '$0.5', annotation: '▼ 50%', before: '$1', path: 'pricing.prompt' },
+      { after: '$0.1', annotation: '', change: 'added', path: 'pricing.input_cache_read' },
     ]),
   ).toBe('`input:       ` `  $1` → `$0.5` ▼ 50%\n+ `cache_read:` `$0.1`')
 
@@ -197,18 +199,18 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
 
   const event: EventRow = {
     ...row(
-      { metadata: { warning_message: null, reasoning_config: { is_mandatory_reasoning: false } } },
+      { metadata: { reasoning_config: { is_mandatory_reasoning: false }, warning_message: null } },
       {
         metadata: {
-          warning_message: 'Preview only.',
           reasoning_config: { is_mandatory_reasoning: true },
+          warning_message: 'Preview only.',
         },
       },
     ),
-    entity_kind: 'model',
     context: {
-      model: { model_id: 'qwen/qwen3.6-max-preview', display_name: 'Qwen3.6 Max Preview' },
+      model: { display_name: 'Qwen3.6 Max Preview', model_id: 'qwen/qwen3.6-max-preview' },
     },
+    entity_kind: 'model',
   }
 
   const text = JSON.stringify(await renderDiscord(event, urls))
@@ -223,9 +225,9 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
 
 test('pricing uses separate value spans without reserving blank old-value columns', () => {
   const lines = pricingTable([
-    { path: 'pricing.prompt', before: '$0.453', after: '$0.452', annotation: '▼' },
-    { path: 'pricing.input_cache_read', before: '$0.123', after: '$0.123', annotation: '▼' },
-    { path: 'pricing.discount', after: '24%', annotation: '', change: 'added' },
+    { after: '$0.452', annotation: '▼', before: '$0.453', path: 'pricing.prompt' },
+    { after: '$0.123', annotation: '▼', before: '$0.123', path: 'pricing.input_cache_read' },
+    { after: '24%', annotation: '', change: 'added', path: 'pricing.discount' },
   ]).split('\n')
   expect(lines).toEqual([
     '`input:     ` `  $0.453` → `  $0.452` ▼',
@@ -246,10 +248,10 @@ test('long prose excerpts include late replacements, additions, and removals', (
   ]) {
     const text = fieldChange(
       {
-        type: 'field_updated',
-        path: 'description',
-        before: prefix + oldEnding,
         after: prefix + newEnding,
+        before: prefix + oldEnding,
+        path: 'description',
+        type: 'field_updated',
       },
       { prose: true },
     )
@@ -267,7 +269,7 @@ test('long prose excerpts include late replacements, additions, and removals', (
 
   expect(
     fieldChange(
-      { type: 'field_updated', path: 'description', before: 'Old.', after: 'New.' },
+      { after: 'New.', before: 'Old.', path: 'description', type: 'field_updated' },
       { prose: true },
     ),
   ).toBe('`description`\nBefore\n> Old.\n\nAfter\n> New.')
@@ -301,12 +303,12 @@ function row(before: JsonValue, after: JsonValue): Extract<EventRow, { entity_ki
   }
 
   return {
-    entity_kind: 'endpoint',
-    entity_id: 'abcdef-123',
-    type: 'UPDATE',
-    scan_at: '2026-09-30T01:00:00Z',
-    context,
     change_json: JSON.stringify(change),
+    context,
+    entity_id: 'abcdef-123',
+    entity_kind: 'endpoint',
+    scan_at: '2026-09-30T01:00:00Z',
+    type: 'UPDATE',
   }
 }
 
@@ -314,24 +316,24 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   const message = await renderDiscord(
     row(
       {
+        metadata: { supports_reasoning: false },
         pricing: {
           meters: {
-            prompt: '0.000000255',
             completion: '0',
             input_cache_read: '0.000000000000000000001',
+            prompt: '0.000000255',
           },
         },
-        metadata: { supports_reasoning: false },
       },
       {
+        metadata: { supports_reasoning: true },
         pricing: {
           meters: {
-            prompt: '0.000000195',
             completion: '0.000001',
             input_cache_read: '0.000000000000000000002',
+            prompt: '0.000000195',
           },
         },
-        metadata: { supports_reasoning: true },
       },
     ),
     urls,
@@ -375,7 +377,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     const event = row({ pricing: { discount: before } }, { pricing: { discount: after } })
     const captured = event.change_json
     const text = pricingChanges([
-      { type: 'field_updated', path: 'pricing.discount', before, after },
+      { after, before, path: 'pricing.discount', type: 'field_updated' },
     ]).join('\n')
 
     expect(text).toContain(expected)
@@ -389,7 +391,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     }
 
     expect(curate(event)).toMatchObject({
-      changes: [{ type: 'field_updated', path: 'pricing.discount', before, after }],
+      changes: [{ after, before, path: 'pricing.discount', type: 'field_updated' }],
     })
 
     expect(event.change_json).toBe(captured)
@@ -407,15 +409,15 @@ test('Discord presents zero discount transitions as added/removed without rewrit
   const combinedCard = await renderDiscord(
     row(
       {
+        metadata: { is_disabled: false },
         pricing: {
           discount: 0.08,
-          meters: { prompt: '0.000001', input_cache_read: '0.0000002' },
+          meters: { input_cache_read: '0.0000002', prompt: '0.000001' },
         },
-        metadata: { is_disabled: false },
       },
       {
-        pricing: { discount: 0, meters: { prompt: '0.000002', input_cache_read: '0.0000001' } },
         metadata: { is_disabled: true },
+        pricing: { discount: 0, meters: { input_cache_read: '0.0000001', prompt: '0.000002' } },
       },
     ),
     urls,
@@ -434,8 +436,8 @@ test('Discord presents zero discount transitions as added/removed without rewrit
 test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', async () => {
   const message = await renderDiscord(
     row(
-      { metadata: { supported_parameters: ['seed'], quantization: 'fp8', is_disabled: false } },
-      { metadata: { supported_parameters: ['**tools**'], quantization: null, limit_rpm: 0 } },
+      { metadata: { is_disabled: false, quantization: 'fp8', supported_parameters: ['seed'] } },
+      { metadata: { limit_rpm: 0, quantization: null, supported_parameters: ['**tools**'] } },
     ),
     urls,
   )
@@ -459,24 +461,24 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
   for (const kind of ['model', 'endpoint'] as const) {
     for (const type of ['ADD', 'REMOVE'] as const) {
       const event = {
-        entity_kind: kind,
         entity_id: 'abcdef-123',
+        entity_kind: kind,
         type,
         ...(type === 'ADD' ? { previously_known: false } : {}),
-        scan_at: '2026-09-30T01:00:00Z',
-        context,
         change_json: JSON.stringify({
-          type,
           key: 'abcdef-123',
+          type,
           value: {
             ...snapshots[kind],
             metadata: {
+              context_length: 128_000,
               description: 'x'.repeat(1000),
               headquarters: 'Earth',
-              context_length: 128_000,
             },
           },
         }),
+        context,
+        scan_at: '2026-09-30T01:00:00Z',
       }
 
       const message = await renderDiscord(event, urls)
@@ -499,10 +501,10 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
 
       expect(content).toContain(
         {
-          ADD: { model: '✨', endpoint: '**Regional offering** endpoint discovered.' },
+          ADD: { endpoint: '**Regional offering** endpoint discovered.', model: '✨' },
           REMOVE: {
-            model: 'has no more listed endpoints',
             endpoint: '− **Regional offering** endpoint unlisted.',
+            model: 'has no more listed endpoints',
           },
         }[type][kind],
       )
@@ -547,28 +549,28 @@ test('entity templates use captured model and endpoint facts with one timestamp 
     kind: EventRow['entity_kind'],
     value: Record<string, JsonValue>,
   ): EventRow => ({
-    entity_kind: kind,
-    entity_id: 'abcdef-123',
-    type: 'ADD',
-    previously_known: false,
-    scan_at: '2026-09-30T01:00:00Z',
-    context,
     change_json: JSON.stringify({
       key: 'abcdef-123',
       type: 'ADD',
       value: { ...snapshots[kind], ...value },
     }),
+    context,
+    entity_id: 'abcdef-123',
+    entity_kind: kind,
+    previously_known: false,
+    scan_at: '2026-09-30T01:00:00Z',
+    type: 'ADD',
   })
 
   const model = await renderDiscord(
     lifecycle('model', {
       input_modalities: ['image', 'text'],
-      output_modalities: ['text'],
       metadata: {
         description: 'Built on [a model](https://example.com/model).',
         supports_reasoning: true,
         warning_message: 'Preview only.',
       },
+      output_modalities: ['text'],
     }),
     urls,
   )
@@ -600,18 +602,18 @@ test('entity templates use captured model and endpoint facts with one timestamp 
     lifecycle('endpoint', {
       metadata: {
         context_length: 128_000,
+        data_policy: { retainsPrompts: false },
         max_completion_tokens: 4096,
         supported_parameters: ['tools', 'temperature'],
         supports_reasoning: true,
-        data_policy: { retainsPrompts: false },
       },
       pricing: {
         discount: 0,
         meters: {
-          prompt: '0',
-          image: '0.000001',
           audio: '0.000001',
+          image: '0.000001',
           input_audio_cache: '0.000000000001',
+          prompt: '0',
         },
       },
     }),
@@ -654,24 +656,24 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
 
   expect(render(event)).toMatchObject({
     changes: [
-      { path: 'description', before: 'Old.', after: 'New.' },
-      { path: 'warning_message', before: null, after: 'Preview only.' },
+      { after: 'New.', before: 'Old.', path: 'description' },
+      { after: 'Preview only.', before: null, path: 'warning_message' },
     ],
   })
 
   const before = {
     metadata: {
+      author_display_name: 'C'.repeat(1000),
       description: 'A'.repeat(1000),
       warning_message: 'B'.repeat(1000),
-      author_display_name: 'C'.repeat(1000),
     },
   }
 
   const after = {
     metadata: {
+      author_display_name: 'F'.repeat(1000),
       description: 'D'.repeat(1000),
       warning_message: 'E'.repeat(1000),
-      author_display_name: 'F'.repeat(1000),
     },
   }
 
@@ -684,35 +686,35 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
 test('provider discoveries are announced and departures only announce endpoint absence', async () => {
   for (const type of ['ADD', 'REMOVE'] as const) {
     const event: EventRow = {
-      entity_kind: 'provider',
       entity_id: 'provider',
+      entity_kind: 'provider',
       type,
       ...(type === 'ADD' ? { previously_known: false } : {}),
-      scan_at: '2026-09-30T01:00:00Z',
-      context: { provider: context.provider },
       change_json: JSON.stringify({
-        type,
         key: 'provider',
+        type,
         value: {
           ...snapshots.provider,
-          metadata: { headquarters: 'Earth', dataPolicy: { training: true } },
+          metadata: { dataPolicy: { training: true }, headquarters: 'Earth' },
         },
       }),
+      context: { provider: context.provider },
+      scan_at: '2026-09-30T01:00:00Z',
     }
 
     const message = await renderDiscord(event, urls)
 
     if (type === 'ADD') {
       expect(message?.embeds?.[0]?.description).toBe('✨ Provider **Provider** discovered.')
-      expect(render(event)).toMatchObject({ type: 'provider_added', previously_known: false })
+      expect(render(event)).toMatchObject({ previously_known: false, type: 'provider_added' })
     } else {
       expect(message?.components).toBeUndefined()
       expect(message?.embeds).toHaveLength(1)
       expect(message?.embeds?.[0]?.footer).toBeUndefined()
 
       expect(message?.embeds?.[0]).toMatchObject({
-        description: '− Provider **Provider** has no more listed endpoints.',
         color: 0xef_44_44,
+        description: '− Provider **Provider** has no more listed endpoints.',
         timestamp: '2026-09-30T01:00:00.000Z',
       })
 
@@ -726,16 +728,16 @@ test('provider discoveries are announced and departures only announce endpoint a
 test('unclassified arrivals use neutral wording instead of claiming discovery or return', async () => {
   for (const entity_kind of ['model', 'provider', 'endpoint'] as const) {
     const event: EventRow = {
-      entity_kind,
-      entity_id: 'unclassified',
-      type: 'ADD',
-      scan_at: '2026-09-30T01:00:00Z',
-      context,
       change_json: JSON.stringify({
         key: 'unclassified',
         type: 'ADD',
         value: snapshots[entity_kind],
       }),
+      context,
+      entity_id: 'unclassified',
+      entity_kind,
+      scan_at: '2026-09-30T01:00:00Z',
+      type: 'ADD',
     }
 
     const text = JSON.stringify({ discord: await renderDiscord(event, urls), feed: render(event) })
@@ -750,10 +752,10 @@ test('unclassified arrivals use neutral wording instead of claiming discovery or
 
 test('provider updates stay classic and include only legacy metadata and policy URLs', async () => {
   const policy = {
-    termsOfServiceURL: 'https://example.com/terms',
     privacyPolicyURL: 'https://example.com/privacy',
-    training: true,
     retainsPrompts: true,
+    termsOfServiceURL: 'https://example.com/terms',
+    training: true,
   }
 
   const providerRow = (before: JsonValue, after: JsonValue): EventRow => ({
@@ -764,7 +766,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
   // Exercise policy leaf changes and whole-object addition, removal, and null transitions.
   for (const [before, after] of [
     [
-      { dataPolicy: { ...policy, training: false, privacyPolicyURL: 'https://old.example' } },
+      { dataPolicy: { ...policy, privacyPolicyURL: 'https://old.example', training: false } },
       { dataPolicy: policy },
     ],
     [{}, { dataPolicy: policy }],
@@ -789,18 +791,18 @@ test('provider updates stay classic and include only legacy metadata and policy 
   const message = await renderDiscord(
     providerRow(
       {
+        byokEnabled: false,
+        datacenters: ['US'],
         displayName: 'Old',
         headquarters: 'US',
-        datacenters: ['US'],
         statusPageUrl: 'https://old.example',
-        byokEnabled: false,
       },
       {
+        byokEnabled: true,
+        datacenters: ['AU'],
         displayName: 'New',
         headquarters: 'AU',
-        datacenters: ['AU'],
         statusPageUrl: `https://example.com/${'a'.repeat(120)}`,
-        byokEnabled: true,
       },
     ),
     urls,
@@ -874,7 +876,7 @@ test('blank scalar and prose values render null without rewriting the captured e
 
       expect(description).toContain(before === blank ? 'Before\n`null`' : 'After\n`null`')
       expect(event.change_json).toBe(captured)
-      expect(render(event)).toMatchObject({ changes: [{ before, after }] })
+      expect(render(event)).toMatchObject({ changes: [{ after, before }] })
     }
     expect(fieldValue(blank)).toBe('`null`')
   }
@@ -883,13 +885,13 @@ test('blank scalar and prose values render null without rewriting the captured e
 
   expect(
     fieldChange(
-      { type: 'field_removed', path: 'description', before: 'Old prose.' },
+      { before: 'Old prose.', path: 'description', type: 'field_removed' },
       { prose: true },
     ),
   ).toBe('− ~~`description`~~\n> ~~Old prose.~~')
 
   expect(
-    fieldChange({ type: 'field_added', path: 'description', after: 'New prose.' }, { prose: true }),
+    fieldChange({ after: 'New prose.', path: 'description', type: 'field_added' }, { prose: true }),
   ).toBe('+ `description`\n> New prose.')
 })
 
@@ -931,15 +933,15 @@ test('one-hour cache writes survive curation and render without pricing units or
 
   const lifecycle: EventRow = {
     ...event,
-    type: 'ADD',
     change_json: JSON.stringify({
-      type: 'ADD',
       key: event.entity_id,
+      type: 'ADD',
       value: {
         ...snapshots.endpoint,
         pricing: { discount: 0, meters: { input_cache_write_1h: '0.000004', web_search: '0.01' } },
       },
     }),
+    type: 'ADD',
   }
 
   const added = await renderDiscord(lifecycle, urls)
@@ -947,7 +949,7 @@ test('one-hour cache writes survive curation and render without pricing units or
   expect(added?.embeds?.[0]?.description).toContain('`web_search:    ` `$0.01`')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
 
-  expect(pricingChanges([{ type: 'field_added', path: 'pricing.prompt', after: '1e-6' }])).toEqual([
+  expect(pricingChanges([{ after: '1e-6', path: 'pricing.prompt', type: 'field_added' }])).toEqual([
     '+ `input:` `$1.00`',
   ])
 
@@ -976,10 +978,10 @@ test('web search is a pricing row across updates, additions, and removals withou
 
 test('cards supply prose and duration rules while generic formatters only follow options', async () => {
   const warning = {
-    type: 'field_updated',
-    path: 'warning_message',
-    before: 'Old.',
     after: 'New.',
+    before: 'Old.',
+    path: 'warning_message',
+    type: 'field_updated',
   } as const
 
   expect(fieldChange(warning)).toBe('`warning_message:` `Old.` → `New.`')
@@ -989,10 +991,10 @@ test('cards supply prose and duration rules while generic formatters only follow
   )
 
   const change = {
-    type: 'field_updated',
-    path: 'data_policy.retentionDays',
-    before: 1,
     after: 2,
+    before: 1,
+    path: 'data_policy.retentionDays',
+    type: 'field_updated',
   } as const
 
   expect(fieldChange(change)).toBe('`retentionDays:` `1` → `2` ▲ 100%')
@@ -1009,7 +1011,7 @@ test('cards supply prose and duration rules while generic formatters only follow
   for (const after of ['', '  ', null]) {
     expect(
       pricingChanges([
-        { type: 'field_updated', path: 'pricing.prompt', before: '0.000001', after },
+        { after, before: '0.000001', path: 'pricing.prompt', type: 'field_updated' },
       ]),
     ).toEqual(['`input:` `$1.00` → `null`'])
   }
@@ -1017,8 +1019,8 @@ test('cards supply prose and duration rules while generic formatters only follow
 
 test('lifecycle markers distinguish arrivals, returns, departures, and routine updates', () => {
   for (const kind of ['model', 'provider', 'endpoint']) {
-    expect(lifecycleMarker({ type: `${kind}_added`, previously_known: false })).toBe('✨ ')
-    expect(lifecycleMarker({ type: `${kind}_added`, previously_known: true })).toBe('↺ ')
+    expect(lifecycleMarker({ previously_known: false, type: `${kind}_added` })).toBe('✨ ')
+    expect(lifecycleMarker({ previously_known: true, type: `${kind}_added` })).toBe('↺ ')
     expect(lifecycleMarker({ type: `${kind}_added` })).toBe('+ ')
     expect(lifecycleMarker({ type: `${kind}_removed` })).toBe('− ')
     expect(lifecycleMarker({ type: `${kind}_updated` })).toBe('Δ ')
@@ -1027,10 +1029,10 @@ test('lifecycle markers distinguish arrivals, returns, departures, and routine u
 
 test('array changes use compact rows and escape embedded Markdown instead of fenced blocks', () => {
   const text = fieldChange({
-    type: 'set_updated',
-    path: 'supported_parameters',
     added: ['tools', '`**literal**'],
+    path: 'supported_parameters',
     removed: ['seed'],
+    type: 'set_updated',
   })
 
   expect(text).toContain('+ `tools`')
@@ -1042,9 +1044,9 @@ test('array changes use compact rows and escape embedded Markdown instead of fen
 test('pricing label widths include external addition and removal markers', () => {
   for (const change of ['added', 'removed'] as const) {
     const lines = pricingTable([
-      { path: 'pricing.prompt', before: '$1', after: '$2', annotation: '' },
-      { path: 'pricing.input_cache_read', after: '$1', annotation: '', change },
-      { path: 'pricing.discount', after: '10%', annotation: '', change },
+      { after: '$2', annotation: '', before: '$1', path: 'pricing.prompt' },
+      { after: '$1', annotation: '', change, path: 'pricing.input_cache_read' },
+      { after: '10%', annotation: '', change, path: 'pricing.discount' },
     ]).split('\n')
 
     const widths = lines.map((line) => {
@@ -1063,10 +1065,10 @@ test('oversized card text logs and respects individual and total Discord limits'
 
   try {
     const message = embedCard('x'.repeat(10_000), {
-      author: { name: 'a'.repeat(1000), url: urls.publicUrl, iconURL: urls.logoOrigin },
-      footer: { text: 'f'.repeat(3000), iconURL: urls.logoOrigin },
-      timestamp: '2026-10-01T00:00:00Z',
+      author: { iconURL: urls.logoOrigin, name: 'a'.repeat(1000), url: urls.publicUrl },
       color: 0,
+      footer: { iconURL: urls.logoOrigin, text: 'f'.repeat(3000) },
+      timestamp: '2026-10-01T00:00:00Z',
     })
     const embed = message.embeds?.[0]
 
@@ -1081,7 +1083,7 @@ test('oversized card text logs and respects individual and total Discord limits'
 
     const component = componentCard('x'.repeat(10_000), {
       color: 0,
-      thumbnail: { url: urls.logoOrigin, description: 'a'.repeat(2000) },
+      thumbnail: { description: 'a'.repeat(2000), url: urls.logoOrigin },
     })
 
     const container = component.components?.[0]
@@ -1123,7 +1125,7 @@ async function renderDiscord(source: EventRow, discordUrls: DiscordUrls) {
 
 async function prepareBatch(rows: (EventRow & { _id: string })[]) {
   return await prepareDiscordBatch(
-    rows.map((source) => ({ source_id: source._id, event: prepareAlert(source) })),
+    rows.map((source) => ({ event: prepareAlert(source), source_id: source._id })),
     async (candidates) => candidates.map(() => false),
   )
 }

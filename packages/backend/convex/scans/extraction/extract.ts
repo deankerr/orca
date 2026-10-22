@@ -28,10 +28,10 @@ export function extractScan({ scan_at, entries }: RawScan): Scan {
   }
 
   return {
-    scan_at,
+    endpoints,
     models,
     providers: assembleProviders(providers),
-    endpoints,
+    scan_at,
     stats: [...stats.values()].flat(),
   }
 }
@@ -58,14 +58,14 @@ function extractEndpoint(
 ): ExtractedEndpoint {
   return ExtractedEndpoint.parse({
     ...R.omit(source, ['provider_info', 'provider_slug', 'status', 'stats', 'statsByTier']),
-    variant: model.variant,
+    input_modalities: model.input_modalities,
+    model_display_name: model.short_name,
     model_id: model.id,
+    model_or_created_at: model.created_at,
+    model_permaslug: model.permaslug,
+    output_modalities: model.output_modalities,
     provider_id,
     provider_tag: source.provider_slug,
-    model_display_name: model.short_name,
-    model_permaslug: model.permaslug,
-    model_or_created_at: model.created_at,
-    input_modalities: model.input_modalities,
-    output_modalities: model.output_modalities,
+    variant: model.variant,
   })
 }

@@ -138,22 +138,22 @@ function modelAlert(
     model:
       related !== null && related.entity_kind !== 'provider'
         ? related.context.model
-        : { model_id: fields.entity_id, display_name: fields.entity_id },
+        : { display_name: fields.entity_id, model_id: fields.entity_id },
   }
   return added
     ? {
         ...fields,
-        entity_kind: 'model',
-        context,
-        type: 'model_added',
         after: snapshot !== null && 'after' in snapshot ? snapshot.after : {},
+        context,
+        entity_kind: 'model',
+        type: 'model_added',
       }
     : {
         ...fields,
-        entity_kind: 'model',
-        context,
-        type: 'model_removed',
         before: snapshot !== null && 'before' in snapshot ? snapshot.before : {},
+        context,
+        entity_kind: 'model',
+        type: 'model_removed',
       }
 }
 
@@ -167,21 +167,21 @@ function providerAlert(
     provider:
       related !== null && related.entity_kind !== 'model'
         ? related.context.provider
-        : { provider_id: fields.entity_id, display_name: fields.entity_id },
+        : { display_name: fields.entity_id, provider_id: fields.entity_id },
   }
   return added
     ? {
         ...fields,
-        entity_kind: 'provider',
-        context,
-        type: 'provider_added',
         after: snapshot !== null && 'after' in snapshot ? snapshot.after : {},
+        context,
+        entity_kind: 'provider',
+        type: 'provider_added',
       }
     : {
         ...fields,
-        entity_kind: 'provider',
-        context,
-        type: 'provider_removed',
         before: snapshot !== null && 'before' in snapshot ? snapshot.before : {},
+        context,
+        entity_kind: 'provider',
+        type: 'provider_removed',
       }
 }

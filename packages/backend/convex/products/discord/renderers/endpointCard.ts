@@ -16,10 +16,10 @@ export function endpointCard(event: EndpointAlert, urls: DiscordUrls): Card {
   const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint ${endpointState(event)}.`
 
   return embedCard([heading, ...endpointBody(event)].filter(Boolean).join('\n\n'), {
-    author: { name: `${model.model_id} [${prefix}]`, url, iconURL: logoUrl(model.model_id, urls) },
-    timestamp: event.observed_at,
+    author: { iconURL: logoUrl(model.model_id, urls), name: `${model.model_id} [${prefix}]`, url },
     color: lifecycleColor(event),
-    footer: { text: endpoint.provider_tag, iconURL: logoUrl(provider.provider_id, urls) },
+    footer: { iconURL: logoUrl(provider.provider_id, urls), text: endpoint.provider_tag },
+    timestamp: event.observed_at,
   })
 }
 
@@ -64,7 +64,7 @@ function fieldGroup(path: string): string {
 
 /** Keep endpoint labels and units consistent across individual and batch cards. */
 export function endpointFieldChange(change: FieldChange): string {
-  return fieldChange(change, { label: endpointLabel(change.path), formatValue: endpointValue })
+  return fieldChange(change, { formatValue: endpointValue, label: endpointLabel(change.path) })
 }
 
 function endpointDetails(facts: Record<string, FieldValue>): string[] {

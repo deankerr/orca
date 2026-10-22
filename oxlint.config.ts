@@ -19,12 +19,6 @@ export default defineConfig({
   },
   overrides: [
     {
-      files: ['apps/web/**/*.{ts,tsx}', 'packages/backend/**/*.{ts,tsx}'],
-      rules: {
-        'sort-keys': 'off',
-      },
-    },
-    {
       files: ['packages/backend/**/*', 'packages/discord-sender/**/*'],
       rules: {
         'unicorn/filename-case': 'off',

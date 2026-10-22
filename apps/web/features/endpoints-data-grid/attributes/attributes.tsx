@@ -64,13 +64,13 @@ function hasValue<T>(value: T | null | undefined): value is T {
 function formatAttributeDateTime(timestamp: string): string {
   return new Date(timestamp)
     .toLocaleString('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
       hour12: false,
+      minute: '2-digit',
+      month: '2-digit',
+      second: '2-digit',
+      year: 'numeric',
     })
     .replace(',', '')
 }
@@ -78,90 +78,90 @@ function formatAttributeDateTime(timestamp: string): string {
 export const attributes = defineAttributes({
   // Features (model)
   reasoning: {
-    key: 'reasoning',
-    icon: BrainCog,
-    label: 'Reasoning',
+    color: 'indigo',
     description: (
       <>
         Produces thinking tokens with chain-of-thought visible in{' '}
         <InlineCode>reasoning_content</InlineCode>.
       </>
     ),
-    color: 'indigo',
+    icon: BrainCog,
+    key: 'reasoning',
+    label: 'Reasoning',
     resolve: (endpoint) => ({
       active: endpoint.reasoning ?? false,
     }),
   },
 
   tools: {
-    key: 'tools',
-    icon: Wrench,
-    label: 'Tools',
+    color: 'blue',
     description: (
       <>
         Function calling via the <InlineCode>tools</InlineCode> parameter.
       </>
     ),
-    color: 'blue',
+    icon: Wrench,
+    key: 'tools',
+    label: 'Tools',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('tools') ?? false,
     }),
   },
 
   response_format: {
-    key: 'response_format',
-    icon: Braces,
-    label: 'Response Format',
+    color: 'teal',
     description: (
       <>
         Constrain output to valid JSON via{' '}
         <InlineCode>{'response_format: { type: "json_object" }'}</InlineCode>.
       </>
     ),
-    color: 'teal',
+    icon: Braces,
+    key: 'response_format',
+    label: 'Response Format',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('response_format') ?? false,
     }),
   },
 
   structured_outputs: {
-    key: 'structured_outputs',
-    icon: Braces,
-    label: 'Structured Outputs',
+    color: 'teal',
     description: (
       <>
         Enforce a JSON schema via{' '}
         <InlineCode>{'response_format: { type: "json_schema" }'}</InlineCode>.
       </>
     ),
-    color: 'teal',
+    icon: Braces,
+    key: 'structured_outputs',
+    label: 'Structured Outputs',
     resolve: (endpoint) => ({
       active: endpoint.supported_parameters?.includes('structured_outputs') ?? false,
     }),
   },
 
   caching: {
-    key: 'caching',
-    icon: Database,
-    label: 'Caching',
-    description: 'Reduced pricing on cache hits for repeated prompt content.',
     color: 'cyan',
+    description: 'Reduced pricing on cache hits for repeated prompt content.',
+    icon: Database,
+    key: 'caching',
+    label: 'Caching',
     resolve: (endpoint) => ({
       active: hasValue(endpoint.pricing?.cache_read),
     }),
   },
 
   implicit_caching: {
-    key: 'implicit_caching',
-    icon: Database,
-    label: 'Implicit Caching',
+    color: 'cyan',
     description: (
       <>
         Provider caches prompts automatically without explicit{' '}
         <InlineCode>cache_control</InlineCode>.
       </>
     ),
-    color: 'cyan',
+    icon: Database,
+    key: 'implicit_caching',
+    label: 'Implicit Caching',
     resolve: (endpoint) => ({
       active: endpoint.implicit_caching ?? false,
     }),
@@ -169,22 +169,22 @@ export const attributes = defineAttributes({
 
   // Features (OpenRouter)
   moderated: {
-    key: 'moderated',
-    icon: ShieldAlert,
-    label: 'Moderated',
-    description: 'OpenRouter applies content filtering before forwarding to the provider.',
     color: 'amber',
+    description: 'OpenRouter applies content filtering before forwarding to the provider.',
+    icon: ShieldAlert,
+    key: 'moderated',
+    label: 'Moderated',
     resolve: (endpoint) => ({
       active: endpoint.moderated ?? false,
     }),
   },
 
   native_web_search: {
-    key: 'native_web_search',
-    icon: Globe,
-    label: 'Native Web Search',
-    description: 'Provider handles web search natively, without the OpenRouter plugin.',
     color: 'emerald',
+    description: 'Provider handles web search natively, without the OpenRouter plugin.',
+    icon: Globe,
+    key: 'native_web_search',
+    label: 'Native Web Search',
     resolve: (endpoint) => {
       const active = endpoint.native_web_search ?? false
       const items = []
@@ -205,30 +205,30 @@ export const attributes = defineAttributes({
   },
 
   completions: {
-    key: 'completions',
-    icon: MessageSquare,
-    label: 'Completions',
+    color: 'blue',
     description: (
       <>
         Legacy <InlineCode>/completions</InlineCode> endpoint for raw text continuation.
       </>
     ),
-    color: 'blue',
+    icon: MessageSquare,
+    key: 'completions',
+    label: 'Completions',
     resolve: (endpoint) => ({
       active: endpoint.completions ?? false,
     }),
   },
 
   chat_completions: {
-    key: 'chat_completions',
-    icon: MessagesSquare,
-    label: 'Chat Completions',
+    color: 'blue',
     description: (
       <>
         Standard <InlineCode>/chat/completions</InlineCode> endpoint with message arrays.
       </>
     ),
-    color: 'blue',
+    icon: MessagesSquare,
+    key: 'chat_completions',
+    label: 'Chat Completions',
     resolve: (endpoint) => ({
       active: endpoint.chat_completions ?? false,
     }),
@@ -236,11 +236,11 @@ export const attributes = defineAttributes({
 
   // Variant
   free: {
-    key: 'free',
-    icon: CakeSlice,
-    label: 'Free',
-    description: 'Zero-cost inference. May have stricter rate limits and lower availability.',
     color: 'pink',
+    description: 'Zero-cost inference. May have stricter rate limits and lower availability.',
+    icon: CakeSlice,
+    key: 'free',
+    label: 'Free',
     resolve: (endpoint) => ({
       active: endpoint.variant === 'free',
     }),
@@ -248,33 +248,33 @@ export const attributes = defineAttributes({
 
   // Status Flags
   deranked: {
-    key: 'deranked',
-    icon: ChevronsDown,
-    label: 'Deranked',
-    description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
     color: 'amber',
+    description: 'Deprioritized in routing; only used as fallback when preferred endpoints fail.',
+    icon: ChevronsDown,
+    key: 'deranked',
+    label: 'Deranked',
     resolve: (endpoint) => ({
       active: endpoint.deranked ?? false,
     }),
   },
 
   disabled: {
-    key: 'disabled',
-    icon: OctagonX,
-    label: 'Disabled',
-    description: 'Temporarily unavailable; requests will fail or route elsewhere.',
     color: 'red',
+    description: 'Temporarily unavailable; requests will fail or route elsewhere.',
+    icon: OctagonX,
+    key: 'disabled',
+    label: 'Disabled',
     resolve: (endpoint) => ({
       active: endpoint.disabled ?? false,
     }),
   },
 
   gone: {
-    key: 'gone',
-    icon: Skull,
-    label: 'Gone',
-    description: 'This endpoint is no longer available.',
     color: 'rose',
+    description: 'This endpoint is no longer available.',
+    icon: Skull,
+    key: 'gone',
+    label: 'Gone',
     resolve: (endpoint) => ({
       active: hasValue(endpoint.unlisted_at),
       details: hasValue(endpoint.unlisted_at)
@@ -290,44 +290,44 @@ export const attributes = defineAttributes({
 
   // Data Policy
   training: {
-    key: 'training',
-    icon: ScanEye,
-    label: 'Training',
-    description: 'Provider may use your prompts and completions for model training.',
     color: 'orange',
+    description: 'Provider may use your prompts and completions for model training.',
+    icon: ScanEye,
+    key: 'training',
+    label: 'Training',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.may_train_on_data === true,
     }),
   },
 
   data_publishing: {
-    key: 'data_publishing',
-    icon: ScrollText,
-    label: 'Data Publishing',
-    description: 'Provider may publish or share your data in research or datasets.',
     color: 'orange',
+    description: 'Provider may publish or share your data in research or datasets.',
+    icon: ScrollText,
+    key: 'data_publishing',
+    label: 'Data Publishing',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.may_publish_data === true,
     }),
   },
 
   user_id: {
-    key: 'user_id',
-    icon: Fingerprint,
-    label: 'User ID',
-    description: 'An anonymized ID is forwarded to the provider with your request.',
     color: 'orange',
+    description: 'An anonymized ID is forwarded to the provider with your request.',
+    icon: Fingerprint,
+    key: 'user_id',
+    label: 'User ID',
     resolve: (endpoint) => ({
       active: endpoint.data_policy?.shares_user_id === true,
     }),
   },
 
   data_retention: {
-    key: 'data_retention',
-    icon: Save,
-    label: 'Data Retention',
-    description: 'Provider stores prompts and completions for a limited period.',
     color: 'orange',
+    description: 'Provider stores prompts and completions for a limited period.',
+    icon: Save,
+    key: 'data_retention',
+    label: 'Data Retention',
     resolve: (endpoint) => {
       const active = endpoint.data_policy?.may_retain_data === true
       const days = endpoint.data_policy?.data_retention_days?.toLocaleString()
@@ -341,11 +341,11 @@ export const attributes = defineAttributes({
 
   // Limits
   max_text_input_tokens: {
-    key: 'max_text_input_tokens',
-    icon: LetterText,
-    label: 'Max Context',
-    description: 'Context window limit for this endpoint (may differ from model maximum).',
     color: 'yellow',
+    description: 'Context window limit for this endpoint (may differ from model maximum).',
+    icon: LetterText,
+    key: 'max_text_input_tokens',
+    label: 'Max Context',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.text_input_tokens !== undefined &&
@@ -355,11 +355,11 @@ export const attributes = defineAttributes({
   },
 
   max_image_input_tokens: {
-    key: 'max_image_input_tokens',
-    icon: Image,
-    label: 'Max Image Tokens',
-    description: 'Token budget consumed by image inputs.',
     color: 'yellow',
+    description: 'Token budget consumed by image inputs.',
+    icon: Image,
+    key: 'max_image_input_tokens',
+    label: 'Max Image Tokens',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.image_input_tokens !== undefined &&
@@ -369,11 +369,11 @@ export const attributes = defineAttributes({
   },
 
   max_images_per_input: {
-    key: 'max_images_per_input',
-    icon: Image,
-    label: 'Max Images',
-    description: 'Number of images allowed in a single request.',
     color: 'yellow',
+    description: 'Number of images allowed in a single request.',
+    icon: Image,
+    key: 'max_images_per_input',
+    label: 'Max Images',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.images_per_input !== undefined &&
@@ -383,11 +383,11 @@ export const attributes = defineAttributes({
   },
 
   max_requests_per_minute: {
-    key: 'max_requests_per_minute',
-    icon: AlarmClock,
-    label: 'Max Requests/Min',
-    description: 'Rate limit enforced by this endpoint.',
     color: 'yellow',
+    description: 'Rate limit enforced by this endpoint.',
+    icon: AlarmClock,
+    key: 'max_requests_per_minute',
+    label: 'Max Requests/Min',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.requests_per_minute !== undefined &&
@@ -397,11 +397,11 @@ export const attributes = defineAttributes({
   },
 
   max_requests_per_day: {
-    key: 'max_requests_per_day',
-    icon: Calendar,
-    label: 'Max Requests/Day',
-    description: 'Daily request quota enforced by this endpoint.',
     color: 'yellow',
+    description: 'Daily request quota enforced by this endpoint.',
+    icon: Calendar,
+    key: 'max_requests_per_day',
+    label: 'Max Requests/Day',
     resolve: (endpoint) => ({
       active:
         endpoint.limits?.requests_per_day !== undefined &&
@@ -412,11 +412,11 @@ export const attributes = defineAttributes({
 
   // Modalities
   image_input: {
-    key: 'image_input',
-    icon: ImageUp,
-    label: 'Image Input',
-    description: 'Accepts images via URL or base64 content parts.',
     color: 'violet',
+    description: 'Accepts images via URL or base64 content parts.',
+    icon: ImageUp,
+    key: 'image_input',
+    label: 'Image Input',
     resolve: (endpoint) => {
       const active = endpoint.input_modalities?.includes('image') ?? false
       const items = []
@@ -437,11 +437,11 @@ export const attributes = defineAttributes({
   },
 
   image_output: {
-    key: 'image_output',
-    icon: ImageDown,
-    label: 'Image Output',
-    description: 'Generates images inline in the completion response.',
     color: 'violet',
+    description: 'Generates images inline in the completion response.',
+    icon: ImageDown,
+    key: 'image_output',
+    label: 'Image Output',
     resolve: (endpoint) => {
       const active = endpoint.output_modalities?.includes('image') ?? false
       const items = []
@@ -462,33 +462,33 @@ export const attributes = defineAttributes({
   },
 
   text_output: {
-    key: 'text_output',
-    icon: LetterText,
-    label: 'Text Output',
-    description: 'Returns text in the completion response.',
     color: 'zinc',
+    description: 'Returns text in the completion response.',
+    icon: LetterText,
+    key: 'text_output',
+    label: 'Text Output',
     resolve: (endpoint) => ({
       active: endpoint.output_modalities?.includes('text') ?? false,
     }),
   },
 
   file_input: {
-    key: 'file_input',
-    icon: FileSpreadsheet,
-    label: 'File Input',
-    description: 'Accepts document and file uploads as input.',
     color: 'sky',
+    description: 'Accepts document and file uploads as input.',
+    icon: FileSpreadsheet,
+    key: 'file_input',
+    label: 'File Input',
     resolve: (endpoint) => ({
       active: endpoint.input_modalities?.includes('file') ?? false,
     }),
   },
 
   audio_input: {
-    key: 'audio_input',
-    icon: AudioLines,
-    label: 'Audio Input',
-    description: 'Natively processes audio without a separate transcription step.',
     color: 'fuchsia',
+    description: 'Natively processes audio without a separate transcription step.',
+    icon: AudioLines,
+    key: 'audio_input',
+    label: 'Audio Input',
     resolve: (endpoint) => {
       const active = endpoint.input_modalities?.includes('audio') ?? false
       const items = []
@@ -517,22 +517,22 @@ export const attributes = defineAttributes({
   },
 
   audio_output: {
-    key: 'audio_output',
-    icon: AudioLines,
-    label: 'Audio Output',
-    description: 'Generates audio inline in the completion response.',
     color: 'fuchsia',
+    description: 'Generates audio inline in the completion response.',
+    icon: AudioLines,
+    key: 'audio_output',
+    label: 'Audio Output',
     resolve: (endpoint) => ({
       active: endpoint.output_modalities?.includes('audio') ?? false,
     }),
   },
 
   video_input: {
-    key: 'video_input',
-    icon: Video,
-    label: 'Video Input',
-    description: 'Accepts video content via URL or base64.',
     color: 'emerald',
+    description: 'Accepts video content via URL or base64.',
+    icon: Video,
+    key: 'video_input',
+    label: 'Video Input',
     resolve: (endpoint) => ({
       active: endpoint.input_modalities?.includes('video') ?? false,
     }),

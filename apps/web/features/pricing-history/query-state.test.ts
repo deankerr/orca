@@ -23,17 +23,17 @@ describe('pricing history hrefs', () => {
   it('adds pricing-history to the current page filters', () => {
     expect(
       buildPricingHistoryHref({
+        modelId: 'z-ai/glm-5.2',
         pathname: '/',
         searchParams: 'q=z-ai/glm-5.2&has=reasoning',
-        modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/?q=z-ai%2Fglm-5.2&has=reasoning&pricing-history=z-ai%2Fglm-5.2')
 
     expect(
       buildPricingHistoryHref({
+        modelId: 'z-ai/glm-5.2',
         pathname: '/monitor',
         searchParams: 'model=z-ai/glm-5.2',
-        modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/monitor?model=z-ai%2Fglm-5.2&pricing-history=z-ai%2Fglm-5.2')
   })
@@ -41,10 +41,10 @@ describe('pricing history hrefs', () => {
   it('drops leftover overlay keys', () => {
     expect(
       buildPricingHistoryHref({
+        modelId: 'z-ai/glm-5.2',
         pathname: '/',
         searchParams:
           'q=z-ai/glm-5.2&overviewModel=z-ai/glm-5.2&chart=z-ai/glm-5.2&history=z-ai/glm-5.2',
-        modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/?q=z-ai%2Fglm-5.2&pricing-history=z-ai%2Fglm-5.2')
   })
@@ -52,9 +52,9 @@ describe('pricing history hrefs', () => {
   it('builds a pricing-history-only href when no other state is present', () => {
     expect(
       buildPricingHistoryHref({
+        modelId: 'z-ai/glm-5.2',
         pathname: '/',
         searchParams: '',
-        modelId: 'z-ai/glm-5.2',
       }),
     ).toBe('/?pricing-history=z-ai%2Fglm-5.2')
   })

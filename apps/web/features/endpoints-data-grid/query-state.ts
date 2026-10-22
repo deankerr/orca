@@ -3,6 +3,7 @@ import type { inferParserType } from 'nuqs/server'
 
 const parseAsAttributeArray = parseAsArrayOf(parseAsString).withDefault([])
 
+// oxlint-disable sort-keys -- Key order is the order of query parameters in generated URLs (Object.keys below, nuqs serialization).
 export const endpointGridParsers = {
   q: parseAsString,
   uuid: parseAsString,
@@ -11,6 +12,7 @@ export const endpointGridParsers = {
   sort: parseAsString,
   order: parseAsStringEnum(['asc', 'desc'] as const),
 }
+// oxlint-enable sort-keys
 
 export const endpointGridQueryKeys = Object.keys(endpointGridParsers)
 
@@ -20,12 +22,12 @@ export const endpointGridStateOptions = {
 }
 
 export const endpointGridResetPatch = {
-  q: null,
-  uuid: null,
   has: [],
   not: [],
-  sort: null,
   order: null,
+  q: null,
+  sort: null,
+  uuid: null,
 } satisfies inferParserType<typeof endpointGridParsers>
 
 export function normalizeEndpointGridQuery(value: string) {

@@ -17,13 +17,13 @@ test('result metadata counts rows without reading their contents', () => {
   })
 
   expect(resultProperties(rows)).toEqual({ result_count: 100_000 })
-  expect(resultProperties({ rows, as_of: '2026-10-11T00:00:00Z' })).toEqual({
-    result_count: 100_000,
+  expect(resultProperties({ as_of: '2026-10-11T00:00:00Z', rows })).toEqual({
     data_scan_at: '2026-10-11T00:00:00Z',
+    result_count: 100_000,
   })
   expect(resultProperties({ scan_at: '2026-10-11T00:00:00Z' })).toEqual({
-    result_count: 1,
     data_scan_at: '2026-10-11T00:00:00Z',
+    result_count: 1,
   })
   expect(resultProperties(null)).toEqual({ result_count: 0 })
 })
@@ -31,29 +31,29 @@ test('result metadata counts rows without reading their contents', () => {
 function setup(localResult = false) {
   let now = 100
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    defaultOptions: { queries: { gcTime: Infinity, retry: false } },
   })
   const timings = new ReadinessQueryTimings(() => now)
-  timings.connection.update({ isWebSocketConnected: true, hasEverConnected: true })
+  timings.connection.update({ hasEverConnected: true, isWebSocketConnected: true })
   timings.observe(client.getQueryCache(), () => localResult)
 
   return {
-    client,
-    timings,
     advance: () => {
       now += 25
     },
+    client,
+    timings,
   }
 }
 
 test('subscription updates do not rewrite the completed fetch span', async () => {
   const { client, timings, advance } = setup()
   await client.query({
-    queryKey: key,
     queryFn: () => {
       advance()
       return ['first']
     },
+    queryKey: key,
   })
   const result = timings.get(hashKey(key))
   expect(result?.source).toBe('server')
@@ -66,7 +66,7 @@ test('subscription updates do not rewrite the completed fetch span', async () =>
 
 test('a Convex local result is distinguished from a server wait', async () => {
   const { client, timings } = setup(true)
-  await client.query({ queryKey: key, queryFn: () => ['cached'] })
+  await client.query({ queryFn: () => ['cached'], queryKey: key })
   expect(timings.get(hashKey(key))?.source).toBe('convex_client')
 })
 
@@ -96,7 +96,7 @@ test('distinct query arguments have independent results', async () => {
   const { client, timings } = setup()
   client.setQueryData(key, ['warm'])
   const coldKey = [key[0], key[1], { filter: 'new' }]
-  await client.query({ queryKey: coldKey, queryFn: () => ['cold'] })
+  await client.query({ queryFn: () => ['cold'], queryKey: coldKey })
   expect(timings.get(hashKey(key))?.source).toBe('tanstack_memory')
   expect(timings.get(hashKey(coldKey))?.source).toBe('server')
 })
@@ -105,10 +105,10 @@ test('failed queries are not reported as completed', async () => {
   const { client, timings } = setup()
   const result = await client
     .query({
-      queryKey: key,
       queryFn: () => {
         throw new Error('offline')
       },
+      queryKey: key,
     })
     .catch((error: unknown) => error)
   expect(result).toBeInstanceOf(Error)
@@ -125,8 +125,8 @@ test('storage restored before mount keeps provenance once, then becomes a memory
   expect(timings.initial(hashKey(key), timings.connection.mark()).source).toBe('tanstack_persisted')
   timings.markObserved(hashKey(key))
   expect(timings.initial(hashKey(key), timings.connection.mark())).toMatchObject({
-    source: 'tanstack_memory',
     available: timings.connection.mark(),
+    source: 'tanstack_memory',
   })
 })
 
@@ -139,11 +139,11 @@ test('overview queries are observed without a preceding grid query', async () =>
   ] as const) {
     const queryKey = ['convexQuery', name, args]
     await client.query({
-      queryKey,
       queryFn: () => {
         advance()
         return { display_name: 'Example' }
       },
+      queryKey,
     })
     expect(timings.get(hashKey(queryKey))?.source).toBe('server')
     expect(timings.get(hashKey(queryKey))?.fetchStarted).toBeDefined()
@@ -162,19 +162,19 @@ test('each actual refetch gets a new run and ignores old cached data during fetc
   )
   timings.observe(client.getQueryCache(), () => false)
   await client.query({
-    queryKey: key,
     queryFn: () => {
       now += 10
       return ['first']
     },
+    queryKey: key,
   })
   const first = timings.get(hashKey(key))
   await client.query({
-    queryKey: key,
     queryFn: () => {
       now += 30
       return ['second']
     },
+    queryKey: key,
   })
   const second = timings.get(hashKey(key))
   expect(second?.id).not.toBe(first?.id)
@@ -199,14 +199,14 @@ test('inactive completions are excludable and errors emit no completed event', a
   timings.observe(client.getQueryCache(), () => false)
   await client
     .query({
-      queryKey: key,
       queryFn: () => {
         throw new Error('failed')
       },
+      queryKey: key,
     })
     .catch(() => undefined)
   expect(events).toHaveLength(0)
-  await client.query({ queryKey: key, queryFn: () => ['success'] })
+  await client.query({ queryFn: () => ['success'], queryKey: key })
   expect(events).toHaveLength(1)
   expect(events[0]?.consumer_active).toBe(false)
 })
@@ -221,21 +221,21 @@ test('connection overlap is per query; connection lifecycle is emitted separatel
       events.push({ event, properties })
     },
   )
-  timings.connection.update({ isWebSocketConnected: false, hasEverConnected: false })
+  timings.connection.update({ hasEverConnected: false, isWebSocketConnected: false })
   timings.observe(client.getQueryCache(), () => false)
   await client.query({
-    queryKey: key,
     queryFn: () => {
       now = 20
-      timings.connection.update({ isWebSocketConnected: true, hasEverConnected: true })
+      timings.connection.update({ hasEverConnected: true, isWebSocketConnected: true })
       now = 70
       return ['loaded']
     },
+    queryKey: key,
   })
   expect(events.find(({ event }) => event === 'convex connected')?.properties.duration_ms).toBe(20)
   expect(events.find(({ event }) => event === 'query completed')?.properties).toMatchObject({
-    duration_ms: 70,
-    connection_wait_ms: 20,
     connected_ms: 50,
+    connection_wait_ms: 20,
+    duration_ms: 70,
   })
 })

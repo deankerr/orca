@@ -11,11 +11,11 @@ test('production and preview capture automatically; development requires explici
     environment: 'development',
     key: undefined,
   })
-  expect(analyticsConfig({ key: 'ingestion-key', developmentEnabled: 'true' }).key).toBe(
+  expect(analyticsConfig({ developmentEnabled: 'true', key: 'ingestion-key' }).key).toBe(
     'ingestion-key',
   )
   expect(
-    analyticsConfig({ environment: 'unknown', key: 'ingestion-key', developmentEnabled: 'true' })
+    analyticsConfig({ developmentEnabled: 'true', environment: 'unknown', key: 'ingestion-key' })
       .key,
   ).toBeUndefined()
 })
@@ -23,7 +23,7 @@ test('production and preview capture automatically; development requires explici
 test('every environment needs a nonblank ingestion key', () => {
   for (const environment of ['production', 'preview', 'development']) {
     for (const key of [undefined, '', '  ']) {
-      expect(analyticsConfig({ environment, key, developmentEnabled: 'true' }).key).toBeUndefined()
+      expect(analyticsConfig({ developmentEnabled: 'true', environment, key }).key).toBeUndefined()
     }
   }
 })

@@ -31,7 +31,7 @@ export async function store(
   ctx: ActionCtx,
   args: ObjectIdentity & { text: string },
 ): Promise<void> {
-  const identity = { path: args.path, name: args.name }
+  const identity = { name: args.name, path: args.path }
 
   const existing = await ctx.runQuery(internal.objects.locators.get, identity)
 
@@ -115,5 +115,5 @@ async function readSource(ctx: ActionCtx): Promise<ObjectReader | null> {
     throw new ConvexError('Object source cannot be this deployment')
   }
 
-  return connect({ deployment: source, apiKey: env.ORCA_OBJECTS_API_KEY ?? '' })
+  return connect({ apiKey: env.ORCA_OBJECTS_API_KEY ?? '', deployment: source })
 }

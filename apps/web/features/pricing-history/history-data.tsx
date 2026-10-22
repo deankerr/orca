@@ -31,12 +31,12 @@ export function HistoryData({
   const pricesByEndpoint = new Map(prices.map((endpoint) => [endpoint.id, endpoint.prices]))
 
   return children({
-    modelId,
     asOf: Date.parse(asOf),
     endpoints: observations.map((endpoint) => ({
       ...endpoint,
       prices: pricesByEndpoint.get(endpoint.id) ?? [],
     })),
+    modelId,
   })
 }
 

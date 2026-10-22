@@ -45,10 +45,10 @@ export class ConnectionTimings {
 
     return {
       at,
-      phase: this.phase,
-      setup: this.setup + (this.phase === 'connecting' ? elapsed : 0),
-      reconnect: this.reconnect + (this.phase === 'reconnecting' ? elapsed : 0),
       connected: this.connected + (this.phase === 'connected' ? elapsed : 0),
+      phase: this.phase,
+      reconnect: this.reconnect + (this.phase === 'reconnecting' ? elapsed : 0),
+      setup: this.setup + (this.phase === 'connecting' ? elapsed : 0),
     }
   }
 
@@ -62,10 +62,10 @@ export class ConnectionTimings {
     const mark = this.mark()
     if (next === 'connected' && (this.phase === 'connecting' || this.phase === 'reconnecting')) {
       this.emit('convex connected', {
+        completed_at_ms: mark.at,
         connection_kind: this.phase === 'connecting' ? 'initial' : 'reconnect',
         duration_ms: mark.at - this.changedAt,
         started_at_ms: this.changedAt,
-        completed_at_ms: mark.at,
       })
     }
     this.setup = mark.setup

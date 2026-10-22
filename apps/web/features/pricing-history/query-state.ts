@@ -53,5 +53,5 @@ export function buildLegacyPricingHistoryHref(modelIdSegments: string[]): string
     return '/'
   }
 
-  return buildPricingHistoryHref({ pathname: '/', searchParams: '', modelId })
+  return buildPricingHistoryHref({ modelId, pathname: '/', searchParams: '' })
 }

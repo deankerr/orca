@@ -9,17 +9,17 @@ export function startReadiness(
   surface: 'grid' | 'overview_sheet',
 ) {
   const started = readinessQueryTimings.connection.mark()
-  const query = client.getQueryCache().find({ queryKey, exact: true })
+  const query = client.getQueryCache().find({ exact: true, queryKey })
 
   return {
     id: crypto.randomUUID(),
-    surface,
-    started,
-    queryKey,
     initial:
       query?.state.data === undefined
         ? undefined
         : readinessQueryTimings.initial(query.queryHash, started),
+    queryKey,
+    started,
+    surface,
   }
 }
 

@@ -12,12 +12,12 @@ import type { RecordState } from './tables'
 
 const view = (overrides: Partial<QueueView<string>>): QueueView<string> => ({
   baselines: [],
-  pending: [],
-  latestCompleteFull: null,
   hasFull: false,
+  inFlight: 0,
+  latestCompleteFull: null,
   latestPair: null,
   pairsUnsettled: false,
-  inFlight: 0,
+  pending: [],
   ...overrides,
 })
 const pending = (...indexes: number[]) =>
@@ -25,32 +25,32 @@ const pending = (...indexes: number[]) =>
 
 test('adjacent times form pairs; one time forms none', () => {
   expect(chain([hour(0), hour(1), hour(2)], true)).toEqual([
-    { from_scan_at: hour(0), scan_at: hour(1), alerts: true },
-    { from_scan_at: hour(1), scan_at: hour(2), alerts: true },
+    { alerts: true, from_scan_at: hour(0), scan_at: hour(1) },
+    { alerts: true, from_scan_at: hour(1), scan_at: hour(2) },
   ])
   expect(chain([hour(0)], false)).toEqual([])
 })
 
 test('the first queued pair is the only full pair until it completes', () => {
   expect(
-    decideQueue(view({ pending: pending(5, 4, 3), latestPair: hour(5) }), {
+    decideQueue(view({ latestPair: hour(5), pending: pending(5, 4, 3) }), {
       batch: 10,
       capacity: Infinity,
     }),
   ).toEqual({
     kind: 'ingest',
-    requests: [{ id: 'p5', scope: 'full', current_stats: true }],
+    requests: [{ current_stats: true, id: 'p5', scope: 'full' }],
   })
 })
 
 test('pairs behind a complete full pair commit departures; later pairs commit changes', () => {
   const decision = decideQueue(
     view({
-      pending: pending(7, 6, 4, 3),
-      latestCompleteFull: hour(5),
       hasFull: true,
+      latestCompleteFull: hour(5),
       latestPair: hour(7),
       pairsUnsettled: true,
+      pending: pending(7, 6, 4, 3),
     }),
     { batch: 3, capacity: Infinity },
   )
@@ -58,15 +58,15 @@ test('pairs behind a complete full pair commit departures; later pairs commit ch
   expect(decision).toEqual({
     kind: 'ingest',
     requests: [
-      { id: 'p7', scope: 'changes', current_stats: true },
-      { id: 'p6', scope: 'changes', current_stats: false },
-      { id: 'p4', scope: 'departures', current_stats: false },
+      { current_stats: true, id: 'p7', scope: 'changes' },
+      { current_stats: false, id: 'p6', scope: 'changes' },
+      { current_stats: false, id: 'p4', scope: 'departures' },
     ],
   })
 })
 
 test('displaced baselines are withdrawn first, unless their execution is unfinished', () => {
-  const baseline = (state: RecordState) => ({ id: 'b', scan_at: hour(3), state, displaced: true })
+  const baseline = (state: RecordState) => ({ displaced: true, id: 'b', scan_at: hour(3), state })
 
   expect(
     decideQueue(view({ baselines: [baseline('complete')], pending: pending(3) }), {
@@ -74,21 +74,21 @@ test('displaced baselines are withdrawn first, unless their execution is unfinis
       capacity: Infinity,
     }),
   ).toEqual({
-    kind: 'withdraw',
     ids: ['b'],
+    kind: 'withdraw',
   })
   expect(
     decideQueue(view({ baselines: [baseline('pending')] }), { batch: 5, capacity: Infinity }),
   ).toEqual({
-    kind: 'withdraw',
     ids: ['b'],
+    kind: 'withdraw',
   })
 
   // The displacing pair waits while the baseline holds its scan.
   for (const state of ['queued', 'failed', 'withdrawing'] as const) {
     expect(
       decideQueue(
-        view({ baselines: [baseline(state)], pending: pending(3), pairsUnsettled: true }),
+        view({ baselines: [baseline(state)], pairsUnsettled: true, pending: pending(3) }),
         { batch: 5, capacity: Infinity },
       ),
     ).toEqual({ kind: 'idle' })
@@ -96,7 +96,7 @@ test('displaced baselines are withdrawn first, unless their execution is unfinis
 })
 
 test('the only baseline is installed once no pair is pending or queued', () => {
-  const baseline = { id: 'b', scan_at: hour(0), state: 'pending' as const, displaced: false }
+  const baseline = { displaced: false, id: 'b', scan_at: hour(0), state: 'pending' as const }
 
   expect(
     decideQueue(view({ baselines: [baseline], pairsUnsettled: true }), {
@@ -107,8 +107,8 @@ test('the only baseline is installed once no pair is pending or queued', () => {
     kind: 'idle',
   })
   expect(decideQueue(view({ baselines: [baseline] }), { batch: 5, capacity: Infinity })).toEqual({
-    kind: 'baseline',
     id: 'b',
+    kind: 'baseline',
   })
   expect(
     decideQueue(view({ baselines: [baseline, { ...baseline, id: 'c', scan_at: hour(1) }] }), {
@@ -129,36 +129,36 @@ function source(times: () => string[]): ListScans {
 test('registration bootstraps, extends forward, backfills, then places one baseline', async () => {
   const times = [1, 2, 3, 4, 5, 6].map(hour)
   const list = source(() => times)
-  const target = { start_at: hour(1), end_at: hour(4) }
-  const empty: RegisterState = { target, edges: { latest: null, earliest: null }, baseline: false }
+  const target = { end_at: hour(4), start_at: hour(1) }
+  const empty: RegisterState = { baseline: false, edges: { earliest: null, latest: null }, target }
 
   expect(await planRegister(empty, list, 2)).toEqual({
     kind: 'bootstrap',
     pairs: chain([2, 3, 4].map(hour), false),
   })
   expect(
-    await planRegister({ ...empty, target: { start_at: hour(4), end_at: hour(4) } }, list, 2),
+    await planRegister({ ...empty, target: { end_at: hour(4), start_at: hour(4) } }, list, 2),
   ).toEqual({
     kind: 'idle',
   })
 
-  const edges = { latest: hour(4), earliest: { from_scan_at: hour(2), scan_at: hour(3) } }
+  const edges = { earliest: { from_scan_at: hour(2), scan_at: hour(3) }, latest: hour(4) }
   const later = { ...target, end_at: hour(6) }
-  expect(await planRegister({ target: later, edges, baseline: false }, list, 2)).toEqual({
+  expect(await planRegister({ baseline: false, edges, target: later }, list, 2)).toEqual({
     kind: 'forward',
     pairs: chain([4, 5, 6].map(hour), true),
   })
-  expect(await planRegister({ target, edges, baseline: false }, list, 2)).toEqual({
+  expect(await planRegister({ baseline: false, edges, target }, list, 2)).toEqual({
     kind: 'backward',
     pairs: chain([1, 2].map(hour), false),
   })
 
   const reached = { ...edges, earliest: { from_scan_at: hour(1), scan_at: hour(2) } }
-  expect(await planRegister({ target, edges: reached, baseline: false }, list, 2)).toEqual({
+  expect(await planRegister({ baseline: false, edges: reached, target }, list, 2)).toEqual({
     kind: 'baseline',
     scan_at: hour(1),
   })
-  expect(await planRegister({ target, edges: reached, baseline: true }, list, 2)).toEqual({
+  expect(await planRegister({ baseline: true, edges: reached, target }, list, 2)).toEqual({
     kind: 'idle',
   })
 })
@@ -176,18 +176,18 @@ type SimRecord = {
 test('acceptance fills only the free capacity, and a full queue defers the baseline', () => {
   const limits = { batch: 10, capacity: 4 }
   expect(
-    decideQueue(view({ pending: pending(5, 4, 3), hasFull: true, inFlight: 2 }), limits),
+    decideQueue(view({ hasFull: true, inFlight: 2, pending: pending(5, 4, 3) }), limits),
   ).toMatchObject({ kind: 'ingest', requests: [{ id: 'p5' }, { id: 'p4' }] })
   expect(
     decideQueue(
-      view({ pending: pending(5), hasFull: true, inFlight: 4, pairsUnsettled: true }),
+      view({ hasFull: true, inFlight: 4, pairsUnsettled: true, pending: pending(5) }),
       limits,
     ),
   ).toEqual({ kind: 'idle' })
   expect(
     decideQueue(
       view({
-        baselines: [{ id: 'b', scan_at: hour(0), state: 'pending', displaced: false }],
+        baselines: [{ displaced: false, id: 'b', scan_at: hour(0), state: 'pending' }],
         inFlight: 4,
       }),
       limits,
@@ -217,7 +217,7 @@ class Simulation {
     this.draw = random(seed)
     this.scans = specs(seed, 30).map((spec, index) => scan(hour(index), spec))
     this.available = 20
-    this.target = { start_at: hour(12), end_at: hour(19) }
+    this.target = { end_at: hour(19), start_at: hour(12) }
   }
 
   readonly list = source(() => this.scans.slice(0, this.available).map(({ scan_at }) => scan_at))
@@ -239,22 +239,22 @@ class Simulation {
     const from = earliest?.from_scan_at ?? null
     const plan = await planRegister(
       {
-        target: this.target,
+        baseline: this.baselines.some(({ scan_at }) => scan_at === from),
         edges: {
-          latest: latest?.scan_at ?? null,
           earliest:
             earliest === undefined || from === null
               ? null
               : { from_scan_at: from, scan_at: earliest.scan_at },
+          latest: latest?.scan_at ?? null,
         },
-        baseline: this.baselines.some(({ scan_at }) => scan_at === from),
+        target: this.target,
       },
       this.list,
       BATCH,
     )
 
     if (plan.kind === 'baseline') {
-      this.add({ from_scan_at: null, scan_at: plan.scan_at, alerts: false })
+      this.add({ alerts: false, from_scan_at: null, scan_at: plan.scan_at })
     } else if (plan.kind !== 'idle') {
       for (const pair of plan.pairs) {
         this.add(pair)
@@ -273,10 +273,10 @@ class Simulation {
       }
     } else if (decision.kind === 'ingest') {
       for (const { id, scope } of decision.requests) {
-        this.update(id, { state: 'queued', scope, request: scope })
+        this.update(id, { request: scope, scope, state: 'queued' })
       }
     } else if (decision.kind === 'baseline') {
-      this.update(decision.id, { state: 'queued', request: 'full' })
+      this.update(decision.id, { request: 'full', state: 'queued' })
     }
 
     return decision.kind !== 'idle'
@@ -307,7 +307,7 @@ class Simulation {
 
     for (const retained of this.retained) {
       if (succeed || this.draw() < 0.5) {
-        retained.commit({ previous, next }, record.request)
+        retained.commit({ next, previous }, record.request)
       }
     }
 
@@ -320,7 +320,7 @@ class Simulation {
     const record = failed[Math.floor(this.draw() * failed.length)]
 
     if (record !== undefined) {
-      this.update(record.id, { state: 'pending', scope: undefined, request: undefined })
+      this.update(record.id, { request: undefined, scope: undefined, state: 'pending' })
     }
 
     return record !== undefined
@@ -352,14 +352,20 @@ class Simulation {
     const latestQueuedFull = latest('full', 'queued')
     const latestCompleteFull = latest('full', 'complete')
     const baselines = this.baselines.map(({ id, scan_at, state }) => ({
+      displaced: pairs.some((pair) => pair.scan_at === scan_at),
       id,
       scan_at,
       state,
-      displaced: pairs.some((pair) => pair.scan_at === scan_at),
     }))
 
     return {
       baselines,
+      hasFull: latestQueuedFull !== null || latestCompleteFull !== null,
+      inFlight: this.records.filter(({ state }) => state === 'queued' || state === 'withdrawing')
+        .length,
+      latestCompleteFull,
+      latestPair: pairs.at(-1)?.scan_at ?? null,
+      pairsUnsettled: pairs.some(({ state }) => state === 'pending' || state === 'queued'),
       pending: pairs
         .filter(
           ({ state, scan_at }) =>
@@ -368,12 +374,6 @@ class Simulation {
         .toReversed()
         .slice(0, BATCH + baselines.length)
         .map(({ id, scan_at }) => ({ id, scan_at })),
-      latestCompleteFull,
-      hasFull: latestQueuedFull !== null || latestCompleteFull !== null,
-      latestPair: pairs.at(-1)?.scan_at ?? null,
-      pairsUnsettled: pairs.some(({ state }) => state === 'pending' || state === 'queued'),
-      inFlight: this.records.filter(({ state }) => state === 'queued' || state === 'withdrawing')
-        .length,
     }
   }
 

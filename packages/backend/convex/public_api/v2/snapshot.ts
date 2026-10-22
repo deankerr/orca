@@ -12,8 +12,8 @@ export async function buildSnapshot(ctx: ActionCtx, scanAt: string): Promise<Orc
   const scan = await scans.loadCollected(ctx, scanAt)
 
   const snapshot = OrcaPublicApiV2Schema.parse({
-    updated_at: scan.scan_at,
     models: transformScanToV2Models(scan.entries),
+    updated_at: scan.scan_at,
   })
 
   // An empty upstream result must not erase the last usable public snapshot.

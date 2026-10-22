@@ -12,7 +12,6 @@ const ALERT_MAX_AGE_MS = 60 * 60 * 1000
 /** Scheduled after ingestion completion; preparation failures leave source events intact. */
 export const sendRecordAlerts = internalMutation({
   args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
-  returns: v.null(),
   handler: async (ctx, { record_id }) => {
     if (env.ORCA_DISCORD_AUTO_SEND_ENABLED !== 'true') {
       return null
@@ -31,36 +30,36 @@ export const sendRecordAlerts = internalMutation({
     // Rendering and fan-out share this alert transaction, independently of the
     // completed record. Delayed records retain their original source-time deadline.
     await submitAlerts(ctx, {
-      messages: rendered.messages,
-      key: `ingestion:${rendered.scan_at}`,
       expiresAt: Date.parse(rendered.scan_at) + ALERT_MAX_AGE_MS,
+      key: `ingestion:${rendered.scan_at}`,
+      messages: rendered.messages,
     })
     return null
   },
+  returns: v.null(),
 })
 
 /** Read-only operator preview: current cards and filtering, without sender admission. */
 export const prepareRecord = internalQuery({
   args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
+  handler: async (ctx, { record_id }) => await renderRecord(ctx, record_id),
   returns: v.object({
-    scan_at: v.string(),
     messages: v.array(
       v.object({ key: v.string(), payload: v.string(), source_ids: v.array(v.string()) }),
     ),
+    scan_at: v.string(),
     skippedEvents: v.array(
       v.object({
-        source_id: v.string(),
         reason: v.union(v.literal('ineligible'), v.literal('frequent_pricing')),
+        source_id: v.string(),
       }),
     ),
   }),
-  handler: async (ctx, { record_id }) => await renderRecord(ctx, record_id),
 })
 
 /** Explicit operator send: rerender one completed record with a fresh delivery window. */
 export const sendRecord = internalMutation({
   args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
-  returns: v.object({ jobIds: v.array(v.string()), messageCount: v.number() }),
   handler: async (ctx, { record_id }) => {
     const rendered = await renderRecord(ctx, record_id)
 
@@ -69,13 +68,14 @@ export const sendRecord = internalMutation({
     // job, receipt, event or processor work is changed to make repetition possible.
     const run = `${Math.random().toString(36).slice(2)}:${Math.random().toString(36).slice(2)}`
     const jobIds = await submitAlerts(ctx, {
-      messages: rendered.messages,
-      key: `manual-ingestion:${rendered.scan_at}:${run}`,
       expiresAt: Date.now() + ALERT_MAX_AGE_MS,
+      key: `manual-ingestion:${rendered.scan_at}:${run}`,
+      messages: rendered.messages,
     })
 
     return { jobIds, messageCount: rendered.messages.length }
   },
+  returns: v.object({ jobIds: v.array(v.string()), messageCount: v.number() }),
 })
 
 async function submitAlerts(
@@ -94,8 +94,8 @@ async function submitAlerts(
   // one topic and one observation key, regardless of its current recipients.
   const jobs = await ctx.runMutation(components.discordSender.api.submitBatch, {
     ...input,
-    topic: 'ingestion',
     messages: input.messages.map(({ key, payload }) => ({ key, payload })),
+    topic: 'ingestion',
   })
 
   return jobs.map(({ jobId }) => jobId)

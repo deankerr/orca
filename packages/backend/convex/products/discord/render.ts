@@ -18,11 +18,11 @@ import { renderDiscordBatch } from './renderers/index'
 
 type Operation = Doc<typeof EVENTS_TABLE>['type']
 
-const operationOrder = { ADD: 0, UPDATE: 1, REMOVE: 2 } satisfies Record<Operation, number>
+const operationOrder = { ADD: 0, REMOVE: 2, UPDATE: 1 } satisfies Record<Operation, number>
 const entityOrder = {
-  ADD: { provider: 0, model: 1, endpoint: 2 },
-  UPDATE: { provider: 0, model: 1, endpoint: 2 },
+  ADD: { endpoint: 2, model: 1, provider: 0 },
   REMOVE: { endpoint: 0, model: 1, provider: 2 },
+  UPDATE: { endpoint: 2, model: 1, provider: 0 },
 } satisfies Record<Operation, Record<AlertSource['entity_kind'], number>>
 
 /** Stable across JSON object insertion order; arrays intentionally retain display order. */
@@ -52,7 +52,7 @@ export async function renderRecord(ctx: QueryCtx, recordId: Id<typeof INGESTION_
   }
 
   if (record.kind === 'baseline') {
-    return { scan_at: record.scan_at, messages: [], skippedEvents: [] }
+    return { messages: [], scan_at: record.scan_at, skippedEvents: [] }
   }
 
   // Filtering and batching must not depend on a caller-selected event subset.
@@ -93,15 +93,15 @@ export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {
   const { alerts, skippedEvents } = await prepareBatch(
     await Promise.all(
       ordered.map(async (row) => ({
-        source_id: row._id,
         event: selectDefault(await interpret(ctx, row)),
+        source_id: row._id,
       })),
     ),
     async (candidates) => await readFrequency(ctx, candidates),
   )
   const notifications = renderDiscordBatch(alerts, {
-    publicUrl: env.ORCA_WEB_ORIGIN,
     logoOrigin: env.ORCA_LOGO_ORIGIN,
+    publicUrl: env.ORCA_WEB_ORIGIN,
   })
   const occurrences = new Map<string, number>()
   const messages = notifications.map(({ message, source_ids }) => {

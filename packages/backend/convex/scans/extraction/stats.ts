@@ -16,6 +16,6 @@ export function extractStats(endpoint_id: string, source: unknown): ExtractedSta
   const samples = { ...statsByTier, default: statsByTier?.default ?? stats }
 
   return Object.entries(samples).flatMap(([tier, sample]) =>
-    sample === null || sample === undefined ? [] : [{ endpoint_id, tier, sample }],
+    sample === null || sample === undefined ? [] : [{ endpoint_id, sample, tier }],
   )
 }

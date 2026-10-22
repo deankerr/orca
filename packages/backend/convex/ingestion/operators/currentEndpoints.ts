@@ -50,8 +50,8 @@ export function derive(source: Source, scope: CurrentScope): CurrentEndpointRow[
       return {
         ...fields,
         ...version,
-        pricing: encodePricing(pricing),
         metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
+        pricing: encodePricing(pricing),
       }
     },
   )

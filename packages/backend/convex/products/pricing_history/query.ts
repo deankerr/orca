@@ -11,7 +11,6 @@ import { ENDPOINT_PRICES_TABLE, endpointPricesTable } from '../../catalog/tables
 // Keep the clock independent so completing a scan does not reread unchanged histories.
 export const observations = query({
   args: { model_id: v.string() },
-  returns: v.array(v.object({ id: v.string(), observations: v.array(endpointObservation) })),
   handler: async (ctx, { model_id }) => {
     const ids = await historicalEndpointIds(ctx, model_id)
 
@@ -34,11 +33,11 @@ export const observations = query({
       }),
     )
   },
+  returns: v.array(v.object({ id: v.string(), observations: v.array(endpointObservation) })),
 })
 
 export const prices = query({
   args: { model_id: v.string() },
-  returns: v.array(v.object({ id: v.string(), prices: v.array(endpointPricesTable.validator) })),
   handler: async (ctx, { model_id }) => {
     const ids = await historicalEndpointIds(ctx, model_id)
 
@@ -53,6 +52,7 @@ export const prices = query({
       }),
     )
   },
+  returns: v.array(v.object({ id: v.string(), prices: v.array(endpointPricesTable.validator) })),
 })
 
 async function historicalEndpointIds(ctx: QueryCtx, modelId: string) {

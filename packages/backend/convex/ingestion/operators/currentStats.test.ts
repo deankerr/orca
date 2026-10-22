@@ -17,17 +17,17 @@ test('a snapshot keeps usable default-tier readings from its scan alone', () => 
     },
   })
 
-  expect(derive({ previous: scan(hour(0)), next })).toEqual({
-    scan_at: hour(1),
+  expect(derive({ next, previous: scan(hour(0)) })).toEqual({
     rows: [{ endpoint_id: 'e1', p50_latency: 12 }],
+    scan_at: hour(1),
   })
 })
 
 test('an empty snapshot is complete and replaces an older one', () => {
-  const empty = derive({ previous: null, next: scan(hour(2)) })
+  const empty = derive({ next: scan(hour(2)), previous: null })
 
-  expect(empty).toEqual({ scan_at: hour(2), rows: [] })
-  expect(supersedes({ scan_at: hour(1), rows: [{ endpoint_id: 'e1' }] }, empty)).toBe(true)
-  expect(supersedes(empty, { scan_at: hour(1), rows: [] })).toBe(false)
+  expect(empty).toEqual({ rows: [], scan_at: hour(2) })
+  expect(supersedes({ rows: [{ endpoint_id: 'e1' }], scan_at: hour(1) }, empty)).toBe(true)
+  expect(supersedes(empty, { rows: [], scan_at: hour(1) })).toBe(false)
   expect(supersedes(null, empty)).toBe(true)
 })

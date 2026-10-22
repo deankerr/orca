@@ -25,10 +25,12 @@ function readPublicApiPreviewSample(payload: unknown) {
     throw new Error('Unexpected API response shape')
   }
 
+  // oxlint-disable sort-keys -- Rendered with JSON.stringify as a sample of the API response, which lists updated_at first.
   return {
     updated_at: payload.updated_at,
     models: payload.models.slice(0, SAMPLE_MODEL_LIMIT),
   }
+  // oxlint-enable sort-keys
 }
 
 async function fetchPublicApiPreviewSample() {
@@ -43,8 +45,8 @@ async function fetchPublicApiPreviewSample() {
 
 export function ClientApiCodeBlock() {
   const query = useQuery({
-    queryKey: ['public-api-preview', API_PATH],
     queryFn: fetchPublicApiPreviewSample,
+    queryKey: ['public-api-preview', API_PATH],
   })
   const code = JSON.stringify(query.data ?? null, null, 2)
 

@@ -10,24 +10,24 @@ import { loadMany, store } from './storage'
 
 test('a configured remote read source never redirects local writes', async () => {
   const settings = {
+    ORCA_OBJECTS_API_KEY: 'test-key',
     ORCA_OBJECTS_BACKEND: 'convex',
     ORCA_OBJECTS_SOURCE_DEPLOYMENT: 'source-deployment',
-    ORCA_OBJECTS_API_KEY: 'test-key',
   }
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   Object.assign(process.env, settings)
 
   const remote = spyOn(ConvexHttpClient.prototype, 'action').mockResolvedValue([
-    { codec: 'gzip', bytes: Bun.gzipSync('source text').buffer },
+    { bytes: Bun.gzipSync('source text').buffer, codec: 'gzip' },
   ])
   const writes: unknown[] = []
-  const identity = { path: 'test', name: 'one' }
+  const identity = { name: 'one', path: 'test' }
   const ctx = {
     meta: { getDeploymentMetadata: async () => ({ name: 'consumer-deployment' }) },
-    runQuery: async () => null,
     runMutation: async (ref: Parameters<typeof getFunctionName>[0], args: unknown) => {
-      writes.push({ function: getFunctionName(ref), args })
+      writes.push({ args, function: getFunctionName(ref) })
     },
+    runQuery: async () => null,
     storage: {
       store: async (blob: Blob) => {
         expect(new TextDecoder().decode(Bun.gunzipSync(await blob.arrayBuffer()))).toBe(
@@ -43,16 +43,16 @@ test('a configured remote read source never redirects local writes', async () =>
     expect(remote).not.toHaveBeenCalled()
     expect(writes).toEqual([
       {
-        function: 'objects/locators:insert',
         args: {
           locator: {
             ...identity,
             backend: 'convex',
-            storage_id: 'local-storage-id',
             codec: 'gzip',
             size: 10,
+            storage_id: 'local-storage-id',
           },
         },
+        function: 'objects/locators:insert',
       },
     ])
     expect(await loadMany(ctx, [identity])).toEqual(['source text'])

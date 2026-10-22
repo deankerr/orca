@@ -44,7 +44,7 @@ export function DataDate({ label, value }: { label: string; value: string | null
       value={
         date === null || Number.isNaN(date.getTime())
           ? null
-          : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+          : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
       }
     />
   )
