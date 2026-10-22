@@ -85,6 +85,11 @@ must be transparent and use the dimensions recorded in `docs/orca/config.md`. In
 sheet and the assets at ORCA's small display sizes.
 Review every file changed by formatting before handoff.
 
+Generation warns when a LobeHub asset shadows a manual one. Report every shadowed asset to the
+developer, whether from a new logo or a LobeHub update, with the key, the manual file, and the
+winning LobeHub asset. Leave the manual files in place unless asked to remove them: shadowing can
+mean a redundant source or a deliberate manual choice that LobeHub now overrides.
+
 For every acquired source, include these facts with the generated review sheet:
 
 - Resolved group and repository-relative source file.
