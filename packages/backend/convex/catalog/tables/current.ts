@@ -62,7 +62,7 @@ export type CurrentEndpointRow = Infer<typeof currentEndpointsTable.validator>
 export const CURRENT_STATS_TABLE = 'catalog_current_stats' as const
 
 /** An endpoint's current default-tier readings; endpoints with no reading have no row. */
-export const currentStatsRow = v.object({
+const currentStatsRow = v.object({
   endpoint_id: v.string(),
   p50_throughput: v.optional(v.number()),
   p50_latency: v.optional(v.number()),

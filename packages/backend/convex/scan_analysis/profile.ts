@@ -119,7 +119,7 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
   }
 }
 
-export type PopulationName = 'models' | 'endpoints' | 'providers'
+type PopulationName = 'models' | 'endpoints' | 'providers'
 export type ScanViewOptions = ViewOptions & { population?: PopulationName }
 
 /** Refine the same full report for agents; selection never changes how profiling is performed. */

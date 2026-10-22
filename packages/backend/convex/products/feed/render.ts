@@ -7,7 +7,7 @@ import { entityAlert } from '../shared/alerts/curate'
 import type { EntityAlert } from '../shared/alerts/curate'
 import { describe, summarize } from './text'
 
-export const feedEvent = v.union(
+const feedEvent = v.union(
   ...entityAlert.members.map((member) =>
     member.extend({ summary: v.string(), details: v.array(v.string()) }),
   ),

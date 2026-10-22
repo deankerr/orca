@@ -20,7 +20,7 @@ import { EntityOverviewTrigger } from '../entity-overview/trigger'
 import { FieldChangeList, FieldItem, FieldItemSet, FieldUnit } from './field-display'
 import { fieldLabel, formatChangeUnit, formatChangeValue } from './field-format'
 
-export function lifecycleLabel(event: EntityAlert): string {
+function lifecycleLabel(event: EntityAlert): string {
   const kind = event.entity_kind
 
   if ('changes' in event) {

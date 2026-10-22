@@ -62,7 +62,7 @@ export const byProvider = query({
 })
 
 /** Preserve source pagination even when preparation removes every event in a page. */
-export async function preparePage(
+async function preparePage(
   ctx: QueryCtx,
   result: PaginationResult<AlertSource>,
 ): Promise<PaginationResult<FeedEvent>> {

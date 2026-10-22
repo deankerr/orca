@@ -20,8 +20,6 @@ import { assertReadCount, decode } from './protocol'
 import type { NameSelection, ObjectIdentity, ObjectReader } from './protocol'
 import type { Locator } from './table'
 
-export type { ObjectReader } from './protocol'
-
 /**
  * Persist uncompressed text under an identity. Insert-only.
  *

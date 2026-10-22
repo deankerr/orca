@@ -14,7 +14,7 @@ import { kickoff } from './sync'
 import { INGESTION_RECORDS_TABLE, INGESTION_TARGET_TABLE, ingestionTargetRange } from './tables'
 
 /** Maximum new pairs per register step. */
-export const REGISTER_BATCH = 24
+const REGISTER_BATCH = 24
 
 const edgesValidator = v.object({
   latest: v.union(v.null(), v.string()),

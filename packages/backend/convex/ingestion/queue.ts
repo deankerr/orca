@@ -17,7 +17,7 @@ import type { RecordKind, RecordState } from './tables'
 type RecordId = Id<typeof INGESTION_RECORDS_TABLE>
 
 /** Maximum pairs accepted for execution per queue step. */
-export const QUEUE_BATCH = 24
+const QUEUE_BATCH = 24
 
 /**
  * Maximum accepted records unfinished at once, a few times Workpool parallelism. The rest stay
