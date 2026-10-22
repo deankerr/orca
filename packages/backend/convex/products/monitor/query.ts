@@ -76,7 +76,7 @@ export const models = query({
 
     return {
       ...result,
-      page: choices.filter((choice) => choice !== null),
+      page: choices.filter((entry) => entry !== null),
     }
   },
 })

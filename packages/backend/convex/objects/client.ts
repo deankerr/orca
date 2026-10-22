@@ -15,7 +15,7 @@ export function connect({
   deployment: string
   apiKey: string
 }): ObjectReader {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(deployment)) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(deployment)) {
     throw new ConvexError('Object source must be a deployment name, not a URL')
   }
 

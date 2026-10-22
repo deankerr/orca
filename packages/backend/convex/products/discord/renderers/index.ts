@@ -17,12 +17,12 @@ export function renderDiscordBatch(alerts: Alert[], urls: DiscordUrls): Notifica
 }
 
 function renderDiscord(event: EntityAlert, urls: DiscordUrls): Card {
-  const card =
-    event.entity_kind === 'model'
-      ? modelCard(event, urls)
-      : event.entity_kind === 'provider'
-        ? providerCard(event, urls)
-        : endpointCard(event, urls)
+  return { allowed_mentions: { parse: [] }, ...entityCard(event, urls) }
+}
 
-  return { allowed_mentions: { parse: [] }, ...card }
+function entityCard(event: EntityAlert, urls: DiscordUrls): Card {
+  if (event.entity_kind === 'model') {
+    return modelCard(event, urls)
+  }
+  return event.entity_kind === 'provider' ? providerCard(event, urls) : endpointCard(event, urls)
 }

@@ -27,6 +27,19 @@ function getPinningStyles<TData>(column: Column<TData>): CSSProperties {
   }
 }
 
+/** The pinned side whose boundary with unpinned columns this column forms, if any. */
+function pinnedBoundary<TData>(column: Column<TData>): 'left' | 'right' | undefined {
+  const isPinned = column.getIsPinned()
+
+  if (isPinned === 'left' && column.getIsLastColumn('left')) {
+    return 'left'
+  }
+  if (isPinned === 'right' && column.getIsFirstColumn('right')) {
+    return 'right'
+  }
+  return undefined
+}
+
 function DataGridTableBase({ children }: { children: ReactNode }) {
   const { props } = useDataGrid()
   const fixedWidth = props.tableLayout?.width === 'fixed'
@@ -100,17 +113,15 @@ function DataGridTableHeadRowCell<TData>({
   const { column } = header
   const isPinned = column.getIsPinned()
   const pinnedSide = isPinned === false ? undefined : isPinned
-  const isLastLeftPinned = isPinned === 'left' && column.getIsLastColumn('left')
-  const isFirstRightPinned = isPinned === 'right' && column.getIsFirstColumn('right')
-  const columnsPinnable = props.tableLayout?.columnsPinnable === true
-  const widthFixed = props.tableLayout?.width === 'fixed'
-  const hasCellBorder = props.tableLayout?.cellBorder === true
-  const columnsResizable = props.tableLayout?.columnsResizable === true
-  const hasHeaderBorder = props.tableLayout?.headerBorder === true
+  const layout = props.tableLayout ?? {}
+  const columnsPinnable = layout.columnsPinnable === true
+  const widthFixed = layout.width === 'fixed'
+  const hasCellBorder = layout.cellBorder === true
+  const columnsResizable = layout.columnsResizable === true
+  const hasHeaderBorder = layout.headerBorder === true
 
   const pinningStyles = columnsPinnable && column.getCanPin() ? getPinningStyles(column) : undefined
-  const needsStickyTop =
-    props.tableLayout?.headerSticky === true && pinningStyles?.position === 'sticky'
+  const needsStickyTop = layout.headerSticky === true && pinningStyles?.position === 'sticky'
 
   return (
     <th
@@ -123,7 +134,7 @@ function DataGridTableHeadRowCell<TData>({
         ...(needsStickyTop && { top: 0, zIndex: 11 }),
       }}
       data-pinned={pinnedSide}
-      data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
+      data-last-col={pinnedBoundary(column)}
       data-slot="data-grid-table-head-row-cell"
       className={cn(
         'h-12 align-middle text-xs font-normal text-accent-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
@@ -216,8 +227,6 @@ function DataGridTableBodyRowCell<TData>({
   const { column, row } = cell
   const isPinned = column.getIsPinned()
   const pinnedSide = isPinned === false ? undefined : isPinned
-  const isLastLeftPinned = isPinned === 'left' && column.getIsLastColumn('left')
-  const isFirstRightPinned = isPinned === 'right' && column.getIsFirstColumn('right')
   const columnsPinnable = props.tableLayout?.columnsPinnable === true
   const hasCellBorder = props.tableLayout?.cellBorder === true
   const columnsResizable = props.tableLayout?.columnsResizable === true
@@ -229,7 +238,7 @@ function DataGridTableBodyRowCell<TData>({
         ...(columnsPinnable && column.getCanPin() && getPinningStyles(column)),
       }}
       data-pinned={pinnedSide}
-      data-last-col={isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined}
+      data-last-col={pinnedBoundary(column)}
       className={cn(
         'align-middle',
         'data-[last-col=left]:border-e data-[last-col=left]:border-border-solid data-[last-col=right]:border-s data-[last-col=right]:border-border-solid',

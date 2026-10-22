@@ -41,6 +41,15 @@ type DecodedEvent =
       pricing?: { before: z.infer<typeof Pricing>; after: z.infer<typeof Pricing> }
     }
 
+function decodeSnapshot(entity_kind: EventRow['entity_kind'], payload: unknown): Snapshot {
+  if (entity_kind === 'model') {
+    return { entity_kind, value: snapshots.model.parse(payload).value }
+  }
+  return entity_kind === 'provider'
+    ? { entity_kind, value: snapshots.provider.parse(payload).value }
+    : { entity_kind, value: snapshots.endpoint.parse(payload).value }
+}
+
 /** Decode once; the row supplies the authoritative root operation and identity. */
 export function decode(row: EventRow): DecodedEvent {
   const payload: unknown = JSON.parse(row.change_json)
@@ -62,12 +71,7 @@ export function decode(row: EventRow): DecodedEvent {
     }
   }
 
-  const snapshot: Snapshot =
-    row.entity_kind === 'model'
-      ? { entity_kind: 'model', value: snapshots.model.parse(payload).value }
-      : row.entity_kind === 'provider'
-        ? { entity_kind: 'provider', value: snapshots.provider.parse(payload).value }
-        : { entity_kind: 'endpoint', value: snapshots.endpoint.parse(payload).value }
+  const snapshot = decodeSnapshot(row.entity_kind, payload)
 
   return row.type === 'ADD'
     ? { type: 'ADD', after: snapshot }

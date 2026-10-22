@@ -14,7 +14,7 @@ export function buildMonitorHref({
   slug: string
 }): string {
   const key = type === 'model' ? 'model' : 'provider'
-  const value = type === 'provider' ? slug.replace(/\/.*$/, '') : slug
+  const value = type === 'provider' ? slug.replace(/\/.*$/u, '') : slug
 
   if (pathname === '/monitor') {
     const next = pickParams(toSearchParams(searchParams), MONITOR_QUERY_KEYS)

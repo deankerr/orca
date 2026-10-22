@@ -1,15 +1,11 @@
-import type { QueryCache, QueryKey } from '@tanstack/react-query'
+import type { QueryCache, QueryCacheNotifyEvent, QueryKey } from '@tanstack/react-query'
 import { z } from 'zod'
 
 import { captureTiming } from './capture'
 import { ConnectionTimings } from './connection-timing'
 import type { TimingMark } from './connection-timing'
 
-export type ReadinessQuerySource =
-  | 'tanstack_memory'
-  | 'tanstack_persisted'
-  | 'convex_client'
-  | 'server'
+type ReadinessQuerySource = 'tanstack_memory' | 'tanstack_persisted' | 'convex_client' | 'server'
 
 export type ReadinessQueryTiming = {
   id: string
@@ -18,15 +14,21 @@ export type ReadinessQueryTiming = {
   fetchStarted?: TimingMark
 }
 
+type PendingFetch = { started: TimingMark; source: ReadinessQuerySource }
+
+const TIMED_QUERIES = new Set([
+  'catalog/endpoints/query:grid',
+  'catalog/stats/query:grid',
+  'catalog/models/query:get',
+  'catalog/providers/query:get',
+])
+
 /** Observe actual cache writes; elapsed time alone cannot identify a cache hit. */
 export class ReadinessQueryTimings {
   private restored = new Set<string>()
   private readonly observed = new Set<string>()
   private readonly results = new Map<string, ReadinessQueryTiming>()
-  private readonly fetches = new Map<
-    string,
-    { started: TimingMark; source: ReadinessQuerySource }
-  >()
+  private readonly fetches = new Map<string, PendingFetch>()
 
   private readonly emit: (event: string, properties: Record<string, unknown>) => void
 
@@ -67,98 +69,101 @@ export class ReadinessQueryTimings {
     observeConnection?: () => void,
   ) {
     return cache.subscribe((event) => {
-      const { queryHash, state } = event.query
       const queryKey = z.array(z.unknown()).parse(event.query.queryKey)
 
-      if (
-        queryKey[0] !== 'convexQuery' ||
-        ![
-          'catalog/endpoints/query:grid',
-          'catalog/stats/query:grid',
-          'catalog/models/query:get',
-          'catalog/providers/query:get',
-        ].includes(String(queryKey[1]))
-      ) {
+      if (queryKey[0] !== 'convexQuery' || !TIMED_QUERIES.has(String(queryKey[1]))) {
         return
       }
 
       observeConnection?.()
-
-      if (event.type === 'removed') {
-        this.observed.delete(queryHash)
-        this.results.delete(queryHash)
-        this.fetches.delete(queryHash)
-        this.restored.delete(queryHash)
-        return
-      }
-
-      if (event.type === 'updated' && event.action.type === 'fetch') {
-        this.fetches.set(queryHash, {
-          started: this.connection.mark(),
-          source: hasConvexResult(queryKey) ? 'convex_client' : 'server',
-        })
-      }
-
-      if (event.type === 'updated' && event.action.type === 'error') {
-        this.fetches.delete(queryHash)
-        return
-      }
-
-      const success = event.type === 'updated' && event.action.type === 'success'
-      if (!success && this.fetches.has(queryHash)) {
-        return
-      }
-      if (state.data === undefined || (!success && this.results.has(queryHash))) {
-        return
-      }
-
-      const fetch = this.fetches.get(queryHash)
-      if (
-        fetch &&
-        event.type === 'updated' &&
-        event.action.type === 'success' &&
-        event.action.manual === true
-      ) {
-        return
-      }
-      const previous = this.results.get(queryHash)
-      if (
-        event.type === 'updated' &&
-        event.action.type === 'success' &&
-        event.action.manual === true &&
-        previous &&
-        !fetch
-      ) {
-        // A live update supersedes persisted content, but must not rewrite the fetch span.
-        this.observed.add(queryHash)
-        this.emit('query updated', {
-          ...resultProperties(state.data),
-          query_name: queryName(queryKey),
-          query_run_id: previous.id,
-          consumer_active: event.query.getObserversCount() > 0,
-          received_at_ms: this.connection.mark().at,
-        })
-        return
-      }
-      const available = this.connection.mark()
-      const result: ReadinessQueryTiming = {
-        id: crypto.randomUUID(),
-        source:
-          fetch?.source ??
-          (this.restored.has(queryHash) ? 'tanstack_persisted' : 'tanstack_memory'),
-        available,
-        ...(fetch ? { fetchStarted: fetch.started } : {}),
-      }
-      this.results.set(queryHash, result)
-      this.fetches.delete(queryHash)
-      if (fetch) {
-        this.emit('query completed', {
-          ...queryProperties(queryKey, result),
-          ...resultProperties(state.data),
-          consumer_active: event.query.getObserversCount() > 0,
-        })
-      }
+      this.track(event, queryKey, hasConvexResult)
     })
+  }
+
+  private track(
+    event: QueryCacheNotifyEvent,
+    queryKey: QueryKey,
+    hasConvexResult: (key: QueryKey) => boolean,
+  ) {
+    const { queryHash, state } = event.query
+    const action = event.type === 'updated' ? event.action : undefined
+
+    if (event.type === 'removed') {
+      this.forget(queryHash)
+      return
+    }
+
+    if (action?.type === 'fetch') {
+      this.fetches.set(queryHash, {
+        started: this.connection.mark(),
+        source: hasConvexResult(queryKey) ? 'convex_client' : 'server',
+      })
+    }
+
+    if (action?.type === 'error') {
+      this.fetches.delete(queryHash)
+      return
+    }
+
+    const success = action?.type === 'success'
+    if (!success && this.fetches.has(queryHash)) {
+      return
+    }
+    if (state.data === undefined || (!success && this.results.has(queryHash))) {
+      return
+    }
+
+    const fetch = this.fetches.get(queryHash)
+    const manual = action?.type === 'success' && action.manual === true
+    if (fetch && manual) {
+      return
+    }
+    const previous = this.results.get(queryHash)
+    if (manual && previous) {
+      // A live update supersedes persisted content, but must not rewrite the fetch span.
+      this.observed.add(queryHash)
+      this.emit('query updated', {
+        ...resultProperties(state.data),
+        query_name: queryName(queryKey),
+        query_run_id: previous.id,
+        consumer_active: event.query.getObserversCount() > 0,
+        received_at_ms: this.connection.mark().at,
+      })
+      return
+    }
+    this.complete(event, queryKey, fetch)
+  }
+
+  private forget(queryHash: string) {
+    this.observed.delete(queryHash)
+    this.results.delete(queryHash)
+    this.fetches.delete(queryHash)
+    this.restored.delete(queryHash)
+  }
+
+  private complete(
+    event: QueryCacheNotifyEvent,
+    queryKey: QueryKey,
+    fetch: PendingFetch | undefined,
+  ) {
+    const { queryHash, state } = event.query
+    const available = this.connection.mark()
+    const result: ReadinessQueryTiming = {
+      id: crypto.randomUUID(),
+      source:
+        fetch?.source ?? (this.restored.has(queryHash) ? 'tanstack_persisted' : 'tanstack_memory'),
+      available,
+      ...(fetch ? { fetchStarted: fetch.started } : {}),
+    }
+    this.results.set(queryHash, result)
+    this.fetches.delete(queryHash)
+    if (fetch) {
+      this.emit('query completed', {
+        ...queryProperties(queryKey, result),
+        ...resultProperties(state.data),
+        consumer_active: event.query.getObserversCount() > 0,
+      })
+    }
   }
 }
 

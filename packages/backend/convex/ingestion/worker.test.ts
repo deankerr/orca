@@ -289,11 +289,11 @@ test('the target start advances only while no registration reads an earlier scan
 
   await rejects(
     t.mutation(internal.ingestion.target.set, { start_at: hour(6), end_at: hour(9) }),
-    /earliest registered scan/,
+    /earliest registered scan/u,
   )
   await rejects(
     t.mutation(internal.ingestion.target.set, { start_at: hour(5), end_at: hour(8) }),
-    /never retract/,
+    /never retract/u,
   )
 })
 
@@ -386,9 +386,9 @@ test('completing an alerting pair schedules automatic Discord delivery', async (
 test('retry-all reopens a full batch within one transaction', async () => {
   const t = setup()
   await t.run(async (ctx) => {
-    await writeRecords(ctx, async (records) => {
+    await writeRecords(ctx, async (writer) => {
       for (const index of range(1, RETRY_BATCH + 1)) {
-        await records.insert({
+        await writer.insert({
           kind: 'pair',
           from_scan_at: hour(index - 1),
           scan_at: hour(index),
@@ -412,8 +412,8 @@ test('completion commits before queue coordination and its wakeup survives until
     async (ctx) =>
       await writeRecords(
         ctx,
-        async (records) =>
-          await records.insert({
+        async (writer) =>
+          await writer.insert({
             kind: 'pair',
             from_scan_at: hour(0),
             scan_at: hour(1),

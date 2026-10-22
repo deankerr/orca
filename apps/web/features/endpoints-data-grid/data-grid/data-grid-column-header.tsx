@@ -11,8 +11,10 @@ interface DataGridColumnHeaderProps<TData, TValue> extends HTMLAttributes<HTMLDi
   subtitle?: string
 }
 
+const sortIcons = { asc: ChevronUp, desc: ChevronDown }
+
 function SortIcon({ direction }: { direction: false | 'asc' | 'desc' }) {
-  const Icon = direction === 'asc' ? ChevronUp : direction === 'desc' ? ChevronDown : ChevronsUpDown
+  const Icon = direction === false ? ChevronsUpDown : sortIcons[direction]
 
   return <Icon data-icon="inline-end" className="-mr-1 size-3" />
 }

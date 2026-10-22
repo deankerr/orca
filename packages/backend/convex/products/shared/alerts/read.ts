@@ -21,6 +21,38 @@ export type EventScope =
 
 export type AlertSource = Doc<typeof EVENTS_TABLE> | Doc<typeof OBSERVATIONS_TABLE>
 
+function scopedEvents(
+  db: ReturnType<typeof stream<typeof schema>>,
+  scope: EventScope,
+  cutoff: string,
+) {
+  const events = db.query(EVENTS_TABLE)
+
+  if (scope.kind === 'entity') {
+    return events.withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>
+      q
+        .eq('entity_kind', scope.entity_kind)
+        .eq('entity_id', scope.entity_id)
+        .lte('scan_at', cutoff),
+    )
+  }
+  if (scope.kind === 'model' || scope.kind === 'pair') {
+    return events.withIndex('by_model_id_and_scan_at', (q) =>
+      q.eq('context.model.model_id', scope.model_id).lte('scan_at', cutoff),
+    )
+  }
+  if (scope.kind === 'provider') {
+    return events.withIndex('by_provider_id_and_scan_at', (q) =>
+      q.eq('context.provider.provider_id', scope.provider_id).lte('scan_at', cutoff),
+    )
+  }
+  return events.withIndex('by_scan_at', (q) => q.lte('scan_at', cutoff))
+}
+
+function scopeEntityId(scope: Extract<EventScope, { kind: 'model' | 'provider' }>): string {
+  return scope.kind === 'model' ? scope.model_id : scope.provider_id
+}
+
 /** Merge indexed Catalog facts before pagination; interpretation may leave an empty page. */
 export async function readPage(
   ctx: QueryCtx,
@@ -41,26 +73,7 @@ export async function readPage(
   }
 
   const db = stream(ctx.db, schema)
-  const events = db.query(EVENTS_TABLE)
-  const eventStream =
-    scope.kind === 'entity'
-      ? events.withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>
-          q
-            .eq('entity_kind', scope.entity_kind)
-            .eq('entity_id', scope.entity_id)
-            .lte('scan_at', cutoff),
-        )
-      : scope.kind === 'model' || scope.kind === 'pair'
-        ? events.withIndex('by_model_id_and_scan_at', (q) =>
-            q.eq('context.model.model_id', scope.model_id).lte('scan_at', cutoff),
-          )
-        : scope.kind === 'provider'
-          ? events.withIndex('by_provider_id_and_scan_at', (q) =>
-              q.eq('context.provider.provider_id', scope.provider_id).lte('scan_at', cutoff),
-            )
-          : events.withIndex('by_scan_at', (q) => q.lte('scan_at', cutoff))
-
-  const sources: QueryStream<AlertSource>[] = [eventStream.order('desc')]
+  const sources: QueryStream<AlertSource>[] = [scopedEvents(db, scope, cutoff).order('desc')]
   const observations = db.query(OBSERVATIONS_TABLE)
 
   if (scope.kind === 'all') {
@@ -72,12 +85,7 @@ export async function readPage(
     !(scope.kind === 'entity' && scope.entity_kind === 'endpoint')
   ) {
     const kind = scope.kind === 'entity' ? scope.entity_kind : scope.kind
-    const id =
-      scope.kind === 'entity'
-        ? scope.entity_id
-        : scope.kind === 'model'
-          ? scope.model_id
-          : scope.provider_id
+    const id = scope.kind === 'entity' ? scope.entity_id : scopeEntityId(scope)
     sources.push(
       observations
         .withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>

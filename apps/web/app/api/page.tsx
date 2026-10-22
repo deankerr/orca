@@ -18,14 +18,15 @@ async function getPublicApiUrl() {
   }
 
   const forwardedProto = requestHeaders.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  const protocol =
-    forwardedProto === 'http' || forwardedProto === 'https'
-      ? forwardedProto
-      : host.startsWith('localhost') || host.startsWith('127.0.0.1')
-        ? 'http'
-        : 'https'
 
-  return `${protocol}://${host}${API_PATH}`
+  return `${requestProtocol(forwardedProto, host)}://${host}${API_PATH}`
+}
+
+function requestProtocol(forwardedProto: string | undefined, host: string) {
+  if (forwardedProto === 'http' || forwardedProto === 'https') {
+    return forwardedProto
+  }
+  return host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https'
 }
 
 export const metadata: Metadata = {

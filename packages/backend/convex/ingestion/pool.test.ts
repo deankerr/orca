@@ -25,6 +25,6 @@ test('parallelism defaults when unset, follows the env var, and sizes the queue 
 test('invalid parallelism fails loudly instead of silently falling back', () => {
   for (const value of ['0', '101', '2.5', 'many']) {
     process.env.ORCA_INGESTION_PARALLELISM = value
-    expect(() => ingestionParallelism()).toThrow(/ORCA_INGESTION_PARALLELISM/)
+    expect(() => ingestionParallelism()).toThrow(/ORCA_INGESTION_PARALLELISM/u)
   }
 })

@@ -41,15 +41,15 @@ export function distinctValues(value: ValueProfile): number {
 
 /** Weighted nearest-rank quantiles of observed numeric values, without coercing strings. */
 export function numericSummary(value: ValueProfile) {
-  const branch = value.types.find((branch) => branch.type === 'number')
+  const branch = value.types.find((candidate) => candidate.type === 'number')
 
   if (branch === undefined || !('values' in branch)) {
     return null
   }
 
   return summarizeNumbers(
-    branch.values.flatMap(({ count, value }) =>
-      typeof value === 'number' ? [{ count, value }] : [],
+    branch.values.flatMap(({ count, value: observed }) =>
+      typeof observed === 'number' ? [{ count, value: observed }] : [],
     ),
   )
 }

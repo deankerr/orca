@@ -23,17 +23,16 @@ export function DataValue({
   return (
     <div className="flex items-baseline justify-between gap-4 py-1">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right font-mono break-words">
-        {typeof value === 'boolean'
-          ? value
-            ? 'Yes'
-            : 'No'
-          : Array.isArray(value)
-            ? value.join(', ')
-            : value}
-      </dd>
+      <dd className="min-w-0 text-right font-mono break-words">{displayValue(value)}</dd>
     </div>
   )
+}
+
+function displayValue(value: string | boolean | string[]): string {
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No'
+  }
+  return Array.isArray(value) ? value.join(', ') : value
 }
 
 export function DataDate({ label, value }: { label: string; value: string | null }) {

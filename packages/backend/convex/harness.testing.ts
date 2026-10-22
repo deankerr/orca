@@ -54,7 +54,7 @@ const aggregateBatchSchema = await loadSchema(aggregateBatchRoot)
 function modules(root: string) {
   return Object.fromEntries(
     [...new Bun.Glob('**/*.{ts,js}').scanSync({ absolute: true, cwd: root })]
-      .filter((file) => !/\.(?:test|testing|d)\.ts$/.test(file))
+      .filter((file) => !/\.(?:test|testing|d)\.ts$/u.test(file))
       .map((file) => [file, async (): Promise<unknown> => await import(file)]),
   )
 }

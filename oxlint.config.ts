@@ -19,13 +19,22 @@ export default defineConfig({
   },
   overrides: [
     {
-      // legacy web/backend code
       files: ['apps/web/**/*.{ts,tsx}', 'packages/backend/**/*.{ts,tsx}'],
       rules: {
-        complexity: 'off',
-        'no-nested-ternary': 'off',
         'sort-keys': 'off',
-        'unicorn/no-useless-undefined': 'off',
+      },
+    },
+    {
+      files: ['packages/backend/**/*', 'packages/discord-sender/**/*'],
+      rules: {
+        'unicorn/filename-case': 'off',
+      },
+    },
+    {
+      files: ['**/*.test.{ts,tsx}', '**/*.testing.ts'],
+      rules: {
+        // scenario tests are long assertion sequences
+        complexity: 'off',
       },
     },
   ],
@@ -43,12 +52,13 @@ export default defineConfig({
     'unicorn/consistent-function-scoping': 'off',
 
     // project specific
+    // Convex transactions, rate-limited delivery, and ordered test scenarios are serial by design
     'no-await-in-loop': 'off',
-    'no-shadow': 'off',
-    'promise/prefer-await-to-then': 'off',
+    // rejects hook setters passed straight through, e.g. `onValueChange={filters.setModelId}`
     'react/jsx-handler-names': 'off',
+    // conflicts with `typescript/promise-function-async` for functions implementing async interfaces
     'require-await': 'off',
-    'require-unicode-regexp': 'off',
-    'unicorn/filename-case': 'off',
+    // conflicts with `typescript/consistent-return` and `no-empty-function`
+    'unicorn/no-useless-undefined': 'off',
   },
 })

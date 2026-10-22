@@ -1,6 +1,28 @@
 import type { MonitorScope } from '@orca/backend/monitor'
 import { parseAsString, useQueryStates } from 'nuqs'
 
+/** The most specific filter wins; a model and provider together select their pair. */
+function monitorScope({
+  model,
+  provider,
+  endpoint,
+}: {
+  model: string
+  provider: string
+  endpoint: string
+}): MonitorScope {
+  if (endpoint) {
+    return { kind: 'endpoint', endpoint_id: endpoint }
+  }
+  if (model && provider) {
+    return { kind: 'pair', model_id: model, provider_id: provider }
+  }
+  if (model) {
+    return { kind: 'model', model_id: model }
+  }
+  return provider ? { kind: 'provider', provider_id: provider } : { kind: 'all' }
+}
+
 export function useMonitorFilters() {
   const [params, setParams] = useQueryStates(
     {
@@ -11,15 +33,7 @@ export function useMonitorFilters() {
     { history: 'push', shallow: true },
   )
 
-  const scope: MonitorScope = params.endpoint
-    ? { kind: 'endpoint', endpoint_id: params.endpoint }
-    : params.model && params.provider
-      ? { kind: 'pair', model_id: params.model, provider_id: params.provider }
-      : params.model
-        ? { kind: 'model', model_id: params.model }
-        : params.provider
-          ? { kind: 'provider', provider_id: params.provider }
-          : { kind: 'all' }
+  const scope = monitorScope(params)
 
   return {
     scope,

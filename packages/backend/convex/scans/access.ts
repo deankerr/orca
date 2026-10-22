@@ -99,7 +99,7 @@ function identity(scanAt: string) {
 }
 
 function timeFromName(name: string): string {
-  const time = /^scan\.(?<time>.+)\.jsonl$/.exec(name)?.groups?.time
+  const time = /^scan\.(?<time>.+)\.jsonl$/u.exec(name)?.groups?.time
 
   if (time === undefined) {
     throw new ConvexError({ message: 'Invalid scan object name', name })

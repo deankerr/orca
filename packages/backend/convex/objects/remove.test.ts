@@ -50,7 +50,7 @@ test('keeps the locator on storage failure and safely retries missing files', as
     }
   )._handler
 
-  await assert.rejects(handler(ctx, { locator }), /storage unavailable/)
+  await assert.rejects(handler(ctx, { locator }), /storage unavailable/u)
   expect(calls).toEqual(['file'])
   fail = false
   calls.length = 0
@@ -91,7 +91,7 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
     }
   )._handler
   try {
-    await assert.rejects(handler(ctx, { path: 'test', name: 'one' }), /R2 DELETE failed: 403/)
+    await assert.rejects(handler(ctx, { path: 'test', name: 'one' }), /R2 DELETE failed: 403/u)
     expect(removed).toBe(false)
     request.mockResolvedValue(new Response(null, { status: 404 }))
     await handler(ctx, { path: 'test', name: 'one' })

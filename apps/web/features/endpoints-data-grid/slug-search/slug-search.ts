@@ -1,4 +1,4 @@
-const QUERY_SEPARATOR_RE = /\s+/g
+const QUERY_SEPARATOR_RE = /\s+/gu
 const SLUG_BOUNDARY_CHARS = new Set(['/', '-', ':'])
 
 /** A single slug-like field to be indexed for one record. */
@@ -30,7 +30,7 @@ interface SlugSearchResult<T> {
 
 /** Normalize indexed values and user input into a consistent comparison form. */
 function normalizeSearchText(value: string) {
-  return value.toLowerCase().normalize('NFKC').replaceAll(/\s+/g, ' ').trim()
+  return value.toLowerCase().normalize('NFKC').replaceAll(/\s+/gu, ' ').trim()
 }
 
 /** Split a query into space-delimited tokens without altering slug punctuation. */

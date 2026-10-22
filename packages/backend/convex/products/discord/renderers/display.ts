@@ -1,5 +1,8 @@
 export const dot = ' • '
 
+const changeMarkers = { added: '+ ', removed: '− ' }
+const arrivalMarkers = { discovered: '✨ ', relisted: '↺ ', listed: '+ ' }
+
 /** Wrap preformatted children in a consistent field row or block; labels are plain text. */
 export function field(
   label: string,
@@ -19,7 +22,7 @@ export function field(
   })
   const heading = change === 'removed' ? strike(key) : key
   const value = change === 'removed' ? strike(children) : children
-  const marker = change === 'added' ? '+ ' : change === 'removed' ? '− ' : ''
+  const marker = change === undefined ? '' : changeMarkers[change]
 
   return layout === 'block' ? `${marker}${heading}\n${value}` : `${marker}${heading} ${value}`
 }
@@ -56,11 +59,21 @@ export function code(
 ): string {
   const text = align === 'right' ? children.padStart(width) : children.padEnd(width)
 
-  return /[`\r\n]/.test(text) ? escape(text) : `\`${text}\``
+  return /[`\r\n]/u.test(text) ? escape(text) : `\`${text}\``
 }
 
 /** Escape inline Markdown, leaving ordinary punctuation such as slug hyphens untouched. */
-export const escape = (text: string): string => text.replaceAll(/[\\`*_~|<>[\]]/g, '\\$&')
+export const escape = (text: string): string => text.replaceAll(/[\\`*_~|<>[\]]/gu, '\\$&')
+
+/** Arrivals distinguish first discovery and returns from arrivals with unknown history. */
+export function arrival(
+  previouslyKnown: boolean | undefined,
+): 'discovered' | 'relisted' | 'listed' {
+  if (previouslyKnown === false) {
+    return 'discovered'
+  }
+  return previouslyKnown === true ? 'relisted' : 'listed'
+}
 
 /** Each event kind has a marker; arrivals distinguish discoveries and returns. */
 export function lifecycleMarker(event: { type: string; previously_known?: boolean }): string {
@@ -69,7 +82,7 @@ export function lifecycleMarker(event: { type: string; previously_known?: boolea
   }
 
   if (event.type.endsWith('_added')) {
-    return event.previously_known === false ? '✨ ' : event.previously_known === true ? '↺ ' : '+ '
+    return arrivalMarkers[arrival(event.previously_known)]
   }
 
   return 'Δ '

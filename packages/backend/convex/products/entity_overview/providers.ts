@@ -10,7 +10,7 @@ import { textOrNull, stringsOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
 
 const url = z
-  .url({ protocol: /^https?$/ })
+  .url({ protocol: /^https?$/u })
   .nullable()
   .catch(null)
 

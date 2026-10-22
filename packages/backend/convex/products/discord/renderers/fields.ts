@@ -157,7 +157,7 @@ export function quote(text: string, start = 0): string {
     return fieldValue(null)
   }
 
-  const markdown = excerpt(text, start).replaceAll(/\]\(\/(?!\/)/g, '](https://openrouter.ai/')
+  const markdown = excerpt(text, start).replaceAll(/\]\(\/(?!\/)/gu, '](https://openrouter.ai/')
 
   return `> ${markdown.replaceAll('\n', '\n> ')}`
 }
@@ -172,6 +172,11 @@ function excerpt(text: string, start = 0, limit = 800): string {
   const clipped = start > 0 || text.length > end
 
   return `${start > 0 ? '… ' : ''}${text.slice(start, end)}${text.length > end ? '…' : ''}${clipped ? ' [excerpt]' : ''}`
+}
+
+const deltaSymbols = {
+  up: { favorable: '▲', unfavorable: '🔺' },
+  down: { favorable: '▼', unfavorable: '🔻' },
 }
 
 /** Numeric interpretation is shared; Discord owns symbols and favorable direction. */
@@ -195,7 +200,8 @@ export function delta(
     return ''
   }
 
-  const symbol = change.isUp ? (lowerIsBetter ? '🔺' : '▲') : lowerIsBetter ? '▼' : '🔻'
+  const direction = deltaSymbols[change.isUp ? 'up' : 'down']
+  const symbol = change.isUp === lowerIsBetter ? direction.unfavorable : direction.favorable
 
   return change.percent === '' ? symbol : `${symbol} ${change.percent}`
 }

@@ -57,23 +57,41 @@ export function ClientApiCodeBlock() {
 
       {/* * Content */}
       <ScrollArea className="h-[28rem] overflow-hidden lg:h-auto lg:min-h-0 lg:min-w-0 lg:flex-1 lg:[&>[data-slot=scroll-area-viewport]]:min-h-0 lg:[&>[data-slot=scroll-area-viewport]]:min-w-0">
-        {query.isPending ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Spinner className="size-3" />
-              <span>Fetching data...</span>
-            </div>
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-            Unable to load sample data
-          </div>
-        ) : (
-          <HighlightedJsonCode code={code} />
-        )}
+        <PreviewContent pending={query.isPending} failed={query.isError} code={code} />
       </ScrollArea>
     </div>
   )
+}
+
+function PreviewContent({
+  pending,
+  failed,
+  code,
+}: {
+  pending: boolean
+  failed: boolean
+  code: string
+}) {
+  if (pending) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Spinner className="size-3" />
+          <span>Fetching data...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (failed) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+        Unable to load sample data
+      </div>
+    )
+  }
+
+  return <HighlightedJsonCode code={code} />
 }
 
 function HighlightedJsonCode({ code }: { code: string }) {

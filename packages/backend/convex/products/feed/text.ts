@@ -118,6 +118,26 @@ function describeChange(change: FieldChange): string[] {
   ]
 }
 
+const describedPaths = {
+  endpoint: [
+    'pricing.prompt',
+    'pricing.completion',
+    'pricing.is_scheduled',
+    'context_length',
+    'max_completion_tokens',
+    'quantization',
+    'supported_parameters',
+  ],
+  model: [
+    'description',
+    'input_modalities',
+    'output_modalities',
+    'knowledge_cutoff',
+    'supports_reasoning',
+  ],
+  provider: ['headquarters', 'datacenters', 'statusPageUrl'],
+}
+
 /** Plain-text items remain independent of a product's markup, grouping, and navigation. */
 export function describe(event: EntityAlert): string[] {
   if ('changes' in event) {
@@ -126,27 +146,7 @@ export function describe(event: EntityAlert): string[] {
 
   const facts = 'after' in event ? event.after : event.before
 
-  const paths =
-    event.entity_kind === 'endpoint'
-      ? [
-          'pricing.prompt',
-          'pricing.completion',
-          'pricing.is_scheduled',
-          'context_length',
-          'max_completion_tokens',
-          'quantization',
-          'supported_parameters',
-        ]
-      : event.entity_kind === 'model'
-        ? [
-            'description',
-            'input_modalities',
-            'output_modalities',
-            'knowledge_cutoff',
-            'supports_reasoning',
-          ]
-        : ['headquarters', 'datacenters', 'statusPageUrl']
-  return paths.flatMap((path) => {
+  return describedPaths[event.entity_kind].flatMap((path) => {
     const field = fact(facts, path)
 
     if (path === 'pricing.is_scheduled') {
@@ -160,25 +160,41 @@ export function describe(event: EntityAlert): string[] {
   })
 }
 
+function endpointListing(row: EntityAlert): string {
+  if ('before' in row) {
+    return 'is no longer listed'
+  }
+  if (row.previously_known === false) {
+    return 'has a newly discovered endpoint'
+  }
+  return row.previously_known === true ? 'is relisted' : 'is now listed'
+}
+
+function parentState(row: EntityAlert): string {
+  if ('changes' in row) {
+    return 'has updated details'
+  }
+  if ('before' in row) {
+    return 'has no more listed endpoints'
+  }
+  if (row.previously_known === false) {
+    return 'was discovered with listed endpoints'
+  }
+  return row.entity_kind === 'provider' && row.previously_known === true
+    ? 'has listed endpoints again'
+    : 'now has listed endpoints'
+}
+
 export function summarize(row: EntityAlert): string {
   if (row.entity_kind === 'endpoint') {
     const { model, endpoint } = row.context
     const offering = `${endpoint.provider_display_name} (${endpoint.provider_tag})`
 
-    const listing =
-      'before' in row
-        ? 'is no longer listed'
-        : row.previously_known === false
-          ? 'has a newly discovered endpoint'
-          : row.previously_known === true
-            ? 'is relisted'
-            : 'is now listed'
-
     return (
       'changes' in row
         ? `${model.display_name} on ${offering} has updated endpoint details.`
-        : `${model.display_name} ${listing} on ${offering}.`
-    ).replaceAll(/\s+/g, ' ')
+        : `${model.display_name} ${endpointListing(row)} on ${offering}.`
+    ).replaceAll(/\s+/gu, ' ')
   }
 
   const subject =
@@ -186,16 +202,5 @@ export function summarize(row: EntityAlert): string {
       ? `Model ${row.context.model.display_name} (${row.entity_id})`
       : `Provider ${row.context.provider.display_name} (${row.entity_id})`
 
-  const state =
-    'changes' in row
-      ? 'has updated details'
-      : 'before' in row
-        ? 'has no more listed endpoints'
-        : row.previously_known === false
-          ? 'was discovered with listed endpoints'
-          : row.entity_kind === 'provider' && row.previously_known === true
-            ? 'has listed endpoints again'
-            : 'now has listed endpoints'
-
-  return `${subject} ${state}.`.replaceAll(/\s+/g, ' ')
+  return `${subject} ${parentState(row)}.`.replaceAll(/\s+/gu, ' ')
 }

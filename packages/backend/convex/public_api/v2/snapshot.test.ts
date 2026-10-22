@@ -27,7 +27,7 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
   const ctx = {} as ActionCtx
 
   try {
-    await rejects(buildSnapshot(ctx, scanAt), /Scan not found/)
+    await rejects(buildSnapshot(ctx, scanAt), /Scan not found/u)
 
     source.mockResolvedValue([
       JSON.stringify({
@@ -39,7 +39,7 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
     await rejects(buildSnapshot(ctx, scanAt))
     for (const endpoints of [null, []]) {
       source.mockResolvedValue([JSON.stringify({ ...entry, endpoints })])
-      await rejects(buildSnapshot(ctx, scanAt), /Public API scan has no usable endpoints/)
+      await rejects(buildSnapshot(ctx, scanAt), /Public API scan has no usable endpoints/u)
     }
   } finally {
     source.mockRestore()

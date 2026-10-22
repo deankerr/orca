@@ -16,15 +16,15 @@ export type CurrentTable<R extends Row = Row> = {
   key: (row: R) => string
 }
 
-function table<R extends Row>(definition: CurrentTable<R>): CurrentTable {
+function eraseRowType<R extends Row>(definition: CurrentTable<R>): CurrentTable {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Each table only receives its own rows back.
   return definition as unknown as CurrentTable
 }
 
 export const currentTables: CurrentTable[] = [
-  table({ name: 'models', derive: models.derive, key: (row) => row.model_id }),
-  table({ name: 'providers', derive: providers.derive, key: (row) => row.provider_id }),
-  table({ name: 'endpoints', derive: endpoints.derive, key: (row) => row.endpoint_id }),
+  eraseRowType({ name: 'models', derive: models.derive, key: (row) => row.model_id }),
+  eraseRowType({ name: 'providers', derive: providers.derive, key: (row) => row.provider_id }),
+  eraseRowType({ name: 'endpoints', derive: endpoints.derive, key: (row) => row.endpoint_id }),
 ]
 
 /** Retained rows keyed by identity, merged as commits do. */

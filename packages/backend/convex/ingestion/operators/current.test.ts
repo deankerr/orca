@@ -57,14 +57,18 @@ test('newer versions win; equal or older candidates leave the retained row', () 
 function commitInRandomOrder(table: CurrentTable, scans: Scan[], seed: number) {
   const draw = random(seed)
   const records = scans
-    .map((scan, index) => ({ previous: scans[index - 1] ?? null, next: scan }))
+    .map((current, index) => ({ previous: scans[index - 1] ?? null, next: current }))
     .toSorted(() => draw() - 0.5)
   const retained = new Retained(table)
   const fullScans: string[] = []
 
   for (const source of records) {
     const behindFull = fullScans.some((scan_at) => scan_at > source.next.scan_at)
-    const scope: CurrentScope = behindFull ? 'departures' : draw() < 0.3 ? 'full' : 'changes'
+    let scope: CurrentScope = 'departures'
+
+    if (!behindFull) {
+      scope = draw() < 0.3 ? 'full' : 'changes'
+    }
 
     if (scope === 'full' && source.previous !== null) {
       fullScans.push(source.next.scan_at)

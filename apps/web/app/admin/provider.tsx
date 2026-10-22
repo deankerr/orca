@@ -27,14 +27,14 @@ export function AdminProvider({
   const [queryClient] = useState(() => {
     // Admin queries never enter the public client's persisted browser cache.
     const adapter = new ConvexQueryClient(convex)
-    const queryClient = new QueryClient({
+    const client = new QueryClient({
       defaultOptions: {
         queries: { queryKeyHashFn: adapter.hashFn(), queryFn: adapter.queryFn() },
       },
     })
 
-    adapter.connect(queryClient)
-    return queryClient
+    adapter.connect(client)
+    return client
   })
 
   useEffect(

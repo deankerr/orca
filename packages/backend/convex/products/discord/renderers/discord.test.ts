@@ -359,7 +359,7 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   expect(message?.allowed_mentions).toEqual({ parse: [] })
 
   const numericCells = [
-    ...(description.split('\n\n')[1] ?? '').matchAll(/`[^`]+` `(?<cell>[^`]+)`/g),
+    ...(description.split('\n\n')[1] ?? '').matchAll(/`[^`]+` `(?<cell>[^`]+)`/gu),
   ].map((match) => match.groups?.cell?.length)
 
   expect(numericCells).toHaveLength(3)
@@ -498,13 +498,13 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
       }
 
       expect(content).toContain(
-        type === 'ADD'
-          ? kind === 'model'
-            ? '✨'
-            : '**Regional offering** endpoint discovered.'
-          : kind === 'model'
-            ? 'has no more listed endpoints'
-            : '− **Regional offering** endpoint unlisted.',
+        {
+          ADD: { model: '✨', endpoint: '**Regional offering** endpoint discovered.' },
+          REMOVE: {
+            model: 'has no more listed endpoints',
+            endpoint: '− **Regional offering** endpoint unlisted.',
+          },
+        }[type][kind],
       )
 
       if (kind === 'model') {
@@ -577,7 +577,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   expect(modelText).toContain('`image, text` → `text` • `reasoning`')
   expect(modelText).toContain('[a model](https://example.com/model)')
   expect(modelText).toContain('Preview only.')
-  expect(modelText.match(/<t:/g)).toHaveLength(1)
+  expect(modelText.match(/<t:/gu)).toHaveLength(1)
   expect(modelText.indexOf('`image, text`')).toBeLessThan(modelText.indexOf('> Built on'))
   const container = model?.components?.[0]
   expect(container?.type).toBe(ComponentType.Container)
@@ -1102,35 +1102,35 @@ test('oversized card text logs and respects individual and total Discord limits'
     ).toHaveLength(1024)
     expect(errors).toHaveBeenCalledTimes(5)
     expect(
-      errors.mock.calls.every(([message]) => message === '[discord] truncated card content'),
+      errors.mock.calls.every(([logged]) => logged === '[discord] truncated card content'),
     ).toBe(true)
   } finally {
     errors.mockRestore()
   }
 })
 
-function render(row: EventRow) {
-  const alert = prepareAlert(row)
+function render(source: EventRow) {
+  const alert = prepareAlert(source)
 
   return alert === null ? null : renderPrepared(alert)
 }
 
-async function renderDiscord(row: EventRow, urls: DiscordUrls) {
-  const { alerts } = await prepareBatch([{ ...row, _id: 'test-event' }])
+async function renderDiscord(source: EventRow, discordUrls: DiscordUrls) {
+  const { alerts } = await prepareBatch([{ ...source, _id: 'test-event' }])
 
-  return renderDiscordBatch(alerts, urls)[0]?.message ?? null
+  return renderDiscordBatch(alerts, discordUrls)[0]?.message ?? null
 }
 
 async function prepareBatch(rows: (EventRow & { _id: string })[]) {
   return await prepareDiscordBatch(
-    rows.map((row) => ({ source_id: row._id, event: prepareAlert(row) })),
+    rows.map((source) => ({ source_id: source._id, event: prepareAlert(source) })),
     async (candidates) => candidates.map(() => false),
   )
 }
 
-function prepareAlert(row: EventRow) {
-  const alert = prepareEvent(row)
-  return alert !== null && row.previously_known !== undefined
-    ? { ...alert, previously_known: row.previously_known }
+function prepareAlert(source: EventRow) {
+  const alert = prepareEvent(source)
+  return alert !== null && source.previously_known !== undefined
+    ? { ...alert, previously_known: source.previously_known }
     : alert
 }

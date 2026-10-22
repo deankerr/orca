@@ -93,6 +93,16 @@ function EntityCombobox({
     setSearch('')
   }
 
+  const triggerContent = (() => {
+    if (selected) {
+      return <FilterIdentity name={selected.name} id={selected.id} />
+    }
+    if (value && isPending) {
+      return <FilterIdentitySkeleton />
+    }
+    return <span className="w-full truncate text-muted-foreground">{value || placeholder}</span>
+  })()
+
   const listContent = (() => {
     if (isPending) {
       return (
@@ -125,13 +135,7 @@ function EntityCombobox({
           />
         }
       >
-        {selected ? (
-          <FilterIdentity name={selected.name} id={selected.id} />
-        ) : value && isPending ? (
-          <FilterIdentitySkeleton />
-        ) : (
-          <span className="w-full truncate text-muted-foreground">{value || placeholder}</span>
-        )}
+        {triggerContent}
       </PopoverTrigger>
 
       <PopoverContent className="w-[300px] overflow-hidden p-0" align="start">

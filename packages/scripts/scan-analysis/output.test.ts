@@ -23,7 +23,7 @@ test('report replacement preserves the previous file when the new write fails pa
   })
 
   try {
-    await rejects(writeReport('replacement report', destination), /Simulated failed write/)
+    await rejects(writeReport('replacement report', destination), /Simulated failed write/u)
     expect(await Bun.file(output).text()).toBe('previous report')
     expect(await readdir(directory)).toEqual(['report.json'])
     write.mockRestore()

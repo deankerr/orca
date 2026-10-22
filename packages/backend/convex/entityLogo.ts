@@ -28,7 +28,7 @@ export type EntityLogoVariant = 'avatar' | 'dark' | 'light'
 // ponytail: relies on that suffix convention; add entity-aware matching if it changes.
 function entityLogoKey(slug: string): string {
   // A leading "~" marks an OpenRouter router alias that shares its author's brand.
-  const normalizedSlug = slug.toLowerCase().replace(/^~/, '')
+  const normalizedSlug = slug.toLowerCase().replace(/^~/u, '')
   const [prefix = '', suffix = ''] = normalizedSlug.split('/')
   const familyKey = FAMILY_LOGO_KEYS_BY_PREFIX[prefix]?.find((key) => suffix.includes(key))
 
@@ -48,7 +48,7 @@ export function entityLogoUrl(args: {
   variant: EntityLogoVariant
 }): string {
   const key = entityLogoKey(args.slug)
-  const origin = args.origin.replace(/\/$/, '')
+  const origin = args.origin.replace(/\/$/u, '')
 
   return `${origin}/v1/${args.variant}/${key === '' ? 'fallback' : key}.webp`
 }

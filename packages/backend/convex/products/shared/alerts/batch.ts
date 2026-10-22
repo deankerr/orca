@@ -11,6 +11,13 @@ export type Alert = IndividualAlert | BatchAlert
 
 const BATCH_THRESHOLD = 3
 
+function batchableChanges(event: EntityAlert): BatchAlert['change'][] {
+  if (event.type === 'endpoint_removed') {
+    return [{ type: 'endpoint_removed' }]
+  }
+  return 'changes' in event ? event.changes : []
+}
+
 /** Group endpoint unlistings and repeated field items; retain source identities and residual fields. */
 export function batchAlerts(events: IndividualAlert[]): Alert[] {
   const groups = new Map<
@@ -21,14 +28,7 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
   for (const bucket of events) {
     const { event } = bucket
 
-    const changes: BatchAlert['change'][] =
-      event.type === 'endpoint_removed'
-        ? [{ type: 'endpoint_removed' }]
-        : 'changes' in event
-          ? event.changes
-          : []
-
-    for (const [index, change] of changes.entries()) {
+    for (const [index, change] of batchableChanges(event).entries()) {
       const key = JSON.stringify([
         event.observed_at,
         event.entity_kind,

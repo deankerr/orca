@@ -122,6 +122,31 @@ function histogramRange(
   return { start_at, end_at: target !== null && target.end_at < latest ? target.end_at : latest }
 }
 
+function SourceScansFact({
+  source,
+  note,
+}: {
+  source: ReturnType<typeof useSourceScans>
+  note: string | null
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="flex items-center gap-2 text-xs text-muted-foreground">
+        Source scans
+        <Button size="xs" variant="ghost" onClick={source.refresh}>
+          Refresh
+        </Button>
+      </span>
+      <span className="font-mono text-sm">
+        {source.range === undefined
+          ? '…'
+          : `${scanTime(source.range.earliest)} → ${scanTime(source.range.latest)}`}
+      </span>
+      {note !== null && <span className="text-[0.625rem] text-muted-foreground">{note}</span>}
+    </div>
+  )
+}
+
 export default function IngestionPage() {
   const overview = useQuery(api.ingestion.admin.overview)
   const source = useSourceScans()
@@ -208,22 +233,7 @@ export default function IngestionPage() {
             }
             note="Installed once no pair is pending or queued"
           />
-          <div className="flex flex-col">
-            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-              Source scans
-              <Button size="xs" variant="ghost" onClick={source.refresh}>
-                Refresh
-              </Button>
-            </span>
-            <span className="font-mono text-sm">
-              {source.range === undefined
-                ? '…'
-                : `${scanTime(source.range.earliest)} → ${scanTime(source.range.latest)}`}
-            </span>
-            {sourceNote !== null && (
-              <span className="text-[0.625rem] text-muted-foreground">{sourceNote}</span>
-            )}
-          </div>
+          <SourceScansFact source={source} note={sourceNote} />
         </div>
         {range !== null && <Histogram range={range} />}
       </Section>

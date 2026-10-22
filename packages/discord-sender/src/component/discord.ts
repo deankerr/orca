@@ -3,7 +3,7 @@ import type { RESTOptions } from '@discordjs/rest'
 import { z } from 'zod'
 
 const zObject = z.record(z.string(), z.json())
-const zSnowflake = z.string().regex(/^\d{17,20}$/)
+const zSnowflake = z.string().regex(/^\d{17,20}$/u)
 
 /** Admission and transmission must accept the same JSON values. */
 export function parseMessagePayload(payload: string) {
@@ -19,7 +19,7 @@ export class ExpiredError extends Error {
 
 export function parseWebhookUrl(value: string) {
   const parsed = new URL(value)
-  const match = /^\/api(?:\/v\d+)?\/webhooks\/(?<id>\d{17,20})\/(?<token>[\w-]+)\/?$/.exec(
+  const match = /^\/api(?:\/v\d+)?\/webhooks\/(?<id>\d{17,20})\/(?<token>[\w-]+)\/?$/u.exec(
     parsed.pathname,
   )
 

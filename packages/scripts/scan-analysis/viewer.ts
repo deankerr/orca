@@ -97,7 +97,7 @@ function describe(value: ValueProfile, selected: Population): string {
   const identities =
     examples.length === 0
       ? ''
-      : `<h3>Entity examples</h3>${examples.map(({ id, value }) => `<div class="example"><code>${escapeHtml(id)}</code><code>${escapeHtml(display(value))}</code></div>`).join('')}`
+      : `<h3>Entity examples</h3>${examples.map(({ id, value: example }) => `<div class="example"><code>${escapeHtml(id)}</code><code>${escapeHtml(display(example))}</code></div>`).join('')}`
   return `${numeric}${branches}${identities}`
 }
 
@@ -151,7 +151,7 @@ function render(): void {
     row.className = 'field'
 
     row.innerHTML = `<summary>
-      <code class="path">${escapeHtml(value.path.replace(/^\$\[\*\]/, ''))}</code>
+      <code class="path">${escapeHtml(value.path.replace(/^\$\[\*\]/u, ''))}</code>
       <span class="types">${value.types.map((branch) => branch.type).join(' · ')}</span>
       <span class="stat" title="${value.population - missing} of ${value.population} locations"><span class="mobile-label">Present </span>${percentage(value.population - missing, value.population)}</span>
       <span class="stat"><span class="mobile-label">Null </span>${percentage(nulls, value.population)}</span>
