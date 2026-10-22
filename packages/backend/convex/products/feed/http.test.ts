@@ -17,7 +17,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
   const ctx = {
     runQuery: async (_reference: unknown, args: unknown) => {
       calls.push(args)
-      return { page: [], continueCursor: 'next-position', isDone }
+      return { continueCursor: 'next-position', isDone, page: [] }
     },
   } as unknown as ActionCtx
   const address =
@@ -27,7 +27,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
   const next = address.replace('previous-position', 'next-position')
   expect(body).toEqual({ events: [], next })
   expect(calls).toEqual([
-    { model_id: 'author/model', paginationOpts: { numItems: 3, cursor: 'previous-position' } },
+    { model_id: 'author/model', paginationOpts: { cursor: 'previous-position', numItems: 3 } },
   ])
   expect(response.headers.get('Link')).toBe(`<${next}>; rel="next"`)
   expect(response.headers.get('Cache-Control')).toBe('no-store')

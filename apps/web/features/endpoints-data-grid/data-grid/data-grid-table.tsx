@@ -20,8 +20,8 @@ function getPinningStyles<TData>(column: Column<TData>): CSSProperties {
 
   return {
     left: isPinnedLeft ? `${column.getStart('left')}px` : undefined,
-    right: isPinnedRight ? `${column.getAfter('right')}px` : undefined,
     position: isPinnedColumn ? 'sticky' : 'relative',
+    right: isPinnedRight ? `${column.getAfter('right')}px` : undefined,
     width: column.getSize(),
     zIndex: isPinnedColumn ? 1 : 0,
   }
@@ -164,13 +164,13 @@ function DataGridTableHeadRowCellResize<TData>({ header }: { header: Header<TDat
   return (
     <div
       {...{
+        className:
+          'absolute top-0 h-full w-4 cursor-col-resize user-select-none touch-none -end-2 z-10 flex justify-center before:absolute before:w-px before:inset-y-0 before:bg-border-solid translate-x-px',
         onDoubleClick: () => {
           column.resetSize()
         },
         onMouseDown: header.getResizeHandler(),
         onTouchStart: header.getResizeHandler(),
-        className:
-          'absolute top-0 h-full w-4 cursor-col-resize user-select-none touch-none -end-2 z-10 flex justify-center before:absolute before:w-px before:inset-y-0 before:bg-border-solid translate-x-px',
       }}
     />
   )
@@ -296,10 +296,10 @@ function DataGridTableVirtual() {
   // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual exposes mutable state; this component opts out of React Compiler memoization.
   const virtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => viewportRef.current,
     estimateSize: () => rowHeight,
-    overscan,
     getItemKey,
+    getScrollElement: () => viewportRef.current,
+    overscan,
   })
 
   if (isLoading) {

@@ -21,12 +21,11 @@ import { currentScope, INGESTION_RECORDS_TABLE } from './tables'
  */
 export const ingest = internalAction({
   args: {
+    current_stats: v.boolean(),
     from_scan_at: v.union(v.string(), v.null()),
     scan_at: v.string(),
     scope: currentScope,
-    current_stats: v.boolean(),
   },
-  returns: v.array(ingestResult),
   handler: async (
     ctx,
     { from_scan_at, scan_at, scope, current_stats },
@@ -37,28 +36,28 @@ export const ingest = internalAction({
     ])
     const results = await Promise.all(
       ingestors.map(
-        async (process) => await process(ctx, { source: { previous, next }, scope, current_stats }),
+        async (process) => await process(ctx, { current_stats, scope, source: { next, previous } }),
       ),
     )
 
     return succeeded(scan_at, results)
   },
+  returns: v.array(ingestResult),
 })
 
 /** Remove output dated at the scan and release its receipts. */
 export const withdraw = internalAction({
   args: { scan_at: v.string() },
-  returns: v.array(removalResult),
   handler: async (ctx, { scan_at }): Promise<RemovalResult[]> =>
     succeeded(
       scan_at,
       await Promise.all(ingestors.map(async (process) => await process.remove(ctx, { scan_at }))),
     ),
+  returns: v.array(removalResult),
 })
 
 export const onIngested = internalMutation({
   args: vOnCompleteArgs(undefined, v.array(ingestResult)),
-  returns: v.null(),
   handler: async (ctx, { workId, result }) => {
     await settle(ctx, workId, result, async (records, record) => {
       await records.patch(record, { state: 'complete' })
@@ -71,17 +70,18 @@ export const onIngested = internalMutation({
     })
     return null
   },
+  returns: v.null(),
 })
 
 export const onWithdrawn = internalMutation({
   args: vOnCompleteArgs(undefined, v.array(removalResult)),
-  returns: v.null(),
   handler: async (ctx, { workId, result }) => {
     await settle(ctx, workId, result, async (records, record) => {
       await records.delete(record)
     })
     return null
   },
+  returns: v.null(),
 })
 
 /** Apply a terminal outcome to the request's own record, then let the queue worker continue. */
@@ -107,11 +107,11 @@ async function settle(
     } else {
       const error = result.kind === 'failed' ? result.error : 'Canceled'
       console.error('[ingestion] request failed', {
+        error,
         record: record._id,
         scan_at: record.scan_at,
-        error,
       })
-      await records.patch(record, { state: 'failed', error })
+      await records.patch(record, { error, state: 'failed' })
     }
   })
 
@@ -127,11 +127,11 @@ function succeeded<Result extends IngestResult | RemovalResult>(
 
   if (failed.length > 0) {
     throw new ConvexError({
-      message: 'Ingestion processes failed',
-      scan_at,
       failed: failed.map((result) =>
         result.kind === 'failed' ? `${result.process}: ${result.error.message}` : result.process,
       ),
+      message: 'Ingestion processes failed',
+      scan_at,
     })
   }
 

@@ -32,28 +32,28 @@ type ResourceEntity = {
 
 const QUICK_LINKS = [
   {
-    label: 'Models frontend',
     description: 'OpenRouter model catalogue',
     href: 'https://openrouter.ai/api/frontend/v1/catalog/models',
     icon: BracesIcon,
+    label: 'Models frontend',
   },
   {
-    label: 'Providers frontend',
     description: 'OpenRouter provider catalogue',
     href: 'https://openrouter.ai/api/frontend/all-providers',
     icon: BracesIcon,
+    label: 'Providers frontend',
   },
   {
-    label: 'Analytics finder',
     description: 'Endpoint analytics lookup',
     href: 'https://openrouter.ai/api/frontend/v1/models/find',
     icon: ChartNoAxesColumnIncreasingIcon,
+    label: 'Analytics finder',
   },
   {
-    label: 'ORCA API v2',
     description: 'Public preview endpoint',
     href: getConvexHttpUrl('/public-api-preview/v2'),
     icon: DatabaseIcon,
+    label: 'ORCA API v2',
   },
 ] as const
 
@@ -71,8 +71,8 @@ export default function Page() {
     entityKind === 'models'
       ? models?.map((model) => ({
           ...model,
-          slug: model.id,
           href: `https://openrouter.ai/api/frontend/v1/stats/endpoint?${new URLSearchParams({ permaslug: model.permaslug, variant: model.variant })}`,
+          slug: model.id,
         }))
       : providers?.map((provider) => ({ ...provider, slug: provider.id }))
   )?.toSorted((a, b) => a.name.localeCompare(b.name))

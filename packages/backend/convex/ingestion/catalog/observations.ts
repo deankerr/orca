@@ -10,20 +10,19 @@ import * as operator from '../operators/observations'
 import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
-  process: 'observations',
   prepare: (_ctx, input) => ({
-    scan_at: input.source.next.scan_at,
     rows: operator.derive(input.source),
+    scan_at: input.source.next.scan_at,
   }),
-  write: async (ctx, args) =>
-    await ctx.runMutation(internal.ingestion.catalog.observations.write, args),
+  process: 'observations',
   remove: async (ctx, args) =>
     await ctx.runMutation(internal.ingestion.catalog.observations.remove, args),
+  write: async (ctx, args) =>
+    await ctx.runMutation(internal.ingestion.catalog.observations.write, args),
 })
 
 export const remove = internalMutation({
-  args: { scan_at: v.string(), process: v.string() },
-  returns: removeResult,
+  args: { process: v.string(), scan_at: v.string() },
   handler: async (ctx, { scan_at, process }) =>
     await removeProcess(ctx, scan_at, process, async () => {
       const rows = ctx.db
@@ -34,15 +33,16 @@ export const remove = internalMutation({
         await ctx.db.delete(OBSERVATIONS_TABLE, row._id)
       }
     }),
+  returns: removeResult,
 })
 
 export const write = internalMutation({
-  args: { process: v.string(), scan_at: v.string(), rows: v.array(observationsTable.validator) },
-  returns: commitResult,
+  args: { process: v.string(), rows: v.array(observationsTable.validator), scan_at: v.string() },
   handler: async (ctx, { rows, scan_at, process }) =>
     await commitProcess(ctx, scan_at, process, async () => {
       for (const row of rows) {
         await ctx.db.insert(OBSERVATIONS_TABLE, row)
       }
     }),
+  returns: commitResult,
 })

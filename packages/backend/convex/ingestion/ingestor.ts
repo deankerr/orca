@@ -43,15 +43,15 @@ export function createIngestor<Prepared extends object>({
     try {
       prepared = await prepare(ctx, input)
     } catch (error) {
-      return { process, kind: 'failed', stage: 'prepare', error: errorDetails(error) }
+      return { error: errorDetails(error), kind: 'failed', process, stage: 'prepare' }
     }
 
     try {
       const kind = await write(ctx, { ...prepared, process })
 
-      return { process, kind }
+      return { kind, process }
     } catch (error) {
-      return { process, kind: 'failed', stage: 'write', error: errorDetails(error) }
+      return { error: errorDetails(error), kind: 'failed', process, stage: 'write' }
     }
   }
 
@@ -61,21 +61,21 @@ export function createIngestor<Prepared extends object>({
       try {
         const kind = await remove(ctx, { ...args, process })
 
-        return { process, kind }
+        return { kind, process }
       } catch (error) {
-        return { process, kind: 'failed', stage: 'remove', error: errorDetails(error) }
+        return { error: errorDetails(error), kind: 'failed', process, stage: 'remove' }
       }
     },
   })
 }
 
 export const release = internalMutation({
-  args: { scan_at: v.string(), process: v.string() },
-  returns: removeResult,
+  args: { process: v.string(), scan_at: v.string() },
   handler: async (ctx, { scan_at, process }) =>
     await removeProcess(ctx, scan_at, process, async () => {
       // Current rows stay; only the receipt is released.
     }),
+  returns: removeResult,
 })
 
 /**
@@ -98,7 +98,7 @@ export async function commitProcess(
 
   await write()
   await (committed === null
-    ? ctx.db.insert(PROCESS_COMMITS_TABLE, { scan_at, process, coverage })
+    ? ctx.db.insert(PROCESS_COMMITS_TABLE, { coverage, process, scan_at })
     : ctx.db.patch(PROCESS_COMMITS_TABLE, committed._id, { coverage }))
 
   return 'committed'
@@ -132,6 +132,6 @@ async function receipt(ctx: MutationCtx, scan_at: string, process: string) {
 
 function errorDetails(error: unknown) {
   return error instanceof Error
-    ? { name: error.name, message: error.message, stack: error.stack }
-    : { name: 'Error', message: String(error) }
+    ? { message: error.message, name: error.name, stack: error.stack }
+    : { message: String(error), name: 'Error' }
 }

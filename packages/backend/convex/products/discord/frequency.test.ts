@@ -43,11 +43,6 @@ function history(rows: PricingCandidate[]) {
         }
 
         const query = {
-          withIndex: (name: string, select: (q: typeof range) => unknown) => {
-            expect(name).toBe('by_endpoint_id_and_scan_at')
-            select(range)
-            return query
-          },
           order: (direction: string) => {
             expect(direction).toBe('desc')
             selected = selected.toSorted((a, b) => b.scan_at.localeCompare(a.scan_at))
@@ -56,6 +51,11 @@ function history(rows: PricingCandidate[]) {
           take: async (count: number) => {
             expect(count).toBe(PRICE_CHANGE_COUNT)
             return selected.slice(0, count)
+          },
+          withIndex: (name: string, select: (q: typeof range) => unknown) => {
+            expect(name).toBe('by_endpoint_id_and_scan_at')
+            select(range)
+            return query
           },
         }
         return query
@@ -99,16 +99,16 @@ function update(id: string, before: JsonValue, after: JsonValue): EventRow & { _
 
   return {
     _id: id,
+    change_json: JSON.stringify(change),
+    context: {
+      endpoint: { endpoint_id: id, provider_display_name: 'Provider', provider_tag: 'provider' },
+      model: { display_name: 'Model', model_id: 'author/model' },
+      provider: { display_name: 'Provider', provider_id: 'provider' },
+    },
     entity_id: id,
     entity_kind: 'endpoint',
-    type: 'UPDATE',
     scan_at,
-    context: {
-      model: { model_id: 'author/model', display_name: 'Model' },
-      provider: { provider_id: 'provider', display_name: 'Provider' },
-      endpoint: { endpoint_id: id, provider_tag: 'provider', provider_display_name: 'Provider' },
-    },
-    change_json: JSON.stringify(change),
+    type: 'UPDATE',
   }
 }
 
@@ -142,8 +142,8 @@ test('frequency removes pricing only, preserves quiet endpoints, and does not ch
   expect(result.skipped).toBe(1)
 
   expect(result.alerts).toMatchObject([
-    { source_id: 'mixed', event: { changes: [{ path: 'context_length' }] } },
-    { source_id: 'quiet', event: { changes: [{ path: 'pricing.prompt' }] } },
+    { event: { changes: [{ path: 'context_length' }] }, source_id: 'mixed' },
+    { event: { changes: [{ path: 'pricing.prompt' }] }, source_id: 'quiet' },
   ])
 
   expect(
@@ -171,30 +171,30 @@ test('cheap exclusions, lifecycle and schedule changes do not read history', asy
     throw new Error('Expected an endpoint')
   }
 
-  schedule.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+  schedule.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
 
   const lifecycle = {
     ...update('arrival', oldPrice, newPrice),
-    type: 'ADD' as const,
     change_json: JSON.stringify({
-      type: 'ADD',
       key: 'arrival',
+      type: 'ADD',
       value: {
         endpoint_id: 'arrival',
-        model_display_name: 'Model',
-        model_permaslug: 'author/model',
-        model_or_created_at: '2026-09-30T01:00:00Z',
         input_modalities: ['text'],
-        output_modalities: ['text'],
+        metadata: {},
+        model_display_name: 'Model',
         model_id: 'author/model',
+        model_or_created_at: '2026-09-30T01:00:00Z',
+        model_permaslug: 'author/model',
+        output_modalities: ['text'],
+        pricing: { discount: 0, meters: { prompt: '2' } },
+        provider_display_name: 'Provider',
         provider_id: 'provider',
         provider_tag: 'provider',
         variant: 'standard',
-        provider_display_name: 'Provider',
-        pricing: { discount: 0, meters: { prompt: '2' } },
-        metadata: {},
       },
     }),
+    type: 'ADD' as const,
   }
 
   const rows = [
@@ -238,7 +238,7 @@ async function prepareBatch(
   read: Parameters<typeof prepareSelectedBatch>[1],
 ) {
   return await prepareSelectedBatch(
-    rows.map((row) => ({ source_id: row._id, event: prepareShared(row) })),
+    rows.map((row) => ({ event: prepareShared(row), source_id: row._id })),
     read,
   )
 }

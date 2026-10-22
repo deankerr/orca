@@ -17,15 +17,15 @@ const HOUR = 3_600_000
  * useful bucket: an empty hourly bucket is a missing capture rather than a sampling artefact.
  */
 const SIZES = [
-  { ms: HOUR, label: '1 hour' },
-  { ms: 2 * HOUR, label: '2 hours' },
-  { ms: 6 * HOUR, label: '6 hours' },
-  { ms: 12 * HOUR, label: '12 hours' },
-  { ms: 24 * HOUR, label: '1 day' },
-  { ms: 2 * 24 * HOUR, label: '2 days' },
-  { ms: 7 * 24 * HOUR, label: '7 days' },
-  { ms: 14 * 24 * HOUR, label: '14 days' },
-  { ms: 28 * 24 * HOUR, label: '28 days' },
+  { label: '1 hour', ms: HOUR },
+  { label: '2 hours', ms: 2 * HOUR },
+  { label: '6 hours', ms: 6 * HOUR },
+  { label: '12 hours', ms: 12 * HOUR },
+  { label: '1 day', ms: 24 * HOUR },
+  { label: '2 days', ms: 2 * 24 * HOUR },
+  { label: '7 days', ms: 7 * 24 * HOUR },
+  { label: '14 days', ms: 14 * 24 * HOUR },
+  { label: '28 days', ms: 28 * 24 * HOUR },
 ] as const
 
 /** Enough bars to read, few enough to stay wide. */
@@ -44,11 +44,11 @@ function bucketing({ start_at, end_at }: Range) {
   const alignedEnd = Math.max(alignedStart + ms, Math.ceil((end + 1) / ms) * ms)
 
   return {
+    buckets: (alignedEnd - alignedStart) / ms,
+    end_at: new Date(alignedEnd).toISOString(),
     label: size?.label ?? `${ms / day} days`,
     ms,
     start_at: new Date(alignedStart).toISOString(),
-    end_at: new Date(alignedEnd).toISOString(),
-    buckets: (alignedEnd - alignedStart) / ms,
   }
 }
 
@@ -63,9 +63,9 @@ export function Histogram({ range }: { range: Range }) {
   const [hovered, setHovered] = useState<number | null>(null)
   const view = bucketing(zoom.at(-1) ?? range)
   const data = useQuery(api.ingestion.admin.histogram, {
-    start_at: view.start_at,
-    end_at: view.end_at,
     buckets: view.buckets,
+    end_at: view.end_at,
+    start_at: view.start_at,
   })
 
   if (data === undefined) {
@@ -110,7 +110,7 @@ export function Histogram({ range }: { range: Range }) {
               }}
               onClick={() => {
                 if (zoomable) {
-                  setZoom([...zoom, { start_at: lower, end_at: upper }])
+                  setZoom([...zoom, { end_at: upper, start_at: lower }])
                 }
               }}
             >
@@ -120,7 +120,7 @@ export function Histogram({ range }: { range: Range }) {
                   <span
                     key={state}
                     className="w-full"
-                    style={{ height: `${(value / max) * 100}%`, background: STATE_COLORS[state] }}
+                    style={{ background: STATE_COLORS[state], height: `${(value / max) * 100}%` }}
                   />
                 )
               })}

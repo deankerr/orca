@@ -53,8 +53,8 @@ export function derive(source: Source, scope: CurrentScope): CurrentModelRow[] {
 
       return {
         ...fields,
-        scan_at,
         metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
+        scan_at,
       }
     },
   )

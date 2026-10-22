@@ -9,13 +9,13 @@ export function useCopyToClipboard() {
     } catch (error) {
       console.error('Failed to copy text:', error)
       toast.add({
-        type: 'error',
-        title: 'Unable to copy to clipboard',
         description: 'Select and copy the text manually.',
+        title: 'Unable to copy to clipboard',
+        type: 'error',
       })
       return
     }
 
-    toast.add({ type: 'success', title: message })
+    toast.add({ title: message, type: 'success' })
   }
 }

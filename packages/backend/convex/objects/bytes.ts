@@ -25,12 +25,6 @@ export function byteStoreFor(ctx: ActionCtx, backend: ObjectBackend): ByteStore 
 
 function convexByteStore(ctx: ActionCtx): ByteStore {
   return {
-    async put(bytes) {
-      const storage_id = await ctx.storage.store(
-        new Blob([new Uint8Array(bytes)], { type: 'application/gzip' }),
-      )
-      return { backend: 'convex', storage_id }
-    },
     async get(ref) {
       if (ref.backend !== 'convex') {
         throw new Error('byte store: convex adapter given a non-convex ref')
@@ -44,22 +38,28 @@ function convexByteStore(ctx: ActionCtx): ByteStore {
 
       return new Uint8Array(await blob.arrayBuffer())
     },
+    async put(bytes) {
+      const storage_id = await ctx.storage.store(
+        new Blob([new Uint8Array(bytes)], { type: 'application/gzip' }),
+      )
+      return { backend: 'convex', storage_id }
+    },
   }
 }
 
 function r2ByteStore(transport: R2Transport): ByteStore {
   return {
-    async put(bytes, identity) {
-      const r2_key = r2Key(identity.path, identity.name)
-      await transport.put(r2_key, bytes)
-      return { backend: 'r2', r2_key }
-    },
     async get(ref) {
       if (ref.backend !== 'r2') {
         throw new Error('byte store: r2 adapter given a non-r2 ref')
       }
 
       return await transport.get(ref.r2_key)
+    },
+    async put(bytes, identity) {
+      const r2_key = r2Key(identity.path, identity.name)
+      await transport.put(r2_key, bytes)
+      return { backend: 'r2', r2_key }
     },
   }
 }

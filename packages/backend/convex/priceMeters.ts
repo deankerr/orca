@@ -1,3 +1,4 @@
+// oxlint-disable sort-keys -- Key order is the display order of price meters (Object.keys/entries consumers).
 /** Decimal scaling exponents and units for upstream price meters, shared across products. */
 export const priceMeters = {
   prompt: { scale: 6, unit: 'MTOK' },
@@ -11,3 +12,4 @@ export const priceMeters = {
   image_output: { scale: 3, unit: 'KTOK' },
   web_search: { scale: 0, unit: 'search' },
 }
+// oxlint-enable sort-keys

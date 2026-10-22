@@ -6,7 +6,7 @@ import type { Source } from './source'
 
 const Metric = z.number().nonnegative().optional().catch(undefined)
 const CurrentSample = z
-  .object({ p50_throughput: Metric, p50_latency: Metric })
+  .object({ p50_latency: Metric, p50_throughput: Metric })
   .transform(R.pickBy(R.isDefined))
 
 export type Snapshot = { scan_at: string; rows: CurrentStatsRow[] }
@@ -21,7 +21,7 @@ export function derive({ next }: Source): Snapshot {
     R.map(({ endpoint_id, metrics }) => ({ endpoint_id, ...metrics })),
   )
 
-  return { scan_at: next.scan_at, rows }
+  return { rows, scan_at: next.scan_at }
 }
 
 /** A whole snapshot replaces an older one; members from different scans never combine. */

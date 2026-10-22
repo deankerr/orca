@@ -19,12 +19,12 @@ describe('endpoint grid facet helpers', () => {
   })
 
   it('updates include and exclude modes without leaving stale values behind', () => {
-    expect(applyFilterMode({ has: ['tools'], not: [], key: 'tools', mode: 'exclude' })).toEqual({
+    expect(applyFilterMode({ has: ['tools'], key: 'tools', mode: 'exclude', not: [] })).toEqual({
       has: [],
       not: ['tools'],
     })
 
-    expect(applyFilterMode({ has: [], not: ['tools'], key: 'tools', mode: 'any' })).toEqual({
+    expect(applyFilterMode({ has: [], key: 'tools', mode: 'any', not: ['tools'] })).toEqual({
       has: [],
       not: [],
     })
@@ -32,22 +32,22 @@ describe('endpoint grid facet helpers', () => {
 
   it('derives facet filters for row filtering from both has and not', () => {
     expect(toFacetFilters(['tools', 'image_input'], ['disabled'])).toEqual({
-      tools: 'include',
-      image_input: 'include',
       disabled: 'exclude',
+      image_input: 'include',
+      tools: 'include',
     })
   })
 
   it('keeps modality filters separate from non-modality attribute filters for UI state', () => {
     expect(toAttributeFilters(['tools', 'image_input'], ['disabled'])).toEqual({
-      tools: 'include',
       disabled: 'exclude',
+      tools: 'include',
     })
 
     expect(toModalityFilters(['tools', 'image_input'], ['text_output'])).toMatchObject({
+      file_input: 'any',
       image_input: 'include',
       text_output: 'exclude',
-      file_input: 'any',
     })
   })
 

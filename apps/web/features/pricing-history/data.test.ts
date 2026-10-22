@@ -6,25 +6,24 @@ import type { PricingHistory } from './data'
 const iso = (at: number) => new Date(at).toISOString()
 type Endpoint = PricingHistory['endpoints'][number]
 const observation = (at: number, changes: Partial<Endpoint['observations'][number]> = {}) => ({
-  entity_id: 'one',
-  scan_at: iso(at),
-  entity_kind: 'endpoint' as const,
   detected: true,
+  entity_id: 'one',
+  entity_kind: 'endpoint' as const,
   model_id: 'model',
   provider_id: 'provider',
   provider_tag: 'provider',
+  scan_at: iso(at),
   ...changes,
 })
 const price = (at: number, meters: Record<string, string>) => ({
-  endpoint_id: 'one',
-  scan_at: iso(at),
   discount: 0,
+  endpoint_id: 'one',
   meters,
+  scan_at: iso(at),
 })
 
 test('steps normalize unmetered values and never carry quotes across a reappearance', () => {
   const pricingHistory: PricingHistory = {
-    modelId: 'model',
     asOf: 4 * DAY,
     endpoints: [
       {
@@ -39,6 +38,7 @@ test('steps normalize unmetered values and never carry quotes across a reappeara
         ],
       },
     ],
+    modelId: 'model',
   }
 
   const traces = pricingHistoryTraces(pricingHistory, 'prompt')
@@ -54,17 +54,17 @@ test('steps normalize unmetered values and never carry quotes across a reappeara
 
 test('daily samples lose excursions but preserve boundaries, latest quote and shared-tag ranges', () => {
   const trace = {
-    id: 'one',
-    tag: 'provider',
-    start: 0,
-    end: 2.5 * DAY,
     current: true,
+    end: 2.5 * DAY,
+    id: 'one',
     samples: [
       [0, 1],
       [DAY / 2, 0.5],
       [DAY, 1],
       [2.25 * DAY, 2],
     ] as [number, number][],
+    start: 0,
+    tag: 'provider',
   }
 
   const daily = dailyTrace(trace, trace.end)
@@ -86,7 +86,6 @@ test('daily samples lose excursions but preserve boundaries, latest quote and sh
 
 test('daily sampling retains the last price before tag and model boundaries', () => {
   const history: PricingHistory = {
-    modelId: 'model',
     asOf: 10 * DAY,
     endpoints: [
       {
@@ -94,7 +93,7 @@ test('daily sampling retains the last price before tag and model boundaries', ()
         observations: [
           observation(0),
           observation(2.75 * DAY, { provider_tag: 'new' }),
-          observation(4.75 * DAY, { provider_tag: 'new', model_id: 'other' }),
+          observation(4.75 * DAY, { model_id: 'other', provider_tag: 'new' }),
         ],
         prices: [
           price(0, { prompt: '1' }),
@@ -103,6 +102,7 @@ test('daily sampling retains the last price before tag and model boundaries', ()
         ],
       },
     ],
+    modelId: 'model',
   }
   const exact = pricingHistoryTraces(history, 'prompt')
   const sampled = exact.map((trace) => dailyTrace(trace, history.asOf))
@@ -118,7 +118,6 @@ test('daily sampling retains the last price before tag and model boundaries', ()
 test('a removal or unmetered quote at the latest scan is not a current price', () => {
   for (const unlisted of [true, false]) {
     const pricingHistory: PricingHistory = {
-      modelId: 'model',
       asOf: DAY,
       endpoints: [
         {
@@ -130,6 +129,7 @@ test('a removal or unmetered quote at the latest scan is not a current price', (
           prices: [price(0, { prompt: '1' }), ...(unlisted ? [] : [price(DAY, { prompt: '0' })])],
         },
       ],
+      modelId: 'model',
     }
 
     const traces = pricingHistoryTraces(pricingHistory, 'prompt')
@@ -158,7 +158,7 @@ test('historical membership retains moves away and carries quotes through tag an
       prices: [price(0, { prompt: '1' })],
     },
   ]
-  const history = { modelId: 'model', asOf: 3 * DAY, endpoints }
+  const history = { asOf: 3 * DAY, endpoints, modelId: 'model' }
   const traces = pricingHistoryTraces(history, 'prompt')
   expect(traces.map(({ tag, start, end }) => [tag, start, end])).toEqual([
     ['provider', 0, DAY],
@@ -167,12 +167,11 @@ test('historical membership retains moves away and carries quotes through tag an
   expect(tagPrices(traces, 'provider/bf16', DAY, history.asOf)).toEqual([1])
   expect(tagPrices(traces, 'provider/bf16', 2 * DAY, history.asOf)).toEqual([])
   const moved = pricingHistoryTraces({ ...history, modelId: 'model:free' }, 'prompt')
-  expect(moved[0]).toMatchObject({ start: 2 * DAY, end: 3 * DAY, samples: [[2 * DAY, 1]] })
+  expect(moved[0]).toMatchObject({ end: 3 * DAY, samples: [[2 * DAY, 1]], start: 2 * DAY })
 })
 
 test('same-price reappearance retains a gap; missing meters replace rather than patch quotes', () => {
   const history: PricingHistory = {
-    modelId: 'model',
     asOf: 5 * DAY,
     endpoints: [
       {
@@ -190,6 +189,7 @@ test('same-price reappearance retains a gap; missing meters replace rather than 
         ],
       },
     ],
+    modelId: 'model',
   }
   const traces = pricingHistoryTraces(history, 'prompt')
   expect(traces.map(({ start, end }) => [start, end])).toEqual([

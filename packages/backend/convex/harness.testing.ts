@@ -61,7 +61,7 @@ function modules(root: string) {
 
 /** The backend with its installed components, backed by an in-memory database. */
 export function setup() {
-  const t = convexTest({ schema, modules: modules(import.meta.dir), transactionLimits: true })
+  const t = convexTest({ modules: modules(import.meta.dir), schema, transactionLimits: true })
 
   t.registerComponent('ingestionPool', workpoolSchema, modules(workpoolRoot))
   t.registerComponent('ingestionPool/batchWorker', batchSchema, modules(batchRoot))

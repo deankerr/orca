@@ -54,7 +54,7 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
 
     for (const endpoint of entry.endpoints ?? []) {
       if (endpoints.has(endpoint.id)) {
-        throw new ConvexError({ message: 'Duplicate endpoint identity', endpoint_id: endpoint.id })
+        throw new ConvexError({ endpoint_id: endpoint.id, message: 'Duplicate endpoint identity' })
       }
 
       const scopedEndpoint = extracted?.endpoints.get(endpoint.id)
@@ -114,8 +114,8 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
     models: profilePopulation(selectedModels),
     providers: profilePopulation(selectedProviders),
     report_format: 'orca-scan-profile-v1',
-    selection,
     scan_at: scan.scan_at,
+    selection,
   }
 }
 
@@ -127,6 +127,7 @@ export function viewScanReport(report: ScanReport, options: ScanViewOptions = {}
   const populations: PopulationName[] =
     options.population === undefined ? ['models', 'endpoints', 'providers'] : [options.population]
 
+  // oxlint-disable sort-keys -- Serialized for agents; the report_format header and selection lead, populations follow.
   return {
     report_format: 'orca-scan-profile-view-v1' as const,
     scan_at: report.scan_at,
@@ -136,6 +137,7 @@ export function viewScanReport(report: ScanReport, options: ScanViewOptions = {}
       ...viewProfile(report[name].profile, options),
     })),
   }
+  // oxlint-enable sort-keys
 }
 
 export type ScanReportView = ReturnType<typeof viewScanReport>

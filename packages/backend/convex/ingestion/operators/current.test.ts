@@ -14,7 +14,7 @@ import { hour, random, scan, sequence } from './testing'
 const served = (model: string) => ({ model, provider: 'p1' })
 const previous = scan(hour(0), {
   endpoints: { e1: served('kept'), e2: served('renamed'), e3: served('departed') },
-  names: { renamed: 'Old', departed: 'Gone' },
+  names: { departed: 'Gone', renamed: 'Old' },
 })
 const next = scan(hour(1), {
   endpoints: { e1: served('kept'), e2: served('renamed'), e4: served('arrived') },
@@ -28,22 +28,22 @@ const ids = (source: Source, scope: CurrentScope) =>
     .toSorted()
 
 test('each scope emits its share of a pair; a model departs with its last endpoint', () => {
-  expect(ids({ previous, next }, 'full')).toEqual(['arrived', 'departed', 'kept', 'renamed'])
-  expect(ids({ previous, next }, 'changes')).toEqual(['arrived', 'departed', 'renamed'])
-  expect(ids({ previous, next }, 'departures')).toEqual(['departed'])
+  expect(ids({ next, previous }, 'full')).toEqual(['arrived', 'departed', 'kept', 'renamed'])
+  expect(ids({ next, previous }, 'changes')).toEqual(['arrived', 'departed', 'renamed'])
+  expect(ids({ next, previous }, 'departures')).toEqual(['departed'])
 })
 
 test('a departure carries last-present facts and, for endpoints, the first absent scan', () => {
-  const [departed] = models.derive({ previous, next }, 'departures')
-  expect(departed).toMatchObject({ model_id: 'departed', display_name: 'Gone', scan_at: hour(1) })
+  const [departed] = models.derive({ next, previous }, 'departures')
+  expect(departed).toMatchObject({ display_name: 'Gone', model_id: 'departed', scan_at: hour(1) })
 
   const listed = scan(hour(0), { endpoints: { e1: { model: 'm1', provider: 'p1' } } })
-  const [unlisted] = endpoints.derive({ previous: listed, next: scan(hour(1)) }, 'departures')
+  const [unlisted] = endpoints.derive({ next: scan(hour(1)), previous: listed }, 'departures')
   expect(unlisted).toMatchObject({ endpoint_id: 'e1', scan_at: hour(1), unlisted_at: hour(1) })
 })
 
 test('a baseline states its complete population whatever scope it receives', () => {
-  expect(ids({ previous: null, next }, 'departures')).toEqual(['arrived', 'kept', 'renamed'])
+  expect(ids({ next, previous: null }, 'departures')).toEqual(['arrived', 'kept', 'renamed'])
 })
 
 test('newer versions win; equal or older candidates leave the retained row', () => {
@@ -57,7 +57,7 @@ test('newer versions win; equal or older candidates leave the retained row', () 
 function commitInRandomOrder(table: CurrentTable, scans: Scan[], seed: number) {
   const draw = random(seed)
   const records = scans
-    .map((current, index) => ({ previous: scans[index - 1] ?? null, next: current }))
+    .map((current, index) => ({ next: current, previous: scans[index - 1] ?? null }))
     .toSorted(() => draw() - 0.5)
   const retained = new Retained(table)
   const fullScans: string[] = []

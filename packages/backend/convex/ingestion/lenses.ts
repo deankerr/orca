@@ -27,16 +27,16 @@ export function modelEntity(model: ExtractedModel): z.infer<typeof Model> {
 
   return {
     ...fields,
-    model_id: id,
     display_name: short_name,
-    or_created_at: created_at,
     metadata: R.omit(model, modelFields),
+    model_id: id,
+    or_created_at: created_at,
   }
 }
 
 export function providerEntity(provider: ExtractedProvider): z.infer<typeof Provider> {
   const { provider_id, displayName, ...metadata } = provider
-  return { provider_id, display_name: displayName, metadata }
+  return { display_name: displayName, metadata, provider_id }
 }
 
 const endpointFields = [
@@ -61,8 +61,8 @@ export function endpointEntity(endpoint: ExtractedEndpoint): z.infer<typeof Endp
   return {
     ...fields,
     endpoint_id: id,
-    pricing: endpointPricing(pricing),
     metadata: R.omit(source, endpointFields),
+    pricing: endpointPricing(pricing),
   }
 }
 

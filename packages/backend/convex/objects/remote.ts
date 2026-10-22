@@ -15,20 +15,20 @@ function requireApiKey(apiKey: string): void {
 /** Authenticated discovery always serves this deployment, regardless of its own source override. */
 export const namesAtOrAfter = query({
   args: { apiKey: v.string(), ...nameSelection.fields },
-  returns: v.array(v.string()),
   handler: async (ctx, { apiKey, ...selection }) => {
     requireApiKey(apiKey)
     return await findLocalNames(ctx, selection)
   },
+  returns: v.array(v.string()),
 })
 
 /** One-hop batch transfer: read local bytes in parallel, without decoding or following redirects. */
 export const loadMany = action({
   args: { apiKey: v.string(), objects: v.array(objectIdentity) },
-  returns: storedBatch,
   handler: async (ctx, { apiKey, objects }) => {
     requireApiKey(apiKey)
     assertReadCount(objects.length)
     return await Promise.all(objects.map(async (identity) => await readLocal(ctx, identity)))
   },
+  returns: storedBatch,
 })

@@ -42,9 +42,9 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
 
       if (group === undefined) {
         group = {
-          batch: { type: 'batch', change, members: [] },
-          occurrences: [],
+          batch: { change, members: [], type: 'batch' },
           entities: new Set(),
+          occurrences: [],
         }
         candidates.push(group)
         groups.set(key, candidates)

@@ -12,25 +12,25 @@ test('a parent return completed before the pair that removed it is still announc
   const alert = await t.run(async (ctx) => {
     // A baseline at hour 0 found the model; it departed at hour 1, but only the hour 2 pair has completed.
     await ctx.db.insert(OBSERVATIONS_TABLE, {
-      entity_kind: 'model',
-      entity_id: 'm1',
-      scan_at: hour(0),
       endpoint_count: 1,
+      entity_id: 'm1',
+      entity_kind: 'model',
       previous_endpoint_count: null,
+      scan_at: hour(0),
     })
     const id = await ctx.db.insert(OBSERVATIONS_TABLE, {
-      entity_kind: 'model',
-      entity_id: 'm1',
-      scan_at: hour(2),
       endpoint_count: 1,
+      entity_id: 'm1',
+      entity_kind: 'model',
       previous_endpoint_count: 0,
+      scan_at: hour(2),
     })
     const returned = await ctx.db.get(id)
     ok(returned !== null)
     return await interpret(ctx, returned)
   })
 
-  expect(alert).toMatchObject({ type: 'model_added', entity_id: 'm1', previously_known: true })
+  expect(alert).toMatchObject({ entity_id: 'm1', previously_known: true, type: 'model_added' })
 })
 
 test('a baseline row has no comparison and announces nothing', async () => {
@@ -38,11 +38,11 @@ test('a baseline row has no comparison and announces nothing', async () => {
 
   const alert = await t.run(async (ctx) => {
     const id = await ctx.db.insert(OBSERVATIONS_TABLE, {
-      entity_kind: 'provider',
-      entity_id: 'p1',
-      scan_at: hour(0),
       endpoint_count: 1,
+      entity_id: 'p1',
+      entity_kind: 'provider',
       previous_endpoint_count: null,
+      scan_at: hour(0),
     })
     const baseline = await ctx.db.get(id)
     ok(baseline !== null)

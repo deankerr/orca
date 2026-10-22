@@ -16,27 +16,27 @@ function appOrigin() {
 }
 
 const nextConfig: NextConfig = {
-  env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: new URL('/callback', appUrl).href },
   allowedDevOrigins: [appUrl.hostname],
-  // This is required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
+  env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: new URL('/callback', appUrl).href },
   reactCompiler: true,
   rewrites: async () => [
     // * posthog
     {
-      source: '/snarf/static/:path*',
       destination: 'https://us-assets.i.posthog.com/static/:path*',
+      source: '/snarf/static/:path*',
     },
     {
-      source: '/snarf/:path*',
       destination: 'https://us.i.posthog.com/:path*',
+      source: '/snarf/:path*',
     },
     // * public api preview
     {
-      source: '/api/preview/v2/models',
       destination: getConvexHttpUrl('/public-api-preview/v2-cached'),
+      source: '/api/preview/v2/models',
     },
   ],
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
   typescript: {
     // required until typescript 7 adds compiler api support
     ignoreBuildErrors: true,

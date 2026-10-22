@@ -13,8 +13,8 @@ describe('overview action hrefs', () => {
       buildMonitorHref({
         pathname: '/monitor',
         searchParams: monitorSearch,
-        type: 'model',
         slug: 'z-ai/glm-5.2',
+        type: 'model',
       }),
     ).toBe('/monitor?model=z-ai%2Fglm-5.2&provider=akashml')
 
@@ -22,8 +22,8 @@ describe('overview action hrefs', () => {
       buildMonitorHref({
         pathname: '/monitor',
         searchParams: monitorSearch,
-        type: 'provider',
         slug: 'deepinfra/fp4',
+        type: 'provider',
       }),
     ).toBe('/monitor?model=openai%2Fgpt-5.4&provider=deepinfra')
   })
@@ -33,8 +33,8 @@ describe('overview action hrefs', () => {
       buildMonitorHref({
         pathname: '/',
         searchParams: gridSearch,
-        type: 'model',
         slug: 'z-ai/glm-5.2',
+        type: 'model',
       }),
     ).toBe('/monitor?model=z-ai%2Fglm-5.2')
 
@@ -42,8 +42,8 @@ describe('overview action hrefs', () => {
       buildMonitorHref({
         pathname: '/',
         searchParams: gridSearch,
-        type: 'provider',
         slug: 'akashml',
+        type: 'provider',
       }),
     ).toBe('/monitor?provider=akashml')
   })
@@ -53,8 +53,8 @@ describe('overview action hrefs', () => {
       buildMonitorHref({
         pathname: '/monitor',
         searchParams: monitorSearch,
-        type: 'provider',
         slug: 'akashml',
+        type: 'provider',
       }),
     ).toBe('/monitor?model=openai%2Fgpt-5.4&provider=akashml')
   })

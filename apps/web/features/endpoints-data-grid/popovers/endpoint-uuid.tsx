@@ -62,7 +62,7 @@ export function EndpointUuid({
     <PopoverCardTrigger
       handle={handle}
       nativeButton={false}
-      payload={{ type: 'endpoint-uuid' as const, uuid, modelSlug }}
+      payload={{ modelSlug, type: 'endpoint-uuid' as const, uuid }}
       render={<Badge variant="outline" className="bg-card/50 font-mono tracking-wider shadow" />}
       {...props}
     >

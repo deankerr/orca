@@ -11,16 +11,16 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
   const scanAt = '2026-10-02T10:40:04.272Z'
 
   const entry = {
-    scan_at: scanAt,
-    model_id: 'author/model',
-    variant: 'standard',
+    endpoints: null,
     model: {
-      slug: 'author/model',
-      permaslug: 'author/model-v1',
       input_modalities: ['text'],
       output_modalities: ['text'],
+      permaslug: 'author/model-v1',
+      slug: 'author/model',
     },
-    endpoints: null,
+    model_id: 'author/model',
+    scan_at: scanAt,
+    variant: 'standard',
   }
 
   const source = spyOn(objects, 'loadMany').mockResolvedValue([null])
@@ -32,7 +32,7 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
     source.mockResolvedValue([
       JSON.stringify({
         ...entry,
-        endpoints: [{ id: 'endpoint', variant: 'standard', model_variant_slug: 'author/model' }],
+        endpoints: [{ id: 'endpoint', model_variant_slug: 'author/model', variant: 'standard' }],
       }),
     ])
 

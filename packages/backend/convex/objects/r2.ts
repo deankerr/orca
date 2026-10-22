@@ -25,30 +25,6 @@ export function createR2Transport(): R2Transport {
   const client = r2Client()
 
   return {
-    async remove(key) {
-      const response = await client.fetch(objectUrl(key), { method: 'DELETE' })
-
-      if (!response.ok && response.status !== 404) {
-        throw new Error(`R2 DELETE failed: ${response.status} ${response.statusText}`)
-      }
-    },
-    async put(key, body) {
-      const buffer = new ArrayBuffer(body.byteLength)
-      new Uint8Array(buffer).set(body)
-
-      const response = await client.fetch(objectUrl(key), {
-        method: 'PUT',
-        headers: {
-          'content-length': String(body.byteLength),
-          'content-type': 'application/gzip',
-        },
-        body: buffer,
-      })
-
-      if (!response.ok) {
-        throw new Error(`R2 PUT failed: ${response.status} ${response.statusText}`)
-      }
-    },
     async get(key) {
       const response = await client.fetch(objectUrl(key), { method: 'GET' })
 
@@ -62,15 +38,39 @@ export function createR2Transport(): R2Transport {
 
       return new Uint8Array(await response.arrayBuffer())
     },
+    async put(key, body) {
+      const buffer = new ArrayBuffer(body.byteLength)
+      new Uint8Array(buffer).set(body)
+
+      const response = await client.fetch(objectUrl(key), {
+        body: buffer,
+        headers: {
+          'content-length': String(body.byteLength),
+          'content-type': 'application/gzip',
+        },
+        method: 'PUT',
+      })
+
+      if (!response.ok) {
+        throw new Error(`R2 PUT failed: ${response.status} ${response.statusText}`)
+      }
+    },
+    async remove(key) {
+      const response = await client.fetch(objectUrl(key), { method: 'DELETE' })
+
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`R2 DELETE failed: ${response.status} ${response.statusText}`)
+      }
+    },
   }
 }
 
 function r2Client() {
   return new AwsClient({
     accessKeyId: required(env.ORCA_OBJECTS_R2_ACCESS_KEY_ID),
+    region: 'auto',
     secretAccessKey: required(env.ORCA_OBJECTS_R2_SECRET_ACCESS_KEY),
     service: 's3',
-    region: 'auto',
   })
 }
 

@@ -35,8 +35,8 @@ export function derive(source: Source, scope: CurrentScope): CurrentProviderRow[
 
       return {
         ...fields,
-        scan_at,
         metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
+        scan_at,
       }
     },
   )

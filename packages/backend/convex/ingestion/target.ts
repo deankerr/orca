@@ -19,7 +19,7 @@ const RangeBoundary = z
   .union([z.iso.date(), IsoDateTime])
   .transform((value) => new Date(value).toISOString())
 const IngestionTargetRange = z
-  .object({ start_at: RangeBoundary, end_at: RangeBoundary })
+  .object({ end_at: RangeBoundary, start_at: RangeBoundary })
   .refine(({ start_at, end_at }) => start_at <= end_at, {
     message: 'Ingestion range must move forward in time',
   })
@@ -30,8 +30,8 @@ const IngestionTargetRange = z
  */
 export const set = internalMutation({
   args: ingestionTargetRange.fields,
-  returns: v.id(INGESTION_TARGET_TABLE),
   handler: async (ctx, args) => await setTarget(ctx, args),
+  returns: v.id(INGESTION_TARGET_TABLE),
 })
 
 export async function setTarget(
@@ -80,6 +80,6 @@ async function earliestRegisteredScan(ctx: MutationCtx): Promise<string | null> 
 
 export const get = internalQuery({
   args: {},
-  returns: v.union(v.null(), docValidator(INGESTION_TARGET_TABLE, ingestionTargetTable)),
   handler: async (ctx) => await ctx.db.query(INGESTION_TARGET_TABLE).unique(),
+  returns: v.union(v.null(), docValidator(INGESTION_TARGET_TABLE, ingestionTargetTable)),
 })

@@ -8,7 +8,7 @@ export function useEndpointFocusState() {
   const highlightUuid = params.uuid?.trim() ?? ''
 
   return {
-    highlightUuid,
     hasFocus: highlightUuid.length > 0,
+    highlightUuid,
   }
 }

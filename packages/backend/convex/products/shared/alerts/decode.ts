@@ -8,22 +8,22 @@ import type { pricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
 
 const CapturedChange = z.object({
-  key: z.string(),
-  type: z.enum(['ADD', 'REMOVE', 'UPDATE']),
-  value: z.json().optional(),
-  oldValue: z.json().optional(),
-  embeddedKey: z.string().optional(),
   get changes() {
     return z.array(CapturedChange).optional()
   },
+  embeddedKey: z.string().optional(),
+  key: z.string(),
+  oldValue: z.json().optional(),
+  type: z.enum(['ADD', 'REMOVE', 'UPDATE']),
+  value: z.json().optional(),
 })
 export type CapturedChange = z.infer<typeof CapturedChange>
 
 const Update = z.object({ changes: z.array(CapturedChange) })
 const snapshots = {
+  endpoint: z.object({ value: Endpoint }),
   model: z.object({ value: Model }),
   provider: z.object({ value: Provider }),
-  endpoint: z.object({ value: Endpoint }),
 }
 
 export type Snapshot =
@@ -58,14 +58,14 @@ export function decode(row: EventRow): DecodedEvent {
     const pricing = row.entity_kind === 'endpoint' ? row.context.pricing : undefined
 
     return {
-      type: 'UPDATE',
       changes: fields(Update.parse(payload).changes),
+      type: 'UPDATE',
       ...(pricing === undefined
         ? {}
         : {
             pricing: {
-              before: decodePricing(pricing.before),
               after: decodePricing(pricing.after),
+              before: decodePricing(pricing.before),
             },
           }),
     }
@@ -74,8 +74,8 @@ export function decode(row: EventRow): DecodedEvent {
   const snapshot = decodeSnapshot(row.entity_kind, payload)
 
   return row.type === 'ADD'
-    ? { type: 'ADD', after: snapshot }
-    : { type: 'REMOVE', before: snapshot }
+    ? { after: snapshot, type: 'ADD' }
+    : { before: snapshot, type: 'REMOVE' }
 }
 
 /** Consume structural wrappers here so curation never has to rediscover their shape. */
@@ -87,7 +87,7 @@ function fields(changes: CapturedChange[], parent: string[] = []): Field[] {
       (path.length === 2 && parent[0] === 'pricing' && change.key === 'meters')
 
     if (!wrapper) {
-      return [{ path, change }]
+      return [{ change, path }]
     }
 
     if (change.type !== 'UPDATE' || change.changes === undefined) {

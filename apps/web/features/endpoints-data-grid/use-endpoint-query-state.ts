@@ -12,8 +12,8 @@ export function useEndpointQueryState() {
   }
 
   return {
-    query,
     hasQuery: hasEndpointGridQuery(query),
+    query,
     setQuery,
   }
 }

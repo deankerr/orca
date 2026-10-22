@@ -24,7 +24,7 @@ export function useEndpointFacetState() {
   const activeModalityCount = countActiveModalityFilters(params.has, params.not)
 
   const setFilter = (key: AttributeKey, value: FilterMode) => {
-    void setParams(applyFilterMode({ has: params.has, not: params.not, key, mode: value }))
+    void setParams(applyFilterMode({ has: params.has, key, mode: value, not: params.not }))
   }
 
   const clearAttributeFilters = () => {
@@ -42,15 +42,15 @@ export function useEndpointFacetState() {
   }
 
   return {
-    facetFilters: toFacetFilters(params.has, params.not),
-    attributeFilters: toAttributeFilters(params.has, params.not),
-    modalityFilters: toModalityFilters(params.has, params.not),
     activeAttributeCount,
     activeModalityCount,
-    hasActiveFacets: activeAttributeCount > 0 || activeModalityCount > 0,
-    setAttributeFilter: setFilter,
-    setModalityFilter: setFilter,
+    attributeFilters: toAttributeFilters(params.has, params.not),
     clearAttributeFilters,
     clearModalityFilters,
+    facetFilters: toFacetFilters(params.has, params.not),
+    hasActiveFacets: activeAttributeCount > 0 || activeModalityCount > 0,
+    modalityFilters: toModalityFilters(params.has, params.not),
+    setAttributeFilter: setFilter,
+    setModalityFilter: setFilter,
   }
 }

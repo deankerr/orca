@@ -16,8 +16,8 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
   const discovery = spyOn(scans, 'latest').mockResolvedValue(scanAt)
 
   const build = spyOn(snapshot, 'buildSnapshot').mockResolvedValue({
-    updated_at: scanAt,
     models: [],
+    updated_at: scanAt,
   })
 
   const logs = spyOn(console, 'log').mockImplementation(() => {})
@@ -25,11 +25,11 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
   const replacements: unknown[] = []
 
   const ctx = {
-    runQuery: async () => ({ scan_at: cachedScanAt, scan_id: 'ignored' }),
     runMutation: async (_ref: unknown, args: unknown) => {
       replacements.push(args)
       return null
     },
+    runQuery: async () => ({ scan_at: cachedScanAt, scan_id: 'ignored' }),
     storage: { store: async () => 'new-blob' },
   } as unknown as ActionCtx
 
@@ -80,25 +80,25 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
   const newBlob = 'new-blob' as Id<'_storage'>
 
   let existing: Doc<typeof PUBLIC_API_V2_CACHE_TABLE> | null = {
-    _id: 'cache-row' as Id<typeof PUBLIC_API_V2_CACHE_TABLE>,
     _creationTime: 0,
+    _id: 'cache-row' as Id<typeof PUBLIC_API_V2_CACHE_TABLE>,
     content_type: 'application/json',
-    storage_id: oldBlob,
-    size: 1,
     scan_id: 'scan.2099-01-01T00:00:00.000Z.jsonl',
+    size: 1,
+    storage_id: oldBlob,
   }
 
   let writes = 0
 
   const ctx = {
     db: {
-      query: () => ({ order: () => ({ first: async () => existing }) }),
       delete: async () => {
         writes += 1
       },
       insert: async () => {
         writes += 1
       },
+      query: () => ({ order: () => ({ first: async () => existing }) }),
     },
   } as unknown as MutationCtx
 
@@ -106,9 +106,9 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
 
   const args = {
     content_type: 'application/json',
-    storage_id: newBlob,
-    size: 2,
     scan_at: '2026-10-02T10:40:04.272Z',
+    size: 2,
+    storage_id: newBlob,
   }
 
   for (const scanAt of [undefined, '2026-10-01T10:40:04.272Z']) {

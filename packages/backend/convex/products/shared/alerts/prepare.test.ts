@@ -15,13 +15,13 @@ import { curate } from './curate'
 import { prepare as prepareAlert } from './prepare'
 
 const context = {
-  model: { model_id: 'author/model', display_name: 'Model' },
-  provider: { provider_id: 'provider', display_name: 'Provider' },
   endpoint: {
     endpoint_id: 'endpoint',
-    provider_tag: 'provider/fp8',
     provider_display_name: 'Regional offering',
+    provider_tag: 'provider/fp8',
   },
+  model: { display_name: 'Model', model_id: 'author/model' },
+  provider: { display_name: 'Provider', provider_id: 'provider' },
 }
 
 function update(
@@ -36,22 +36,22 @@ function update(
   }
 
   return {
-    scan_at: '2026-09-29T01:00:00.000Z',
-    entity_kind: 'endpoint',
-    entity_id: id,
-    type: 'UPDATE',
-    context: { ...context, endpoint: { ...context.endpoint, endpoint_id: id } },
     change_json: JSON.stringify(change),
+    context: { ...context, endpoint: { ...context.endpoint, endpoint_id: id } },
+    entity_id: id,
+    entity_kind: 'endpoint',
+    scan_at: '2026-09-29T01:00:00.000Z',
+    type: 'UPDATE',
   }
 }
 
 test('scheduled pricing suppresses unchanged overrides regardless of the price or discount movement', async () => {
-  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
-  const overrides = [{ utc_days: ['saturday', 'sunday'], prompt: '0.000001' }]
+  const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
+  const overrides = [{ prompt: '0.000001', utc_days: ['saturday', 'sunday'] }]
   const before = { discount: 0, meters: { prompt: '0.000001' }, overrides }
   const after = { discount: 0.5, meters: { prompt: '0.0001' }, overrides }
   const row = update({ pricing: before }, { pricing: after })
-  row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+  row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
   const captured = row.change_json
 
   expect(curate(row)).not.toBeNull()
@@ -74,9 +74,9 @@ test('scheduled pricing suppresses unchanged overrides regardless of the price o
 })
 
 test('schedule changes announce an opaque change, including introduction and removal without meter movement', async () => {
-  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
-  const schedule = [{ utc_days: ['saturday'], prompt: '0.000001' }]
-  const changed = [{ utc_days: ['sunday'], prompt: '0.000001', extension: { future: true } }]
+  const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
+  const schedule = [{ prompt: '0.000001', utc_days: ['saturday'] }]
+  const changed = [{ extension: { future: true }, prompt: '0.000001', utc_days: ['sunday'] }]
   const base = { discount: 0, meters: { prompt: '0.000001' } }
 
   for (const [before, after] of [
@@ -91,17 +91,19 @@ test('schedule changes announce an opaque change, including introduction and rem
       { ...base, discount: 0.01, meters: { prompt: '0.000001001' }, overrides: changed },
     ],
   ]) {
+    // oxlint-disable sort-keys -- Fixture key order sets the order of the compared change list asserted below.
     const row = update(
       { pricing: before, metadata: { context_length: 100 } },
       { pricing: after, metadata: { context_length: 200 } },
     )
-    row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+    // oxlint-enable sort-keys
+    row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
     const captured = row.change_json
 
     expect(prepareAlert(row)).toMatchObject({
       changes: [
-        { type: 'field_changed', path: 'pricing.overrides' },
-        { type: 'field_updated', path: 'context_length', before: 100, after: 200 },
+        { path: 'pricing.overrides', type: 'field_changed' },
+        { after: 200, before: 100, path: 'context_length', type: 'field_updated' },
       ],
     })
     expect(render(row)?.details).toEqual([
@@ -122,9 +124,9 @@ test('schedule changes announce an opaque change, including introduction and rem
 
 test('schedule detection accepts open UTC conditions and keeps unknown context distinct from no schedule', () => {
   const cases: [Record<string, JsonValue>[], boolean][] = [
-    [[{ utc_start: 0, utc_end: 1400 }], true],
+    [[{ utc_end: 1400, utc_start: 0 }], true],
     [[{ utc_days: ['saturday'] }], true],
-    [[{ utc_future_condition: { arbitrary: true }, $extension: { 原名: '例' } }], true],
+    [[{ $extension: { 原名: '例' }, utc_future_condition: { arbitrary: true } }], true],
     [[{ utcExtension: null }], true],
     [[{ min_prompt_tokens: 200_000 }], false],
     [[], false],
@@ -134,7 +136,7 @@ test('schedule detection accepts open UTC conditions and keeps unknown context d
     const before = { discount: 0, meters: { prompt: '1' }, overrides }
     const after = { ...before, meters: { prompt: '2' } }
     const row = update({ pricing: before }, { pricing: after })
-    row.context.pricing = { before: encodePricing(before), after: encodePricing(after) }
+    row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
 
     expect(curate(row)).toMatchObject({ pricing_is_scheduled: scheduled })
     expect(prepareAlert(row) === null).toBe(scheduled)
@@ -151,7 +153,7 @@ test('schedule detection accepts open UTC conditions and keeps unknown context d
 })
 
 test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', async () => {
-  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+  const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
   for (const [before, after, visible] of [
     [{ prompt: '1' }, { prompt: '1.01999999999999999999' }, false],
@@ -159,9 +161,9 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     [{ prompt: '1' }, { prompt: '0.98' }, true],
     [{ prompt: '1e-400' }, { prompt: '1.019e-400' }, false],
     [{ prompt: '1e-400' }, { prompt: '1.02e-400' }, true],
-    [{ prompt: '1', completion: '1' }, { prompt: '1.001', completion: '1.5' }, true],
-    [{ prompt: '1', completion: '1' }, { prompt: '1.001', completion: 'invalid' }, false],
-    [{ prompt: '1', completion: '1' }, { prompt: '1.5', completion: 'invalid' }, true],
+    [{ completion: '1', prompt: '1' }, { completion: '1.5', prompt: '1.001' }, true],
+    [{ completion: '1', prompt: '1' }, { completion: 'invalid', prompt: '1.001' }, false],
+    [{ completion: '1', prompt: '1' }, { completion: 'invalid', prompt: '1.5' }, true],
     [{ prompt: '1' }, { prompt: null }, false],
     [{ prompt: 'invalid' }, { prompt: '1' }, false],
     [{ prompt: '1' }, { prompt: '' }, false],
@@ -186,23 +188,23 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
   }
 
   const micro = update(
-    { pricing: { discount: 0.1, meters: { prompt: '1' } }, metadata: { context_length: 100 } },
-    { pricing: { discount: 0.11, meters: { prompt: '1.001' } }, metadata: { context_length: 200 } },
+    { metadata: { context_length: 100 }, pricing: { discount: 0.1, meters: { prompt: '1' } } },
+    { metadata: { context_length: 200 }, pricing: { discount: 0.11, meters: { prompt: '1.001' } } },
   )
   expect(render(micro)).toBeNull()
   expect(await renderDiscord(micro, urls)).toBeNull()
   const captured = curate(micro)
 
   expect(captured?.type === 'endpoint_updated' ? captured.changes : []).toContainEqual({
-    type: 'field_updated',
-    path: 'context_length',
-    before: 100,
     after: 200,
+    before: 100,
+    path: 'context_length',
+    type: 'field_updated',
   })
-  expect(renderPage({ page: [micro], isDone: false, continueCursor: 'next' })).toEqual({
-    page: [],
-    isDone: false,
+  expect(renderPage({ continueCursor: 'next', isDone: false, page: [micro] })).toEqual({
     continueCursor: 'next',
+    isDone: false,
+    page: [],
   })
 
   const discountOnly = update({ pricing: { discount: 0 } }, { pricing: { discount: 0.1 } })
@@ -218,7 +220,7 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
 })
 
 test('discount micro-adjustments suppress notifications before the relative price threshold', async () => {
-  const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+  const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
   for (const [before, after, priceBefore, priceAfter, visible] of [
     [0.82, 0.828, '0.238', '0.227', false],
@@ -246,30 +248,30 @@ test('discount micro-adjustments suppress notifications before the relative pric
 test('curated updates retain precise values, presence, nulls, and membership while selecting native fields', () => {
   const row = update(
     {
-      pricing: { discount: 0, meters: { prompt: '0.0000001', completion: '0.000002' } },
       metadata: {
-        quantization: 'fp8',
+        capacity_tpm: 10,
         context_length: 128_000,
+        quantization: 'fp8',
         supported_parameters: ['tools', 'temperature'],
         supports_reasoning: true,
-        capacity_tpm: 10,
       },
+      pricing: { discount: 0, meters: { completion: '0.000002', prompt: '0.0000001' } },
     },
     {
-      pricing: { discount: 0, meters: { prompt: '0.0000001001', input_cache_read: '0' } },
       metadata: {
-        quantization: null,
+        capacity_tpm: 20,
         context_length: 256_000,
         limit_rpm: null,
+        pricing_version_id: 'revision',
+        quantization: null,
         supported_parameters: ['tools', 'response_format'],
         supports_reasoning: false,
-        capacity_tpm: 20,
-        pricing_version_id: 'revision',
       },
+      pricing: { discount: 0, meters: { input_cache_read: '0', prompt: '0.0000001001' } },
     },
   )
 
-  const stored = { ...row, _id: 'internal-id', _creationTime: 123 }
+  const stored = { ...row, _creationTime: 123, _id: 'internal-id' }
   const event = render(stored)
   expect(event?.type).toBe('endpoint_updated')
 
@@ -285,17 +287,17 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   expect(event).not.toHaveProperty('scan_at')
   expect(event.changes).toHaveLength(7)
   for (const expected of [
-    { type: 'field_updated', path: 'pricing.prompt', before: '0.0000001', after: '0.0000001001' },
-    { type: 'field_removed', path: 'pricing.completion', before: '0.000002' },
-    { type: 'field_added', path: 'pricing.input_cache_read', after: '0' },
-    { type: 'field_updated', path: 'quantization', before: 'fp8', after: null },
-    { type: 'field_updated', path: 'context_length', before: 128_000, after: 256_000 },
-    { type: 'field_added', path: 'limit_rpm', after: null },
+    { after: '0.0000001001', before: '0.0000001', path: 'pricing.prompt', type: 'field_updated' },
+    { before: '0.000002', path: 'pricing.completion', type: 'field_removed' },
+    { after: '0', path: 'pricing.input_cache_read', type: 'field_added' },
+    { after: null, before: 'fp8', path: 'quantization', type: 'field_updated' },
+    { after: 256_000, before: 128_000, path: 'context_length', type: 'field_updated' },
+    { after: null, path: 'limit_rpm', type: 'field_added' },
     {
-      type: 'set_updated',
-      path: 'supported_parameters',
       added: ['response_format'],
+      path: 'supported_parameters',
       removed: ['temperature'],
+      type: 'set_updated',
     },
   ] satisfies Extract<FeedEvent, { changes: unknown }>['changes']) {
     expect(event.changes).toContainEqual(expected)
@@ -311,16 +313,16 @@ test('curated updates retain precise values, presence, nulls, and membership whi
 
 test('nested fields are curated on addition/removal and empty pages retain native pagination metadata', () => {
   const added = render(
-    update({ metadata: {} }, { metadata: { data_policy: { training: false, hidden: true } } }),
+    update({ metadata: {} }, { metadata: { data_policy: { hidden: true, training: false } } }),
   )
 
-  expect(added).toMatchObject({ changes: [{ path: 'data_policy', after: { training: false } }] })
+  expect(added).toMatchObject({ changes: [{ after: { training: false }, path: 'data_policy' }] })
 
   const removed = render(
-    update({ metadata: { data_policy: { training: false, hidden: true } } }, { metadata: {} }),
+    update({ metadata: { data_policy: { hidden: true, training: false } } }, { metadata: {} }),
   )
 
-  expect(removed).toMatchObject({ changes: [{ path: 'data_policy', before: { training: false } }] })
+  expect(removed).toMatchObject({ changes: [{ before: { training: false }, path: 'data_policy' }] })
 
   expect(
     render(
@@ -329,7 +331,7 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
         { metadata: { data_policy: { training: null } } },
       ),
     ),
-  ).toMatchObject({ changes: [{ path: 'data_policy.training', before: false, after: null }] })
+  ).toMatchObject({ changes: [{ after: null, before: false, path: 'data_policy.training' }] })
 
   const ignored = update(
     { metadata: { capacity_tpm: 10, data_policy: { hidden: false } } },
@@ -338,22 +340,23 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
 
   expect(
     renderPage({
-      page: [ignored],
-      isDone: false,
       continueCursor: 'next',
-      splitCursor: 'split',
+      isDone: false,
+      page: [ignored],
       pageStatus: 'SplitRequired',
+      splitCursor: 'split',
     }),
   ).toEqual({
-    page: [],
-    isDone: false,
     continueCursor: 'next',
-    splitCursor: 'split',
+    isDone: false,
+    page: [],
     pageStatus: 'SplitRequired',
+    splitCursor: 'split',
   })
 })
 
 test('text preserves tiny prices and literal upstream content; malformed events fail visibly', () => {
+  // oxlint-disable sort-keys -- Fixture key order sets the order of the detail lines asserted below.
   const row = update(
     {
       pricing: { meters: { prompt: '0.00000001' } },
@@ -364,6 +367,7 @@ test('text preserves tiny prices and literal upstream content; malformed events 
       metadata: { provider_display_name: 'new_`name`' },
     },
   )
+  // oxlint-enable sort-keys
 
   expect(render(row)?.details).toEqual([
     'Input price changed from $0.01 to $0.000000000000001.',
@@ -379,24 +383,24 @@ test('invalid event envelopes and incomplete selected changes cannot disappear d
   for (const payload of [
     { key: 'endpoint', type: 'REMOVE', value: {} },
     { key: 'endpoint', type: 'UPDATE' },
-    { key: 'endpoint', type: 'UPDATE', changes: [{ key: 'metadata', type: 'UPDATE' }] },
+    { changes: [{ key: 'metadata', type: 'UPDATE' }], key: 'endpoint', type: 'UPDATE' },
     {
-      key: 'endpoint',
-      type: 'UPDATE',
       changes: [
         {
-          key: 'metadata',
-          type: 'UPDATE',
           changes: [
             {
+              changes: [{ key: 'tools', oldValue: 'tools', type: 'UPDATE', value: 'other' }],
+              embeddedKey: '$value',
               key: 'supported_parameters',
               type: 'UPDATE',
-              embeddedKey: '$value',
-              changes: [{ key: 'tools', type: 'UPDATE', oldValue: 'tools', value: 'other' }],
             },
           ],
+          key: 'metadata',
+          type: 'UPDATE',
         },
       ],
+      key: 'endpoint',
+      type: 'UPDATE',
     },
   ]) {
     expect(() => curate({ ...row, change_json: JSON.stringify(payload) })).toThrow()
@@ -406,23 +410,23 @@ test('invalid event envelopes and incomplete selected changes cannot disappear d
 test('the stored row supplies root identity and operation without reconciling duplicate payload fields', () => {
   const row = update({ metadata: { context_length: 100 } }, { metadata: { context_length: 200 } })
   const payload = {
-    key: 'unused-copy',
-    type: 'unused-copy',
     changes: [
       {
+        changes: [{ key: 'context_length', oldValue: 100, type: 'UPDATE', value: 200 }],
         key: 'metadata',
         type: 'UPDATE',
-        changes: [{ key: 'context_length', type: 'UPDATE', oldValue: 100, value: 200 }],
       },
     ],
+    key: 'unused-copy',
+    type: 'unused-copy',
   }
 
   expect(curate({ ...row, change_json: JSON.stringify(payload) })).toEqual(curate(row))
 })
 
 test('failed events are logged and omitted before batching; healthy events keep their residual changes', async () => {
-  const before = { metadata: { supported_parameters: ['tools', 'audio'], context_length: 100 } }
-  const after = { metadata: { supported_parameters: ['tools'], context_length: 100 } }
+  const before = { metadata: { context_length: 100, supported_parameters: ['tools', 'audio'] } }
+  const after = { metadata: { context_length: 100, supported_parameters: ['tools'] } }
   const good = Array.from({ length: 5 }, (_, index) => ({
     ...update(
       before,
@@ -434,7 +438,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
   const unsupported = {
     ...update(
       before,
-      { metadata: { supported_parameters: [{ name: 'tools' }], context_length: 300 } },
+      { metadata: { context_length: 300, supported_parameters: [{ name: 'tools' }] } },
       'bad-endpoint',
     ),
     _id: 'unsupported-event',
@@ -446,9 +450,9 @@ test('failed events are logged and omitted before batching; healthy events keep 
     change_json: JSON.stringify({
       changes: [
         {
+          changes: [{ key: 'context_length', oldValue: 100, type: 'UPDATE' }],
           key: 'metadata',
           type: 'UPDATE',
-          changes: [{ key: 'context_length', type: 'UPDATE', oldValue: 100 }],
         },
       ],
     }),
@@ -464,8 +468,8 @@ test('failed events are logged and omitted before batching; healthy events keep 
     expect(result.skipped).toBe(3)
     expect(result.alerts.map((alert) => alert.type)).toEqual(['batch', 'event'])
     expect(result.alerts[0]).toMatchObject({
-      type: 'batch',
       change: { path: 'supported_parameters' },
+      type: 'batch',
     })
     expect(
       result.alerts[0]?.type === 'batch'
@@ -473,8 +477,8 @@ test('failed events are logged and omitted before batching; healthy events keep 
         : [],
     ).toEqual(good.map((row) => row._id))
     expect(result.alerts[1]).toMatchObject({
+      event: { changes: [{ after: 200, path: 'context_length' }] },
       source_id: 'event-0',
-      event: { changes: [{ path: 'context_length', after: 200 }] },
     })
     expect(JSON.stringify(input)).toBe(original)
     expect(log).toHaveBeenCalledTimes(3)
@@ -483,9 +487,9 @@ test('failed events are logged and omitted before batching; healthy events keep 
         index + 1,
         '[alerts] could not prepare event',
         expect.objectContaining({
-          source_id: row._id,
           entity_id: row.entity_id,
           scan_at: row.scan_at,
+          source_id: row._id,
         }),
       )
     }
@@ -500,11 +504,11 @@ test('failed events are logged and omitted before batching; healthy events keep 
     expect(prepareAlert(unsupported)).toBeNull()
     expect(prepareAlert(unsupported)).toBeNull()
     const page = {
-      page: input,
-      isDone: false,
       continueCursor: 'next',
-      splitCursor: 'split',
+      isDone: false,
+      page: input,
       pageStatus: 'SplitRequired' as const,
+      splitCursor: 'split',
     }
     expect(renderPage(page)).toEqual({
       ...page,
@@ -518,11 +522,11 @@ test('failed events are logged and omitted before batching; healthy events keep 
 test('unselected external objects and indexed arrays remain valid captured data', () => {
   const row = update(
     { metadata: { context_length: 100, new_field: [{ nested: [1, 2] }] } },
-    { metadata: { context_length: 200, new_field: [{ nested: [3], extra: { value: true } }] } },
+    { metadata: { context_length: 200, new_field: [{ extra: { value: true }, nested: [3] }] } },
   )
   const alert = curate(row)
 
-  expect(alert).toMatchObject({ changes: [{ path: 'context_length', before: 100, after: 200 }] })
+  expect(alert).toMatchObject({ changes: [{ after: 200, before: 100, path: 'context_length' }] })
   expect(alert?.type === 'endpoint_updated' ? alert.changes : []).toHaveLength(1)
 })
 
@@ -540,7 +544,7 @@ async function renderDiscord(row: EventRow, urls: DiscordUrls) {
 
 async function prepareBatch(rows: (EventRow & { _id: string })[]) {
   return await prepareDiscordBatch(
-    rows.map((row) => ({ source_id: row._id, event: prepareAlert(row) })),
+    rows.map((row) => ({ event: prepareAlert(row), source_id: row._id })),
     async (candidates) => candidates.map(() => false),
   )
 }

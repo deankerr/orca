@@ -37,10 +37,10 @@ async function seed(t: Harness) {
     await writeRecords(ctx, async (records) => {
       for (let index = 1; index <= 40; index += 1) {
         await records.insert({
-          kind: 'pair',
-          from_scan_at: hour(index - 1),
-          scan_at: hour(index),
           alerts: false,
+          from_scan_at: hour(index - 1),
+          kind: 'pair',
+          scan_at: hour(index),
           state: STATES[index % STATES.length] ?? 'complete',
         })
       }
@@ -59,7 +59,7 @@ test('every operation requires the configured administrator', async () => {
   await rejects(other.mutation(api.ingestion.admin.runSync, {}), /Administrator access required/u)
   await rejects(other.mutation(api.ingestion.admin.retry, {}), /Administrator access required/u)
   await rejects(
-    t.mutation(api.ingestion.admin.saveTarget, { start_at: hour(0), end_at: hour(1) }),
+    t.mutation(api.ingestion.admin.saveTarget, { end_at: hour(1), start_at: hour(0) }),
     /Administrator access required/u,
   )
 })
@@ -70,9 +70,9 @@ test('histogram buckets count each state exactly, including the inclusive range 
   const admin = t.withIdentity({ subject: ADMIN })
 
   const { edges, counts } = await admin.query(api.ingestion.admin.histogram, {
-    start_at: hour(0),
-    end_at: hour(40),
     buckets: 8,
+    end_at: hour(40),
+    start_at: hour(0),
   })
 
   expect(edges).toHaveLength(9)
@@ -91,14 +91,14 @@ test('histogram buckets count each state exactly, including the inclusive range 
   expect(totals['pair/failed']).toBe(8)
 
   await rejects(
-    admin.query(api.ingestion.admin.histogram, { start_at: hour(1), end_at: hour(0), buckets: 4 }),
+    admin.query(api.ingestion.admin.histogram, { buckets: 4, end_at: hour(0), start_at: hour(1) }),
     /Invalid histogram/u,
   )
   await rejects(
     admin.query(api.ingestion.admin.histogram, {
-      start_at: hour(0),
-      end_at: hour(1),
       buckets: 10_000,
+      end_at: hour(1),
+      start_at: hour(0),
     }),
     /Invalid histogram/u,
   )
@@ -108,7 +108,7 @@ test('records page newest first, filtered by state, from a chosen time', async (
   const t = setup()
   await seed(t)
   const admin = t.withIdentity({ subject: ADMIN })
-  const paginationOpts = { numItems: 3, cursor: null }
+  const paginationOpts = { cursor: null, numItems: 3 }
 
   const all = await admin.query(api.ingestion.admin.records, { paginationOpts })
   expect(all.page.map(({ scan_at }) => scan_at)).toEqual([hour(40), hour(39), hour(38)])
@@ -116,10 +116,10 @@ test('records page newest first, filtered by state, from a chosen time', async (
   await t.run(async (ctx) => {
     await writeRecords(ctx, async (records) => {
       await records.insert({
-        kind: 'baseline',
-        from_scan_at: null,
-        scan_at: hour(14),
         alerts: false,
+        from_scan_at: null,
+        kind: 'baseline',
+        scan_at: hour(14),
         state: 'failed',
       })
     })
@@ -127,9 +127,9 @@ test('records page newest first, filtered by state, from a chosen time', async (
 
   // A state filter includes baselines in scan order.
   const failed = await admin.query(api.ingestion.admin.records, {
-    state: 'failed',
     before: hour(20),
     paginationOpts,
+    state: 'failed',
   })
   expect(failed.page.map(({ kind, scan_at }) => [kind, scan_at])).toEqual([
     ['pair', hour(17)],
@@ -138,9 +138,9 @@ test('records page newest first, filtered by state, from a chosen time', async (
   ])
 
   const next = await admin.query(api.ingestion.admin.records, {
-    state: 'failed',
     before: hour(20),
-    paginationOpts: { numItems: 3, cursor: failed.continueCursor },
+    paginationOpts: { cursor: failed.continueCursor, numItems: 3 },
+    state: 'failed',
   })
   expect(next.page.map(({ scan_at }) => scan_at)).toEqual([hour(7), hour(2)])
 })

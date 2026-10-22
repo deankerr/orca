@@ -11,21 +11,21 @@ import { cn, withEnvironmentPrefix } from '@/lib/utils'
 import { ConvexClientProvider } from './convex-client-provider'
 
 const geistSans = Geist({
-  variable: '--font-sans',
   subsets: ['latin'],
+  variable: '--font-sans',
 })
 
 const geistMono = Geist_Mono({
-  variable: '--font-mono',
   subsets: ['latin'],
+  variable: '--font-mono',
 })
 
 export const metadata: Metadata = {
-  title: {
-    template: withEnvironmentPrefix('ORCA ⋅ %s'),
-    default: withEnvironmentPrefix('ORCA'),
-  },
   description: 'Compare models and providers available on OpenRouter',
+  title: {
+    default: withEnvironmentPrefix('ORCA'),
+    template: withEnvironmentPrefix('ORCA ⋅ %s'),
+  },
 }
 
 export default function RootLayout({

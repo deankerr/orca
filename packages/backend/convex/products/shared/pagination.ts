@@ -29,5 +29,5 @@ export function pageResult<T extends Validator<Value, 'required', string>>(item:
 
 /** Empty result for a timeline without a released observation. */
 export function emptyPage() {
-  return { page: [], isDone: true, continueCursor: '', as_of: null }
+  return { as_of: null, continueCursor: '', isDone: true, page: [] }
 }

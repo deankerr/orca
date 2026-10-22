@@ -4,9 +4,9 @@ import { TopAppsTargets } from './topApps'
 
 test('top-app targets preserve canonical slugs and variants across modalities, excluding latest aliases', () => {
   const model = (id: string, output: string) => ({
-    id,
-    canonical_slug: 'author/model-version',
     architecture: { output_modalities: [output] },
+    canonical_slug: 'author/model-version',
+    id,
   })
 
   expect(
@@ -22,8 +22,8 @@ test('top-app targets preserve canonical slugs and variants across modalities, e
   ).toEqual(
     ['standard', 'free', 'batch', 'future'].map((variant) => ({
       slug: variant === 'standard' ? 'author/model' : `author/model:${variant}`,
-      version_slug: 'author/model-version',
       variant,
+      version_slug: 'author/model-version',
     })),
   )
 
@@ -32,6 +32,6 @@ test('top-app targets preserve canonical slugs and variants across modalities, e
   }
 
   expect(
-    TopAppsTargets.safeParse({ data: [{ id: 'author/model', canonical_slug: '' }] }).success,
+    TopAppsTargets.safeParse({ data: [{ canonical_slug: '', id: 'author/model' }] }).success,
   ).toBe(false)
 })

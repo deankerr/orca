@@ -11,8 +11,8 @@ import { PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable } from './table'
 
 export const get = internalQuery({
   args: {},
-  returns: v.union(v.null(), docValidator(PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable)),
   handler: async (ctx) => await ctx.db.query(PUBLIC_API_V2_CACHE_TABLE).order('desc').first(),
+  returns: v.union(v.null(), docValidator(PUBLIC_API_V2_CACHE_TABLE, publicApiV2CacheTable)),
 })
 
 /**
@@ -24,7 +24,6 @@ export const replaceIfNewer = internalMutation({
     ...publicApiV2CacheTable.validator.omit('scan_id').fields,
     scan_at: v.string(),
   },
-  returns: v.union(v.null(), v.id('_storage')),
   handler: async (ctx, args) => {
     const existing = await ctx.db.query(PUBLIC_API_V2_CACHE_TABLE).order('desc').first()
     const existingScanAt = existing?.scan_at
@@ -42,12 +41,12 @@ export const replaceIfNewer = internalMutation({
     // The caller deletes only the unused blob, after this transaction commits.
     return existing?.storage_id ?? null
   },
+  returns: v.union(v.null(), v.id('_storage')),
 })
 
 /** A legacy cache without a capture time triggers a fresh build. */
 export const refresh = internalAction({
   args: {},
-  returns: v.null(),
   handler: async (ctx): Promise<null> => {
     const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
     const cachedScanAt = cached?.scan_at ?? null
@@ -63,10 +62,10 @@ export const refresh = internalAction({
     const storage_id = await ctx.storage.store(new Blob([new Uint8Array(compressed)]))
 
     const unusedStorageId = await ctx.runMutation(internal.public_api.v2.cache.replaceIfNewer, {
-      scan_at: scanAt,
       content_type: 'application/json',
-      storage_id,
+      scan_at: scanAt,
       size: compressed.byteLength,
+      storage_id,
     })
 
     if (unusedStorageId !== null) {
@@ -74,17 +73,18 @@ export const refresh = internalAction({
         await ctx.storage.delete(unusedStorageId)
       } catch (error) {
         console.error('[public_api:v2:refresh] failed to delete unused blob', {
-          storage_id: unusedStorageId,
           error: String(error),
+          storage_id: unusedStorageId,
         })
       }
     }
 
     console.log('[public_api:v2:refresh]', {
+      raw: encoded.byteLength,
       scan_at: scanAt,
       size: compressed.byteLength,
-      raw: encoded.byteLength,
     })
     return null
   },
+  returns: v.null(),
 })

@@ -119,7 +119,7 @@ function histogramRange(
   }
 
   const latest = pairs.latest !== null && pairs.latest > start_at ? pairs.latest : start_at
-  return { start_at, end_at: target !== null && target.end_at < latest ? target.end_at : latest }
+  return { end_at: target !== null && target.end_at < latest ? target.end_at : latest, start_at }
 }
 
 function SourceScansFact({

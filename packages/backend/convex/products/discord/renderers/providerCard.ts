@@ -8,8 +8,8 @@ type ProviderAlert = Extract<EntityAlert, { entity_kind: 'provider' }>
 
 const arrivals = {
   discovered: 'discovered',
-  relisted: 'has listed endpoints again',
   listed: 'now has listed endpoints',
+  relisted: 'has listed endpoints again',
 }
 
 /** Providers are discovered once; endpoint presence can disappear and return repeatedly. */
@@ -18,12 +18,12 @@ export function providerCard(event: ProviderAlert, urls: DiscordUrls): Card {
 
   return embedCard(lifecycleMarker(event) + providerContent(event), {
     author: {
+      iconURL: logoUrl(provider.provider_id, urls),
       name: provider.provider_id,
       url: gridUrl(provider.provider_id, urls),
-      iconURL: logoUrl(provider.provider_id, urls),
     },
-    timestamp: event.observed_at,
     color: lifecycleColor(event),
+    timestamp: event.observed_at,
   })
 }
 

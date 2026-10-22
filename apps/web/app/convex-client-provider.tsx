@@ -31,9 +31,9 @@ const convexQueryClient = new ConvexQueryClient(convex)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryKeyHashFn: convexQueryClient.hashFn(),
-      queryFn: convexQueryClient.queryFn(),
       gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      queryFn: convexQueryClient.queryFn(),
+      queryKeyHashFn: convexQueryClient.hashFn(),
     },
   },
 })
@@ -74,8 +74,8 @@ convexQueryClient.connect(queryClient)
 const browserStorage = typeof window === 'undefined' ? undefined : window.localStorage
 
 const asyncStoragePersister = createAsyncStoragePersister({
-  storage: browserStorage,
   key: 'ORCA_QUERY_CACHE',
+  storage: browserStorage,
 })
 
 const persister = {
@@ -103,9 +103,9 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{
-            persister,
             // Discard queries from older builds before hydration starts Convex subscriptions.
             buster: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development',
+            persister,
           }}
         >
           {children}

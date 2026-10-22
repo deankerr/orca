@@ -6,12 +6,12 @@ import type { Infer } from 'convex/values'
 export const OBJECTS_LOCATORS_TABLE = 'objects_locators' as const
 
 const locatorBase = {
-  /** Grouping prefix. Opaque; an object-storage backend uses this as the key prefix. */
-  path: v.string(),
-  /** Object name within `path`. Opaque; not parsed. */
-  name: v.string(),
   /** How the blob is encoded. Load switches on this. */
   codec: v.literal('gzip'),
+  /** Object name within `path`. Opaque; not parsed. */
+  name: v.string(),
+  /** Grouping prefix. Opaque; an object-storage backend uses this as the key prefix. */
+  path: v.string(),
   /** Uncompressed UTF-8 byte length. */
   size: v.number(),
 }

@@ -67,9 +67,9 @@ function DataGridProvider<TData extends object>({
   ...props
 }: DataGridProps<TData>) {
   const contextValue = {
+    isLoading: props.isLoading ?? false,
     props,
     table,
-    isLoading: props.isLoading ?? false,
   }
 
   // oxlint-disable-next-line react/jsx-no-constructed-context-values -- rest props intentionally define context identity
@@ -79,40 +79,40 @@ function DataGridProvider<TData extends object>({
 function DataGrid<TData extends object>({ children, table, ...props }: DataGridProps<TData>) {
   'use no memo'
   const defaultProps: Partial<DataGridProviderProps<TData>> = {
-    tableLayout: {
-      cellBorder: false,
-      rowBorder: true,
-      headerSticky: false,
-      headerBorder: true,
-      width: 'fixed',
-      columnsResizable: false,
-      columnsPinnable: false,
-      rowHeight: 58.5,
-      overscan: 5,
-    },
     tableClassNames: {
       base: '',
-      header: '',
-      headerRow: '',
-      headerCell: 'px-4',
-      headerSticky: 'sticky top-0 z-10 bg-background',
       body: '',
-      bodyRow: '',
       bodyCell: 'px-4 py-3',
+      bodyRow: '',
       edgeCell: '',
+      header: '',
+      headerCell: 'px-4',
+      headerRow: '',
+      headerSticky: 'sticky top-0 z-10 bg-background',
+    },
+    tableLayout: {
+      cellBorder: false,
+      columnsPinnable: false,
+      columnsResizable: false,
+      headerBorder: true,
+      headerSticky: false,
+      overscan: 5,
+      rowBorder: true,
+      rowHeight: 58.5,
+      width: 'fixed',
     },
   }
 
   const mergedProps: DataGridProviderProps<TData> = {
     ...defaultProps,
     ...props,
-    tableLayout: {
-      ...defaultProps.tableLayout,
-      ...props.tableLayout,
-    },
     tableClassNames: {
       ...defaultProps.tableClassNames,
       ...props.tableClassNames,
+    },
+    tableLayout: {
+      ...defaultProps.tableLayout,
+      ...props.tableLayout,
     },
   }
 

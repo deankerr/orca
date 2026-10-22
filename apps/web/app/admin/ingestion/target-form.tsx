@@ -59,7 +59,7 @@ export function TargetForm({ target }: { target: Target }) {
           onClick={() => {
             void attempt(
               'Save target',
-              async () => await saveTarget({ start_at: start.trim(), end_at: end.trim() }),
+              async () => await saveTarget({ end_at: end.trim(), start_at: start.trim() }),
             )
           }}
         >

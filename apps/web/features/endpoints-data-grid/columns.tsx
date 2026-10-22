@@ -28,9 +28,7 @@ function EmptyCell() {
 
 export const columns: ColumnDef<GridEndpoint>[] = [
   {
-    id: 'model',
     accessorFn: (row) => `${row.model_display_name} ${row.model_id}`,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -45,17 +43,17 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         </EntityOverviewTrigger>
       )
     },
-    size: 230,
     enableHiding: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="MODEL" />,
+    id: 'model',
     meta: {
       cellClassName: 'px-1.5',
     },
+    size: 230,
   },
 
   {
-    id: 'provider',
     accessorFn: (row) => `${row.provider_display_name} ${row.provider_id}`,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="PROVIDER" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -70,19 +68,17 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         </EntityOverviewTrigger>
       )
     },
-    size: 180,
     enableHiding: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="PROVIDER" />,
+    id: 'provider',
     meta: {
       cellClassName: 'px-1.5',
     },
+    size: 180,
   },
 
   {
-    id: 'inputPrice',
     accessorFn: (row) => row.pricing.text_input,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="INPUT" subtitle="$/MTOK" />
-    ),
     cell: ({ getValue }) => {
       const inputPrice = getValue<number | undefined>()
       if (inputPrice !== undefined) {
@@ -90,19 +86,19 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 110,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="INPUT" subtitle="$/MTOK" />
+    ),
+    id: 'inputPrice',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 110,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'outputPrice',
     accessorFn: (row) => row.pricing.text_output,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="OUTPUT" subtitle="$/MTOK" />
-    ),
     cell: ({ getValue }) => {
       const outputPrice = getValue<number | undefined>()
       if (outputPrice !== undefined) {
@@ -110,19 +106,19 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 110,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="OUTPUT" subtitle="$/MTOK" />
+    ),
+    id: 'outputPrice',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 110,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'cacheReadPrice',
     accessorFn: (row) => row.pricing.cache_read,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="CACHE READ" subtitle="$/MTOK" />
-    ),
     cell: ({ getValue }) => {
       const cacheReadPrice = getValue<number | undefined>()
       if (cacheReadPrice !== undefined) {
@@ -130,19 +126,19 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 120,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="CACHE READ" subtitle="$/MTOK" />
+    ),
+    id: 'cacheReadPrice',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 120,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'cacheWritePrice',
     accessorFn: (row) => row.pricing.cache_write,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="CACHE WRITE" subtitle="$/MTOK" />
-    ),
     cell: ({ getValue }) => {
       const cacheWritePrice = getValue<number | undefined>()
       if (cacheWritePrice !== undefined) {
@@ -150,16 +146,18 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 120,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="CACHE WRITE" subtitle="$/MTOK" />
+    ),
+    id: 'cacheWritePrice',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 120,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'modalities',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="MODALITIES" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -170,13 +168,13 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         />
       )
     },
-    size: 155,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="MODALITIES" />,
+    id: 'modalities',
+    size: 155,
   },
 
   {
-    id: 'features',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="FEATURES" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -188,67 +186,67 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         />
       )
     },
-    size: 215,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="FEATURES" />,
+    id: 'features',
+    size: 215,
   },
 
   {
-    id: 'contextLength',
     accessorFn: (row) => row.context_length ?? undefined,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
-    ),
     cell: ({ getValue }) => {
       const contextLength = getValue<number | undefined>()
 
       return contextLength?.toLocaleString() ?? <EmptyCell />
     },
-    size: 105,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="CONTEXT" subtitle="TOKENS" />
+    ),
+    id: 'contextLength',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 105,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'maxOutput',
     accessorFn: (row) => row.max_output ?? undefined,
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
-    ),
     cell: ({ getValue }) => {
       const maxOutput = getValue<number | undefined>()
 
       return maxOutput?.toLocaleString() ?? <EmptyCell />
     },
-    size: 105,
-    sortUndefined: 'last',
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="MAX OUT." subtitle="TOKENS" />
+    ),
+    id: 'maxOutput',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 105,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'quantization',
     accessorFn: (row) =>
       row.quantization === 'unknown' ? undefined : (row.quantization ?? undefined),
-    header: ({ column }) => <DataGridColumnHeader column={column} title="QUANT." />,
     cell: ({ getValue }) => (
       <Badge variant="outline" className="font-mono text-xs uppercase">
         {getValue<string | undefined>() ?? '?'}
       </Badge>
     ),
-    size: 90,
-    sortUndefined: 'last',
+    header: ({ column }) => <DataGridColumnHeader column={column} title="QUANT." />,
+    id: 'quantization',
     meta: {
       cellClassName: 'text-center px-2',
     },
+    size: 90,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'throughput',
     accessorFn: (row) => row.stats?.p50_throughput,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />,
     cell: ({ getValue }) => {
       const throughput = getValue<number | undefined>()
       if (throughput !== undefined) {
@@ -258,17 +256,17 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 90,
-    sortUndefined: 'last',
+    header: ({ column }) => <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />,
+    id: 'throughput',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 90,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'latency',
     accessorFn: (row) => row.stats?.p50_latency,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />,
     cell: ({ getValue }) => {
       const latency = getValue<number | undefined>()
       if (latency !== undefined) {
@@ -278,16 +276,16 @@ export const columns: ColumnDef<GridEndpoint>[] = [
       }
       return <EmptyCell />
     },
-    size: 95,
-    sortUndefined: 'last',
+    header: ({ column }) => <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />,
+    id: 'latency',
     meta: {
       cellClassName: 'text-right',
     },
+    size: 95,
+    sortUndefined: 'last',
   },
 
   {
-    id: 'dataPolicy',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="DATA POLICY" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -298,13 +296,13 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         />
       )
     },
-    size: 110,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="DATA POLICY" />,
+    id: 'dataPolicy',
+    size: 110,
   },
 
   {
-    id: 'limits',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="LIMITS" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -315,28 +313,28 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         />
       )
     },
-    size: 95,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="LIMITS" />,
+    id: 'limits',
+    size: 95,
   },
 
   {
-    id: 'modelAddedAt',
     accessorFn: (row) => row.model_or_created_at,
-    sortingFn: 'basic',
+    cell: ({ getValue }) => formatGridDate(getValue<string>()),
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="MODEL" subtitle="AVAIL." />
     ),
-    cell: ({ getValue }) => formatGridDate(getValue<string>()),
-    size: 100,
-    sortUndefined: 'last',
+    id: 'modelAddedAt',
     meta: {
       cellClassName: 'text-center',
     },
+    size: 100,
+    sortUndefined: 'last',
+    sortingFn: 'basic',
   },
 
   {
-    id: 'status',
-    header: ({ column }) => <DataGridColumnHeader column={column} title="STATUS" />,
     cell: ({ row }) => {
       const endpoint = row.original
       return (
@@ -347,17 +345,17 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         />
       )
     },
-    size: 70,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="STATUS" />,
+    id: 'status',
     meta: {
       cellClassName: 'justify-center',
     },
+    size: 70,
   },
 
   {
-    id: 'uuid',
     accessorFn: (row) => row.endpoint_id,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
     cell: ({ row }) => (
       <EndpointUuid
         uuid={row.original.endpoint_id}
@@ -365,10 +363,12 @@ export const columns: ColumnDef<GridEndpoint>[] = [
         handle={dataGridPopoverHandle}
       />
     ),
-    size: 70,
     enableSorting: false,
+    header: ({ column }) => <DataGridColumnHeader column={column} title="UUID" />,
+    id: 'uuid',
     meta: {
       cellClassName: 'text-center px-1',
     },
+    size: 70,
   },
 ]

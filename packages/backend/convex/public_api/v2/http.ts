@@ -55,8 +55,8 @@ export const serveCached = httpAction(async (ctx, req) => {
   if (snapshot === null) {
     console.error('[public_api:v2] missing cache pointer')
     return new Response('Internal server error', {
-      status: 500,
       headers: allowOrigin,
+      status: 500,
     })
   }
 
@@ -65,8 +65,8 @@ export const serveCached = httpAction(async (ctx, req) => {
   if (blob === null) {
     console.error('[public_api:v2] missing cache blob', { storage_id: snapshot.storage_id })
     return new Response('Internal server error', {
-      status: 500,
       headers: allowOrigin,
+      status: 500,
     })
   }
 
@@ -75,23 +75,23 @@ export const serveCached = httpAction(async (ctx, req) => {
 
   if (shouldReturnNotModified(req, etag, snapshot._creationTime)) {
     return new Response(null, {
-      status: 304,
       headers: representationHeaders({
         contentType: snapshot.content_type,
         etag,
         updatedAt: snapshot._creationTime,
       }),
+      status: 304,
     })
   }
 
   if (serveGzip) {
     return new Response(blob, {
       headers: representationHeaders({
+        contentEncoding: 'gzip',
+        contentLength: snapshot.size,
         contentType: snapshot.content_type,
         etag,
         updatedAt: snapshot._creationTime,
-        contentEncoding: 'gzip',
-        contentLength: snapshot.size,
       }),
     })
   }
@@ -100,10 +100,10 @@ export const serveCached = httpAction(async (ctx, req) => {
 
   return new Response(body, {
     headers: representationHeaders({
+      contentLength: body.byteLength,
       contentType: snapshot.content_type,
       etag,
       updatedAt: snapshot._creationTime,
-      contentLength: body.byteLength,
     }),
   })
 })
@@ -122,8 +122,8 @@ function representationHeaders(args: {
   contentLength?: number
 }): Headers {
   const headers = new Headers({
-    'Content-Type': args.contentType,
     'Cache-Control': cacheControl,
+    'Content-Type': args.contentType,
     ETag: args.etag,
     'Last-Modified': new Date(args.updatedAt).toUTCString(),
     ...allowOrigin,

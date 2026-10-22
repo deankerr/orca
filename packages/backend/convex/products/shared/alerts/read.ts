@@ -69,7 +69,7 @@ export async function readPage(
   const cutoff = await cappedCutoff(ctx)
 
   if (cutoff === null) {
-    return { page: [], isDone: true, continueCursor: '' }
+    return { continueCursor: '', isDone: true, page: [] }
   }
 
   const db = stream(ctx.db, schema)

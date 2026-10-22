@@ -34,13 +34,13 @@ describe('createSlugSearcher', () => {
   it('uses compareItems to break ties within the same score bucket', () => {
     const searcher = createSlugSearcher(
       [
-        { slug: 'openai/gpt-5.4', addedAt: 200 },
-        { slug: 'openai/gpt-3.5-turbo', addedAt: 100 },
-        { slug: 'openai/gpt-4', addedAt: 150 },
+        { addedAt: 200, slug: 'openai/gpt-5.4' },
+        { addedAt: 100, slug: 'openai/gpt-3.5-turbo' },
+        { addedAt: 150, slug: 'openai/gpt-4' },
       ],
       {
-        getFields: (record) => [{ name: 'slug', value: record.slug }],
         compareItems: (left, right) => right.addedAt - left.addedAt,
+        getFields: (record) => [{ name: 'slug', value: record.slug }],
       },
     )
 
@@ -63,12 +63,12 @@ describe('createSlugSearcher', () => {
 
     expect(
       results.map((result) => ({
-        slug: result.record.slug,
         score: result.score,
+        slug: result.record.slug,
       })),
     ).toEqual([
-      { slug: 'openai/gpt-4.1', score: 2000 },
-      { slug: 'openai/gpt-4.1-mini', score: 1001 },
+      { score: 2000, slug: 'openai/gpt-4.1' },
+      { score: 1001, slug: 'openai/gpt-4.1-mini' },
     ])
   })
 })
@@ -79,9 +79,9 @@ describe('createSlugSearcher endpoint integration', () => {
       [
         {
           model: {
+            or_added_at: 300,
             slug: 'openai/gpt-5.4',
             version_slug: 'openai/gpt-5.4',
-            or_added_at: 300,
           },
           provider: {
             tag_slug: 'openai',
@@ -89,9 +89,9 @@ describe('createSlugSearcher endpoint integration', () => {
         },
         {
           model: {
+            or_added_at: 200,
             slug: 'openai/gpt-4',
             version_slug: 'openai/gpt-4',
-            or_added_at: 200,
           },
           provider: {
             tag_slug: 'openai',
@@ -99,9 +99,9 @@ describe('createSlugSearcher endpoint integration', () => {
         },
         {
           model: {
+            or_added_at: 100,
             slug: 'openai/gpt-3.5-turbo',
             version_slug: 'openai/gpt-3.5-turbo',
-            or_added_at: 100,
           },
           provider: {
             tag_slug: 'openai',
@@ -109,15 +109,15 @@ describe('createSlugSearcher endpoint integration', () => {
         },
       ],
       {
+        compareItems: (left, right) =>
+          right.model.or_added_at - left.model.or_added_at ||
+          left.model.slug.localeCompare(right.model.slug) ||
+          left.provider.tag_slug.localeCompare(right.provider.tag_slug),
         getFields: (endpoint) => [
           { name: 'model.slug', value: endpoint.model.slug },
           { name: 'model.version_slug', value: endpoint.model.version_slug },
           { name: 'provider.tag_slug', value: endpoint.provider.tag_slug },
         ],
-        compareItems: (left, right) =>
-          right.model.or_added_at - left.model.or_added_at ||
-          left.model.slug.localeCompare(right.model.slug) ||
-          left.provider.tag_slug.localeCompare(right.provider.tag_slug),
       },
     )
 

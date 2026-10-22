@@ -21,10 +21,10 @@ export function PricingHistoryProvider({ children }: { children: React.ReactNode
 
   const value = useMemo(
     () => ({
-      modelId,
       close: () => {
         void setParams(pricingHistoryQueryPatch(null))
       },
+      modelId,
     }),
     [modelId, setParams],
   )

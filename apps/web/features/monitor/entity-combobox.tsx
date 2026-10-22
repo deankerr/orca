@@ -235,8 +235,8 @@ function VirtualizedEntityList({
   // oxlint-disable-next-line react-hooks-js/incompatible-library -- TanStack Virtual owns mutable measurement state.
   const virtualizer = useVirtualizer({
     count: items.length,
-    getScrollElement: () => viewportRef.current,
     estimateSize: () => 42,
+    getScrollElement: () => viewportRef.current,
     overscan: 5,
   })
 

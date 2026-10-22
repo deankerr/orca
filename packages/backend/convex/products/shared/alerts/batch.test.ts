@@ -16,40 +16,40 @@ import type { EntityAlert, FieldChange } from './curate'
 import { prepare as prepareAlert } from './prepare'
 
 const shared: FieldChange = {
-  type: 'set_updated',
-  path: 'supported_parameters',
   added: [],
+  path: 'supported_parameters',
   removed: ['audio', 'image'],
+  type: 'set_updated',
 }
 const unique: FieldChange = {
-  type: 'field_updated',
-  path: 'max_completion_tokens',
-  before: 943_718,
   after: 131_072,
+  before: 943_718,
+  path: 'max_completion_tokens',
+  type: 'field_updated',
 }
 
 function bucket(index: number, changes: FieldChange[] = [shared]): IndividualAlert {
   const entity_id = `abcdef${index}-endpoint`
 
   return {
-    type: 'event',
-    source_id: `event-${index}`,
     event: {
-      type: 'endpoint_updated',
-      entity_kind: 'endpoint',
-      entity_id,
-      observed_at: '2026-10-01T17:40:05.451Z',
       changes,
       context: {
-        model: { model_id: `author/model-${index}`, display_name: 'Model' },
-        provider: { provider_id: 'provider', display_name: 'Provider' },
         endpoint: {
           endpoint_id: entity_id,
-          provider_tag: 'provider/fp8',
           provider_display_name: 'Provider',
+          provider_tag: 'provider/fp8',
         },
+        model: { display_name: 'Model', model_id: `author/model-${index}` },
+        provider: { display_name: 'Provider', provider_id: 'provider' },
       },
+      entity_id,
+      entity_kind: 'endpoint',
+      observed_at: '2026-10-01T17:40:05.451Z',
+      type: 'endpoint_updated',
     },
+    source_id: `event-${index}`,
+    type: 'event',
   }
 }
 
@@ -65,7 +65,7 @@ function occurrenceCount(item: Alert): number {
 }
 
 test('extracts each shared item independently, keeps unique fields, and drops only empty updates', () => {
-  const second: FieldChange = { type: 'field_added', path: 'is_disabled', after: false }
+  const second: FieldChange = { after: false, path: 'is_disabled', type: 'field_added' }
   const input = Array.from({ length: 5 }, (_, i) =>
     bucket(i, [
       { ...shared, removed: i % 2 === 0 ? ['image', 'audio'] : ['audio', 'image'] },
@@ -107,20 +107,20 @@ test('batches five endpoint unlistings at one observation and renders their prov
     return {
       ...member,
       event: {
-        type: 'endpoint_removed',
-        entity_kind: 'endpoint',
-        entity_id: `${prefix}-endpoint`,
-        observed_at: event.observed_at,
         before: {},
         context: {
-          model: { model_id, display_name: model_id },
-          provider: { provider_id: 'nextbit', display_name: 'NextBit' },
           endpoint: {
             ...event.context.endpoint,
             endpoint_id: `${prefix}-endpoint`,
             provider_tag: 'nextbit/fp8',
           },
+          model: { display_name: model_id, model_id },
+          provider: { display_name: 'NextBit', provider_id: 'nextbit' },
         },
+        entity_id: `${prefix}-endpoint`,
+        entity_kind: 'endpoint',
+        observed_at: event.observed_at,
+        type: 'endpoint_removed',
       },
     }
   })
@@ -128,7 +128,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
   const cards = renderDiscordBatch(result, urls)
   const embed = cards[0]?.message.embeds?.[0]
 
-  expect(result).toEqual([{ type: 'batch', change: { type: 'endpoint_removed' }, members }])
+  expect(result).toEqual([{ change: { type: 'endpoint_removed' }, members, type: 'batch' }])
   expect(cards).toHaveLength(1)
   expect(cards[0]?.source_ids.toSorted()).toEqual(
     members.map((member) => member.source_id).toSorted(),
@@ -148,12 +148,12 @@ test('batches five endpoint unlistings at one observation and renders their prov
 
   const paged = batchCards(
     {
-      type: 'batch',
       change: { type: 'endpoint_removed' },
       members: Array.from({ length: 45 }, (_, index) => ({
         ...members[index % 5],
         source_id: `page-${index}`,
       })),
+      type: 'batch',
     },
     urls,
   )
@@ -179,7 +179,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
 
   expect(batchAlerts(members.slice(0, 2))).toEqual(members.slice(0, 2))
   expect(batchAlerts(members.slice(0, 3))).toEqual([
-    { type: 'batch', change: { type: 'endpoint_removed' }, members: members.slice(0, 3) },
+    { change: { type: 'endpoint_removed' }, members: members.slice(0, 3), type: 'batch' },
   ])
   expect(batchAlerts(Array.from({ length: 5 }, () => members[0]))).toHaveLength(5)
 
@@ -197,19 +197,19 @@ test('batches five endpoint unlistings at one observation and renders their prov
     const departures: IndividualAlert[] = members.map((member, index) => ({
       ...member,
       event: {
+        before: {},
         entity_id: `${entity_kind}-${index}`,
         observed_at: member.event.observed_at,
-        before: {},
         ...(entity_kind === 'model'
           ? {
-              type: 'model_removed',
+              context: { model: { display_name: 'Model', model_id: `model-${index}` } },
               entity_kind,
-              context: { model: { model_id: `model-${index}`, display_name: 'Model' } },
+              type: 'model_removed',
             }
           : {
-              type: 'provider_removed',
+              context: { provider: { display_name: 'Provider', provider_id: `provider-${index}` } },
               entity_kind,
-              context: { provider: { provider_id: `provider-${index}`, display_name: 'Provider' } },
+              type: 'provider_removed',
             }),
       },
     }))
@@ -228,23 +228,23 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   const provider: IndividualAlert = {
     ...base,
     event: {
-      type: 'provider_updated',
-      entity_kind: 'provider',
-      entity_id: 'provider',
-      observed_at: base.event.observed_at,
-      context: { provider: { provider_id: 'provider', display_name: 'Provider' } },
       changes: [shared],
+      context: { provider: { display_name: 'Provider', provider_id: 'provider' } },
+      entity_id: 'provider',
+      entity_kind: 'provider',
+      observed_at: base.event.observed_at,
+      type: 'provider_updated',
     },
   }
   const arrival: IndividualAlert = {
     ...provider,
     event: {
-      type: 'provider_added',
-      entity_kind: 'provider',
-      entity_id: 'new-provider',
-      observed_at: base.event.observed_at,
-      context: { provider: { provider_id: 'new-provider', display_name: 'New' } },
       after: {},
+      context: { provider: { display_name: 'New', provider_id: 'new-provider' } },
+      entity_id: 'new-provider',
+      entity_kind: 'provider',
+      observed_at: base.event.observed_at,
+      type: 'provider_added',
     },
   }
   const all = [
@@ -258,12 +258,12 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   expect(batchAlerts(all)).toEqual(all)
 
   const numeric = Array.from({ length: 2 }, (_, i) =>
-    bucket(i, [{ type: 'field_updated', path: 'context_length', before: 1, after: 2 }]),
+    bucket(i, [{ after: 2, before: 1, path: 'context_length', type: 'field_updated' }]),
   )
   const distinct: FieldChange[] = [
-    { type: 'field_updated', path: 'context_length', before: '1', after: '2' },
-    { type: 'field_added', path: 'context_length', after: 2 },
-    { type: 'field_updated', path: 'context_length', before: null, after: 2 },
+    { after: '2', before: '1', path: 'context_length', type: 'field_updated' },
+    { after: 2, path: 'context_length', type: 'field_added' },
+    { after: 2, before: null, path: 'context_length', type: 'field_updated' },
   ]
 
   expect(
@@ -275,12 +275,13 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
   const records = Array.from({ length: 5 }, (_, i) =>
     bucket(i, [
       {
-        type: 'field_added',
-        path: 'data_policy',
         after:
           i % 2 === 0
-            ? { training: false, retentionDays: 0 }
+            ? // oxlint-disable-next-line sort-keys -- Differently ordered records must still batch together.
+              { training: false, retentionDays: 0 }
             : { retentionDays: 0, training: false },
+        path: 'data_policy',
+        type: 'field_added',
       },
     ]),
   )
@@ -290,8 +291,8 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
   const rows = Array.from({ length: 5 }, (_, i) =>
     stored(
       i,
-      { pricing: { meters: { prompt: '1', completion: '1' } } },
-      { pricing: { meters: { prompt: '2', completion: i === 0 ? '1.001' : '1' } } },
+      { pricing: { meters: { completion: '1', prompt: '1' } } },
+      { pricing: { meters: { completion: i === 0 ? '1.001' : '1', prompt: '2' } } },
     ),
   )
   const { alerts, skipped } = await prepareBatch(rows)
@@ -306,20 +307,20 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
 
 test('batch cards identify all three entity types and page long lists without losing identities', () => {
   const model: EntityAlert = {
-    type: 'model_updated',
-    entity_kind: 'model',
-    entity_id: 'author/model',
-    observed_at: '2026-10-01T17:40:05.451Z',
-    context: { model: { model_id: 'author/model', display_name: 'Model' } },
     changes: [],
+    context: { model: { display_name: 'Model', model_id: 'author/model' } },
+    entity_id: 'author/model',
+    entity_kind: 'model',
+    observed_at: '2026-10-01T17:40:05.451Z',
+    type: 'model_updated',
   }
   const provider: EntityAlert = {
-    type: 'provider_updated',
-    entity_kind: 'provider',
-    entity_id: 'provider',
-    observed_at: model.observed_at,
-    context: { provider: { provider_id: 'provider', display_name: 'Provider' } },
     changes: [],
+    context: { provider: { display_name: 'Provider', provider_id: 'provider' } },
+    entity_id: 'provider',
+    entity_kind: 'provider',
+    observed_at: model.observed_at,
+    type: 'provider_updated',
   }
 
   const cases: [EntityAlert, FieldChange, string[]][] = [
@@ -327,10 +328,10 @@ test('batch cards identify all three entity types and page long lists without lo
     [
       provider,
       {
-        type: 'field_updated',
-        path: 'dataPolicy.privacyPolicyURL',
-        before: 'https://example.com/privacy',
         after: 'https://example.com/legal/privacy',
+        before: 'https://example.com/privacy',
+        path: 'dataPolicy.privacyPolicyURL',
+        type: 'field_updated',
       },
       ['Provider • `provider`', 'dataPolicy.privacyPolicyURL', 'https://example.com/legal/privacy'],
     ],
@@ -341,7 +342,7 @@ test('batch cards identify all three entity types and page long lists without lo
     ],
     [
       bucket(0).event,
-      { type: 'field_updated', path: 'data_policy.retentionDays', before: 30, after: 7 },
+      { after: 7, before: 30, path: 'data_policy.retentionDays', type: 'field_updated' },
       ['retentionDays', '30 days', '7 days'],
     ],
   ]
@@ -349,9 +350,9 @@ test('batch cards identify all three entity types and page long lists without lo
   for (const [event, change, expected] of cases) {
     const cards = batchCards(
       {
-        type: 'batch',
         change,
-        members: [{ type: 'event', source_id: 'source', event }],
+        members: [{ event, source_id: 'source', type: 'event' }],
+        type: 'batch',
       },
       urls,
     )
@@ -363,7 +364,7 @@ test('batch cards identify all three entity types and page long lists without lo
   }
 
   const members = Array.from({ length: 100 }, (_, i) => bucket(i))
-  const cards = batchCards({ type: 'batch', change: shared, members }, urls)
+  const cards = batchCards({ change: shared, members, type: 'batch' }, urls)
 
   expect(cards.length).toBeGreaterThan(1)
   expect(cards.flatMap((card) => card.source_ids).toSorted()).toEqual(
@@ -398,7 +399,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
 
       return member
     })
-    const cards = batchCards({ type: 'batch', change: shared, members }, urls)
+    const cards = batchCards({ change: shared, members, type: 'batch' }, urls)
     const description = cards[0]?.message.embeds?.[0]?.description ?? ''
     const groupByModel = modelCount < providerCount
 
@@ -426,7 +427,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
   }
 })
 
-const urls = { publicUrl: 'https://orca.orb.town', logoOrigin: 'https://logos.orb.town' }
+const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
 function stored(
   index: number,
@@ -438,27 +439,27 @@ function stored(
   const [change] = compare({ [entity_id]: before }, { [entity_id]: after })
   const fields = {
     _id: `event-${index}`,
-    entity_id,
-    type: 'UPDATE' as const,
-    scan_at: '2026-10-01T17:40:05.451Z',
     change_json: JSON.stringify(change),
+    entity_id,
+    scan_at: '2026-10-01T17:40:05.451Z',
+    type: 'UPDATE' as const,
   }
-  const provider = { provider_id: `provider-${index}`, display_name: 'Provider' }
+  const provider = { display_name: 'Provider', provider_id: `provider-${index}` }
 
   return kind === 'provider'
-    ? { ...fields, entity_kind: 'provider', context: { provider } }
+    ? { ...fields, context: { provider }, entity_kind: 'provider' }
     : {
         ...fields,
-        entity_kind: 'endpoint',
         context: {
-          provider,
-          model: { model_id: `author/model-${index}`, display_name: 'Model' },
           endpoint: {
             endpoint_id: entity_id,
-            provider_tag: 'provider/fp8',
             provider_display_name: 'Provider',
+            provider_tag: 'provider/fp8',
           },
+          model: { display_name: 'Model', model_id: `author/model-${index}` },
+          provider,
         },
+        entity_kind: 'endpoint',
       }
 }
 
@@ -467,6 +468,7 @@ test('provider URL batches pass shared selection and retain individual changes',
     stored(
       i,
       {
+        // oxlint-disable sort-keys -- Fixture key order sets the order of the compared change paths.
         metadata: {
           headquarters: 'US',
           dataPolicy: { privacyPolicyURL: 'https://example.com/privacy' },
@@ -478,6 +480,7 @@ test('provider URL batches pass shared selection and retain individual changes',
           dataPolicy: { privacyPolicyURL: 'https://example.com/legal/privacy', training: false },
         },
       },
+      // oxlint-enable sort-keys
       'provider',
     ),
   )
@@ -497,7 +500,7 @@ test('provider URL batches pass shared selection and retain individual changes',
 
   // Monitor and Feed share selected content and retain individual events.
   const monitor = rows.map(prepareAlert)
-  const feed = renderPage({ page: rows, isDone: true, continueCursor: '' }).page
+  const feed = renderPage({ continueCursor: '', isDone: true, page: rows }).page
 
   expect(monitor).toHaveLength(5)
   expect(monitor.every((alert) => alert?.type === 'provider_updated')).toBe(true)
@@ -531,9 +534,9 @@ test('oversized batch details and identity fields truncate without losing member
     })
     const cards = batchCards(
       {
-        type: 'batch',
         change: { ...shared, removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}`) },
         members,
+        type: 'batch',
       },
       urls,
     )
@@ -558,7 +561,7 @@ test('oversized batch details and identity fields truncate without losing member
 
 async function prepareBatch(rows: (EventRow & { _id: string })[]) {
   return await prepareDiscordBatch(
-    rows.map((row) => ({ source_id: row._id, event: prepareAlert(row) })),
+    rows.map((row) => ({ event: prepareAlert(row), source_id: row._id })),
     async (candidates) => candidates.map(() => false),
   )
 }

@@ -16,7 +16,7 @@ export function EntityOverviewTrigger({
   const { openOverview } = useEntityOverview()
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    openOverview({ type, slug })
+    openOverview({ slug, type })
     props.onClick?.(e)
   }
 

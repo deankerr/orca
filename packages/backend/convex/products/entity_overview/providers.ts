@@ -19,29 +19,28 @@ const Provider = convexToZod(docValidator(CURRENT_PROVIDERS_TABLE, currentProvid
   .extend({
     metadata_json: JsonObjectFromString.pipe(
       z.object({
-        headquarters: textOrNull,
-        datacenters: stringsOrNull,
-        statusPageUrl: url,
         dataPolicy: z
-          .object({ termsOfServiceURL: url, privacyPolicyURL: url })
+          .object({ privacyPolicyURL: url, termsOfServiceURL: url })
           .nullable()
           .catch(null),
+        datacenters: stringsOrNull,
+        headquarters: textOrNull,
+        statusPageUrl: url,
       }),
     ),
   })
   .transform(({ metadata_json: facts, ...identity }) => ({
     ...identity,
-    headquarters: facts.headquarters,
-    datacenters: facts.datacenters,
-    statusPageUrl: facts.statusPageUrl,
-    'dataPolicy.termsOfServiceURL': facts.dataPolicy?.termsOfServiceURL ?? null,
     'dataPolicy.privacyPolicyURL': facts.dataPolicy?.privacyPolicyURL ?? null,
+    'dataPolicy.termsOfServiceURL': facts.dataPolicy?.termsOfServiceURL ?? null,
+    datacenters: facts.datacenters,
+    headquarters: facts.headquarters,
+    statusPageUrl: facts.statusPageUrl,
   }))
 
 /** Current or last-known provider. */
 export const get = query({
   args: { provider_id: v.string() },
-  returns: v.union(v.null(), zodOutputToConvex(Provider)),
   handler: async (ctx, args) => {
     const row = await ctx.db
       .query(CURRENT_PROVIDERS_TABLE)
@@ -49,4 +48,5 @@ export const get = query({
       .unique()
     return row === null ? null : Provider.parse(row)
   },
+  returns: v.union(v.null(), zodOutputToConvex(Provider)),
 })

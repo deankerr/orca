@@ -3,16 +3,16 @@ import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
-export const objectIdentity = v.object({ path: v.string(), name: v.string() })
+export const objectIdentity = v.object({ name: v.string(), path: v.string() })
 export type ObjectIdentity = Infer<typeof objectIdentity>
 
 export const nameSelection = v.object({
-  path: v.string(),
   atOrAfter: v.string(),
   /** Exclusive upper bound; omitted means unbounded. */
   before: v.optional(v.string()),
   limit: v.number(),
   order: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+  path: v.string(),
 })
 export type NameSelection = Infer<typeof nameSelection>
 
@@ -25,7 +25,7 @@ export interface ObjectReader {
 }
 
 /** Wire representation stays private to objects; consumers receive decoded text. */
-const storedObject = v.object({ codec: v.literal('gzip'), bytes: v.bytes() })
+const storedObject = v.object({ bytes: v.bytes(), codec: v.literal('gzip') })
 export const storedBatch = v.array(v.union(v.null(), storedObject))
 export type StoredObject = Infer<typeof storedObject>
 

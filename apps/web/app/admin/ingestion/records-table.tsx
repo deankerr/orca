@@ -30,7 +30,7 @@ export function RecordsTable({ failed }: { failed: number }) {
   const retry = useMutation(api.ingestion.admin.retry)
   const { results, status, loadMore } = usePaginatedQuery(
     api.ingestion.admin.records,
-    { state, before },
+    { before, state },
     { initialNumItems: PAGE },
   )
 

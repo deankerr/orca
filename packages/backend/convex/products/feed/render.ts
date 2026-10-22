@@ -9,7 +9,7 @@ import { describe, summarize } from './text'
 
 const feedEvent = v.union(
   ...entityAlert.members.map((member) =>
-    member.extend({ summary: v.string(), details: v.array(v.string()) }),
+    member.extend({ details: v.array(v.string()), summary: v.string() }),
   ),
 )
 export const feedPage = paginationResultValidator(feedEvent)
@@ -17,7 +17,7 @@ export type FeedEvent = Infer<typeof feedEvent>
 
 /** Add plain-text presentation to an already prepared entity alert. */
 export function render(event: EntityAlert): FeedEvent {
-  return { ...event, summary: summarize(event), details: describe(event) }
+  return { ...event, details: describe(event), summary: summarize(event) }
 }
 
 export function renderPage(result: PaginationResult<EntityAlert>) {

@@ -29,7 +29,7 @@ export function AdminProvider({
     const adapter = new ConvexQueryClient(convex)
     const client = new QueryClient({
       defaultOptions: {
-        queries: { queryKeyHashFn: adapter.hashFn(), queryFn: adapter.queryFn() },
+        queries: { queryFn: adapter.queryFn(), queryKeyHashFn: adapter.hashFn() },
       },
     })
 
@@ -63,8 +63,6 @@ function useConvexAuthKit() {
   const { getAccessToken, refresh } = useAccessToken()
 
   return {
-    isLoading: loading,
-    isAuthenticated: Boolean(user),
     fetchAccessToken: async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!user) {
         return null
@@ -72,6 +70,8 @@ function useConvexAuthKit() {
 
       return (await (forceRefreshToken ? refresh() : getAccessToken())) ?? null
     },
+    isAuthenticated: Boolean(user),
+    isLoading: loading,
   }
 }
 

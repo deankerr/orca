@@ -12,7 +12,7 @@ export function useQueryResult(measurement: ReadinessMeasurement, success: boole
     if (!success || reported.current) {
       return
     }
-    const query = client.getQueryCache().find({ queryKey: measurement.queryKey, exact: true })
+    const query = client.getQueryCache().find({ exact: true, queryKey: measurement.queryKey })
     const result = measurement.initial ?? (query && readinessQueryTimings.get(query.queryHash))
     if (!query || !result) {
       return
@@ -29,8 +29,8 @@ export function useQueryResult(measurement: ReadinessMeasurement, success: boole
     captureTiming('query consumed', {
       query_name: queryName(measurement.queryKey),
       query_run_id: result.id,
-      view_load_id: measurement.id,
       surface: measurement.surface,
+      view_load_id: measurement.id,
       view_started_at_ms: measurement.started.at,
     })
   }, [client, measurement, success])

@@ -31,7 +31,7 @@ export async function AccountMenu() {
 
   return (
     <>
-      <PostHogIdentity user={{ id: user.id, email: user.email, name }} />
+      <PostHogIdentity user={{ email: user.email, id: user.id, name }} />
       <DropdownMenu>
         <DropdownMenuTrigger
           render={<Button variant="ghost" size="icon-lg" className="rounded-full" />}

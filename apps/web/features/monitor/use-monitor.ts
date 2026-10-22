@@ -13,11 +13,11 @@ export function useMonitor(scope: MonitorScope) {
 
   return {
     events: results,
-    status,
-    isLoading: status === 'LoadingFirstPage' || status === 'LoadingMore',
     hasMore: status !== 'Exhausted',
+    isLoading: status === 'LoadingFirstPage' || status === 'LoadingMore',
     loadMore: () => {
       loadMore(PAGE_SIZE)
     },
+    status,
   }
 }

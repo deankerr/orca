@@ -110,7 +110,7 @@ export function OverviewActions({
         Endpoints
       </OverviewAction>
       <OverviewAction
-        href={buildMonitorHref({ pathname, searchParams, type, slug })}
+        href={buildMonitorHref({ pathname, searchParams, slug, type })}
         onClick={close}
         icon={ActivityIcon}
       >
@@ -127,7 +127,7 @@ export function PricingHistoryAction({ modelId }: { modelId: string }) {
 
   return (
     <OverviewAction
-      href={buildPricingHistoryHref({ pathname, searchParams, modelId })}
+      href={buildPricingHistoryHref({ modelId, pathname, searchParams })}
       icon={ChartNoAxesCombinedIcon}
       onMouseEnter={preloadPricingHistoryPlot}
       onFocus={preloadPricingHistoryPlot}

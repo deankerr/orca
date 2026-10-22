@@ -20,19 +20,18 @@ const orFetch = up(fetch, () => ({
 /** Collect and store one scan, timestamped after collection completes. */
 export const run = internalAction({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     const entries = await collect()
-    await scans.store(ctx, { scan_at: new Date().toISOString(), entries })
+    await scans.store(ctx, { entries, scan_at: new Date().toISOString() })
 
     return null
   },
+  returns: v.null(),
 })
 
 /** Admit scheduled captures; manual runs remain available. */
 export const scheduled = internalMutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     if (env.ORCA_SCAN_CRON_ENABLED === 'true') {
       await ctx.scheduler.runAfter(0, internal.collectors.scan.run, {})
@@ -40,6 +39,7 @@ export const scheduled = internalMutation({
 
     return null
   },
+  returns: v.null(),
 })
 
 async function collect() {
@@ -48,20 +48,20 @@ async function collect() {
   const entries = await asyncMap(catalog, async ({ endpoint, ...model }) => {
     if (endpoint === null) {
       return {
+        endpoints: null,
+        model,
         model_id: model.slug,
         variant: 'standard',
-        model,
-        endpoints: null,
       }
     }
 
     const endpoints = await fetchEndpoints(model.permaslug, endpoint.variant)
 
     return {
+      endpoints: R.sortBy(endpoints, R.prop('id')),
+      model,
       model_id: endpoint.model_variant_slug,
       variant: endpoint.variant,
-      model,
-      endpoints: R.sortBy(endpoints, R.prop('id')),
     }
   })
 

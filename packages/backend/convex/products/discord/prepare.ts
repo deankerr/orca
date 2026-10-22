@@ -19,9 +19,9 @@ export async function prepareBatch(
     const { event } = row
 
     if (event === null) {
-      skippedEvents.push({ source_id: row.source_id, reason: 'ineligible' })
+      skippedEvents.push({ reason: 'ineligible', source_id: row.source_id })
     } else {
-      alerts.push({ type: 'event', source_id: row.source_id, event })
+      alerts.push({ event, source_id: row.source_id, type: 'event' })
     }
   }
 
@@ -52,7 +52,7 @@ export async function prepareBatch(
     const changes = alert.event.changes.filter((change) => !change.path.startsWith('pricing.'))
 
     if (changes.length === 0) {
-      skippedEvents.push({ source_id: alert.source_id, reason: 'frequent_pricing' })
+      skippedEvents.push({ reason: 'frequent_pricing', source_id: alert.source_id })
       return []
     }
 

@@ -37,9 +37,9 @@ const omittedDataPolicyKeys = [
 
 export const ProviderInput = z
   .object({
-    slug: z.string(),
-    displayName: z.string(),
     dataPolicy: z.record(z.string(), z.json()).transform(R.omit(omittedDataPolicyKeys)).nullish(),
+    displayName: z.string(),
+    slug: z.string(),
   })
   .catchall(z.json())
 

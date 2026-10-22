@@ -15,15 +15,15 @@ const atom = v.union(v.null(), v.string(), v.number(), v.boolean(), v.array(v.st
 const value = v.union(atom, v.record(v.string(), atom))
 const fieldChange = v.union(
   // Opaque changes are announced without projecting their arbitrary values into alerts.
-  v.object({ type: v.literal('field_changed'), path: v.string() }),
-  v.object({ type: v.literal('field_updated'), path: v.string(), before: value, after: value }),
-  v.object({ type: v.literal('field_added'), path: v.string(), after: value }),
-  v.object({ type: v.literal('field_removed'), path: v.string(), before: value }),
+  v.object({ path: v.string(), type: v.literal('field_changed') }),
+  v.object({ after: value, before: value, path: v.string(), type: v.literal('field_updated') }),
+  v.object({ after: value, path: v.string(), type: v.literal('field_added') }),
+  v.object({ before: value, path: v.string(), type: v.literal('field_removed') }),
   v.object({
-    type: v.literal('set_updated'),
-    path: v.string(),
     added: v.array(v.string()),
+    path: v.string(),
     removed: v.array(v.string()),
+    type: v.literal('set_updated'),
   }),
 )
 
@@ -36,18 +36,18 @@ export const entityAlert = v.union(
     })
     return [
       identity.extend({
-        type: v.literal(`${kind}_updated`),
         changes: v.array(fieldChange),
         /** Derived during alert preparation, never persisted on the event. */
         pricing_is_scheduled: v.optional(v.boolean()),
+        type: v.literal(`${kind}_updated`),
       }),
       identity.extend({
-        type: v.literal(`${kind}_added`),
         after: v.record(v.string(), value),
+        type: v.literal(`${kind}_added`),
       }),
       identity.extend({
-        type: v.literal(`${kind}_removed`),
         before: v.record(v.string(), value),
+        type: v.literal(`${kind}_removed`),
       }),
     ]
   }),
@@ -61,47 +61,8 @@ const fields = (...names: string[]): Record<string, true> =>
   Object.fromEntries(names.map((name) => [name, true]))
 
 /** Public facts use upstream names; these selections also curate lifecycle values. */
+// oxlint-disable sort-keys -- Key order is the field order of curated added/removed snapshots (entityValue iterates it).
 const selections: Record<EventRow['entity_kind'], Selection> = {
-  model: {
-    ...fields(
-      'id',
-      'slug',
-      'permaslug',
-      'variant',
-      'short_name',
-      'created_at',
-      'input_modalities',
-      'output_modalities',
-      'description',
-      'warning_message',
-      'author_display_name',
-      'hf_slug',
-      'knowledge_cutoff',
-      'supports_reasoning',
-    ),
-    reasoning_config: ['is_mandatory_reasoning', 'supported_reasoning_efforts'],
-  },
-  provider: {
-    ...fields(
-      'provider_id',
-      'displayName',
-      'headquarters',
-      'datacenters',
-      'statusPageUrl',
-      'hasChatCompletions',
-      'hasCompletions',
-      'byokEnabled',
-    ),
-    dataPolicy: [
-      'termsOfServiceURL',
-      'privacyPolicyURL',
-      'training',
-      'retainsPrompts',
-      'requiresUserIDs',
-      'canPublish',
-      'retentionDays',
-    ],
-  },
   endpoint: {
     ...fields(
       'id',
@@ -143,12 +104,54 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
     features: ['supports_implicit_caching', 'supports_native_web_search'],
     data_policy: ['training', 'canPublish', 'requiresUserIDs', 'retainsPrompts', 'retentionDays'],
   },
+  model: {
+    ...fields(
+      'id',
+      'slug',
+      'permaslug',
+      'variant',
+      'short_name',
+      'created_at',
+      'input_modalities',
+      'output_modalities',
+      'description',
+      'warning_message',
+      'author_display_name',
+      'hf_slug',
+      'knowledge_cutoff',
+      'supports_reasoning',
+    ),
+    reasoning_config: ['is_mandatory_reasoning', 'supported_reasoning_efforts'],
+  },
+  provider: {
+    ...fields(
+      'provider_id',
+      'displayName',
+      'headquarters',
+      'datacenters',
+      'statusPageUrl',
+      'hasChatCompletions',
+      'hasCompletions',
+      'byokEnabled',
+    ),
+    dataPolicy: [
+      'termsOfServiceURL',
+      'privacyPolicyURL',
+      'training',
+      'retainsPrompts',
+      'requiresUserIDs',
+      'canPublish',
+      'retentionDays',
+    ],
+  },
 }
+
+// oxlint-enable sort-keys
 
 const Atom = z.union([z.null(), z.string(), z.number(), z.boolean(), z.array(z.string())])
 const StringSet = z.object({
-  embeddedKey: z.literal('$value'),
   changes: z.array(z.object({ type: z.enum(['ADD', 'REMOVE']), value: z.string() })),
+  embeddedKey: z.literal('$value'),
 })
 
 function nativePath(kind: EventRow['entity_kind'], path: string[]): string[] {
@@ -245,10 +248,10 @@ function selectedChanges(
 
     return [
       {
-        type: 'set_updated',
-        path: path.join('.'),
         added: set.changes.filter((item) => item.type === 'ADD').map((item) => item.value),
+        path: path.join('.'),
         removed: set.changes.filter((item) => item.type === 'REMOVE').map((item) => item.value),
+        type: 'set_updated',
       },
     ]
   }
@@ -256,19 +259,19 @@ function selectedChanges(
   const field = path.join('.')
 
   if (node.type === 'ADD') {
-    return [{ type: 'field_added', path: field, after: selectValue(node.value, selection, field) }]
+    return [{ after: selectValue(node.value, selection, field), path: field, type: 'field_added' }]
   }
 
   if (node.type === 'REMOVE') {
     return [
-      { type: 'field_removed', path: field, before: selectValue(node.value, selection, field) },
+      { before: selectValue(node.value, selection, field), path: field, type: 'field_removed' },
     ]
   }
 
   const before = selectValue(node.oldValue, selection, field)
   const after = selectValue(node.value, selection, field)
 
-  return isDeepEqual(before, after) ? [] : [{ type: 'field_updated', path: field, before, after }]
+  return isDeepEqual(before, after) ? [] : [{ after, before, path: field, type: 'field_updated' }]
 }
 
 function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
@@ -308,15 +311,15 @@ export function curate(row: EventRow): EntityAlert | null {
   if (event.type === 'ADD') {
     return {
       ...identity,
-      type: `${row.entity_kind}_added`,
       after: entityValue(event.after),
+      type: `${row.entity_kind}_added`,
     }
   }
   if (event.type === 'REMOVE') {
     return {
       ...identity,
-      type: `${row.entity_kind}_removed`,
       before: entityValue(event.before),
+      type: `${row.entity_kind}_removed`,
     }
   }
   const scheduled =
@@ -333,7 +336,7 @@ export function curate(row: EventRow): EntityAlert | null {
     ) {
       // Override row order has been stable upstream. A reorder intentionally counts as
       // a coarse schedule change; we do not interpret condition equivalence.
-      return [{ type: 'field_changed', path: 'pricing.overrides' }]
+      return [{ path: 'pricing.overrides', type: 'field_changed' }]
     }
 
     return selectedChanges(row.entity_kind, change, path)
@@ -342,8 +345,8 @@ export function curate(row: EventRow): EntityAlert | null {
     ? null
     : {
         ...identity,
-        type: `${row.entity_kind}_updated`,
         changes,
+        type: `${row.entity_kind}_updated`,
         ...(scheduled === undefined ? {} : { pricing_is_scheduled: scheduled }),
       }
 }

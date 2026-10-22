@@ -9,17 +9,16 @@ import { scheduleQueue } from './queue'
 /** Kickoff: start both workers; each reads its own intent and stops when idle. */
 export const run = internalMutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     await kickoff(ctx)
     return null
   },
+  returns: v.null(),
 })
 
 /** Cron entry point; manual kickoff remains available while disabled. */
 export const scheduled = internalMutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
     if (env.ORCA_INGESTION_CRON_ENABLED === 'true') {
       await kickoff(ctx)
@@ -27,6 +26,7 @@ export const scheduled = internalMutation({
 
     return null
   },
+  returns: v.null(),
 })
 
 /** Redundant kickoffs are harmless: overtaken register steps commit nothing. */

@@ -14,8 +14,8 @@ const parentCounts = {
 
 export const endpointObservation = v.object({
   ...fields,
-  entity_kind: v.literal('endpoint'),
   detected: v.boolean(),
+  entity_kind: v.literal('endpoint'),
   model_id: v.string(),
   provider_id: v.string(),
   provider_tag: v.string(),

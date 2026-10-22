@@ -12,11 +12,11 @@ import type { Locator } from './table'
 test('keeps the locator on storage failure and safely retries missing files', async () => {
   const locator = {
     backend: 'convex',
-    path: 'test',
-    name: 'one',
-    storage_id: 'file',
     codec: 'gzip',
+    name: 'one',
+    path: 'test',
     size: 1,
+    storage_id: 'file',
   } as Locator
 
   const calls: string[] = []
@@ -25,13 +25,13 @@ test('keeps the locator on storage failure and safely retries missing files', as
 
   const ctx = {
     db: {
+      delete: () => {
+        calls.push('locator')
+      },
       query: () => ({
         withIndex: () => ({ unique: () => ({ ...locator, _id: 'locator' }) }),
       }),
       system: { get: () => (fileExists ? {} : null) },
-      delete: () => {
-        calls.push('locator')
-      },
     },
     storage: {
       delete: () => {
@@ -79,10 +79,10 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
   let removed = false
 
   const ctx = {
-    runQuery: () => ({ backend: 'r2', r2_key: 'test/one' }),
     runMutation: () => {
       removed = true
     },
+    runQuery: () => ({ backend: 'r2', r2_key: 'test/one' }),
   } as unknown as ActionCtx
 
   const handler = (
@@ -91,10 +91,10 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
     }
   )._handler
   try {
-    await assert.rejects(handler(ctx, { path: 'test', name: 'one' }), /R2 DELETE failed: 403/u)
+    await assert.rejects(handler(ctx, { name: 'one', path: 'test' }), /R2 DELETE failed: 403/u)
     expect(removed).toBe(false)
     request.mockResolvedValue(new Response(null, { status: 404 }))
-    await handler(ctx, { path: 'test', name: 'one' })
+    await handler(ctx, { name: 'one', path: 'test' })
     expect(removed).toBe(true)
     expect(request.mock.calls[0]?.[1]?.method).toBe('DELETE')
   } finally {

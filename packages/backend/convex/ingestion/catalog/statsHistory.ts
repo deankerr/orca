@@ -10,20 +10,19 @@ import * as operator from '../operators/statsHistory'
 import { commitResult, removeResult } from '../results'
 
 export const ingest: Ingestor = createIngestor({
-  process: 'statsHistory',
   prepare: (_ctx, input) => ({
-    scan_at: input.source.next.scan_at,
     rows: operator.derive(input.source),
+    scan_at: input.source.next.scan_at,
   }),
-  write: async (ctx, args) =>
-    await ctx.runMutation(internal.ingestion.catalog.statsHistory.write, args),
+  process: 'statsHistory',
   remove: async (ctx, args) =>
     await ctx.runMutation(internal.ingestion.catalog.statsHistory.remove, args),
+  write: async (ctx, args) =>
+    await ctx.runMutation(internal.ingestion.catalog.statsHistory.write, args),
 })
 
 export const remove = internalMutation({
-  args: { scan_at: v.string(), process: v.string() },
-  returns: removeResult,
+  args: { process: v.string(), scan_at: v.string() },
   handler: async (ctx, { scan_at, process }) =>
     await removeProcess(ctx, scan_at, process, async () => {
       const rows = ctx.db
@@ -34,15 +33,16 @@ export const remove = internalMutation({
         await ctx.db.delete(ENDPOINT_STATS_TABLE, row._id)
       }
     }),
+  returns: removeResult,
 })
 
 export const write = internalMutation({
-  args: { process: v.string(), scan_at: v.string(), rows: v.array(endpointStatsTable.validator) },
-  returns: commitResult,
+  args: { process: v.string(), rows: v.array(endpointStatsTable.validator), scan_at: v.string() },
   handler: async (ctx, { rows, scan_at, process }) =>
     await commitProcess(ctx, scan_at, process, async () => {
       for (const row of rows) {
         await ctx.db.insert(ENDPOINT_STATS_TABLE, row)
       }
     }),
+  returns: commitResult,
 })

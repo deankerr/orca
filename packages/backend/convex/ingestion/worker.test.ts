@@ -92,7 +92,7 @@ const range = (from: number, to: number) =>
 
 /** Save the target, then kick off sync as a separate operation. */
 async function target(t: Harness, from: number, to: number) {
-  await t.mutation(internal.ingestion.target.set, { start_at: hour(from), end_at: hour(to) })
+  await t.mutation(internal.ingestion.target.set, { end_at: hour(to), start_at: hour(from) })
   await t.mutation(internal.ingestion.sync.run, {})
 }
 
@@ -117,13 +117,13 @@ async function expectCountsMatch(t: Harness) {
       keys.map((namespace) => ({ namespace: [...namespace] })),
     )
     return {
-      counted: Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index]])),
       actual: Object.fromEntries(
         keys.map((key) => [
           key.join('/'),
           all.filter(({ kind, state }) => kind === key[0] && state === key[1]).length,
         ]),
       ),
+      counted: Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index]])),
     }
   })
   expect(counted).toEqual(actual)
@@ -132,7 +132,7 @@ async function expectCountsMatch(t: Harness) {
 async function records(t: Harness) {
   const all = await t.run(async (ctx) => await ctx.db.query(INGESTION_RECORDS_TABLE).collect())
   return all
-    .map(({ from_scan_at, scan_at, alerts, state }) => ({ from_scan_at, scan_at, alerts, state }))
+    .map(({ from_scan_at, scan_at, alerts, state }) => ({ alerts, from_scan_at, scan_at, state }))
     .toSorted((a, b) => a.scan_at.localeCompare(b.scan_at) || (a.from_scan_at === null ? -1 : 1))
 }
 
@@ -154,14 +154,14 @@ async function projections(t: Harness) {
     }
 
     return {
-      models: await read(CURRENT_MODELS_TABLE),
-      providers: await read(CURRENT_PROVIDERS_TABLE),
-      endpoints: await read(CURRENT_ENDPOINTS_TABLE),
       currentStats: await read(CURRENT_STATS_TABLE),
+      endpoints: await read(CURRENT_ENDPOINTS_TABLE),
+      events: sorted(await read(EVENTS_TABLE)),
+      models: await read(CURRENT_MODELS_TABLE),
       observations: sorted(await read(OBSERVATIONS_TABLE)),
       prices: sorted(await read(ENDPOINT_PRICES_TABLE)),
+      providers: await read(CURRENT_PROVIDERS_TABLE),
       stats: sorted(await read(ENDPOINT_STATS_TABLE)),
-      events: sorted(await read(EVENTS_TABLE)),
     }
   })
 }
@@ -169,7 +169,7 @@ async function projections(t: Harness) {
 /** The retained view a baseline at the first scan and pairs through the last must produce. */
 function reference(from: number, to: number) {
   const window = range(from, to).map((index) => scan(hour(index), SPECS[index]))
-  const sources = window.map((next, index) => ({ previous: window[index - 1] ?? null, next }))
+  const sources = window.map((next, index) => ({ next, previous: window[index - 1] ?? null }))
   const pairs = sources.slice(1)
   const current = (name: string) => {
     const table = currentTables.find((item) => item.name === name)
@@ -178,14 +178,14 @@ function reference(from: number, to: number) {
   const latest = sources.at(-1)
 
   return {
-    models: current('models'),
-    providers: current('providers'),
-    endpoints: current('endpoints'),
     currentStats: latest === undefined ? [] : [currentStats.derive(latest)],
+    endpoints: current('endpoints'),
+    events: sorted(pairs.flatMap(events.derive)),
+    models: current('models'),
     observations: sorted(sources.flatMap(observations.derive)),
     prices: sorted(sources.flatMap(pricingHistory.derive)),
+    providers: current('providers'),
     stats: sorted(sources.flatMap(statsHistory.derive)),
-    events: sorted(pairs.flatMap(events.derive)),
   }
 }
 
@@ -202,10 +202,10 @@ function unversioned<
 
   return {
     ...view,
+    currentStats: sorted(view.currentStats),
+    endpoints: facts(view.endpoints),
     models: facts(view.models),
     providers: facts(view.providers),
-    endpoints: facts(view.endpoints),
-    currentStats: sorted(view.currentStats),
   }
 }
 
@@ -221,9 +221,9 @@ test('bootstrap, backfill, and the baseline converge to the reference projection
   const registry = await records(t)
   expect(registry).toHaveLength(30)
   expect(registry[0]).toEqual({
+    alerts: false,
     from_scan_at: null,
     scan_at: hour(0),
-    alerts: false,
     state: 'complete',
   })
   expect(registry.slice(1).every(({ state, alerts }) => state === 'complete' && !alerts)).toBe(true)
@@ -266,7 +266,7 @@ test('moving the target start back withdraws the old baseline and installs one a
 
   const registry = await records(t)
   expect(registry.filter(({ from_scan_at }) => from_scan_at === null)).toEqual([
-    { from_scan_at: null, scan_at: hour(0), alerts: false, state: 'complete' },
+    { alerts: false, from_scan_at: null, scan_at: hour(0), state: 'complete' },
   ])
   expect(
     registry.find(({ scan_at, from_scan_at }) => scan_at === hour(start) && from_scan_at !== null),
@@ -288,11 +288,11 @@ test('the target start advances only while no registration reads an earlier scan
   expect(await facts(t)).toEqual(expected(5, 9))
 
   await rejects(
-    t.mutation(internal.ingestion.target.set, { start_at: hour(6), end_at: hour(9) }),
+    t.mutation(internal.ingestion.target.set, { end_at: hour(9), start_at: hour(6) }),
     /earliest registered scan/u,
   )
   await rejects(
-    t.mutation(internal.ingestion.target.set, { start_at: hour(5), end_at: hour(8) }),
+    t.mutation(internal.ingestion.target.set, { end_at: hour(8), start_at: hour(5) }),
     /never retract/u,
   )
 })
@@ -341,7 +341,7 @@ test('a failed request waits for an explicit retry, then completes without dupli
 test('a target edit waits for kickoff, and the cron kicks off only when enabled', async () => {
   const t = setup()
   await collect(t, range(0, 3))
-  await t.mutation(internal.ingestion.target.set, { start_at: hour(0), end_at: hour(3) })
+  await t.mutation(internal.ingestion.target.set, { end_at: hour(3), start_at: hour(0) })
   await settle(t)
   expect(await records(t)).toEqual([])
 
@@ -370,12 +370,12 @@ test('completing an alerting pair schedules automatic Discord delivery', async (
     const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
     const all = await ctx.db.query(INGESTION_RECORDS_TABLE).collect()
     return {
-      delivered: scheduled
-        .filter(({ name }) => name.startsWith('products/discord/delivery'))
-        .map(({ args }) => canonicalJson(args)),
       alerting: all
         .filter(({ alerts }) => alerts)
         .map(({ _id }) => canonicalJson([{ record_id: _id }])),
+      delivered: scheduled
+        .filter(({ name }) => name.startsWith('products/discord/delivery'))
+        .map(({ args }) => canonicalJson(args)),
     }
   })
 
@@ -389,12 +389,12 @@ test('retry-all reopens a full batch within one transaction', async () => {
     await writeRecords(ctx, async (writer) => {
       for (const index of range(1, RETRY_BATCH + 1)) {
         await writer.insert({
-          kind: 'pair',
-          from_scan_at: hour(index - 1),
-          scan_at: hour(index),
           alerts: false,
-          state: 'failed',
           error: 'x'.repeat(4096),
+          from_scan_at: hour(index - 1),
+          kind: 'pair',
+          scan_at: hour(index),
+          state: 'failed',
         })
       }
     })
@@ -414,10 +414,10 @@ test('completion commits before queue coordination and its wakeup survives until
         ctx,
         async (writer) =>
           await writer.insert({
-            kind: 'pair',
-            from_scan_at: hour(0),
-            scan_at: hour(1),
             alerts: false,
+            from_scan_at: hour(0),
+            kind: 'pair',
+            scan_at: hour(1),
             state: 'queued',
             work_id: workId,
           }),
@@ -425,9 +425,9 @@ test('completion commits before queue coordination and its wakeup survives until
   )
 
   await t.mutation(internal.ingestion.execute.onIngested, {
-    workId,
     context: undefined,
     result: { kind: 'success', returnValue: [] },
+    workId,
   })
 
   await t.run(async (ctx) => {
@@ -472,13 +472,13 @@ test('repeated wakeups leave at most one queue step waiting', async () => {
 
 test('a retry assigned a broader scope writes past a narrower receipt', async () => {
   const t = setup()
-  const source = { previous: scan(hour(0), SPECS[0]), next: scan(hour(1), SPECS[1]) }
+  const source = { next: scan(hour(1), SPECS[1]), previous: scan(hour(0), SPECS[0]) }
   const write = async (scope: CurrentScope) =>
     await t.mutation(internal.ingestion.catalog.currentEndpoints.write, {
       process: 'currentEndpoints',
+      rows: currentEndpoints.derive(source, scope),
       scan_at: source.next.scan_at,
       scope,
-      rows: currentEndpoints.derive(source, scope),
     })
 
   expect(await write('departures')).toBe('committed')

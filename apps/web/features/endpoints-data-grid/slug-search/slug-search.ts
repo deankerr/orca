@@ -128,16 +128,16 @@ export function createSlugSearcher<T>(
 ) {
   // Build the in-memory index once for the provided records
   const index = records.map((record, position) => ({
-    position,
-    record,
     fields: getFields(record).map((field) => {
       const exact = normalizeSearchText(field.value)
       return {
-        name: field.name,
         exact,
+        name: field.name,
         tokens: tokenizeSlugField(exact),
       }
     }),
+    position,
+    record,
   }))
 
   return {
@@ -171,9 +171,9 @@ export function createSlugSearcher<T>(
 
                 const candidate: SlugSearchMatch = {
                   field: field.name,
-                  queryToken,
-                  matchedToken: indexToken,
                   kind: indexToken === queryToken ? 'exact' : 'prefix',
+                  matchedToken: indexToken,
+                  queryToken,
                 }
 
                 if (!bestMatch || compareMatches(candidate, bestMatch) < 0) {

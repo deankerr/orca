@@ -51,11 +51,11 @@ export function fieldChange(
       typeof input === 'string' ? quote(input, start) : format(input)
 
     if (change.type === 'field_added') {
-      return field(name, proseValue(change.after), { layout: 'block', change: 'added' })
+      return field(name, proseValue(change.after), { change: 'added', layout: 'block' })
     }
 
     if (change.type === 'field_removed') {
-      return field(name, proseValue(change.before), { layout: 'block', change: 'removed' })
+      return field(name, proseValue(change.before), { change: 'removed', layout: 'block' })
     }
 
     return field(
@@ -175,8 +175,8 @@ function excerpt(text: string, start = 0, limit = 800): string {
 }
 
 const deltaSymbols = {
-  up: { favorable: '▲', unfavorable: '🔺' },
   down: { favorable: '▼', unfavorable: '🔻' },
+  up: { favorable: '▲', unfavorable: '🔺' },
 }
 
 /** Numeric interpretation is shared; Discord owns symbols and favorable direction. */

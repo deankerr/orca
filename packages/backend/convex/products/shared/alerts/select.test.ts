@@ -10,28 +10,28 @@ function update(kind: 'provider' | 'endpoint', before: JsonValue, after: JsonVal
   const [change] = compare({ entity: before }, { entity: after })
 
   const identity = {
-    entity_id: 'entity',
-    type: 'UPDATE' as const,
-    scan_at: '2026-10-01T00:00:00.000Z',
     change_json: JSON.stringify(change),
+    entity_id: 'entity',
+    scan_at: '2026-10-01T00:00:00.000Z',
+    type: 'UPDATE' as const,
   }
 
-  const provider = { provider_id: 'provider', display_name: 'Provider' }
+  const provider = { display_name: 'Provider', provider_id: 'provider' }
 
   return kind === 'provider'
-    ? { ...identity, entity_kind: kind, context: { provider } }
+    ? { ...identity, context: { provider }, entity_kind: kind }
     : {
         ...identity,
-        entity_kind: kind,
         context: {
-          provider,
-          model: { model_id: 'model', display_name: 'Model' },
           endpoint: {
             endpoint_id: 'entity',
-            provider_tag: 'tag',
             provider_display_name: 'Offering',
+            provider_tag: 'tag',
           },
+          model: { display_name: 'Model', model_id: 'model' },
+          provider,
         },
+        entity_kind: kind,
       }
 }
 
@@ -41,7 +41,7 @@ test('shared selection retains Discord field policy without rewriting captured o
     { metadata: {} },
     {
       metadata: {
-        dataPolicy: { training: false, privacyPolicyURL: 'https://example.com/privacy' },
+        dataPolicy: { privacyPolicyURL: 'https://example.com/privacy', training: false },
       },
     },
   )
@@ -49,9 +49,9 @@ test('shared selection retains Discord field policy without rewriting captured o
   expect(prepareAlert(provider)).toMatchObject({
     changes: [
       {
-        type: 'field_added',
-        path: 'dataPolicy.privacyPolicyURL',
         after: 'https://example.com/privacy',
+        path: 'dataPolicy.privacyPolicyURL',
+        type: 'field_added',
       },
     ],
   })
@@ -59,8 +59,8 @@ test('shared selection retains Discord field policy without rewriting captured o
   expect(curate(provider)).toMatchObject({
     changes: [
       {
+        after: { privacyPolicyURL: 'https://example.com/privacy', training: false },
         path: 'dataPolicy',
-        after: { training: false, privacyPolicyURL: 'https://example.com/privacy' },
       },
     ],
   })
@@ -89,9 +89,9 @@ test('shared selection retains Discord field policy without rewriting captured o
     prepareAlert(
       update(
         'endpoint',
-        { metadata: { supports_reasoning: false, context_length: 100 } },
-        { metadata: { supports_reasoning: true, context_length: 200 } },
+        { metadata: { context_length: 100, supports_reasoning: false } },
+        { metadata: { context_length: 200, supports_reasoning: true } },
       ),
     ),
-  ).toMatchObject({ changes: [{ path: 'context_length', before: 100, after: 200 }] })
+  ).toMatchObject({ changes: [{ after: 200, before: 100, path: 'context_length' }] })
 })

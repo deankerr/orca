@@ -4,6 +4,7 @@ import type { Pricing } from '../../../catalog/pricing'
 import { priceMeters as meters } from '../../../priceMeters'
 
 /** Alert paths and labels use the shared meter units and decimal scaling. */
+// oxlint-disable sort-keys -- Object.keys order sets the price order in Discord endpoint cards.
 export const priceMeters: Record<string, { label: string; scale: number; unit: string }> = {
   'pricing.prompt': { label: 'input', ...meters.prompt },
   'pricing.completion': { label: 'output', ...meters.completion },
@@ -16,6 +17,7 @@ export const priceMeters: Record<string, { label: string; scale: number; unit: s
   'pricing.image_output': { label: 'image_output', ...meters.image_output },
   'pricing.web_search': { label: 'web_search', ...meters.web_search },
 }
+// oxlint-enable sort-keys
 
 /** Detect schedule evidence without interpreting or constraining upstream conditions. */
 export function isScheduledPricing(pricing: z.infer<typeof Pricing>): boolean {

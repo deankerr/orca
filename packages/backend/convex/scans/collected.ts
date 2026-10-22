@@ -2,10 +2,10 @@ import { z } from 'zod'
 
 /** Model fields required to identify and project a scan entry. */
 export const IdentifiedModel = z.looseObject({
-  slug: z.string(),
-  permaslug: z.string(),
   input_modalities: z.array(z.string()),
   output_modalities: z.array(z.string()),
+  permaslug: z.string(),
+  slug: z.string(),
 })
 
 /** Endpoint fields required to identify and project a scan entry. */
