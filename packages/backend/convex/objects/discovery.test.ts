@@ -96,13 +96,13 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
       ['c', 'a'],
     ]) {
       query.mockResolvedValue(invalid)
-      await rejects(namesAtOrAfter(ctx, selection), /order\/range/)
+      await rejects(namesAtOrAfter(ctx, selection), /order\/range/u)
     }
 
     query.mockResolvedValue(['b', 'c'])
     expect(await namesAtOrAfter(ctx, { ...selection, order: undefined })).toEqual(['b', 'c'])
     query.mockResolvedValue(['c', 'b'])
-    await rejects(namesAtOrAfter(ctx, { ...selection, order: undefined }), /order\/range/)
+    await rejects(namesAtOrAfter(ctx, { ...selection, order: undefined }), /order\/range/u)
     query.mockResolvedValue([])
     expect(await namesAtOrAfter(ctx, selection)).toEqual([])
 
@@ -111,7 +111,7 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
     expect(await namesAtOrAfter(ctx, bounded)).toEqual(['b'])
     expect(query.mock.lastCall?.[1]).toEqual({ ...bounded, apiKey: 'test-key' })
     query.mockResolvedValue(['c', 'b'])
-    await rejects(namesAtOrAfter(ctx, bounded), /order\/range/)
+    await rejects(namesAtOrAfter(ctx, bounded), /order\/range/u)
   } finally {
     query.mockRestore()
 

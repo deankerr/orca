@@ -18,7 +18,7 @@ import type { AssetGroup } from './contract'
 import { emitFallbackAsset } from './fallback-image'
 
 // Keep the public key parser and output image size easy to change while the service is young.
-const FILE_EXTENSION = /\.(?:avif|png|jpe?g|svg|webp)$/i
+const FILE_EXTENSION = /\.(?:avif|png|jpe?g|svg|webp)$/iu
 const THEME_GROUPS = ['light', 'dark'] as const
 const MANUAL_SOURCE_GROUPS = ['base', ...ASSET_GROUPS] as const
 const OUTPUT_IMAGE_SIZE_PX = 128

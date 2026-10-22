@@ -164,16 +164,16 @@ export const records = query({
   },
   handler: async (ctx, { state, before, paginationOpts }) => {
     await requireAdmin(ctx)
-    const records = stream(ctx.db, schema).query(INGESTION_RECORDS_TABLE)
+    const recordStream = stream(ctx.db, schema).query(INGESTION_RECORDS_TABLE)
     // A state filter covers both kinds, so failed baselines stay visible and retryable.
     const page = await (
       state === undefined
-        ? records
+        ? recordStream
             .withIndex('by_scan_at', (q) => (before === undefined ? q : q.lt('scan_at', before)))
             .order('desc')
         : mergedStream(
             recordKind.members.map(({ value: kind }) =>
-              records
+              recordStream
                 .withIndex('by_kind_and_state_and_scan_at', (q) => {
                   const range = q.eq('kind', kind).eq('state', state)
                   return before === undefined ? range : range.lt('scan_at', before)
@@ -192,7 +192,7 @@ export const records = query({
           kind,
           from_scan_at,
           scan_at,
-          state,
+          state: rowState,
           alerts,
           current_scope,
           current_stats,
@@ -202,7 +202,7 @@ export const records = query({
           kind,
           from_scan_at,
           scan_at,
-          state,
+          state: rowState,
           alerts,
           current_scope: current_scope ?? null,
           current_stats: current_stats ?? null,

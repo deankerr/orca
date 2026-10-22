@@ -62,7 +62,7 @@ export const serve = httpAction(async (ctx, request) => {
     if (
       args.cursor !== undefined &&
       error instanceof Error &&
-      /InvalidCursor|Failed to parse cursor/.test(error.message)
+      /InvalidCursor|Failed to parse cursor/u.test(error.message)
     ) {
       return Response.json(
         { error: 'Invalid cursor. Restart from the feed without a cursor.' },

@@ -1,38 +1,42 @@
 import type { EntityAlert } from '../../shared/alerts/curate'
-import { colors, embedCard, gridUrl, logoUrl } from './card'
+import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { escape, lifecycleMarker } from './display'
+import { arrival, escape, lifecycleMarker } from './display'
 import { fieldChange } from './fields'
 
+type ProviderAlert = Extract<EntityAlert, { entity_kind: 'provider' }>
+
+const arrivals = {
+  discovered: 'discovered',
+  relisted: 'has listed endpoints again',
+  listed: 'now has listed endpoints',
+}
+
 /** Providers are discovered once; endpoint presence can disappear and return repeatedly. */
-export function providerCard(
-  event: Extract<EntityAlert, { entity_kind: 'provider' }>,
-  urls: DiscordUrls,
-): Card {
+export function providerCard(event: ProviderAlert, urls: DiscordUrls): Card {
   const { provider } = event.context
-  const changes = 'changes' in event ? event.changes : []
 
-  const content =
-    'after' in event
-      ? event.previously_known === false
-        ? `Provider **${escape(provider.display_name)}** discovered.`
-        : event.previously_known === true
-          ? `Provider **${escape(provider.display_name)}** has listed endpoints again.`
-          : `Provider **${escape(provider.display_name)}** now has listed endpoints.`
-      : 'before' in event
-        ? `Provider **${escape(provider.display_name)}** has no more listed endpoints.`
-        : [
-            `Provider **${escape(provider.display_name)}** updated.`,
-            ...changes.map((change) => fieldChange(change)),
-          ].join('\n\n')
-
-  return embedCard(lifecycleMarker(event) + content, {
+  return embedCard(lifecycleMarker(event) + providerContent(event), {
     author: {
       name: provider.provider_id,
       url: gridUrl(provider.provider_id, urls),
       iconURL: logoUrl(provider.provider_id, urls),
     },
     timestamp: event.observed_at,
-    color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
+    color: lifecycleColor(event),
   })
+}
+
+function providerContent(event: ProviderAlert): string {
+  const subject = `Provider **${escape(event.context.provider.display_name)}**`
+
+  if ('after' in event) {
+    return `${subject} ${arrivals[arrival(event.previously_known)]}.`
+  }
+
+  if ('before' in event) {
+    return `${subject} has no more listed endpoints.`
+  }
+
+  return [`${subject} updated.`, ...event.changes.map((change) => fieldChange(change))].join('\n\n')
 }

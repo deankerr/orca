@@ -4,13 +4,16 @@ import type { NextConfig } from 'next'
 import { getConvexHttpUrl } from './lib/utils'
 
 // Preview credentials are shared, but the callback must return to this branch's web app.
-const appUrl = new URL(
-  process.env.NODE_ENV === 'development'
-    ? (process.env.ORCA_DEV_URL ?? '')
-    : process.env.VERCEL_ENV === 'preview'
-      ? `https://${process.env.VERCEL_BRANCH_URL}`
-      : 'https://orca.orb.town',
-)
+const appUrl = new URL(appOrigin())
+
+function appOrigin() {
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.ORCA_DEV_URL ?? ''
+  }
+  return process.env.VERCEL_ENV === 'preview'
+    ? `https://${process.env.VERCEL_BRANCH_URL}`
+    : 'https://orca.orb.town'
+}
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_WORKOS_REDIRECT_URI: new URL('/callback', appUrl).href },

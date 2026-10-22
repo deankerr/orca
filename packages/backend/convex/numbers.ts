@@ -19,7 +19,10 @@ export function compareNumbers(left: Numeric, right: Numeric): -1 | 0 | 1 | null
 
   const difference = a.numerator * b.denominator - b.numerator * a.denominator
 
-  return difference === 0n ? 0 : difference > 0n ? 1 : -1
+  if (difference === 0n) {
+    return 0
+  }
+  return difference > 0n ? 1 : -1
 }
 
 /**
@@ -72,9 +75,7 @@ export function relativeChange(
 
   const amount =
     fractionDigits === undefined
-      ? ratio.numerator * 1000n < ratio.denominator
-        ? '<0.001'
-        : formatRatio(ratio, { fractionDigits: 1, significantDigits: 2 })
+      ? formatSmallRatio(ratio)
       : formatRatio(ratio, { fractionDigits, significantDigits: 0 })
 
   return { isUp: ratio.isUp, percent: amount === '0' ? '' : `${amount}%` }
@@ -132,7 +133,7 @@ function decimal(value: Numeric, scale = 0): Ratio | null {
   }
 
   const parts =
-    /^(?<sign>[+-]?)(?<whole>\d+)(?:\.(?<fraction>\d+))?(?:[eE](?<exponent>[+-]?\d+))?$/.exec(
+    /^(?<sign>[+-]?)(?<whole>\d+)(?:\.(?<fraction>\d+))?(?:[eE](?<exponent>[+-]?\d+))?$/u.exec(
       text,
     )?.groups
 
@@ -153,6 +154,13 @@ function decimal(value: Numeric, scale = 0): Ratio | null {
     numerator: coefficient * power(Math.max(0, exponent)),
     denominator: power(Math.max(0, -exponent)),
   }
+}
+
+/** Unpinned precision keeps changes below 0.001% visible as a bound rather than zero. */
+function formatSmallRatio(ratio: Ratio): string {
+  return ratio.numerator * 1000n < ratio.denominator
+    ? '<0.001'
+    : formatRatio(ratio, { fractionDigits: 1, significantDigits: 2 })
 }
 
 function formatRatio(
@@ -183,7 +191,7 @@ function formatRatio(
   const digits = rounded.toString().padStart(places + 1, '0')
   const whole = places === 0 ? digits : digits.slice(0, -places)
   const fraction = (places === 0 ? '' : digits.slice(-places))
-    .replace(/0+$/, '')
+    .replace(/0+$/u, '')
     .padEnd(minimumFractionDigits, '0')
 
   return `${numerator < 0n && rounded !== 0n ? '-' : ''}${BigInt(whole).toLocaleString('en-US')}${fraction === '' ? '' : `.${fraction}`}`

@@ -157,7 +157,7 @@ function ifNoneMatchHits(header: string, etag: string): boolean {
   }
 
   return header.split(',').some((part) => {
-    const token = part.trim().replace(/^W\//, '')
+    const token = part.trim().replace(/^W\//u, '')
     return token === etag
   })
 }

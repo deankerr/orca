@@ -1,14 +1,13 @@
 import type { EntityAlert, FieldValue } from '../../shared/alerts/curate'
-import { colors, embedCard, componentCard, gridUrl, logoUrl } from './card'
+import { colors, embedCard, componentCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape, field, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
+type ModelAlert = Extract<EntityAlert, { entity_kind: 'model' }>
+
 /** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
-export function modelCard(
-  event: Extract<EntityAlert, { entity_kind: 'model' }>,
-  urls: DiscordUrls,
-): Card {
+export function modelCard(event: ModelAlert, urls: DiscordUrls): Card {
   const { model } = event.context
   const name = model.display_name
   const slug = model.model_id
@@ -30,30 +29,37 @@ export function modelCard(
     })
   }
 
-  const content =
-    'after' in event
-      ? [`Model **${escape(name)}** now has listed endpoints.`, modelDetails(event.after)]
-      : 'before' in event
-        ? [
-            `Model **${escape(name)}** has no more listed endpoints.`,
-            Object.keys(event.before).length > 0 ? 'Last known model details:' : '',
-            modelDetails(event.before),
-          ]
-        : [
-            `Model **${escape(name)}** updated.`,
-            ...event.changes.map(
-              (change) =>
-                `${change.path === 'warning_message' ? '⚠ ' : ''}${fieldChange(change, {
-                  prose: change.path === 'description' || change.path === 'warning_message',
-                })}`,
-            ),
-          ]
-
-  return embedCard(lifecycleMarker(event) + content.filter(Boolean).join('\n\n'), {
+  return embedCard(lifecycleMarker(event) + compactContent(event).filter(Boolean).join('\n\n'), {
     author: { name: slug, url, iconURL: logo },
     timestamp: event.observed_at,
-    color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
+    color: lifecycleColor(event),
   })
+}
+
+function compactContent(event: ModelAlert): string[] {
+  const name = escape(event.context.model.display_name)
+
+  if ('after' in event) {
+    return [`Model **${name}** now has listed endpoints.`, modelDetails(event.after)]
+  }
+
+  if ('before' in event) {
+    return [
+      `Model **${name}** has no more listed endpoints.`,
+      Object.keys(event.before).length > 0 ? 'Last known model details:' : '',
+      modelDetails(event.before),
+    ]
+  }
+
+  return [
+    `Model **${name}** updated.`,
+    ...event.changes.map(
+      (change) =>
+        `${change.path === 'warning_message' ? '⚠ ' : ''}${fieldChange(change, {
+          prose: change.path === 'description' || change.path === 'warning_message',
+        })}`,
+    ),
+  ]
 }
 
 /** Model facts in display order; all field-specific choices stay beside the card. */

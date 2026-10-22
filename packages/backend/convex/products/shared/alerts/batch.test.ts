@@ -54,16 +54,14 @@ function bucket(index: number, changes: FieldChange[] = [shared]): IndividualAle
 }
 
 function occurrences(buckets: Alert[]): number {
-  return buckets.reduce<number>(
-    (count, item) =>
-      count +
-      (item.type === 'batch'
-        ? item.members.length
-        : 'changes' in item.event
-          ? item.event.changes.length
-          : 0),
-    0,
-  )
+  return buckets.reduce<number>((count, item) => count + occurrenceCount(item), 0)
+}
+
+function occurrenceCount(item: Alert): number {
+  if (item.type === 'batch') {
+    return item.members.length
+  }
+  return 'changes' in item.event ? item.event.changes.length : 0
 }
 
 test('extracts each shared item independently, keeps unique fields, and drops only empty updates', () => {
@@ -408,7 +406,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
     expect(cards[0]?.source_ids.toSorted()).toEqual(
       members.map((member) => member.source_id).toSorted(),
     )
-    expect(description.match(/^\*\*/gm)).toHaveLength(Math.min(providerCount, modelCount))
+    expect(description.match(/^\*\*/gmu)).toHaveLength(Math.min(providerCount, modelCount))
 
     for (let index = 0; index < 6; index += 1) {
       const group = groupByModel

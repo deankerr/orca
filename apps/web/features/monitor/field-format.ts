@@ -28,13 +28,13 @@ export function formatChangeUnit(path: string, ...values: FieldValue[]): string 
     ? meter.unit
     : ''
 }
+const fieldLabels: Record<string, string> = {
+  'pricing.overrides': 'Price schedule',
+  max_completion_tokens: 'max_output',
+}
+
 export const fieldLabel = (path: string): string =>
-  priceMeters[path]?.label ??
-  (path === 'pricing.overrides'
-    ? 'Price schedule'
-    : path === 'max_completion_tokens'
-      ? 'max_output'
-      : (path.split('.').at(-1) ?? path))
+  priceMeters[path]?.label ?? fieldLabels[path] ?? path.split('.').at(-1) ?? path
 
 export function formatChangeDelta(before: FieldValue, after: FieldValue, path: string) {
   const numeric = typeof before === 'number' && typeof after === 'number'

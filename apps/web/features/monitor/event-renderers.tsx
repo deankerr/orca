@@ -101,35 +101,51 @@ export function EntityEventCard({
         )}
       </div>
 
-      {'changes' in event ? (
-        <div className="px-6 pb-2.5">
-          <FieldChangeList fields={event.changes} />
-        </div>
-      ) : event.entity_kind === 'model' ? (
-        <div className="space-y-2.5 px-6 pb-2.5">
-          {removed && <p className="text-xs text-muted-foreground">When last observed:</p>}
-          <ModelFacts facts={'after' in event ? event.after : event.before} />
-        </div>
-      ) : event.entity_kind === 'endpoint' && 'after' in event ? (
-        <div className="px-6 pb-2.5">
-          <FactList
-            facts={event.after}
-            paths={[
-              'context_length',
-              'max_completion_tokens',
-              'quantization',
-              ...Object.keys(priceMeters),
-              'pricing.discount',
-              'data_policy.training',
-              'data_policy.retainsPrompts',
-              'data_policy.retentionDays',
-            ]}
-          />
-          {fact(event.after, 'pricing.is_scheduled') === true && (
-            <p className="mt-1.5 font-mono text-xs">Price schedule detected.</p>
-          )}
-        </div>
-      ) : null}
+      <EventDetails event={event} />
+    </div>
+  )
+}
+
+function EventDetails({ event }: { event: EntityAlert }) {
+  if ('changes' in event) {
+    return (
+      <div className="px-6 pb-2.5">
+        <FieldChangeList fields={event.changes} />
+      </div>
+    )
+  }
+
+  if (event.entity_kind === 'model') {
+    return (
+      <div className="space-y-2.5 px-6 pb-2.5">
+        {'before' in event && <p className="text-xs text-muted-foreground">When last observed:</p>}
+        <ModelFacts facts={'after' in event ? event.after : event.before} />
+      </div>
+    )
+  }
+
+  if (event.entity_kind !== 'endpoint' || !('after' in event)) {
+    return null
+  }
+
+  return (
+    <div className="px-6 pb-2.5">
+      <FactList
+        facts={event.after}
+        paths={[
+          'context_length',
+          'max_completion_tokens',
+          'quantization',
+          ...Object.keys(priceMeters),
+          'pricing.discount',
+          'data_policy.training',
+          'data_policy.retainsPrompts',
+          'data_policy.retentionDays',
+        ]}
+      />
+      {fact(event.after, 'pricing.is_scheduled') === true && (
+        <p className="mt-1.5 font-mono text-xs">Price schedule detected.</p>
+      )}
     </div>
   )
 }

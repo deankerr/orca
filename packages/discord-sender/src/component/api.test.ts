@@ -18,7 +18,7 @@ function setup() {
 // JSON.parse accepts this as Infinity, but the Discord boundary requires finite
 // JSON values. Admission must reject it before routing or enqueueing any work.
 const payload = '{"n":1e999}'
-const parserError = /Invalid input|Infinity/
+const parserError = /Invalid input|Infinity/u
 
 test('submitBatch rejects numeric overflow even without subscribers', async () => {
   const t = setup()
@@ -38,7 +38,7 @@ test('submitBatch rejects numeric overflow even without subscribers', async () =
 
 test('editMessage rejects numeric overflow before creating a delivery job', async () => {
   const t = setup()
-  const { jobId, resultId } = await t.run(async (ctx) => {
+  const original = await t.run(async (ctx) => {
     const webhookId = await ctx.db.insert('webhooks', {
       topics: [],
       url: 'https://discord.com/api/v10/webhooks/100000000000000001/test-token',
@@ -66,11 +66,11 @@ test('editMessage rejects numeric overflow before creating a delivery job', asyn
       expiresAt: Date.now() + 60_000,
       key: 'overflow-edit',
       payload,
-      resultId,
+      resultId: original.resultId,
     }),
     parserError,
   )
 
   const jobs = await t.run(async (ctx) => await ctx.db.query('jobs').collect())
-  expect(jobs.map((job) => job._id)).toEqual([jobId])
+  expect(jobs.map((job) => job._id)).toEqual([original.jobId])
 })

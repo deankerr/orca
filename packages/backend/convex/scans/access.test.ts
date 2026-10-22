@@ -52,7 +52,7 @@ test('scan storage round-trips collected entries and loads one extracted scan', 
       stats: [],
     })
     batch.mockResolvedValue([null])
-    await rejects(scans.load(ctx, scan_at), /Scan not found/)
+    await rejects(scans.load(ctx, scan_at), /Scan not found/u)
     await rejects(store(ctx, { ...scan, entries: [] }))
     expect(saved).toHaveBeenCalledTimes(1)
   } finally {

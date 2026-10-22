@@ -33,9 +33,9 @@ function quoteAt(rows: readonly EndpointPriceRow[], endpoint_id: string, time: s
     return undefined
   }
 
-  const { scan_at: _scanAt, ...quote } = latest
+  const { scan_at: _scanAt, ...latestQuote } = latest
 
-  return quote
+  return latestQuote
 }
 
 test('every listed endpoint reads the quote from its own scan', () => {

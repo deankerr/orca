@@ -9,11 +9,20 @@ import { MessageFlags } from 'discord-api-types/v10'
 import type { RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
 import { entityLogoUrl } from '../../../entityLogo'
+import type { EntityAlert } from '../../shared/alerts/curate'
 
 export type Card = RESTPostAPIWebhookWithTokenJSONBody
 export type DiscordUrls = { publicUrl: string; logoOrigin: string }
 
 export const colors = { added: 0x22_c5_5e, updated: 0x3b_82_f6, removed: 0xef_44_44 }
+
+/** Arrivals carry `after`, departures `before`, and updates `changes`. */
+export function lifecycleColor(event: EntityAlert): number {
+  if ('after' in event) {
+    return colors.added
+  }
+  return 'before' in event ? colors.removed : colors.updated
+}
 
 /** Discord transport details receive display-ready identity and content, never event data. */
 export function embedCard(

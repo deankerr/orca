@@ -42,17 +42,17 @@ test('anonymous and other signed-in users cannot call the admin demo directly', 
   process.env.ORCA_ADMIN_USER_ID = 'user_admin'
 
   for (const subject of [null, 'user_other']) {
-    await rejects(demoHandler(context(subject), {}), /Administrator access required/)
+    await rejects(demoHandler(context(subject), {}), /Administrator access required/u)
     expect(await viewerHandler(context(subject), {})).toEqual({ userId: subject, isAdmin: false })
   }
 })
 
 test('an unset or empty allowlist denies authenticated callers', async () => {
   delete process.env.ORCA_ADMIN_USER_ID
-  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/)
+  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/u)
 
   process.env.ORCA_ADMIN_USER_ID = ''
-  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/)
+  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/u)
 })
 
 test('only the configured identity can call the demo; replacing it revokes the old identity', async () => {
@@ -67,7 +67,7 @@ test('only the configured identity can call the demo; replacing it revokes the o
   })
 
   process.env.ORCA_ADMIN_USER_ID = 'user_replacement'
-  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/)
+  await rejects(demoHandler(context('user_admin'), {}), /Administrator access required/u)
   expect(await demoHandler(context('user_replacement'), {})).toMatchObject({
     userId: 'user_replacement',
   })

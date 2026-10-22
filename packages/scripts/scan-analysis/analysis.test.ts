@@ -221,7 +221,7 @@ test('embeds observed values as inert JSON and escapes visible selection in the 
   expect(html).toContain('&lt;/script&gt;')
   expect(html).not.toContain('<script src=')
 
-  const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/s.exec(
+  const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/su.exec(
     html,
   )?.groups?.payload
 

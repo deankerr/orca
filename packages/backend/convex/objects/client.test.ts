@@ -39,8 +39,8 @@ test('standalone and deployment readers share ordered remote batches and propaga
     }
 
     action.mockResolvedValue([null])
-    await rejects(standalone.loadMany(identities), /invalid batch/)
-    await rejects(loadMany(ctx, identities), /invalid batch/)
+    await rejects(standalone.loadMany(identities), /invalid batch/u)
+    await rejects(loadMany(ctx, identities), /invalid batch/u)
 
     const unavailable = new Error('Source unavailable')
     action.mockRejectedValue(unavailable)

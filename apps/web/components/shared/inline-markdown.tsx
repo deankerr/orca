@@ -1,4 +1,4 @@
-const inlinePattern = /`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)\]]+/g
+const inlinePattern = /`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)\]]+/gu
 
 export function InlineMarkdown({ text }: { text: string }) {
   const parts: React.ReactNode[] = []

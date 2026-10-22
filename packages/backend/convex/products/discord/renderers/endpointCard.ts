@@ -1,45 +1,40 @@
 import type { EntityAlert, FieldChange, FieldValue } from '../../shared/alerts/curate'
-import { colors, embedCard, gridUrl, logoUrl } from './card'
+import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { escape, lifecycleMarker } from './display'
+import { arrival, escape, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldName, fieldValue } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
+type EndpointAlert = Extract<EntityAlert, { entity_kind: 'endpoint' }>
+
 /** Endpoint identity, field layout, and lifecycle presentation belong to this card. */
-export function endpointCard(
-  event: Extract<EntityAlert, { entity_kind: 'endpoint' }>,
-  urls: DiscordUrls,
-): Card {
+export function endpointCard(event: EndpointAlert, urls: DiscordUrls): Card {
   const { model, provider, endpoint } = event.context
   const prefix = event.entity_id.slice(0, 6)
   const url = gridUrl(model.model_id, urls, prefix)
 
-  const state =
-    'after' in event
-      ? event.previously_known === false
-        ? 'discovered'
-        : event.previously_known === true
-          ? 'relisted'
-          : 'listed'
-      : 'before' in event
-        ? 'unlisted'
-        : 'updated'
+  const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint ${endpointState(event)}.`
 
-  const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint ${state}.`
-
-  const body =
-    'changes' in event
-      ? endpointChanges(event.changes)
-      : 'after' in event
-        ? endpointDetails(event.after)
-        : []
-
-  return embedCard([heading, ...body].filter(Boolean).join('\n\n'), {
+  return embedCard([heading, ...endpointBody(event)].filter(Boolean).join('\n\n'), {
     author: { name: `${model.model_id} [${prefix}]`, url, iconURL: logoUrl(model.model_id, urls) },
     timestamp: event.observed_at,
-    color: 'after' in event ? colors.added : 'before' in event ? colors.removed : colors.updated,
+    color: lifecycleColor(event),
     footer: { text: endpoint.provider_tag, iconURL: logoUrl(provider.provider_id, urls) },
   })
+}
+
+function endpointState(event: EndpointAlert): string {
+  if ('after' in event) {
+    return arrival(event.previously_known)
+  }
+  return 'before' in event ? 'unlisted' : 'updated'
+}
+
+function endpointBody(event: EndpointAlert): string[] {
+  if ('changes' in event) {
+    return endpointChanges(event.changes)
+  }
+  return 'after' in event ? endpointDetails(event.after) : []
 }
 
 function endpointChanges(changes: FieldChange[]): string[] {
@@ -51,23 +46,20 @@ function endpointChanges(changes: FieldChange[]): string[] {
     { label: 'Pricing', rows: pricingChanges(prices) },
     ...['Limits', 'Data policy', 'Details'].map((label) => ({
       label,
-      rows: fields
-        .filter((change) => {
-          const group = change.path.startsWith('data_policy.')
-            ? 'Data policy'
-            : /^(?:context_length|max_|limit_)/.test(change.path)
-              ? 'Limits'
-              : 'Details'
-
-          return group === label
-        })
-        .map(endpointFieldChange),
+      rows: fields.filter((change) => fieldGroup(change.path) === label).map(endpointFieldChange),
     })),
   ].filter((group) => group.rows.length > 0)
 
   return groups.map(({ label, rows }) =>
     groups.length > 1 ? `◇ **${label}**\n${rows.join('\n')}` : rows.join('\n\n'),
   )
+}
+
+function fieldGroup(path: string): string {
+  if (path.startsWith('data_policy.')) {
+    return 'Data policy'
+  }
+  return /^(?:context_length|max_|limit_)/u.test(path) ? 'Limits' : 'Details'
 }
 
 /** Keep endpoint labels and units consistent across individual and batch cards. */

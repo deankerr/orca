@@ -16,7 +16,7 @@ import type { JsonValue } from '../../json'
 import type { AlertSource } from '../shared/alerts/read'
 import { canonicalJson, contentKey, renderRows } from './render'
 
-function row(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
+function eventRow(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
   const [change] = compare({ [id]: before }, { [id]: after })
   return {
     _id: id as Id<'catalog_events'>,
@@ -38,7 +38,7 @@ function row(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_even
   }
 }
 const changed = (id: string) =>
-  row(id, { metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
+  eventRow(id, { metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
 
 const SCAN_AT = '2026-09-30T01:00:00.000Z'
 const PREVIOUS_SCAN_AT = '2026-09-30T00:00:00.000Z'
@@ -111,12 +111,13 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
           type === 'ADD' ? { [id]: snapshot } : {},
         )
   const fields = { entity_id: id, type, scan_at, change_json: JSON.stringify(change) }
-  const event: EventRow =
-    kind === 'endpoint'
-      ? { ...fields, entity_kind: kind, context }
-      : kind === 'model'
-        ? { ...fields, entity_kind: kind, context: { model: context.model } }
-        : { ...fields, entity_kind: kind, context: { provider: context.provider } }
+  let event: EventRow = { ...fields, entity_kind: 'endpoint', context }
+
+  if (kind === 'model') {
+    event = { ...fields, entity_kind: kind, context: { model: context.model } }
+  } else if (kind === 'provider') {
+    event = { ...fields, entity_kind: kind, context: { provider: context.provider } }
+  }
 
   return { previous, row: { table: EVENTS_TABLE, value: event } } as const
 }
@@ -187,7 +188,7 @@ async function withOrigins(run: () => Promise<void>) {
 
 test('rendering reports suppressed source events and preserves deterministic ordering', async () => {
   const visible = [changed('first'), changed('second')]
-  const hidden = row(
+  const hidden = eventRow(
     'hidden',
     { pricing: { meters: { prompt: '1' } } },
     { pricing: { meters: { prompt: '1.001' } } },

@@ -55,12 +55,12 @@ test('every operation requires the configured administrator', async () => {
   const t = setup()
   const other = t.withIdentity({ subject: 'user_other' })
 
-  await rejects(other.query(api.ingestion.admin.overview, {}), /Administrator access required/)
-  await rejects(other.mutation(api.ingestion.admin.runSync, {}), /Administrator access required/)
-  await rejects(other.mutation(api.ingestion.admin.retry, {}), /Administrator access required/)
+  await rejects(other.query(api.ingestion.admin.overview, {}), /Administrator access required/u)
+  await rejects(other.mutation(api.ingestion.admin.runSync, {}), /Administrator access required/u)
+  await rejects(other.mutation(api.ingestion.admin.retry, {}), /Administrator access required/u)
   await rejects(
     t.mutation(api.ingestion.admin.saveTarget, { start_at: hour(0), end_at: hour(1) }),
-    /Administrator access required/,
+    /Administrator access required/u,
   )
 })
 
@@ -78,7 +78,7 @@ test('histogram buckets count each state exactly, including the inclusive range 
   expect(edges).toHaveLength(9)
   for (const state of new Set(STATES)) {
     const expected = Array.from({ length: 8 }, (_, bucket) => {
-      const indexes = Array.from({ length: 40 }, (_, i) => i + 1).filter((index) =>
+      const indexes = Array.from({ length: 40 }, (_entry, i) => i + 1).filter((index) =>
         bucket === 7 ? index >= bucket * 5 : index >= bucket * 5 && index < (bucket + 1) * 5,
       )
       return indexes.filter((index) => STATES[index % STATES.length] === state).length
@@ -92,7 +92,7 @@ test('histogram buckets count each state exactly, including the inclusive range 
 
   await rejects(
     admin.query(api.ingestion.admin.histogram, { start_at: hour(1), end_at: hour(0), buckets: 4 }),
-    /Invalid histogram/,
+    /Invalid histogram/u,
   )
   await rejects(
     admin.query(api.ingestion.admin.histogram, {
@@ -100,7 +100,7 @@ test('histogram buckets count each state exactly, including the inclusive range 
       end_at: hour(1),
       buckets: 10_000,
     }),
-    /Invalid histogram/,
+    /Invalid histogram/u,
   )
 })
 

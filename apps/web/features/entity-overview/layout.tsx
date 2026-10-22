@@ -151,19 +151,39 @@ export function OverviewStatus({
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
       <SheetTitle className="sr-only">{kind} Overview</SheetTitle>
-      {pending ? (
-        <output className="flex items-center gap-2">
-          <Spinner />
-          Loading…
-        </output>
-      ) : error ? (
-        <>
-          <p role="alert">Could not load {kind.toLowerCase()}.</p>
-          <Button onClick={retry}>Retry</Button>
-        </>
-      ) : (
-        <p>{kind} not found.</p>
-      )}
+      <OverviewStatusMessage pending={pending} error={error} retry={retry} kind={kind} />
     </div>
   )
+}
+
+function OverviewStatusMessage({
+  pending,
+  error,
+  retry,
+  kind,
+}: {
+  pending: boolean
+  error: boolean
+  retry: () => void
+  kind: string
+}) {
+  if (pending) {
+    return (
+      <output className="flex items-center gap-2">
+        <Spinner />
+        Loading…
+      </output>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <p role="alert">Could not load {kind.toLowerCase()}.</p>
+        <Button onClick={retry}>Retry</Button>
+      </>
+    )
+  }
+
+  return <p>{kind} not found.</p>
 }

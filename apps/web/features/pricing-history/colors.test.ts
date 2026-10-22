@@ -30,7 +30,7 @@ describe('providerColor', () => {
   test('emits valid in-range oklch coordinates', () => {
     for (const providerId of KNOWN_PROVIDERS) {
       const color = providerColor(providerId)
-      expect(color).toMatch(/^oklch\(0\.\d+ 0\.\d+ \d+(?:\.\d+)?\)$/)
+      expect(color).toMatch(/^oklch\(0\.\d+ 0\.\d+ \d+(?:\.\d+)?\)$/u)
 
       const [lightness, chroma, hue] = color.slice('oklch('.length, -1).split(' ').map(Number)
       expect(lightness).toBeWithin(0.66, 0.7601)
@@ -57,7 +57,7 @@ describe('providerColor', () => {
 
   test('provides the same palette in the sRGB syntax required by ECharts', () => {
     for (const providerId of KNOWN_PROVIDERS) {
-      expect(providerSrgbColor(providerId)).toMatch(/^rgb\(\d+, \d+, \d+\)$/)
+      expect(providerSrgbColor(providerId)).toMatch(/^rgb\(\d+, \d+, \d+\)$/u)
     }
 
     expect(providerSrgbColor('anthropic')).toBe(providerSrgbColor('anthropic'))

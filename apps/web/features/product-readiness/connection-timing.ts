@@ -10,6 +10,15 @@ export type TimingMark = {
   connected: number
 }
 
+function connectionPhase(
+  state: Pick<ConnectionState, 'isWebSocketConnected' | 'hasEverConnected'>,
+): ConnectionPhase {
+  if (state.isWebSocketConnected) {
+    return 'connected'
+  }
+  return state.hasEverConnected ? 'reconnecting' : 'connecting'
+}
+
 /** Cumulative clocks allow overlapping query waits to be combined without double counting. */
 export class ConnectionTimings {
   private phase: ConnectionPhase = 'unobserved'
@@ -44,11 +53,7 @@ export class ConnectionTimings {
   }
 
   update(state: Pick<ConnectionState, 'isWebSocketConnected' | 'hasEverConnected'>) {
-    const next = state.isWebSocketConnected
-      ? 'connected'
-      : state.hasEverConnected
-        ? 'reconnecting'
-        : 'connecting'
+    const next = connectionPhase(state)
 
     if (next === this.phase) {
       return

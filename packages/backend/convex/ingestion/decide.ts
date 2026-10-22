@@ -124,17 +124,24 @@ export type QueueDecision<Id> =
   | { kind: 'baseline'; id: Id }
   | { kind: 'idle' }
 
+function pairScope(behindFull: boolean, hasFull: boolean) {
+  if (behindFull) {
+    return 'departures'
+  }
+  return hasFull ? 'changes' : 'full'
+}
+
 /** One queue step: the first selection that finds work. */
 export function decideQueue<Id>(
   view: QueueView<Id>,
   { batch, capacity }: QueueLimits,
 ): QueueDecision<Id> {
-  const displaced = view.baselines.filter(
+  const withdrawable = view.baselines.filter(
     ({ displaced, state }) => displaced && (state === 'pending' || state === 'complete'),
   )
 
-  if (displaced.length > 0) {
-    return { kind: 'withdraw', ids: displaced.map(({ id }) => id) }
+  if (withdrawable.length > 0) {
+    return { kind: 'withdraw', ids: withdrawable.map(({ id }) => id) }
   }
 
   // Withdrawals bypass the capacity: they are rare and must not wait behind ingestion.
@@ -153,7 +160,7 @@ export function decideQueue<Id>(
     }
 
     const behindFull = view.latestCompleteFull !== null && view.latestCompleteFull > scan_at
-    const scope = behindFull ? 'departures' : hasFull ? 'changes' : 'full'
+    const scope = pairScope(behindFull, hasFull)
     requests.push({ id, scope, current_stats: scan_at === view.latestPair })
 
     // Pairs behind a queued full pair wait until it completes, then commit departures only.

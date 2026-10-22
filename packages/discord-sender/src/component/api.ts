@@ -199,7 +199,7 @@ async function messageTarget(ctx: MutationCtx, resultId: Id<'results'>) {
         // that receipt-derived route even though they no longer carry thread_name.
         threadId = z
           .string()
-          .regex(/^\d{17,20}$/)
+          .regex(/^\d{17,20}$/u)
           .parse(response.channel_id)
       }
     }

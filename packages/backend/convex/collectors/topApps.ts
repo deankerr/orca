@@ -23,7 +23,7 @@ export const TopAppsTargets = z
   .object({
     data: z.array(
       z.object({
-        id: z.string().regex(/^[^:\s]+(?::[^:\s]+)?$/),
+        id: z.string().regex(/^[^:\s]+(?::[^:\s]+)?$/u),
         canonical_slug: z.string().min(1),
       }),
     ),

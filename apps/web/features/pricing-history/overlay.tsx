@@ -280,11 +280,11 @@ function Content({
         meters={meters}
         disabled={available.length === 0}
         preset={preset}
-        onMeter={(requestedMeter) => {
-          setPreferences((current) => ({ ...current, requestedMeter }))
+        onMeter={(selected) => {
+          setPreferences((current) => ({ ...current, requestedMeter: selected }))
         }}
-        onPreset={(preset) => {
-          setPreferences((current) => ({ ...current, preset }))
+        onPreset={(nextPreset) => {
+          setPreferences((current) => ({ ...current, preset: nextPreset }))
           setHoverAt(null)
         }}
       />
@@ -311,6 +311,13 @@ function Content({
   )
 }
 
+function chartEmptyMessage(hasProviders: boolean, canWiden: boolean): string {
+  if (hasProviders) {
+    return 'Select a provider below to show its pricing history.'
+  }
+  return canWiden ? 'No metered prices in this period.' : 'No metered prices for this meter.'
+}
+
 function ChartEmpty({
   hasProviders,
   canWiden,
@@ -325,13 +332,7 @@ function ChartEmpty({
       className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3"
       aria-live="polite"
     >
-      <p>
-        {hasProviders
-          ? 'Select a provider below to show its pricing history.'
-          : canWiden
-            ? 'No metered prices in this period.'
-            : 'No metered prices for this meter.'}
-      </p>
+      <p>{chartEmptyMessage(hasProviders, canWiden)}</p>
       {hasProviders || !canWiden ? null : (
         <Button className="pointer-events-auto" onClick={onShowAll}>
           Show all time

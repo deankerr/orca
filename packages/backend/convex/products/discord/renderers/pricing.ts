@@ -96,7 +96,7 @@ function pricingChange(change: FieldChange): PriceRow | null {
     path: change.path,
     before: added ? undefined : before,
     after: removed ? undefined : after,
-    change: removed ? 'removed' : added ? 'added' : undefined,
+    change: changeKind(removed, added),
     annotation:
       !removed && !added && change.type === 'field_updated'
         ? priceDelta(change.before, change.after, change.path)
@@ -173,4 +173,11 @@ function priceDelta(before: FieldValue, after: FieldValue, path: string): string
     after.trim() !== ''
     ? delta(before, after, { lowerIsBetter: true })
     : ''
+}
+
+function changeKind(removed: boolean, added: boolean): 'removed' | 'added' | undefined {
+  if (removed) {
+    return 'removed'
+  }
+  return added ? 'added' : undefined
 }

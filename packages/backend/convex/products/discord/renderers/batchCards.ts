@@ -1,5 +1,5 @@
 import type { BatchAlert } from '../../shared/alerts/batch'
-import type { EntityAlert } from '../../shared/alerts/curate'
+import type { EntityAlert, FieldChange } from '../../shared/alerts/curate'
 import { colors, embedCard, gridUrl, logoUrl, truncateContent } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape } from './display'
@@ -33,6 +33,15 @@ function identity(event: EntityAlert, groupByModel: boolean) {
   }
 }
 
+function sharedChange(change: FieldChange, event: EntityAlert): string {
+  if (change.path.startsWith('pricing.')) {
+    return pricingChanges([change]).join('\n')
+  }
+  return event.entity_kind === 'endpoint'
+    ? endpointFieldChange(change)
+    : fieldChange(change, { label: change.path })
+}
+
 /** Page shared changes without dropping affected entities or source IDs. */
 export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[] {
   const [first] = batch.members
@@ -43,13 +52,7 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
 
   const { change } = batch
   const removed = change.type === 'endpoint_removed'
-  const detail = removed
-    ? ''
-    : change.path.startsWith('pricing.')
-      ? pricingChanges([change]).join('\n')
-      : first.event.entity_kind === 'endpoint'
-        ? endpointFieldChange(change)
-        : fieldChange(change, { label: change.path })
+  const detail = removed ? '' : sharedChange(change, first.event)
   const endpoints = batch.members
     .map(({ event }) => event)
     .filter((event) => event.entity_kind === 'endpoint')
@@ -81,12 +84,11 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
     longestIdentity = Math.max(longestIdentity, member.heading.length + member.line.length)
   }
 
-  const label =
-    provider === undefined
-      ? removed
-        ? ''
-        : `\n\nAffected ${first.event.entity_kind}s:\n`
-      : `− Provider **${escape(truncateContent(provider.display_name, 500, 'batch.provider_name'))}** unlisted ${batch.members.length} endpoints.\n\n`
+  let label = removed ? '' : `\n\nAffected ${first.event.entity_kind}s:\n`
+
+  if (provider !== undefined) {
+    label = `− Provider **${escape(truncateContent(provider.display_name, 500, 'batch.provider_name'))}** unlisted ${batch.members.length} endpoints.\n\n`
+  }
   const heading = `${truncateContent(detail, 4000 - label.length - longestIdentity, `batch.${removed ? change.type : change.path}`)}${label}`
   const pages: { description: string; source_ids: string[] }[] = []
   let page = { description: heading, source_ids: [] as string[] }

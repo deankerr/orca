@@ -14,7 +14,7 @@ import discordSenderPackage from './packages/discord-sender/package.json' with {
 const convexDirs = ['packages/backend/convex', 'packages/discord-sender/src/component']
 
 const convexExport =
-  /^export (?=default\b|const \w+(?::[^=]+)? = (?:query|mutation|action|internalQuery|internalMutation|internalAction|httpAction)\()/m
+  /^export (?=default\b|const \w+(?::[^=]+)? = (?:query|mutation|action|internalQuery|internalMutation|internalAction|httpAction)\()/mu
 
 const isConvexModule = (file: string) =>
   convexDirs.some((dir) => file.includes(`/${dir}/`)) && !file.includes('/_generated/')
@@ -42,7 +42,7 @@ const config: KnipConfig = {
   compilers: {
     ts: (text: string, file: string) =>
       isConvexModule(file)
-        ? text.replaceAll(new RegExp(convexExport, 'gm'), '/** @public */\nexport ')
+        ? text.replaceAll(new RegExp(convexExport, 'gmu'), '/** @public */\nexport ')
         : text,
   },
   // Agent skills ship example assets and scripts that the project never imports.
