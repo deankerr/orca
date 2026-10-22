@@ -218,11 +218,13 @@ test('rendering reports suppressed source events and preserves deterministic ord
 })
 
 test('content identities canonicalize objects but preserve message and array order', () => {
-  expect(contentKey({ a: { c: 3, d: 4 }, b: 2 })).toBe(contentKey({ a: { c: 3, d: 4 }, b: 2 }))
+  // oxlint-disable sort-keys -- Unsorted inputs prove canonicalization ignores key order.
+  expect(contentKey({ b: 2, a: { d: 4, c: 3 } })).toBe(contentKey({ a: { c: 3, d: 4 }, b: 2 }))
   expect(contentKey([1, 2])).not.toBe(contentKey([2, 1]))
-  expect(canonicalJson({ content: 'header', embeds: [{ title: 'hello' }] })).toBe(
+  expect(canonicalJson({ embeds: [{ title: 'hello' }], content: 'header' })).toBe(
     '{"content":"header","embeds":[{"title":"hello"}]}',
   )
+  // oxlint-enable sort-keys
 })
 
 test('Discord announces additions, updates and removals in dependency order regardless of input order', async () => {

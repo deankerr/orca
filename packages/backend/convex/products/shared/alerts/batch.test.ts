@@ -277,7 +277,8 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
       {
         after:
           i % 2 === 0
-            ? { retentionDays: 0, training: false }
+            ? // oxlint-disable-next-line sort-keys -- Differently ordered records must still batch together.
+              { training: false, retentionDays: 0 }
             : { retentionDays: 0, training: false },
         path: 'data_policy',
         type: 'field_added',
