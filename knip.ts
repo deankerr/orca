@@ -45,6 +45,8 @@ const config: KnipConfig = {
         ? text.replaceAll(new RegExp(convexExport, 'gm'), '/** @public */\nexport ')
         : text,
   },
+  // Agent skills ship example assets and scripts that the project never imports.
+  ignore: ['.agents/skills/**'],
   // Installed globally rather than as a dependency.
   ignoreBinaries: ['portless'],
   ignoreIssues: {

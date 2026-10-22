@@ -10,5 +10,8 @@ pre-commit:
       run: bun x ultracite fix --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
 
+    - name: knip
+      run: bun run knip
+
     - name: test
       run: bun test
