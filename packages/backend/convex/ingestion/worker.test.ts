@@ -30,7 +30,7 @@ import * as observations from './operators/observations'
 import * as pricingHistory from './operators/pricingHistory'
 import * as statsHistory from './operators/statsHistory'
 import { hour, rawScan, scan, specs } from './operators/testing'
-import { RETRY_BATCH, scheduleQueue } from './queue'
+import { RETRY_BATCH } from './queue'
 import { recordCounts, writeRecords } from './records'
 import {
   INGESTION_RECORDS_TABLE,
@@ -438,6 +438,59 @@ test('completion commits before queue coordination and its wakeup survives until
   ).not.toBeNull()
 })
 
+test('kickoff, queue steps, and retries wake the queue without touching its schedule', async () => {
+  const t = setup()
+  const inspect = async () =>
+    await t.run(async (ctx) => {
+      const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
+      return {
+        schedule: await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique(),
+        wakes: scheduled.filter(
+          ({ name, state }) => name === 'ingestion/queue:wake' && state.kind === 'pending',
+        ).length,
+      }
+    })
+  const insert = async (state: 'failed' | 'pending') => {
+    await t.run(async (ctx) => {
+      await writeRecords(ctx, async (writer) => {
+        await writer.insert({
+          alerts: false,
+          from_scan_at: hour(0),
+          kind: 'pair',
+          scan_at: hour(1),
+          state,
+        })
+      })
+    })
+  }
+
+  await t.mutation(internal.ingestion.sync.run, {})
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+  await settle(t)
+
+  await t.run(async (ctx) => {
+    for (const record of await ctx.db.query(INGESTION_RECORDS_TABLE).collect()) {
+      await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
+    }
+    for (const row of await ctx.db.query(QUEUE_SCHEDULE_TABLE).collect()) {
+      await ctx.db.delete(QUEUE_SCHEDULE_TABLE, row._id)
+    }
+  })
+  await insert('pending')
+  expect(await t.mutation(internal.ingestion.queue.run, {})).toBe('ingest')
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+  await settle(t)
+
+  await t.run(async (ctx) => {
+    for (const row of await ctx.db.query(QUEUE_SCHEDULE_TABLE).collect()) {
+      await ctx.db.delete(QUEUE_SCHEDULE_TABLE, row._id)
+    }
+  })
+  await insert('failed')
+  expect(await t.mutation(internal.ingestion.queue.retry, {})).toBeGreaterThan(0)
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+})
+
 test('repeated wakeups leave at most one queue step waiting', async () => {
   const t = setup()
   const waiting = async () =>
@@ -454,9 +507,7 @@ test('repeated wakeups leave at most one queue step waiting', async () => {
   expect(await waiting()).toBe(1)
 
   await settle(t)
-  await t.run(async (ctx) => {
-    await scheduleQueue(ctx)
-  })
+  await t.mutation(internal.ingestion.queue.wake, {})
   expect(await waiting()).toBe(1)
 })
 
