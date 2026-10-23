@@ -4,6 +4,8 @@ import { Command } from 'commander'
 
 import { addLogLine, emptyReport, totals } from './contention'
 import type { ContentionReport } from './contention'
+import { findProblems, parseOptions } from './rules'
+import type { Options, RawOptions } from './rules'
 
 const BACKEND_DIR = path.resolve(import.meta.dir, '../../backend')
 const CONVEX_BIN = path.resolve(BACKEND_DIR, 'node_modules/.bin/convex')
@@ -11,14 +13,10 @@ const PENDING_STATES = ['pending', 'queued', 'withdrawing'] as const
 const KINDS = ['baseline', 'pair'] as const
 const DEV_DEPLOYMENT = /^dev:(?<name>[a-z]+-[a-z]+-\d+)$/u
 
-type Options = {
-  allowExisting?: boolean
-  deployment: string
-  hours: number
-  parallelism: number
-  poll: number
-  timeout: number
-}
+/** The sweep schedules confirmations after this grace period (`GRACE_MS` in ingestion/reconcile.ts). */
+const RECONCILE_GRACE_MS = 5 * 60_000
+const RECONCILE_MARGIN_MS = 60_000
+const FAILED_SCAN_LIMIT = 1000
 
 async function exec(args: string[], { allowFailure = false } = {}): Promise<string> {
   const proc = Bun.spawn([CONVEX_BIN, ...args], {
@@ -114,6 +112,11 @@ function captureLogs(target: string[], report: ContentionReport) {
     stderr: 'ignore',
     stdout: 'pipe',
   })
+  const handle = { endedEarly: false, stopping: false }
+  void (async () => {
+    await proc.exited
+    handle.endedEarly = !handle.stopping
+  })()
   const done = (async () => {
     let buffered = ''
     for await (const chunk of proc.stdout) {
@@ -126,7 +129,10 @@ function captureLogs(target: string[], report: ContentionReport) {
     }
   })()
   return {
+    /** True when the log command exited before `stop` was requested. */
+    endedEarly: () => handle.endedEarly,
     stop: async () => {
+      handle.stopping = true
       proc.kill()
       // The stream can stay open briefly after the kill; the report only needs what arrived.
       await Promise.race([done.catch(() => undefined), Bun.sleep(3000)])
@@ -134,20 +140,56 @@ function captureLogs(target: string[], report: ContentionReport) {
   }
 }
 
-/** Number of kind/state pairs that still hold unfinished records, from the exact index rather than counts. */
-async function outstanding(convex: Convex) {
+/** Kind/state pairs that still hold unfinished records, from the exact index rather than counts. */
+async function outstanding(convex: Convex): Promise<string[]> {
   const found = await convex.inlineQuery(
     `const out = []; for (const kind of ${JSON.stringify(KINDS)}) for (const state of ${JSON.stringify(PENDING_STATES)}) { const r = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", state)).first(); if (r) out.push(kind + "/" + state); } return out`,
   )
-  return Array.isArray(found) ? found.length : 1
+  return Array.isArray(found) ? found.map(String) : ['unreadable']
 }
 
-/** Poll until records stop changing with nothing outstanding; returns whether the timeout hit first. */
+const openCount = async (convex: Convex) => {
+  const open = await outstanding(convex)
+  return open.length
+}
+
+const isAwaitingCompletion = (pair: string) => /\/(?:queued|withdrawing)$/u.test(pair)
+
+/** Failed records read directly from the index (not the aggregate counts), with a few samples. */
+async function readFailed(convex: Convex) {
+  const found = await convex.inlineQuery(
+    `const rows = []; for (const kind of ${JSON.stringify(KINDS)}) { const found = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", "failed")).take(${FAILED_SCAN_LIMIT}); for (const r of found) rows.push({ kind, scan_at: r.scan_at, error: r.error ?? null }); } return rows`,
+  )
+  const rows = Array.isArray(found) ? found.map((row) => record(row)) : []
+  return {
+    count: rows.length,
+    lost: rows.filter((row) => String(row.error).startsWith('Completion lost')).length,
+    sample: rows.slice(0, 5),
+  }
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+    ? Object.fromEntries(Object.entries(value))
+    : {}
+}
+
+/**
+ * Step the registration plan. Only an `idle` plan proves registered pairs cover the whole target:
+ * the earliest pair reads from the window start, the latest pair is the latest source scan inside the
+ * target, and a baseline holds the earliest input.
+ */
+async function registrationStep(convex: Convex): Promise<string> {
+  return String(await convex.run('ingestion/register:run'))
+}
+
+/** Poll until registration is idle and records stop changing with nothing outstanding; returns whether the timeout hit first. */
 async function waitForSettle(
   convex: Convex,
   report: ContentionReport,
   options: Options,
   startedAt: number,
+  logs: { endedEarly: () => boolean },
 ) {
   const deadline = startedAt + options.timeout * 60_000
   let settledTotal = -1
@@ -157,22 +199,58 @@ async function waitForSettle(
     await Bun.sleep(options.poll * 1000)
     const current = counts(await convex.run('ingestion/records:counts'))
     const total = sumCounts(current)
-    const open = await outstanding(convex)
+    const open = await openCount(convex)
     const elapsed = Math.round((Date.now() - startedAt) / 1000)
     console.error(
-      `[${elapsed}s] ${describeCounts(current)} | OCC retries ${totals(report).occRetries}`,
+      `[${elapsed}s] ${describeCounts(current)} | OCC retries ${totals(report).occRetries}${logs.endedEarly() ? ' | LOG STREAM ENDED' : ''}`,
     )
 
-    // Registration may still be adding records, so quiescence must hold across polls at a stable total.
+    // Quiescence must hold across polls at a stable total before registration is checked.
     settledPolls = open === 0 && total > 0 && total === settledTotal ? settledPolls + 1 : 0
     settledTotal = open === 0 ? total : -1
 
     if (settledPolls >= 2) {
-      return false
+      // A register step that commits work reschedules itself; only `idle` means the target is covered.
+      const step = await registrationStep(convex)
+      console.error(`[${elapsed}s] registration check: ${step}`)
+      if (step === 'idle') {
+        return false
+      }
+      settledPolls = 0
+      settledTotal = -1
     }
   }
 
   return true
+}
+
+/**
+ * Sweep for completions lost by the pool. Confirmation is delayed by a grace period, so this only
+ * waits when records are still queued or withdrawing; a clean settle has nothing to confirm.
+ */
+async function reconcileLostCompletions(convex: Convex, options: Options) {
+  const unfinished = await outstanding(convex)
+  const awaiting = unfinished.filter((pair) => isAwaitingCompletion(pair))
+  await convex.run('ingestion/reconcile:sweep')
+
+  if (awaiting.length === 0) {
+    console.error('Reconcile sweep: no queued or withdrawing records, no grace wait needed')
+    return
+  }
+
+  const waitMs = RECONCILE_GRACE_MS + RECONCILE_MARGIN_MS
+  console.error(
+    `Reconcile sweep: ${awaiting.join(', ')} still unfinished; waiting up to ${waitMs / 1000}s for lost-completion confirmations`,
+  )
+  const until = Date.now() + waitMs
+
+  while (Date.now() < until) {
+    await Bun.sleep(options.poll * 1000)
+    const remaining = await outstanding(convex)
+    if (!remaining.some((pair) => isAwaitingCompletion(pair))) {
+      return
+    }
+  }
 }
 
 function printContention(report: ContentionReport) {
@@ -232,12 +310,45 @@ async function sourceWindow(convex: Convex, hours: number) {
   return { earliest: bounds.earliest, endAt: bounds.latest, startAt }
 }
 
+type Drive = {
+  endAt: string
+  logs: ReturnType<typeof captureLogs>
+  report: ContentionReport
+  startAt: string
+  startedAt: number
+}
+
+/** Apply the target, start ingestion, and wait until it settles, then reconcile lost completions. */
+async function drive(convex: Convex, options: Options, run: Drive) {
+  await exec([
+    'env',
+    'set',
+    'ORCA_INGESTION_PARALLELISM',
+    String(options.parallelism),
+    ...convex.target,
+  ])
+  await convex.run(
+    'ingestion/target:set',
+    JSON.stringify({ end_at: run.endAt, start_at: run.startAt }),
+  )
+  await convex.run('ingestion/sync:run')
+
+  const timedOut = await waitForSettle(convex, run.report, options, run.startedAt, run.logs)
+  const beforeSweep = await readFailed(convex)
+  await reconcileLostCompletions(convex, options)
+
+  const final = counts(await convex.run('ingestion/records:counts'))
+  const failed = await readFailed(convex)
+  const stillOpen = await openCount(convex)
+  return { beforeSweep, failed, final, stillOpen, timedOut }
+}
+
 async function main(options: Options) {
   const name = await resolveDeployment(options.deployment)
   const convex = connect(name)
 
   if (
-    options.allowExisting !== true &&
+    !options.allowExisting &&
     sumCounts(counts(await convex.run('ingestion/records:counts'))) > 0
   ) {
     throw new Error(
@@ -257,28 +368,18 @@ async function main(options: Options) {
   // Let the log stream attach before work starts.
   await Bun.sleep(5000)
 
-  await exec([
-    'env',
-    'set',
-    'ORCA_INGESTION_PARALLELISM',
-    String(options.parallelism),
-    ...convex.target,
-  ])
-  await convex.run('ingestion/target:set', JSON.stringify({ end_at: endAt, start_at: startAt }))
-  await convex.run('ingestion/sync:run')
+  let driven: Awaited<ReturnType<typeof drive>>
+  try {
+    driven = await drive(convex, options, { endAt, logs, report, startAt, startedAt })
+  } catch (error) {
+    await logs.stop()
+    throw error
+  }
 
-  const timedOut = await waitForSettle(convex, report, options, startedAt)
-  await convex.run('ingestion/reconcile:sweep')
-  await Bun.sleep(15_000)
-
-  const final = counts(await convex.run('ingestion/records:counts'))
-  const failed = await convex.inlineQuery(
-    `const out = []; for (const kind of ${JSON.stringify(KINDS)}) { const rows = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", "failed")).take(5); for (const r of rows) out.push({ kind, scan_at: r.scan_at, error: r.error }); } return out`,
-  )
-  const stillOpen = await outstanding(convex)
+  const { beforeSweep, failed, final, stillOpen, timedOut } = driven
+  const logsStoppedEarly = logs.endedEarly()
   await logs.stop()
 
-  const failedCount = KINDS.reduce((sum, kind) => sum + (final[`${kind}/failed`] ?? 0), 0)
   const sum = totals(report)
 
   console.log(`\nIngestion load summary (${name})`)
@@ -289,21 +390,28 @@ async function main(options: Options) {
     `Duration ${Math.round((Date.now() - startedAt) / 1000)}s${timedOut ? ' (TIMED OUT)' : ''}`,
   )
   console.log(`Records ${describeCounts(final)}`)
+  console.log(
+    `Failed records (direct index read${failed.count >= FAILED_SCAN_LIMIT ? `, capped per kind at ${FAILED_SCAN_LIMIT}` : ''}): ${failed.count}; completion lost by sweep: ${failed.lost - beforeSweep.lost}`,
+  )
+  console.log(`Log stream ${logsStoppedEarly ? 'ENDED EARLY' : 'stayed open for the whole run'}`)
   printContention(report)
 
-  if (Array.isArray(failed) && failed.length > 0) {
-    console.log(`Failed record sample:\n  ${failed.map((row) => JSON.stringify(row)).join('\n  ')}`)
+  if (failed.sample.length > 0) {
+    console.log(
+      `Failed record sample:\n  ${failed.sample.map((row) => JSON.stringify(row)).join('\n  ')}`,
+    )
   }
 
   await printInsights(name, convex.target)
 
-  const problems = [
-    timedOut && 'timed out',
-    stillOpen > 0 && 'records still pending, queued or withdrawing',
-    failedCount > 0 && `${failedCount} failed records`,
-    sum.occExhausted > 0 && `${sum.occExhausted} OCC-exhausted executions`,
-    report.completionLost > 0 && `${report.completionLost} completion lost`,
-  ].filter((problem): problem is string => typeof problem === 'string')
+  const problems = findProblems({
+    completionLostLogged: report.completionLost,
+    failedRecords: failed.count,
+    logsStoppedEarly,
+    occExhausted: sum.occExhausted,
+    stillOpen,
+    timedOut,
+  })
 
   console.log(problems.length === 0 ? 'RESULT: PASS' : `RESULT: FAIL (${problems.join('; ')})`)
   process.exitCode = problems.length === 0 ? 0 : 1
@@ -318,17 +426,17 @@ const program = new Command()
     '--deployment <dev:name>',
     'dev deployment; must match packages/backend/.env.local',
   )
-  .option('--hours <n>', 'window ending at the latest source scan', Number, 24)
-  .option('--parallelism <n>', 'ORCA_INGESTION_PARALLELISM to set (1-100)', Number, 32)
-  .option('--timeout <minutes>', 'give up waiting after this long', Number, 30)
+  .option('--hours <n>', 'window ending at the latest source scan', '24')
+  .option('--parallelism <n>', 'ORCA_INGESTION_PARALLELISM to set (integer 1-100)', '32')
+  .option('--timeout <minutes>', 'give up waiting after this long', '30')
   .option(
     '--allow-existing',
     'run on a deployment that already holds records; the new window must widen the old one',
   )
-  .option('--poll <seconds>', 'progress polling interval', Number, 10)
+  .option('--poll <seconds>', 'progress polling interval', '10')
   .showHelpAfterError()
-  .action(async (options: Options) => {
-    await main(options)
+  .action(async (raw: RawOptions) => {
+    await main(parseOptions(raw))
   })
 
 try {
