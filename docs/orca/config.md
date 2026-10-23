@@ -80,22 +80,24 @@ Collection switches guard cron invocation, leaving manual collection available.
 
 Backend paths below are relative to `packages/backend/convex`.
 
-| Setting                      | Value                                                                            | Owner                              |
-| ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
-| Ingestion register batch     | 24 new pairs per register step                                                   | `ingestion/register.ts`            |
-| Ingestion queue batch        | 24 pairs accepted per queue step                                                 | `ingestion/queue.ts`               |
-| Ingestion queue capacity     | 4 × concurrency queued or withdrawing; soft, from stale aggregate counts         | `ingestion/queue.ts`               |
-| Ingestion histogram buckets  | At most 240 per request                                                          | `ingestion/admin.ts`               |
-| Ingestion retry-all batch    | 256 failed records reopened per call                                             | `ingestion/queue.ts`               |
-| Preview ingestion lookback   | 24 hours before initialization; only when no target exists                       | `init.ts`                          |
-| Grid unlisting window        | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`       |
-| Discord alert age            | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
-| Discord batching             | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |
-| Discord message order        | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`       |
-| Discord frequent pricing     | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
-| Ordinary pricing eligibility | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
-| Feed page request            | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
-| Public API V2 shared cache   | `s-maxage=900` (15 minutes); `stale-while-revalidate=3600`                       | `public_api/v2/http.ts`            |
+| Setting                         | Value                                                                            | Owner                              |
+| ------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
+| Ingestion register batch        | 24 new pairs per register step                                                   | `ingestion/register.ts`            |
+| Ingestion queue batch           | 24 pairs accepted per queue step                                                 | `ingestion/queue.ts`               |
+| Ingestion queue capacity        | 4 × concurrency queued or withdrawing; soft, from stale aggregate counts         | `ingestion/queue.ts`               |
+| Ingestion histogram buckets     | At most 240 per request                                                          | `ingestion/admin.ts`               |
+| Ingestion retry-all batch       | 256 failed records reopened per call                                             | `ingestion/queue.ts`               |
+| Ingestion lost-completion sweep | 512 queued or withdrawing records read per kind and state                        | `ingestion/reconcile.ts`           |
+| Ingestion lost-completion grace | 5 minutes after the sweep before a finished, unsettled record fails              | `ingestion/reconcile.ts`           |
+| Preview ingestion lookback      | 24 hours before initialization; only when no target exists                       | `init.ts`                          |
+| Grid unlisting window           | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`       |
+| Discord alert age               | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`     |
+| Discord batching                | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`  |
+| Discord message order           | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`       |
+| Discord frequent pricing        | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
+| Ordinary pricing eligibility    | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
+| Feed page request               | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
+| Public API V2 shared cache      | `s-maxage=900` (15 minutes); `stale-while-revalidate=3600`                       | `public_api/v2/http.ts`            |
 
 ## WorkOS and deployment tooling
 

@@ -87,8 +87,20 @@ test('a record whose work finished without settling it fails after the grace per
   const t = setup()
   const id = await insertQueued(t, await finishedWork(t))
 
+  const sweptAt = Date.now()
   await t.mutation(internal.ingestion.reconcile.sweep, {})
-  expect(await scheduledCalls(t, 'ingestion/reconcile:confirmLost')).toBe(1)
+  const confirmations = await t.run(
+    async (ctx) =>
+      await ctx.db.system
+        .query('_scheduled_functions')
+        .filter((q) => q.eq(q.field('name'), 'ingestion/reconcile:confirmLost'))
+        .collect(),
+  )
+  // Normal completions get five minutes to settle before the record is judged lost.
+  expect(confirmations).toHaveLength(1)
+  const delay = (confirmations[0]?.scheduledTime ?? 0) - sweptAt
+  expect(delay).toBeGreaterThanOrEqual(5 * 60 * 1000)
+  expect(delay).toBeLessThan(5 * 60 * 1000 + 1000)
   const waiting = await record(t, id)
   expect(waiting?.state).toBe('queued')
 
