@@ -30,10 +30,12 @@ export const recordCounts = new TableAggregate<RecordCountsType>(components.inge
   sortKey: (record) => record.scan_at,
 })
 
-// Excludes the fields recordCounts keys on (kind, scan_at); from_scan_at is excluded because it determines kind.
-type RecordPatch = Partial<
-  Omit<WithoutSystemFields<RecordDoc>, 'from_scan_at' | 'kind' | 'scan_at'>
->
+type RecordKeyField = 'from_scan_at' | 'kind' | 'scan_at'
+
+// Forbids the fields recordCounts keys on (kind, scan_at), and from_scan_at, which determines kind.
+// `never` rejects them from variables and spreads too, which `Omit` alone would allow.
+type RecordPatch = Partial<Omit<WithoutSystemFields<RecordDoc>, RecordKeyField>> &
+  Partial<Record<RecordKeyField, never>>
 
 export type RecordWrites = {
   insert: (record: WithoutSystemFields<RecordDoc>) => Promise<RecordId>

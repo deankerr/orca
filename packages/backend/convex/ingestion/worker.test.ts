@@ -6,6 +6,7 @@ import * as R from 'remeda'
 import { afterEach, beforeEach, expect, vi, test } from 'vitest'
 
 import { internal } from '#generated/api'
+import type { Doc } from '#generated/dataModel'
 import * as scans from '#scans'
 
 import {
@@ -32,6 +33,7 @@ import * as statsHistory from './operators/statsHistory'
 import { hour, rawScan, scan, specs } from './operators/testing'
 import { RETRY_BATCH } from './queue'
 import { recordCounts, writeRecords } from './records'
+import type { RecordWrites } from './records'
 import {
   INGESTION_RECORDS_TABLE,
   PROCESS_COMMITS_TABLE,
@@ -392,6 +394,19 @@ test('retry-all reopens a full batch within one transaction', async () => {
 
   expect(await t.mutation(internal.ingestion.queue.retry, {})).toBe(RETRY_BATCH)
   expect(await t.mutation(internal.ingestion.queue.retry, {})).toBe(1)
+})
+
+test('record patches cannot change the fields record counts key on', () => {
+  // Type-only: the linter's type check fails if a variable or spread can carry these fields.
+  const move = async (writer: RecordWrites, record: Doc<typeof INGESTION_RECORDS_TABLE>) => {
+    const moved = { alerts: false, scan_at: hour(1) }
+    // @ts-expect-error -- A patch carrying scan_at would desynchronize record counts.
+    await writer.patch(record, moved)
+    // @ts-expect-error -- Spreads are checked too.
+    await writer.patch(record, { ...moved, kind: 'baseline' })
+  }
+
+  expect(move).toBeTypeOf('function')
 })
 
 test('completion commits before queue coordination and its wakeup survives until drained', async () => {
