@@ -37,6 +37,8 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - The `ingestionRecordCounts` aggregate counts records by kind and state over scan time.
 - Every record write goes through `ingestion/records.ts`; aggregate writes are queued and reads are stale.
 - The aggregate is derived: rebuild it from `ingestion_records` rather than repairing it.
+- `records:rebuildCounts` clears the aggregate and dead letters, then reinserts every record in bounded pages. It refuses unless the cron is off, no record is `queued` or `withdrawing`, and no aggregate operation is pending. Writes during a rebuild fail it or skew counts.
+- Operations the aggregate component could not apply are dead-lettered; the admin overview reports their count (saturating at 100).
 - Both workers run as single steps and schedule themselves again until a step finds no work.
 - Registration commits only if the registry edges it read are unchanged.
 - Queue acceptance, Workpool enqueue, and the state change commit in one mutation.
