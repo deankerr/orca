@@ -347,10 +347,7 @@ async function main(options: Options) {
   const name = await resolveDeployment(options.deployment)
   const convex = connect(name)
 
-  if (
-    !options.allowExisting &&
-    sumCounts(counts(await convex.run('ingestion/records:counts'))) > 0
-  ) {
+  if (!options.allowExisting && (await convex.run('ingestion/records:exists')) !== false) {
     throw new Error(
       'Deployment already has ingestion records; use a fresh deployment, or --allow-existing to widen the target (the window start may only move earlier)',
     )
