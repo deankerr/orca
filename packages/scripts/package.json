@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "ingestion-load": "bun run ingestion-load/index.ts",
     "scan-analysis": "bun run scan-analysis/index.ts",
     "test": "bun run --cwd ../.. test --project scripts"
   },

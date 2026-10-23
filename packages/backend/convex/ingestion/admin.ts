@@ -2,8 +2,8 @@ import { mergedStream, stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 
-import { action, env, mutation, query } from '#generated/server'
-import type { QueryCtx } from '#generated/server'
+import { action, env, internalAction, mutation, query } from '#generated/server'
+import type { ActionCtx, QueryCtx } from '#generated/server'
 import * as scans from '#scans'
 
 import { requireAdmin } from '../admin'
@@ -219,15 +219,28 @@ export const records = query({
   },
 })
 
+async function sourceScanRange(ctx: ActionCtx) {
+  const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
+  return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
+}
+
+const sourceScanRangeReturns = v.object({ earliest: scanAt, latest: scanAt })
+
 /** The object store's capture range: the earliest scan bounds a backfill, the latest shows lag. */
 export const sourceScans = action({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx)
-    const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
-    return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
+    return await sourceScanRange(ctx)
   },
-  returns: v.object({ earliest: scanAt, latest: scanAt }),
+  returns: sourceScanRangeReturns,
+})
+
+/** Operator entry point for `packages/scripts/ingestion-load.ts`, which sizes its target from the latest scan. */
+export const sourceScanBounds = internalAction({
+  args: {},
+  handler: async (ctx) => await sourceScanRange(ctx),
+  returns: sourceScanRangeReturns,
 })
 
 export const saveTarget = mutation({
