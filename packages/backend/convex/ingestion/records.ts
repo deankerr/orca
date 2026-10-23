@@ -30,9 +30,14 @@ export const recordCounts = new TableAggregate<RecordCountsType>(components.inge
   sortKey: (record) => record.scan_at,
 })
 
+// Excludes the fields recordCounts keys on (kind, scan_at); from_scan_at is excluded because it determines kind.
+type RecordPatch = Partial<
+  Omit<WithoutSystemFields<RecordDoc>, 'from_scan_at' | 'kind' | 'scan_at'>
+>
+
 export type RecordWrites = {
   insert: (record: WithoutSystemFields<RecordDoc>) => Promise<RecordId>
-  patch: (previous: RecordDoc, patch: Partial<WithoutSystemFields<RecordDoc>>) => Promise<void>
+  patch: (previous: RecordDoc, patch: RecordPatch) => Promise<void>
   delete: (record: RecordDoc) => Promise<void>
 }
 
@@ -63,7 +68,7 @@ export async function writeRecords<Result>(
     patch: async (previous, patch) => {
       await ctx.db.patch(INGESTION_RECORDS_TABLE, previous._id, patch)
 
-      // The aggregate reads only kind, state and scan_at, so the patched document needs no read.
+      // RecordPatch cannot change kind or scan_at, so only a state change can move the aggregate entry.
       if (patch.state !== undefined && patch.state !== previous.state) {
         operations.push({ newDoc: { ...previous, ...patch }, oldDoc: previous, type: 'replace' })
       }
