@@ -69,12 +69,12 @@ Collection switches guard cron invocation, leaving manual collection available.
 
 `crons.ts` owns the schedules; wall-clock schedules use UTC.
 
-| Job                                     | Schedule               |
-| --------------------------------------- | ---------------------- |
-| Analytics / top apps                    | Daily at 00:05 / 00:15 |
-| Scan collection                         | Hourly at minute 40    |
-| Ingestion sync                          | Hourly at minute 50    |
-| Independent public API V2 cache refresh | Every 5 minutes        |
+| Job                                     | Schedule                                               |
+| --------------------------------------- | ------------------------------------------------------ |
+| Analytics / top apps                    | Daily at 00:05 / 00:15                                 |
+| Scan collection                         | Hourly at minute 40                                    |
+| Ingestion sync                          | Hourly at minute 50                                    |
+| Independent public API V2 cache refresh | Hourly at minute 42, two minutes after scan collection |
 
 ### Maintained limits and defaults
 
@@ -95,6 +95,7 @@ Backend paths below are relative to `packages/backend/convex`.
 | Discord frequent pricing     | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
 | Ordinary pricing eligibility | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
 | Feed page request            | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
+| Public API V2 shared cache   | `s-maxage=900` (15 minutes); `stale-while-revalidate=3600`                       | `public_api/v2/http.ts`            |
 
 ## WorkOS and deployment tooling
 
