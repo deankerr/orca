@@ -240,54 +240,78 @@ function stateOf(registry: Registry, target: RegisterState['target']): RegisterS
   }
 }
 
-type RegisterCase = { limit: number; offsets: number[]; range: { start: number; end: number } }
+type Range = { start: number; end: number }
+
+/** `initial` lies within `range`: the target is widened from it to `range` mid-run. */
+type RegisterCase = { initial: Range; limit: number; offsets: number[]; range: Range }
+
+const ordered = ([a, b]: [number, number]): Range =>
+  a <= b ? { end: b, start: a } : { end: a, start: b }
 
 const registerCase: Arbitrary<RegisterCase> = record({
   limit: integer({ max: 6, min: 1 }),
   offsets: uniqueArray(integer({ max: 40, min: 0 }), { maxLength: 25 }),
   // Range edges may fall on, between, or outside source times.
-  range: tuple(integer({ max: 42, min: -2 }), integer({ max: 42, min: -2 })).map(([a, b]) =>
-    a <= b ? { end: b, start: a } : { end: a, start: b },
-  ),
-})
+  range: tuple(integer({ max: 42, min: -2 }), integer({ max: 42, min: -2 })).map(ordered),
+}).chain((draft) =>
+  tuple(
+    integer({ max: draft.range.end, min: draft.range.start }),
+    integer({ max: draft.range.end, min: draft.range.start }),
+  )
+    .map(ordered)
+    .map((initial): RegisterCase => ({ ...draft, initial })),
+)
 
-async function converge({ limit, offsets, range }: RegisterCase) {
+const targetOf = ({ start, end }: Range) => ({ end_at: iso(end), start_at: iso(start) })
+
+/** Registers until idle under the initial target, then widens it to the final range and continues. */
+async function converge({ initial, limit, offsets, range }: RegisterCase) {
   const times = offsets.toSorted((a, b) => a - b).map(iso)
-  const target = { end_at: iso(range.end), start_at: iso(range.start) }
+  const target = targetOf(range)
   const list = sourceListing(times)
   const registry: Registry = { baseline: null, pairs: new Map() }
   const log: { before: RegisterState; kind: string; pairs: NewPair[] }[] = []
+  let settled = true
 
-  // Each step registers at least one pair or baseline, so this bounds a correct run.
-  for (let step = 0; step <= times.length + 2; step += 1) {
-    const before = stateOf(registry, target)
-    const plan = await planRegister(before, list, limit)
+  for (const phase of [targetOf(initial), target]) {
+    settled = false
 
-    if (plan.kind === 'idle') {
-      return {
-        log,
-        registry,
-        selected: times.filter((t) => t >= target.start_at && t <= target.end_at),
-        settled: true,
+    // Each step registers at least one pair or baseline, so this bounds a correct run.
+    for (let step = 0; step <= times.length + 2 && !settled; step += 1) {
+      const before = stateOf(registry, phase)
+      const plan = await planRegister(before, list, limit)
+
+      if (plan.kind === 'idle') {
+        settled = true
+      } else if (plan.kind === 'baseline') {
+        registry.baseline = plan.scan_at
+        log.push({ before, kind: plan.kind, pairs: [] })
+      } else {
+        for (const pair of plan.pairs) {
+          registry.pairs.set(pair.scan_at, pair.from_scan_at)
+        }
+        log.push({ before, kind: plan.kind, pairs: plan.pairs })
       }
     }
 
-    if (plan.kind === 'baseline') {
-      registry.baseline = plan.scan_at
-      log.push({ before, kind: plan.kind, pairs: [] })
-      continue
+    if (!settled) {
+      return { log, registry, selected: [], settled }
     }
-
-    for (const pair of plan.pairs) {
-      registry.pairs.set(pair.scan_at, pair.from_scan_at)
-    }
-    log.push({ before, kind: plan.kind, pairs: plan.pairs })
   }
 
-  return { log, registry, selected: [], settled: false }
+  return {
+    log,
+    registry,
+    selected: times.filter((t) => t >= target.start_at && t <= target.end_at),
+    settled,
+  }
 }
 
+let forwardBatches = 0
+
 test('each register batch chains adjacent source times within the target, ascending', async () => {
+  forwardBatches = 0
+
   await assert(
     asyncProperty(registerCase, async (input) => {
       const { log, selected } = await converge(input)
@@ -309,6 +333,7 @@ test('each register batch chains adjacent source times within the target, ascend
         }
 
         if (kind === 'forward') {
+          forwardBatches += 1
           expect(pairs[0]?.from_scan_at).toBe(before.edges.latest)
         }
         if (kind === 'backward') {
@@ -317,6 +342,25 @@ test('each register batch chains adjacent source times within the target, ascend
       }
     }),
   )
+
+  // Widening the target must exercise forward batches, or their checks are vacuous.
+  expect(forwardBatches).toBeGreaterThan(0)
+})
+
+test('widening a settled target registers forward batches that chain from the latest pair', async () => {
+  const offsets = Array.from({ length: 11 }, (_, index) => index)
+  const { log, registry } = await converge({
+    initial: { end: 3, start: 0 },
+    limit: 2,
+    offsets,
+    range: { end: 10, start: 0 },
+  })
+  const forward = log.filter(({ kind }) => kind === 'forward')
+
+  expect(forward.length).toBeGreaterThan(0)
+  expect(forward.every(({ pairs }) => pairs.every(({ alerts }) => alerts))).toBe(true)
+  expect(forward[0]?.pairs[0]?.from_scan_at).toBe(iso(3))
+  expect(registry.pairs.size).toBe(10)
 })
 
 test('registration converges to the whole target chain and a baseline, for any batch limit', async () => {
