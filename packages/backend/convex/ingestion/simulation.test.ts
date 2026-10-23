@@ -2,13 +2,26 @@ import { expect, test } from 'vitest'
 
 import { EVENT_KINDS, emptyTally, simulate } from './simulation.testing'
 
+/** Reads an integer environment variable of at least `min`; unset or empty yields `fallback`. */
+const integerFromEnv = (name: string, min: number, fallback: number | undefined) => {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') {
+    return fallback
+  }
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < min) {
+    throw new Error(`${name} must be an integer of at least ${min}, received "${raw}"`)
+  }
+  return value
+}
+
 /** `SIM_SEED=n` replays one scenario; `SIM_RUNS=n` changes how many seeds run. */
 const seeds = (): number[] => {
-  const only = process.env.SIM_SEED
-  if (only !== undefined && only !== '') {
-    return [Number(only)]
+  const only = integerFromEnv('SIM_SEED', 0, undefined)
+  if (only !== undefined) {
+    return [only]
   }
-  const runs = Number(process.env.SIM_RUNS ?? 20)
+  const runs = integerFromEnv('SIM_RUNS', 1, 20) ?? 20
   return Array.from({ length: runs }, (_, index) => index + 1)
 }
 
