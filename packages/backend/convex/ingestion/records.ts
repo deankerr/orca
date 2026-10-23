@@ -146,20 +146,30 @@ export const rebuildCounts = internalMutation({
     // Throws while operations are pending, aborting before anything is cleared.
     await recordCounts.clearAll(ctx)
 
-    // Dead letters describe the counts just discarded.
-    for (;;) {
-      const { page } = await ctx.runQuery(components.ingestionRecordCounts.deadLetter.list, {
-        paginationOpts: { cursor: null, numItems: REBUILD_BATCH },
-      })
-      await Promise.all(
-        page.map(
-          async ({ _id }) =>
-            await ctx.runMutation(components.ingestionRecordCounts.deadLetter.delete_, { id: _id }),
-        ),
-      )
-      if (page.length < REBUILD_BATCH) {
-        break
-      }
+    // Dead letters describe the counts just discarded; clear them in pages before reinserting.
+    await ctx.scheduler.runAfter(0, internal.ingestion.records.rebuildCountsDeadLetters, {})
+  },
+  returns: v.null(),
+})
+
+/** One bounded page of dead-letter deletion; continues until none remain, then starts the record pages. */
+export const rebuildCountsDeadLetters = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    await assertQuiescent(ctx)
+    const { page } = await ctx.runQuery(components.ingestionRecordCounts.deadLetter.list, {
+      paginationOpts: { cursor: null, numItems: REBUILD_BATCH },
+    })
+    await Promise.all(
+      page.map(
+        async ({ _id }) =>
+          await ctx.runMutation(components.ingestionRecordCounts.deadLetter.delete_, { id: _id }),
+      ),
+    )
+
+    if (page.length === REBUILD_BATCH) {
+      await ctx.scheduler.runAfter(0, internal.ingestion.records.rebuildCountsDeadLetters, {})
+      return
     }
     await ctx.scheduler.runAfter(0, internal.ingestion.records.rebuildCountsPage, {
       cursor: null,

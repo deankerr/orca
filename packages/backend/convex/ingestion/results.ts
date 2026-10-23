@@ -11,11 +11,12 @@ const error = v.object({
   stack: v.optional(v.string()),
 })
 
+/** What an action returns: `succeeded` throws before any failed result escapes. */
+export const ingestSuccess = v.object({ kind: commitResult, process: v.string() })
+export const removalSuccess = v.object({ kind: removeResult, process: v.string() })
+
 export const ingestResult = v.union(
-  v.object({
-    kind: commitResult,
-    process: v.string(),
-  }),
+  ingestSuccess,
   v.object({
     error,
     kind: v.literal('failed'),
@@ -25,10 +26,7 @@ export const ingestResult = v.union(
 )
 
 export const removalResult = v.union(
-  v.object({
-    kind: removeResult,
-    process: v.string(),
-  }),
+  removalSuccess,
   v.object({
     error,
     kind: v.literal('failed'),
@@ -40,4 +38,6 @@ export const removalResult = v.union(
 export type CommitResult = Infer<typeof commitResult>
 export type RemoveResult = Infer<typeof removeResult>
 export type IngestResult = Infer<typeof ingestResult>
+export type IngestSuccess = Infer<typeof ingestSuccess>
+export type RemovalSuccess = Infer<typeof removalSuccess>
 export type RemovalResult = Infer<typeof removalResult>

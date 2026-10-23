@@ -267,20 +267,18 @@ export async function retryFailed(ctx: MutationCtx, record_id?: RecordId): Promi
           ...(await byState(ctx, 'pair', 'failed').take(RETRY_BATCH)),
         ].slice(0, RETRY_BATCH)
       : [await ctx.db.get(INGESTION_RECORDS_TABLE, record_id)].filter(
-          (record) => record?.state === 'failed',
+          (record): record is NonNullable<typeof record> => record?.state === 'failed',
         )
 
   await writeRecords(ctx, async (records) => {
     await Promise.all(
       failed.map(async (record) => {
-        if (record !== null) {
-          await records.patch(record, {
-            current_scope: undefined,
-            current_stats: undefined,
-            state: 'pending',
-            work_id: undefined,
-          })
-        }
+        await records.patch(record, {
+          current_scope: undefined,
+          current_stats: undefined,
+          state: 'pending',
+          work_id: undefined,
+        })
       }),
     )
   })

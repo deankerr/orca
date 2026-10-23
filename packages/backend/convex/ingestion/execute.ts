@@ -12,8 +12,8 @@ import { ingestors } from './ingestors'
 import { requestQueueStep } from './queue'
 import { writeRecords } from './records'
 import type { RecordWrites } from './records'
-import { ingestResult, removalResult } from './results'
-import type { IngestResult, RemovalResult } from './results'
+import { ingestSuccess, removalSuccess } from './results'
+import type { IngestResult, IngestSuccess, RemovalResult, RemovalSuccess } from './results'
 import { currentScope, INGESTION_RECORDS_TABLE } from './tables'
 
 /**
@@ -30,7 +30,7 @@ export const ingest = internalAction({
   handler: async (
     ctx,
     { from_scan_at, scan_at, scope, current_stats },
-  ): Promise<IngestResult[]> => {
+  ): Promise<IngestSuccess[]> => {
     const [previous, next] = await Promise.all([
       from_scan_at === null ? null : scans.load(ctx, from_scan_at),
       scans.load(ctx, scan_at),
@@ -43,22 +43,22 @@ export const ingest = internalAction({
 
     return succeeded(scan_at, results)
   },
-  returns: v.array(ingestResult),
+  returns: v.array(ingestSuccess),
 })
 
 /** Remove output dated at the scan and release its receipts. */
 export const withdraw = internalAction({
   args: { scan_at: v.string() },
-  handler: async (ctx, { scan_at }): Promise<RemovalResult[]> =>
+  handler: async (ctx, { scan_at }): Promise<RemovalSuccess[]> =>
     succeeded(
       scan_at,
       await Promise.all(ingestors.map(async (process) => await process.remove(ctx, { scan_at }))),
     ),
-  returns: v.array(removalResult),
+  returns: v.array(removalSuccess),
 })
 
 export const onIngested = internalMutation({
-  args: vOnCompleteArgs(undefined, v.array(ingestResult)),
+  args: vOnCompleteArgs(undefined, v.array(ingestSuccess)),
   handler: async (ctx, { workId, result }) => {
     await settle(ctx, workId, result, async (records, record) => {
       await records.patch(record, { state: 'complete' })
@@ -75,7 +75,7 @@ export const onIngested = internalMutation({
 })
 
 export const onWithdrawn = internalMutation({
-  args: vOnCompleteArgs(undefined, v.array(removalResult)),
+  args: vOnCompleteArgs(undefined, v.array(removalSuccess)),
   handler: async (ctx, { workId, result }) => {
     await settle(ctx, workId, result, async (records, record) => {
       await records.delete(record)
@@ -120,21 +120,35 @@ async function settle(
   await requestQueueStep(ctx)
 }
 
+/** Log each failure with its stage and stack, then fail the attempt so Workpool retries it. */
 function succeeded<Result extends IngestResult | RemovalResult>(
   scan_at: string,
   results: Result[],
-): Result[] {
-  const failed = results.filter((result) => result.kind === 'failed')
+): Exclude<Result, { kind: 'failed' }>[] {
+  const failed = results.filter(
+    (result): result is Extract<Result, { kind: 'failed' }> => result.kind === 'failed',
+  )
 
   if (failed.length > 0) {
+    for (const result of failed) {
+      console.error('[ingestion] process failed', {
+        error: result.error,
+        process: result.process,
+        scan_at,
+        stage: result.stage,
+      })
+    }
+
     throw new ConvexError({
-      failed: failed.map((result) =>
-        result.kind === 'failed' ? `${result.process}: ${result.error.message}` : result.process,
+      failed: failed.map(
+        (result) => `${result.process} (${result.stage}): ${result.error.message}`,
       ),
       message: 'Ingestion processes failed',
       scan_at,
     })
   }
 
-  return results
+  return results.filter(
+    (result): result is Exclude<Result, { kind: 'failed' }> => result.kind !== 'failed',
+  )
 }

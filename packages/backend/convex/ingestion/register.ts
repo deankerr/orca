@@ -21,7 +21,7 @@ const edgesValidator = v.object({
   latest: v.union(v.null(), v.string()),
 })
 
-const step = literals('bootstrap', 'forward', 'backward', 'baseline', 'idle')
+const step = literals('bootstrap', 'forward', 'backward', 'baseline', 'idle', 'overtaken')
 
 /** One register step: select at most one batch, commit it, and finish. */
 export const run = internalAction({
@@ -49,7 +49,7 @@ export const run = internalAction({
             pairs: plan.pairs,
           })
 
-    return registered ? plan.kind : 'idle'
+    return registered ? plan.kind : 'overtaken'
   },
   returns: step,
 })

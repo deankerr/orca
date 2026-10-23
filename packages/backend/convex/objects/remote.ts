@@ -7,9 +7,23 @@ import { assertReadCount, nameSelection, objectIdentity, storedBatch } from './p
 
 function requireApiKey(apiKey: string): void {
   const expected = env.ORCA_OBJECTS_API_KEY
-  if (expected === undefined || expected === '' || apiKey !== expected) {
+  if (expected === undefined || expected === '' || !sameKey(apiKey, expected)) {
     throw new ConvexError('Unauthorized object source request')
   }
+}
+
+/** Compare without an early exit on the first differing byte; the length is not secret enough to hide. */
+function sameKey(a: string, b: string): boolean {
+  const left = new TextEncoder().encode(a)
+  const right = new TextEncoder().encode(b)
+  // oxlint-disable-next-line no-bitwise -- XOR accumulation keeps the comparison constant-time.
+  let diff = left.length ^ right.length
+
+  for (const [index, byte] of left.entries()) {
+    // oxlint-disable-next-line no-bitwise -- XOR accumulation keeps the comparison constant-time.
+    diff |= byte ^ (right[index] ?? 0)
+  }
+  return diff === 0
 }
 
 /** Authenticated discovery always serves this deployment, regardless of its own source override. */

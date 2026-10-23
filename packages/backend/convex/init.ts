@@ -4,6 +4,7 @@ import { internalMutation } from '#generated/server'
 
 import { kickoff } from './ingestion/sync'
 import { INGESTION_TARGET_TABLE } from './ingestion/tables'
+import { setTarget } from './ingestion/target'
 
 /** Preview initialization lookback before the captured instant. */
 const PREVIEW_LOOKBACK_MS = 24 * 60 * 60 * 1000
@@ -14,7 +15,7 @@ const init = internalMutation({
   handler: async (ctx) => {
     if ((await ctx.db.query(INGESTION_TARGET_TABLE).unique()) === null) {
       const now = Date.now()
-      await ctx.db.insert(INGESTION_TARGET_TABLE, {
+      await setTarget(ctx, {
         end_at: new Date(now).toISOString(),
         start_at: new Date(now - PREVIEW_LOOKBACK_MS).toISOString(),
       })

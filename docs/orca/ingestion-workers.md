@@ -117,7 +117,7 @@ Bootstrap pairs, backward pairs, and baselines describe history and never alert.
 
 Each committed batch starts the registry, extends an existing edge, or places a baseline. Overlapping
 attempts cannot create two starting batches or extend an obsolete edge; a decision overtaken by another
-registration is recomputed from the resulting registry.
+registration is recomputed from the resulting registry. The register action reports such a step as `overtaken`, distinct from `idle`.
 
 ### Register a baseline
 
