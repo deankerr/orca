@@ -51,7 +51,7 @@ const QUICK_LINKS = [
   },
   {
     description: 'Public preview endpoint',
-    href: getConvexHttpUrl('/public-api-preview/v2'),
+    href: getConvexHttpUrl('/public-api-preview/v2-cached'),
     icon: DatabaseIcon,
     label: 'ORCA API v2',
   },
