@@ -7,6 +7,7 @@ import type { Id } from '#generated/dataModel'
 
 import { setup } from '../harness.testing'
 import type { Harness } from '../harness.testing'
+import { expectIngestionInvariants } from './invariants.testing'
 import { hour } from './operators/testing'
 import { pool } from './pool'
 import { writeRecords } from './records'
@@ -110,6 +111,7 @@ test('a record whose work finished without settling it fails after the grace per
   expect(failed?.state).toBe('failed')
   expect(failed?.error).toMatch(/Completion lost/u)
   expect(await scheduledCalls(t, 'ingestion/queue:wake')).toBe(1)
+  await expectIngestionInvariants(t, { receipts: false })
 })
 
 test('a record settled or retried during the grace period is left alone', async () => {
@@ -138,4 +140,5 @@ test('a record settled or retried during the grace period is left alone', async 
   expect(settledRecord?.state).toBe('complete')
   expect(retriedRecord?.state).toBe('pending')
   expect(retriedRecord?.error).toBeUndefined()
+  await expectIngestionInvariants(t, { receipts: false })
 })

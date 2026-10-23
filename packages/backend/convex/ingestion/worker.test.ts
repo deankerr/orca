@@ -22,6 +22,7 @@ import { ENDPOINT_STATS_TABLE } from '../catalog/tables/stats'
 import { setup } from '../harness.testing'
 import type { Harness } from '../harness.testing'
 import { canonicalJson } from '../products/discord/render'
+import { expectIngestionInvariants } from './invariants.testing'
 import type { CurrentScope } from './operators/current'
 import { currentTables, expectedCurrent } from './operators/current.testing'
 import * as currentEndpoints from './operators/currentEndpoints'
@@ -32,15 +33,9 @@ import * as pricingHistory from './operators/pricingHistory'
 import * as statsHistory from './operators/statsHistory'
 import { hour, rawScan, scan, specs } from './operators/testing'
 import { RETRY_BATCH } from './queue'
-import { recordCounts, writeRecords } from './records'
+import { writeRecords } from './records'
 import type { RecordWrites } from './records'
-import {
-  INGESTION_RECORDS_TABLE,
-  PROCESS_COMMITS_TABLE,
-  QUEUE_SCHEDULE_TABLE,
-  recordKind,
-  recordState,
-} from './tables'
+import { INGESTION_RECORDS_TABLE, PROCESS_COMMITS_TABLE, QUEUE_SCHEDULE_TABLE } from './tables'
 
 const RETIRED_AT = 20
 
@@ -92,33 +87,9 @@ async function target(t: Harness, from: number, to: number) {
 }
 
 /** Run registration, queueing, Workpool execution, and completions until nothing is scheduled. */
-async function settle(t: Harness) {
+async function settle(t: Harness, options?: { receipts: boolean }) {
   await drainScheduledFunctions(t)
-  await expectCountsMatch(t)
-}
-
-/** The aggregate must count exactly the records in each kind and state once its queue drains. */
-async function expectCountsMatch(t: Harness) {
-  const { counted, actual } = await t.run(async (ctx) => {
-    const all = await ctx.db.query(INGESTION_RECORDS_TABLE).collect()
-    const keys = recordKind.members.flatMap((kind) =>
-      recordState.members.map((state) => [kind.value, state.value] as const),
-    )
-    const totals = await recordCounts.countBatch(
-      ctx,
-      keys.map((namespace) => ({ namespace: [...namespace] })),
-    )
-    return {
-      actual: Object.fromEntries(
-        keys.map((key) => [
-          key.join('/'),
-          all.filter(({ kind, state }) => kind === key[0] && state === key[1]).length,
-        ]),
-      ),
-      counted: Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index]])),
-    }
-  })
-  expect(counted).toEqual(actual)
+  await expectIngestionInvariants(t, options)
 }
 
 async function records(t: Harness) {
@@ -447,7 +418,8 @@ test('completion commits before queue coordination and its wakeup survives until
     ).toBe(true)
   })
 
-  await settle(t)
+  // The synthetic completion bypassed the ingestors, so the record has no receipts.
+  await settle(t, { receipts: false })
   expect(
     await t.run(async (ctx) => await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()),
   ).not.toBeNull()
@@ -504,6 +476,12 @@ test('kickoff, queue steps, and retries wake the queue without touching its sche
   await insert('failed')
   expect(await t.mutation(internal.ingestion.queue.retry, {})).toBeGreaterThan(0)
   expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+
+  // The wake does its work once drained: the queue holds a schedule again and nothing is stuck.
+  await settle(t, { receipts: false })
+  const drained = await inspect()
+  expect(drained.schedule).not.toBeNull()
+  expect(drained.wakes).toBe(0)
 })
 
 test('repeated wakeups leave at most one queue step waiting', async () => {
