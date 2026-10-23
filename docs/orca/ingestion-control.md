@@ -42,7 +42,7 @@ not enqueue individual ingest jobs directly. Successful process output is retain
 
 The register worker identifies missing pairs; the queue worker identifies registered pending work.
 Pending pairs remain eligible even when their scan times lie beyond a subsequently reduced target end.
-Queued pairs remain entrusted to Workpool; failed pairs wait for an explicit retry request, and complete
+Queued pairs remain entrusted to Workpool, with a reconciler that fails those whose completion was lost; failed pairs wait for an explicit retry request, and complete
 pairs retain their output. Registering new pairs alone is not sufficient implementation of sync.
 
 Workpool retains its existing automatic retries for thrown action errors. Individual process failures

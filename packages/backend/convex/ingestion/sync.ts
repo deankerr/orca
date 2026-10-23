@@ -5,6 +5,7 @@ import { env, internalMutation } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
 import { requestQueueStep } from './queue'
+import { requestSweep } from './reconcile'
 
 /** Kickoff: start both workers; each reads its own intent and stops when idle. */
 export const run = internalMutation({
@@ -22,6 +23,7 @@ export const scheduled = internalMutation({
   handler: async (ctx) => {
     if (env.ORCA_INGESTION_CRON_ENABLED === 'true') {
       await kickoff(ctx)
+      await requestSweep(ctx)
     }
 
     return null

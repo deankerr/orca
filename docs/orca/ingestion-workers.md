@@ -230,6 +230,9 @@ one logical operation. An overlapping queue attempt cannot admit the same pendin
 An interruption leaves either pending work to select again or an accepted request whose execution
 is somebody else's responsibility.
 
+A lost completion is backstopped by reconciliation: an accepted record whose request has finished
+without settling it becomes `failed`, so it stops consuming capacity and blocking pairs, and awaits an explicit retry.
+
 The queue worker ignores queued, failed, and complete pairs. A failed record becomes eligible only
 when an explicit retry changes it to pending.
 
@@ -244,7 +247,7 @@ completion across retries; withdrawal releases them.
 
 ## Repair
 
-Repair is manual. With automatic invocation stopped and no queued work, an operator withdraws the
+Lost completions are repaired automatically by failing the record; retry stays explicit. Other repair is manual. With automatic invocation stopped and no queued work, an operator withdraws the
 affected record and registers it again. The workers then resume from the resulting registry.
 
 - Edge-only registration never re-adds an interior pair; the operator does.
