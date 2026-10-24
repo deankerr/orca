@@ -22,6 +22,10 @@ Convex tests use installed component helpers. Aggregate 0.3.4 omits nested regis
 batch-worker test dependency must match Aggregate's pinned 0.3.3 dependency. Workpool registers its own
 nested worker through its helper.
 
+The pure ingestion decisions in `ingestion/decide.ts` also have property tests (`decide.property.test.ts`,
+fast-check 4.10.2, a backend dev dependency) that run on the default 100 cases per property. They cover queue
+selection and register convergence for any batch limit.
+
 Scheduler scenarios advance to the next timer and await started Convex invocations before advancing
 again. The shared drain stops after 1000 timer turns. It assumes handlers do not await fake-timer sleeps;
 tests of such waits must drive the clock explicitly. This avoids advancing watchdogs and expiry while
