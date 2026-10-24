@@ -1,16 +1,15 @@
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { internalAction } from '#generated/server'
+import { action, internalAction } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
 import * as scans from '#scans'
 
+import { requireAdmin } from '../admin'
 import { profileScan, viewScanReport } from './profile'
-import type { ScanReport, ScanReportView, Selection } from './profile'
+import type { ScanReport, ScanReportView } from './profile'
 
 const selectionArgs = v.object({
-  model: v.optional(v.string()),
-  provider: v.optional(v.string()),
   scanAt: v.optional(v.string()),
   scope: v.optional(v.union(v.literal('orca'), v.literal('collected'))),
 })
@@ -31,16 +30,19 @@ export const profile = internalAction({
   returns: v.any(),
 })
 
-/** Full report for the local HTML renderer. JSON preserves JSONPath keys forbidden in Convex objects. */
-export const report = internalAction({
+/** Full report for the admin explorer. JSON preserves JSONPath keys forbidden in Convex objects. */
+export const report = action({
   args: selectionArgs.fields,
-  handler: async (ctx, args): Promise<string> => JSON.stringify(await analyze(ctx, args)),
+  handler: async (ctx, args): Promise<string> => {
+    await requireAdmin(ctx)
+    return JSON.stringify(await analyze(ctx, args))
+  },
   returns: v.string(),
 })
 
 async function analyze(
   ctx: ActionCtx,
-  { scanAt, scope = 'orca', model, provider }: Infer<typeof selectionArgs>,
+  { scanAt, scope = 'orca' }: Infer<typeof selectionArgs>,
 ): Promise<ScanReport> {
   const selected = scanAt === undefined || scanAt === 'latest' ? await scans.latest(ctx) : scanAt
 
@@ -48,16 +50,5 @@ async function analyze(
     throw new ConvexError('No stored scans')
   }
 
-  const scan = await scans.loadCollected(ctx, selected)
-  const selection: Selection = { scope }
-
-  if (model !== undefined) {
-    selection.model = model
-  }
-
-  if (provider !== undefined) {
-    selection.provider = provider
-  }
-
-  return profileScan(scan, selection)
+  return profileScan(await scans.loadCollected(ctx, selected), { scope })
 }

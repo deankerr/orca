@@ -12,6 +12,7 @@
     "@base-ui/react": "^1.9.0",
     "@convex-dev/react-query": "^0.1.0",
     "@orca/backend": "workspace:*",
+    "@orca/json-profile": "workspace:*",
     "@posthog/nextjs-config": "^1.11.5",
     "@shikijs/langs": "4.5.0",
     "@shikijs/themes": "4.5.0",

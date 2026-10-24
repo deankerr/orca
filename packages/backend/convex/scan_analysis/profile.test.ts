@@ -1,20 +1,17 @@
-import { deepStrictEqual, throws } from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { once } from 'node:events'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-import { text } from 'node:stream/consumers'
-import { fileURLToPath } from 'node:url'
+import { deepStrictEqual, rejects, throws } from 'node:assert/strict'
 
-import { profileScan, viewScanReport } from '@orca/backend/scans/analysis'
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { convexToJson } from 'convex/values'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import { sampleScan } from './fixtures'
+import { api } from '#generated/api'
+import * as objects from '#objects'
 
-test('collected reports retain endpoints without usable provider bodies and preserve filter meaning', () => {
+import { setup } from '../harness.testing'
+import { sampleScan } from './fixtures.testing'
+import { profileScan, viewScanReport } from './profile'
+
+test('collected reports retain endpoints without usable provider bodies', () => {
   const scan = sampleScan()
   const [first] = scan.entries
   const endpoint = first?.endpoints?.[0]
@@ -54,18 +51,6 @@ test('collected reports retain endpoints without usable provider bodies and pres
     { count: 1, type: 'string' },
     { count: 3, type: 'object' },
   ])
-
-  const model = profileScan(scan, { model: first.model_id, scope: 'collected' })
-  expect(model.endpoints.profile.record_count).toBe(6)
-
-  const provider = profileScan(scan, {
-    provider: 'provider-0',
-    scope: 'collected',
-  })
-
-  expect(provider.endpoints.profile.record_count).toBe(1)
-  expect(provider.models.profile.record_count).toBe(1)
-  expect(provider.providers.profile.record_count).toBe(1)
 })
 
 test('scan views pin capture time and select detail without changing the full report', () => {
@@ -94,7 +79,7 @@ test('scan views pin capture time and select detail without changing the full re
   expect(JSON.stringify(report)).toBe(before)
 })
 
-test('profiles the same ORCA scope and identities, with explicit collected and filtered populations', () => {
+test('profiles the ORCA scope and collected data as distinct populations', () => {
   const scan = sampleScan()
   const orca = profileScan(scan, { scope: 'orca' })
   const collected = profileScan(scan, { scope: 'collected' })
@@ -114,31 +99,17 @@ test('profiles the same ORCA scope and identities, with explicit collected and f
     profileRows(collected.endpoints.profile).some(({ value }) => value.path.endsWith('["status"]')),
   ).toBe(true)
 
-  const selected = profileScan(scan, {
-    model: 'example/text-model',
-    provider: 'provider-0',
-    scope: 'orca',
-  })
-
-  expect(selected.models.profile.record_count).toBe(1)
-  expect(selected.endpoints.profile.record_count).toBe(2)
-  expect(selected.providers.profile.record_count).toBe(1)
-
-  expect(selected.endpoints.examples['$[*]["quantization"]']).toEqual([
+  // Examples keep the first identity for each distinct value, in identity order.
+  expect(orca.endpoints.examples['$[*]["quantization"]']).toEqual([
     { id: '00000000-0000-4000-8000-000000000000', value: null },
-    { id: '00000000-0000-4000-8000-000000000002', value: 'fp8' },
+    { id: '00000000-0000-4000-8000-000000000001', value: 'fp8' },
   ])
 
-  const quantization = profileRows(selected.endpoints.profile).find(
+  const quantization = profileRows(orca.endpoints.profile).find(
     ({ value }) => value.path === '$[*]["quantization"]',
   )
 
   expect(quantization === undefined ? 0 : distinctValues(quantization.value)).toBe(2)
-  const empty = profileScan(scan, { model: 'missing', scope: 'orca' })
-
-  expect(
-    [empty.models, empty.endpoints, empty.providers].map(({ profile }) => profile.record_count),
-  ).toEqual([0, 0, 0])
 
   const [first] = scan.entries
 
@@ -208,51 +179,32 @@ test('numeric summaries weight frequencies and keep nested absence, array occurr
   expect(rows.find(({ value }) => value.path === '$[*]["tags"][*]')?.value.population).toBe(2)
 })
 
-test('the Bun HTML CLI escapes report data and preserves output on invalid input', async () => {
+test('only the configured administrator can request a full report', async () => {
+  vi.stubEnv('ORCA_ADMIN_USER_ID', 'user_admin')
   const scan = sampleScan()
-  const [first] = scan.entries
-
-  if (first === undefined) {
-    throw new Error('Fixture requires a model')
-  }
-
-  first.model_id = '</script><script>alert(1)</script>'
-  const report = profileScan(scan, { model: first.model_id, scope: 'orca' })
-  const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-cli-'))
-  const output = path.join(directory, 'report.html')
-
-  async function render(input: string) {
-    const child = spawn(
-      'bun',
-      [fileURLToPath(new URL('index.ts', import.meta.url)), '--output', output],
-      { stdio: ['pipe', 'ignore', 'pipe'], timeout: 5000 },
-    )
-    const completed = once(child, 'close')
-    child.stdin.end(input)
-    const [, stderr] = await Promise.all([completed, text(child.stderr)])
-    return { code: child.exitCode, stderr }
-  }
+  const text = scan.entries
+    .map((entry) => `${JSON.stringify({ ...entry, scan_at: scan.scan_at })}\n`)
+    .join('')
+  const source = vi.spyOn(objects, 'loadMany').mockResolvedValue([text])
+  const t = setup()
 
   try {
-    const rendered = await render(JSON.stringify(convexToJson(JSON.stringify(report))))
-    expect(rendered.code, rendered.stderr).toBe(0)
-    const html = await readFile(output, 'utf-8')
-    expect(html).toContain(report.scan_at)
-    expect(html).not.toContain('</script><script>alert(1)</script>')
-    expect(html).toContain('\\u003c/script>')
-    expect(html).toContain('&lt;/script&gt;')
-    expect(html).not.toContain('<script src=')
+    for (const caller of [t, t.withIdentity({ subject: 'user_other' })]) {
+      await rejects(
+        caller.action(api.scan_analysis.index.report, { scanAt: scan.scan_at }),
+        /Administrator access required/u,
+      )
+    }
 
-    const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/su.exec(
-      html,
-    )?.groups?.payload
-    expect(payload === undefined ? null : JSON.parse(payload)).toEqual(report)
+    expect(source).not.toHaveBeenCalled()
 
-    const invalid = await render(JSON.stringify(viewScanReport(report)))
-    expect(invalid.code).toBe(1)
-    expect(invalid.stderr).toContain('Expected output from scan_analysis/index:report')
-    expect(await readFile(output, 'utf-8')).toBe(html)
+    const report = await t
+      .withIdentity({ subject: 'user_admin' })
+      .action(api.scan_analysis.index.report, { scanAt: scan.scan_at, scope: 'collected' })
+
+    expect(JSON.parse(report)).toEqual(profileScan(scan, { scope: 'collected' }))
   } finally {
-    await rm(directory, { force: true, recursive: true })
+    source.mockRestore()
+    vi.unstubAllEnvs()
   }
-}, 15_000)
+})

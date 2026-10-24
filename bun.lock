@@ -41,6 +41,7 @@
         "@base-ui/react": "^1.9.0",
         "@convex-dev/react-query": "^0.1.0",
         "@orca/backend": "workspace:*",
+        "@orca/json-profile": "workspace:*",
         "@posthog/nextjs-config": "^1.11.5",
         "@shikijs/langs": "4.5.0",
         "@shikijs/themes": "4.5.0",
@@ -151,15 +152,12 @@
     "packages/scripts": {
       "name": "@orca/scripts",
       "dependencies": {
-        "@orca/backend": "workspace:*",
-        "@orca/json-profile": "workspace:*",
         "commander": "^15.0.0",
       },
       "devDependencies": {
         "@orca/config": "workspace:*",
         "@oxc-project/types": "0.155.0",
         "@types/bun": "catalog:",
-        "convex": "catalog:",
         "oxc-parser": "0.155.0",
         "typescript": "catalog:",
         "vitest": "catalog:",
