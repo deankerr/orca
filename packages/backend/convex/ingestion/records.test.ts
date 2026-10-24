@@ -134,3 +134,11 @@ test('rebuild refuses while aggregate operations are pending', async () => {
     /PENDING_OPERATIONS|pending/iu,
   )
 })
+
+test('exists reads the table, not the aggregate counts', async () => {
+  const t = setup()
+  expect(await t.query(internal.ingestion.records.exists, {})).toBe(false)
+
+  await seedUncounted(t, 1)
+  expect(await t.query(internal.ingestion.records.exists, {})).toBe(true)
+})

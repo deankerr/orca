@@ -100,6 +100,13 @@ export const counts = internalQuery({
   returns: v.record(v.string(), v.number()),
 })
 
+/** Whether any ingestion record exists, read from the table rather than the aggregate counts. */
+export const exists = internalQuery({
+  args: {},
+  handler: async (ctx) => (await ctx.db.query(INGESTION_RECORDS_TABLE).first()) !== null,
+  returns: v.boolean(),
+})
+
 /** Dead-lettered aggregate operations, counted up to `limit`: each one is a missed count change. */
 export async function deadLetteredCount(ctx: QueryCtx, limit: number) {
   const { page } = await ctx.runQuery(components.ingestionRecordCounts.deadLetter.list, {
