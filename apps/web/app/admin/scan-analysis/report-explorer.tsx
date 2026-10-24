@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { FieldDetail, percentage } from './field-detail'
+import { readablePath } from './field-path'
 
 const POPULATIONS = ['endpoints', 'models', 'providers'] as const
 type PopulationName = (typeof POPULATIONS)[number]
@@ -58,7 +59,10 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
   const population = report[populationName]
   const all = profileRows(population.profile)
   const rows = all
-    .filter(({ value }) => value.path.toLowerCase().includes(deferredQuery))
+    .filter(({ value }) => {
+      const { parent, leaf } = readablePath(value.path)
+      return [value.path, parent + leaf].some((path) => path.toLowerCase().includes(deferredQuery))
+    })
     .toSorted(compare(sort))
   const filters = [report.selection.model, report.selection.provider].filter(Boolean).join(' · ')
 
@@ -139,7 +143,7 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
 
       <div className="rounded-lg border">
         <div
-          className={`${COLUMNS} border-b py-1.5 text-[0.625rem] tracking-wide text-muted-foreground uppercase`}
+          className={`${COLUMNS} sticky top-0 z-10 rounded-t-lg border-b bg-background py-1.5 text-[0.625rem] tracking-wide text-muted-foreground uppercase`}
           aria-hidden="true"
         >
           <span>Field path</span>
@@ -183,6 +187,7 @@ function FieldRow({ row, population }: { row: ProfileRow; population: Population
   const [open, setOpen] = useState(false)
   const { missing, value } = row
   const nulls = value.types.find((branch) => branch.type === 'null')?.count ?? 0
+  const path = readablePath(value.path)
 
   return (
     <details
@@ -193,7 +198,8 @@ function FieldRow({ row, population }: { row: ProfileRow; population: Population
     >
       <summary className={`${COLUMNS} cursor-pointer py-1.5 text-xs hover:bg-muted/40`}>
         <code className="truncate font-mono" title={value.path}>
-          {value.path.replace(/^\$\[\*\]/u, '')}
+          <span className="text-muted-foreground">{path.parent}</span>
+          {path.leaf}
         </code>
         <span className="truncate text-muted-foreground">
           {value.types.map((branch) => branch.type).join(' · ')}
