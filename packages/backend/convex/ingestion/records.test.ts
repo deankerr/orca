@@ -7,6 +7,7 @@ import { internal } from '#generated/api'
 
 import { setup } from '../harness.testing'
 import type { Harness } from '../harness.testing'
+import { expectIngestionInvariants } from './invariants.testing'
 import { hour } from './operators/testing'
 import { writeRecords } from './records'
 import { INGESTION_RECORDS_TABLE } from './tables'
@@ -58,6 +59,7 @@ test('rebuild restores counts that disagree with the table, across pages', async
     'pair/pending': expected('pending'),
     'pair/queued': 0,
   })
+  await expectIngestionInvariants(t, { receipts: false })
 })
 
 test('rebuild discards stale counts instead of adding to them', async () => {
@@ -79,6 +81,7 @@ test('rebuild discards stale counts instead of adding to them', async () => {
   await drainScheduledFunctions(t)
 
   expect(await t.query(internal.ingestion.records.counts, {})).toMatchObject({ 'pair/complete': 1 })
+  await expectIngestionInvariants(t, { receipts: false })
 })
 
 test('rebuild refuses while a record is queued or withdrawing', async () => {
