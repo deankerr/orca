@@ -3,6 +3,7 @@
 import type { Population, ScanReport } from '@orca/backend/scans/analysis'
 import { distinctValues, profileRows } from '@orca/json-profile'
 import type { ProfileRow } from '@orca/json-profile'
+import { ChevronRightIcon } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
 
 import { SearchInput } from '@/components/shared/search-input'
@@ -15,7 +16,14 @@ import { readablePath } from './field-path'
 const POPULATIONS = ['endpoints', 'models', 'providers'] as const
 type PopulationName = (typeof POPULATIONS)[number]
 
-const SORTS = { distinct: 'Most distinct', missing: 'Most absent', path: 'Field path' } as const
+const POPULATION_LABELS: Record<PopulationName, string> = {
+  endpoints: 'Endpoints',
+  models: 'Models',
+  providers: 'Providers',
+}
+
+// oxlint-disable-next-line sort-keys -- Display order of the sort options.
+const SORTS = { path: 'Field path', missing: 'Most absent', distinct: 'Most distinct' } as const
 type Sort = keyof typeof SORTS
 
 const COLUMNS = 'grid grid-cols-[minmax(0,1fr)_12rem_5rem_5rem_6rem] items-center gap-3 px-3'
@@ -68,12 +76,18 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
 
   return (
     <section className="flex flex-col gap-3" aria-label="Explore fields">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-sm">{report.scan_at}</span>
-        <span className="text-xs text-muted-foreground">
-          {report.selection.scope === 'orca' ? 'ORCA scope' : 'Collected data'}
-          {filters === '' ? '' : ` · ${filters}`}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span>
+          Scan <span className="font-mono text-foreground">{report.scan_at}</span>
         </span>
+        <span>·</span>
+        <span>{report.selection.scope === 'orca' ? 'ORCA scope' : 'Collected data'}</span>
+        {filters !== '' && (
+          <>
+            <span>·</span>
+            <span className="font-mono text-foreground">{filters}</span>
+          </>
+        )}
         <Button
           className="ml-auto"
           size="sm"
@@ -102,7 +116,7 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
         >
           {POPULATIONS.map((name) => (
             <ToggleGroupItem key={name} value={name}>
-              {name}
+              {POPULATION_LABELS[name]}
               <span className="font-mono text-muted-foreground tabular-nums">
                 {report[name].profile.record_count.toLocaleString()}
               </span>
@@ -114,7 +128,7 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
           onValueChange={setQuery}
           placeholder="Find a field, e.g. pricing, quantization"
           aria-label="Find a field"
-          className="sm:max-w-80"
+          className="h-6 sm:max-w-80"
         />
         <ToggleGroup
           multiple={false}
@@ -189,19 +203,25 @@ function FieldRow({ row, population }: { row: ProfileRow; population: Population
   const { missing, value } = row
   const nulls = value.types.find((branch) => branch.type === 'null')?.count ?? 0
   const path = readablePath(value.path)
+  const primitive = value.types.some((branch) => branch.type === 'null' || 'values' in branch)
 
   return (
     <details
-      className="border-b last:border-b-0"
+      className="group/field border-b last:border-b-0"
       onToggle={(event) => {
         setOpen(event.currentTarget.open)
       }}
     >
-      <summary className={`${COLUMNS} cursor-pointer py-1.5 text-xs hover:bg-muted/40`}>
-        <code className="truncate font-mono" title={value.path}>
-          <span className="text-muted-foreground">{path.parent}</span>
-          {path.leaf}
-        </code>
+      <summary
+        className={`${COLUMNS} cursor-pointer list-none py-1.5 text-xs group-open/field:bg-muted/40 hover:bg-muted/40 [&::-webkit-details-marker]:hidden`}
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ChevronRightIcon className="size-3 shrink-0 text-muted-foreground transition-transform group-open/field:rotate-90" />
+          <code className="truncate font-mono" title={value.path}>
+            <span className="text-muted-foreground">{path.parent}</span>
+            {path.leaf}
+          </code>
+        </span>
         <span className="truncate text-muted-foreground">
           {value.types.map((branch) => branch.type).join(' · ')}
         </span>
@@ -215,7 +235,7 @@ function FieldRow({ row, population }: { row: ProfileRow; population: Population
           {percentage(nulls, value.population)}
         </span>
         <span className="text-right font-mono tabular-nums">
-          {distinctValues(value).toLocaleString()}
+          {primitive ? distinctValues(value).toLocaleString() : '—'}
         </span>
       </summary>
       {open && (
