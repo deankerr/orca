@@ -142,8 +142,9 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
       </div>
 
       <div className="rounded-lg border">
+        {/* Offset the page container's top padding so scrolled rows cannot show above the header. */}
         <div
-          className={`${COLUMNS} sticky top-0 z-10 rounded-t-lg border-b bg-background py-1.5 text-[0.625rem] tracking-wide text-muted-foreground uppercase`}
+          className={`${COLUMNS} sticky -top-4 z-10 rounded-t-lg border-b bg-background py-1.5 text-[0.625rem] tracking-wide text-muted-foreground uppercase`}
           aria-hidden="true"
         >
           <span>Field path</span>
