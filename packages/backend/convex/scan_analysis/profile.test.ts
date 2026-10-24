@@ -1,18 +1,15 @@
-import { deepStrictEqual, throws } from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { once } from 'node:events'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-import { text } from 'node:stream/consumers'
-import { fileURLToPath } from 'node:url'
+import { deepStrictEqual, rejects, throws } from 'node:assert/strict'
 
-import { profileScan, viewScanReport } from '@orca/backend/scans/analysis'
 import { profileJsonRecords, distinctValues, numericSummary, profileRows } from '@orca/json-profile'
 import { convexToJson } from 'convex/values'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import { sampleScan } from './fixtures'
+import { api } from '#generated/api'
+import * as objects from '#objects'
+
+import { setup } from '../harness.testing'
+import { sampleScan } from './fixtures.testing'
+import { profileScan, viewScanReport } from './profile'
 
 test('collected reports retain endpoints without usable provider bodies and preserve filter meaning', () => {
   const scan = sampleScan()
@@ -208,51 +205,32 @@ test('numeric summaries weight frequencies and keep nested absence, array occurr
   expect(rows.find(({ value }) => value.path === '$[*]["tags"][*]')?.value.population).toBe(2)
 })
 
-test('the Bun HTML CLI escapes report data and preserves output on invalid input', async () => {
+test('only the configured administrator can request a full report', async () => {
+  vi.stubEnv('ORCA_ADMIN_USER_ID', 'user_admin')
   const scan = sampleScan()
-  const [first] = scan.entries
-
-  if (first === undefined) {
-    throw new Error('Fixture requires a model')
-  }
-
-  first.model_id = '</script><script>alert(1)</script>'
-  const report = profileScan(scan, { model: first.model_id, scope: 'orca' })
-  const directory = await mkdtemp(path.join(tmpdir(), 'orca-report-cli-'))
-  const output = path.join(directory, 'report.html')
-
-  async function render(input: string) {
-    const child = spawn(
-      'bun',
-      [fileURLToPath(new URL('index.ts', import.meta.url)), '--output', output],
-      { stdio: ['pipe', 'ignore', 'pipe'], timeout: 5000 },
-    )
-    const completed = once(child, 'close')
-    child.stdin.end(input)
-    const [, stderr] = await Promise.all([completed, text(child.stderr)])
-    return { code: child.exitCode, stderr }
-  }
+  const text = scan.entries
+    .map((entry) => `${JSON.stringify({ ...entry, scan_at: scan.scan_at })}\n`)
+    .join('')
+  const source = vi.spyOn(objects, 'loadMany').mockResolvedValue([text])
+  const t = setup()
 
   try {
-    const rendered = await render(JSON.stringify(convexToJson(JSON.stringify(report))))
-    expect(rendered.code, rendered.stderr).toBe(0)
-    const html = await readFile(output, 'utf-8')
-    expect(html).toContain(report.scan_at)
-    expect(html).not.toContain('</script><script>alert(1)</script>')
-    expect(html).toContain('\\u003c/script>')
-    expect(html).toContain('&lt;/script&gt;')
-    expect(html).not.toContain('<script src=')
+    for (const caller of [t, t.withIdentity({ subject: 'user_other' })]) {
+      await rejects(
+        caller.action(api.scan_analysis.index.report, { scanAt: scan.scan_at }),
+        /Administrator access required/u,
+      )
+    }
 
-    const payload = /<script type="application\/json" id="report">(?<payload>.*?)<\/script>/su.exec(
-      html,
-    )?.groups?.payload
-    expect(payload === undefined ? null : JSON.parse(payload)).toEqual(report)
+    expect(source).not.toHaveBeenCalled()
 
-    const invalid = await render(JSON.stringify(viewScanReport(report)))
-    expect(invalid.code).toBe(1)
-    expect(invalid.stderr).toContain('Expected output from scan_analysis/index:report')
-    expect(await readFile(output, 'utf-8')).toBe(html)
+    const report = await t
+      .withIdentity({ subject: 'user_admin' })
+      .action(api.scan_analysis.index.report, { scanAt: scan.scan_at, scope: 'collected' })
+
+    expect(JSON.parse(report)).toEqual(profileScan(scan, { scope: 'collected' }))
   } finally {
-    await rm(directory, { force: true, recursive: true })
+    source.mockRestore()
+    vi.unstubAllEnvs()
   }
-}, 15_000)
+})

@@ -4,19 +4,15 @@
   "type": "module",
   "scripts": {
     "ingestion-load": "bun run ingestion-load/index.ts",
-    "scan-analysis": "bun run scan-analysis/index.ts",
     "test": "bun run --cwd ../.. test --project scripts"
   },
   "dependencies": {
-    "@orca/backend": "workspace:*",
-    "@orca/json-profile": "workspace:*",
     "commander": "^15.0.0"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
     "@oxc-project/types": "0.155.0",
     "@types/bun": "catalog:",
-    "convex": "catalog:",
     "oxc-parser": "0.155.0",
     "typescript": "catalog:",
     "vitest": "catalog:"

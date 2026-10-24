@@ -1,10 +1,11 @@
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
-import { internalAction } from '#generated/server'
+import { action, internalAction } from '#generated/server'
 import type { ActionCtx } from '#generated/server'
 import * as scans from '#scans'
 
+import { requireAdmin } from '../admin'
 import { profileScan, viewScanReport } from './profile'
 import type { ScanReport, ScanReportView, Selection } from './profile'
 
@@ -31,10 +32,13 @@ export const profile = internalAction({
   returns: v.any(),
 })
 
-/** Full report for the local HTML renderer. JSON preserves JSONPath keys forbidden in Convex objects. */
-export const report = internalAction({
+/** Full report for the admin explorer. JSON preserves JSONPath keys forbidden in Convex objects. */
+export const report = action({
   args: selectionArgs.fields,
-  handler: async (ctx, args): Promise<string> => JSON.stringify(await analyze(ctx, args)),
+  handler: async (ctx, args): Promise<string> => {
+    await requireAdmin(ctx)
+    return JSON.stringify(await analyze(ctx, args))
+  },
   returns: v.string(),
 })
 
