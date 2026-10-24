@@ -12,7 +12,7 @@ import schema from '../schema'
 import { ingestionParallelism } from './pool'
 import { queueCapacity, retryFailed } from './queue'
 import { requestSweep } from './reconcile'
-import { recordCounts } from './records'
+import { deadLetteredCount, recordCounts } from './records'
 import { kickoff } from './sync'
 import {
   INGESTION_RECORDS_TABLE,
@@ -28,6 +28,9 @@ import { setTarget } from './target'
 const HISTOGRAM_BUCKETS_LIMIT = 240
 
 const BASELINE_LIMIT = 8
+
+/** Dead-lettered aggregate operations shown before the count saturates. */
+const DEAD_LETTER_LIMIT = 100
 
 const namespaces = recordKind.members.flatMap((kind) =>
   recordState.members.map((state): [RecordKind, RecordState] => [kind.value, state.value]),
@@ -76,6 +79,7 @@ export const overview = query({
       counts: Object.fromEntries(
         namespaces.map((namespace, index) => [namespace.join('/'), totals[index] ?? 0]),
       ),
+      deadLettered: await deadLetteredCount(ctx, DEAD_LETTER_LIMIT),
       execution: { capacity: queueCapacity(), parallelism: ingestionParallelism() },
       frontier: frontier?.scan_at ?? null,
       latestCompleteFull: full?.scan_at ?? null,
@@ -88,6 +92,7 @@ export const overview = query({
     baselines: v.array(v.object({ scan_at: v.string(), state: recordState })),
     clock: scanAt,
     counts: v.record(v.string(), v.number()),
+    deadLettered: v.number(),
     execution: v.object({ capacity: v.number(), parallelism: v.number() }),
     frontier: scanAt,
     latestCompleteFull: scanAt,
