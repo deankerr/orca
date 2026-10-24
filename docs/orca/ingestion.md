@@ -37,7 +37,7 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - The `ingestionRecordCounts` aggregate counts records by kind and state over scan time.
 - Every record write goes through `ingestion/records.ts`; aggregate writes are queued and reads are stale.
 - The aggregate is derived: rebuild it from `ingestion_records` rather than repairing it.
-- `records:rebuildCounts` clears the aggregate and dead letters, then reinserts every record in bounded pages. It refuses unless the cron is off, no record is `queued` or `withdrawing`, and no aggregate operation is pending. Writes during a rebuild fail it or skew counts.
+- `records:rebuildCounts` clears the aggregate and dead letters, then deletes dead letters and reinserts every record in bounded pages. It refuses unless the cron is off, no record is `queued` or `withdrawing`, and no aggregate operation is pending. Writes during a rebuild fail it or skew counts.
 - Operations the aggregate component could not apply are dead-lettered; the admin overview reports their count (saturating at 100).
 - Both workers run as single steps and schedule themselves again until a step finds no work.
 - Registration commits only if the registry edges it read are unchanged.
@@ -57,7 +57,7 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - Each process commits its output and a receipt per scan and process in one transaction, including empty output.
 - Retries skip committed processes; overlapping attempts cannot duplicate output.
 - A receipt records its coverage; a retry assigned a broader scope or the stats snapshot writes again.
-- Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`.
+- Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`. Each failed process is logged with its stage and stack, and the error names `process (stage): message`.
 - `ingestion/reconcile:sweep` finds queued or withdrawing records whose Workpool work has finished (at most 512 per kind and state).
 - For each it schedules `confirmLost` after a 5-minute grace period, because Workpool deletes failed work and
   schedules its completion in one transaction, so finished-but-unsettled is briefly normal.
