@@ -56,6 +56,12 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - Retries skip committed processes; overlapping attempts cannot duplicate output.
 - A receipt records its coverage; a retry assigned a broader scope or the stats snapshot writes again.
 - Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`.
+- `ingestion/reconcile:sweep` finds queued or withdrawing records whose Workpool work has finished (at most 512 per kind and state).
+- For each it schedules `confirmLost` after a 5-minute grace period, because Workpool deletes failed work and
+  schedules its completion in one transaction, so finished-but-unsettled is briefly normal.
+- `confirmLost` fails the record only if it still has the same work ID, is still accepted, and the work is still finished.
+- A late completion still finds the record by work ID and overwrites its state.
+- The hourly cron (when enabled) and `ingestion/admin:runSync` schedule the sweep; `kickoff` does not.
 - A failed record waits for `ingestion/queue:retry`, which returns one or all failed records to `pending` without a scope.
 - Withdrawal deletes history rows dated at the scan and releases every receipt; current rows stay.
 - Only displaced baselines are withdrawn so far: their scan remains an input of the displacing pair.

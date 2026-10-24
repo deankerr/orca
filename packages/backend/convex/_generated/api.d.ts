@@ -52,6 +52,7 @@ import type * as ingestion_operators_statsHistory from "../ingestion/operators/s
 import type * as ingestion_operators_testing from "../ingestion/operators/testing.js";
 import type * as ingestion_pool from "../ingestion/pool.js";
 import type * as ingestion_queue from "../ingestion/queue.js";
+import type * as ingestion_reconcile from "../ingestion/reconcile.js";
 import type * as ingestion_records from "../ingestion/records.js";
 import type * as ingestion_register from "../ingestion/register.js";
 import type * as ingestion_results from "../ingestion/results.js";
@@ -176,6 +177,7 @@ declare const fullApi: ApiFromModules<{
   "ingestion/operators/testing": typeof ingestion_operators_testing;
   "ingestion/pool": typeof ingestion_pool;
   "ingestion/queue": typeof ingestion_queue;
+  "ingestion/reconcile": typeof ingestion_reconcile;
   "ingestion/records": typeof ingestion_records;
   "ingestion/register": typeof ingestion_register;
   "ingestion/results": typeof ingestion_results;

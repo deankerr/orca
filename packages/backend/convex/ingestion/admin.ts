@@ -11,6 +11,7 @@ import { clock } from '../products/shared/clock'
 import schema from '../schema'
 import { ingestionParallelism } from './pool'
 import { queueCapacity, retryFailed } from './queue'
+import { requestSweep } from './reconcile'
 import { recordCounts } from './records'
 import { kickoff } from './sync'
 import {
@@ -239,6 +240,7 @@ export const runSync = mutation({
   handler: async (ctx) => {
     await requireAdmin(ctx)
     await kickoff(ctx)
+    await requestSweep(ctx)
     return null
   },
   returns: v.null(),
