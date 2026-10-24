@@ -72,7 +72,6 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
       return [value.path, parent + leaf].some((path) => path.toLowerCase().includes(deferredQuery))
     })
     .toSorted(compare(sort))
-  const filters = [report.selection.model, report.selection.provider].filter(Boolean).join(' · ')
 
   return (
     <section className="flex flex-col gap-3" aria-label="Explore fields">
@@ -82,12 +81,6 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
         </span>
         <span>·</span>
         <span>{report.selection.scope === 'orca' ? 'ORCA scope' : 'Collected data'}</span>
-        {filters !== '' && (
-          <>
-            <span>·</span>
-            <span className="font-mono text-foreground">{filters}</span>
-          </>
-        )}
         <Button
           className="ml-auto"
           size="sm"

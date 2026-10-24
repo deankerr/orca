@@ -15,7 +15,6 @@ It persists neither source data nor reports.
 | `collected` | All collected models and retained endpoint fields, including malformed provider information |
 
 - Both scopes read stored artifacts.
-- Provider selections require an identifiable provider; model selections retain unattributed endpoints.
 - Providers count once per identity, using the last collected body when copies differ.
 
 ## Bounded CLI views

@@ -27,27 +27,22 @@ export default function ScanAnalysisPage() {
   const analyze = useAction(api.scan_analysis.index.report)
   const [scanAt, setScanAt] = useState('')
   const [scope, setScope] = useState<Scope>('orca')
-  const [model, setModel] = useState('')
-  const [provider, setProvider] = useState('')
   const [report, setReport] = useState<ScanReport | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   // Only the newest request may replace the report; earlier selections finish silently.
   const request = useRef(0)
-  const ids = { model: useId(), provider: useId(), scanAt: useId() }
+  const scanAtId = useId()
 
   const run = async () => {
     request.current += 1
     const { current } = request
-    const optional = (value: string) => (value.trim() === '' ? undefined : value.trim())
     setRunning(true)
     setStatus(null)
 
     try {
       const payload = await analyze({
-        model: optional(model),
-        provider: optional(provider),
-        scanAt: optional(scanAt),
+        scanAt: scanAt.trim() === '' ? undefined : scanAt.trim(),
         scope,
       })
 
@@ -100,40 +95,16 @@ export default function ScanAnalysisPage() {
               <ToggleGroupItem value="orca">ORCA scope</ToggleGroupItem>
               <ToggleGroupItem value="collected">Collected data</ToggleGroupItem>
             </ToggleGroup>
-            <label htmlFor={ids.scanAt} className="text-xs text-muted-foreground">
+            <label htmlFor={scanAtId} className="text-xs text-muted-foreground">
               Scan
             </label>
             <Input
-              id={ids.scanAt}
+              id={scanAtId}
               className="h-6 w-56 font-mono text-xs"
               placeholder="latest"
               value={scanAt}
               onChange={(event) => {
                 setScanAt(event.target.value)
-              }}
-            />
-            <label htmlFor={ids.model} className="text-xs text-muted-foreground">
-              Model
-            </label>
-            <Input
-              id={ids.model}
-              className="h-6 w-56 font-mono text-xs"
-              placeholder="any"
-              value={model}
-              onChange={(event) => {
-                setModel(event.target.value)
-              }}
-            />
-            <label htmlFor={ids.provider} className="text-xs text-muted-foreground">
-              Provider
-            </label>
-            <Input
-              id={ids.provider}
-              className="h-6 w-44 font-mono text-xs"
-              placeholder="any"
-              value={provider}
-              onChange={(event) => {
-                setProvider(event.target.value)
               }}
             />
             <Button type="submit" size="sm" disabled={running}>
@@ -143,16 +114,14 @@ export default function ScanAnalysisPage() {
           <p className="text-xs text-muted-foreground">
             {scope === 'orca'
               ? 'ORCA scope applies the current text-model selection and entity assembly rules.'
-              : 'Collected data includes all collected models and retained endpoint fields, including malformed provider information. Providers count once per identity, using the last collected body.'}{' '}
-            Provider selections require an identifiable provider; model selections retain
-            unattributed endpoints.
+              : 'Collected data includes all collected models and retained endpoint fields, including malformed provider information. Providers count once per identity, using the last collected body.'}
             {status !== null && <span className="ml-2 text-foreground">{status}</span>}
           </p>
         </form>
 
         {report === null ? (
           <p className="text-xs text-muted-foreground">
-            {running ? 'Loading and profiling the scan…' : 'Choose a selection, then analyze.'}
+            {running ? 'Loading and profiling the scan…' : 'Choose a scope and scan, then analyze.'}
           </p>
         ) : (
           <ReportExplorer report={report} />
