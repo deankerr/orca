@@ -4,7 +4,7 @@ import { internal } from '#generated/api'
 import { env, internalMutation } from '#generated/server'
 import type { MutationCtx } from '#generated/server'
 
-import { scheduleQueue } from './queue'
+import { requestQueueStep } from './queue'
 
 /** Kickoff: start both workers; each reads its own intent and stops when idle. */
 export const run = internalMutation({
@@ -32,5 +32,5 @@ export const scheduled = internalMutation({
 /** Redundant kickoffs are harmless: overtaken register steps commit nothing. */
 export async function kickoff(ctx: MutationCtx) {
   await ctx.scheduler.runAfter(0, internal.ingestion.register.run, {})
-  await scheduleQueue(ctx)
+  await requestQueueStep(ctx)
 }

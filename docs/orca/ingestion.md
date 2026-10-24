@@ -43,6 +43,8 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - Accepted ingestion is capped; `queued` means handed to Workpool, not merely registered.
 - One Workpool batch per queue step; completions find their record by work ID, so a stale ID matches nothing.
 - At most one queue step waits to start; completions arriving meanwhile do not stack more.
+- Only `queue:wake` touches the queue schedule; completions, kickoff, queue steps, and retries schedule it,
+  so contention on that singleton never rolls back their own work.
 - `ingestion/sync:run` kicks off sync manually; the ingestion cron invokes it when enabled.
 - Sync never advances the target; continuous ingestion uses a far-future end.
 - Preview initialization targets the preceding day once, then kicks off sync on every run.
