@@ -18,6 +18,7 @@ const scope = v.union(
   v.object({ kind: v.literal('pair'), model_id: v.string(), provider_id: v.string() }),
   v.object({ endpoint_id: v.string(), kind: v.literal('endpoint') }),
 )
+
 export type MonitorScope = Infer<typeof scope>
 
 /** Historical activity, selected using the relationships captured with each event. */
@@ -35,6 +36,7 @@ export const feed = query({
     const alerts = await Promise.all(
       result.page.map(async (row) => selectDefault(await interpret(ctx, row))),
     )
+
     return { ...result, page: alerts.filter((alert) => alert !== null) }
   },
   returns: paginationResultValidator(entityAlert),
@@ -89,6 +91,7 @@ export const providers = query({
       .query(CURRENT_PROVIDERS_TABLE)
       .withIndex('by_provider_id')
       .paginate(paginationOpts)
+
     return {
       ...result,
       page: result.page.map((row) => ({ id: row.provider_id, name: row.display_name })),

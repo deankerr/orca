@@ -95,6 +95,7 @@ test('schedule changes announce an opaque change, including introduction and rem
       { pricing: before, metadata: { context_length: 100 } },
       { pricing: after, metadata: { context_length: 200 } },
     )
+
     // oxlint-enable sort-keys
     row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
     const captured = row.change_json
@@ -190,6 +191,7 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     { metadata: { context_length: 100 }, pricing: { discount: 0.1, meters: { prompt: '1' } } },
     { metadata: { context_length: 200 }, pricing: { discount: 0.11, meters: { prompt: '1.001' } } },
   )
+
   expect(render(micro)).toBeNull()
   expect(await renderDiscord(micro, urls)).toBeNull()
   const captured = curate(micro)
@@ -214,6 +216,7 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     { metadata: { context_length: 100 } },
     { metadata: { context_length: 200 } },
   )
+
   expect(render(metadataOnly)).not.toBeNull()
   expect(await renderDiscord(metadataOnly, urls)).not.toBeNull()
 })
@@ -285,6 +288,7 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   expect(event.observed_at).toBe(row.scan_at)
   expect(event).not.toHaveProperty('scan_at')
   expect(event.changes).toHaveLength(7)
+
   for (const expected of [
     { after: '0.0000001001', before: '0.0000001', path: 'pricing.prompt', type: 'field_updated' },
     { before: '0.000002', path: 'pricing.completion', type: 'field_removed' },
@@ -301,6 +305,7 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   ] satisfies Extract<FeedEvent, { changes: unknown }>['changes']) {
     expect(event.changes).toContainEqual(expected)
   }
+
   expect(event.details).toContain('Input price is approximately $0.10 (increased by 0.1%).')
   expect(event.details).not.toContain('Reasoning support changed from yes to no.')
   expect(event.details).toContain('Supported parameters added: "response_format".')
@@ -379,6 +384,7 @@ test('text preserves tiny prices and literal upstream content; malformed events 
 
 test('invalid event envelopes and incomplete selected changes cannot disappear during rendering', () => {
   const row = update({ metadata: { context_length: 100 } }, { metadata: { context_length: 200 } })
+
   for (const payload of [
     { key: 'endpoint', type: 'REMOVE', value: {} },
     { key: 'endpoint', type: 'UPDATE' },
@@ -408,6 +414,7 @@ test('invalid event envelopes and incomplete selected changes cannot disappear d
 
 test('the stored row supplies root identity and operation without reconciling duplicate payload fields', () => {
   const row = update({ metadata: { context_length: 100 } }, { metadata: { context_length: 200 } })
+
   const payload = {
     changes: [
       {
@@ -426,6 +433,7 @@ test('the stored row supplies root identity and operation without reconciling du
 test('failed events are logged and omitted before batching; healthy events keep their residual changes', async () => {
   const before = { metadata: { context_length: 100, supported_parameters: ['tools', 'audio'] } }
   const after = { metadata: { context_length: 100, supported_parameters: ['tools'] } }
+
   const good = Array.from({ length: 5 }, (_, index) => ({
     ...update(
       before,
@@ -434,6 +442,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
     ),
     _id: `event-${index}`,
   }))
+
   const unsupported = {
     ...update(
       before,
@@ -442,7 +451,9 @@ test('failed events are logged and omitted before batching; healthy events keep 
     ),
     _id: 'unsupported-event',
   }
+
   const malformed = { ...unsupported, _id: 'malformed-event', change_json: '{broken' }
+
   const missingValue = {
     ...unsupported,
     _id: 'missing-value-event',
@@ -456,6 +467,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
       ],
     }),
   }
+
   const bad = [unsupported, malformed, missingValue]
   const log = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -481,6 +493,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
     })
     expect(JSON.stringify(input)).toBe(original)
     expect(log).toHaveBeenCalledTimes(3)
+
     for (const [index, row] of bad.entries()) {
       expect(log).toHaveBeenNthCalledWith(
         index + 1,
@@ -492,6 +505,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
         }),
       )
     }
+
     expect(() => curate(unsupported)).toThrow('supported_parameters')
     expect(() => curate(missingValue)).toThrow('context_length')
 
@@ -502,6 +516,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
 
     expect(prepareAlert(unsupported)).toBeNull()
     expect(prepareAlert(unsupported)).toBeNull()
+
     const page = {
       continueCursor: 'next',
       isDone: false,
@@ -509,6 +524,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
       pageStatus: 'SplitRequired' as const,
       splitCursor: 'split',
     }
+
     expect(renderPage(page)).toEqual({
       ...page,
       page: good.map(render).filter((event) => event !== null),
@@ -523,6 +539,7 @@ test('unselected external objects and indexed arrays remain valid captured data'
     { metadata: { context_length: 100, new_field: [{ nested: [1, 2] }] } },
     { metadata: { context_length: 200, new_field: [{ extra: { value: true }, nested: [3] }] } },
   )
+
   const alert = curate(row)
 
   expect(alert).toMatchObject({ changes: [{ after: 200, before: 100, path: 'context_length' }] })
@@ -553,6 +570,7 @@ function renderPage(result: PaginationResult<EventRow>) {
     ...result,
     page: result.page.flatMap((row) => {
       const alert = prepareAlert(row)
+
       return alert === null ? [] : [alert]
     }),
   })

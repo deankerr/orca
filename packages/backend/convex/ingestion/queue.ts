@@ -46,6 +46,7 @@ export const wake = internalMutation({
   args: {},
   handler: async (ctx) => {
     await scheduleQueue(ctx)
+
     return null
   },
   returns: v.null(),
@@ -54,6 +55,7 @@ export const wake = internalMutation({
 /** Schedule a queue step unless one is already waiting to start; a running step does not count. */
 async function scheduleQueue(ctx: MutationCtx) {
   const schedule = await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()
+
   const waiting =
     schedule === null
       ? null
@@ -95,6 +97,7 @@ export const run = internalMutation({
     })
 
     await requestQueueStep(ctx)
+
     return decision.kind
   },
   returns: literals('withdraw', 'ingest', 'baseline', 'idle'),
@@ -105,6 +108,7 @@ async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
     ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', kind))
+
   const latestFull = async (state: RecordState) =>
     scanAt(
       await ctx.db
@@ -117,6 +121,7 @@ async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
     )
 
   const baselineRecords = await byKind('baseline').take(BASELINE_LIMIT)
+
   const baselines = await Promise.all(
     baselineRecords.map(async ({ _id, scan_at, state }) => ({
       displaced:
@@ -129,12 +134,15 @@ async function readView(ctx: QueryCtx): Promise<QueueView<RecordId>> {
       state,
     })),
   )
+
   const latestQueuedFull = await latestFull('queued')
   const latestCompleteFull = await latestFull('complete')
+
   const pending = await ctx.db
     .query(INGESTION_RECORDS_TABLE)
     .withIndex('by_kind_and_state_and_scan_at', (q) => {
       const range = q.eq('kind', 'pair').eq('state', 'pending')
+
       return latestQueuedFull === null ? range : range.gt('scan_at', latestQueuedFull)
     })
     .order('desc')
@@ -162,11 +170,12 @@ async function inFlight(ctx: QueryCtx): Promise<number> {
     ctx,
     (['pair', 'baseline'] as const).flatMap((kind) =>
       (['queued', 'withdrawing'] as const).map((state) => ({
-        namespace: [kind, state] as [RecordKind, RecordState],
+        namespace: [kind, state] satisfies [RecordKind, RecordState],
       })),
     ),
     { stale: true },
   )
+
   return counts.reduce((sum, value) => sum + value, 0)
 }
 
@@ -188,6 +197,7 @@ async function load<Request extends { id: RecordId }>(ctx: QueryCtx, requests: R
       request,
     })),
   )
+
   return loaded.flatMap(({ request, record }) => (record === null ? [] : [{ record, request }]))
 }
 
@@ -201,6 +211,7 @@ async function ingest(
   requests: IngestRequest<RecordId>[],
 ) {
   const accepted = await load(ctx, requests)
+
   const workIds = await pool().enqueueActionBatch(
     ctx,
     internal.ingestion.execute.ingest,
@@ -233,6 +244,7 @@ async function withdraw(ctx: MutationCtx, records: RecordWrites, ids: RecordId[]
     ctx,
     ids.map((id) => ({ id })),
   )
+
   const workIds = await pool().enqueueActionBatch(
     ctx,
     internal.ingestion.execute.withdraw,
@@ -286,5 +298,6 @@ export async function retryFailed(ctx: MutationCtx, record_id?: RecordId): Promi
   if (failed.length > 0) {
     await requestQueueStep(ctx)
   }
+
   return failed.length
 }

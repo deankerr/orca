@@ -16,6 +16,7 @@ function connectionPhase(
   if (state.isWebSocketConnected) {
     return 'connected'
   }
+
   return state.hasEverConnected ? 'reconnecting' : 'connecting'
 }
 
@@ -60,6 +61,7 @@ export class ConnectionTimings {
     }
 
     const mark = this.mark()
+
     if (next === 'connected' && (this.phase === 'connecting' || this.phase === 'reconnecting')) {
       this.emit('convex connected', {
         completed_at_ms: mark.at,
@@ -68,6 +70,7 @@ export class ConnectionTimings {
         started_at_ms: this.changedAt,
       })
     }
+
     this.setup = mark.setup
     this.reconnect = mark.reconnect
     this.connected = mark.connected

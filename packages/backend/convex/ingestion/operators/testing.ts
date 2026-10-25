@@ -87,6 +87,7 @@ export function random(seed: number): () => number {
 
   return () => {
     state = (state * 1_664_525 + 1_013_904_223) % 2 ** 32
+
     return state / 2 ** 32
   }
 }
@@ -94,6 +95,7 @@ export function random(seed: number): () => number {
 /** A random sequence of specs over a small universe, so entities depart, return, and change facts. */
 export function specs(seed: number, length: number): ScanSpec[] {
   const draw = random(seed)
+
   const pick = <T>(items: readonly T[]): T => {
     const item = items[Math.floor(draw() * items.length)]
 
@@ -106,6 +108,7 @@ export function specs(seed: number, length: number): ScanSpec[] {
 
   return Array.from({ length }, () => {
     const endpoints: Record<string, EndpointSpec> = {}
+
     const names = Object.fromEntries(
       ['m1', 'm2', 'm3', 'p1', 'p2'].map((id) => [id, pick(['Alpha', 'Beta'])]),
     )

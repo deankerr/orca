@@ -28,6 +28,7 @@ export function useInfiniteScroll(
     // Convex ignores loadMore while a page is already loading.
     loadIfNearBottom()
     viewport.addEventListener('scroll', loadIfNearBottom, { passive: true })
+
     return () => {
       viewport.removeEventListener('scroll', loadIfNearBottom)
     }

@@ -121,6 +121,7 @@ test('requests come from pending in view order without duplicates or held scans'
       expect(ids).toEqual(eligible.slice(0, ids.length))
 
       const heldPending = view.pending.filter(({ scan_at }) => held.has(scan_at))
+
       for (const { id } of heldPending) {
         expect(ids).not.toContain(id)
       }
@@ -169,6 +170,7 @@ test('scope and current stats follow the registry state', () => {
       for (const { id, scope, current_stats } of decision.requests) {
         const pair = view.pending.find((candidate) => candidate.id === id)
         expect(pair).toBeDefined()
+
         const behindFull =
           view.latestCompleteFull !== null &&
           pair !== undefined &&
@@ -217,6 +219,7 @@ const sourceListing =
   (times: readonly string[]): ListScans =>
   async ({ atOrAfter, before, limit, order }) => {
     const inRange = times.filter((time) => time >= atOrAfter && time < before)
+
     return order === 'asc' ? inRange.slice(0, limit) : inRange.toReversed().slice(0, limit)
   }
 
@@ -290,6 +293,7 @@ async function converge({ initial, limit, offsets, range }: RegisterCase) {
         for (const pair of plan.pairs) {
           registry.pairs.set(pair.scan_at, pair.from_scan_at)
         }
+
         log.push({ before, kind: plan.kind, pairs: plan.pairs })
       }
     }
@@ -327,6 +331,7 @@ test('each register batch chains adjacent source times within the target, ascend
           // Adjacent in the source, so nothing is skipped.
           expect(times[times.indexOf(pair.scan_at) - 1]).toBe(pair.from_scan_at)
           expect(pair.alerts).toBe(kind === 'forward')
+
           if (index > 0) {
             expect(pair.from_scan_at).toBe(pairs[index - 1]?.scan_at)
           }
@@ -336,6 +341,7 @@ test('each register batch chains adjacent source times within the target, ascend
           forwardBatches += 1
           expect(pairs[0]?.from_scan_at).toBe(before.edges.latest)
         }
+
         if (kind === 'backward') {
           expect(pairs.at(-1)?.scan_at).toBe(before.edges.earliest?.from_scan_at)
         }
@@ -349,12 +355,14 @@ test('each register batch chains adjacent source times within the target, ascend
 
 test('widening a settled target registers forward batches that chain from the latest pair', async () => {
   const offsets = Array.from({ length: 11 }, (_, index) => index)
+
   const { log, registry } = await converge({
     initial: { end: 3, start: 0 },
     limit: 2,
     offsets,
     range: { end: 10, start: 0 },
   })
+
   const forward = log.filter(({ kind }) => kind === 'forward')
 
   expect(forward.length).toBeGreaterThan(0)
@@ -386,6 +394,7 @@ test('without a target the register worker is idle', async () => {
   await assert(
     asyncProperty(registerCase, async ({ limit, offsets }) => {
       const list = sourceListing(offsets.toSorted((a, b) => a - b).map(iso))
+
       const plan = await planRegister(
         { baseline: false, edges: { earliest: null, latest: null }, target: null },
         list,

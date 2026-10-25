@@ -23,8 +23,10 @@ function Frequencies({
   keySets?: boolean
 }) {
   const noun = keySets ? 'combinations' : 'values'
+
   const label = (value: unknown) =>
     keySets && Array.isArray(value) ? value.join(', ') : display(value)
+
   const shown = entries
     .toSorted((left, right) => right.count - left.count)
     .slice(0, FREQUENCY_LIMIT)

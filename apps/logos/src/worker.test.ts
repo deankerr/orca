@@ -6,6 +6,7 @@ type TestEnv = Parameters<typeof worker.fetch>[1]
 
 test('returns the matching group fallback asset for missing public logo images', async () => {
   const assetRequests: Request[] = []
+
   const env: TestEnv = {
     ASSETS: createAssetsFetcher(async (input) => {
       const request = requestFromInput(input)
@@ -24,10 +25,12 @@ test('returns the matching group fallback asset for missing public logo images',
     new Request('https://logos.test/v1/light/missing.webp'),
     env,
   )
+
   const darkResponse = await worker.fetch(
     new Request('https://logos.test/v1/dark/missing.webp'),
     env,
   )
+
   const avatarResponse = await worker.fetch(
     new Request('https://logos.test/v1/avatar/missing.webp'),
     env,
@@ -49,6 +52,7 @@ test('returns the matching group fallback asset for missing public logo images',
 
 test('serves a direct fallback request from the same asset path', async () => {
   const assetRequests: Request[] = []
+
   const env: TestEnv = {
     ASSETS: createAssetsFetcher(async (input) => {
       const request = requestFromInput(input)

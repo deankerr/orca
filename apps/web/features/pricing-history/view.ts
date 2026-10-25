@@ -21,6 +21,7 @@ const METERS = (
   unit: `$/${priceMeters[value].unit}`,
   value,
 }))
+
 export type Meter = (typeof METERS)[number]
 
 export function pricingHistoryView(
@@ -42,6 +43,7 @@ export function pricingHistoryView(
   const tracesByMeter = new Map(
     METERS.map(({ value }) => [value, pricingHistoryTraces(pricingHistory, value)]),
   )
+
   const available = METERS.filter(({ value }) => (tracesByMeter.get(value)?.length ?? 0) > 0)
 
   const meter = available.find(({ value }) => value === requestedMeter) ?? available[0] ?? METERS[0]
@@ -69,6 +71,7 @@ export function pricingHistoryView(
 
   const daily = range[1] - range[0] > 7 * DAY + 1
   const exact = tracesByMeter.get(meter.value) ?? []
+
   const exactScaled = exact.map((trace) => ({
     ...trace,
     samples: trace.samples.map(([at, price]): [number, number] => [at, price * meter.scale]),
@@ -79,11 +82,13 @@ export function pricingHistoryView(
     : exactScaled
 
   const tagSet = new Set<string>()
+
   for (const trace of traces) {
     if (trace.end >= range[0] && trace.start <= range[1]) {
       tagSet.add(trace.tag)
     }
   }
+
   const tags = [...tagSet].toSorted()
   const shownCount = tags.filter((tag) => !hidden.has(tag)).length
   const allShown = tags.length > 0 && shownCount === tags.length

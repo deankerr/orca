@@ -2,11 +2,11 @@ import { gzipSync, gunzipSync } from 'node:zlib'
 
 import { ConvexHttpClient } from 'convex/browser'
 import { getFunctionName } from 'convex/server'
-/* oxlint-disable typescript/no-unsafe-type-assertion -- The context implements only the storage operations exercised by this test. */
 import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 
+import { testDouble } from '../doubles.testing'
 import { loadMany, store } from './storage'
 
 test('a configured remote read source never redirects local writes', async () => {
@@ -15,15 +15,18 @@ test('a configured remote read source never redirects local writes', async () =>
     ORCA_OBJECTS_BACKEND: 'convex',
     ORCA_OBJECTS_SOURCE_DEPLOYMENT: 'source-deployment',
   }
+
   const previous = Object.fromEntries(Object.keys(settings).map((key) => [key, process.env[key]]))
   Object.assign(process.env, settings)
 
   const remote = vi
     .spyOn(ConvexHttpClient.prototype, 'action')
     .mockResolvedValue([{ bytes: Uint8Array.from(gzipSync('source text')).buffer, codec: 'gzip' }])
+
   const writes: unknown[] = []
   const identity = { name: 'one', path: 'test' }
-  const ctx = {
+
+  const ctx = testDouble<ActionCtx>({
     meta: { getDeploymentMetadata: async () => ({ name: 'consumer-deployment' }) },
     runMutation: async (ref: Parameters<typeof getFunctionName>[0], args: unknown) => {
       writes.push({ args, function: getFunctionName(ref) })
@@ -34,10 +37,11 @@ test('a configured remote read source never redirects local writes', async () =>
         expect(new TextDecoder().decode(gunzipSync(new Uint8Array(await blob.arrayBuffer())))).toBe(
           'local text',
         )
+
         return 'local-storage-id'
       },
     },
-  } as unknown as ActionCtx
+  })
 
   try {
     await store(ctx, { ...identity, text: 'local text' })

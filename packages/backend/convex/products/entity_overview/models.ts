@@ -51,6 +51,7 @@ export const get = query({
       .query(CURRENT_MODELS_TABLE)
       .withIndex('by_model_id', (q) => q.eq('model_id', args.model_id))
       .unique()
+
     return row === null ? null : Model.parse(row)
   },
   returns: v.union(v.null(), zodOutputToConvex(Model)),

@@ -12,14 +12,17 @@ import { OBJECTS_LOCATORS_TABLE } from './table'
 
 export async function findLocalNames(ctx: QueryCtx, args: NameSelection): Promise<string[]> {
   assertReadCount(args.limit)
+
   const rows = await ctx.db
     .query(OBJECTS_LOCATORS_TABLE)
     .withIndex('by_path_name', (q) => {
       const range = q.eq('path', args.path).gte('name', args.atOrAfter)
+
       return args.before === undefined ? range : range.lt('name', args.before)
     })
     .order(args.order ?? 'asc')
     .take(args.limit)
+
   return rows.map((row) => row.name)
 }
 
@@ -29,16 +32,21 @@ export async function readLocal(
   identity: ObjectIdentity,
 ): Promise<StoredObject | null> {
   const locator = await ctx.runQuery(internal.objects.locators.get, identity)
+
   if (locator === null) {
     return null
   }
+
   const ref: BlobRef =
     locator.backend === 'r2'
       ? { backend: 'r2', r2_key: locator.r2_key }
       : { backend: 'convex', storage_id: locator.storage_id }
+
   const body = await byteStoreFor(ctx, locator.backend).get(ref)
+
   if (body === null) {
     throw new ConvexError({ message: 'object blob missing', ...identity })
   }
+
   return { bytes: new Uint8Array(body).buffer, codec: locator.codec }
 }

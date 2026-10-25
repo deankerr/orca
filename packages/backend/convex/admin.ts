@@ -5,6 +5,7 @@ import { env, query } from '#generated/server'
 
 function isAdmin(subject: string | undefined): boolean {
   const adminUserId = env.ORCA_ADMIN_USER_ID ?? ''
+
   return adminUserId.length > 0 && subject === adminUserId
 }
 

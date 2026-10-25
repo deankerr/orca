@@ -18,6 +18,7 @@ async function loadCatalog() {
       }
     })
   }
+
   return await snapshot.value
 }
 

@@ -14,6 +14,7 @@ export const get = query({
       .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_endpoint_id', (q) => q.eq('endpoint_id', args.endpoint_id))
       .unique()
+
     return row === null ? null : Endpoint.parse(row)
   },
   returns: v.union(v.null(), zodOutputToConvex(Endpoint)),
@@ -27,6 +28,7 @@ export const byModel = query({
       .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_model_id', (q) => q.eq('model_id', args.model_id))
       .collect()
+
     return rows.map((row) => Endpoint.parse(row))
   },
   returns: v.array(zodOutputToConvex(Endpoint)),
@@ -42,6 +44,7 @@ export const byProviderModel = query({
         q.eq('provider_id', args.provider_id).eq('model_id', args.model_id),
       )
       .collect()
+
     return rows.map((row) => Endpoint.parse(row))
   },
   returns: v.array(zodOutputToConvex(Endpoint)),

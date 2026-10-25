@@ -19,10 +19,13 @@ export const load = internalQuery({
       .query('jobs')
       .withIndex('by_finishedAt', (q) => q.eq('finishedAt', undefined))
       .collect()
+
     const destinations = await ctx.db.query('webhooks').collect()
     const webhooks = new Map(destinations.map((webhook) => [webhook._id, webhook]))
+
     const lanes = groupBy(jobs, (job) => {
       const webhook = webhooks.get(job.webhookId)
+
       // Missing registrations still get a lane: start cancels their jobs normally,
       // without making another destination's work depend on a historical row.
       return webhook ? parseWebhookUrl(webhook.url).resourceKey : job.webhookId
@@ -45,6 +48,7 @@ export const start = internalMutation({
 
     if (!webhook || webhook.invalidatedAt !== undefined) {
       await finishJob(ctx, jobId, 'cancelled')
+
       return null
     }
 
@@ -73,6 +77,7 @@ export const isOpen = internalQuery({
   args: { jobId: v.id('jobs') },
   handler: async (ctx, { jobId }) => {
     const job = await ctx.db.get(jobId)
+
     // Deliberately do not read the webhook here. Invalidation controls job start;
     // cancellation controls an active job. Topic edits affect neither.
     return job !== null && job.finishedAt === undefined
@@ -123,6 +128,7 @@ export const expire = internalMutation({
   args: { jobId: v.id('jobs') },
   handler: async (ctx, { jobId }) => {
     await finishJob(ctx, jobId, 'expired')
+
     return null
   },
   returns: v.null(),
@@ -154,6 +160,7 @@ export const drain = internalAction({
     const lanes = await ctx.runQuery(internal.worker.load, {})
     const discord = createDiscord()
     let stopped = false
+
     const stopAfterProgressFailure = (error: unknown): never => {
       // Unlike an unavailable webhook, inability to record progress affects every
       // lane. Other in-flight sends must still finish and attempt their checkpoint.
@@ -213,6 +220,7 @@ export const drain = internalAction({
                 ...('messageId' in message ? { messageId: message.messageId } : {}),
                 ...('threadId' in message ? { threadId: message.threadId } : {}),
               })
+
               result = { kind: 'succeeded', response }
             } catch (error) {
               if (error instanceof ExpiredError) {

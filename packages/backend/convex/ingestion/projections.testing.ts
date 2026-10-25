@@ -36,6 +36,7 @@ export async function projections(t: Harness) {
   return await t.run(async (ctx) => {
     const read = async (table: Parameters<typeof ctx.db.query>[0]) => {
       const docs = await ctx.db.query(table).collect()
+
       return docs.map(strip)
     }
 
@@ -56,10 +57,13 @@ export async function projections(t: Harness) {
 export function referenceProjection(window: Scan[]) {
   const sources = window.map((next, index) => ({ next, previous: window[index - 1] ?? null }))
   const pairs = sources.slice(1)
+
   const current = (name: string) => {
     const table = currentTables.find((item) => item.name === name)
+
     return table === undefined ? [] : [...expectedCurrent(table, window).values()]
   }
+
   const latest = sources.at(-1)
 
   return {

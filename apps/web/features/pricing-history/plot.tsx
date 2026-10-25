@@ -233,6 +233,7 @@ export function PricingHistoryPlot({
         grid: { bottom: 85, left: 58, right: 16, top: 20 },
         series: traces.map((trace) => {
           const color = providerSrgbColor(trace.tag)
+
           return {
             data: [...trace.samples, [trace.end, trace.samples.at(-1)?.[1] ?? null]],
             emphasis: { focus: 'series', lineStyle: { width: 3 } },
@@ -355,5 +356,6 @@ function zoomEvent(value: unknown): { start: number; end: number } | null {
 function niceCeiling(value: number) {
   const magnitude = 10 ** Math.floor(Math.log10(value / 5))
   const step = Math.ceil(value / 5 / magnitude) * magnitude
+
   return Math.ceil(value / step) * step
 }

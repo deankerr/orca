@@ -26,7 +26,9 @@ const app = defineApp({
 })
 
 app.use(discordSender)
+
 app.use(workpool, { name: 'ingestionPool' })
+
 app.use(aggregate, { name: 'ingestionRecordCounts' })
 
 export default app

@@ -22,6 +22,7 @@ export function profileRows(profile: JsonProfile): ProfileRow[] {
   }
 
   visit(profile.root)
+
   return rows
 }
 

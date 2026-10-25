@@ -42,6 +42,7 @@ function tokenizeQuery(value: string) {
 function tokenizeSlugField(value: string) {
   // Normalize
   const normalized = normalizeSearchText(value)
+
   if (!normalized) {
     return []
   }
@@ -61,12 +62,14 @@ function tokenizeSlugField(value: string) {
 
     // Add plain segments between boundaries
     let currentSegment = ''
+
     for (const character of slug) {
       if (SLUG_BOUNDARY_CHARS.has(character)) {
         if (currentSegment) {
           tokens.add(currentSegment)
           currentSegment = ''
         }
+
         continue
       }
 
@@ -88,6 +91,7 @@ function compareMatches(left: SlugSearchMatch, right: SlugSearchMatch) {
   }
 
   const tokenLengthDifference = left.matchedToken.length - right.matchedToken.length
+
   if (tokenLengthDifference !== 0) {
     return tokenLengthDifference
   }
@@ -130,6 +134,7 @@ export function createSlugSearcher<T>(
   const index = records.map((record, position) => ({
     fields: getFields(record).map((field) => {
       const exact = normalizeSearchText(field.value)
+
       return {
         exact,
         name: field.name,
@@ -187,6 +192,7 @@ export function createSlugSearcher<T>(
 
           for (const queryToken of queryTokens) {
             const match = findBestMatch(queryToken)
+
             if (!match) {
               return []
             }
@@ -229,11 +235,13 @@ export function createSlugSearcher<T>(
         .toSorted((left, right) => {
           // Sort by search score first, then by consumer-provided ordering
           const rankDifference = compareRanks(left.rank, right.rank)
+
           if (rankDifference !== 0) {
             return rankDifference
           }
 
           const itemDifference = compareItems?.(left.result.record, right.result.record) ?? 0
+
           if (itemDifference !== 0) {
             return itemDifference
           }

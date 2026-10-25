@@ -12,6 +12,7 @@ import { entityLogoUrl } from '../../../entityLogo'
 import type { EntityAlert } from '../../shared/alerts/curate'
 
 export type Card = RESTPostAPIWebhookWithTokenJSONBody
+
 export type DiscordUrls = { publicUrl: string; logoOrigin: string }
 
 export const colors = { added: 0x22_c5_5e, removed: 0xef_44_44, updated: 0x3b_82_f6 }
@@ -21,6 +22,7 @@ export function lifecycleColor(event: EntityAlert): number {
   if ('after' in event) {
     return colors.added
   }
+
   return 'before' in event ? colors.removed : colors.updated
 }
 
@@ -38,6 +40,7 @@ export function embedCard(
     ...options.author,
     name: truncateContent(options.author.name, 256, 'embed.author'),
   }
+
   const footer =
     options.footer === undefined
       ? undefined
@@ -45,6 +48,7 @@ export function embedCard(
           ...options.footer,
           text: truncateContent(options.footer.text, 2048, 'embed.footer'),
         }
+
   const descriptionLimit = Math.min(4096, 6000 - author.name.length - (footer?.text.length ?? 0))
 
   const embed = new EmbedBuilder()
@@ -79,6 +83,7 @@ export function componentCard(
           truncateContent(options.thumbnail.description, 1024, 'component.thumbnail'),
         ),
     )
+
   const container = new ContainerBuilder()
     .setAccentColor(options.color)
     .addSectionComponents(section)

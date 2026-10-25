@@ -36,6 +36,7 @@ program
         order: options.order,
         path: 'scans',
       })
+
       console.log(names.join('\n'))
     },
   )

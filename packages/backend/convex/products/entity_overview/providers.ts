@@ -46,6 +46,7 @@ export const get = query({
       .query(CURRENT_PROVIDERS_TABLE)
       .withIndex('by_provider_id', (q) => q.eq('provider_id', args.provider_id))
       .unique()
+
     return row === null ? null : Provider.parse(row)
   },
   returns: v.union(v.null(), zodOutputToConvex(Provider)),

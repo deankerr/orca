@@ -1,12 +1,12 @@
 import { rejects } from 'node:assert/strict'
 
 import type { UserIdentity } from 'convex/server'
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal auth contexts exercise the registered query handlers without a deployment. */
 import { afterEach, expect, test } from 'vitest'
 
 import type { QueryCtx } from '#generated/server'
 
 import { demo, viewer } from './admin'
+import { testDouble } from './doubles.testing'
 
 const originalAdmin = process.env.ORCA_ADMIN_USER_ID
 
@@ -18,16 +18,13 @@ afterEach(() => {
   }
 })
 
-const demoHandler = (
-  demo as unknown as {
-    _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string; message: string }>
-  }
-)._handler
-const viewerHandler = (
-  viewer as unknown as {
-    _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string | null; isAdmin: boolean }>
-  }
-)._handler
+const demoHandler = testDouble<{
+  _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string; message: string }>
+}>(demo)._handler
+
+const viewerHandler = testDouble<{
+  _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string | null; isAdmin: boolean }>
+}>(viewer)._handler
 
 function context(subject: string | null): QueryCtx {
   const identity: UserIdentity | null =
@@ -35,7 +32,7 @@ function context(subject: string | null): QueryCtx {
       ? null
       : { issuer: 'https://issuer.example', subject, tokenIdentifier: `test|${subject}` }
 
-  return { auth: { getUserIdentity: async () => identity } } as unknown as QueryCtx
+  return testDouble<QueryCtx>({ auth: { getUserIdentity: async () => identity } })
 }
 
 test('anonymous and other signed-in users cannot call the admin demo directly', async () => {

@@ -37,6 +37,7 @@ const queryClient = new QueryClient({
     },
   },
 })
+
 if (typeof window !== 'undefined') {
   let observingConnection = false
 
@@ -85,6 +86,7 @@ const persister = {
     readinessQueryTimings.markRestored(
       restored?.clientState.queries.map((query) => query.queryHash) ?? [],
     )
+
     return restored
   },
 }

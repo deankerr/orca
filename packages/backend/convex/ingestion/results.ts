@@ -36,8 +36,13 @@ export const removalResult = v.union(
 )
 
 export type CommitResult = Infer<typeof commitResult>
+
 export type RemoveResult = Infer<typeof removeResult>
+
 export type IngestResult = Infer<typeof ingestResult>
+
 export type IngestSuccess = Infer<typeof ingestSuccess>
+
 export type RemovalSuccess = Infer<typeof removalSuccess>
+
 export type RemovalResult = Infer<typeof removalResult>

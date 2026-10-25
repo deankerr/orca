@@ -71,13 +71,16 @@ test('histogram buckets count each state exactly, including the inclusive range 
   })
 
   expect(edges).toHaveLength(9)
+
   for (const state of new Set(STATES)) {
     const expected = Array.from({ length: 8 }, (_, bucket) => {
       const indexes = Array.from({ length: 40 }, (_entry, i) => i + 1).filter((index) =>
         bucket === 7 ? index >= bucket * 5 : index >= bucket * 5 && index < (bucket + 1) * 5,
       )
+
       return indexes.filter((index) => STATES[index % STATES.length] === state).length
     })
+
     expect(counts[state]).toEqual(expected)
   }
 
@@ -126,6 +129,7 @@ test('records page newest first, filtered by state, from a chosen time', async (
     paginationOpts,
     state: 'failed',
   })
+
   expect(failed.page.map(({ kind, scan_at }) => [kind, scan_at])).toEqual([
     ['pair', hour(17)],
     ['baseline', hour(14)],
@@ -137,6 +141,7 @@ test('records page newest first, filtered by state, from a chosen time', async (
     paginationOpts: { cursor: failed.continueCursor, numItems: 3 },
     state: 'failed',
   })
+
   expect(next.page.map(({ scan_at }) => scan_at)).toEqual([hour(7), hour(2)])
 })
 

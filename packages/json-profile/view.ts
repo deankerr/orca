@@ -17,6 +17,7 @@ export function viewProfile(profile: JsonProfile, options: ViewOptions = {}) {
   }
 
   const paths = options.paths === undefined ? null : new Set(options.paths)
+
   const fields = [{ missing: 0, value: profile.root }, ...profileRows(profile)]
     .filter(({ value }) => paths === null || paths.has(value.path))
     .map(({ missing, value }) => ({
@@ -41,6 +42,7 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
     case 'null': {
       return { ...branch }
     }
+
     case 'object': {
       return {
         count: branch.count,
@@ -48,6 +50,7 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
         type: branch.type,
       }
     }
+
     case 'array': {
       return {
         count: branch.count,
@@ -59,6 +62,7 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
         type: branch.type,
       }
     }
+
     case 'boolean':
     case 'number':
     case 'string': {
@@ -73,6 +77,7 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
         ...(branch.type === 'number' ? { summary: numericSummary(value) } : {}),
       }
     }
+
     default: {
       throw new Error('Unknown profile type')
     }

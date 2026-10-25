@@ -45,10 +45,12 @@ export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boole
         order: null,
         sort: null,
       })
+
       return
     }
 
     const [nextSort] = nextSorting
+
     if (nextSort === undefined) {
       return
     }

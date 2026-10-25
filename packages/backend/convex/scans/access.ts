@@ -30,6 +30,7 @@ export async function latest(
   { atOrAfter = null }: { atOrAfter?: string | null } = {},
 ): Promise<string | null> {
   const [scanAt] = await times(ctx, { atOrAfter, limit: 1, order: 'desc' })
+
   return scanAt ?? null
 }
 
@@ -43,6 +44,7 @@ async function discover(
   },
 ) {
   const { atOrAfter, before, limit, order } = selection
+
   const names = await objects.namesAtOrAfter(ctx, {
     atOrAfter: atOrAfter === null ? '' : identity(atOrAfter).name,
     ...(before === null ? {} : { before: identity(before).name }),
@@ -64,6 +66,7 @@ export async function loadCollected(ctx: ActionCtx, reference: string): Promise<
   const scan_at = reference.startsWith('scan.')
     ? timeFromName(reference)
     : IsoDateTime.parse(reference)
+
   const [text] = await objects.loadMany(ctx, [identity(scan_at)])
 
   if (text === null || text === undefined) {
@@ -74,8 +77,9 @@ export async function loadCollected(ctx: ActionCtx, reference: string): Promise<
     .split('\n')
     .filter((line) => line.length > 0)
     .map((line) => {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Collection already parsed this persisted JSONL format.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: Collection already parsed this persisted JSONL format.
       const { scan_at: _scanAt, ...entry } = JSON.parse(line) as ScanEntry & { scan_at: string }
+
       return entry
     })
 

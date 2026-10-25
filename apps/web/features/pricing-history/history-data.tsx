@@ -17,6 +17,7 @@ export function HistoryData({
   const observations = useQuery(api.products.pricing_history.query.observations, {
     model_id: modelId,
   })
+
   const prices = useQuery(api.products.pricing_history.query.prices, { model_id: modelId })
   const asOf = useQuery(api.products.shared.clock.observe)
 

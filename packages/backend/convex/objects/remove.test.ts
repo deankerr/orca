@@ -6,6 +6,7 @@ import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx, MutationCtx } from '#generated/server'
 
+import { testDouble } from '../doubles.testing'
 import { finish, run } from './remove'
 import type { Locator } from './table'
 
@@ -23,7 +24,7 @@ test('keeps the locator on storage failure and safely retries missing files', as
   let fileExists = true
   let fail = true
 
-  const ctx = {
+  const ctx = testDouble<MutationCtx>({
     db: {
       delete: () => {
         calls.push('locator')
@@ -42,13 +43,11 @@ test('keeps the locator on storage failure and safely retries missing files', as
         }
       },
     },
-  } as unknown as MutationCtx
+  })
 
-  const handler = (
-    finish as unknown as {
-      _handler: (ctx: MutationCtx, args: { locator: Locator }) => Promise<null>
-    }
-  )._handler
+  const handler = testDouble<{
+    _handler: (ctx: MutationCtx, args: { locator: Locator }) => Promise<null>
+  }>(finish)._handler
 
   await assert.rejects(handler(ctx, { locator }), /storage unavailable/u)
   expect(calls).toEqual(['file'])
@@ -78,18 +77,17 @@ test('R2 failure preserves the locator; missing R2 bytes allow deletion to finis
 
   let removed = false
 
-  const ctx = {
+  const ctx = testDouble<ActionCtx>({
     runMutation: () => {
       removed = true
     },
     runQuery: () => ({ backend: 'r2', r2_key: 'test/one' }),
-  } as unknown as ActionCtx
+  })
 
-  const handler = (
-    run as unknown as {
-      _handler: (ctx: ActionCtx, args: { path: string; name: string }) => Promise<null>
-    }
-  )._handler
+  const handler = testDouble<{
+    _handler: (ctx: ActionCtx, args: { path: string; name: string }) => Promise<null>
+  }>(run)._handler
+
   try {
     await assert.rejects(handler(ctx, { name: 'one', path: 'test' }), /R2 DELETE failed: 403/u)
     expect(removed).toBe(false)

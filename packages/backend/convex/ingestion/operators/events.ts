@@ -54,6 +54,7 @@ function createRow({
 }): EventRow {
   // Removed entities and their related identities belong to the previous observation.
   const observation = change.type === Operation.REMOVE ? previous : next
+
   const fields = {
     change_json: JSON.stringify(change),
     entity_id: change.key,
@@ -85,6 +86,7 @@ function createRow({
   }
 
   const endpoint = required(observation.endpoints, change.key)
+
   const row: Extract<EventRow, { entity_kind: 'endpoint' }> = {
     ...fields,
     context: {

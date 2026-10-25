@@ -25,6 +25,7 @@ export function ingestionParallelism(): number {
       `ORCA_INGESTION_PARALLELISM must be an integer from 1 to ${MAX_PARALLELISM}`,
     )
   }
+
   return value
 }
 

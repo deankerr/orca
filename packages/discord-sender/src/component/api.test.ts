@@ -33,11 +33,13 @@ test('submitBatch rejects numeric overflow even without subscribers', async () =
 
 test('editMessage rejects numeric overflow before creating a delivery job', async () => {
   const t = setup()
+
   const original = await t.run(async (ctx) => {
     const webhookId = await ctx.db.insert('webhooks', {
       topics: [],
       url: 'https://discord.com/api/v10/webhooks/100000000000000001/test-token',
     })
+
     const jobId = await ctx.db.insert('jobs', {
       expiresAt: Date.now() + 60_000,
       finishedAt: Date.now(),
@@ -46,11 +48,13 @@ test('editMessage rejects numeric overflow before creating a delivery job', asyn
       outcome: 'succeeded',
       webhookId,
     })
+
     const resultId = await ctx.db.insert('results', {
       jobId,
       messageKey: 'message',
       result: { kind: 'succeeded', response: { id: '100000000000000002' } },
     })
+
     return { jobId, resultId }
   })
 

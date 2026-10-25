@@ -38,6 +38,7 @@ test('snapshot rejects missing data, unusable endpoint fields and empty snapshot
     ])
 
     await rejects(buildSnapshot(ctx, scanAt))
+
     for (const endpoints of [null, []]) {
       source.mockResolvedValue([JSON.stringify({ ...entry, endpoints })])
       await rejects(buildSnapshot(ctx, scanAt), /Public API scan has no usable endpoints/u)

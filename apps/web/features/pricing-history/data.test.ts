@@ -4,7 +4,9 @@ import { DAY, dailyTrace, pricingHistoryTraces, tagPrices } from './data'
 import type { PricingHistory } from './data'
 
 const iso = (at: number) => new Date(at).toISOString()
+
 type Endpoint = PricingHistory['endpoints'][number]
+
 const observation = (at: number, changes: Partial<Endpoint['observations'][number]> = {}) => ({
   detected: true,
   entity_id: 'one',
@@ -15,6 +17,7 @@ const observation = (at: number, changes: Partial<Endpoint['observations'][numbe
   scan_at: iso(at),
   ...changes,
 })
+
 const price = (at: number, meters: Record<string, string>) => ({
   discount: 0,
   endpoint_id: 'one',
@@ -104,6 +107,7 @@ test('daily sampling retains the last price before tag and model boundaries', ()
     ],
     modelId: 'model',
   }
+
   const exact = pricingHistoryTraces(history, 'prompt')
   const sampled = exact.map((trace) => dailyTrace(trace, history.asOf))
 
@@ -158,6 +162,7 @@ test('historical membership retains moves away and carries quotes through tag an
       prices: [price(0, { prompt: '1' })],
     },
   ]
+
   const history = { asOf: 3 * DAY, endpoints, modelId: 'model' }
   const traces = pricingHistoryTraces(history, 'prompt')
   expect(traces.map(({ tag, start, end }) => [tag, start, end])).toEqual([
@@ -191,6 +196,7 @@ test('same-price reappearance retains a gap; missing meters replace rather than 
     ],
     modelId: 'model',
   }
+
   const traces = pricingHistoryTraces(history, 'prompt')
   expect(traces.map(({ start, end }) => [start, end])).toEqual([
     [0, DAY],

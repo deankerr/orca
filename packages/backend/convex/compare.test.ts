@@ -13,6 +13,7 @@ test('string arrays use value identity at known, new, and nested paths', () => {
       groups: [{ labels: ['old'] }],
     },
   }
+
   const next = {
     entity: {
       supported_parameters: ['temperature', 'tools', 'top_logprobs'],

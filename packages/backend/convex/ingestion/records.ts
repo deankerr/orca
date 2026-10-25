@@ -12,6 +12,7 @@ import { INGESTION_RECORDS_TABLE, recordKind, recordState } from './tables'
 import type { RecordKind, RecordState } from './tables'
 
 type RecordDoc = Doc<typeof INGESTION_RECORDS_TABLE>
+
 type RecordId = Id<typeof INGESTION_RECORDS_TABLE>
 
 /**
@@ -53,6 +54,7 @@ export async function writeRecords<Result>(
   write: (records: RecordWrites) => Promise<Result>,
 ): Promise<Result> {
   const operations: TableAggregateOperation<RecordCountsType>[] = []
+
   const result = await write({
     delete: async (record) => {
       await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
@@ -65,6 +67,7 @@ export async function writeRecords<Result>(
       if (doc !== null) {
         operations.push({ doc, type: 'insert' })
       }
+
       return id
     },
     patch: async (previous, patch) => {
@@ -80,6 +83,7 @@ export async function writeRecords<Result>(
   if (operations.length > 0) {
     await recordCounts.enqueueBatch(ctx, operations)
   }
+
   return result
 }
 
@@ -90,11 +94,13 @@ export const counts = internalQuery({
     const keys = recordKind.members.flatMap((kind) =>
       recordState.members.map((state): [RecordKind, RecordState] => [kind.value, state.value]),
     )
+
     const totals = await recordCounts.countBatch(
       ctx,
       keys.map((namespace) => ({ namespace })),
       { stale: true },
     )
+
     return Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index] ?? 0]))
   },
   returns: v.record(v.string(), v.number()),
@@ -112,6 +118,7 @@ export async function deadLetteredCount(ctx: QueryCtx, limit: number) {
   const { page } = await ctx.runQuery(components.ingestionRecordCounts.deadLetter.list, {
     paginationOpts: { cursor: null, numItems: limit },
   })
+
   return page.length
 }
 
@@ -164,9 +171,11 @@ export const rebuildCountsDeadLetters = internalMutation({
   args: {},
   handler: async (ctx) => {
     await assertQuiescent(ctx)
+
     const { page } = await ctx.runQuery(components.ingestionRecordCounts.deadLetter.list, {
       paginationOpts: { cursor: null, numItems: REBUILD_BATCH },
     })
+
     await Promise.all(
       page.map(
         async ({ _id }) =>
@@ -176,8 +185,10 @@ export const rebuildCountsDeadLetters = internalMutation({
 
     if (page.length === REBUILD_BATCH) {
       await ctx.scheduler.runAfter(0, internal.ingestion.records.rebuildCountsDeadLetters, {})
+
       return
     }
+
     await ctx.scheduler.runAfter(0, internal.ingestion.records.rebuildCountsPage, {
       cursor: null,
       inserted: 0,
@@ -191,6 +202,7 @@ export const rebuildCountsPage = internalMutation({
   args: { cursor: v.union(v.null(), v.string()), inserted: v.number() },
   handler: async (ctx, { cursor, inserted }) => {
     await assertQuiescent(ctx)
+
     const { page, continueCursor, isDone } = await ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .paginate({ cursor, numItems: REBUILD_BATCH })

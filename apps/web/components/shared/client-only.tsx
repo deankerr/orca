@@ -15,6 +15,7 @@ export function ClientOnly({ children }: { children: ReactNode }): ReactNode {
     () => true, // client snapshot
     () => false, // server snapshot
   )
+
   if (!hasMounted) {
     return null
   }

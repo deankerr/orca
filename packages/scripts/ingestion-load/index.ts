@@ -24,6 +24,7 @@ async function exec(args: string[], { allowFailure = false } = {}): Promise<stri
     stderr: 'pipe',
     stdout: 'pipe',
   })
+
   const [stdout, stderr, code] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
@@ -74,6 +75,7 @@ function counts(value: unknown): Record<string, number> {
   if (typeof value !== 'object' || value === null) {
     throw new TypeError('Expected record counts')
   }
+
   return Object.fromEntries(Object.entries(value).map(([key, count]) => [key, Number(count)]))
 }
 
@@ -85,6 +87,7 @@ type Convex = {
 
 function connect(name: string): Convex {
   const target = ['--deployment', name]
+
   return {
     inlineQuery: async (query) =>
       parseJson(await exec(['run', '--inline-query', query, ...target])),
@@ -112,22 +115,27 @@ function captureLogs(target: string[], report: ContentionReport) {
     stderr: 'ignore',
     stdout: 'pipe',
   })
+
   const handle = { endedEarly: false, stopping: false }
   void (async () => {
     await proc.exited
     handle.endedEarly = !handle.stopping
   })()
+
   const done = (async () => {
     let buffered = ''
+
     for await (const chunk of proc.stdout) {
       buffered += new TextDecoder().decode(chunk)
       const lines = buffered.split('\n')
       buffered = lines.pop() ?? ''
+
       for (const line of lines) {
         addLogLine(report, line)
       }
     }
   })()
+
   return {
     /** True when the log command exited before `stop` was requested. */
     endedEarly: () => handle.endedEarly,
@@ -145,11 +153,13 @@ async function outstanding(convex: Convex): Promise<string[]> {
   const found = await convex.inlineQuery(
     `const out = []; for (const kind of ${JSON.stringify(KINDS)}) for (const state of ${JSON.stringify(PENDING_STATES)}) { const r = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", state)).first(); if (r) out.push(kind + "/" + state); } return out`,
   )
+
   return Array.isArray(found) ? found.map(String) : ['unreadable']
 }
 
 const openCount = async (convex: Convex) => {
   const open = await outstanding(convex)
+
   return open.length
 }
 
@@ -160,7 +170,9 @@ async function readFailed(convex: Convex) {
   const found = await convex.inlineQuery(
     `const rows = []; for (const kind of ${JSON.stringify(KINDS)}) { const found = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", "failed")).take(${FAILED_SCAN_LIMIT}); for (const r of found) rows.push({ kind, scan_at: r.scan_at, error: r.error ?? null }); } return rows`,
   )
+
   const rows = Array.isArray(found) ? found.map((row) => record(row)) : []
+
   return {
     count: rows.length,
     lost: rows.filter((row) => String(row.error).startsWith('Completion lost')).length,
@@ -213,9 +225,11 @@ async function waitForSettle(
       // A register step that commits work reschedules itself; only `idle` means the target is covered.
       const step = await registrationStep(convex)
       console.error(`[${elapsed}s] registration check: ${step}`)
+
       if (step === 'idle') {
         return false
       }
+
       settledPolls = 0
       settledTotal = -1
     }
@@ -235,6 +249,7 @@ async function reconcileLostCompletions(convex: Convex, options: Options) {
 
   if (awaiting.length === 0) {
     console.error('Reconcile sweep: no queued or withdrawing records, no grace wait needed')
+
     return
   }
 
@@ -247,6 +262,7 @@ async function reconcileLostCompletions(convex: Convex, options: Options) {
   while (Date.now() < until) {
     await Bun.sleep(options.poll * 1000)
     const remaining = await outstanding(convex)
+
     if (!remaining.some((pair) => isAwaitingCompletion(pair))) {
       return
     }
@@ -269,6 +285,7 @@ function printContention(report: ContentionReport) {
 
   if (contended.length > 0) {
     console.log('Errors by function (occRetries / occExhausted / other of executions):')
+
     for (const [fn, stats] of contended) {
       console.log(
         `  ${fn}: ${stats.occRetries} / ${stats.occExhausted} / ${stats.otherErrors} of ${stats.executions}`,
@@ -283,18 +300,22 @@ function printContention(report: ContentionReport) {
 
 async function printInsights(name: string, target: string[]) {
   const parsed = parseJson(await exec(['insights', '--json', ...target], { allowFailure: true }))
+
   const list =
     typeof parsed === 'object' && parsed !== null && 'insights' in parsed ? parsed.insights : []
+
   const insights = Array.isArray(list) ? list : []
   console.log(`Convex insights (72h window, not scoped to this run): ${insights.length}`)
+
   for (const insight of insights) {
     console.log(`  ${JSON.stringify(insight).slice(0, 300)}`)
   }
+
   console.log(`Dashboard insights: https://dashboard.convex.dev/d/${name}?view=insights`)
 }
 
 async function sourceWindow(convex: Convex, hours: number) {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Shape is fixed by ingestion/admin:sourceScanBounds.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: Shape is fixed by ingestion/admin:sourceScanBounds.
   const bounds = (await convex.run('ingestion/admin:sourceScanBounds')) as {
     earliest: string | null
     latest: string | null
@@ -307,6 +328,7 @@ async function sourceWindow(convex: Convex, hours: number) {
   }
 
   const startAt = new Date(Date.parse(bounds.latest) - hours * 3_600_000).toISOString()
+
   return { earliest: bounds.earliest, endAt: bounds.latest, startAt }
 }
 
@@ -340,6 +362,7 @@ async function drive(convex: Convex, options: Options, run: Drive) {
   const final = counts(await convex.run('ingestion/records:counts'))
   const failed = await readFailed(convex)
   const stillOpen = await openCount(convex)
+
   return { beforeSweep, failed, final, stillOpen, timedOut }
 }
 
@@ -366,6 +389,7 @@ async function main(options: Options) {
   await Bun.sleep(5000)
 
   let driven: Awaited<ReturnType<typeof drive>>
+
   try {
     driven = await drive(convex, options, { endAt, logs, report, startAt, startedAt })
   } catch (error) {

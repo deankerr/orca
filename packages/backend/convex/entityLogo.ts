@@ -2,8 +2,16 @@
 // Each consumer supplies its own origin — localhost in web dev, the deployed domain
 // in the backend — so this module stays origin-agnostic.
 
+interface LogoKeys {
+  [slug: string]: readonly string[]
+}
+
+interface LogoKeyOverrides {
+  [slug: string]: string
+}
+
 // Dedicated model-family logos, scoped to the slug prefix to avoid cross-brand matches.
-const FAMILY_LOGO_KEYS_BY_PREFIX: Record<string, readonly string[]> = {
+const FAMILY_LOGO_KEYS_BY_PREFIX: LogoKeys = {
   anthropic: ['claude'],
   google: ['gemini', 'gemma'],
   meituan: ['longcat'],
@@ -12,7 +20,7 @@ const FAMILY_LOGO_KEYS_BY_PREFIX: Record<string, readonly string[]> = {
   xiaomi: ['mimo'],
 }
 
-const ENTITY_LOGO_KEY_OVERRIDES: Record<string, string> = {
+const ENTITY_LOGO_KEY_OVERRIDES: LogoKeyOverrides = {
   'amazon-bedrock/claude-on-aws': 'anthropic',
   'amazon-nova': 'nova',
   'anthropic/claude-on-aws': 'anthropic',

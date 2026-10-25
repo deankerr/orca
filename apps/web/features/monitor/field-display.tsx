@@ -96,6 +96,7 @@ function FieldUpdatedItem({
   if (isLong) {
     const before = truncate(formatChangeValue(field.before, field.path), TRUNCATE_LENGTH)
     const after = truncate(formatChangeValue(field.after, field.path), TRUNCATE_LENGTH)
+
     return (
       <div data-field={field.path}>
         <FieldLabel>{fieldKey}</FieldLabel>

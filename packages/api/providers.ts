@@ -37,6 +37,7 @@ export function selectProviders(providers: readonly Provider[], selection: Provi
   const selected = providers.filter((provider) =>
     matchesListings(provider.listed_endpoints, selection.has_listings),
   )
+
   const query = selection.q?.trim() ?? ''
 
   const ranked =

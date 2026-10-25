@@ -14,9 +14,7 @@
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
-    "@oxc-project/types": "0.155.0",
     "@types/bun": "catalog:",
-    "oxc-parser": "0.155.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

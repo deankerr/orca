@@ -47,7 +47,7 @@ export default function ScanAnalysisPage() {
       })
 
       if (current === request.current) {
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The action serializes its typed ScanReport as JSON because JSONPath keys cannot cross Convex transport.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: The action serializes its typed ScanReport as JSON because JSONPath keys cannot cross Convex transport.
         setReport(JSON.parse(payload) as ScanReport)
         setStatus(null)
         setRunning(false)
@@ -84,6 +84,7 @@ export default function ScanAnalysisPage() {
               value={[scope]}
               onValueChange={(value: string[]) => {
                 const [next] = value
+
                 if (next === 'orca' || next === 'collected') {
                   setScope(next)
                 }

@@ -48,6 +48,7 @@ export function ClientApiCodeBlock() {
     queryFn: fetchPublicApiPreviewSample,
     queryKey: ['public-api-preview', API_PATH],
   })
+
   const code = JSON.stringify(query.data ?? null, null, 2)
 
   return (
@@ -110,6 +111,7 @@ function HighlightedJsonCode({ code }: { code: string }) {
     const loadHighlight = async () => {
       try {
         const nextHtml = await highlightJson(code)
+
         if (isActive) {
           setHighlighted({ code, html: nextHtml })
         }

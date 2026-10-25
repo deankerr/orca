@@ -3,9 +3,13 @@ import type { z } from 'zod'
 import type { Pricing } from '../../../catalog/pricing'
 import { priceMeters as meters } from '../../../priceMeters'
 
+interface PriceMeters {
+  [path: string]: { label: string; scale: number; unit: string }
+}
+
 /** Alert paths and labels use the shared meter units and decimal scaling. */
 // oxlint-disable sort-keys -- Object.keys order sets the price order in Discord endpoint cards.
-export const priceMeters: Record<string, { label: string; scale: number; unit: string }> = {
+export const priceMeters: PriceMeters = {
   'pricing.prompt': { label: 'input', ...meters.prompt },
   'pricing.completion': { label: 'output', ...meters.completion },
   'pricing.input_cache_read': { label: 'cache_read', ...meters.input_cache_read },

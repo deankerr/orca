@@ -15,6 +15,7 @@ function sources(dir: string): string[] {
     if (entry.isDirectory()) {
       return entry.name === '_generated' ? [] : sources(file)
     }
+
     return entry.name.endsWith('.ts') && !/\.(?:test|testing)\.ts$/u.test(entry.name) ? [file] : []
   })
 }

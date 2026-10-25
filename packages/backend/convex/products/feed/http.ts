@@ -31,12 +31,15 @@ const parameters = z
 export const serve = httpAction(async (ctx, request) => {
   const url = new URL(request.url)
   const parsed = parameters.safeParse(Object.fromEntries(url.searchParams))
+
   if (!parsed.success) {
     return Response.json({ error: z.prettifyError(parsed.error) }, { status: 400 })
   }
+
   const args = parsed.data
   const paginationOpts = { cursor: args.cursor ?? null, numItems: args.limit }
   let result: PaginationResult<FeedEvent>
+
   try {
     if (args.entity_kind !== undefined && args.entity_id !== undefined) {
       result = await ctx.runQuery(api.products.feed.query.byEntity, {
@@ -69,15 +72,20 @@ export const serve = httpAction(async (ctx, request) => {
         { status: 400 },
       )
     }
+
     console.error('[feed] read failed', error)
+
     return Response.json({ error: 'Unable to read the feed.' }, { status: 500 })
   }
+
   url.searchParams.set('cursor', result.continueCursor)
   const next = result.isDone ? null : url.href
+
   const headers = {
     'Cache-Control': 'no-store',
     ...(next === null ? {} : { Link: `<${next}>; rel="next"` }),
   }
+
   return new Response(JSON.stringify({ events: result.page, next }, null, 2), {
     headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' },
   })

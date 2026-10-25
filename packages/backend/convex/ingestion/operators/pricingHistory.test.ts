@@ -41,6 +41,7 @@ function quoteAt(rows: readonly EndpointPriceRow[], endpoint_id: string, time: s
 test('every listed endpoint reads the quote from its own scan', () => {
   for (let seed = 0; seed < 200; seed += 1) {
     const scans = sequence(seed, 8)
+
     const rows = scans
       .flatMap((next, index) => derive({ next, previous: scans[index - 1] ?? null }))
       .toSorted((a, b) => a.scan_at.localeCompare(b.scan_at))

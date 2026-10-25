@@ -37,6 +37,7 @@ async function interpretStoredEvent(
 
   if (entity_kind === 'endpoint') {
     const alert = interpretEvent(source)
+
     return alert !== null && source.type === 'ADD'
       ? { ...alert, previously_known: (await earlierObservations(ctx, source).first()) !== null }
       : alert
@@ -48,6 +49,7 @@ async function interpretStoredEvent(
   }
 
   const before = await earlierObservations(ctx, source).order('desc').first()
+
   const at = await ctx.db
     .query(OBSERVATIONS_TABLE)
     .withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>
@@ -98,6 +100,7 @@ async function interpretObservation(
   }
 
   const added = endpoint_count > 0
+
   const event = await ctx.db
     .query(EVENTS_TABLE)
     .withIndex('by_entity_kind_and_entity_id_and_scan_at', (q) =>
@@ -105,13 +108,17 @@ async function interpretObservation(
     )
     .order('desc')
     .first()
+
   const related =
     event?.scan_at === scan_at ? event : await relatedEvent(ctx, entity_kind, entity_id, scan_at)
+
   const snapshot =
     event?.scan_at === scan_at && event.type === (added ? 'ADD' : 'REMOVE')
       ? interpretEvent(event)
       : null
+
   const known = added ? (await earlierObservations(ctx, source).first()) !== null : undefined
+
   const fields = {
     entity_id,
     observed_at: scan_at,
@@ -124,6 +131,7 @@ async function interpretObservation(
 }
 
 type AlertFields = { entity_id: string; observed_at: string; previously_known?: boolean }
+
 type RelatedEvent = Doc<typeof EVENTS_TABLE> | null
 
 // Observations retain no metadata snapshot. Use historical identity or the identifier,
@@ -140,6 +148,7 @@ function modelAlert(
         ? related.context.model
         : { display_name: fields.entity_id, model_id: fields.entity_id },
   }
+
   return added
     ? {
         ...fields,
@@ -169,6 +178,7 @@ function providerAlert(
         ? related.context.provider
         : { display_name: fields.entity_id, provider_id: fields.entity_id },
   }
+
   return added
     ? {
         ...fields,

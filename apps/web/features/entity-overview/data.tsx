@@ -32,6 +32,7 @@ function displayValue(value: string | boolean | string[]): string {
   if (typeof value === 'boolean') {
     return value ? 'Yes' : 'No'
   }
+
   return Array.isArray(value) ? value.join(', ') : value
 }
 
@@ -71,6 +72,7 @@ export function DataDescription({ value }: { value: string | null }) {
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(el)
+
     return () => {
       observer.disconnect()
     }

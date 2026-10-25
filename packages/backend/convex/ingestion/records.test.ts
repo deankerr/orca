@@ -53,6 +53,7 @@ test('rebuild restores counts that disagree with the table, across pages', async
     Array.from({ length: 450 }, (_, index) => STATES[(index + 1) % STATES.length]).filter(
       (candidate) => candidate === state,
     ).length
+
   expect(await t.query(internal.ingestion.records.counts, {})).toMatchObject({
     'pair/complete': expected('complete'),
     'pair/failed': expected('failed'),
@@ -98,6 +99,7 @@ test('rebuild refuses while a record is queued or withdrawing', async () => {
           state,
         }),
     )
+
     await rejects(t.mutation(internal.ingestion.records.rebuildCounts, {}), new RegExp(state, 'u'))
     await t.run(async (ctx) => {
       await ctx.db.delete(INGESTION_RECORDS_TABLE, id)

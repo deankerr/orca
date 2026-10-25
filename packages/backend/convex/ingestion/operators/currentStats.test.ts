@@ -9,6 +9,7 @@ test('a snapshot keeps usable default-tier readings from its scan alone', () => 
     provider: 'p1',
     stats,
   })
+
   const next = scan(hour(1), {
     endpoints: {
       e1: listed({ default: { p50_latency: 12, p50_throughput: -1 } }),

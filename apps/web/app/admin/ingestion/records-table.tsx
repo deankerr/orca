@@ -28,6 +28,7 @@ export function RecordsTable({ failed }: { failed: number }) {
   const [before, setBefore] = useState<string | undefined>(undefined)
   const [retrying, setRetrying] = useState<string | null>(null)
   const retry = useMutation(api.ingestion.admin.retry)
+
   const { results, status, loadMore } = usePaginatedQuery(
     api.ingestion.admin.records,
     { before, state },
@@ -37,14 +38,18 @@ export function RecordsTable({ failed }: { failed: number }) {
   /** Retry-all reopens one bounded batch per call; repeat until nothing is left. */
   const retryAll = async () => {
     let reopened = 0
+
     for (;;) {
       setRetrying(`Reopened ${count.format(reopened)}…`)
       const batch = await retry({})
+
       if (batch === 0) {
         break
       }
+
       reopened += batch
     }
+
     setRetrying(`Reopened ${count.format(reopened)}`)
   }
 

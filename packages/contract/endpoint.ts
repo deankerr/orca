@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 // Contract fields are always present; null means ORCA does not know the fact.
 const flag = (description: string) => z.boolean().nullable().meta({ description })
+
 const count = (description: string) =>
   z.number().int().nonnegative().nullable().meta({ description })
 

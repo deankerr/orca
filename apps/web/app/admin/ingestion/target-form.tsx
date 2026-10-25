@@ -21,6 +21,7 @@ export function TargetForm({ target }: { target: Target }) {
 
   const attempt = async (label: string, run: () => Promise<unknown>) => {
     setStatus(`${label}…`)
+
     try {
       await run()
       setStatus(`${label}: done`)

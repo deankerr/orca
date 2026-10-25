@@ -1,6 +1,5 @@
 import { rejects } from 'node:assert/strict'
 
-/* oxlint-disable typescript/no-unsafe-type-assertion -- An indexed database double exercises historical filtering without deploying test mutations. */
 import { expect, test } from 'vitest'
 
 import type { QueryCtx } from '#generated/server'
@@ -8,6 +7,7 @@ import type { QueryCtx } from '#generated/server'
 import { encodePricing } from '../../catalog/pricing'
 import type { EventRow } from '../../catalog/tables/events'
 import { compare } from '../../compare'
+import { testDouble } from '../../doubles.testing'
 import type { JsonValue } from '../../json'
 import { prepare as prepareShared } from '../shared/alerts/prepare'
 import { readFrequency, PRICE_CHANGE_COUNT, PRICE_CHANGE_WINDOW_HOURS } from './frequency'
@@ -19,7 +19,7 @@ const hour = 3_600_000
 const at = (offset: number) => new Date(Date.parse(scan_at) + offset * hour).toISOString()
 
 function history(rows: PricingCandidate[]) {
-  return {
+  return testDouble<QueryCtx>({
     db: {
       query: (table: string) => {
         expect(table).toBe('catalog_pricing_history')
@@ -29,16 +29,19 @@ function history(rows: PricingCandidate[]) {
           eq: (field: keyof PricingCandidate, value: string) => {
             expect(field).toBe('endpoint_id')
             selected = selected.filter((row) => row[field] === value)
+
             return range
           },
           gte: (field: keyof PricingCandidate, value: string) => {
             expect(field).toBe('scan_at')
             selected = selected.filter((row) => row[field] >= value)
+
             return range
           },
           lt: (field: keyof PricingCandidate, value: string) => {
             expect(field).toBe('scan_at')
             selected = selected.filter((row) => row[field] < value)
+
             return range
           },
         }
@@ -47,22 +50,26 @@ function history(rows: PricingCandidate[]) {
           order: (direction: string) => {
             expect(direction).toBe('desc')
             selected = selected.toSorted((a, b) => b.scan_at.localeCompare(a.scan_at))
+
             return query
           },
           take: async (count: number) => {
             expect(count).toBe(PRICE_CHANGE_COUNT)
+
             return selected.slice(0, count)
           },
           withIndex: (name: string, select: (q: typeof range) => unknown) => {
             expect(name).toBe('by_endpoint_id_and_scan_at')
             select(range)
+
             return query
           },
         }
+
         return query
       },
     },
-  } as unknown as QueryCtx
+  })
 }
 
 test('counts only prior endpoint quotes in the inclusive rolling window, bounded at the threshold', async () => {
@@ -136,6 +143,7 @@ test('frequency removes pricing only, preserves quiet endpoints, and does not ch
   const result = await prepareBatch(rows, async (candidates) => {
     queries += 1
     expect(candidates).toEqual(rows.map((row) => ({ endpoint_id: row.entity_id, scan_at })))
+
     return [true, true, false]
   })
 

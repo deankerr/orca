@@ -34,9 +34,11 @@ function pinnedBoundary<TData>(column: Column<TData>): 'left' | 'right' | undefi
   if (isPinned === 'left' && column.getIsLastColumn('left')) {
     return 'left'
   }
+
   if (isPinned === 'right' && column.getIsFirstColumn('right')) {
     return 'right'
   }
+
   return undefined
 }
 
@@ -352,6 +354,7 @@ function DataGridTableVirtual() {
           {virtualRows.length > 0 ? (
             virtualRows.map((virtualRow) => {
               const row = rows[virtualRow.index]
+
               if (row === undefined) {
                 return null
               }

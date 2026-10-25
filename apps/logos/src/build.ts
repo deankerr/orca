@@ -39,9 +39,13 @@ const PackageJsonSchema = z.object({
 })
 
 type AliasCatalog = z.infer<typeof AliasCatalogSchema>
+
 type ThemeGroup = (typeof THEME_GROUPS)[number]
+
 type ManualSourceGroup = (typeof MANUAL_SOURCE_GROUPS)[number]
+
 type ThemeVariant = 'color' | 'mono'
+
 type SourceKind = 'lobehub' | 'manual'
 
 type BuildLog = (message: string) => void
@@ -77,6 +81,7 @@ type SourceAsset = {
 }
 
 type SourceIndex = Record<AssetGroup, Map<string, SourceAsset>>
+
 type ManualSourceIndex = Record<ManualSourceGroup, Map<string, SourceAsset>>
 
 type ResolvedSources = {
@@ -259,12 +264,13 @@ async function readSourcePackage(root: string): Promise<SourcePackage> {
 }
 
 async function readJsonFile(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, 'utf-8')) as unknown
+  return JSON.parse(await readFile(path, 'utf-8'))
 }
 
 async function pathExists(path: string): Promise<boolean> {
   try {
     await access(path)
+
     return true
   } catch {
     return false
@@ -281,6 +287,7 @@ async function collectSources(args: {
     dark: await collectLobehubThemeAssets({ group: 'dark', sourcePackage: args.packages.webp }),
     light: await collectLobehubThemeAssets({ group: 'light', sourcePackage: args.packages.webp }),
   }
+
   const manualSources = await collectManualSources(args.context)
 
   return resolveSources({ lobehubSources, manualSources })
@@ -304,11 +311,13 @@ async function collectLobehubThemeAssets(args: {
 
     const file = entry.name
     const variant = parseLobehubThemeVariant(file)
+
     if (variant === undefined) {
       continue
     }
 
     const existing = assets.get(variant.key)
+
     if (existing !== undefined && existing.variant === 'color' && !variant.isColor) {
       continue
     }
@@ -349,6 +358,7 @@ async function collectLobehubAvatars(
 
     const file = entry.name
     const key = normalizeLogoKey(file)
+
     if (assets.has(key)) {
       throw new Error(`Duplicate avatar asset for ${key}`)
     }
@@ -398,6 +408,7 @@ async function collectManualGroup(args: {
 
     const file = entry.name
     const key = normalizeLogoKey(file)
+
     if (assets.has(key)) {
       throw new Error(`Duplicate manual asset for ${args.group}/${key}`)
     }
@@ -432,6 +443,7 @@ function resolveSources(args: {
     for (const manualAssets of [args.manualSources[group], args.manualSources.base]) {
       for (const [key, asset] of manualAssets) {
         const existing = sources[group].get(key)
+
         if (existing !== undefined) {
           if (existing.sourceKind === 'lobehub') {
             shadowedManualAssets.push({
@@ -441,6 +453,7 @@ function resolveSources(args: {
               winner: describeSourceAsset(existing),
             })
           }
+
           continue
         }
 
@@ -469,6 +482,7 @@ function collectManualSourceCoverageWarnings(args: {
   resolvedSources: SourceIndex
 }): ManualSourceCoverageWarning[] {
   const keys = new Set<string>()
+
   for (const group of MANUAL_SOURCE_GROUPS) {
     for (const key of args.manualSources[group].keys()) {
       keys.add(key)
@@ -546,11 +560,13 @@ async function emitStaticOutput(args: {
     manualSourceCoverageWarnings: args.sources.manualSourceCoverageWarnings,
     shadowedManualAssets: args.sources.shadowedManualAssets,
   })
+
   const sourceAssetsWritten = await emitSourceAssets({
     context: args.context,
     manifest,
     sources: args.sources,
   })
+
   const aliasAssetsWritten = await emitAliasAssets({
     aliases: args.aliases,
     context: args.context,
@@ -627,6 +643,7 @@ async function emitAliasAssets(args: {
   for (const [alias, target] of Object.entries(args.aliases)) {
     for (const group of ASSET_GROUPS) {
       const targetAsset = args.sources.sources[group].get(target)
+
       if (targetAsset === undefined) {
         continue
       }
@@ -666,6 +683,7 @@ async function emitAsset(args: {
   const outputFile = logoAssetFile(args.key)
   const outputPath = nodePath.join(args.context.publicDir, args.group, outputFile)
   const input = await loadSourceImage(args.asset.sourcePath)
+
   const output = await input
     .resize({
       background: { alpha: 0, b: 0, g: 0, r: 0 },
@@ -698,6 +716,7 @@ async function loadSourceImage(sourcePath: string): Promise<Sharp> {
 
   const { width, height } = await sharp(sourcePath).metadata()
   const DEFAULT_SVG_DENSITY = 72
+
   const density = Math.max(
     DEFAULT_SVG_DENSITY,
     (DEFAULT_SVG_DENSITY * OUTPUT_IMAGE_SIZE_PX) / Math.max(width, height),
@@ -732,6 +751,7 @@ function recordManifestAsset(args: {
 
 function getManifestLogo(manifest: Manifest, key: string): ManifestLogo {
   const existing = manifest.logos.find((logo) => logo.key === key)
+
   if (existing !== undefined) {
     return existing
   }
@@ -758,6 +778,7 @@ export function assertValidOutputDimensions(logos: OutputDimensionLogo[]): void 
 
     for (const group of ASSET_GROUPS) {
       const asset = logo[group]
+
       if (asset === undefined) {
         continue
       }

@@ -80,6 +80,7 @@ export function modelRoutes(load: LoadCatalog) {
     const { limit, offset, ...selection } = c.req.valid('query')
     const catalog = await load()
     const selected = selectModels(catalog.models, selection)
+
     return c.json(paginate(c.req.url, catalog.as_at, selected, { limit, offset }), 200, cached)
   })
 
@@ -88,9 +89,11 @@ export function modelRoutes(load: LoadCatalog) {
     const modelId = `${author}/${slug}`
     const catalog = await load()
     const model = catalog.models.find((candidate) => candidate.id === modelId)
+
     if (model === undefined) {
       return c.json(modelNotFound(modelId), 404, problemHeaders)
     }
+
     return c.json({ as_at: catalog.as_at, data: model }, 200, cached)
   })
 
@@ -99,10 +102,13 @@ export function modelRoutes(load: LoadCatalog) {
     const { limit, offset, ...selection } = c.req.valid('query')
     const modelId = `${author}/${slug}`
     const catalog = await load()
+
     if (!catalog.models.some((model) => model.id === modelId)) {
       return c.json(modelNotFound(modelId), 404, problemHeaders)
     }
+
     const selected = selectEndpoints(catalog.endpoints, selection, { modelId })
+
     return c.json(paginate(c.req.url, catalog.as_at, selected, { limit, offset }), 200, cached)
   })
 

@@ -20,6 +20,7 @@ export function field(
   const key = code(layout === 'inline' ? `${label}:` : label, {
     width: width + (layout === 'inline' ? 1 : 0),
   })
+
   const heading = change === 'removed' ? strike(key) : key
   const value = change === 'removed' ? strike(children) : children
   const marker = change === undefined ? '' : changeMarkers[change]
@@ -72,6 +73,7 @@ export function arrival(
   if (previouslyKnown === false) {
     return 'discovered'
   }
+
   return previouslyKnown === true ? 'relisted' : 'listed'
 }
 

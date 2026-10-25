@@ -5,6 +5,7 @@ import type { CurrentStatsRow } from '../../catalog/tables/current'
 import type { Source } from './source'
 
 const Metric = z.number().nonnegative().optional().catch(undefined)
+
 const CurrentSample = z
   .object({ p50_latency: Metric, p50_throughput: Metric })
   .transform(R.pickBy(R.isDefined))

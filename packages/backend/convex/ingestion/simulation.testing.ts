@@ -24,6 +24,10 @@ import { INGESTION_RECORDS_TABLE } from './tables'
 
 type Doc_ = Doc<typeof INGESTION_RECORDS_TABLE>
 
+interface SimulationEvents {
+  [name: string]: (all: Doc_[]) => Promise<void>
+}
+
 export const EVENT_KINDS = [
   'processFailure',
   'terminalFailure',
@@ -37,7 +41,9 @@ export const EVENT_KINDS = [
   'targetWidened',
   'baselineWithdrawn',
 ] as const
+
 type EventKind = (typeof EVENT_KINDS)[number]
+
 export type Tally = Record<EventKind, number>
 
 export const emptyTally = (): Tally => ({
@@ -60,11 +66,14 @@ function prng(seed: number) {
   Array.from({ length: 8 }, () => next())
   const int = (low: number, high: number) => low + Math.floor(next() * (high - low + 1))
   const chance = (probability: number) => next() < probability
+
   const pick = <T>(items: readonly T[]): T => {
     const item = items[int(0, items.length - 1)]
+
     if (item === undefined) {
       throw new Error('Cannot pick from an empty list')
     }
+
     return item
   }
 
@@ -91,13 +100,17 @@ function scenario(seed: number): Scenario {
   const base = random.int(7, 10)
   const arrivalCount = random.int(0, 3)
   const end = base + arrivalCount - 1
+
   // The newest three initial scans always exist, so the final window holds at least one pair.
   const initial = Array.from({ length: base }, (_, index) => index).filter(
     (index) => index >= base - 3 || random.chance(0.85),
   )
+
   const arrivals: number[][] = []
+
   for (let index = base; index <= end; index += 1) {
     const last = arrivals.at(-1)
+
     if (last !== undefined && random.chance(0.4)) {
       last.push(index)
     } else {
@@ -108,6 +121,7 @@ function scenario(seed: number): Scenario {
   const start = random.int(Math.floor(base / 2), base - 3)
   const widenings: number[] = []
   let at = start
+
   for (let count = random.int(0, 2); count > 0 && at > 0; count -= 1) {
     at = random.int(Math.max(0, at - 4), at - 1)
     widenings.push(at)
@@ -139,9 +153,11 @@ export async function simulate(seed: number): Promise<Run> {
   const random = prng(seed + 1_000_003)
   const log: string[] = []
   const tally = emptyTally()
+
   const note = (message: string) => {
     log.push(`+${Date.now() - Date.parse(hour(100))}ms ${message}`)
   }
+
   const count = (kind: EventKind, message: string) => {
     tally[kind] += 1
     note(`${kind}: ${message}`)
@@ -157,19 +173,24 @@ export async function simulate(seed: number): Promise<Run> {
   const { load } = scans
   vi.spyOn(scans, 'load').mockImplementation(async (ctx, scanAt) => {
     const index = (Date.parse(scanAt) - Date.parse(hour(0))) / 3_600_000
+
     const fail =
       faulty &&
       (plan.failure.kind === 'random'
         ? random.chance(plan.failure.rate)
         : plan.failure.scans.includes(index))
+
     if (fail) {
       count('processFailure', `load ${scanAt}`)
       throw new Error('Injected source failure')
     }
+
     return await load(ctx, scanAt)
   })
+
   const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     const text = String(args[0])
+
     if (text.includes('request failed')) {
       tally.terminalFailure += 1
     } else if (text.includes('completion lost')) {
@@ -188,11 +209,13 @@ export async function simulate(seed: number): Promise<Run> {
   try {
     await store(plan.initial)
     let { start } = plan
+
     const target = async () =>
       await t.mutation(internal.ingestion.target.set, {
         end_at: hour(plan.end),
         start_at: hour(start),
       })
+
     await target()
     await t.mutation(internal.ingestion.sync.run, {})
     note(`kickoff target ${start}..${plan.end}, parallelism ${plan.parallelism}`)
@@ -204,32 +227,40 @@ export async function simulate(seed: number): Promise<Run> {
 
     const observe = async () => {
       const all = await records(t)
+
       for (const record of all) {
         if (record.work_id !== undefined) {
           seenWork.add(record.work_id)
         }
       }
+
       const present = new Set(all.map(({ _id }) => _id))
+
       for (const [id, scanAt] of baselines) {
         if (!present.has(id)) {
           baselines.delete(id)
           count('baselineWithdrawn', scanAt)
         }
       }
+
       for (const record of all.filter(({ kind }) => kind === 'baseline')) {
         baselines.set(record._id, record.scan_at)
       }
+
       return all
     }
 
-    const events: Record<string, (all: Doc_[]) => Promise<void>> = {
+    const events: SimulationEvents = {
       arrival: async () => {
         const next = arrivals.shift()
+
         if (next === undefined) {
           return
         }
+
         await store(next)
         count('scanArrival', `scans ${next.join(',')}`)
+
         if (random.chance(0.6)) {
           await t.mutation(internal.ingestion.sync.run, {})
         }
@@ -243,8 +274,10 @@ export async function simulate(seed: number): Promise<Run> {
           ({ state, work_id }) =>
             (state === 'complete' || state === 'failed') && work_id !== undefined,
         )
+
         const old = [...seenWork].filter((id) => !all.some(({ work_id }) => work_id === id))
         const record = settled.length > 0 ? random.pick(settled) : undefined
+
         if (record?.work_id !== undefined && (old.length === 0 || random.chance(0.5))) {
           // The same outcome the record already holds, delivered again.
           await t.mutation(internal.ingestion.execute.onIngested, {
@@ -281,24 +314,31 @@ export async function simulate(seed: number): Promise<Run> {
           ({ state, work_id }) =>
             (state === 'complete' || state === 'failed') && work_id !== undefined,
         )
+
         const record = finished.length > 0 ? random.pick(finished) : undefined
+
         if (record === undefined) {
           return
         }
+
         // The end state of a completion that never committed: finished work, unsettled record.
         const reverted = await t.run(async (ctx) => {
           const current = await ctx.db.get(INGESTION_RECORDS_TABLE, record._id)
+
           if (
             current?.work_id === undefined ||
             (current.state !== 'complete' && current.state !== 'failed')
           ) {
             return false
           }
+
           await writeRecords(ctx, async (writer) => {
             await writer.patch(current, { state: 'queued' })
           })
+
           return true
         })
+
         if (reverted) {
           count('lostCompletion', `${record.state} ${record.scan_at}`)
         }
@@ -306,25 +346,31 @@ export async function simulate(seed: number): Promise<Run> {
       retry: async (all) => {
         const failed = all.filter(({ state }) => state === 'failed')
         const one = failed.length > 0 && random.chance(0.5) ? random.pick(failed) : undefined
+
         const reopened = await t.mutation(
           internal.ingestion.queue.retry,
           one === undefined ? {} : { record_id: one._id },
         )
+
         count('operatorRetry', `reopened ${reopened}`)
       },
       widen: async () => {
         const next = widenings.shift()
+
         if (next === undefined) {
           return
         }
+
         start = next
         await target()
         count('targetWidened', `start ${start}`)
+
         if (random.chance(0.6)) {
           await t.mutation(internal.ingestion.sync.run, {})
         }
       },
     }
+
     const names = Object.keys(events)
 
     // Advance scheduled work in small, uneven slices so steps interleave differently per seed.
@@ -336,6 +382,7 @@ export async function simulate(seed: number): Promise<Run> {
       } else {
         vi.advanceTimersByTime(random.pick([0, 5, 50, 500, 3000, 90_000, 400_000]))
       }
+
       await t.finishInProgressScheduledFunctions()
     }
 
@@ -344,6 +391,7 @@ export async function simulate(seed: number): Promise<Run> {
         // Earlier events in the step may have moved records, so each reads the current registry.
         await events[random.pick(names)]?.(await observe())
       }
+
       await slice()
     }
 
@@ -352,6 +400,7 @@ export async function simulate(seed: number): Promise<Run> {
       await events.arrival?.(await observe())
       await slice()
     }
+
     while (widenings.length > 0) {
       await events.widen?.(await observe())
       await slice()
@@ -365,6 +414,7 @@ export async function simulate(seed: number): Promise<Run> {
     // retries move work, so a completion that fails to wake the queue leaves records stuck.
     await t.mutation(internal.ingestion.sync.run, {})
     let quiet = false
+
     for (let round = 0; round < 40 && !quiet; round += 1) {
       await drainScheduledFunctions(t)
       await t.mutation(internal.ingestion.reconcile.sweep, {})
@@ -392,6 +442,7 @@ export async function simulate(seed: number): Promise<Run> {
     const stored = [...new Set([...plan.initial, ...plan.arrivals.flat()])]
       .filter((index) => index >= start && index <= plan.end)
       .toSorted((a, b) => a - b)
+
     const pairs = final.filter(({ kind }) => kind === 'pair')
     const baseline = final.filter(({ kind }) => kind === 'baseline')
     expect(

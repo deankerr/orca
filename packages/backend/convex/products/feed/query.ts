@@ -69,5 +69,6 @@ async function preparePage(
   const alerts = await Promise.all(
     result.page.map(async (row) => selectDefault(await interpret(ctx, row))),
   )
+
   return renderPage({ ...result, page: alerts.filter((alert) => alert !== null) })
 }

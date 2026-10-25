@@ -19,10 +19,12 @@ export async function expectIngestionInvariants(t: Harness, { receipts = true } 
     const keys = recordKind.members.flatMap((kind) =>
       recordState.members.map((state) => [kind.value, state.value] as const),
     )
+
     const totals = await recordCounts.countBatch(
       ctx,
       keys.map((namespace) => ({ namespace: [...namespace] })),
     )
+
     expect(Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index]]))).toEqual(
       Object.fromEntries(
         keys.map((key) => [
@@ -38,6 +40,7 @@ export async function expectIngestionInvariants(t: Harness, { receipts = true } 
         record.work_id,
         `${record.state} record at ${record.scan_at} has no work`,
       ).toBeDefined()
+
       if (record.work_id !== undefined) {
         const status = await pool().status(ctx, record.work_id)
         expect(status.state, `${record.state} record at ${record.scan_at} is stuck`).not.toBe(
@@ -49,10 +52,12 @@ export async function expectIngestionInvariants(t: Harness, { receipts = true } 
     // A complete record has every ingestor's receipt for its scan.
     if (receipts) {
       const committed = await ctx.db.query(PROCESS_COMMITS_TABLE).collect()
+
       for (const { scan_at } of all.filter(({ state }) => state === 'complete')) {
         const processes = committed
           .filter((row) => row.scan_at === scan_at)
           .map((row) => row.process)
+
         expect(processes.toSorted(), `receipts at ${scan_at}`).toEqual(
           ingestors.map(({ process }) => process).toSorted(),
         )

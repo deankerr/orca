@@ -22,6 +22,7 @@ const init = internalMutation({
     }
 
     await kickoff(ctx)
+
     return null
   },
   returns: v.null(),

@@ -2,11 +2,11 @@ import { rejects } from 'node:assert/strict'
 import { gzipSync } from 'node:zlib'
 
 import { ConvexHttpClient } from 'convex/browser'
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Remote reads only use deployment metadata from this context. */
 import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 
+import { testDouble } from '../doubles.testing'
 import { connect } from './client'
 import { loadMany } from './storage'
 
@@ -16,9 +16,9 @@ test('standalone and deployment readers share ordered remote batches and propaga
   process.env.ORCA_OBJECTS_SOURCE_DEPLOYMENT = 'source-deployment'
   process.env.ORCA_OBJECTS_API_KEY = 'test-key'
 
-  const ctx = {
+  const ctx = testDouble<ActionCtx>({
     meta: { getDeploymentMetadata: async () => ({ name: 'consumer-deployment' }) },
-  } as unknown as ActionCtx
+  })
 
   const identities = [
     { name: 'some.metadata.1', path: 'arbitrary' },
@@ -37,6 +37,7 @@ test('standalone and deployment readers share ordered remote batches and propaga
   try {
     expect(await standalone.loadMany(identities)).toEqual(['logical text ✓', null])
     expect(await loadMany(ctx, identities)).toEqual(['logical text ✓', null])
+
     for (const [, args] of action.mock.calls) {
       expect(args).toEqual({ apiKey: 'test-key', objects: identities })
     }

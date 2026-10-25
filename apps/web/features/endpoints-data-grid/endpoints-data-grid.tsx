@@ -112,15 +112,18 @@ export function EndpointsDataGrid({
   const focus = useEndpointFocusState()
   const facets = useEndpointFacetState()
   const sort = useEndpointSortState({ hasActiveQuery: query.hasQuery })
+
   const { rows } = useEndpointGridRows({
     endpoints,
     facetFilters: facets.facetFilters,
     query: query.query,
   })
+
   const isMobile = useIsMobile()
 
   const rowDataAttributes = (row: GridEndpoint) => {
     let status: 'gone' | 'disabled' | undefined
+
     if (row.unlisted_at !== undefined && row.unlisted_at !== null) {
       status = 'gone'
     } else if (row.disabled === true) {

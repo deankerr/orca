@@ -35,6 +35,7 @@ export const report = action({
   args: selectionArgs.fields,
   handler: async (ctx, args): Promise<string> => {
     await requireAdmin(ctx)
+
     return JSON.stringify(await analyze(ctx, args))
   },
   returns: v.string(),

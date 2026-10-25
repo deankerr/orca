@@ -12,7 +12,9 @@ const feedEvent = v.union(
     member.extend({ details: v.array(v.string()), summary: v.string() }),
   ),
 )
+
 export const feedPage = paginationResultValidator(feedEvent)
+
 export type FeedEvent = Infer<typeof feedEvent>
 
 /** Add plain-text presentation to an already prepared entity alert. */

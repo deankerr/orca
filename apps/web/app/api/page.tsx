@@ -9,6 +9,7 @@ import { API_PATH } from './public-api'
 
 async function getPublicApiUrl() {
   const requestHeaders = await headers()
+
   const host = (requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host'))
     ?.split(',')[0]
     ?.trim()
@@ -26,6 +27,7 @@ function requestProtocol(forwardedProto: string | undefined, host: string) {
   if (forwardedProto === 'http' || forwardedProto === 'https') {
     return forwardedProto
   }
+
   return host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https'
 }
 

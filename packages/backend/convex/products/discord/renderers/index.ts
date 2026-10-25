@@ -24,5 +24,6 @@ function entityCard(event: EntityAlert, urls: DiscordUrls): Card {
   if (event.entity_kind === 'model') {
     return modelCard(event, urls)
   }
+
   return event.entity_kind === 'provider' ? providerCard(event, urls) : endpointCard(event, urls)
 }

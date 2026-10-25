@@ -21,6 +21,7 @@ const view = (overrides: Partial<QueueView<string>>): QueueView<string> => ({
   pending: [],
   ...overrides,
 })
+
 const pending = (...indexes: number[]) =>
   indexes.map((index) => ({ id: `p${index}`, scan_at: hour(index) }))
 
@@ -123,6 +124,7 @@ test('the only baseline is installed once no pair is pending or queued', () => {
 function source(times: () => string[]): ListScans {
   return async ({ atOrAfter, before, limit, order }) => {
     const selected = times().filter((time) => time >= atOrAfter && time < before)
+
     return (order === 'desc' ? selected.toReversed() : selected).slice(0, limit)
   }
 }
@@ -238,6 +240,7 @@ class Simulation {
     const latest = pairs.at(-1)
     const [earliest] = pairs
     const from = earliest?.from_scan_at ?? null
+
     const plan = await planRegister(
       {
         baseline: this.baselines.some(({ scan_at }) => scan_at === from),
@@ -288,6 +291,7 @@ class Simulation {
     const running = this.records.filter(
       ({ state }) => state === 'queued' || state === 'withdrawing',
     )
+
     const record = running[Math.floor(this.draw() * running.length)]
 
     if (record === undefined) {
@@ -299,6 +303,7 @@ class Simulation {
       this.records = succeed
         ? this.records.filter(({ id }) => id !== record.id)
         : this.records.map((item) => (item.id === record.id ? { ...item, state: 'failed' } : item))
+
       return true
     }
 
@@ -313,6 +318,7 @@ class Simulation {
     }
 
     this.update(record.id, { state: succeed ? 'complete' : 'failed' })
+
     return true
   }
 
@@ -342,16 +348,20 @@ class Simulation {
       0,
       this.scans.findIndex(({ scan_at }) => scan_at === this.target.start_at) - 4,
     )
+
     this.target = { ...this.target, start_at: hour(start) }
   }
 
   /** Mirrors `queue.ts`'s bounded registry reads. */
   view(): QueueView<number> {
     const { pairs } = this
+
     const latest = (scope: CurrentScope, state: RecordState) =>
       pairs.findLast((pair) => pair.scope === scope && pair.state === state)?.scan_at ?? null
+
     const latestQueuedFull = latest('full', 'queued')
     const latestCompleteFull = latest('full', 'complete')
+
     const baselines = this.baselines.map(({ id, scan_at, state }) => ({
       displaced: pairs.some((pair) => pair.scan_at === scan_at),
       id,
@@ -381,10 +391,12 @@ class Simulation {
   /** Registry invariants that must hold after every committed step. */
   check() {
     const { pairs } = this
+
     // Withdrawals may overlap: a pending baseline's withdrawal removes nothing.
     const installed = this.baselines.filter(
       ({ state }) => state === 'queued' || state === 'complete',
     )
+
     expect(installed.length).toBeLessThanOrEqual(1)
     expect(this.records.filter(({ state }) => state === 'queued').length).toBeLessThanOrEqual(
       CAPACITY,
@@ -416,6 +428,7 @@ class Simulation {
   private scanAt(time: string) {
     const found = this.scans.find(({ scan_at }) => scan_at === time)
     ok(found !== undefined)
+
     return found
   }
 
@@ -464,6 +477,7 @@ test('any interleaving of steps and outcomes settles into one baseline and the r
         scan_at <= sim.target.end_at &&
         scan_at < hour(sim.available),
     )
+
     const [first, ...rest] = window
     ok(first !== undefined)
 

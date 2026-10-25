@@ -28,6 +28,7 @@ function summarize(rows: readonly CurrentEndpointRow[]) {
     if (row.unlisted_at !== undefined) {
       continue
     }
+
     const model = models.get(row.model_id) ?? { endpoints: 0, providerIds: new Set() }
     model.endpoints += 1
     model.providerIds.add(row.provider_id)

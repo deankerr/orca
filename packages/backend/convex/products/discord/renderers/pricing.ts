@@ -179,5 +179,6 @@ function changeKind(removed: boolean, added: boolean): 'removed' | 'added' | und
   if (removed) {
     return 'removed'
   }
+
   return added ? 'added' : undefined
 }

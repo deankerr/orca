@@ -33,6 +33,7 @@ export async function emitFallbackAsset(args: FallbackAssetOptions): Promise<voi
     nodePath.resolve(import.meta.dirname, '../../../branding/svg/orb-ring-mark.svg'),
     'utf-8',
   )
+
   const theme = FALLBACK_THEME[args.group]
   const svg = source.replaceAll('#ededed', theme.mark)
   const image = sharp(Buffer.from(svg), { density: 192 })

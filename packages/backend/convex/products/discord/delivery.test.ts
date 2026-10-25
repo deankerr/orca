@@ -11,6 +11,7 @@ import { EVENTS_TABLE } from '../../catalog/tables/events'
 import { OBSERVATIONS_TABLE } from '../../catalog/tables/observations'
 import type { ObservationRow } from '../../catalog/tables/observations'
 import { compare } from '../../compare'
+import { testDouble } from '../../doubles.testing'
 import { setup } from '../../harness.testing'
 import { INGESTION_RECORDS_TABLE } from '../../ingestion/tables'
 import type { JsonValue } from '../../json'
@@ -19,6 +20,7 @@ import { canonicalJson, contentKey, renderRows } from './render'
 
 function eventRow(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
   const [change] = compare({ [id]: before }, { [id]: after })
+
   return {
     _creationTime: 0,
     _id: id as Id<'catalog_events'>,
@@ -38,6 +40,7 @@ function eventRow(id: string, before: JsonValue, after: JsonValue): Doc<'catalog
     type: 'UPDATE',
   }
 }
+
 const changed = (id: string) =>
   eventRow(id, { metadata: { is_disabled: false } }, { metadata: { is_disabled: true } })
 
@@ -45,6 +48,7 @@ const SCAN_AT = '2026-09-30T01:00:00.000Z'
 const PREVIOUS_SCAN_AT = '2026-09-30T00:00:00.000Z'
 
 type Kind = EventRow['entity_kind']
+
 type Operation = EventRow['type']
 
 /** Endpoint lifecycle and every update are Events; parent lifecycle is an endpoint-count observation. */
@@ -84,6 +88,7 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
       previous_endpoint_count: type === 'ADD' ? 0 : 1,
       scan_at,
     }
+
     return { previous, row: { table: OBSERVATIONS_TABLE, value: observation } } as const
   }
 
@@ -100,7 +105,9 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
     provider_id: context.provider.provider_id,
     variant: 'standard',
   }
+
   const field = { endpoint: 'is_disabled', model: 'description', provider: 'headquarters' }[kind]
+
   const [change] =
     type === 'UPDATE'
       ? compare(
@@ -111,6 +118,7 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
           type === 'REMOVE' ? { [id]: snapshot } : {},
           type === 'ADD' ? { [id]: snapshot } : {},
         )
+
   const fields = { change_json: JSON.stringify(change), entity_id: id, scan_at, type }
   let event: EventRow = { ...fields, context, entity_kind: 'endpoint' }
 
@@ -150,6 +158,7 @@ async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
         row.table === EVENTS_TABLE
           ? await ctx.db.insert(EVENTS_TABLE, row.value)
           : await ctx.db.insert(OBSERVATIONS_TABLE, row.value)
+
       const doc = await ctx.db.get(id)
       ok(doc !== null)
       labels.set(id, row.value.entity_id)
@@ -171,6 +180,7 @@ async function withOrigins(run: () => Promise<void>) {
   const before = { logo: process.env.ORCA_LOGO_ORIGIN, web: process.env.ORCA_WEB_ORIGIN }
   process.env.ORCA_WEB_ORIGIN = 'https://orca.orb.town'
   process.env.ORCA_LOGO_ORIGIN = 'https://logos.orb.town'
+
   try {
     await run()
   } finally {
@@ -179,6 +189,7 @@ async function withOrigins(run: () => Promise<void>) {
     } else {
       process.env.ORCA_WEB_ORIGIN = before.web
     }
+
     if (before.logo === undefined) {
       delete process.env.ORCA_LOGO_ORIGIN
     } else {
@@ -189,20 +200,26 @@ async function withOrigins(run: () => Promise<void>) {
 
 test('rendering reports suppressed source events and preserves deterministic ordering', async () => {
   const visible = [changed('first'), changed('second')]
+
   const hidden = eventRow(
     'hidden',
     { pricing: { meters: { prompt: '1' } } },
     { pricing: { meters: { prompt: '1.001' } } },
   )
+
   const rows = [...visible, hidden]
-  const ctx = {
+
+  const ctx = testDouble<QueryCtx>({
     db: { get: async (_table: string, id: string) => rows.find((item) => item._id === id) ?? null },
-  } as unknown as QueryCtx
+  })
+
   // convex-test installs accessors on globals, which spyOn cannot wrap.
   const request = vi.fn(async () => {
     throw new Error('Rendering must never contact Discord')
   })
+
   vi.stubGlobal('fetch', request)
+
   try {
     await withOrigins(async () => {
       const rendered = await renderRows(ctx, rows)
@@ -255,6 +272,7 @@ test('individual and batched endpoint unlistings precede last-endpoint departure
   await withOrigins(async () => {
     for (const count of [1, 3]) {
       const unlistings = Array.from({ length: count }, (_, i) => `endpoint-${i}`)
+
       const { rendered, order } = await renderStored([
         lifecycleSource('provider', 'REMOVE'),
         lifecycleSource('endpoint', 'UPDATE', 'unrelated-update'),
@@ -288,10 +306,12 @@ test('scan chronology takes precedence over lifecycle order', async () => {
 
 test('identical legitimate notification bodies retain distinct deterministic keys inside a group', async () => {
   const event = changed('same-endpoint')
+
   const rows = [
     { ...event, _id: 'first' as Id<'catalog_events'> },
     { ...event, _id: 'second' as Id<'catalog_events'> },
   ]
+
   await withOrigins(async () => {
     const rendered = await renderRows({} as QueryCtx, rows)
     expect(rendered.messages).toHaveLength(2)

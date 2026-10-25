@@ -18,6 +18,7 @@ export const sendRecordAlerts = internalMutation({
     }
 
     const record = await ctx.db.get(INGESTION_RECORDS_TABLE, record_id)
+
     if (
       record === null ||
       !record.alerts ||
@@ -25,6 +26,7 @@ export const sendRecordAlerts = internalMutation({
     ) {
       return null
     }
+
     const rendered = await renderRecord(ctx, record_id)
 
     // Rendering and fan-out share this alert transaction, independently of the
@@ -34,6 +36,7 @@ export const sendRecordAlerts = internalMutation({
       key: `ingestion:${rendered.scan_at}`,
       messages: rendered.messages,
     })
+
     return null
   },
   returns: v.null(),
@@ -67,6 +70,7 @@ export const sendRecord = internalMutation({
     // already. Convex keeps Math.random stable across transaction retries. No old
     // job, receipt, event or processor work is changed to make repetition possible.
     const run = `${Math.random().toString(36).slice(2)}:${Math.random().toString(36).slice(2)}`
+
     const jobIds = await submitAlerts(ctx, {
       expiresAt: Date.now() + ALERT_MAX_AGE_MS,
       key: `manual-ingestion:${rendered.scan_at}:${run}`,

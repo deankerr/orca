@@ -63,6 +63,7 @@ test('builds reviewable static output through the build module interface', async
       'shared-alias': 'shared',
     },
   })
+
   const logs: string[] = []
 
   try {
@@ -275,6 +276,7 @@ async function readManifest(appRoot: string): Promise<TestManifest> {
 
 function findLogo(manifest: TestManifest, key: string): TestManifest['logos'][number] {
   const logo = manifest.logos.find((candidate) => candidate.key === key)
+
   if (logo === undefined) {
     throw new Error(`Missing manifest logo ${key}`)
   }

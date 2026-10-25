@@ -31,6 +31,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => `${row.model_display_name} ${row.model_id}`,
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <EntityOverviewTrigger type="model" slug={endpoint.model_id} className="size-full">
           <EntityIdentity>
@@ -56,6 +57,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => `${row.provider_display_name} ${row.provider_id}`,
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <EntityOverviewTrigger type="provider" slug={endpoint.provider_id} className="size-full">
           <EntityIdentity>
@@ -81,9 +83,11 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.pricing.text_input,
     cell: ({ getValue }) => {
       const inputPrice = getValue<number | undefined>()
+
       if (inputPrice !== undefined) {
         return formatPrice(inputPrice, 6)
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => (
@@ -101,9 +105,11 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.pricing.text_output,
     cell: ({ getValue }) => {
       const outputPrice = getValue<number | undefined>()
+
       if (outputPrice !== undefined) {
         return formatPrice(outputPrice, 6)
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => (
@@ -121,9 +127,11 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.pricing.cache_read,
     cell: ({ getValue }) => {
       const cacheReadPrice = getValue<number | undefined>()
+
       if (cacheReadPrice !== undefined) {
         return formatPrice(cacheReadPrice, 6)
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => (
@@ -141,9 +149,11 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.pricing.cache_write,
     cell: ({ getValue }) => {
       const cacheWritePrice = getValue<number | undefined>()
+
       if (cacheWritePrice !== undefined) {
         return formatPrice(cacheWritePrice, 6)
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => (
@@ -160,6 +170,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
   {
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <AttributeBadgeSet
           endpoint={endpoint}
@@ -177,6 +188,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
   {
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <AttributeBadgeSet
           endpoint={endpoint}
@@ -249,11 +261,13 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.stats?.p50_throughput,
     cell: ({ getValue }) => {
       const throughput = getValue<number | undefined>()
+
       if (throughput !== undefined) {
         return throughput.toLocaleString('en-US', {
           maximumFractionDigits: 0,
         })
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => <DataGridColumnHeader column={column} title="TOKENS" subtitle="/SEC" />,
@@ -269,11 +283,13 @@ export const columns: ColumnDef<GridEndpoint>[] = [
     accessorFn: (row) => row.stats?.p50_latency,
     cell: ({ getValue }) => {
       const latency = getValue<number | undefined>()
+
       if (latency !== undefined) {
         return latency.toLocaleString('en-US', {
           maximumFractionDigits: 0,
         })
       }
+
       return <EmptyCell />
     },
     header: ({ column }) => <DataGridColumnHeader column={column} title="LATENCY" subtitle="MS" />,
@@ -288,6 +304,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
   {
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <AttributeBadgeSet
           endpoint={endpoint}
@@ -305,6 +322,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
   {
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <AttributeBadgeSet
           endpoint={endpoint}
@@ -337,6 +355,7 @@ export const columns: ColumnDef<GridEndpoint>[] = [
   {
     cell: ({ row }) => {
       const endpoint = row.original
+
       return (
         <AttributeBadgeSet
           endpoint={endpoint}

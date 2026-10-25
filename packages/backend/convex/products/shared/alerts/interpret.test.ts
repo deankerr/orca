@@ -19,6 +19,7 @@ test('a parent return completed before the pair that removed it is still announc
       previous_endpoint_count: null,
       scan_at: hour(0),
     })
+
     const id = await ctx.db.insert(OBSERVATIONS_TABLE, {
       endpoint_count: 1,
       entity_id: 'm1',
@@ -26,8 +27,10 @@ test('a parent return completed before the pair that removed it is still announc
       previous_endpoint_count: 0,
       scan_at: hour(2),
     })
+
     const returned = await ctx.db.get(id)
     ok(returned !== null)
+
     return await interpret(ctx, returned)
   })
 
@@ -45,8 +48,10 @@ test('a baseline row has no comparison and announces nothing', async () => {
       previous_endpoint_count: null,
       scan_at: hour(0),
     })
+
     const baseline = await ctx.db.get(id)
     ok(baseline !== null)
+
     return await interpret(ctx, baseline)
   })
 

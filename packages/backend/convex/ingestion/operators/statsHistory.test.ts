@@ -8,6 +8,7 @@ const reading = (endpoint_id: string, p50_latency: number | null) => ({
   sample: { p50_latency },
   tier: 'default',
 })
+
 const listed = (p50_latency: number | null) => ({
   model: 'm1',
   provider: 'p1',
@@ -17,6 +18,7 @@ const listed = (p50_latency: number | null) => ({
 test("a record owns only its introduced scan's readings, including repeated values", () => {
   const previous = scan(hour(0), { endpoints: { e1: listed(10) } })
   const next = scan(hour(1), { endpoints: { e1: listed(10), e2: listed(null) } })
+
   const rows = [
     { ...reading('e1', 10), scan_at: hour(1) },
     { ...reading('e2', null), scan_at: hour(1) },

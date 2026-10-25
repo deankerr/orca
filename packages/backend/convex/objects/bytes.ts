@@ -42,6 +42,7 @@ function convexByteStore(ctx: ActionCtx): ByteStore {
       const storage_id = await ctx.storage.store(
         new Blob([new Uint8Array(bytes)], { type: 'application/gzip' }),
       )
+
       return { backend: 'convex', storage_id }
     },
   }
@@ -59,6 +60,7 @@ function r2ByteStore(transport: R2Transport): ByteStore {
     async put(bytes, identity) {
       const r2_key = r2Key(identity.path, identity.name)
       await transport.put(r2_key, bytes)
+
       return { backend: 'r2', r2_key }
     },
   }

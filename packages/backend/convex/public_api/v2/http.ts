@@ -30,6 +30,7 @@ export const serveCached = httpAction(async (ctx, req) => {
 
   if (snapshot === null) {
     console.error('[public_api:v2] missing cache pointer')
+
     return new Response('Internal server error', {
       headers: allowOrigin,
       status: 500,
@@ -40,6 +41,7 @@ export const serveCached = httpAction(async (ctx, req) => {
 
   if (blob === null) {
     console.error('[public_api:v2] missing cache blob', { storage_id: snapshot.storage_id })
+
     return new Response('Internal server error', {
       headers: allowOrigin,
       status: 500,
@@ -134,6 +136,7 @@ function ifNoneMatchHits(header: string, etag: string): boolean {
 
   return header.split(',').some((part) => {
     const token = part.trim().replace(/^W\//u, '')
+
     return token === etag
   })
 }
@@ -169,6 +172,7 @@ function acceptsGzip(acceptEncoding: string | null): boolean {
     }
 
     let q = 1
+
     for (const param of segments.slice(1)) {
       const trimmed = param.trim()
 

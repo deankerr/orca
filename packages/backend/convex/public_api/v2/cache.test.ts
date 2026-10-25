@@ -6,6 +6,7 @@ import type { Doc, Id } from '#generated/dataModel'
 import type { ActionCtx, MutationCtx } from '#generated/server'
 import * as scans from '#scans'
 
+import { testDouble } from '../../doubles.testing'
 import { refresh, replaceIfNewer } from './cache'
 import * as snapshot from './snapshot'
 import type { PUBLIC_API_V2_CACHE_TABLE } from './table'
@@ -23,20 +24,19 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
   let cachedScanAt: string | undefined
   const replacements: unknown[] = []
 
-  const ctx = {
+  const ctx = testDouble<ActionCtx>({
     runMutation: async (_ref: unknown, args: unknown) => {
       replacements.push(args)
+
       return null
     },
     runQuery: async () => ({ scan_at: cachedScanAt, scan_id: 'ignored' }),
     storage: { store: async () => 'new-blob' },
-  } as unknown as ActionCtx
+  })
 
-  const handler = (
-    refresh as unknown as {
-      _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<null>
-    }
-  )._handler
+  const handler = testDouble<{
+    _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<null>
+  }>(refresh)._handler
 
   try {
     for (const key of [undefined, '2026-10-01T10:40:04.272Z', scanAt]) {
@@ -89,7 +89,7 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
 
   let writes = 0
 
-  const ctx = {
+  const ctx = testDouble<MutationCtx>({
     db: {
       delete: async () => {
         writes += 1
@@ -99,7 +99,7 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
       },
       query: () => ({ order: () => ({ first: async () => existing }) }),
     },
-  } as unknown as MutationCtx
+  })
 
   const handler = mutationHandler(replaceIfNewer)
 
@@ -135,5 +135,5 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
 function mutationHandler<Args extends Record<string, unknown>, Result>(
   fn: RegisteredMutation<'internal', Args, Result>,
 ) {
-  return (fn as unknown as { _handler: (ctx: MutationCtx, args: Args) => Promise<Result> })._handler
+  return testDouble<{ _handler: (ctx: MutationCtx, args: Args) => Promise<Result> }>(fn)._handler
 }

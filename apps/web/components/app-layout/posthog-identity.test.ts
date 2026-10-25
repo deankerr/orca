@@ -15,12 +15,15 @@ it('keeps anonymous sessions, identifies login, and clears identity on logout or
 
   let userId: string | undefined
   const user = { email: 'admin@example.com', id: 'workos-user', name: 'Admin' }
+
   const identify = vi.spyOn(posthog, 'identify').mockImplementation((id) => {
     userId = id
   })
+
   const reset = vi.spyOn(posthog, 'reset').mockImplementation(() => {
     userId = undefined
   })
+
   const register = vi.spyOn(posthog, 'register_for_session').mockImplementation(() => {})
 
   vi.spyOn(posthog, 'get_property').mockImplementation((key) =>

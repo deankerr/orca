@@ -12,6 +12,7 @@ export const run = internalMutation({
   args: {},
   handler: async (ctx) => {
     await kickoff(ctx)
+
     return null
   },
   returns: v.null(),

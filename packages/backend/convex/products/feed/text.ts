@@ -3,7 +3,11 @@ import type { EntityAlert, FieldChange, FieldValue } from '../shared/alerts/cura
 import { fact } from '../shared/alerts/facts'
 import { priceMeters } from '../shared/alerts/pricing'
 
-const labels: Record<string, string> = {
+interface Labels {
+  [path: string]: string
+}
+
+const labels: Labels = {
   context_length: 'Context length',
   'data_policy.canPublish': 'May publish data',
   'data_policy.requiresUserIDs': 'Shares user ID',
@@ -154,6 +158,7 @@ export function describe(event: EntityAlert): string[] {
     }
 
     const name = labels[path] ?? path
+
     return field === undefined
       ? []
       : [`${name}${'before' in event ? ' when last observed' : ''}: ${value(field, path)}.`]
@@ -164,9 +169,11 @@ function endpointListing(row: EntityAlert): string {
   if ('before' in row) {
     return 'is no longer listed'
   }
+
   if (row.previously_known === false) {
     return 'has a newly discovered endpoint'
   }
+
   return row.previously_known === true ? 'is relisted' : 'is now listed'
 }
 
@@ -174,12 +181,15 @@ function parentState(row: EntityAlert): string {
   if ('changes' in row) {
     return 'has updated details'
   }
+
   if ('before' in row) {
     return 'has no more listed endpoints'
   }
+
   if (row.previously_known === false) {
     return 'was discovered with listed endpoints'
   }
+
   return row.entity_kind === 'provider' && row.previously_known === true
     ? 'has listed endpoints again'
     : 'now has listed endpoints'

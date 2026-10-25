@@ -24,6 +24,7 @@ export function providerColor(providerId: string) {
   const { lightness, chroma, hue } = providerColorCoordinates(providerId)
   const color = `oklch(${formatChannel(lightness)} ${formatChannel(chroma)} ${formatChannel(hue)})`
   oklchById.set(providerId, color)
+
   return color
 }
 
@@ -39,6 +40,7 @@ export function providerSrgbColor(providerId: string) {
   const [red, green, blue] = linearSrgbChannels(lightness, chroma, hue).map(linearToSrgbByte)
   const color = `rgb(${red}, ${green}, ${blue})`
   srgbById.set(providerId, color)
+
   return color
 }
 
@@ -77,6 +79,7 @@ function providerColorCoordinates(providerId: string) {
   const chroma = findMaxSrgbChroma(lightness, hue) * CHROMA_FRACTION
   const coordinates = { chroma, hue, lightness }
   coordinatesById.set(providerId, coordinates)
+
   return coordinates
 }
 

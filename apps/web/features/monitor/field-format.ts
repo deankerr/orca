@@ -28,7 +28,12 @@ export function formatChangeUnit(path: string, ...values: FieldValue[]): string 
     ? meter.unit
     : ''
 }
-const fieldLabels: Record<string, string> = {
+
+interface FieldLabels {
+  [path: string]: string
+}
+
+const fieldLabels: FieldLabels = {
   max_completion_tokens: 'max_output',
   'pricing.overrides': 'Price schedule',
 }
@@ -47,5 +52,6 @@ export function formatChangeDelta(before: FieldValue, after: FieldValue, path: s
   }
 
   const delta = relativeChange(before, after)
+
   return delta === null ? null : { ...delta, isGood: price ? !delta.isUp : delta.isUp }
 }

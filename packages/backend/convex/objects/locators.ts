@@ -37,10 +37,12 @@ export const get = internalQuery({
 
     if (doc.backend === 'r2') {
       const { path, name, backend, r2_key, codec, size } = doc
+
       return { backend, codec, name, path, r2_key, size }
     }
 
     const { path, name, backend, storage_id, codec, size } = doc
+
     return { backend, codec, name, path, size, storage_id }
   },
   returns: v.union(v.null(), locator),
@@ -70,6 +72,7 @@ export const insert = internalMutation({
     }
 
     await ctx.db.insert(OBJECTS_LOCATORS_TABLE, args.locator)
+
     return null
   },
   returns: v.null(),

@@ -63,6 +63,7 @@ export async function planRegister(
       limit: limit + 1,
       order: 'desc',
     })
+
     return planned('bootstrap', chain(newest.toReversed(), false))
   }
 
@@ -128,6 +129,7 @@ function pairScope(behindFull: boolean, hasFull: boolean) {
   if (behindFull) {
     return 'departures'
   }
+
   return hasFull ? 'changes' : 'full'
 }
 

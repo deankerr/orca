@@ -19,6 +19,7 @@ export class ExpiredError extends Error {
 
 export function parseWebhookUrl(value: string) {
   const parsed = new URL(value)
+
   const match = /^\/api(?:\/v\d+)?\/webhooks\/(?<id>\d{17,20})\/(?<token>[\w-]+)\/?$/u.exec(
     parsed.pathname,
   )
@@ -56,8 +57,9 @@ export function invalidatesWebhook(error: { code: string | number }) {
 /** Share one SDK client across an action's lanes so Discord's global limits are shared. */
 export function createDiscord() {
   const deadlines = new Map<string, number>()
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The SDK's browser build declares undici types, but its documented makeRequest hook accepts native fetch for JSON requests.
-  const nativeFetch = fetch as unknown as RESTOptions['makeRequest']
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: The SDK's browser build declares undici types, but its documented makeRequest hook accepts native fetch for JSON requests.
+  const nativeFetch = fetch as RESTOptions['makeRequest']
+
   const rest = new REST({
     handlerSweepInterval: 0,
     hashSweepInterval: 0,
@@ -88,10 +90,12 @@ export function createDiscord() {
     }) {
       const webhook = parseWebhookUrl(input.url)
       const url = new URL(webhook.url)
+
       const route =
         input.operation === 'send'
           ? webhook.route
           : (`${webhook.route}/messages/${zSnowflake.parse(input.messageId)}` as const)
+
       const body =
         input.operation === 'delete' ? undefined : parseMessagePayload(input.payload ?? '')
 

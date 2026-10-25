@@ -1,6 +1,11 @@
 export { profileJsonRecords } from './profile'
+
 export type { JsonProfile, JsonRecord, JsonValue, ValueProfile } from './profile'
+
 export { distinctValues, numericSummary, profileRows } from './summary'
+
 export type { ProfileRow } from './summary'
+
 export { viewProfile } from './view'
+
 export type { ProfileView, ViewOptions } from './view'

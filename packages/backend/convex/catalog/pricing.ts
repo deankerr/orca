@@ -19,6 +19,7 @@ export const pricing = v.object({
 /** Encode arbitrary override keys only when crossing into storage. */
 export function encodePricing(value: z.infer<typeof Pricing>) {
   const { overrides, ...fields } = value
+
   return overrides === undefined ? fields : { ...fields, overrides_json: JSON.stringify(overrides) }
 }
 

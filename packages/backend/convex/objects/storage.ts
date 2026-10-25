@@ -97,6 +97,7 @@ export async function loadMany(
 export async function namesAtOrAfter(ctx: ActionCtx, selection: NameSelection): Promise<string[]> {
   assertReadCount(selection.limit)
   const source = await readSource(ctx)
+
   return source === null
     ? await ctx.runQuery(internal.objects.locators.namesAtOrAfter, selection)
     : await source.namesAtOrAfter(selection)

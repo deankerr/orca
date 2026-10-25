@@ -22,6 +22,7 @@ async function validatePublicApi(apiUrl: string) {
   console.log(`Fetching data from ${apiUrl}...`)
 
   const response = await fetch(apiUrl)
+
   if (!response.ok) {
     throw new Error(`Failed to fetch API: ${response.status} ${response.statusText}`)
   }
@@ -40,11 +41,13 @@ async function main() {
     await validatePublicApi(getApiUrl())
   } catch (error) {
     console.error('\n❌ Fatal error during validation:')
+
     if (error instanceof ZodError) {
       console.error(JSON.stringify(error.issues, null, 2))
     } else {
       console.error(error)
     }
+
     process.exit(1)
   }
 }
