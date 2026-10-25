@@ -21,6 +21,6 @@ async function loadCatalog() {
   return await snapshot.value
 }
 
-const app = createApp({ basePath: '/api/v5', loadCatalog })
+const app = createApp({ basePath: '/api/v5-alpha', loadCatalog })
 
 export const GET = async (request: Request) => await app.fetch(request)

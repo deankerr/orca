@@ -1,6 +1,7 @@
 # Public API V5
 
 V5 is the development name for ORCA's next public data API. It carries no stability promise or public name yet.
+It is served at `/api/v5-alpha`, with reference docs at `/api/v5-alpha/docs`.
 This document records goals, curation principles, working decisions, and open questions;
 experiments establish the implementation.
 
@@ -83,8 +84,13 @@ They may represent planned, abandoned, or enterprise-only features, and ORCA doe
 
 ### Pricing
 
-ORCA takes an opinionated view of pricing. `pricing.*` meters, `discount`, and `overrides` carry the quote.
+ORCA takes an opinionated view of pricing. `pricing` carries declared meter rates beside `discount` and `overrides`.
 
+- Meters are flat, declared Contract keys; upstream's meter record is a storage choice, not the user's shape.
+- A new upstream meter is unpublished until it is declared; meters change rarely.
+- `input` and `output` name upstream `prompt` and `completion`, matching ORCA's and OpenRouter's labels.
+- Other meters keep upstream names; a meter upstream does not quote is null.
+- `overrides` remains an array of records because its shape is volatile.
 - `internal_reasoning` is never published; its values have been misleading across many endpoints.
 - `pricing_json`, `display_pricing`, and `pricing_version_id` are internal representations and are not published.
 
@@ -195,26 +201,26 @@ The first projection reads Retained Events directly because it is simple. Like D
 will likely gain a secondary curated layer that gives ORCA's interpretation decisions stability.
 
 Updates are partial entities, so the Contract translates partial shapes as well as complete ones. Each
-endpoint Contract field declares the catalog entity paths it reads and its value mapping. Current rows,
+Contract field declares the catalog entity paths it reads and its value mapping. Current rows,
 Event snapshots, and Event diffs share the catalog entity shape, so one declaration set serves Listings
 and Events. A changed path that no field reads is curated out, and a change whose mapped sides are equal
 produces nothing. A field that a change touches without supplying its complete sides is unresolved; an
-Event's complete pricing quotes resolve `pricing`. String-set fields translate as added and removed members.
+Event's complete pricing quotes resolve `pricing.overrides`. String-set fields translate as added and removed members.
 
 The 2026-10-25 spike, `v5-events-spike` in `packages/scripts`, ran on the worktree deployment's data:
 
 - The declarations reproduced all 1,560 snapshot endpoints exactly and projected all 124 lifecycle snapshots.
 - Of the latest 4,827 endpoint UPDATEs, 1,879 translated and 2,948 had no Contract change; none was unresolved.
-- `pricing` changed in 1,787; most no-change updates were `derived_service_tier`, `capacity_tpm`, or display pricing.
-- Pricing changes carry whole before and after quotes, which consumers must diff to find the changed meter.
+- Declared meters changed individually, led by `pricing.input` in 1,524; most no-change updates were unpublished fields.
 - The model declarations reproduced all 463 snapshot models and projected all 46 model lifecycle snapshots.
 - Of all 105 model UPDATEs since 2026-10-09, 77 translated and 28 had no Contract change; none was unresolved.
 - Model changes were mostly reasoning configuration, plus `hf_slug`, `description`, author name, and `created_at`.
+- All 84 providers reproduced; of 93 provider UPDATEs, 2 translated and 91 added unpublished `safetyRetention`.
 
 Stored diffs match string arrays by value, so a reordering alone, such as of reasoning efforts, produces no Event.
 Ordered lists therefore translate as member changes and cannot report a new order.
 
-Providers and context fields such as provider names, stats, and listing counts are not yet declared.
+Context fields such as endpoint provider names, stats, and listing counts are not yet declared.
 
 Pricing and stats histories are time series rather than events, but answer the same "over time" question:
 
@@ -243,6 +249,7 @@ Pricing and stats histories are time series rather than events, but answer the s
 - What replaces boolean attributes for selecting capabilities, and how does it distinguish known false from unknown?
 - Should provider-facing `derived_service_tier` labels be published beside `service_tier`?
 - Do `can_abort` or `allowed_passthrough_parameters` change any user decision?
+- What do data policy `trainingOpenRouter` and `safetyRetention` mean, and should they be published?
 - Which `features.*` flags, such as native web search, apply patch, and web fetch, can ORCA explain to users?
 - How should the grid render deprecation dates and tool-choice support?
 - What observation period and maturity justify a public name and a stability promise?
@@ -257,6 +264,5 @@ Pricing and stats histories are time series rather than events, but answer the s
 - Should events follow alert selection and pricing eligibility, or every Contract-visible change?
 - How should observation-only lifecycle alerts and prior-knowledge classification appear?
 - Does a Contract entity in a lifecycle event describe the scan's facts, which can predate current curation?
-- Should record-valued fields such as `pricing.meters` translate per key rather than as whole values?
 - How should multi-source fields resolve when an Event supplies no complete sides for them?
 - Which histories need pagination, given pricing history's complete per-model reads and stats history's larger scale?

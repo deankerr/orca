@@ -2,23 +2,31 @@ import { Provider } from '@orca/contract/provider'
 import { z } from 'zod'
 
 import type { CurrentProviderRow } from '../../catalog/tables/current'
+import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
+import { field, project, translateStored } from './projection'
+import type { Fields } from './projection'
 
 const url = z
   .url({ protocol: /^https?$/u })
   .nullable()
   .catch(null)
 
-const Metadata = JsonObjectFromString.pipe(
-  z.object({
-    byokEnabled: flagOrNull,
-    dataPolicy: z.object({ privacyPolicyURL: url, termsOfServiceURL: url }).nullable().catch(null),
-    datacenters: stringsOrNull,
-    headquarters: textOrNull,
-    statusPageUrl: url,
-  }),
-)
+const fact = (path: string[], schema: z.ZodType, options?: { set?: true }) =>
+  field(['metadata', ...path], schema, options)
+
+/** Provider Contract fields read from the catalog entity; listing fields are added by `toProvider`. */
+export const providerFields = {
+  byok_enabled: fact(['byokEnabled'], flagOrNull),
+  datacenters: fact(['datacenters'], stringsOrNull, { set: true }),
+  headquarters: fact(['headquarters'], textOrNull),
+  id: field(['provider_id'], z.string()),
+  name: field(['display_name'], z.string()),
+  privacy_policy_url: fact(['dataPolicy', 'privacyPolicyURL'], url),
+  status_page_url: fact(['statusPageUrl'], url),
+  terms_of_service_url: fact(['dataPolicy', 'termsOfServiceURL'], url),
+} satisfies Fields
 
 /** Listed endpoints from a provider, by model. */
 export interface ProviderListing {
@@ -31,18 +39,16 @@ export function toProvider(
   row: CurrentProviderRow,
   listing: ProviderListing | undefined,
 ): Provider {
-  const facts = Metadata.parse(row.metadata_json)
+  const metadata = JsonObjectFromString.parse(row.metadata_json)
 
   return Provider.parse({
-    byok_enabled: facts.byokEnabled,
-    datacenters: facts.datacenters,
-    headquarters: facts.headquarters,
-    id: row.provider_id,
+    ...project(providerFields, { ...row, metadata }),
     listed_endpoints: listing?.endpoints ?? 0,
     listed_models: listing?.modelIds.size ?? 0,
-    name: row.display_name,
-    privacy_policy_url: facts.dataPolicy?.privacyPolicyURL ?? null,
-    status_page_url: facts.statusPageUrl,
-    terms_of_service_url: facts.dataPolicy?.termsOfServiceURL ?? null,
   })
+}
+
+/** Stored provider UPDATE to Contract field changes. */
+export function translateProviderUpdate(row: Extract<EventRow, { entity_kind: 'provider' }>) {
+  return translateStored(providerFields, row.change_json)
 }

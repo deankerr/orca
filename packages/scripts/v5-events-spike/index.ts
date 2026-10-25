@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { endpointFields, toEndpoint, translateEndpointUpdate } from '@orca/backend/v5/endpoints'
 import { modelFields, toModel, translateModelUpdate } from '@orca/backend/v5/models'
 import { project } from '@orca/backend/v5/projection'
+import { providerFields, toProvider, translateProviderUpdate } from '@orca/backend/v5/providers'
 
 // Spike: one field declaration set translating complete entities and stored changes.
 const [directory = '/tmp/v5-spike'] = process.argv.slice(2)
@@ -15,6 +16,9 @@ type EndpointEvent = Parameters<typeof translateEndpointUpdate>[0]
 type ModelRow = Parameters<typeof toModel>[0]
 type Model = ReturnType<typeof toModel>
 type ModelEvent = Parameters<typeof translateModelUpdate>[0]
+type ProviderRow = Parameters<typeof toProvider>[0]
+type Provider = ReturnType<typeof toProvider>
+type ProviderEvent = Parameters<typeof translateProviderUpdate>[0]
 
 // oxlint-disable-next-line no-unnecessary-type-parameters -- Each call names the export it reads.
 function load<T>(name: string): T {
@@ -80,6 +84,29 @@ for (const expected of load<{ models: Model[] }>('snapshot.json').models) {
 }
 
 console.log('complete models', { matched: modelsMatched, mismatched: modelMismatches.length })
+
+// Complete providers; listing fields come from the snapshot because they are not declared.
+const providerRows = new Map(
+  load<ProviderRow[]>('providers.json').map((row) => [row.provider_id, row]),
+)
+let providersMatched = 0
+let providerMismatches = 0
+
+for (const expected of load<{ providers: Provider[] }>('snapshot.json').providers) {
+  const row = providerRows.get(expected.id)
+  const listing = {
+    endpoints: expected.listed_endpoints,
+    modelIds: new Set(Array.from({ length: expected.listed_models }, (_, index) => String(index))),
+  }
+
+  if (row !== undefined && isDeepStrictEqual(toProvider(row, listing), expected)) {
+    providersMatched += 1
+  } else {
+    providerMismatches += 1
+  }
+}
+
+console.log('complete providers', { matched: providersMatched, mismatched: providerMismatches })
 
 // Stored changes through the same declarations.
 type Translation = ReturnType<typeof translateEndpointUpdate>
@@ -155,3 +182,9 @@ report(
   translateEndpointUpdate,
 )
 report('model events', load<ModelEvent[]>('model-events.json'), modelFields, translateModelUpdate)
+report(
+  'provider events',
+  load<ProviderEvent[]>('provider-events.json'),
+  providerFields,
+  translateProviderUpdate,
+)

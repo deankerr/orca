@@ -166,8 +166,14 @@ on `google-ai-studio` moved from 2026-03-31 to 2026-06-01. Far-future values are
 - `data_policy.retainsPrompts`
 - `data_policy.retentionDays`
 - `data_policy.requiresUserIDs`
-- `data_policy.safetyRetention` — true on 58 endpoints on 2026-10-23; `false` on embedded provider copies.
+- `data_policy.safetyRetention` — ❓ see below.
 - `data_policy.training`
-- `data_policy.trainingOpenRouter`
+- `data_policy.trainingOpenRouter` — ❓ see below.
 - `data_policy.privacyPolicyURL`
 - `data_policy.termsOfServiceURL`
+
+📊 On 2026-10-23, `safetyRetention` was true on 58 listed endpoints, all `google-vertex`, each with
+`retainsPrompts` false and no `retentionDays`. Provider `dataPolicy` copies gained the key, `false`, on
+81 providers in the 2026-10-19T02 scan. `trainingOpenRouter` was true on 8 listed endpoints, all `:free`
+variants from `nvidia` (6) and `thinkingmachines` (2), each also with `training` and `retainsPrompts` true.
+❓ Neither key is documented; both were present on every listed endpoint.

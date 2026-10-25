@@ -12,7 +12,7 @@ function endpoint(overrides: {
   tag: string
   created_at?: string
   context_length?: number
-  prompt?: string
+  input?: string
   parameters?: string[]
   unlisted_at?: string
 }): Endpoint {
@@ -48,9 +48,19 @@ function endpoint(overrides: {
     moderation_required: false,
     output_modalities: ['text'],
     pricing: {
+      audio: null,
+      audio_output: null,
       discount: 0,
-      meters: { completion: '0.000002', prompt: overrides.prompt ?? '0.000001' },
+      image: null,
+      image_output: null,
+      input: overrides.input ?? '0.000001',
+      input_audio_cache: null,
+      input_cache_read: null,
+      input_cache_write: null,
+      input_cache_write_1h: null,
+      output: '0.000002',
       overrides: null,
+      web_search: null,
     },
     provider: { id: providerId, name: providerId, tag: overrides.tag },
     quantization: null,
@@ -73,11 +83,11 @@ const endpoints = [
   endpoint({
     context_length: 32_768,
     id: 'b',
+    input: '0.0000005',
     model: 'qwen/qwen4',
-    prompt: '0.0000005',
     tag: 'novita',
   }),
-  endpoint({ id: 'c', model: 'xingchen-agi/xing4.0-29b-a4b:free', prompt: '0', tag: 'phala' }),
+  endpoint({ id: 'c', input: '0', model: 'xingchen-agi/xing4.0-29b-a4b:free', tag: 'phala' }),
   endpoint({ id: 'd', model: 'qwen/qwen4', tag: 'gone', unlisted_at: '2026-10-20T00:00:00.000Z' }),
 ]
 
@@ -149,7 +159,7 @@ const providers = [
 ]
 
 const app = createApp({
-  basePath: '/api/v5',
+  basePath: '/api/v5-alpha',
   loadCatalog: async () => ({ as_at: '2026-10-23T01:40:41.466Z', endpoints, models, providers }),
 })
 
@@ -170,12 +180,12 @@ const Spec = z.object({
 })
 
 async function get<T extends z.ZodType>(path: string, schema: T) {
-  const response = await app.request(`http://orca.test/api/v5${path}`)
+  const response = await app.request(`http://orca.test/api/v5-alpha${path}`)
   return { body: schema.parse(await response.json()), response }
 }
 
 async function status(path: string) {
-  const response = await app.request(`http://orca.test/api/v5${path}`)
+  const response = await app.request(`http://orca.test/api/v5-alpha${path}`)
   return response.status
 }
 
@@ -196,13 +206,13 @@ describe('V5 endpoints', () => {
 
   it('applies bounds, search, and status', async () => {
     expect(await ids('/endpoints?min_context_length=100000')).toEqual(['a', 'c'])
-    expect(await ids('/endpoints?max_prompt_price=0.0000005')).toEqual(['b', 'c'])
+    expect(await ids('/endpoints?max_input_price=0.0000005')).toEqual(['b', 'c'])
     expect(await ids('/endpoints?q=qwen%20novita')).toEqual(['b'])
     expect(await ids('/endpoints?status=unlisted')).toEqual(['d'])
   })
 
   it('sorts with unknown values last', async () => {
-    expect(await ids('/endpoints?sort=prompt_price&order=asc')).toEqual(['c', 'b', 'a'])
+    expect(await ids('/endpoints?sort=input_price&order=asc')).toEqual(['c', 'b', 'a'])
     expect(await ids('/endpoints?sort=throughput')).toEqual(['a', 'b', 'c'])
   })
 
@@ -210,7 +220,7 @@ describe('V5 endpoints', () => {
     const { body } = await get('/endpoints?limit=2', Page)
     expect(body.data.map((item) => item.id)).toEqual(['a', 'b'])
     expect(body.total).toBe(3)
-    expect(body.next).toBe('http://orca.test/api/v5/endpoints?limit=2&offset=2')
+    expect(body.next).toBe('http://orca.test/api/v5-alpha/endpoints?limit=2&offset=2')
   })
 
   it('reports invalid parameters as problem details', async () => {
@@ -307,14 +317,14 @@ describe('V5 reference', () => {
   it('publishes every route and contract component', async () => {
     const { body } = await get('/openapi.json', Spec)
     expect(Object.keys(body.paths).toSorted()).toEqual([
-      '/api/v5/endpoints',
-      '/api/v5/endpoints/{id}',
-      '/api/v5/models',
-      '/api/v5/models/{author}/{slug}',
-      '/api/v5/models/{author}/{slug}/endpoints',
-      '/api/v5/providers',
-      '/api/v5/providers/{id}',
-      '/api/v5/providers/{id}/endpoints',
+      '/api/v5-alpha/endpoints',
+      '/api/v5-alpha/endpoints/{id}',
+      '/api/v5-alpha/models',
+      '/api/v5-alpha/models/{author}/{slug}',
+      '/api/v5-alpha/models/{author}/{slug}/endpoints',
+      '/api/v5-alpha/providers',
+      '/api/v5-alpha/providers/{id}',
+      '/api/v5-alpha/providers/{id}/endpoints',
     ])
     expect(Object.keys(body.components.schemas).toSorted()).toEqual([
       'Endpoint',

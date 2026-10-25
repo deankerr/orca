@@ -22,6 +22,7 @@
     "./objects/client": "./convex/objects/client.ts",
     "./v5/endpoints": "./convex/products/v5/endpoints.ts",
     "./v5/models": "./convex/products/v5/models.ts",
+    "./v5/providers": "./convex/products/v5/providers.ts",
     "./v5/projection": "./convex/products/v5/projection.ts",
     "./public-api/v2/schema": "./convex/public_api/v2/schema.ts",
     "./scans/collection": "./convex/scans/collected.ts",

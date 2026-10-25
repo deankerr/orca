@@ -45,21 +45,32 @@ export const EndpointDataPolicy = z
   })
   .meta({ description: 'Upstream data policy for this endpoint.' })
 
+const rate = (description: string) =>
+  MeterRate.nullable().meta({ description: `${description} Null when upstream quotes no rate.` })
+
 export const EndpointPricing = z
   .object({
-    discount: z.number().meta({ description: 'Upstream discount fraction applied to meters.' }),
-    meters: z.record(z.string(), MeterRate).meta({
-      description:
-        'Upstream meter rates in USD, keyed by upstream meter name. Token meters are per token. ' +
-        'Zero rates are preserved; `internal_reasoning` is not published.',
-      example: { completion: '0.00000018', input_cache_read: '0.000000012', prompt: '0.00000006' },
-    }),
+    audio: rate('Audio input rate; upstream `audio`.'),
+    audio_output: rate('Audio output rate; upstream `audio_output`.'),
+    discount: z.number().meta({ description: 'Upstream discount fraction applied to rates.' }),
+    image: rate('Image input rate; upstream `image`.'),
+    image_output: rate('Image output rate; upstream `image_output`.'),
+    input: rate('Text input rate per token; upstream `prompt`.'),
+    input_audio_cache: rate('Cached audio input rate; upstream `input_audio_cache`.'),
+    input_cache_read: rate('Prompt-cache read rate per token.'),
+    input_cache_write: rate('Prompt-cache write rate per token.'),
+    input_cache_write_1h: rate('One-hour prompt-cache write rate per token.'),
+    output: rate('Text output rate per token; upstream `completion`.'),
     overrides: z
       .array(z.record(z.string(), z.unknown()))
       .nullable()
       .meta({ description: 'Upstream conditional pricing, such as long-context rates.' }),
+    web_search: rate('Rate per web search.'),
   })
-  .meta({ description: 'Current price quote.' })
+  .meta({
+    description:
+      'Current price quote in USD. Zero rates are preserved; `internal_reasoning` is not published.',
+  })
 
 export const EndpointStats = z
   .object({

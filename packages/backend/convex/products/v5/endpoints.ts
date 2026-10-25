@@ -2,7 +2,7 @@ import { Endpoint, MeterRate } from '@orca/contract/endpoint'
 import { isPlainObject } from 'remeda'
 import { z } from 'zod'
 
-import { Pricing, decodePricing } from '../../catalog/pricing'
+import { decodePricing } from '../../catalog/pricing'
 import type { CurrentEndpointRow, CurrentStatsRow } from '../../catalog/tables/current'
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
@@ -17,21 +17,9 @@ const strings = z.array(z.string())
 
 const Overrides = z.array(JsonObject)
 
-// Upstream reasoning rates have been misleading across many endpoints.
-const UNPUBLISHED_METERS = new Set(['internal_reasoning'])
-
-function toPricing(value: unknown) {
-  const { discount, meters, overrides } = Pricing.parse(value)
-  return {
-    discount,
-    meters: Object.fromEntries(
-      Object.entries(meters).filter(
-        ([meter, rate]) => !UNPUBLISHED_METERS.has(meter) && MeterRate.safeParse(rate).success,
-      ),
-    ),
-    overrides: overrides === undefined ? null : Overrides.parse(overrides),
-  }
-}
+// Declared meters only: a new upstream meter is unpublished until curated. `internal_reasoning` is
+// omitted because its rates have been misleading across many endpoints.
+const meter = (key: string) => field(['pricing', 'meters', key], MeterRate.nullable().catch(null))
 
 const fact = (key: string, schema: z.ZodType, options?: { set?: true }) =>
   field(['metadata', key], schema, options)
@@ -66,7 +54,22 @@ export const endpointFields = {
   'model.variant': field(['variant'], text),
   moderation_required: fact('moderation_required', flagOrNull),
   output_modalities: field(['output_modalities'], strings, { set: true }),
-  pricing: { read: toPricing, sources: [['pricing']] },
+  'pricing.audio': meter('audio'),
+  'pricing.audio_output': meter('audio_output'),
+  'pricing.discount': field(['pricing', 'discount'], z.number()),
+  'pricing.image': meter('image'),
+  'pricing.image_output': meter('image_output'),
+  'pricing.input': meter('prompt'),
+  'pricing.input_audio_cache': meter('input_audio_cache'),
+  'pricing.input_cache_read': meter('input_cache_read'),
+  'pricing.input_cache_write': meter('input_cache_write'),
+  'pricing.input_cache_write_1h': meter('input_cache_write_1h'),
+  'pricing.output': meter('completion'),
+  'pricing.overrides': {
+    read: (overrides) => (overrides === undefined ? null : Overrides.parse(overrides)),
+    sources: [['pricing', 'overrides']],
+  },
+  'pricing.web_search': meter('web_search'),
   'provider.id': field(['provider_id'], text),
   'provider.tag': field(['provider_tag'], text),
   quantization: fact('quantization', textOrNull),
