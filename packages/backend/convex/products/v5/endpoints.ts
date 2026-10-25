@@ -7,8 +7,7 @@ import type { CurrentEndpointRow, CurrentStatsRow } from '../../catalog/tables/c
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObject, JsonObjectFromString } from '../../json'
-import { CapturedChange } from '../shared/alerts/decode'
-import { field, project, translate } from './projection'
+import { field, project, translateStored } from './projection'
 import type { Fields } from './projection'
 
 // Malformed optional facts are unknown, not invented defaults.
@@ -112,11 +111,8 @@ export function toEndpoint(
   })
 }
 
-const CapturedUpdate = z.object({ changes: z.array(CapturedChange) })
-
 /** Stored endpoint UPDATE to Contract field changes; its complete quotes resolve pricing. */
 export function translateEndpointUpdate(row: EndpointEventRow) {
-  const { changes } = CapturedUpdate.parse(JSON.parse(row.change_json))
   const { pricing } = row.context
   const known =
     pricing === undefined
@@ -129,5 +125,5 @@ export function translateEndpointUpdate(row: EndpointEventRow) {
           },
         ]
 
-  return translate(endpointFields, changes, known)
+  return translateStored(endpointFields, row.change_json, known)
 }

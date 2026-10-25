@@ -2,27 +2,53 @@ import { Model } from '@orca/contract/model'
 import { z } from 'zod'
 
 import type { CurrentModelRow } from '../../catalog/tables/current'
+import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
+import { field, project, translateStored } from './projection'
+import type { Fields } from './projection'
 
-const Metadata = JsonObjectFromString.pipe(
-  z.object({
-    author_display_name: textOrNull,
-    // Upstream has always supplied a description; a missing one is a source failure, not unknown.
-    description: z.string().trim().min(1),
-    hf_slug: textOrNull,
-    knowledge_cutoff: textOrNull,
-    reasoning_config: z
-      .object({
-        default_reasoning_effort: textOrNull,
-        is_mandatory_reasoning: flagOrNull,
-        supported_reasoning_efforts: stringsOrNull,
-      })
-      .nullable()
-      .catch(null),
-    supports_reasoning: flagOrNull,
-  }),
-)
+const text = z.string()
+const strings = z.array(z.string())
+
+const fact = (path: string[], schema: z.ZodType, options?: { set?: true }) =>
+  field(['metadata', ...path], schema, options)
+
+/** Model Contract fields read from the catalog entity; listing fields are added by `toModel`. */
+export const modelFields = {
+  // The author is the model ID prefix.
+  'author.id': {
+    read: (id) => text.parse(id).split('/')[0],
+    sources: [['model_id']],
+  },
+  'author.name': fact(['author_display_name'], textOrNull),
+  created_at: field(['or_created_at'], isoDate),
+  // Upstream has always supplied a description; a missing one is a source failure, not unknown.
+  description: fact(['description'], z.string().trim().min(1)),
+  hf_slug: fact(['hf_slug'], textOrNull),
+  id: field(['model_id'], text),
+  input_modalities: field(['input_modalities'], strings, { set: true }),
+  knowledge_cutoff: fact(['knowledge_cutoff'], textOrNull),
+  name: field(['display_name'], text),
+  output_modalities: field(['output_modalities'], strings, { set: true }),
+  permaslug: field(['permaslug'], text),
+  'reasoning_config.default_reasoning_effort': fact(
+    ['reasoning_config', 'default_reasoning_effort'],
+    textOrNull,
+  ),
+  'reasoning_config.is_mandatory_reasoning': fact(
+    ['reasoning_config', 'is_mandatory_reasoning'],
+    flagOrNull,
+  ),
+  // Stored diffs match string arrays by value, so a reordering alone is not an Event.
+  'reasoning_config.supported_reasoning_efforts': fact(
+    ['reasoning_config', 'supported_reasoning_efforts'],
+    stringsOrNull,
+    { set: true },
+  ),
+  supports_reasoning: fact(['supports_reasoning'], flagOrNull),
+  variant: field(['variant'], text),
+} satisfies Fields
 
 /** Listed endpoints serving a model, by provider. */
 export interface ModelListing {
@@ -32,28 +58,16 @@ export interface ModelListing {
 
 /** Catalog row to V5 contract, with its current listing summary. */
 export function toModel(row: CurrentModelRow, listing: ModelListing | undefined): Model {
-  const facts = Metadata.parse(row.metadata_json)
-  const [author = row.model_id] = row.model_id.split('/')
+  const metadata = JsonObjectFromString.parse(row.metadata_json)
 
   return Model.parse({
-    author: { id: author, name: facts.author_display_name },
-    created_at: isoDate.parse(row.or_created_at),
-    description: facts.description,
-    hf_slug: facts.hf_slug,
-    id: row.model_id,
-    input_modalities: row.input_modalities,
-    knowledge_cutoff: facts.knowledge_cutoff,
+    ...project(modelFields, { ...row, metadata }),
     listed_endpoints: listing?.endpoints ?? 0,
-    name: row.display_name,
-    output_modalities: row.output_modalities,
-    permaslug: row.permaslug,
     provider_ids: [...(listing?.providerIds ?? [])].toSorted(),
-    reasoning_config: {
-      default_reasoning_effort: facts.reasoning_config?.default_reasoning_effort ?? null,
-      is_mandatory_reasoning: facts.reasoning_config?.is_mandatory_reasoning ?? null,
-      supported_reasoning_efforts: facts.reasoning_config?.supported_reasoning_efforts ?? null,
-    },
-    supports_reasoning: facts.supports_reasoning,
-    variant: row.variant,
   })
+}
+
+/** Stored model UPDATE to Contract field changes. */
+export function translateModelUpdate(row: Extract<EventRow, { entity_kind: 'model' }>) {
+  return translateStored(modelFields, row.change_json)
 }

@@ -115,6 +115,7 @@ import type * as products_stats_history_query from "../products/stats_history/qu
 import type * as products_v5_catalog from "../products/v5/catalog.js";
 import type * as products_v5_endpoints from "../products/v5/endpoints.js";
 import type * as products_v5_models from "../products/v5/models.js";
+import type * as products_v5_projection from "../products/v5/projection.js";
 import type * as products_v5_providers from "../products/v5/providers.js";
 import type * as public_api_v2_cache from "../public_api/v2/cache.js";
 import type * as public_api_v2_compatibility from "../public_api/v2/compatibility.js";
@@ -243,6 +244,7 @@ declare const fullApi: ApiFromModules<{
   "products/v5/catalog": typeof products_v5_catalog;
   "products/v5/endpoints": typeof products_v5_endpoints;
   "products/v5/models": typeof products_v5_models;
+  "products/v5/projection": typeof products_v5_projection;
   "products/v5/providers": typeof products_v5_providers;
   "public_api/v2/cache": typeof public_api_v2_cache;
   "public_api/v2/compatibility": typeof public_api_v2_compatibility;

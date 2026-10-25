@@ -207,8 +207,14 @@ The 2026-10-25 spike, `v5-events-spike` in `packages/scripts`, ran on the worktr
 - Of the latest 4,827 endpoint UPDATEs, 1,879 translated and 2,948 had no Contract change; none was unresolved.
 - `pricing` changed in 1,787; most no-change updates were `derived_service_tier`, `capacity_tpm`, or display pricing.
 - Pricing changes carry whole before and after quotes, which consumers must diff to find the changed meter.
+- The model declarations reproduced all 463 snapshot models and projected all 46 model lifecycle snapshots.
+- Of all 105 model UPDATEs since 2026-10-09, 77 translated and 28 had no Contract change; none was unresolved.
+- Model changes were mostly reasoning configuration, plus `hf_slug`, `description`, author name, and `created_at`.
 
-Models and providers, and context fields such as provider names, stats, and listing counts, are not yet declared.
+Stored diffs match string arrays by value, so a reordering alone, such as of reasoning efforts, produces no Event.
+Ordered lists therefore translate as member changes and cannot report a new order.
+
+Providers and context fields such as provider names, stats, and listing counts are not yet declared.
 
 Pricing and stats histories are time series rather than events, but answer the same "over time" question:
 

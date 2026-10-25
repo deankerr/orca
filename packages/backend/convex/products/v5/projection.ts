@@ -1,7 +1,7 @@
 import { isDeepEqual, isPlainObject } from 'remeda'
-import type { z } from 'zod'
+import { z } from 'zod'
 
-import type { CapturedChange } from '../shared/alerts/decode'
+import { CapturedChange } from '../shared/alerts/decode'
 
 /** A path into a catalog entity, the shape shared by current rows, Event snapshots, and Event diffs. */
 export type Source = readonly string[]
@@ -123,11 +123,7 @@ function sourceValue(source: Source, side: Side, leaves: Leaf[], known: Known) {
 }
 
 /** Translate an entity change through the same field declarations as complete entities. */
-export function translate(
-  fields: Fields,
-  changes: CapturedChange[],
-  known: Known = [],
-): Translation {
+function translate(fields: Fields, changes: CapturedChange[], known: Known = []): Translation {
   const touched = touches(changes)
   const leaves = touched.filter((touch): touch is Leaf => touch.kind === 'leaf')
   const result: Translation = { changes: [], ignored: [], unresolved: [] }
@@ -174,4 +170,11 @@ export function translate(
     .map((touch) => touch.path.join('.'))
 
   return result
+}
+
+const CapturedUpdate = z.object({ changes: z.array(CapturedChange) })
+
+/** Translate a stored UPDATE's serialized entity-root diff. */
+export function translateStored(fields: Fields, changeJson: string, known: Known = []) {
+  return translate(fields, CapturedUpdate.parse(JSON.parse(changeJson)).changes, known)
 }
