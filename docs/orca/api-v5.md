@@ -257,7 +257,7 @@ Pricing and stats histories are time series rather than events, but answer the s
 ### Listings
 
 - How should cache lifetimes follow hourly scans and ingestion without serving a stale clock for long?
-- `as_at` is the completed-ingestion clock, but current tables can advance first, so offsets can shift under one `as_at`.
+- `as_at` is the completed-ingestion clock; current tables can advance first, so pages can shift under one `as_at`.
 - Should the web app consume V5 over HTTP, or keep Convex subscriptions over the same canonical shapes?
 
 ### Events
