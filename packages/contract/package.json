@@ -1,0 +1,23 @@
+{
+  "name": "@orca/contract",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./endpoint": "./endpoint.ts",
+    "./model": "./model.ts",
+    "./provider": "./provider.ts",
+    "./slug-search": "./slug-search/slug-search.ts"
+  },
+  "scripts": {
+    "test": "bun run --cwd ../.. test --project contract"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

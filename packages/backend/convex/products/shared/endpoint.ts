@@ -59,7 +59,6 @@ const EndpointMetadata = z
       .catch(null),
     features: z
       .object({
-        supports_implicit_caching: flagOrNull,
         supports_native_web_search: flagOrNull,
       })
       .nullable()
@@ -71,7 +70,6 @@ const EndpointMetadata = z
     limit_rpd: quantity,
     limit_rpm: quantity,
     max_completion_tokens: quantity,
-    max_prompt_images: quantity,
     max_prompt_tokens: quantity,
     max_tokens_per_image: quantity,
     moderation_required: flagOrNull,
@@ -92,10 +90,8 @@ const EndpointMetadata = z
     },
     deranked: facts.is_deranked,
     disabled: facts.is_disabled,
-    implicit_caching: facts.features?.supports_implicit_caching ?? null,
     limits: {
       image_input_tokens: facts.max_tokens_per_image,
-      images_per_input: facts.max_prompt_images,
       requests_per_day: facts.limit_rpd,
       requests_per_minute: facts.limit_rpm,
       text_input_tokens: facts.max_prompt_tokens,

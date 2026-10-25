@@ -1,0 +1,22 @@
+{
+  "name": "@orca/api",
+  "private": true,
+  "type": "module",
+  "exports": "./app.ts",
+  "scripts": {
+    "test": "bun run --cwd ../.. test --project api"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.6.3",
+    "@orca/contract": "workspace:*",
+    "@scalar/hono-api-reference": "^0.12.13",
+    "hono": "^4.13.13",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

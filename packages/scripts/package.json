@@ -4,9 +4,12 @@
   "type": "module",
   "scripts": {
     "ingestion-load": "bun run ingestion-load/index.ts",
-    "test": "bun run --cwd ../.. test --project scripts"
+    "scan-download": "bun run scan-download/index.ts",
+    "test": "bun run --cwd ../.. test --project scripts",
+    "v5-events-spike": "bun run v5-events-spike/index.ts"
   },
   "dependencies": {
+    "@orca/backend": "workspace:*",
     "commander": "^15.0.0"
   },
   "devDependencies": {

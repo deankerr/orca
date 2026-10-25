@@ -42,7 +42,7 @@ export const endpointAttributeSets = {
     ['reasoning'],
     ['tools'],
     ['structured_outputs', 'response_format'],
-    ['implicit_caching', 'caching'],
+    ['caching'],
     ['native_web_search'],
     ['moderated'],
     ['free'],
@@ -50,7 +50,6 @@ export const endpointAttributeSets = {
   limits: [
     ['max_text_input_tokens'],
     ['max_image_input_tokens'],
-    ['max_images_per_input'],
     ['max_requests_per_minute'],
     ['max_requests_per_day'],
   ],

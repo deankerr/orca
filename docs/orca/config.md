@@ -13,7 +13,7 @@ Bun remains the package manager and report bundler. `.node-version` selects Node
 and CI; the minimum is 24.2 for `import.meta.main`. `bun run test` runs Vitest on Node. Use
 `bun run test:watch` for watch mode and `--project backend` (or another workspace name) to select a suite.
 
-`vitest.config.ts` owns six projects. Backend and Discord sender use `edge-runtime`; the other four use
+`vitest.config.ts` owns eight projects. Backend and Discord sender use `edge-runtime`; the other six use
 Node. Test files stay isolated, and spies restore automatically. `bun run test:coverage` uses V8 coverage;
 it does not instrument the Bun subprocess that builds HTML reports. That CLI is exercised with real
 bundling and output assertions.
@@ -101,6 +101,8 @@ Backend paths below are relative to `packages/backend/convex`.
 | Discord frequent pricing        | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
 | Ordinary pricing eligibility    | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
 | Feed page request               | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
+| V5 alpha snapshot memo          | 60 seconds per server instance; failed reads are not memoized                    | `apps/web/app/api/v5-alpha`        |
+| V5 alpha response cache         | `max-age=60`, `s-maxage=300`, `stale-while-revalidate=3600`                      | `packages/api/http.ts`             |
 | Public API V2 shared cache      | `s-maxage=900` (15 minutes); `stale-while-revalidate=3600`                       | `public_api/v2/http.ts`            |
 
 ## WorkOS and deployment tooling

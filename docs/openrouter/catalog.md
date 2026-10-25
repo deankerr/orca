@@ -32,11 +32,19 @@ is the author slug (`openai` in that example).
 A colon suffix names a variant in observation scopes and endpoint identifiers:
 `openai/gpt-oss-120b:free`, `anthropic/claude-3.7-sonnet:thinking`.
 
-- Observed variant suffixes include `free`, `thinking`, and `exacto`.
+- Observed variant suffixes include `free`, `batch`, `thinking`, and `exacto`.
 - The unsuffixed slug is the standard variant.
 
 ⚠️ The nested `model.slug` on an endpoint payload identifies the base model. Variant identity is
 carried by endpoint fields such as `model_variant_slug`, not by a separate variant model record.
+
+`:batch` endpoints accept many input messages and eventually return as many outputs. Batch is not a
+service tier on the priority/flex spectrum.
+
+- 📊 On 2026-10-23, 79 batch models had 81 endpoints, led by `openai` 37, `anthropic` 15, and `google-vertex` 12.
+- Batch endpoints use distinct adapters, such as `AnthropicBatchAdapter`, and carried no `stats` on 2026-10-23.
+- Prices are quoted with `discount` 0; prompt rates were 0.5× the same-tag standard rate on 64 of 73 pairs.
+- Most `openai` and `anthropic` batch endpoints are BYOK-only; see `is_byok_only` in `endpoints.md`.
 
 ### `permaslug`
 
