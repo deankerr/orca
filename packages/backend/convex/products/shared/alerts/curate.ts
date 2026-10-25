@@ -75,7 +75,6 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
       'max_completion_tokens',
       'max_prompt_tokens',
       'max_tokens_per_image',
-      'max_prompt_images',
       'limit_rpm',
       'limit_rpd',
       'quantization',
@@ -101,7 +100,7 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
       'discount',
       'is_scheduled',
     ],
-    features: ['supports_implicit_caching', 'supports_native_web_search'],
+    features: ['supports_native_web_search'],
     data_policy: ['training', 'canPublish', 'requiresUserIDs', 'retainsPrompts', 'retentionDays'],
   },
   model: {

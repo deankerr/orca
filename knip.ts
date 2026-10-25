@@ -57,6 +57,9 @@ const config: KnipConfig = {
     'apps/web': {
       entry: ['scripts/*.ts', '**/*.test.ts'],
     },
+    'packages/api': {
+      entry: ['**/*.test.ts'],
+    },
     'packages/backend': {
       convex: false,
       entry: [
@@ -64,6 +67,9 @@ const config: KnipConfig = {
         'convex/**/*.test.ts',
       ],
       includeEntryExports: true,
+    },
+    'packages/contract': {
+      entry: ['**/*.test.ts'],
     },
     'packages/discord-sender': {
       entry: convexEntries('packages/discord-sender', 'src/component', discordSenderPackage),

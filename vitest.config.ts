@@ -40,6 +40,14 @@ export default defineConfig({
         test: { environment: 'node', include: ['src/**/*.test.ts'], name: 'logos' },
       },
       {
+        root: 'packages/api',
+        test: { environment: 'node', include: ['**/*.test.ts'], name: 'api' },
+      },
+      {
+        root: 'packages/contract',
+        test: { environment: 'node', include: ['**/*.test.ts'], name: 'contract' },
+      },
+      {
         root: 'packages/json-profile',
         test: { environment: 'node', include: ['**/*.test.ts'], name: 'json-profile' },
       },

@@ -13,7 +13,7 @@ Bun remains the package manager and report bundler. `.node-version` selects Node
 and CI; the minimum is 24.2 for `import.meta.main`. `bun run test` runs Vitest on Node. Use
 `bun run test:watch` for watch mode and `--project backend` (or another workspace name) to select a suite.
 
-`vitest.config.ts` owns six projects. Backend and Discord sender use `edge-runtime`; the other four use
+`vitest.config.ts` owns eight projects. Backend and Discord sender use `edge-runtime`; the other six use
 Node. Test files stay isolated, and spies restore automatically. `bun run test:coverage` uses V8 coverage;
 it does not instrument the Bun subprocess that builds HTML reports. That CLI is exercised with real
 bundling and output assertions.

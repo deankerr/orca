@@ -6,3 +6,6 @@
 
 Observation markers: ⚠️ trap, 🔄 volatile,
 📊 measurement, ❓ unresolved, 💤 outside current scope.
+
+Publication markers: 🚫 ORCA has decided never to publish the field; 💤 also covers fields not published for now.
+Reasons belong in `docs/orca/api-v5.md`.

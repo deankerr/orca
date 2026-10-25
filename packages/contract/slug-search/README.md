@@ -1,6 +1,6 @@
-# Endpoint-grid slug search
+# Slug search
 
-Search targets model slugs and provider tags, preserving punctuation that users copy into code.
+Endpoint search in the grid and API targets model slugs and provider tags, preserving punctuation that users copy into code.
 Display names, fuzzy matching, typo correction, and numeric aliases are outside its scope.
 
 Every whitespace-separated query token must match, but tokens can match different fields of an

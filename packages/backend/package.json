@@ -19,6 +19,7 @@
     "./alerts/facts": "./convex/products/shared/alerts/facts.ts",
     "./alerts/pricing": "./convex/products/shared/alerts/pricing.ts",
     "./monitor": "./convex/products/monitor/query.ts",
+    "./objects/client": "./convex/objects/client.ts",
     "./public-api/v2/schema": "./convex/public_api/v2/schema.ts",
     "./scans/collection": "./convex/scans/collected.ts",
     "./scans/analysis": "./convex/scan_analysis/profile.ts"
@@ -32,6 +33,7 @@
     "@convex-dev/workpool": "0.4.14",
     "@discordjs/builders": "^1.14.1",
     "@noble/hashes": "^2.4.0",
+    "@orca/contract": "workspace:*",
     "@orca/discord-sender": "workspace:*",
     "@orca/json-profile": "workspace:*",
     "aws4fetch": "^1.0.20",

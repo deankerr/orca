@@ -1,5 +1,6 @@
 'use client'
 
+import { createSlugSearcher } from '@orca/contract/slug-search'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -28,7 +29,6 @@ import { EndpointsEmptyState } from './endpoints-empty-state'
 import { DataGridFooter } from './footer'
 import { DataGridPopoverProvider } from './popovers/popover-handle'
 import { hasEndpointGridQuery } from './query-state'
-import { createSlugSearcher } from './slug-search/slug-search'
 import { useEndpointFocusState } from './use-endpoint-focus-state'
 import { useEndpointQueryState } from './use-endpoint-query-state'
 import { useEndpointSortState } from './use-endpoint-sort-state'

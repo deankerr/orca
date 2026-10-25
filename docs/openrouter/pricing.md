@@ -8,10 +8,9 @@ signals with different purposes, not interchangeable copies or a consistency hie
 | `pricing.*` rate fields | Normalized rates currently presented                       |
 | `pricing.discount`      | Fractional adjustment already reflected in presented rates |
 | `pricing.overrides`     | Opaque conditional-pricing definition                      |
-| `display_pricing`       | Presentation-oriented pricing data                         |
-| `pricing_json`          | Opaque adapter-specific source pricing object              |
-| `pricing_version_id`    | Opaque upstream pricing revision identity                  |
-| `tiers`                 | Named service-tier pricing views                           |
+| `display_pricing` 🚫    | Presentation-oriented pricing data                         |
+| `pricing_json` 🚫       | Opaque adapter-specific source pricing object              |
+| `pricing_version_id` 🚫 | Opaque upstream pricing revision identity                  |
 
 - Prices can be extremely small decimal values.
 - ⚠️ A small price movement is not evidence of floating-point jitter or meaningless noise.
@@ -23,7 +22,7 @@ contains the additional pricing representations used for comprehensive change de
 
 The public response includes normalized `pricing` fields such as `prompt`, `completion`,
 `input_cache_read`, and `discount`. The frontend bundle also supplies `display_pricing`,
-`pricing_json`, `pricing_version_id`, and `tiers`. Field presence differs between the surfaces.
+`pricing_json`, and `pricing_version_id`. Field presence differs between the surfaces.
 
 ## `pricing`
 
@@ -74,7 +73,7 @@ does not imply low cost or low importance for workloads that use them.
 - `image` prices image input; `image_output` prices provider-side image generation.
 - OpenRouter presents `image` and `image_output` per thousand tokens rather than per million tokens.
 - `audio` prices audio input; `input_audio_cache` prices cached audio input.
-- `internal_reasoning` prices native reasoning tokens when an endpoint exposes a distinct reasoning rate.
+- `internal_reasoning` 🚫 prices native reasoning tokens when an endpoint exposes a distinct reasoning rate.
 
 ## `pricing.discount`
 
@@ -108,6 +107,9 @@ frontend bundle. Rows have no schedule discriminator and remain open to addition
 206 with prompt-length conditions and seven with schedules. No mixed schedule/context arrays
 appeared in that corpus; this does not constrain future representations.
 
+📊 On 2026-10-23, 216 of 1,457 text endpoints carried 237 override rows. 209 rows conditioned on
+`min_prompt_tokens`, most often 272,000 (129) or 200,000 (51); 26 carried `utc_start`/`utc_end`.
+
 Schedules vary and do not provide a universal base price or default band.
 
 The scheduled rows in that corpus used three condition shapes:
@@ -131,7 +133,7 @@ varied in cache-write and audio meter coverage. These are observations, not a cl
 a view for presentation, not an authored-pricing source.
 
 - Rows use `kind: "token"`, `"unit"`, or `"schedule"` in current observations.
-- `display_pricing[].tiers` is distinct from the endpoint's `tiers` object.
+- `display_pricing[].tiers` holds context-length bands labelled like `≤272K` and `>272K`, not service tiers.
 - 🔄 Presentation data can change with normalized rates or independently of them.
 
 Schedule rows expose `scheduleWindows`; DeepSeek also exposed `scheduleExceptions` with numeric
@@ -158,20 +160,20 @@ configuration such as thresholds, window bounds, and multipliers.
 
 ## `tiers`
 
-`tiers` describes named service tiers such as flex or priority. It is distinct from both
-`display_pricing[].tiers` and `pricing.overrides`.
+From mid-July 2026 to 2026-08-31, `tiers` nested `flex` and `priority` pricing views on standard
+endpoints. Separate tier endpoints with their own `pricing` replaced it; see service tiers in `endpoints.md`.
 
 ## Change-signal relationships
 
 Changes to these representations are independent observations; simultaneous movement does not
 establish causation.
 
-| Changed signal          | Fields that can remain stable                                    |
-| ----------------------- | ---------------------------------------------------------------- |
-| `pricing.discount`      | `pricing_json`, `pricing_version_id`                             |
-| Active normalized rates | `pricing.overrides`, `pricing_json`, `pricing_version_id`        |
-| `pricing_version_id`    | `pricing_json`, normalized `pricing`, `display_pricing`, `tiers` |
-| `display_pricing`       | Normalized rates and authored-pricing signals                    |
+| Changed signal          | Fields that can remain stable                             |
+| ----------------------- | --------------------------------------------------------- |
+| `pricing.discount`      | `pricing_json`, `pricing_version_id`                      |
+| Active normalized rates | `pricing.overrides`, `pricing_json`, `pricing_version_id` |
+| `pricing_version_id`    | `pricing_json`, normalized `pricing`, `display_pricing`   |
+| `display_pricing`       | Normalized rates and authored-pricing signals             |
 
 A complete `display_pricing` array includes active headline prices, so its movement does not
 establish that a schedule definition changed.
@@ -197,3 +199,4 @@ represent earlier feature adoption.
 In the working inventory inspected on 2026-10-04, one vintage model endpoint used
 `internal_reasoning` as a distinct rate; around 100 Gemini endpoints exposed misleading values.
 These are approximate inventory observations, not a prevalence measurement over a defined corpus.
+📊 On 2026-10-23, 91 of 1,457 text endpoints carried an `internal_reasoning` meter.

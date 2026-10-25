@@ -54,7 +54,7 @@ function tokenizeSlugField(value: string) {
 
     // Add suffixes that begin immediately after a slug boundary
     for (let index = 1; index < slug.length; index += 1) {
-      if (SLUG_BOUNDARY_CHARS.has(slug[index - 1])) {
+      if (SLUG_BOUNDARY_CHARS.has(slug.charAt(index - 1))) {
         tokens.add(slug.slice(index))
       }
     }

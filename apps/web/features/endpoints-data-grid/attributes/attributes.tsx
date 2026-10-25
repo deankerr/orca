@@ -151,22 +151,6 @@ export const attributes = defineAttributes({
     }),
   },
 
-  implicit_caching: {
-    color: 'cyan',
-    description: (
-      <>
-        Provider caches prompts automatically without explicit{' '}
-        <InlineCode>cache_control</InlineCode>.
-      </>
-    ),
-    icon: Database,
-    key: 'implicit_caching',
-    label: 'Implicit Caching',
-    resolve: (endpoint) => ({
-      active: endpoint.implicit_caching ?? false,
-    }),
-  },
-
   // Features (OpenRouter)
   moderated: {
     color: 'amber',
@@ -365,20 +349,6 @@ export const attributes = defineAttributes({
         endpoint.limits?.image_input_tokens !== undefined &&
         endpoint.limits.image_input_tokens !== null,
       value: endpoint.limits?.image_input_tokens?.toLocaleString(),
-    }),
-  },
-
-  max_images_per_input: {
-    color: 'yellow',
-    description: 'Number of images allowed in a single request.',
-    icon: Image,
-    key: 'max_images_per_input',
-    label: 'Max Images',
-    resolve: (endpoint) => ({
-      active:
-        endpoint.limits?.images_per_input !== undefined &&
-        endpoint.limits.images_per_input !== null,
-      value: endpoint.limits?.images_per_input?.toLocaleString(),
     }),
   },
 
