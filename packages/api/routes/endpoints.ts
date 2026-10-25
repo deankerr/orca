@@ -15,13 +15,14 @@ import {
   problemHeaders,
 } from '../http'
 import type { LoadCatalog } from '../http'
+import { orderRequiresSort } from '../select'
 
 const listEndpoints = createRoute({
   description: 'Search, filter, and sort endpoint listings.',
   method: 'get',
   operationId: 'listEndpoints',
   path: '/endpoints',
-  request: { query: EndpointSelection.extend(Paging.shape) },
+  request: { query: orderRequiresSort(EndpointSelection.extend(Paging.shape)) },
   responses: {
     200: {
       content: { 'application/json': { schema: pageOf(Endpoint) } },

@@ -17,13 +17,14 @@ import {
 } from '../http'
 import type { LoadCatalog } from '../http'
 import { ModelSelection, selectModels } from '../models'
+import { orderRequiresSort } from '../select'
 
 const listModels = createRoute({
   description: 'Search, filter, and sort known models, including those without listed endpoints.',
   method: 'get',
   operationId: 'listModels',
   path: '/models',
-  request: { query: ModelSelection.extend(Paging.shape) },
+  request: { query: orderRequiresSort(ModelSelection.extend(Paging.shape)) },
   responses: {
     200: {
       content: { 'application/json': { schema: pageOf(Model) } },
@@ -56,7 +57,7 @@ const listModelEndpoints = createRoute({
   method: 'get',
   operationId: 'listModelEndpoints',
   path: '/models/{author}/{slug}/endpoints',
-  request: { params: ModelPath, query: EndpointSelection.extend(Paging.shape) },
+  request: { params: ModelPath, query: orderRequiresSort(EndpointSelection.extend(Paging.shape)) },
   responses: {
     200: {
       content: { 'application/json': { schema: pageOf(Endpoint) } },

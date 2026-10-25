@@ -17,6 +17,7 @@ import {
 } from '../http'
 import type { LoadCatalog } from '../http'
 import { ProviderSelection, selectProviders } from '../providers'
+import { orderRequiresSort } from '../select'
 
 const ProviderPath = z.object({
   id: z.string().meta({ description: 'Provider slug.', example: 'deepinfra' }),
@@ -27,7 +28,7 @@ const listProviders = createRoute({
   method: 'get',
   operationId: 'listProviders',
   path: '/providers',
-  request: { query: ProviderSelection.extend(Paging.shape) },
+  request: { query: orderRequiresSort(ProviderSelection.extend(Paging.shape)) },
   responses: {
     200: {
       content: { 'application/json': { schema: pageOf(Provider) } },
@@ -60,7 +61,10 @@ const listProviderEndpoints = createRoute({
   method: 'get',
   operationId: 'listProviderEndpoints',
   path: '/providers/{id}/endpoints',
-  request: { params: ProviderPath, query: EndpointSelection.extend(Paging.shape) },
+  request: {
+    params: ProviderPath,
+    query: orderRequiresSort(EndpointSelection.extend(Paging.shape)),
+  },
   responses: {
     200: {
       content: { 'application/json': { schema: pageOf(Endpoint) } },

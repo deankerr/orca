@@ -171,7 +171,7 @@ const Page = z.object({
 })
 const One = z.object({ data: Endpoint })
 const OneModel = z.object({ data: Model })
-const Problem = z.object({ title: z.string() })
+const Problem = z.object({ detail: z.string().optional(), title: z.string() })
 const Spec = z.object({
   components: z.object({
     schemas: z.record(z.string(), z.looseObject({ properties: z.object({}).loose() })),
@@ -211,6 +211,19 @@ describe('V5 endpoints', () => {
     expect(await ids('/endpoints?status=unlisted')).toEqual(['d'])
   })
 
+  it('filters exponent-form rates by value', async () => {
+    const exponent = endpoint({ id: 'e', input: '5e-7', model: 'qwen/qwen4', tag: 'novita' })
+    const exponentApp = createApp({
+      basePath: '/api/v5-alpha',
+      loadCatalog: async () => ({ as_at: null, endpoints: [exponent], models, providers }),
+    })
+    const response = await exponentApp.request(
+      'http://orca.test/api/v5-alpha/endpoints?max_input_price=0.000001',
+    )
+    const body = Page.parse(await response.json())
+    expect(body.data.map((item) => item.id)).toEqual(['e'])
+  })
+
   it('sorts with unknown values last', async () => {
     expect(await ids('/endpoints?sort=input_price&order=asc')).toEqual(['c', 'b', 'a'])
     expect(await ids('/endpoints?sort=throughput')).toEqual(['a', 'b', 'c'])
@@ -228,6 +241,14 @@ describe('V5 endpoints', () => {
     expect(response.status).toBe(400)
     expect(response.headers.get('Content-Type')).toContain('application/problem+json')
     expect(body.title).toBe('Invalid parameters')
+  })
+
+  it('rejects a direction without a sort key', async () => {
+    for (const path of ['/endpoints?order=asc', '/models?order=asc', '/providers?order=asc']) {
+      const { body, response } = await get(path, Problem)
+      expect(response.status).toBe(400)
+      expect(body.detail).toContain('`order` requires `sort`.')
+    }
   })
 
   it('gets one endpoint by UUID', async () => {

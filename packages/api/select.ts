@@ -27,8 +27,22 @@ export function matchesStatus(listed: boolean, status: 'listed' | 'unlisted' | '
 }
 
 export const Order = z.enum(['asc', 'desc']).optional().meta({
-  description: 'Sort direction; `desc` by default. Unknown values sort last in either direction.',
+  description:
+    'Direction for `sort`, which it requires; `desc` by default. Unknown values sort last in either direction.',
 })
+
+/** Reject `order` without `sort`, which would otherwise be silently ignored. */
+export function orderRequiresSort<T extends z.ZodType<{ order?: string; sort?: string }>>(
+  schema: T,
+) {
+  return schema.refine(
+    (selection) => selection.order === undefined || selection.sort !== undefined,
+    {
+      message: '`order` requires `sort`.',
+      path: ['order'],
+    },
+  )
+}
 
 /** Numeric ordering with unknown values last in either direction. */
 export function compareBy<T>(key: (entity: T) => number | null, order: 'asc' | 'desc' = 'desc') {

@@ -5,11 +5,11 @@ const flag = (description: string) => z.boolean().nullable().meta({ description 
 const count = (description: string) =>
   z.number().int().nonnegative().nullable().meta({ description })
 
-/** Upstream meter rate; sentinel values such as router `-1` are not rates. */
+/** Upstream meter rate, including exponent form; sentinel values such as router `-1` are not rates. */
 export const MeterRate = z
   .string()
   // oxlint-disable-next-line require-unicode-regexp -- The OpenAPI generator copies regex flags into `pattern`.
-  .regex(/^\d+(?:\.\d+)?$/)
+  .regex(/^\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?$/)
   .meta({ description: 'Upstream decimal string, preserving its precision.', example: '0.0000025' })
 
 export const EndpointModel = z

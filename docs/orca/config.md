@@ -101,6 +101,8 @@ Backend paths below are relative to `packages/backend/convex`.
 | Discord frequent pricing        | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`    |
 | Ordinary pricing eligibility    | Suppress discount adjustments ≤2 percentage points; require a meter change ≥2%   | `products/shared/alerts/filter.ts` |
 | Feed page request               | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`            |
+| V5 alpha snapshot memo          | 60 seconds per server instance; failed reads are not memoized                    | `apps/web/app/api/v5-alpha`        |
+| V5 alpha response cache         | `max-age=60`, `s-maxage=300`, `stale-while-revalidate=3600`                      | `packages/api/http.ts`             |
 | Public API V2 shared cache      | `s-maxage=900` (15 minutes); `stale-while-revalidate=3600`                       | `public_api/v2/http.ts`            |
 
 ## WorkOS and deployment tooling
