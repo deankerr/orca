@@ -1,13 +1,12 @@
 import { ConvexError } from 'convex/values'
-import type { Infer } from 'convex/values'
 import { z } from 'zod'
 
 import { Endpoint, Model, Provider } from '../../../catalog/entities'
-import { Pricing } from '../../../catalog/pricing'
-import type { pricing } from '../../../catalog/pricing'
+import { decodePricing } from '../../../catalog/pricing'
+import type { Pricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
 
-const CapturedChange = z.object({
+export const CapturedChange = z.object({
   get changes() {
     return z.array(CapturedChange).optional()
   },
@@ -96,13 +95,4 @@ function fields(changes: CapturedChange[], parent: string[] = []): Field[] {
 
     return fields(change.changes, path)
   })
-}
-
-/** Decode the same stored quote representation used by Catalog and Pricing History. */
-function decodePricing(quote: Infer<typeof pricing>) {
-  const { overrides_json, ...prices } = quote
-
-  const overrides: unknown = overrides_json === undefined ? undefined : JSON.parse(overrides_json)
-
-  return Pricing.parse({ ...prices, ...(overrides === undefined ? {} : { overrides }) })
 }

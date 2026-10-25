@@ -5,7 +5,8 @@
   "scripts": {
     "scan-analysis": "bun run scan-analysis/index.ts",
     "scan-download": "bun run scan-download/index.ts",
-    "test": "bun run --cwd ../.. test --project scripts"
+    "test": "bun run --cwd ../.. test --project scripts",
+    "v5-events-spike": "bun run v5-events-spike/index.ts"
   },
   "dependencies": {
     "@orca/backend": "workspace:*",

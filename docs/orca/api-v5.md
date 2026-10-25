@@ -194,9 +194,21 @@ Working shape, pending a spike:
 The first projection reads Retained Events directly because it is simple. Like Discord alerts, events
 will likely gain a secondary curated layer that gives ORCA's interpretation decisions stability.
 
-Updates are partial entities, so the Contract should translate partial shapes as well as complete ones.
-The V5 adapters are currently parsers over complete current-view rows; partial translation needs each
-Contract field to declare its upstream sources and value mapping, so Listings and Events share one mapping.
+Updates are partial entities, so the Contract translates partial shapes as well as complete ones. Each
+endpoint Contract field declares the catalog entity paths it reads and its value mapping. Current rows,
+Event snapshots, and Event diffs share the catalog entity shape, so one declaration set serves Listings
+and Events. A changed path that no field reads is curated out, and a change whose mapped sides are equal
+produces nothing. A field that a change touches without supplying its complete sides is unresolved; an
+Event's complete pricing quotes resolve `pricing`. String-set fields translate as added and removed members.
+
+The 2026-10-25 spike, `v5-events-spike` in `packages/scripts`, ran on the worktree deployment's data:
+
+- The declarations reproduced all 1,560 snapshot endpoints exactly and projected all 124 lifecycle snapshots.
+- Of the latest 4,827 endpoint UPDATEs, 1,879 translated and 2,948 had no Contract change; none was unresolved.
+- `pricing` changed in 1,787; most no-change updates were `derived_service_tier`, `capacity_tpm`, or display pricing.
+- Pricing changes carry whole before and after quotes, which consumers must diff to find the changed meter.
+
+Models and providers, and context fields such as provider names, stats, and listing counts, are not yet declared.
 
 Pricing and stats histories are time series rather than events, but answer the same "over time" question:
 
@@ -239,5 +251,6 @@ Pricing and stats histories are time series rather than events, but answer the s
 - Should events follow alert selection and pricing eligibility, or every Contract-visible change?
 - How should observation-only lifecycle alerts and prior-knowledge classification appear?
 - Does a Contract entity in a lifecycle event describe the scan's facts, which can predate current curation?
-- How do partial changes translate when one Contract field derives from several upstream fields, such as pricing?
+- Should record-valued fields such as `pricing.meters` translate per key rather than as whole values?
+- How should multi-source fields resolve when an Event supplies no complete sides for them?
 - Which histories need pagination, given pricing history's complete per-model reads and stats history's larger scale?

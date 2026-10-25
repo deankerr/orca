@@ -1,67 +1,28 @@
 import { Endpoint, MeterRate } from '@orca/contract/endpoint'
+import { isPlainObject } from 'remeda'
 import { z } from 'zod'
 
+import { Pricing, decodePricing } from '../../catalog/pricing'
 import type { CurrentEndpointRow, CurrentStatsRow } from '../../catalog/tables/current'
+import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObject, JsonObjectFromString } from '../../json'
+import { CapturedChange } from '../shared/alerts/decode'
+import { field, project, translate } from './projection'
+import type { Fields } from './projection'
 
 // Malformed optional facts are unknown, not invented defaults.
 const count = z.number().int().nonnegative().nullable().catch(null)
-
-const Metadata = JsonObjectFromString.pipe(
-  z.object({
-    context_length: count,
-    data_policy: z
-      .object({
-        canPublish: flagOrNull,
-        requiresUserIDs: flagOrNull,
-        retainsPrompts: flagOrNull,
-        retentionDays: count,
-        training: flagOrNull,
-      })
-      .nullable()
-      .catch(null),
-    features: z
-      .object({
-        supports_native_web_search: flagOrNull,
-      })
-      .nullable()
-      .catch(null),
-    has_chat_completions: flagOrNull,
-    has_completions: flagOrNull,
-    is_deranked: flagOrNull,
-    is_disabled: flagOrNull,
-    is_zdr: flagOrNull,
-    limit_rpd: count,
-    limit_rpm: count,
-    max_completion_tokens: count,
-    max_prompt_tokens: count,
-    max_tokens_per_image: count,
-    moderation_required: flagOrNull,
-    quantization: textOrNull,
-    supported_parameters: stringsOrNull,
-    supports_reasoning: flagOrNull,
-  }),
-)
-
-type Facts = z.infer<typeof Metadata>
+const text = z.string()
+const strings = z.array(z.string())
 
 const Overrides = z.array(JsonObject)
-
-function toDataPolicy(policy: Facts['data_policy']): Endpoint['data_policy'] {
-  return {
-    can_publish: policy?.canPublish ?? null,
-    requires_user_ids: policy?.requiresUserIDs ?? null,
-    retains_prompts: policy?.retainsPrompts ?? null,
-    retention_days: policy?.retentionDays ?? null,
-    training: policy?.training ?? null,
-  }
-}
 
 // Upstream reasoning rates have been misleading across many endpoints.
 const UNPUBLISHED_METERS = new Set(['internal_reasoning'])
 
-function toPricing({ discount, meters, overrides_json }: CurrentEndpointRow['pricing']) {
+function toPricing(value: unknown) {
+  const { discount, meters, overrides } = Pricing.parse(value)
   return {
     discount,
     meters: Object.fromEntries(
@@ -69,7 +30,61 @@ function toPricing({ discount, meters, overrides_json }: CurrentEndpointRow['pri
         ([meter, rate]) => !UNPUBLISHED_METERS.has(meter) && MeterRate.safeParse(rate).success,
       ),
     ),
-    overrides: overrides_json === undefined ? null : Overrides.parse(JSON.parse(overrides_json)),
+    overrides: overrides === undefined ? null : Overrides.parse(overrides),
+  }
+}
+
+const fact = (key: string, schema: z.ZodType, options?: { set?: true }) =>
+  field(['metadata', key], schema, options)
+const policy = (key: string, schema: z.ZodType) => field(['metadata', 'data_policy', key], schema)
+
+type EndpointEventRow = Extract<EventRow, { entity_kind: 'endpoint' }>
+
+/** Endpoint Contract fields read from the catalog entity; context fields are added by `toEndpoint`. */
+export const endpointFields = {
+  context_length: fact('context_length', count),
+  'data_policy.can_publish': policy('canPublish', flagOrNull),
+  'data_policy.requires_user_ids': policy('requiresUserIDs', flagOrNull),
+  'data_policy.retains_prompts': policy('retainsPrompts', flagOrNull),
+  'data_policy.retention_days': policy('retentionDays', count),
+  'data_policy.training': policy('training', flagOrNull),
+  has_chat_completions: fact('has_chat_completions', flagOrNull),
+  has_completions: fact('has_completions', flagOrNull),
+  id: field(['endpoint_id'], text),
+  input_modalities: field(['input_modalities'], strings, { set: true }),
+  is_deranked: fact('is_deranked', flagOrNull),
+  is_disabled: fact('is_disabled', flagOrNull),
+  is_zdr: fact('is_zdr', flagOrNull),
+  label: field(['provider_display_name'], text),
+  limit_rpd: fact('limit_rpd', count),
+  limit_rpm: fact('limit_rpm', count),
+  max_completion_tokens: fact('max_completion_tokens', count),
+  max_prompt_tokens: fact('max_prompt_tokens', count),
+  max_tokens_per_image: fact('max_tokens_per_image', count),
+  'model.created_at': field(['model_or_created_at'], isoDate),
+  'model.id': field(['model_id'], text),
+  'model.name': field(['model_display_name'], text),
+  'model.variant': field(['variant'], text),
+  moderation_required: fact('moderation_required', flagOrNull),
+  output_modalities: field(['output_modalities'], strings, { set: true }),
+  pricing: { read: toPricing, sources: [['pricing']] },
+  'provider.id': field(['provider_id'], text),
+  'provider.tag': field(['provider_tag'], text),
+  quantization: fact('quantization', textOrNull),
+  supported_parameters: fact('supported_parameters', stringsOrNull, { set: true }),
+  supports_native_web_search: field(
+    ['metadata', 'features', 'supports_native_web_search'],
+    flagOrNull,
+  ),
+  supports_reasoning: fact('supports_reasoning', flagOrNull),
+} satisfies Fields
+
+/** The catalog entity a current row stores, with its storage encodings decoded. */
+function toEntity(row: CurrentEndpointRow) {
+  return {
+    ...row,
+    metadata: JsonObjectFromString.parse(row.metadata_json),
+    pricing: decodePricing(row.pricing),
   }
 }
 
@@ -79,48 +94,40 @@ export function toEndpoint(
   stats: CurrentStatsRow | undefined,
   providerName: string | undefined,
 ): Endpoint {
-  const facts = Metadata.parse(row.metadata_json)
+  const fields = project(endpointFields, toEntity(row))
   const listedStats = row.unlisted_at === undefined ? stats : undefined
 
   return Endpoint.parse({
-    context_length: facts.context_length,
-    data_policy: toDataPolicy(facts.data_policy),
-    has_chat_completions: facts.has_chat_completions,
-    has_completions: facts.has_completions,
-    id: row.endpoint_id,
-    input_modalities: row.input_modalities,
-    is_deranked: facts.is_deranked,
-    is_disabled: facts.is_disabled,
-    is_zdr: facts.is_zdr,
-    label: row.provider_display_name,
-    limit_rpd: facts.limit_rpd,
-    limit_rpm: facts.limit_rpm,
-    max_completion_tokens: facts.max_completion_tokens,
-    max_prompt_tokens: facts.max_prompt_tokens,
-    max_tokens_per_image: facts.max_tokens_per_image,
-    model: {
-      created_at: isoDate.parse(row.model_or_created_at),
-      id: row.model_id,
-      name: row.model_display_name,
-      variant: row.variant,
-    },
-    moderation_required: facts.moderation_required,
-    output_modalities: row.output_modalities,
-    pricing: toPricing(row.pricing),
+    ...fields,
     // Endpoint labels vary within a provider; the provider entity holds its own name.
     provider: {
-      id: row.provider_id,
+      ...(isPlainObject(fields.provider) ? fields.provider : {}),
       name: providerName ?? row.provider_display_name,
-      tag: row.provider_tag,
     },
-    quantization: facts.quantization,
     stats: {
       p50_latency_ms: listedStats?.p50_latency ?? null,
       p50_throughput_tps: listedStats?.p50_throughput ?? null,
     },
-    supported_parameters: facts.supported_parameters,
-    supports_native_web_search: facts.features?.supports_native_web_search ?? null,
-    supports_reasoning: facts.supports_reasoning,
     unlisted_at: row.unlisted_at ?? null,
   })
+}
+
+const CapturedUpdate = z.object({ changes: z.array(CapturedChange) })
+
+/** Stored endpoint UPDATE to Contract field changes; its complete quotes resolve pricing. */
+export function translateEndpointUpdate(row: EndpointEventRow) {
+  const { changes } = CapturedUpdate.parse(JSON.parse(row.change_json))
+  const { pricing } = row.context
+  const known =
+    pricing === undefined
+      ? []
+      : [
+          {
+            after: decodePricing(pricing.after),
+            before: decodePricing(pricing.before),
+            path: ['pricing'],
+          },
+        ]
+
+  return translate(endpointFields, changes, known)
 }
