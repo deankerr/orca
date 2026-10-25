@@ -1,6 +1,7 @@
 import { dehydrate, hashKey, hydrate, QueryClient } from '@tanstack/react-query'
 import { expect, test } from 'vitest'
 
+import type { TimingProperties } from './capture'
 import { ReadinessQueryTimings, resultProperties } from './query-timing'
 
 const key = ['convexQuery', 'catalog/endpoints/query:grid', {}] as const
@@ -106,16 +107,14 @@ test('distinct query arguments have independent results', async () => {
 test('failed queries are not reported as completed', async () => {
   const { client, timings } = setup()
 
-  const result = await client
-    .query({
+  await expect(
+    client.query({
       queryFn: () => {
         throw new Error('offline')
       },
       queryKey: key,
-    })
-    .catch((error: unknown) => error)
-
-  expect(result).toBeInstanceOf(Error)
+    }),
+  ).rejects.toThrow('offline')
   expect(timings.get(hashKey(key))).toBeUndefined()
 })
 
@@ -157,7 +156,7 @@ test('overview queries are observed without a preceding grid query', async () =>
 
 test('each actual refetch gets a new run and ignores old cached data during fetch', async () => {
   let now = 0
-  const events: { event: string; properties: Record<string, unknown> }[] = []
+  const events: { event: string; properties: TimingProperties }[] = []
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   const timings = new ReadinessQueryTimings(
@@ -195,7 +194,7 @@ test('each actual refetch gets a new run and ignores old cached data during fetc
 })
 
 test('inactive completions are excludable and errors emit no completed event', async () => {
-  const events: Record<string, unknown>[] = []
+  const events: TimingProperties[] = []
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   const timings = new ReadinessQueryTimings(
@@ -224,7 +223,7 @@ test('inactive completions are excludable and errors emit no completed event', a
 
 test('connection overlap is per query; connection lifecycle is emitted separately', async () => {
   let now = 0
-  const events: { event: string; properties: Record<string, unknown> }[] = []
+  const events: { event: string; properties: TimingProperties }[] = []
   const client = new QueryClient()
 
   const timings = new ReadinessQueryTimings(

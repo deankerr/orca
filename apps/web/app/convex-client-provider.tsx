@@ -14,6 +14,7 @@ import { useKeys } from 'rooks'
 import { z } from 'zod'
 
 import { readinessQueryTimings } from '@/features/product-readiness/query-timing'
+import { appVersion } from '@/lib/app-version'
 
 // oxlint-disable-next-line typescript/no-non-null-assertion -- The Convex client requires this environment variable.
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -106,7 +107,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
           client={queryClient}
           persistOptions={{
             // Discard queries from older builds before hydration starts Convex subscriptions.
-            buster: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? 'development',
+            buster: appVersion,
             persister,
           }}
         >

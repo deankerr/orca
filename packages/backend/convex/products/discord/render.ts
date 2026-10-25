@@ -1,6 +1,7 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import { ConvexError } from 'convex/values'
+import { isPlainObject } from 'remeda'
 
 import type { Doc, Id } from '#generated/dataModel'
 import { env } from '#generated/server'
@@ -27,9 +28,11 @@ const entityOrder = {
 } satisfies Record<Operation, Record<AlertSource['entity_kind'], number>>
 
 /** Stable across JSON object insertion order; arrays intentionally retain display order. */
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Serializes anything JSON.stringify accepts.
 export function canonicalJson(value: unknown): string {
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JSON.stringify visits arbitrary nested values.
   return JSON.stringify(value, (_key, item: unknown) => {
-    if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+    if (isPlainObject(item)) {
       return Object.fromEntries(Object.entries(item).toSorted(([a], [b]) => a.localeCompare(b)))
     }
 
@@ -37,6 +40,7 @@ export function canonicalJson(value: unknown): string {
   })
 }
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Hashes anything canonicalJson accepts.
 export function contentKey(value: unknown): string {
   return bytesToHex(sha256(utf8ToBytes(canonicalJson(value))))
 }

@@ -262,7 +262,11 @@ function LogoTile({ entity }: { entity: ResourceEntity }) {
   )
 
   const tile =
-    typeof entity.href === 'string' ? (
+    entity.href === undefined ? (
+      <button type="button" aria-label={entity.name} className={tileClassName}>
+        <EntityAvatar slug={entity.slug} className="size-9 border-0 bg-transparent" />
+      </button>
+    ) : (
       <a
         href={entity.href}
         target="_blank"
@@ -272,10 +276,6 @@ function LogoTile({ entity }: { entity: ResourceEntity }) {
       >
         <EntityAvatar slug={entity.slug} className="size-9 border-0 bg-transparent" />
       </a>
-    ) : (
-      <button type="button" aria-label={entity.name} className={tileClassName}>
-        <EntityAvatar slug={entity.slug} className="size-9 border-0 bg-transparent" />
-      </button>
     )
 
   return (

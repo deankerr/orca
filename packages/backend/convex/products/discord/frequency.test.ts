@@ -58,7 +58,7 @@ function history(rows: PricingCandidate[]) {
 
             return selected.slice(0, count)
           },
-          withIndex: (name: string, select: (q: typeof range) => unknown) => {
+          withIndex: (name: string, select: (q: typeof range) => typeof range) => {
             expect(name).toBe('by_endpoint_id_and_scan_at')
             select(range)
 

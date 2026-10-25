@@ -1,11 +1,3 @@
-export function toSearchParams(search: string | URLSearchParams): URLSearchParams {
-  if (typeof search === 'string') {
-    return new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
-  }
-
-  return new URLSearchParams(search)
-}
-
 export function pickParams(from: URLSearchParams, keys: readonly string[]): URLSearchParams {
   const next = new URLSearchParams()
 

@@ -1,4 +1,5 @@
 /** Contention evidence from Convex function log events (`convex logs --jsonl`). */
+import { z } from 'zod'
 
 const OCC_PATTERN = /changed while this mutation was being run|write conflict|\bOCC\b/iu
 const RETRIES_EXHAUSTED_PATTERN = /retried too many times|too many (?:retries|conflicts)/iu
@@ -33,13 +34,20 @@ export function emptyReport(): ContentionReport {
   return { completionLost: 0, events: 0, functions: {}, requestFailed: 0, sampleErrors: [] }
 }
 
-function record(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-    ? Object.fromEntries(Object.entries(value))
-    : {}
-}
+/** A function execution; other event kinds carry no contention evidence. */
+const Completion = z.object({
+  componentPath: z.string().nullish(),
+  error: z.string().nullish(),
+  identifier: z.string(),
+  kind: z.literal('Completion'),
+  occInfo: z.json().nullish(),
+  willRetry: z.boolean().optional(),
+})
 
-function parseEvent(line: string): Record<string, unknown> | null {
+type Completion = z.infer<typeof Completion>
+
+/** Log events are JSON objects; CLI banners and partial lines are not. */
+function parseEvent(line: string): z.infer<ReturnType<typeof z.json>> | null {
   const trimmed = line.trim()
 
   if (!trimmed.startsWith('{')) {
@@ -47,19 +55,19 @@ function parseEvent(line: string): Record<string, unknown> | null {
   }
 
   try {
-    return record(JSON.parse(trimmed))
+    return z.json().parse(JSON.parse(trimmed))
   } catch {
     return null
   }
 }
 
-function functionStats(report: ContentionReport, event: Record<string, unknown>) {
+function functionStats(report: ContentionReport, event: Completion) {
   const path =
-    typeof event.componentPath === 'string' && event.componentPath !== ''
-      ? `${event.componentPath}:`
-      : ''
+    event.componentPath === undefined || event.componentPath === null || event.componentPath === ''
+      ? ''
+      : `${event.componentPath}:`
 
-  const key = `${path}${String(event.identifier)}`
+  const key = `${path}${event.identifier}`
 
   const stats = report.functions[key] ?? {
     executions: 0,
@@ -73,7 +81,7 @@ function functionStats(report: ContentionReport, event: Record<string, unknown>)
   return stats
 }
 
-function classify(event: Record<string, unknown>, error: string | null) {
+function classify(event: Completion, error: string | null) {
   const occ = (event.occInfo ?? null) !== null || (error !== null && OCC_PATTERN.test(error))
 
   if (error === null && !occ) {
@@ -111,14 +119,16 @@ export function addLogLine(report: ContentionReport, line: string): void {
   report.requestFailed += LINE_PATTERNS.requestFailed.test(line) ? 1 : 0
   report.completionLost += LINE_PATTERNS.completionLost.test(line) ? 1 : 0
 
-  if (event.kind !== 'Completion' || typeof event.identifier !== 'string') {
+  const completion = Completion.safeParse(event)
+
+  if (!completion.success) {
     return
   }
 
-  const stats = functionStats(report, event)
+  const stats = functionStats(report, completion.data)
   stats.executions += 1
-  const error = typeof event.error === 'string' ? event.error : null
-  const outcome = classify(event, error)
+  const error = completion.data.error ?? null
+  const outcome = classify(completion.data, error)
 
   if (outcome !== 'ok') {
     stats[outcome] += 1

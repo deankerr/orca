@@ -224,8 +224,7 @@ function parseLobehubThemeVariant(file: string): { isColor: boolean; key: string
 
 // Normalize aliases at the catalog boundary.
 async function readAliasCatalog(path: string): Promise<AliasCatalog['aliases']> {
-  const rawCatalog = await readJsonFile(path)
-  const catalog = AliasCatalogSchema.parse(rawCatalog)
+  const catalog = await readJsonFile(path, AliasCatalogSchema)
 
   return Object.fromEntries(
     Object.entries(catalog.aliases).map(([alias, target]) => [
@@ -252,9 +251,7 @@ async function resolveSourcePackages(roots?: SourcePackageRoots): Promise<{
 }
 
 async function readSourcePackage(root: string): Promise<SourcePackage> {
-  const packageJson = PackageJsonSchema.parse(
-    await readJsonFile(nodePath.join(root, 'package.json')),
-  )
+  const packageJson = await readJsonFile(nodePath.join(root, 'package.json'), PackageJsonSchema)
 
   return {
     name: packageJson.name,
@@ -263,8 +260,8 @@ async function readSourcePackage(root: string): Promise<SourcePackage> {
   }
 }
 
-async function readJsonFile(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, 'utf-8'))
+async function readJsonFile<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  return schema.parse(JSON.parse(await readFile(path, 'utf-8')))
 }
 
 async function pathExists(path: string): Promise<boolean> {

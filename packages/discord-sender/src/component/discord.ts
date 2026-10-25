@@ -2,12 +2,17 @@ import { REST, RESTEvents, RequestMethod } from '@discordjs/rest'
 import type { RESTOptions } from '@discordjs/rest'
 import { z } from 'zod'
 
-const zObject = z.record(z.string(), z.json())
 const zSnowflake = z.string().regex(/^\d{17,20}$/u)
+
+/** Callers own the message; the sender reads only the thread a forum send creates. */
+const zMessagePayload = z.object({ thread_name: z.string().optional() }).catchall(z.json())
+
+/** Discord's message object, kept whole; receipts route later edits by its identity. */
+export const zMessage = z.object({ channel_id: zSnowflake, id: zSnowflake }).catchall(z.json())
 
 /** Admission and transmission must accept the same JSON values. */
 export function parseMessagePayload(payload: string) {
-  return zObject.parse(JSON.parse(payload))
+  return zMessagePayload.parse(JSON.parse(payload))
 }
 
 export class ExpiredError extends Error {
@@ -131,7 +136,7 @@ export function createDiscord() {
           query: url.searchParams,
         })
 
-        return input.operation === 'delete' ? null : zObject.parse(result)
+        return input.operation === 'delete' ? null : zMessage.parse(result)
       } finally {
         deadlines.delete(fullUrl)
       }

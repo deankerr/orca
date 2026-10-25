@@ -36,7 +36,7 @@ test('local discovery applies direction before limiting and preserves both bound
   const ctx = testDouble<QueryCtx>({
     db: {
       query: () => ({
-        withIndex: (_index: string, select: (range: unknown) => unknown) => {
+        withIndex: (_index: string, select: (builder: typeof range) => typeof range) => {
           select(range)
 
           return {

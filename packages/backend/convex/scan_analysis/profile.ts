@@ -1,5 +1,5 @@
 import type { JsonProfile, JsonRecord, JsonValue, ViewOptions } from '@orca/json-profile'
-import { profileJsonRecords, viewProfile } from '@orca/json-profile'
+import { isJsonRecord, profileJsonRecords, viewProfile } from '@orca/json-profile'
 import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
@@ -120,7 +120,7 @@ function profilePopulation(entries: [string, JsonRecord][]): Population {
       for (const item of value) {
         visit(id, item, `${path}[*]`)
       }
-    } else if (value !== null && typeof value === 'object') {
+    } else if (isJsonRecord(value)) {
       for (const [key, field] of Object.entries(value)) {
         visit(id, field, `${path}[${JSON.stringify(key)}]`)
       }

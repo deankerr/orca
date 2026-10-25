@@ -131,6 +131,7 @@ async function receipt(ctx: MutationCtx, scan_at: string, process: string) {
     .unique()
 }
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Catch clauses bind unknown; this records whatever was thrown.
 function errorDetails(error: unknown) {
   return error instanceof Error
     ? { message: error.message, name: error.name, stack: error.stack }

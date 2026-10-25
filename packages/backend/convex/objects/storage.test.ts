@@ -2,6 +2,7 @@ import { gzipSync, gunzipSync } from 'node:zlib'
 
 import { ConvexHttpClient } from 'convex/browser'
 import { getFunctionName } from 'convex/server'
+import type { DefaultFunctionArgs } from 'convex/server'
 import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
@@ -23,12 +24,12 @@ test('a configured remote read source never redirects local writes', async () =>
     .spyOn(ConvexHttpClient.prototype, 'action')
     .mockResolvedValue([{ bytes: Uint8Array.from(gzipSync('source text')).buffer, codec: 'gzip' }])
 
-  const writes: unknown[] = []
+  const writes: { args: DefaultFunctionArgs; function: string }[] = []
   const identity = { name: 'one', path: 'test' }
 
   const ctx = testDouble<ActionCtx>({
     meta: { getDeploymentMetadata: async () => ({ name: 'consumer-deployment' }) },
-    runMutation: async (ref: Parameters<typeof getFunctionName>[0], args: unknown) => {
+    runMutation: async (ref: Parameters<typeof getFunctionName>[0], args: DefaultFunctionArgs) => {
       writes.push({ args, function: getFunctionName(ref) })
     },
     runQuery: async () => null,

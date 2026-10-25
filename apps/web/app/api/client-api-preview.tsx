@@ -1,5 +1,6 @@
 'use client'
 
+import { OrcaPublicApiV2Schema } from '@orca/backend/public-api/v2/schema'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
@@ -12,27 +13,6 @@ import { API_PATH } from './public-api'
 
 const SAMPLE_MODEL_LIMIT = 5
 
-function readPublicApiPreviewSample(payload: unknown) {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Unexpected API response shape')
-  }
-
-  if (!('updated_at' in payload) || typeof payload.updated_at !== 'string') {
-    throw new Error('Unexpected API response shape')
-  }
-
-  if (!('models' in payload) || !Array.isArray(payload.models)) {
-    throw new Error('Unexpected API response shape')
-  }
-
-  // oxlint-disable sort-keys -- Rendered with JSON.stringify as a sample of the API response, which lists updated_at first.
-  return {
-    updated_at: payload.updated_at,
-    models: payload.models.slice(0, SAMPLE_MODEL_LIMIT),
-  }
-  // oxlint-enable sort-keys
-}
-
 async function fetchPublicApiPreviewSample() {
   const response = await fetch(API_PATH)
 
@@ -40,7 +20,10 @@ async function fetchPublicApiPreviewSample() {
     throw new Error(`Failed to fetch API: ${response.status}`)
   }
 
-  return readPublicApiPreviewSample(await response.json())
+  const { updated_at, models } = OrcaPublicApiV2Schema.parse(await response.json())
+
+  // oxlint-disable-next-line sort-keys -- Rendered with JSON.stringify as a sample of the API response, which lists updated_at first.
+  return { updated_at, models: models.slice(0, SAMPLE_MODEL_LIMIT) }
 }
 
 export function ClientApiCodeBlock() {

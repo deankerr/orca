@@ -1,4 +1,4 @@
-import { href, pickParams, toSearchParams } from '@/lib/href'
+import { href, pickParams } from '@/lib/href'
 
 const MONITOR_QUERY_KEYS = ['model', 'provider'] as const
 
@@ -17,7 +17,7 @@ export function buildMonitorHref({
   const value = type === 'provider' ? slug.replace(/\/.*$/u, '') : slug
 
   if (pathname === '/monitor') {
-    const next = pickParams(toSearchParams(searchParams), MONITOR_QUERY_KEYS)
+    const next = pickParams(new URLSearchParams(searchParams), MONITOR_QUERY_KEYS)
     next.set(key, value)
 
     return href('/monitor', next)

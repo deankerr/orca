@@ -1,6 +1,8 @@
 import * as R from 'remeda'
 import { z } from 'zod'
 
+import type { IdentifiedEndpoint } from '#scans/collection'
+
 import { ExtractedStats } from './schema'
 
 const Sample = ExtractedStats.shape.sample.transform(R.omit(['endpoint_id'])).nullish()
@@ -11,7 +13,10 @@ const SuppliedStats = z.object({
 })
 
 /** Stats are found on source endpoints but form their own observations. */
-export function extractStats(endpoint_id: string, source: unknown): ExtractedStats[] {
+export function extractStats(
+  endpoint_id: string,
+  source: z.infer<typeof IdentifiedEndpoint>,
+): ExtractedStats[] {
   const { stats, statsByTier } = SuppliedStats.parse(source)
   const samples = { ...statsByTier, default: statsByTier?.default ?? stats }
 

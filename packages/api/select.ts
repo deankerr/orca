@@ -45,7 +45,7 @@ export function orderRequiresSort<T extends z.ZodType<{ order?: string; sort?: s
 }
 
 /** Numeric ordering with unknown values last in either direction. */
-export function compareBy<T>(key: (entity: T) => number | null, order: 'asc' | 'desc' = 'desc') {
+export function compareBy<T>(key: SortKey<T>, order: 'asc' | 'desc' = 'desc') {
   return (left: T, right: T) => {
     const a = key(left)
     const b = key(right)
@@ -58,6 +58,9 @@ export function compareBy<T>(key: (entity: T) => number | null, order: 'asc' | '
   }
 }
 
-export function sortKeys<K extends string>(sorts: Record<K, unknown>) {
+/** A sort's numeric key; null sorts last in either order. */
+type SortKey<T> = (entity: T) => number | null
+
+export function sortKeys<K extends string>(sorts: Record<K, SortKey<never>>) {
   return Object.keys(sorts).filter((key): key is K => Object.hasOwn(sorts, key))
 }

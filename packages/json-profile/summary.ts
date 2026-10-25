@@ -44,15 +44,7 @@ export function distinctValues(value: ValueProfile): number {
 export function numericSummary(value: ValueProfile) {
   const branch = value.types.find((candidate) => candidate.type === 'number')
 
-  if (branch === undefined || !('values' in branch)) {
-    return null
-  }
-
-  return summarizeNumbers(
-    branch.values.flatMap(({ count, value: observed }) =>
-      typeof observed === 'number' ? [{ count, value: observed }] : [],
-    ),
-  )
+  return branch === undefined ? null : summarizeNumbers(branch.values)
 }
 
 export function summarizeNumbers(frequencies: { value: number; count: number }[]) {

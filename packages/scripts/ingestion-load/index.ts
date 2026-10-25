@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import { Command } from 'commander'
+import { z } from 'zod'
 
 import { addLogLine, emptyReport, totals } from './contention'
 import type { ContentionReport } from './contention'
@@ -68,20 +69,18 @@ async function resolveDeployment(requested: string): Promise<string> {
   return name
 }
 
-/** Functions returning null print nothing when piped. */
-const parseJson = (text: string): unknown => (text.trim() === '' ? null : JSON.parse(text))
+/** CLI output is JSON; functions returning null print nothing when piped. */
+const parseOutput = <T>(text: string, schema: z.ZodType<T>): T =>
+  schema.parse(text.trim() === '' ? null : JSON.parse(text))
 
-function counts(value: unknown): Record<string, number> {
-  if (typeof value !== 'object' || value === null) {
-    throw new TypeError('Expected record counts')
-  }
-
-  return Object.fromEntries(Object.entries(value).map(([key, count]) => [key, Number(count)]))
-}
+const RecordCounts = z.record(z.string(), z.number())
 
 type Convex = {
-  inlineQuery: (query: string) => Promise<unknown>
-  run: (fn: string, args?: string) => Promise<unknown>
+  /** Run a function and parse the result its caller depends on. */
+  read: <T>(fn: string, schema: z.ZodType<T>, args?: string) => Promise<T>
+  inlineQuery: <T>(query: string, schema: z.ZodType<T>) => Promise<T>
+  /** Run a function for its effect. */
+  run: (fn: string, args?: string) => Promise<void>
   target: string[]
 }
 
@@ -89,9 +88,13 @@ function connect(name: string): Convex {
   const target = ['--deployment', name]
 
   return {
-    inlineQuery: async (query) =>
-      parseJson(await exec(['run', '--inline-query', query, ...target])),
-    run: async (fn, args = '{}') => parseJson(await exec(['run', fn, args, ...target])),
+    inlineQuery: async (query, schema) =>
+      parseOutput(await exec(['run', '--inline-query', query, ...target]), schema),
+    read: async (fn, schema, args = '{}') =>
+      parseOutput(await exec(['run', fn, args, ...target]), schema),
+    run: async (fn, args = '{}') => {
+      await exec(['run', fn, args, ...target])
+    },
     target,
   }
 }
@@ -150,11 +153,10 @@ function captureLogs(target: string[], report: ContentionReport) {
 
 /** Kind/state pairs that still hold unfinished records, from the exact index rather than counts. */
 async function outstanding(convex: Convex): Promise<string[]> {
-  const found = await convex.inlineQuery(
+  return await convex.inlineQuery(
     `const out = []; for (const kind of ${JSON.stringify(KINDS)}) for (const state of ${JSON.stringify(PENDING_STATES)}) { const r = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", state)).first(); if (r) out.push(kind + "/" + state); } return out`,
+    z.array(z.string()),
   )
-
-  return Array.isArray(found) ? found.map(String) : ['unreadable']
 }
 
 const openCount = async (convex: Convex) => {
@@ -167,23 +169,16 @@ const isAwaitingCompletion = (pair: string) => /\/(?:queued|withdrawing)$/u.test
 
 /** Failed records read directly from the index (not the aggregate counts), with a few samples. */
 async function readFailed(convex: Convex) {
-  const found = await convex.inlineQuery(
+  const rows = await convex.inlineQuery(
     `const rows = []; for (const kind of ${JSON.stringify(KINDS)}) { const found = await ctx.db.query("ingestion_records").withIndex("by_kind_and_state_and_scan_at", (q) => q.eq("kind", kind).eq("state", "failed")).take(${FAILED_SCAN_LIMIT}); for (const r of found) rows.push({ kind, scan_at: r.scan_at, error: r.error ?? null }); } return rows`,
+    z.array(z.object({ error: z.string().nullable(), kind: z.string(), scan_at: z.string() })),
   )
-
-  const rows = Array.isArray(found) ? found.map((row) => record(row)) : []
 
   return {
     count: rows.length,
-    lost: rows.filter((row) => String(row.error).startsWith('Completion lost')).length,
+    lost: rows.filter((row) => row.error?.startsWith('Completion lost') === true).length,
     sample: rows.slice(0, 5),
   }
-}
-
-function record(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-    ? Object.fromEntries(Object.entries(value))
-    : {}
 }
 
 /**
@@ -192,7 +187,7 @@ function record(value: unknown): Record<string, unknown> {
  * target, and a baseline holds the earliest input.
  */
 async function registrationStep(convex: Convex): Promise<string> {
-  return String(await convex.run('ingestion/register:run'))
+  return await convex.read('ingestion/register:run', z.string())
 }
 
 /** Poll until registration is idle and records stop changing with nothing outstanding; returns whether the timeout hit first. */
@@ -209,7 +204,7 @@ async function waitForSettle(
 
   while (Date.now() <= deadline) {
     await Bun.sleep(options.poll * 1000)
-    const current = counts(await convex.run('ingestion/records:counts'))
+    const current = await convex.read('ingestion/records:counts', RecordCounts)
     const total = sumCounts(current)
     const open = await openCount(convex)
     const elapsed = Math.round((Date.now() - startedAt) / 1000)
@@ -299,12 +294,14 @@ function printContention(report: ContentionReport) {
 }
 
 async function printInsights(name: string, target: string[]) {
-  const parsed = parseJson(await exec(['insights', '--json', ...target], { allowFailure: true }))
+  const output = await exec(['insights', '--json', ...target], { allowFailure: true })
 
-  const list =
-    typeof parsed === 'object' && parsed !== null && 'insights' in parsed ? parsed.insights : []
+  // Insights are advisory; a failed or unexpected report lists none.
+  const parsed = z
+    .object({ insights: z.array(z.json()) })
+    .safeParse(output.trim() === '' ? null : JSON.parse(output))
 
-  const insights = Array.isArray(list) ? list : []
+  const insights = parsed.success ? parsed.data.insights : []
   console.log(`Convex insights (72h window, not scoped to this run): ${insights.length}`)
 
   for (const insight of insights) {
@@ -315,11 +312,10 @@ async function printInsights(name: string, target: string[]) {
 }
 
 async function sourceWindow(convex: Convex, hours: number) {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: Shape is fixed by ingestion/admin:sourceScanBounds.
-  const bounds = (await convex.run('ingestion/admin:sourceScanBounds')) as {
-    earliest: string | null
-    latest: string | null
-  }
+  const bounds = await convex.read(
+    'ingestion/admin:sourceScanBounds',
+    z.object({ earliest: z.string().nullable(), latest: z.string().nullable() }),
+  )
 
   if (bounds.latest === null) {
     throw new Error(
@@ -359,7 +355,7 @@ async function drive(convex: Convex, options: Options, run: Drive) {
   const beforeSweep = await readFailed(convex)
   await reconcileLostCompletions(convex, options)
 
-  const final = counts(await convex.run('ingestion/records:counts'))
+  const final = await convex.read('ingestion/records:counts', RecordCounts)
   const failed = await readFailed(convex)
   const stillOpen = await openCount(convex)
 
@@ -370,7 +366,7 @@ async function main(options: Options) {
   const name = await resolveDeployment(options.deployment)
   const convex = connect(name)
 
-  if (!options.allowExisting && (await convex.run('ingestion/records:exists')) !== false) {
+  if (!options.allowExisting && (await convex.read('ingestion/records:exists', z.boolean()))) {
     throw new Error(
       'Deployment already has ingestion records; use a fresh deployment, or --allow-existing to widen the target (the window start may only move earlier)',
     )

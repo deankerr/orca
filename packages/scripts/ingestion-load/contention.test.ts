@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { z } from 'zod'
 
 import { addLogLine, emptyReport, totals } from './contention'
 
-const completion = (fields: Record<string, unknown>) =>
+type JsonValue = z.infer<ReturnType<typeof z.json>>
+
+const completion = (fields: Record<string, JsonValue>) =>
   JSON.stringify({
     error: null,
     identifier: 'ingestion/queue:step',

@@ -3,25 +3,17 @@
 import { api } from '@orca/backend/api'
 import type { ScanReport } from '@orca/backend/scans/analysis'
 import { useAction } from 'convex/react'
-import { ConvexError } from 'convex/values'
 import { useId, useRef, useState } from 'react'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { errorMessage } from '@/lib/error-message'
 
 import { ReportExplorer } from './report-explorer'
 
 type Scope = ScanReport['selection']['scope']
-
-function failure(error: unknown): string {
-  if (error instanceof ConvexError) {
-    return typeof error.data === 'string' ? error.data : JSON.stringify(error.data)
-  }
-
-  return error instanceof Error ? error.message : String(error)
-}
 
 export default function ScanAnalysisPage() {
   const analyze = useAction(api.scan_analysis.index.report)
@@ -54,7 +46,7 @@ export default function ScanAnalysisPage() {
       }
     } catch (error) {
       if (current === request.current) {
-        setStatus(failure(error))
+        setStatus(errorMessage(error))
         setRunning(false)
       }
     }

@@ -1,4 +1,4 @@
-import { href, pickParams, toSearchParams } from '@/lib/href'
+import { href, pickParams } from '@/lib/href'
 
 import { endpointGridQueryKeys, normalizeEndpointGridQuery } from './query-state'
 
@@ -34,7 +34,7 @@ export function buildEndpointsHref({
   slug: string
 }): string {
   if (pathname === '/') {
-    const current = toSearchParams(searchParams)
+    const current = new URLSearchParams(searchParams)
     const next = pickParams(current, endpointGridQueryKeys)
 
     if ((next.get('q') ?? '') !== slug) {

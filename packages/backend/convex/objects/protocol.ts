@@ -1,4 +1,3 @@
-import { validate } from 'convex-helpers/validators'
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 import { gunzipSync } from 'fflate'
@@ -38,9 +37,9 @@ export function assertReadCount(count: number): void {
   }
 }
 
-/** Check discovery responses at both the deployment and standalone reader interfaces. */
-export function validateNames(names: unknown, selection: NameSelection): string[] {
-  if (!validate(v.array(v.string()), names) || names.length > selection.limit) {
+/** Check that discovered names honour the requested limit, order and range. */
+export function validateNames(names: string[], selection: NameSelection): string[] {
+  if (names.length > selection.limit) {
     throw new ConvexError('Object source returned invalid names')
   }
 

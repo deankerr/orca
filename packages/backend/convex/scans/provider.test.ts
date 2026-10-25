@@ -2,6 +2,7 @@ import { ok } from 'node:assert/strict'
 
 import { expect, test } from 'vitest'
 
+import type { JsonValue } from '../json'
 import type { RawScan } from './collected'
 import { extractScan as fromCollected } from './extraction/extract'
 import { assembleProviders, ProviderInput, providerId } from './extraction/providers'
@@ -281,7 +282,7 @@ function captured(
 function endpoint(
   id: string,
   slug: string,
-  facts: Record<string, unknown> = {},
+  facts: Record<string, JsonValue> = {},
 ): NonNullable<RawScan['entries'][number]['endpoints']>[number] {
   return {
     id,

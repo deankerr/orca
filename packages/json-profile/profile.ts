@@ -32,11 +32,16 @@ interface NullProfile {
   count: number
 }
 
-interface PrimitiveProfile {
-  type: 'boolean' | 'number' | 'string'
+interface ValuesProfile<Type extends JsonType, Value> {
+  type: Type
   count: number
-  values: Array<{ value: Exclude<JsonPrimitive, null>; count: number }>
+  values: Array<{ value: Value; count: number }>
 }
+
+type PrimitiveProfile =
+  | ValuesProfile<'boolean', boolean>
+  | ValuesProfile<'number', number>
+  | ValuesProfile<'string', string>
 
 export interface ObjectProfile {
   type: 'object'
@@ -69,11 +74,16 @@ interface MutableNullProfile {
   type: 'null'
 }
 
-interface MutablePrimitiveProfile {
+interface MutableValuesProfile<Type extends JsonType, Value> {
   count: number
-  type: 'boolean' | 'number' | 'string'
-  values: Map<Exclude<JsonPrimitive, null>, number>
+  type: Type
+  values: Map<Value, number>
 }
+
+type MutablePrimitiveProfile =
+  | MutableValuesProfile<'boolean', boolean>
+  | MutableValuesProfile<'number', number>
+  | MutableValuesProfile<'string', string>
 
 interface MutableObjectProfile {
   count: number
@@ -127,29 +137,46 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
     return
   }
 
+  /* oxlint-disable anti-slop/no-runtime-typeof -- Profiling classifies arbitrary JSON values by runtime type. */
   if (typeof value === 'boolean') {
-    const typeProfile = getOrCreatePrimitive(profile, 'boolean')
-    typeProfile.count += 1
-    observePrimitive(typeProfile, value)
+    const existing = profile.types.get('boolean')
+
+    const typeProfile =
+      existing?.type === 'boolean'
+        ? existing
+        : { count: 0, type: 'boolean' as const, values: new Map<boolean, number>() }
+
+    profile.types.set('boolean', countValue(typeProfile, value))
 
     return
   }
 
   if (typeof value === 'number') {
-    const typeProfile = getOrCreatePrimitive(profile, 'number')
-    typeProfile.count += 1
-    observePrimitive(typeProfile, value)
+    const existing = profile.types.get('number')
+
+    const typeProfile =
+      existing?.type === 'number'
+        ? existing
+        : { count: 0, type: 'number' as const, values: new Map<number, number>() }
+
+    profile.types.set('number', countValue(typeProfile, value))
 
     return
   }
 
   if (typeof value === 'string') {
-    const typeProfile = getOrCreatePrimitive(profile, 'string')
-    typeProfile.count += 1
-    observePrimitive(typeProfile, value)
+    const existing = profile.types.get('string')
+
+    const typeProfile =
+      existing?.type === 'string'
+        ? existing
+        : { count: 0, type: 'string' as const, values: new Map<string, number>() }
+
+    profile.types.set('string', countValue(typeProfile, value))
 
     return
   }
+  /* oxlint-enable anti-slop/no-runtime-typeof */
 
   if (Array.isArray(value)) {
     const typeProfile = getOrCreateArray(profile)
@@ -164,11 +191,14 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
   observeObject(typeProfile, value)
 }
 
-function observePrimitive(
-  profile: MutablePrimitiveProfile,
-  value: Exclude<JsonPrimitive, null>,
-): void {
-  increment(profile.values, value)
+function countValue<Type extends JsonType, Value>(
+  typeProfile: MutableValuesProfile<Type, Value>,
+  value: Value,
+): MutableValuesProfile<Type, Value> {
+  typeProfile.count += 1
+  increment(typeProfile.values, value)
+
+  return typeProfile
 }
 
 function observeArray(profile: MutableArrayProfile, value: JsonValue[]): void {
@@ -208,22 +238,6 @@ function getOrCreateNull(profile: MutableValueProfile): MutableNullProfile {
 
   const created: MutableNullProfile = { count: 0, type: 'null' }
   profile.types.set('null', created)
-
-  return created
-}
-
-function getOrCreatePrimitive(
-  profile: MutableValueProfile,
-  type: MutablePrimitiveProfile['type'],
-): MutablePrimitiveProfile {
-  const existing = profile.types.get(type)
-
-  if (existing?.type === 'boolean' || existing?.type === 'number' || existing?.type === 'string') {
-    return existing
-  }
-
-  const created: MutablePrimitiveProfile = { count: 0, type, values: new Map() }
-  profile.types.set(type, created)
 
   return created
 }
@@ -322,11 +336,26 @@ function finalizeType(profile: MutableTypeProfile): JsonTypeProfile {
     return { type: profile.type, count: profile.count }
   }
 
+  if (profile.type === 'boolean') {
+    return finalizeValues(profile, (left, right) => Number(left) - Number(right))
+  }
+
+  if (profile.type === 'number') {
+    return finalizeValues(profile, (left, right) => left - right)
+  }
+
+  return finalizeValues(profile, compareStrings)
+}
+
+function finalizeValues<Type extends JsonType, Value>(
+  profile: MutableValuesProfile<Type, Value>,
+  compare: (left: Value, right: Value) => number,
+): ValuesProfile<Type, Value> {
   return {
     type: profile.type,
     count: profile.count,
     values: [...profile.values.entries()]
-      .toSorted(([left], [right]) => comparePrimitives(left, right))
+      .toSorted(([left], [right]) => compare(left, right))
       .map(([value, count]) => ({ value, count })),
   }
 }
@@ -339,19 +368,9 @@ function increment<Key>(counts: Map<Key, number>, key: Key): void {
   counts.set(key, (counts.get(key) ?? 0) + 1)
 }
 
-function comparePrimitives(
-  left: Exclude<JsonPrimitive, null>,
-  right: Exclude<JsonPrimitive, null>,
-): number {
-  if (typeof left === 'number' && typeof right === 'number') {
-    return left - right
-  }
-
-  if (typeof left === 'boolean' && typeof right === 'boolean') {
-    return Number(left) - Number(right)
-  }
-
-  return compareStrings(String(left), String(right))
+/** The object member of a JSON value. */
+export function isJsonRecord(value: JsonValue): value is JsonRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function compareStrings(left: string, right: string): number {
