@@ -37,12 +37,16 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - The `ingestionRecordCounts` aggregate counts records by kind and state over scan time.
 - Every record write goes through `ingestion/records.ts`; aggregate writes are queued and reads are stale.
 - The aggregate is derived: rebuild it from `ingestion_records` rather than repairing it.
+- `records:rebuildCounts` clears the aggregate and dead letters, then deletes dead letters and reinserts every record in bounded pages. It refuses unless the cron is off, no record is `queued` or `withdrawing`, and no aggregate operation is pending. Writes during a rebuild fail it or skew counts.
+- Operations the aggregate component could not apply are dead-lettered; the admin overview reports their count (saturating at 100).
 - Both workers run as single steps and schedule themselves again until a step finds no work.
 - Registration commits only if the registry edges it read are unchanged.
 - Queue acceptance, Workpool enqueue, and the state change commit in one mutation.
 - Accepted ingestion is capped; `queued` means handed to Workpool, not merely registered.
 - One Workpool batch per queue step; completions find their record by work ID, so a stale ID matches nothing.
 - At most one queue step waits to start; completions arriving meanwhile do not stack more.
+- Only `queue:wake` touches the queue schedule; completions, kickoff, queue steps, and retries schedule it,
+  so contention on that singleton never rolls back their own work.
 - `ingestion/sync:run` kicks off sync manually; the ingestion cron invokes it when enabled.
 - Sync never advances the target; continuous ingestion uses a far-future end.
 - Preview initialization targets the preceding day once, then kicks off sync on every run.
@@ -53,7 +57,13 @@ current scopes, baseline moves, and resumption; `projections/model.md` owns reco
 - Each process commits its output and a receipt per scan and process in one transaction, including empty output.
 - Retries skip committed processes; overlapping attempts cannot duplicate output.
 - A receipt records its coverage; a retry assigned a broader scope or the stats snapshot writes again.
-- Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`.
+- Any failed process fails the attempt, so Workpool retries it; exhausted retries mark the record `failed`. Each failed process is logged with its stage and stack, and the error names `process (stage): message`.
+- `ingestion/reconcile:sweep` finds queued or withdrawing records whose Workpool work has finished (at most 512 per kind and state).
+- For each it schedules `confirmLost` after a 5-minute grace period, because Workpool deletes failed work and
+  schedules its completion in one transaction, so finished-but-unsettled is briefly normal.
+- `confirmLost` fails the record only if it still has the same work ID, is still accepted, and the work is still finished.
+- A late completion still finds the record by work ID and overwrites its state.
+- The hourly cron (when enabled) and `ingestion/admin:runSync` schedule the sweep; `kickoff` does not.
 - A failed record waits for `ingestion/queue:retry`, which returns one or all failed records to `pending` without a scope.
 - Withdrawal deletes history rows dated at the scan and releases every receipt; current rows stay.
 - Only displaced baselines are withdrawn so far: their scan remains an input of the displacing pair.

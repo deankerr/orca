@@ -8,6 +8,16 @@ preview initialization, Discord scheduling on completion, and the `/admin/ingest
 
 - ⚠️ The cron's enabled setting is still `ORCA_INGESTION_CRON_ENABLED`, not deployment-local database state.
 
+## Rebuilding record counts
+
+When the dashboard shows dead-lettered count updates, or counts disagree with the table, rebuild them:
+
+1. Unset `ORCA_INGESTION_CRON_ENABLED` and wait for `queued` and `withdrawing` records to settle and the aggregate queue to drain.
+2. Do not run sync, retry, or reconcile until the rebuild logs `Rebuilt record counts from N records`.
+3. Run `npx convex run ingestion/records:rebuildCounts` against the deployment.
+
+The start refuses with a clear error if the cron is on, records are accepted, or aggregate operations are pending. Rebuild also discards dead letters.
+
 ## Confirmed direction
 
 The control plane manages the ingestion target and can invoke ingestion. The register worker and
@@ -42,7 +52,7 @@ not enqueue individual ingest jobs directly. Successful process output is retain
 
 The register worker identifies missing pairs; the queue worker identifies registered pending work.
 Pending pairs remain eligible even when their scan times lie beyond a subsequently reduced target end.
-Queued pairs remain entrusted to Workpool; failed pairs wait for an explicit retry request, and complete
+Queued pairs remain entrusted to Workpool, with a reconciler that fails those whose completion was lost; failed pairs wait for an explicit retry request, and complete
 pairs retain their output. Registering new pairs alone is not sufficient implementation of sync.
 
 Workpool retains its existing automatic retries for thrown action errors. Individual process failures

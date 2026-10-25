@@ -2,43 +2,25 @@ import { rejects } from 'node:assert/strict'
 
 import type { WorkId } from '@convex-dev/workpool'
 import { drainScheduledFunctions } from '@orca/config/testing'
-import * as R from 'remeda'
 import { afterEach, beforeEach, expect, vi, test } from 'vitest'
 
 import { internal } from '#generated/api'
+import type { Doc } from '#generated/dataModel'
 import * as scans from '#scans'
 
-import {
-  CURRENT_ENDPOINTS_TABLE,
-  CURRENT_MODELS_TABLE,
-  CURRENT_PROVIDERS_TABLE,
-  CURRENT_STATS_TABLE,
-} from '../catalog/tables/current'
-import { EVENTS_TABLE } from '../catalog/tables/events'
-import { OBSERVATIONS_TABLE } from '../catalog/tables/observations'
-import { ENDPOINT_PRICES_TABLE } from '../catalog/tables/pricing'
-import { ENDPOINT_STATS_TABLE } from '../catalog/tables/stats'
+import { CURRENT_ENDPOINTS_TABLE } from '../catalog/tables/current'
 import { setup } from '../harness.testing'
 import type { Harness } from '../harness.testing'
 import { canonicalJson } from '../products/discord/render'
+import { expectIngestionInvariants } from './invariants.testing'
 import type { CurrentScope } from './operators/current'
-import { currentTables, expectedCurrent } from './operators/current.testing'
 import * as currentEndpoints from './operators/currentEndpoints'
-import * as currentStats from './operators/currentStats'
-import * as events from './operators/events'
-import * as observations from './operators/observations'
-import * as pricingHistory from './operators/pricingHistory'
-import * as statsHistory from './operators/statsHistory'
 import { hour, rawScan, scan, specs } from './operators/testing'
-import { RETRY_BATCH, scheduleQueue } from './queue'
-import { recordCounts, writeRecords } from './records'
-import {
-  INGESTION_RECORDS_TABLE,
-  PROCESS_COMMITS_TABLE,
-  QUEUE_SCHEDULE_TABLE,
-  recordKind,
-  recordState,
-} from './tables'
+import { projections, referenceProjection, unversioned } from './projections.testing'
+import { RETRY_BATCH } from './queue'
+import { writeRecords } from './records'
+import type { RecordWrites } from './records'
+import { INGESTION_RECORDS_TABLE, PROCESS_COMMITS_TABLE, QUEUE_SCHEDULE_TABLE } from './tables'
 
 const RETIRED_AT = 20
 
@@ -90,33 +72,9 @@ async function target(t: Harness, from: number, to: number) {
 }
 
 /** Run registration, queueing, Workpool execution, and completions until nothing is scheduled. */
-async function settle(t: Harness) {
+async function settle(t: Harness, options?: { receipts: boolean }) {
   await drainScheduledFunctions(t)
-  await expectCountsMatch(t)
-}
-
-/** The aggregate must count exactly the records in each kind and state once its queue drains. */
-async function expectCountsMatch(t: Harness) {
-  const { counted, actual } = await t.run(async (ctx) => {
-    const all = await ctx.db.query(INGESTION_RECORDS_TABLE).collect()
-    const keys = recordKind.members.flatMap((kind) =>
-      recordState.members.map((state) => [kind.value, state.value] as const),
-    )
-    const totals = await recordCounts.countBatch(
-      ctx,
-      keys.map((namespace) => ({ namespace: [...namespace] })),
-    )
-    return {
-      actual: Object.fromEntries(
-        keys.map((key) => [
-          key.join('/'),
-          all.filter(({ kind, state }) => kind === key[0] && state === key[1]).length,
-        ]),
-      ),
-      counted: Object.fromEntries(keys.map((key, index) => [key.join('/'), totals[index]])),
-    }
-  })
-  expect(counted).toEqual(actual)
+  await expectIngestionInvariants(t, options)
 }
 
 async function records(t: Harness) {
@@ -126,77 +84,9 @@ async function records(t: Harness) {
     .toSorted((a, b) => a.scan_at.localeCompare(b.scan_at) || (a.from_scan_at === null ? -1 : 1))
 }
 
-const strip = <T extends { _id: unknown; _creationTime: unknown }>(doc: T) =>
-  R.omit(doc, ['_id', '_creationTime'])
-/** Rows in a stable order with sorted keys, so stored documents and derived rows compare equal. */
-const sorted = (rows: object[]): unknown[] =>
-  rows
-    .map((row) => canonicalJson(row))
-    .toSorted()
-    .map((text): unknown => JSON.parse(text))
-
-/** Every projection table, as retained rows without document metadata. */
-async function projections(t: Harness) {
-  return await t.run(async (ctx) => {
-    const read = async (table: Parameters<typeof ctx.db.query>[0]) => {
-      const docs = await ctx.db.query(table).collect()
-      return docs.map(strip)
-    }
-
-    return {
-      currentStats: await read(CURRENT_STATS_TABLE),
-      endpoints: await read(CURRENT_ENDPOINTS_TABLE),
-      events: sorted(await read(EVENTS_TABLE)),
-      models: await read(CURRENT_MODELS_TABLE),
-      observations: sorted(await read(OBSERVATIONS_TABLE)),
-      prices: sorted(await read(ENDPOINT_PRICES_TABLE)),
-      providers: await read(CURRENT_PROVIDERS_TABLE),
-      stats: sorted(await read(ENDPOINT_STATS_TABLE)),
-    }
-  })
-}
-
 /** The retained view a baseline at the first scan and pairs through the last must produce. */
 function reference(from: number, to: number) {
-  const window = range(from, to).map((index) => scan(hour(index), SPECS[index]))
-  const sources = window.map((next, index) => ({ next, previous: window[index - 1] ?? null }))
-  const pairs = sources.slice(1)
-  const current = (name: string) => {
-    const table = currentTables.find((item) => item.name === name)
-    return table === undefined ? [] : [...expectedCurrent(table, window).values()]
-  }
-  const latest = sources.at(-1)
-
-  return {
-    currentStats: latest === undefined ? [] : [currentStats.derive(latest)],
-    endpoints: current('endpoints'),
-    events: sorted(pairs.flatMap(events.derive)),
-    models: current('models'),
-    observations: sorted(sources.flatMap(observations.derive)),
-    prices: sorted(sources.flatMap(pricingHistory.derive)),
-    providers: current('providers'),
-    stats: sorted(sources.flatMap(statsHistory.derive)),
-  }
-}
-
-/** Current versions record which commit won; compare facts, as `expectedCurrent` does. */
-function unversioned<
-  View extends {
-    models: object[]
-    providers: object[]
-    endpoints: object[]
-    currentStats: object[]
-  },
->(view: View) {
-  const facts = (rows: object[]) => sorted(rows.map((row) => ({ ...row, scan_at: null })))
-
-  return {
-    ...view,
-    currentStats: sorted(view.currentStats),
-    endpoints: facts(view.endpoints),
-    models: facts(view.models),
-    providers: facts(view.providers),
-  }
+  return referenceProjection(range(from, to).map((index) => scan(hour(index), SPECS[index])))
 }
 
 const facts = async (t: Harness) => unversioned(await projections(t))
@@ -394,6 +284,19 @@ test('retry-all reopens a full batch within one transaction', async () => {
   expect(await t.mutation(internal.ingestion.queue.retry, {})).toBe(1)
 })
 
+test('record patches cannot change the fields record counts key on', () => {
+  // Type-only: the linter's type check fails if a variable or spread can carry these fields.
+  const move = async (writer: RecordWrites, record: Doc<typeof INGESTION_RECORDS_TABLE>) => {
+    const moved = { alerts: false, scan_at: hour(1) }
+    // @ts-expect-error -- A patch carrying scan_at would desynchronize record counts.
+    await writer.patch(record, moved)
+    // @ts-expect-error -- Spreads are checked too.
+    await writer.patch(record, { ...moved, kind: 'baseline' })
+  }
+
+  expect(move).toBeTypeOf('function')
+})
+
 test('completion commits before queue coordination and its wakeup survives until drained', async () => {
   const t = setup()
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Synthetic work ID isolates settlement from Workpool execution.
@@ -432,10 +335,70 @@ test('completion commits before queue coordination and its wakeup survives until
     ).toBe(true)
   })
 
-  await settle(t)
+  // The synthetic completion bypassed the ingestors, so the record has no receipts.
+  await settle(t, { receipts: false })
   expect(
     await t.run(async (ctx) => await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()),
   ).not.toBeNull()
+})
+
+test('kickoff, queue steps, and retries wake the queue without touching its schedule', async () => {
+  const t = setup()
+  const inspect = async () =>
+    await t.run(async (ctx) => {
+      const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
+      return {
+        schedule: await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique(),
+        wakes: scheduled.filter(
+          ({ name, state }) => name === 'ingestion/queue:wake' && state.kind === 'pending',
+        ).length,
+      }
+    })
+  const insert = async (state: 'failed' | 'pending') => {
+    await t.run(async (ctx) => {
+      await writeRecords(ctx, async (writer) => {
+        await writer.insert({
+          alerts: false,
+          from_scan_at: hour(0),
+          kind: 'pair',
+          scan_at: hour(1),
+          state,
+        })
+      })
+    })
+  }
+
+  await t.mutation(internal.ingestion.sync.run, {})
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+  await settle(t)
+
+  await t.run(async (ctx) => {
+    for (const record of await ctx.db.query(INGESTION_RECORDS_TABLE).collect()) {
+      await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
+    }
+    for (const row of await ctx.db.query(QUEUE_SCHEDULE_TABLE).collect()) {
+      await ctx.db.delete(QUEUE_SCHEDULE_TABLE, row._id)
+    }
+  })
+  await insert('pending')
+  expect(await t.mutation(internal.ingestion.queue.run, {})).toBe('ingest')
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+  await settle(t)
+
+  await t.run(async (ctx) => {
+    for (const row of await ctx.db.query(QUEUE_SCHEDULE_TABLE).collect()) {
+      await ctx.db.delete(QUEUE_SCHEDULE_TABLE, row._id)
+    }
+  })
+  await insert('failed')
+  expect(await t.mutation(internal.ingestion.queue.retry, {})).toBeGreaterThan(0)
+  expect(await inspect()).toEqual({ schedule: null, wakes: 1 })
+
+  // The wake does its work once drained: the queue holds a schedule again and nothing is stuck.
+  await settle(t, { receipts: false })
+  const drained = await inspect()
+  expect(drained.schedule).not.toBeNull()
+  expect(drained.wakes).toBe(0)
 })
 
 test('repeated wakeups leave at most one queue step waiting', async () => {
@@ -454,9 +417,7 @@ test('repeated wakeups leave at most one queue step waiting', async () => {
   expect(await waiting()).toBe(1)
 
   await settle(t)
-  await t.run(async (ctx) => {
-    await scheduleQueue(ctx)
-  })
+  await t.mutation(internal.ingestion.queue.wake, {})
   expect(await waiting()).toBe(1)
 })
 

@@ -6,7 +6,7 @@ import { z } from 'zod'
 import type { RawScan } from '#scans/collection'
 import { extractScan } from '#scans/extract'
 
-export type Selection = { model?: string; provider?: string; scope: 'orca' | 'collected' }
+export type Selection = { scope: 'orca' | 'collected' }
 export type Population = {
   examples: Record<string, { id: string; value: JsonValue }[]>
   profile: JsonProfile
@@ -29,7 +29,6 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
   const models = new Map<string, JsonRecord>()
   const endpoints = new Map<string, JsonRecord>()
   const providers = new Map<string, JsonRecord>()
-  const relationships = new Map<string, { model: string; provider?: string }>()
 
   for (const entry of scan.entries) {
     if (extracted !== null && !extracted.models.has(entry.model_id)) {
@@ -68,51 +67,18 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
         }
 
         endpoints.set(endpoint.id, jsonRecord.parse(endpoint))
-
-        relationships.set(endpoint.id, {
-          model: entry.model_id,
-          provider: observedProvider.success ? observedProvider.data.slug : undefined,
-        })
       } else {
         endpoints.set(endpoint.id, scopedEndpoint)
-
-        relationships.set(endpoint.id, {
-          model: entry.model_id,
-          provider: scopedEndpoint.provider_id,
-        })
       }
     }
   }
 
   const scoped = extracted ?? { endpoints, models, providers }
 
-  const selectedEndpoints = [...scoped.endpoints].filter(([id]) => {
-    const relation = relationships.get(id)
-    return (
-      (selection.model === undefined || relation?.model === selection.model) &&
-      (selection.provider === undefined || relation?.provider === selection.provider)
-    )
-  })
-
-  const relatedModels = new Set(selectedEndpoints.map(([id]) => relationships.get(id)?.model))
-  const relatedProviders = new Set(selectedEndpoints.map(([id]) => relationships.get(id)?.provider))
-
-  const selectedModels = [...scoped.models].filter(
-    ([id]) =>
-      (selection.model === undefined || id === selection.model) &&
-      (selection.provider === undefined || relatedModels.has(id)),
-  )
-
-  const selectedProviders = [...scoped.providers].filter(
-    ([id]) =>
-      (selection.provider === undefined || id === selection.provider) &&
-      (selection.model === undefined || relatedProviders.has(id)),
-  )
-
   return {
-    endpoints: profilePopulation(selectedEndpoints),
-    models: profilePopulation(selectedModels),
-    providers: profilePopulation(selectedProviders),
+    endpoints: profilePopulation([...scoped.endpoints]),
+    models: profilePopulation([...scoped.models]),
+    providers: profilePopulation([...scoped.providers]),
     report_format: 'orca-scan-profile-v1',
     scan_at: scan.scan_at,
     selection,

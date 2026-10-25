@@ -1,38 +1,14 @@
-import { ConvexError } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
 import { internal } from '#generated/api'
 import { httpAction } from '#generated/server'
-import * as scans from '#scans'
-
-import { buildSnapshot } from './snapshot'
 
 const allowOrigin = { 'Access-Control-Allow-Origin': '*' } as const
 
 /**
- * GET /public-api-preview/v2
- *
- * Uncached diagnostic path. The public Next rewrite serves `/public-api-preview/v2-cached`.
- */
-export const serve = httpAction(async (ctx) => {
-  const cached = await ctx.runQuery(internal.public_api.v2.cache.get)
-  const cachedScanAt = cached?.scan_at ?? null
-  const scanAt = (await scans.latest(ctx, { atOrAfter: cachedScanAt })) ?? cachedScanAt
-
-  if (scanAt === null) {
-    throw new ConvexError('Public API requires a stored scan')
-  }
-
-  const result = await buildSnapshot(ctx, scanAt)
-  return Response.json(result, {
-    headers: allowOrigin,
-  })
-})
-
-/**
  * GET /public-api-preview/v2-cached
  *
- * Serves the prebuilt gzipped payload written by the independent five-minute refresh cron. This path never rebuilds the response.
+ * Serves the prebuilt gzipped payload written by the hourly refresh cron. This path never rebuilds the response.
  *
  * After the first refresh, a missing pointer or blob is a broken invariant.
  * Those cases are logged and returned as 500 — not 404 — so we do not leak
@@ -43,7 +19,7 @@ export const serve = httpAction(async (ctx) => {
  * - otherwise → gunzip at the origin and return JSON
  *
  * Caching:
- * - `Cache-Control: public, s-maxage=300, stale-while-revalidate=3600`
+ * - `Cache-Control: public, s-maxage=900, stale-while-revalidate=3600`
  * - `ETag` is the storage id (plus `-identity` when serving uncompressed)
  * - `Last-Modified` is the cache document `_creationTime`
  * - `If-None-Match` / `If-Modified-Since` → 304
@@ -108,7 +84,7 @@ export const serveCached = httpAction(async (ctx, req) => {
   })
 })
 
-const cacheControl = 'public, s-maxage=300, stale-while-revalidate=3600'
+const cacheControl = 'public, s-maxage=900, stale-while-revalidate=3600'
 
 function representationEtag(storageId: string, encoding: 'gzip' | 'identity'): string {
   return encoding === 'gzip' ? `"${storageId}"` : `"${storageId}-identity"`

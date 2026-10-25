@@ -3,21 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "scan-analysis": "bun run scan-analysis/index.ts",
+    "ingestion-load": "bun run ingestion-load/index.ts",
     "scan-download": "bun run scan-download/index.ts",
     "test": "bun run --cwd ../.. test --project scripts",
     "v5-events-spike": "bun run v5-events-spike/index.ts"
   },
   "dependencies": {
     "@orca/backend": "workspace:*",
-    "@orca/json-profile": "workspace:*",
     "commander": "^15.0.0"
   },
   "devDependencies": {
     "@orca/config": "workspace:*",
     "@oxc-project/types": "0.155.0",
     "@types/bun": "catalog:",
-    "convex": "catalog:",
     "oxc-parser": "0.155.0",
     "typescript": "catalog:",
     "vitest": "catalog:"

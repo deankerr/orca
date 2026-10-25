@@ -2,8 +2,8 @@ import { mergedStream, stream } from 'convex-helpers/server/stream'
 import { paginationOptsValidator } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
 
-import { action, env, mutation, query } from '#generated/server'
-import type { QueryCtx } from '#generated/server'
+import { action, env, internalAction, mutation, query } from '#generated/server'
+import type { ActionCtx, QueryCtx } from '#generated/server'
 import * as scans from '#scans'
 
 import { requireAdmin } from '../admin'
@@ -11,7 +11,8 @@ import { clock } from '../products/shared/clock'
 import schema from '../schema'
 import { ingestionParallelism } from './pool'
 import { queueCapacity, retryFailed } from './queue'
-import { recordCounts } from './records'
+import { requestSweep } from './reconcile'
+import { deadLetteredCount, recordCounts } from './records'
 import { kickoff } from './sync'
 import {
   INGESTION_RECORDS_TABLE,
@@ -27,6 +28,9 @@ import { setTarget } from './target'
 const HISTOGRAM_BUCKETS_LIMIT = 240
 
 const BASELINE_LIMIT = 8
+
+/** Dead-lettered aggregate operations shown before the count saturates. */
+const DEAD_LETTER_LIMIT = 100
 
 const namespaces = recordKind.members.flatMap((kind) =>
   recordState.members.map((state): [RecordKind, RecordState] => [kind.value, state.value]),
@@ -75,6 +79,7 @@ export const overview = query({
       counts: Object.fromEntries(
         namespaces.map((namespace, index) => [namespace.join('/'), totals[index] ?? 0]),
       ),
+      deadLettered: await deadLetteredCount(ctx, DEAD_LETTER_LIMIT),
       execution: { capacity: queueCapacity(), parallelism: ingestionParallelism() },
       frontier: frontier?.scan_at ?? null,
       latestCompleteFull: full?.scan_at ?? null,
@@ -87,6 +92,7 @@ export const overview = query({
     baselines: v.array(v.object({ scan_at: v.string(), state: recordState })),
     clock: scanAt,
     counts: v.record(v.string(), v.number()),
+    deadLettered: v.number(),
     execution: v.object({ capacity: v.number(), parallelism: v.number() }),
     frontier: scanAt,
     latestCompleteFull: scanAt,
@@ -213,15 +219,28 @@ export const records = query({
   },
 })
 
+async function sourceScanRange(ctx: ActionCtx) {
+  const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
+  return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
+}
+
+const sourceScanRangeReturns = v.object({ earliest: scanAt, latest: scanAt })
+
 /** The object store's capture range: the earliest scan bounds a backfill, the latest shows lag. */
 export const sourceScans = action({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx)
-    const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
-    return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
+    return await sourceScanRange(ctx)
   },
-  returns: v.object({ earliest: scanAt, latest: scanAt }),
+  returns: sourceScanRangeReturns,
+})
+
+/** Operator entry point for `packages/scripts/ingestion-load.ts`, which sizes its target from the latest scan. */
+export const sourceScanBounds = internalAction({
+  args: {},
+  handler: async (ctx) => await sourceScanRange(ctx),
+  returns: sourceScanRangeReturns,
 })
 
 export const saveTarget = mutation({
@@ -239,6 +258,7 @@ export const runSync = mutation({
   handler: async (ctx) => {
     await requireAdmin(ctx)
     await kickoff(ctx)
+    await requestSweep(ctx)
     return null
   },
   returns: v.null(),

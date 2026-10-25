@@ -147,6 +147,17 @@ function SourceScansFact({
   )
 }
 
+/** Dead-lettered aggregate operations mean the record counts have drifted. */
+function DeadLetters({ dropped }: { dropped: number }) {
+  return dropped === 0 ? null : (
+    <span className="text-destructive">
+      {' '}
+      · {dropped}
+      {dropped >= 100 ? '+' : ''} dead-lettered count updates: rebuild counts
+    </span>
+  )
+}
+
 export default function IngestionPage() {
   const overview = useQuery(api.ingestion.admin.overview)
   const source = useSourceScans()
@@ -172,6 +183,7 @@ export default function IngestionPage() {
           Clock {scanTime(overview.clock)} · cron {overview.automation.cron ? 'on' : 'off'} ·
           Discord auto-send {overview.automation.discord ? 'on' : 'off'} · parallelism{' '}
           {overview.execution.parallelism}, capacity {overview.execution.capacity}
+          <DeadLetters dropped={overview.deadLettered} />
         </p>
       </PageHeader>
 

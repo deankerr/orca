@@ -33,7 +33,15 @@ export const RETRY_BATCH = 256
 /** More would be an invalid registry; the queue worker then waits rather than guessing. */
 const BASELINE_LIMIT = 8
 
-/** Coordinate wakeups separately so queue contention cannot roll back a completion. */
+/**
+ * Ask for a queue step from any transaction. Only `wake` touches the shared schedule document,
+ * in its own transaction, so queue contention cannot roll back the caller's work.
+ */
+export async function requestQueueStep(ctx: MutationCtx) {
+  await ctx.scheduler.runAfter(0, internal.ingestion.queue.wake, {})
+}
+
+/** The only writer of the queue schedule; callers reach it through `requestQueueStep`. */
 export const wake = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -44,7 +52,7 @@ export const wake = internalMutation({
 })
 
 /** Schedule a queue step unless one is already waiting to start; a running step does not count. */
-export async function scheduleQueue(ctx: MutationCtx) {
+async function scheduleQueue(ctx: MutationCtx) {
   const schedule = await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique()
   const waiting =
     schedule === null
@@ -86,7 +94,7 @@ export const run = internalMutation({
       }
     })
 
-    await scheduleQueue(ctx)
+    await requestQueueStep(ctx)
     return decision.kind
   },
   returns: literals('withdraw', 'ingest', 'baseline', 'idle'),
@@ -259,26 +267,24 @@ export async function retryFailed(ctx: MutationCtx, record_id?: RecordId): Promi
           ...(await byState(ctx, 'pair', 'failed').take(RETRY_BATCH)),
         ].slice(0, RETRY_BATCH)
       : [await ctx.db.get(INGESTION_RECORDS_TABLE, record_id)].filter(
-          (record) => record?.state === 'failed',
+          (record): record is NonNullable<typeof record> => record?.state === 'failed',
         )
 
   await writeRecords(ctx, async (records) => {
     await Promise.all(
       failed.map(async (record) => {
-        if (record !== null) {
-          await records.patch(record, {
-            current_scope: undefined,
-            current_stats: undefined,
-            state: 'pending',
-            work_id: undefined,
-          })
-        }
+        await records.patch(record, {
+          current_scope: undefined,
+          current_stats: undefined,
+          state: 'pending',
+          work_id: undefined,
+        })
       }),
     )
   })
 
   if (failed.length > 0) {
-    await scheduleQueue(ctx)
+    await requestQueueStep(ctx)
   }
   return failed.length
 }

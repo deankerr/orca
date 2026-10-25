@@ -29,6 +29,9 @@ export default function AdminPage() {
           <Link href="/admin/resources" className="text-xs underline">
             Open resources
           </Link>
+          <Link href="/admin/scan-analysis" className="text-xs underline">
+            Open scan analysis
+          </Link>
         </div>
       </PageHeader>
     </PageContainer>

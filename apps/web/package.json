@@ -14,6 +14,7 @@
     "@orca/api": "workspace:*",
     "@orca/backend": "workspace:*",
     "@orca/contract": "workspace:*",
+    "@orca/json-profile": "workspace:*",
     "@posthog/nextjs-config": "^1.11.5",
     "@shikijs/langs": "4.5.0",
     "@shikijs/themes": "4.5.0",

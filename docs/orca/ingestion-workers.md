@@ -117,7 +117,7 @@ Bootstrap pairs, backward pairs, and baselines describe history and never alert.
 
 Each committed batch starts the registry, extends an existing edge, or places a baseline. Overlapping
 attempts cannot create two starting batches or extend an obsolete edge; a decision overtaken by another
-registration is recomputed from the resulting registry.
+registration is recomputed from the resulting registry. The register action reports such a step as `overtaken`, distinct from `idle`.
 
 ### Register a baseline
 
@@ -230,6 +230,9 @@ one logical operation. An overlapping queue attempt cannot admit the same pendin
 An interruption leaves either pending work to select again or an accepted request whose execution
 is somebody else's responsibility.
 
+A lost completion is backstopped by reconciliation: an accepted record whose request has finished
+without settling it becomes `failed`, so it stops consuming capacity and blocking pairs, and awaits an explicit retry.
+
 The queue worker ignores queued, failed, and complete pairs. A failed record becomes eligible only
 when an explicit retry changes it to pending.
 
@@ -244,7 +247,7 @@ completion across retries; withdrawal releases them.
 
 ## Repair
 
-Repair is manual. With automatic invocation stopped and no queued work, an operator withdraws the
+Lost completions are repaired automatically by failing the record; retry stays explicit. Other repair is manual. With automatic invocation stopped and no queued work, an operator withdraws the
 affected record and registers it again. The workers then resume from the resulting registry.
 
 - Edge-only registration never re-adds an interior pair; the operator does.
@@ -278,3 +281,14 @@ Reverse queueing reduces redundant writes but does not require reverse completio
 The register worker extends the registry only at its edges and never creates or searches for gaps.
 Collection never introduces a scan inside an existing range, so reading the two registry edges is
 sufficient. The projection model permits gaps, but this worker never produces them.
+
+## Simulation testing
+
+`simulation.test.ts` drives the real functions with a seeded scenario until quiescence, then checks the
+registry, `expectIngestionInvariants`, and that every projection equals a fault-free reference.
+Workpool completions run inside the component, so lost callbacks are modeled by their end state.
+
+- Faults: failed source loads, completions reverted to `queued` with finished work, stale and duplicate
+  completions, operator retries, cron ticks, arriving scans, and a target widened backward.
+- After faults stop, only completions, the reconcile sweep, and retry-all move work.
+- `SIM_SEED=n` replays one scenario and a failure prints its seed and event log; `SIM_RUNS=n` sets the count.
