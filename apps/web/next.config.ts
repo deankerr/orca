@@ -1,4 +1,5 @@
 import { withPostHogConfig } from '@posthog/nextjs-config'
+import { withEnvStyles } from 'env.style'
 import type { NextConfig } from 'next'
 
 import { getConvexHttpUrl } from './lib/utils'
@@ -48,6 +49,11 @@ const nextConfig: NextConfig = {
 const posthogApiKey = process.env.POSTHOG_API_KEY
 const posthogProjectId = process.env.POSTHOG_PROJECT_ID
 
-export default posthogApiKey !== undefined && posthogProjectId !== undefined
-  ? withPostHogConfig(nextConfig, { personalApiKey: posthogApiKey, projectId: posthogProjectId })
-  : nextConfig
+// Tint the favicon in development and preview; production keeps the original.
+export default withEnvStyles(
+  posthogApiKey !== undefined && posthogProjectId !== undefined
+    ? withPostHogConfig(nextConfig, { personalApiKey: posthogApiKey, projectId: posthogProjectId })
+    : nextConfig,
+  // Keep the white outline and highlight so the mark stays recognizable.
+  { excludeColors: ['#fff'] },
+)

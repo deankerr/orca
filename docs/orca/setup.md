@@ -35,7 +35,7 @@ or running app. Start from the root so Next.js and Convex receive the same brows
 
 ```sh
 bun run dev          # Web and backend
-bun run dev:web      # Web, including a backend push before startup
+bun run dev:web      # Web
 bun run dev:backend  # Backend
 ```
 

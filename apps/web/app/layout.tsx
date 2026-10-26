@@ -6,7 +6,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { AppShell } from '@/components/app-layout/app-shell'
 import { Toaster } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { cn, withEnvironmentPrefix } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 import { ConvexClientProvider } from './convex-client-provider'
 
@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   description: 'Compare models and providers available on OpenRouter',
   title: {
-    default: withEnvironmentPrefix('ORCA'),
-    template: withEnvironmentPrefix('ORCA ⋅ %s'),
+    default: 'ORCA',
+    template: 'ORCA ⋅ %s',
   },
 }
 

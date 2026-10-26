@@ -143,7 +143,8 @@ authenticated Convex CLI. WorkOS owns login policy and sign-out allowlists outsi
 
 `portless.json` owns the app name. Portless allocates ports and forwarding; `turbo.json` passes the port,
 host, CA certificate, and browser origin to dev tasks. `PORTLESS_TAILSCALE=1` enables tailnet sharing.
-Web startup runs `convex dev --once` before Next.js, pushing code and registering the callback.
+Backend pushes register the origin's callback and CORS origin in WorkOS; registration is additive and
+persists. Web-only startup pushes nothing, so a new origin needs one `dev` or `dev:backend` run before login.
 
 The maintained shared dev/preview WorkOS sign-out allowlist is:
 
@@ -164,22 +165,25 @@ The maintained shared dev/preview WorkOS sign-out allowlist is:
 
 Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_URL` for that backend.
 
-| Variable                            | Behavior                                                                                      |
-| ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                   |
-| `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                  |
-| `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.      |
-| `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.           |
-| `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.     |
-| `VERCEL_ENV`                        | Server/build tier; selects preview callback/title behavior. Must agree with the browser tier. |
-| `VERCEL_BRANCH_URL`                 | Preview branch hostname used by both backend and web builds.                                  |
-| `POSTHOG_API_KEY`                   | **Secret** source-map upload credential; requires `POSTHOG_PROJECT_ID`.                       |
-| `POSTHOG_PROJECT_ID`                | Source-map upload destination; requires `POSTHOG_API_KEY`.                                    |
-| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | Query-cache invalidation and analytics version; defaults to `development`.                    |
-| `NODE_ENV`                          | Development enables local title prefix, breakpoint display, and detailed errors.              |
+| Variable                            | Behavior                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                     |
+| `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                    |
+| `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.        |
+| `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.             |
+| `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.       |
+| `VERCEL_ENV`                        | Server/build tier; selects preview callback and favicon tint. Must agree with the browser tier. |
+| `VERCEL_BRANCH_URL`                 | Preview branch hostname used by both backend and web builds.                                    |
+| `POSTHOG_API_KEY`                   | **Secret** source-map upload credential; requires `POSTHOG_PROJECT_ID`.                         |
+| `POSTHOG_PROJECT_ID`                | Source-map upload destination; requires `POSTHOG_API_KEY`.                                      |
+| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | Query-cache invalidation and analytics version; defaults to `development`.                      |
+| `NODE_ENV`                          | Development enables favicon tint, breakpoint display, and detailed errors.                      |
 
 The public query cache persists for 24 hours in browser local storage; its build key discards older
 builds' entries before hydration. Browser and Discord logo origins are configured separately.
+
+`env.style` tints the favicon blue in development and amber in preview, leaving white pixels untinted;
+production serves the original. The tint is fixed at build time.
 
 PostHog proxy destinations are `us-assets.i.posthog.com` and `us.i.posthog.com`; the UI host is
 `https://us.posthog.com`. EU or self-hosted installations require endpoint changes as well as credentials.
