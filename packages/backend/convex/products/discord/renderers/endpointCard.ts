@@ -1,9 +1,10 @@
 import type { AlertChange, AlertFact, EntityAlert } from '../../shared/alerts/curate'
+import { findFact, formatQuantity } from '../../shared/alerts/present'
 import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { arrival, escape, lifecycleMarker } from './display'
-import { factsText, fieldChange } from './fields'
-import { pricingChanges, pricingFacts } from './pricing'
+import { arrival, bulletList, dot, escape, lifecycleMarker, stackRows } from './display'
+import { fieldChange } from './fields'
+import { pricingChanges, pricingSummary } from './pricing'
 
 type EndpointAlert = Extract<EntityAlert, { entity_kind: 'endpoint' }>
 
@@ -13,10 +14,11 @@ export function endpointCard(event: EndpointAlert, urls: DiscordUrls): Card {
   const prefix = event.entity_id.slice(0, 6)
   const url = gridUrl(model.model_id, urls, prefix)
 
-  const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint ${endpointState(event)}.`
+  // The UUID prefix names the endpoint among its provider's offerings and matches the grid link.
+  const heading = `${lifecycleMarker(event)}**${escape(endpoint.provider_display_name)}** endpoint (${prefix}) ${endpointState(event)}.`
 
   return embedCard([heading, ...endpointBody(event)].filter(Boolean).join('\n\n'), {
-    author: { iconURL: logoUrl(model.model_id, urls), name: `${model.model_id} [${prefix}]`, url },
+    author: { iconURL: logoUrl(model.model_id, urls), name: model.model_id, url },
     color: lifecycleColor(event),
     footer: { iconURL: logoUrl(provider.provider_id, urls), text: endpoint.provider_tag },
     timestamp: event.observed_at,
@@ -48,15 +50,15 @@ function endpointChanges(changes: AlertChange[]): string[] {
   )
 
   const groups = [
-    { label: 'Pricing', rows: pricingChanges(prices) },
+    { changeRows: pricingChanges(prices), label: 'Pricing' },
     ...['Limits', 'Data policy', 'Details'].map((label) => ({
+      changeRows: (fields.get(label) ?? []).map(endpointFieldChange),
       label,
-      rows: (fields.get(label) ?? []).map(endpointFieldChange),
     })),
-  ].filter((group) => group.rows.length > 0)
+  ].filter((group) => group.changeRows.length > 0)
 
-  return groups.map(({ label, rows }) =>
-    groups.length > 1 ? `◇ **${label}**\n${rows.join('\n')}` : rows.join('\n\n'),
+  return groups.map(({ label, changeRows }) =>
+    groups.length > 1 ? `◇ **${label}**\n${stackRows(changeRows)}` : stackRows(changeRows),
   )
 }
 
@@ -73,16 +75,69 @@ export function endpointFieldChange(change: AlertChange): string {
   return fieldChange(change, { suffix: unit(change.field) })
 }
 
+/** Listings summarize facts as bullet lists; the grid link carries the full presentation. */
 function endpointDetails(facts: readonly AlertFact[], scheduled: boolean | undefined): string[] {
+  const limits = [limitsSummary(facts), quantizationSummary(facts)].filter(Boolean).join(dot)
+  const policy = policySummary(facts).filter(Boolean).join(dot)
+
+  // Data policy is a separate list, so it reads apart from limits and prices.
   return [
-    factsText(facts, ['context_length', 'max_completion_tokens', 'quantization']),
-    pricingFacts(facts, scheduled),
-    factsText(
-      facts,
-      ['data_policy.training', 'data_policy.retains_prompts', 'data_policy.retention_days'],
-      { suffix: unit },
-    ),
+    bulletList([
+      limits,
+      ...pricingSummary(facts),
+      scheduled === true ? 'Price schedule detected.' : '',
+    ]),
+    bulletList([policy]),
   ].filter(Boolean)
 }
+
+/** `**Context** 262K (65K)`, with the output limit in parentheses. */
+function limitsSummary(facts: readonly AlertFact[]): string {
+  const tokens = (name: string) => {
+    const value = findFact(facts, name, 'count')?.value
+
+    return value === undefined || value === null ? undefined : compactCount(value)
+  }
+
+  const [context, output] = [tokens('context_length'), tokens('max_completion_tokens')]
+
+  if (context === undefined) {
+    return output === undefined ? '' : `**Max output** ${output}`
+  }
+
+  return output === undefined ? `**Context** ${context}` : `**Context** ${context} (${output})`
+}
+
+function quantizationSummary(facts: readonly AlertFact[]): string {
+  const quantization = findFact(facts, 'quantization', 'text')?.value
+
+  return quantization === undefined || quantization === null || quantization === 'unknown'
+    ? ''
+    : escape(quantization.toUpperCase())
+}
+
+/** Only affirmative policies are worth a line; false and unknown flags are omitted. */
+function policySummary(facts: readonly AlertFact[]): string[] {
+  const flag = (name: string) => findFact(facts, name, 'flag')?.value === true
+  const retention = findFact(facts, 'data_policy.retention_days', 'count')
+
+  const days =
+    retention === undefined || retention.value === null
+      ? ''
+      : `: ${formatQuantity(retention)}${unit(retention.field)}`
+
+  return [
+    flag('data_policy.training') ? 'Trains on prompts' : '',
+    flag('data_policy.retains_prompts') ? `Retains prompts${days}` : '',
+  ]
+}
+
+/** Token limits read at a glance: 262,144 is 262K and 65,536 is 65K; limits never round up. */
+const compactCount = (value: number): string =>
+  new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: value < 1_000_000 ? 0 : 2,
+    notation: 'compact',
+    roundingMode: 'floor',
+  }).format(value)
 
 const unit = (name: string) => (name === 'data_policy.retention_days' ? ' days' : '')

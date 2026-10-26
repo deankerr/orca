@@ -140,18 +140,18 @@ test('batches five endpoint unlistings at one observation and renders their prov
     members.map((member) => member.source_id).toSorted(),
   )
   expect(embed?.title).toBeUndefined()
-  expect(embed?.author?.name).toBe('NextBit • nextbit')
+  expect(embed?.author?.name).toBe('nextbit')
   expect(embed?.author?.url).toBe('https://orca.orb.town/?q=nextbit')
   expect(embed?.author?.icon_url).toContain('nextbit')
   expect(embed?.color).toBe(0xef_44_44)
-  expect(embed?.description?.startsWith('− Provider **NextBit** unlisted 5 endpoints.\n\n')).toBe(
+  expect(embed?.description?.startsWith('Provider **NextBit** unlisted 5 endpoints.\n\n')).toBe(
     true,
   )
-  expect(embed?.description).not.toContain('**`nextbit`**')
+  expect(embed?.description).not.toContain('(nextbit)')
   expect(embed?.description).not.toContain('nextbit/fp8')
 
   for (const [model_id, prefix] of endpoints) {
-    expect(embed?.description?.split('\n')).toContain(`\`${model_id}\` • \`${prefix}\``)
+    expect(embed?.description?.split('\n')).toContain(`- ${model_id} (${prefix})`)
   }
 
   const paged = batchCards(
@@ -306,7 +306,7 @@ test('a remainder keeps its original event eligibility when its shared change is
   expect(notifications).toHaveLength(2)
   expect(notifications[0]?.source_ids).toHaveLength(5)
   expect(notifications[1]?.source_ids).toEqual(['event-0'])
-  expect(JSON.stringify(notifications[1]?.message)).toContain('output')
+  expect(JSON.stringify(notifications[1]?.message)).toContain('**Output**')
 })
 
 test('batch cards identify all three entity types and page long lists without losing identities', () => {
@@ -338,7 +338,7 @@ test('batch cards identify all three entity types and page long lists without lo
         field: 'privacy_policy_url',
         kind: 'text',
       },
-      ['Provider • `provider`', 'privacy_policy_url', 'https://example.com/legal/privacy'],
+      ['- Provider (provider)', 'privacy_policy_url', 'https://example.com/legal/privacy'],
     ],
     [
       bucket(0).event,
@@ -379,7 +379,7 @@ test('batch cards identify all three entity types and page long lists without lo
 
   for (const { message, source_ids } of cards) {
     expect(message.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4000)
-    expect(message.embeds?.[0]?.description).toContain('**Provider** • `provider`\n')
+    expect(message.embeds?.[0]?.description).toContain('**Provider** (provider)\n')
     expect(source_ids.length).toBeLessThanOrEqual(40)
     expect(message.allowed_mentions).toEqual({ parse: [] })
   }
@@ -423,10 +423,8 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
 
       const label = groupByModel ? `route-${index}/flex` : `author/model-${index % modelCount}`
 
-      expect(description).toContain(
-        groupByModel ? `**\`${group}\`**\n` : `**Provider** • \`${group}\`\n`,
-      )
-      expect(description.split('\n')).toContain(`\`${label}\` • \`00000${index}\``)
+      expect(description).toContain(groupByModel ? `**${group}**\n` : `**Provider** (${group})\n`)
+      expect(description.split('\n')).toContain(`- ${label} (00000${index})`)
     }
 
     if (!groupByModel) {
@@ -546,7 +544,10 @@ test('oversized batch details and identity fields truncate without losing member
 
     const cards = batchCards(
       {
-        change: { ...shared, removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}`) },
+        change: {
+          ...shared,
+          removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}-${'x'.repeat(20)}`),
+        },
         members,
         type: 'batch',
       },

@@ -1,7 +1,13 @@
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
-import { fieldLabel, formatQuantity, isQuantity, presentChange } from '../../shared/alerts/present'
+import {
+  fieldLabel,
+  formatQuantity,
+  isBlockText,
+  isQuantity,
+  presentChange,
+} from '../../shared/alerts/present'
 import type { Movement } from '../../shared/alerts/present'
-import { code, dot, fieldRow, valueChange } from './display'
+import { changeRow, dot, escape, presence, strike, valueChange } from './display'
 
 export function fieldChange(
   change: AlertChange,
@@ -15,16 +21,17 @@ export function fieldChange(
   const presented = presentChange(change, { fractionDigits: 0 })
 
   if (presented.transition === 'opaque') {
-    return fieldRow(label, 'changed')
+    return changeRow(label, 'changed')
   }
 
   if (presented.transition === 'members') {
-    const lines = [
-      ...presented.added.map((item) => `+ ${code(item)}`),
-      ...presented.removed.map((item) => `− ~~${code(item)}~~`),
-    ]
+    const members = (items: string[], transition: 'added' | 'removed') =>
+      items.length === 0 ? [] : [presence(items.map(escape).join(', '), transition)]
 
-    return fieldRow(label, lines.join('\n'), { layout: 'block' })
+    return changeRow(
+      label,
+      [...members(presented.added, 'added'), ...members(presented.removed, 'removed')].join(dot),
+    )
   }
 
   if (change.kind === 'prose') {
@@ -32,30 +39,49 @@ export function fieldChange(
   }
 
   if (presented.transition === 'added' || presented.transition === 'removed') {
-    return fieldRow(label, fieldValue(presented.fact, { suffix }), { change: presented.transition })
+    const value = changeValue(presented.fact, suffix)
+
+    return isBlockText(presented.fact, 'single')
+      ? changeRow(label, blockPresence(`> ${value}`, presented.transition), { layout: 'block' })
+      : changeRow(label, presence(value, presented.transition))
   }
 
-  return fieldRow(
+  const [before, after] = [
+    changeValue(presented.before, suffix),
+    changeValue(presented.after, suffix),
+  ]
+
+  // Like the Monitor, long text strikes the old value above the new one.
+  if (isBlockText(presented.before, 'pair') || isBlockText(presented.after, 'pair')) {
+    return changeRow(label, `> ~~${before}~~\n> ${after}`, { layout: 'block' })
+  }
+
+  return changeRow(
     label,
-    valueChange(fieldValue(presented.before, { suffix }), fieldValue(presented.after, { suffix }), {
+    valueChange(before, after, {
       annotation: annotation ?? (presented.movement === null ? '' : delta(presented.movement)),
     }),
   )
 }
 
+/** A block's presence is named after its label: `- **description** (removed)`, then the quote. */
+function blockPresence(quoted: string, transition: 'added' | 'removed'): string {
+  return transition === 'added' ? `(new)\n${quoted}` : `(removed)\n${strike(quoted)}`
+}
+
 function proseChange(label: string, before: string | null, after: string | null): string {
   const start = before !== null && after !== null ? changedExcerptStart(before, after) : 0
-  const prose = (text: string | null) => (text === null ? code('null') : quote(text, start))
 
-  if (before === null) {
-    return fieldRow(label, prose(after), { change: 'added', layout: 'block' })
+  if (before === null || after === null) {
+    const [text, transition] =
+      before === null ? [after, 'added' as const] : [before, 'removed' as const]
+
+    return changeRow(label, text === null ? 'null' : blockPresence(quote(text, start), transition))
   }
 
-  if (after === null) {
-    return fieldRow(label, prose(before), { change: 'removed', layout: 'block' })
-  }
-
-  return fieldRow(label, `Before\n${prose(before)}\n\nAfter\n${prose(after)}`, { layout: 'block' })
+  return changeRow(label, `Before\n${quote(before, start)}\n\nAfter\n${quote(after, start)}`, {
+    layout: 'block',
+  })
 }
 
 /** Prefix excerpts are sufficient until the change falls beyond the visible 800 characters. */
@@ -73,49 +99,30 @@ function changedExcerptStart(before: string, after: string): number {
   return firstDifference < 800 ? 0 : firstDifference - 160
 }
 
-/** Facts in the caller's order; unknown and empty facts are omitted. */
-export function factsText(
-  facts: readonly AlertFact[],
-  fields: string[],
-  {
-    label = fieldLabel,
-    suffix,
-  }: { label?: (field: string) => string; suffix?: (field: string) => string } = {},
-): string {
-  return fields
-    .flatMap((name) => {
-      const item = facts.find((candidate) => candidate.field === name)
-
-      return item === undefined ||
-        item.value === null ||
-        (item.kind === 'list' && item.value.length === 0)
-        ? []
-        : [fieldRow(label(name), fieldValue(item, { suffix: suffix?.(name) }))]
-    })
-    .join(dot)
-}
-
-export function fieldValue(
-  item: AlertFact,
-  { suffix = '' }: { suffix?: string | undefined } = {},
-): string {
+/** Change values are plain text: escaped, with links left clickable. */
+function changeValue(item: AlertFact, suffix = ''): string {
   if (item.value === null) {
-    return code('null')
-  }
-
-  if (item.kind === 'flag') {
-    return code(String(item.value))
+    return 'null'
   }
 
   if (isQuantity(item)) {
-    return code(`${formatQuantity(item)}${item.kind === 'count' ? suffix : ''}`)
+    return `${formatQuantity(item)}${item.kind === 'count' ? suffix : ''}`
+  }
+
+  if (item.kind === 'flag') {
+    return String(item.value)
   }
 
   if (item.kind === 'list') {
-    return code(item.value.length === 0 ? '[]' : item.value.join(', '))
+    return item.value.length === 0 ? '[]' : item.value.map(escape).join(', ')
   }
 
-  return code(excerpt(item.value))
+  return link(item.value) ?? escape(excerpt(item.value))
+}
+
+/** Angle brackets bound an http(s) URL so adjacent Markdown, such as `~~`, stays outside the link. */
+function link(text: string): string | null {
+  return /^https?:\/\/[^\s<>]+$/iu.test(text) ? `<${text}>` : null
 }
 
 /** Upstream Markdown uses OpenRouter-relative links; restore their origin for Discord. */
@@ -142,5 +149,5 @@ export function delta({ isUp, isFavorable, percent }: Movement): string {
   const direction = deltaSymbols[isUp ? 'up' : 'down']
   const symbol = isFavorable ? direction.favorable : direction.unfavorable
 
-  return percent === '' ? symbol : `${symbol} ${percent}`
+  return percent === '' ? symbol : `${symbol}${percent}`
 }

@@ -1,42 +1,51 @@
 export const dot = ' • '
 
-const changeMarkers = { added: '+ ', removed: '− ' }
-const arrivalMarkers = { discovered: '✨ ', listed: '+ ', relisted: '↺ ' }
-
-/** Wrap preformatted children in a consistent field row or block; labels are plain text. */
-export function fieldRow(
+/**
+ * One change per bullet: `- **label** value`, or the label above a quoted block.
+ * Labels are curated field names; Discord leaves their mid-word underscores alone.
+ */
+export function changeRow(
   label: string,
   children: string,
-  {
-    width = 0,
-    layout = 'inline',
-    change,
-  }: {
-    width?: number
-    layout?: 'inline' | 'block'
-    change?: 'added' | 'removed' | undefined
-  } = {},
+  { layout = 'inline' }: { layout?: 'inline' | 'block' } = {},
 ): string {
-  const key = code(layout === 'inline' ? `${label}:` : label, {
-    width: width + (layout === 'inline' ? 1 : 0),
-  })
+  const key = `- **${label}**`
 
-  const heading = change === 'removed' ? strike(key) : key
-  const value = change === 'removed' ? strike(children) : children
-  const marker = change === undefined ? '' : changeMarkers[change]
+  return layout === 'block' ? `${key}\n${children}` : `${key} ${children}`
+}
 
-  return layout === 'block' ? `${marker}${heading}\n${value}` : `${marker}${heading} ${value}`
+/** `- item` per non-empty line, as one list. */
+export function bulletList(items: readonly string[]): string {
+  return items.flatMap((item) => (item === '' ? [] : [`- ${item}`])).join('\n')
+}
+
+/** Rows stack line by line; a quote is always followed by a blank line before what comes next. */
+export function stackRows(lines: readonly string[]): string {
+  const present = lines.filter(Boolean)
+
+  return present
+    .map((line, index) =>
+      index < present.length - 1 && line.split('\n').at(-1)?.startsWith('>') === true
+        ? `${line}\n`
+        : line,
+    )
+    .join('\n')
+}
+
+/** Added values are new; removed values are struck and named, since bullets carry no marker. */
+export function presence(value: string, transition: 'added' | 'removed'): string {
+  return transition === 'added' ? `${value} (new)` : `${strike(value)} (removed)`
 }
 
 /** Keep quote markers outside strikethrough so removed prose retains its block layout. */
-function strike(children: string): string {
+export function strike(children: string): string {
   return children
     .split('\n')
     .map((line) => (line.startsWith('> ') ? `> ~~${line.slice(2)}~~` : `~~${line}~~`))
     .join('\n')
 }
 
-/** Values arrive formatted; arrows indicate updates, and only removed fields are struck. */
+/** Values arrive formatted; an arrow joins the sides, and a known side alone stands by itself. */
 export function valueChange(
   before: string | undefined,
   after: string | undefined,
@@ -53,16 +62,6 @@ export function valueChange(
   return `${values}${annotation === '' ? '' : ` ${annotation}`}`
 }
 
-/** Padding stays inside the code span; literal backticks/newlines retain the escaped-text fallback. */
-export function code(
-  children: string,
-  { width = 0, align = 'left' }: { width?: number; align?: 'left' | 'right' } = {},
-): string {
-  const text = align === 'right' ? children.padStart(width) : children.padEnd(width)
-
-  return /[`\r\n]/u.test(text) ? escape(text) : `\`${text}\``
-}
-
 /** Escape inline Markdown, leaving ordinary punctuation such as slug hyphens untouched. */
 export const escape = (text: string): string => text.replaceAll(/[\\`*_~|<>[\]]/gu, '\\$&')
 
@@ -77,15 +76,12 @@ export function arrival(
   return previouslyKnown === true ? 'relisted' : 'listed'
 }
 
-/** Each event kind has a marker; arrivals distinguish discoveries and returns. */
+/** A first-ever arrival, as opposed to a return or an arrival with unknown history. */
+export function isDiscovery(event: { type: string; previously_known?: boolean }): boolean {
+  return event.type.endsWith('_added') && arrival(event.previously_known) === 'discovered'
+}
+
+/** Only discoveries carry a marker; headings say what happened to everything else. */
 export function lifecycleMarker(event: { type: string; previously_known?: boolean }): string {
-  if (event.type.endsWith('_removed')) {
-    return '− '
-  }
-
-  if (event.type.endsWith('_added')) {
-    return arrivalMarkers[arrival(event.previously_known)]
-  }
-
-  return 'Δ '
+  return isDiscovery(event) ? '✨ ' : ''
 }

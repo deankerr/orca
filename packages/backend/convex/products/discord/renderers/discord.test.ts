@@ -1,4 +1,3 @@
-import { ComponentType } from 'discord-api-types/v10'
 import * as R from 'remeda'
 import { expect, vi, test } from 'vitest'
 
@@ -11,11 +10,11 @@ import { prepare as prepareEvent } from '../../shared/alerts/prepare'
 import { fieldLabel, presentChange } from '../../shared/alerts/present'
 import { prepareBatch as prepareDiscordBatch } from '../prepare'
 import type { DiscordUrls } from './card'
-import { embedCard, componentCard } from './card'
-import { code, escape, fieldRow, lifecycleMarker, valueChange } from './display'
-import { delta, fieldChange, factsText, fieldValue, quote } from './fields'
+import { embedCard } from './card'
+import { changeRow, escape, lifecycleMarker, presence, stackRows, valueChange } from './display'
+import { delta, fieldChange, quote } from './fields'
 import { renderDiscordBatch } from './index'
-import { pricingChanges, pricingTable } from './pricing'
+import { pricingChanges, priceList } from './pricing'
 
 type EventRow = CatalogEvent & { previously_known?: boolean }
 
@@ -74,8 +73,8 @@ function countDelta(before: number, after: number): string {
 }
 
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
-  expect(countDelta(100, 150)).toBe('▲ 50%')
-  expect(countDelta(100, 50)).toBe('🔻 50%')
+  expect(countDelta(100, 150)).toBe('▲50%')
+  expect(countDelta(100, 50)).toBe('🔻50%')
 
   for (const [before, after, symbol] of [
     ['0.000001', '0.000002', '🔺'],
@@ -101,20 +100,15 @@ test('update headings are sentences for every entity', async () => {
       'model',
       { supports_reasoning: false },
       { supports_reasoning: true },
-      'Δ Model **Model** updated.',
+      'Model **Model** updated.',
     ],
     [
       'endpoint',
       { quantization: 'fp8' },
       { quantization: 'fp16' },
-      'Δ **Regional offering** endpoint updated.',
+      '**Regional offering** endpoint (abcdef) updated.',
     ],
-    [
-      'provider',
-      { headquarters: 'US' },
-      { headquarters: 'GB' },
-      'Δ Provider **Provider** updated.',
-    ],
+    ['provider', { headquarters: 'US' }, { headquarters: 'GB' }, 'Provider **Provider** updated.'],
   ] as const) {
     const event: EventRow = {
       ...row({ metadata: before }, { metadata: after }),
@@ -129,17 +123,17 @@ test('update headings are sentences for every entity', async () => {
 
 test('prices and other numeric fields share precision and reveal changes hidden by rounding', async () => {
   expect(fieldChange({ after: 0.142, before: 0.141953, field: 'limit_rpm', kind: 'count' })).toBe(
-    '`limit_rpm:` ≈`0.142` ▲',
+    '- **limit_rpm** ≈0.142 ▲',
   )
   expect(countDelta(1_000_000, 1_000_001)).toBe('▲')
   expect(countDelta(1_000_001, 1_000_000)).toBe('🔻')
   expect(countDelta(100, 100.0999)).toBe('▲')
   expect(countDelta(100, 100.1)).toBe('▲')
   expect(countDelta(100, 100.4999)).toBe('▲')
-  expect(countDelta(100, 100.5)).toBe('▲ 1%')
-  expect(countDelta(100, 108.49)).toBe('▲ 8%')
-  expect(countDelta(100, 108.5)).toBe('▲ 9%')
-  expect(countDelta(100, 81.4)).toBe('🔻 19%')
+  expect(countDelta(100, 100.5)).toBe('▲1%')
+  expect(countDelta(100, 108.49)).toBe('▲8%')
+  expect(countDelta(100, 108.5)).toBe('▲9%')
+  expect(countDelta(100, 81.4)).toBe('🔻19%')
 
   // oxlint-disable sort-keys -- Fixture key order sets the order of the rendered and compared price changes.
   const event = row(
@@ -152,8 +146,7 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   const card = await renderDiscord(event, urls)
   const description = card?.embeds?.[0]?.description ?? ''
 
-  expect(description).toContain('`input:     ` `≈ $0.0001` 🔺 9%')
-  expect(description).toContain('`cache_read:` `  $0.0171` → `  $0.0162` ▼ 5%')
+  expect(description).toContain('- **Input** ≈$0.0001 🔺9%\n- **Cache** $0.0171 → $0.0162 ▼5%')
   expect(description).not.toContain('~~')
   expect(description).not.toContain('◇')
   expect(description).not.toContain('0.016156')
@@ -166,36 +159,20 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   })
 })
 
-test('display pieces compose consistently across facts, changes, pricing, and block children', () => {
-  const change = valueChange(code('fp8'), code('fp16'))
-
-  expect(fieldRow('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
-
+test('display pieces compose consistently across changes and block children', () => {
   expect(fieldChange({ after: 'fp16', before: 'fp8', field: 'quantization', kind: 'text' })).toBe(
-    fieldRow('quantization', change),
+    changeRow('quantization', valueChange('fp8', 'fp16')),
   )
 
-  expect(
-    factsText([{ field: 'quantization', kind: 'text', value: 'fp16' }], ['quantization']),
-  ).toBe('`quantization:` `fp16`')
-
-  expect(
-    pricingTable([
-      { after: '$0.5', annotation: '▼ 50%', before: '$1', path: 'pricing.input' },
-      { after: '$0.1', annotation: '', change: 'added', path: 'pricing.input_cache_read' },
-    ]),
-  ).toBe('`input:       ` `  $1` → `$0.5` ▼ 50%\n+ `cache_read:` `$0.1`')
-
-  expect(fieldRow('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
-
-  expect(fieldRow('parameters', '+ `tools`', { layout: 'block' })).toBe('`parameters`\n+ `tools`')
-
-  expect(fieldRow('enabled', code('true'), { change: 'added' })).toBe('+ `enabled:` `true`')
-  expect(fieldRow('enabled', code('false'), { change: 'removed' })).toBe(
-    '− ~~`enabled:`~~ ~~`false`~~',
+  expect(changeRow('quantization', 'fp8 → fp16')).toBe('- **quantization** fp8 → fp16')
+  expect(changeRow('description', '> prose', { layout: 'block' })).toBe(
+    '- **description**\n> prose',
   )
-  expect(code('long_value', { width: 3 })).toBe('`long_value`')
-  expect(code('a`b')).toBe('a\\`b')
+  expect(stackRows(['- **a** 1', '', '- **b**\n> quote', '- **c** 2', '- **d**\n> last'])).toBe(
+    '- **a** 1\n- **b**\n> quote\n\n- **c** 2\n- **d**\n> last',
+  )
+  expect(presence('true', 'added')).toBe('true (new)')
+  expect(presence('false', 'removed')).toBe('~~false~~ (removed)')
 })
 
 test('Discord keeps slug punctuation and renders raw final keys with lowercase pricing labels', async () => {
@@ -239,24 +216,28 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
 
   expect(card?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
   expect(text).not.toContain('reasoning_config')
-  expect(text).toContain('`is_mandatory_reasoning:`')
-  expect(text).toContain('⚠ + `warning_message`\\n> Preview only.')
+  expect(text).toContain('- **is_mandatory_reasoning**')
+  expect(text).toContain('- **⚠ warning_message** (new)\\n> Preview only.')
 })
 
-test('pricing uses separate value spans without reserving blank old-value columns', () => {
-  const lines = pricingTable([
-    { after: '$0.452', annotation: '▼', before: '$0.453', path: 'pricing.input' },
-    { after: '$0.123', annotation: '▼', before: '$0.123', path: 'pricing.input_cache_read' },
-    { after: '24%', annotation: '', change: 'added', path: 'pricing.discount' },
-  ]).split('\n')
-
-  expect(lines).toEqual([
-    '`input:     ` `  $0.453` → `  $0.452` ▼',
-    '`cache_read:` `≈ $0.123` ▼',
-    '+ `discount:` `     24%`',
+test('price changes list one rate per bullet in listing order, with family names and discount last', () => {
+  expect(
+    priceList([
+      { after: '10%', annotation: '', change: 'added', path: 'pricing.discount' },
+      { after: '$0.123', annotation: '▼', before: '$0.123', path: 'pricing.input_cache_read' },
+      { after: '$2', annotation: '', before: '$1', path: 'pricing.web_search' },
+      { annotation: '', before: '$0.50', change: 'removed', path: 'pricing.image_output' },
+      { after: '$0.452', annotation: '▼', before: '$0.453', path: 'pricing.output' },
+      { after: '$1.25', annotation: '', change: 'added', path: 'pricing.input_cache_write' },
+    ]).split('\n'),
+  ).toEqual([
+    '- **Output** $0.453 → $0.452 ▼',
+    '- **Cache** ≈$0.123 ▼',
+    '- **Cache Write** $1.25 (new)',
+    '- **Image Output** ~~$0.50~~ (removed)',
+    '- **Web search** $1 → $2',
+    '- **Discount** 10% (new)',
   ])
-  expect(lines.every((line) => !line.includes('~~'))).toBe(true)
-  expect(lines.map((line) => line.split('`')[3]?.length)).toEqual([8, 8, 8])
 })
 
 test('long prose excerpts include late replacements, additions, and removals', () => {
@@ -286,7 +267,7 @@ test('long prose excerpts include late replacements, additions, and removals', (
   expect(quote(`${prefix}Later facts.`)).not.toContain('Later facts.')
 
   expect(fieldChange({ after: 'New.', before: 'Old.', field: 'description', kind: 'prose' })).toBe(
-    '`description`\nBefore\n> Old.\n\nAfter\n> New.',
+    '- **description**\nBefore\n> Old.\n\nAfter\n> New.',
   )
 })
 
@@ -327,7 +308,7 @@ function row(before: JsonValue, after: JsonValue): Extract<EventRow, { entity_ki
   }
 }
 
-test('Discord pricing cells preserve tiny magnitudes; identity and mentions survive serialization', async () => {
+test('Discord prices preserve tiny magnitudes; identity and mentions survive serialization', async () => {
   const message = await renderDiscord(
     row(
       {
@@ -357,10 +338,10 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   const embed = message?.embeds?.[0]
   const description = embed?.description ?? ''
 
-  expect(description).toContain('`input:     `')
-  expect(description).toContain('$0.000000000000002`')
-  expect(description).toContain('▼ 24%')
-  expect(description).toContain('🔺 100%')
+  expect(description).toContain('- **Input** $0.255 → $0.195 ▼24%')
+  expect(description).toContain('$0.000000000000002')
+  expect(description).toContain('▼24%')
+  expect(description).toContain('🔺100%')
   expect(description).not.toContain('Infinity')
   expect(description).not.toContain('supports_reasoning')
   expect(embed?.author?.icon_url).toContain('/v1/avatar/author.webp')
@@ -369,25 +350,18 @@ test('Discord pricing cells preserve tiny magnitudes; identity and mentions surv
   expect(description).not.toContain('provider/fp8')
   const endpointUrl = `${urls.publicUrl}/?q=author%2Fmodel&uuid=abcdef`
   expect(embed?.author?.url).toBe(endpointUrl)
-  expect(embed?.author?.name).toBe('author/model [abcdef]')
-  expect(description).not.toContain('abcdef')
+  expect(embed?.author?.name).toBe('author/model')
+  expect(description.split('\n')[0]).toBe('**Regional offering** endpoint (abcdef) updated.')
   expect(description).not.toContain(endpointUrl)
   expect(embed?.timestamp).toBe('2026-09-30T01:00:00.000Z')
   expect(message?.allowed_mentions).toEqual({ parse: [] })
-
-  const numericCells = [
-    ...(description.split('\n\n')[1] ?? '').matchAll(/`[^`]+` `(?<cell>[^`]+)`/gu),
-  ].map((match) => match.groups?.cell?.length)
-
-  expect(numericCells).toHaveLength(3)
-  expect(new Set(numericCells).size).toBe(1)
 })
 
 test('Discord presents zero discount transitions as added/removed without rewriting event facts', async () => {
   for (const [before, after, expected] of [
-    [0, 0.08, '+ `discount:` `8%`'],
-    [0.08, 0, '− ~~`discount:`~~ ~~`8%`~~'],
-    [0.08, 0.12, '`discount:` ` 8%` → `12%`'],
+    [0, 0.08, '- **Discount** 8% (new)'],
+    [0.08, 0, '- **Discount** ~~8%~~ (removed)'],
+    [0.08, 0.12, '- **Discount** 8% → 12%'],
   ] as const) {
     const event = row({ pricing: { discount: before } }, { pricing: { discount: after } })
     const captured = event.change_json
@@ -401,7 +375,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     expect(text).not.toMatch(/[▲▼🔺🔻]/u)
 
     if (before === 0 || after === 0) {
-      expect(text).not.toContain('0%')
+      expect(text).not.toContain(' 0%')
       expect(text).not.toContain('▲')
       expect(text).not.toContain('▼')
     }
@@ -420,7 +394,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
 
   const free = freeCard?.embeds?.[0]?.description
 
-  expect(free).toContain('$0.00`')
+  expect(free).toContain('- **Input** $1.00 → $0.00')
   expect(free).not.toContain('removed')
 
   const combinedCard = await renderDiscord(
@@ -447,8 +421,11 @@ test('Discord presents zero discount transitions as added/removed without rewrit
 
   const table = combined.split('\n\n')[1]?.split('\n').slice(1) ?? []
 
-  expect(table).toHaveLength(3)
-  expect(table[2]).toBe('− ~~`discount:`~~ ~~`   8%`~~')
+  expect(table).toEqual([
+    '- **Input** $1.00 → $2.00 🔺100%',
+    '- **Cache** $0.20 → $0.10 ▼50%',
+    '- **Discount** ~~8%~~ (removed)',
+  ])
 })
 
 test('Discord presents unknown sides as additions and removals, escapes set members, and skips unpublished fields', async () => {
@@ -462,10 +439,10 @@ test('Discord presents unknown sides as additions and removals, escapes set memb
 
   const text = message?.embeds?.[0]?.description
 
-  expect(text).toContain('`supported_parameters`\n+ `**tools**`\n− ~~`seed`~~')
-  expect(text).toContain('− ~~`quantization:`~~ ~~`fp8`~~')
-  expect(text).toContain('+ `limit_rpm:` `0`')
-  expect(text).toContain('− ~~`is_disabled:`~~ ~~`false`~~')
+  expect(text).toContain('- **supported_parameters** \\*\\*tools\\*\\* (new) • ~~seed~~ (removed)')
+  expect(text).toContain('- **quantization** ~~fp8~~ (removed)')
+  expect(text).toContain('- **limit_rpm** 0 (new)')
+  expect(text).toContain('- **is_disabled** ~~false~~ (removed)')
 
   expect(
     await renderDiscord(
@@ -503,26 +480,22 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
 
       const content = JSON.stringify(message)
 
-      if (kind === 'model' && type === 'ADD') {
-        expect(message?.flags).toBe(32_768)
-        expect(message?.embeds).toBeUndefined()
-      } else {
-        expect(message?.components).toBeUndefined()
-        expect(message?.embeds).toHaveLength(1)
-
-        expect(message?.embeds?.[0]?.footer?.text).toBe(
-          kind === 'endpoint' ? 'provider/fp8' : undefined,
-        )
-
-        expect(message?.embeds?.[0]?.color).toBe(type === 'ADD' ? 0x22_c5_5e : 0xef_44_44)
-      }
+      expect(message?.components).toBeUndefined()
+      expect(message?.embeds).toHaveLength(1)
+      expect(message?.embeds?.[0]?.footer?.text).toBe(
+        kind === 'endpoint' ? 'provider/fp8' : undefined,
+      )
+      expect(message?.embeds?.[0]?.color).toBe(type === 'ADD' ? 0x22_c5_5e : 0xef_44_44)
 
       expect(content).toContain(
         {
-          ADD: { endpoint: '**Regional offering** endpoint discovered.', model: '✨' },
+          ADD: {
+            endpoint: '✨ **Regional offering** endpoint (abcdef) discovered.',
+            model: '"title":"✨ Model"',
+          },
           REMOVE: {
-            endpoint: '− **Regional offering** endpoint unlisted.',
-            model: 'has no more listed endpoints',
+            endpoint: '**Regional offering** endpoint (abcdef) unlisted.',
+            model: 'Model **Model** has no more listed endpoints.',
           },
         }[type][kind],
       )
@@ -530,18 +503,17 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
       // Unknown facts, such as an absent knowledge cutoff, are not described in the feed.
       expect(render(event)?.details.join('\n')).not.toContain('null')
 
-      if (kind === 'model') {
-        expect(content).toContain('excerpt')
-      } else {
-        expect(content).not.toContain('Last known endpoint details:')
-        expect(message?.embeds?.[0]?.author?.name).toBe('author/model [abcdef]')
-        expect(message?.embeds?.[0]?.description).not.toContain('abcdef')
+      expect(message?.embeds?.[0]?.author?.name).toBe('author/model')
 
-        if (type === 'REMOVE') {
-          expect(message?.embeds?.[0]?.description).toBe(
-            '− **Regional offering** endpoint unlisted.',
-          )
-        }
+      // Departures announce absence only; arrivals describe the entity.
+      if (type === 'REMOVE') {
+        expect(message?.embeds?.[0]?.description).toBe(
+          kind === 'model'
+            ? 'Model **Model** has no more listed endpoints.'
+            : '**Regional offering** endpoint (abcdef) unlisted.',
+        )
+      } else if (kind === 'model') {
+        expect(content).toContain('excerpt')
       }
     }
   }
@@ -596,28 +568,17 @@ test('entity templates use captured model and endpoint facts with one timestamp 
     urls,
   )
 
-  const modelText = JSON.stringify(model)
-  expect(modelText).toContain('`image, text` → `text` • `reasoning`')
-  expect(modelText).toContain('[a model](https://example.com/model)')
-  expect(modelText).toContain('Preview only.')
-  expect(modelText.match(/<t:/gu)).toHaveLength(1)
-  expect(modelText.indexOf('`image, text`')).toBeLessThan(modelText.indexOf('> Built on'))
-  const container = model?.components?.[0]
-  expect(container?.type).toBe(ComponentType.Container)
-
-  if (container?.type !== ComponentType.Container) {
-    throw new Error('Expected a container')
-  }
-
-  expect(container.components).toHaveLength(1)
-  const [section] = container.components
-  expect(section?.type).toBe(ComponentType.Section)
-
-  if (section?.type !== ComponentType.Section) {
-    throw new Error('Expected a section')
-  }
-
-  expect(section.components).toHaveLength(1)
+  // Discoveries are ordinary embeds titled by name; facts sit directly above the description,
+  // and every quote is followed by a blank line.
+  expect(model?.components).toBeUndefined()
+  expect(model?.embeds?.[0]).toMatchObject({
+    author: { name: 'author/model', url: 'https://orca.orb.town/?q=author%2Fmodel' },
+    color: 0x22_c5_5e,
+    description:
+      '- **Modalities** image, text → text • reasoning\n> Built on [a model](https://example.com/model).\n\n**⚠ Warning**\n> Preview only.',
+    timestamp: '2026-09-30T01:00:00.000Z',
+    title: '✨ Model',
+  })
 
   const endpoint = await renderDiscord(
     lifecycle('endpoint', {
@@ -642,18 +603,85 @@ test('entity templates use captured model and endpoint facts with one timestamp 
   )
 
   const endpointText = JSON.stringify(endpoint)
-  expect(endpointText).toContain('128,000')
-  expect(endpointText).toContain('4,096')
-  expect(endpointText).toContain('$0.001')
-  expect(endpointText).toContain('$0.000001')
+  expect(endpoint?.embeds?.[0]?.description).toBe(
+    '✨ **Regional offering** endpoint (abcdef) discovered.\n\n- **Context** 128K (4K)\n- **Input** $0.00\n- **Image** $0.001\n- **Audio** $1.00 • **Output** **Cache** $0.000001',
+  )
   expect(endpointText).toContain('/v1/avatar/author.webp')
   expect(endpointText).toContain('/v1/avatar/provider.webp')
   expect(endpointText).not.toContain('discount')
   expect(endpointText).not.toContain('supports_reasoning')
   expect(endpointText).not.toContain('supported_parameters')
   expect(endpointText).not.toContain('tools, temperature')
-  expect(endpointText).toContain('`max_output:` `4,096`')
+  expect(endpointText).not.toContain('retains')
   expect(endpointText).not.toContain('max_completion_tokens')
+})
+
+test('endpoint listings list limits, price families, and affirmative data policies', async () => {
+  const listing = (metadata: Record<string, JsonValue>, pricing: JsonValue): EventRow => ({
+    change_json: JSON.stringify({
+      key: 'abcdef-123',
+      type: 'ADD',
+      value: { ...snapshots.endpoint, metadata, pricing },
+    }),
+    context,
+    entity_id: 'abcdef-123',
+    entity_kind: 'endpoint',
+    previously_known: true,
+    scan_at: '2026-09-30T01:00:00Z',
+    type: 'ADD',
+  })
+
+  const description = async (event: EventRow) => {
+    const message = await renderDiscord(event, urls)
+
+    return message?.embeds?.[0]?.description
+  }
+
+  expect(
+    await description(
+      listing(
+        {
+          context_length: 262_144,
+          data_policy: { retainsPrompts: false, training: false },
+          max_completion_tokens: 65_536,
+          quantization: 'fp4',
+        },
+        {
+          discount: 0,
+          meters: {
+            completion: '0.0000005',
+            input_cache_read: '0.000000009',
+            prompt: '0.00000002',
+          },
+        },
+      ),
+    ),
+  ).toBe(
+    '**Regional offering** endpoint (abcdef) relisted.\n\n- **Context** 262K (65K) • FP4\n- **Input** $0.02 • **Output** $0.50\n- **Cache** $0.009',
+  )
+
+  expect(
+    await description(
+      listing(
+        {
+          data_policy: { retainsPrompts: true, retentionDays: 30, training: true },
+          max_completion_tokens: 1_048_576,
+          quantization: 'unknown',
+        },
+        {
+          discount: 0.5,
+          meters: {
+            image_output: '0.0025',
+            input_cache_write: '0.0000025',
+            input_cache_write_1h: '0.000005',
+            prompt: '0.000002',
+          },
+        },
+      ),
+    ),
+  ).toBe(
+    '**Regional offering** endpoint (abcdef) relisted.\n\n- **Max output** 1.04M\n- **Input** $2.00 • **Discount** 50%\n- **Cache** **Write** $2.50 • **1Hr** $5.00\n- **Image** **Output** $2.50\n\n- Trains on prompts • Retains prompts: 30 days',
+  )
 })
 
 test('prose updates use embeds, preserve warning facts, and truncate aggregate overflow', async () => {
@@ -735,7 +763,7 @@ test('provider discoveries are announced and departures only announce endpoint a
 
       expect(message?.embeds?.[0]).toMatchObject({
         color: 0xef_44_44,
-        description: '− Provider **Provider** has no more listed endpoints.',
+        description: 'Provider **Provider** has no more listed endpoints.',
         timestamp: '2026-09-30T01:00:00.000Z',
       })
 
@@ -802,7 +830,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
 
     expect(message?.components).toBeUndefined()
     expect(message?.embeds).toHaveLength(1)
-    expect(text).toContain('`privacy_policy_url:`')
+    expect(text).toContain('- **privacy_policy_url** ')
     expect(text).not.toContain('training')
     expect(text).not.toContain('retainsPrompts')
     expect(event.change_json).toBe(captured)
@@ -833,9 +861,14 @@ test('provider updates stay classic and include only legacy metadata and policy 
 
   expect(message?.components).toBeUndefined()
 
-  for (const label of ['name:', 'headquarters:', 'datacenters', 'status_page_url:']) {
-    expect(text).toContain(`\`${label}\``)
+  for (const label of ['name', 'headquarters', 'datacenters', 'status_page_url']) {
+    expect(text).toContain(`- **${label}**`)
   }
+
+  // URLs too long to share a row strike the old value, and both stay clickable outside code spans.
+  expect(text).toContain(
+    `- **status_page_url**\n> ~~<https://old.example>~~\n> <https://example.com/${'a'.repeat(120)}>`,
+  )
 
   expect(text).not.toContain('byok_enabled')
 
@@ -852,7 +885,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
   }
 })
 
-test('endpoint updates remain embeds and inline code has no bold wrappers', async () => {
+test('endpoint and model updates are embeds whose rows carry no code spans', async () => {
   const endpoint = await renderDiscord(
     row(
       { metadata: { quantization: 'fp8' }, provider_tag: 'old' },
@@ -863,8 +896,11 @@ test('endpoint updates remain embeds and inline code has no bold wrappers', asyn
 
   expect(endpoint?.components).toBeUndefined()
   expect(endpoint?.embeds).toHaveLength(1)
-  expect(endpoint?.embeds?.[0]?.description).toContain(`\`tag:\` \`old\` → \`${'tag'.repeat(50)}\``)
-  expect(endpoint?.embeds?.[0]?.description).not.toContain('**`')
+  expect(endpoint?.embeds?.[0]?.description).toContain(
+    `- **tag**\n> ~~old~~\n> ${'tag'.repeat(50)}`,
+  )
+  expect(endpoint?.embeds?.[0]?.description).toContain('- **quantization** fp8 → fp16')
+  expect(endpoint?.embeds?.[0]?.description).not.toContain('`')
   expect(endpoint?.embeds?.[0]?.footer?.text).toBe('provider/fp8')
 
   const model = await renderDiscord(
@@ -878,7 +914,7 @@ test('endpoint updates remain embeds and inline code has no bold wrappers', asyn
   const text = JSON.stringify(model)
 
   expect(text).not.toContain('[orca.orb.town]')
-  expect(text).not.toContain('**`')
+  expect(model?.embeds?.[0]?.description).not.toContain('`')
   expect(model?.embeds?.[0]?.timestamp).toBe('2026-09-30T01:00:00.000Z')
 })
 
@@ -899,8 +935,8 @@ test('blank text is unknown, so it renders as an addition or removal without rew
 
       expect(description).toContain(
         before === blank
-          ? '⚠ + `warning_message`\n> Warning.'
-          : '⚠ − ~~`warning_message`~~\n> ~~Warning.~~',
+          ? '- **⚠ warning_message** (new)\n> Warning.'
+          : '- **⚠ warning_message** (removed)\n> ~~Warning.~~',
       )
       expect(event.change_json).toBe(captured)
       expect(render(event)).toMatchObject({
@@ -911,22 +947,13 @@ test('blank text is unknown, so it renders as an addition or removal without rew
     }
   }
 
-  const list = (value: string[]) => ({
-    field: 'supported_parameters',
-    kind: 'list' as const,
-    value,
-  })
-
-  expect(fieldValue(list(['tools', 'temperature']))).toBe('`tools, temperature`')
-  expect(fieldValue(list([]))).toBe('`[]`')
-
   expect(
     fieldChange({ after: null, before: 'Old prose.', field: 'description', kind: 'prose' }),
-  ).toBe('− ~~`description`~~\n> ~~Old prose.~~')
+  ).toBe('- **description** (removed)\n> ~~Old prose.~~')
 
   expect(
     fieldChange({ after: 'New prose.', before: null, field: 'description', kind: 'prose' }),
-  ).toBe('+ `description`\n> New prose.')
+  ).toBe('- **description** (new)\n> New prose.')
 })
 
 test('endpoint reasoning-only changes are skipped while model reasoning remains visible', async () => {
@@ -939,7 +966,7 @@ test('endpoint reasoning-only changes are skipped while model reasoning remains 
 
   const card = await renderDiscord({ ...event, entity_kind: 'model' }, urls)
 
-  expect(card?.embeds?.[0]?.description).toContain('`supports_reasoning:` `false` → `true`')
+  expect(card?.embeds?.[0]?.description).toContain('- **supports_reasoning** false → true')
 })
 
 test('endpoint output limits use max_output without changing the captured field name', async () => {
@@ -950,7 +977,7 @@ test('endpoint output limits use max_output without changing the captured field 
 
   const card = await renderDiscord(event, urls)
 
-  expect(card?.embeds?.[0]?.description).toContain('`max_output:` `4,096` → `8,192` ▲ 100%')
+  expect(card?.embeds?.[0]?.description).toContain('- **max_output** 4,096 → 8,192 ▲100%')
   expect(render(event)).toMatchObject({ changes: [{ field: 'max_completion_tokens' }] })
 })
 
@@ -962,7 +989,8 @@ test('one-hour cache writes survive curation and render without pricing units or
 
   const message = await renderDiscord(event, urls)
 
-  expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$2.00` → `$4.00` 🔺 100%')
+  // Standing alone, a carried label names its family.
+  expect(message?.embeds?.[0]?.description).toContain('- **Cache 1Hr** $2.00 → $4.00 🔺100%')
   expect(render(event)).toMatchObject({ changes: [{ field: 'pricing.input_cache_write_1h' }] })
 
   const lifecycle: EventRow = {
@@ -979,13 +1007,14 @@ test('one-hour cache writes survive curation and render without pricing units or
   }
 
   const added = await renderDiscord(lifecycle, urls)
-  expect(added?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$4.00`')
-  expect(added?.embeds?.[0]?.description).toContain('`web_search:    ` `$0.01`')
+  // Without read or write rates, their labels introduce the one-hour write; web search is not listed.
+  expect(added?.embeds?.[0]?.description).toContain('- **Cache** **Write** **1Hr** $4.00')
+  expect(added?.embeds?.[0]?.description).not.toContain('$0.01')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
 
   expect(
     pricingChanges([{ after: '1e-6', before: null, field: 'pricing.input', kind: 'price' }]),
-  ).toEqual(['+ `input:` `$1.00`'])
+  ).toEqual(['- **Input** $1.00 (new)'])
 
   for (const payload of [message, added]) {
     expect(payload).not.toHaveProperty('username')
@@ -996,9 +1025,9 @@ test('one-hour cache writes survive curation and render without pricing units or
 
 test('web search is a pricing row across updates, additions, and removals without token scaling', async () => {
   for (const [before, after, expected] of [
-    [{ web_search: '0.001' }, { web_search: '0.002' }, '`web_search:` `$0.001` → `$0.002` 🔺 100%'],
-    [{}, { web_search: '0.001' }, '+ `web_search:` `$0.001`'],
-    [{ web_search: '0.001' }, {}, '− ~~`web_search:`~~ ~~`$0.001`~~'],
+    [{ web_search: '0.001' }, { web_search: '0.002' }, '- **Web search** $0.001 → $0.002 🔺100%'],
+    [{}, { web_search: '0.001' }, '- **Web search** $0.001 (new)'],
+    [{ web_search: '0.001' }, {}, '- **Web search** ~~$0.001~~ (removed)'],
   ] as const) {
     const event = row({ pricing: { meters: before } }, { pricing: { meters: after } })
     const card = await renderDiscord(event, urls)
@@ -1010,14 +1039,14 @@ test('web search is a pricing row across updates, additions, and removals withou
   }
 })
 
-test('field kinds decide prose layout; cards add units and price tables', async () => {
+test('field kinds decide prose layout; cards add units and price lists', async () => {
   expect(
     fieldChange({ after: 'New.', before: 'Old.', field: 'warning_message', kind: 'prose' }),
-  ).toBe('`warning_message`\nBefore\n> Old.\n\nAfter\n> New.')
+  ).toBe('- **warning_message**\nBefore\n> Old.\n\nAfter\n> New.')
 
   expect(
     fieldChange({ after: 2, before: 1, field: 'data_policy.retention_days', kind: 'count' }),
-  ).toBe('`retention_days:` `1` → `2` ▲ 100%')
+  ).toBe('- **retention_days** 1 → 2 ▲100%')
 
   const event = row(
     { metadata: { data_policy: { retentionDays: 1 } } },
@@ -1026,25 +1055,25 @@ test('field kinds decide prose layout; cards add units and price tables', async 
 
   const card = await renderDiscord(event, urls)
 
-  expect(card?.embeds?.[0]?.description).toContain('`retention_days:` `1 days` → `2 days` ▲ 100%')
+  expect(card?.embeds?.[0]?.description).toContain('- **retention_days** 1 days → 2 days ▲100%')
 
-  // A price that becomes unquoted is removed from the table.
+  // A price that becomes unquoted is removed from the list.
   expect(
     pricingChanges([{ after: null, before: '0.000001', field: 'pricing.input', kind: 'price' }]),
-  ).toEqual(['− ~~`input:`~~ ~~`$1.00`~~'])
+  ).toEqual(['- **Input** ~~$1.00~~ (removed)'])
 })
 
-test('lifecycle markers distinguish arrivals, returns, departures, and routine updates', () => {
+test('only discoveries carry a lifecycle marker', () => {
   for (const kind of ['model', 'provider', 'endpoint']) {
     expect(lifecycleMarker({ previously_known: false, type: `${kind}_added` })).toBe('✨ ')
-    expect(lifecycleMarker({ previously_known: true, type: `${kind}_added` })).toBe('↺ ')
-    expect(lifecycleMarker({ type: `${kind}_added` })).toBe('+ ')
-    expect(lifecycleMarker({ type: `${kind}_removed` })).toBe('− ')
-    expect(lifecycleMarker({ type: `${kind}_updated` })).toBe('Δ ')
+    expect(lifecycleMarker({ previously_known: true, type: `${kind}_added` })).toBe('')
+    expect(lifecycleMarker({ type: `${kind}_added` })).toBe('')
+    expect(lifecycleMarker({ type: `${kind}_removed` })).toBe('')
+    expect(lifecycleMarker({ type: `${kind}_updated` })).toBe('')
   }
 })
 
-test('array changes use compact rows and escape embedded Markdown instead of fenced blocks', () => {
+test('array changes share one row and escape embedded Markdown instead of fenced blocks', () => {
   const text = fieldChange({
     added: ['tools', '`**literal**'],
     field: 'supported_parameters',
@@ -1052,31 +1081,9 @@ test('array changes use compact rows and escape embedded Markdown instead of fen
     removed: ['seed'],
   })
 
-  expect(text).toContain('+ `tools`')
-  expect(text).toContain('− ~~`seed`~~')
-  expect(text).not.toContain('```')
-  expect(text).toContain(code('`**literal**'))
-})
-
-test('pricing label widths include external addition and removal markers', () => {
-  for (const change of ['added', 'removed'] as const) {
-    const lines = pricingTable([
-      { after: '$2', annotation: '', before: '$1', path: 'pricing.input' },
-      { after: '$1', annotation: '', change, path: 'pricing.input_cache_read' },
-      { after: '10%', annotation: '', change, path: 'pricing.discount' },
-    ]).split('\n')
-
-    const widths = lines.map((line) => {
-      const label = line.split('`')[1] ?? ''
-
-      return label.length + (line.startsWith('+ ') || line.startsWith('− ') ? 2 : 0)
-    })
-
-    expect(new Set(widths).size).toBe(1)
-    expect(
-      lines[1]?.startsWith(change === 'added' ? '+ `cache_read:`' : '− ~~`cache_read:`~~'),
-    ).toBe(true)
-  }
+  expect(text).toBe(
+    `- **supported_parameters** tools, ${escape('`**literal**')} (new) • ~~seed~~ (removed)`,
+  )
 })
 
 test('oversized card text logs and respects individual and total Discord limits', () => {
@@ -1101,28 +1108,7 @@ test('oversized card text logs and respects individual and total Discord limits'
     ).toBe(6000)
     expect(embed?.description?.endsWith('...')).toBe(true)
 
-    const component = componentCard('x'.repeat(10_000), {
-      color: 0,
-      thumbnail: { description: 'a'.repeat(2000), url: urls.logoOrigin },
-    })
-
-    const container = component.components?.[0]
-
-    if (container?.type !== ComponentType.Container) {
-      throw new Error('Expected a container')
-    }
-
-    const [section] = container.components
-
-    if (section?.type !== ComponentType.Section) {
-      throw new Error('Expected a section')
-    }
-
-    expect(section.components[0]?.content).toHaveLength(3900)
-    expect(
-      section.accessory.type === ComponentType.Thumbnail ? section.accessory.description : null,
-    ).toHaveLength(1024)
-    expect(errors).toHaveBeenCalledTimes(5)
+    expect(errors).toHaveBeenCalledTimes(3)
     expect(
       errors.mock.calls.every(([logged]) => logged === '[discord] truncated card content'),
     ).toBe(true)

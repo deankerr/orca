@@ -15,6 +15,7 @@ export {
   findFact,
   fieldLabel,
   formatQuantity,
+  isBlockText,
   isQuantity,
   presentChange,
   priceFields,

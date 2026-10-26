@@ -74,6 +74,19 @@ export function formatQuantity(item: Quantity): string {
   return (field === undefined ? null : formatPrice(item.value, field.scale)) ?? `$${item.value}`
 }
 
+const blockTextLength = { pair: 30, single: 80 }
+
+/**
+ * Prose, and text too long for one row, such as URLs, take a block layout.
+ * A before/after pair shares its row, so it switches sooner than a lone added or removed value.
+ */
+export function isBlockText(item: AlertFact, layout: 'pair' | 'single'): boolean {
+  return (
+    item.kind === 'prose' ||
+    (item.kind === 'text' && (item.value?.length ?? 0) > blockTextLength[layout])
+  )
+}
+
 /** A quantity's relative movement; lower prices and higher limits are favorable. */
 export type Movement = { isUp: boolean; isFavorable: boolean; percent: string }
 

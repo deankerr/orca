@@ -1,11 +1,4 @@
-import {
-  ContainerBuilder,
-  EmbedBuilder,
-  SectionBuilder,
-  TextDisplayBuilder,
-  ThumbnailBuilder,
-} from '@discordjs/builders'
-import { MessageFlags } from 'discord-api-types/v10'
+import { EmbedBuilder } from '@discordjs/builders'
 import type { RESTPostAPIWebhookWithTokenJSONBody } from 'discord-api-types/v10'
 
 import { entityLogoUrl } from '../../../entityLogo'
@@ -34,6 +27,7 @@ export function embedCard(
     timestamp: string
     color: number
     footer?: { text: string; iconURL?: string } | undefined
+    title?: string | undefined
   },
 ): Card {
   const author = {
@@ -49,46 +43,33 @@ export function embedCard(
           text: truncateContent(options.footer.text, 2048, 'embed.footer'),
         }
 
-  const descriptionLimit = Math.min(4096, 6000 - author.name.length - (footer?.text.length ?? 0))
+  const title =
+    options.title === undefined ? undefined : truncateContent(options.title, 256, 'embed.title')
+
+  const descriptionLimit = Math.min(
+    4096,
+    6000 - author.name.length - (footer?.text.length ?? 0) - (title?.length ?? 0),
+  )
 
   const embed = new EmbedBuilder()
     .setColor(options.color)
     .setAuthor(author)
     .setTimestamp(new Date(options.timestamp))
-    .setDescription(truncateContent(content, descriptionLimit, 'embed.description'))
+
+  // Discord rejects empty descriptions; a titled discovery without facts needs none.
+  if (content !== '') {
+    embed.setDescription(truncateContent(content, descriptionLimit, 'embed.description'))
+  }
 
   if (footer !== undefined) {
     embed.setFooter(footer)
   }
 
+  if (title !== undefined) {
+    embed.setTitle(title)
+  }
+
   return { embeds: [embed.toJSON()] }
-}
-
-/** One text section and thumbnail, with content bounded to fit a single message. */
-export function componentCard(
-  content: string,
-  options: {
-    color: number
-    thumbnail: { url: string; description: string }
-  },
-): Card {
-  const section = new SectionBuilder()
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(truncateContent(content, 3900, 'component.content')),
-    )
-    .setThumbnailAccessory(
-      new ThumbnailBuilder()
-        .setURL(options.thumbnail.url)
-        .setDescription(
-          truncateContent(options.thumbnail.description, 1024, 'component.thumbnail'),
-        ),
-    )
-
-  const container = new ContainerBuilder()
-    .setAccentColor(options.color)
-    .addSectionComponents(section)
-
-  return { components: [container.toJSON()], flags: MessageFlags.IsComponentsV2 }
 }
 
 export function gridUrl(query: string, urls: DiscordUrls, uuid?: string): string {
