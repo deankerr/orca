@@ -4,7 +4,7 @@
 - Keep public API compatibility semantics out of other products.
 - Allow uncaught exceptions to halt workflows and roll back mutations.
 - Use `ConvexError` with domain data and a concise message for our own exceptions; do not catch and rethrow.
-- Convex executes `convex/init.ts` after preview deployment to initialize its data.
+- Preview deployment and worktree setup run `convex/init.ts` to initialize data; keep it idempotent.
 - Preserve observed meaning, not byte fidelity or incidental object-key/array ordering.
 - Run backend tests with `bun run test --project backend` from the repository root; import test APIs from `vitest`.
 - Use the shared harness and component test helpers; drain scheduled functions before advancing later deadlines.

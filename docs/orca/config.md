@@ -41,6 +41,7 @@ are optional. Object writes use the selected backend, while existing locators re
 | ----------------------------------- | -------------------------------------------------------------------- | --------------------------------- |
 | `ORCA_ADMIN_USER_ID`                | Authorized WorkOS subject; unset denies everyone.                    | `user_01M45DYDABT9537G38YC4Q1BK3` |
 | `ORCA_WEB_ORIGIN`                   | Discord link origin.                                                 | `https://orca.orb.town/`          |
+| `ORCA_DEV_DISCORD_ALERTS_WEBHOOK`   | **Secret** development webhook `init` subscribes to alerts.          | Configured secret                 |
 | `ORCA_LOGO_ORIGIN`                  | Discord image origin.                                                | `https://logos.orb.town`          |
 | `ORCA_INGESTION_PARALLELISM`        | Concurrent ingestion actions, 1–100; read per enqueue.               | Unset → 16                        |
 | `ORCA_OBJECTS_BACKEND`              | Storage for new objects: `convex` or `r2`.                           | Unset → `convex`                  |
@@ -93,7 +94,7 @@ Backend paths below are relative to `packages/backend/convex`.
 | Ingestion retry-all batch       | 256 failed records reopened per call                                             | `ingestion/queue.ts`                |
 | Ingestion lost-completion sweep | 512 queued or withdrawing records read per kind and state                        | `ingestion/reconcile.ts`            |
 | Ingestion lost-completion grace | 5 minutes after the sweep before a finished, unsettled record fails              | `ingestion/reconcile.ts`            |
-| Preview ingestion lookback      | 24 hours before initialization; only when no target exists                       | `init.ts`                           |
+| Initialization lookback         | 24 hours before `init`; only when no target exists                               | `init.ts`                           |
 | Grid unlisting window           | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`        |
 | Discord alert age               | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`      |
 | Discord batching                | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`   |
@@ -121,6 +122,9 @@ credentials, and administrator; development login credentials are absent there.
 | `CONVEX_DEPLOYMENT`       | Backend CLI deployment selection                                                      | Per checkout                             |
 | `CONVEX_DEPLOY_KEY`       | **Secret** Vercel deploy credential, scoped separately for production/preview         | Per scope                                |
 | `WORKOS_COOKIE_PASSWORD`  | **Secret** web session key, at least 32 characters; shared sessions need the same key | Per scope                                |
+
+`packages/scripts/deployments/index.ts` owns the team, project, and 14-day expiration of worktree deployments.
+It prunes them once their worktree is gone, and previews once their branch is gone from `origin`.
 
 `ORCA_ADMIN_USER_ID` identifies the development login account. Retrieve login secrets through the
 authenticated Convex CLI. WorkOS owns login policy and sign-out allowlists outside Git.
