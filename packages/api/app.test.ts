@@ -155,7 +155,8 @@ function provider(id: string, name: string, listed: number, display_name = name)
 }
 
 const providers = [
-  provider('novita', 'Novita', 1, 'NovitaAI'),
+  // Like `google-vertex` ("Google", "Google Vertex"), names can match neither the slug nor each other.
+  provider('novita', 'Novita Labs', 1, 'NovitaAI'),
   provider('deepinfra', 'DeepInfra', 1),
   provider('phala', 'Phala', 1),
   provider('gone', 'Gone', 0),
@@ -335,7 +336,7 @@ describe('V5 providers', () => {
   })
 
   it('searches provider names and display names as well as slugs', async () => {
-    expect(await ids('/providers?q=novita')).toEqual(['novita'])
+    expect(await ids('/providers?q=labs')).toEqual(['novita'])
     expect(await ids('/providers?q=novitaai')).toEqual(['novita'])
   })
 
