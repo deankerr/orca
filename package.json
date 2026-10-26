@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build --filter=@orca/web",
     "check": "ultracite check",
+    "deployments:prune": "bun run --cwd packages/scripts deployments prune",
     "dev": "portless run bun run dev:tasks",
     "dev:backend": "turbo run dev --filter=@orca/backend",
     "dev:origin": "portless get \"$(bun -p 'require(\"./portless.json\").name')\"",
@@ -21,7 +22,9 @@
     "start": "turbo run start --filter=@orca/web",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "worktree:setup": "bun run --cwd packages/scripts deployments setup",
+    "worktree:teardown": "bun run --cwd packages/scripts deployments teardown"
   },
   "devDependencies": {
     "@edge-runtime/vm": "5.0.0",
@@ -46,7 +49,7 @@
   "catalog": {
     "@types/bun": "1.4.3",
     "@types/node": "24.19.2",
-    "convex": "1.47.0",
+    "convex": "1.48.0",
     "convex-helpers": "0.1.129",
     "remeda": "2.53.0",
     "typescript": "7.0.2",

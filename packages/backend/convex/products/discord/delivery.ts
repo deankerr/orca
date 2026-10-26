@@ -9,6 +9,9 @@ import { renderRecord } from './render'
 
 const ALERT_MAX_AGE_MS = 60 * 60 * 1000
 
+/** Sender topic for ingestion alerts; eligible webhooks subscribe to it. */
+export const ALERTS_TOPIC = 'ingestion'
+
 /** Scheduled after ingestion completion; preparation failures leave source events intact. */
 export const sendRecordAlerts = internalMutation({
   args: { record_id: v.id(INGESTION_RECORDS_TABLE) },
@@ -99,7 +102,7 @@ async function submitAlerts(
   const jobs = await ctx.runMutation(components.discordSender.api.submitBatch, {
     ...input,
     messages: input.messages.map(({ key, payload }) => ({ key, payload })),
-    topic: 'ingestion',
+    topic: ALERTS_TOPIC,
   })
 
   return jobs.map(({ jobId }) => jobId)

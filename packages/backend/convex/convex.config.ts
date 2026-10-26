@@ -8,6 +8,7 @@ const app = defineApp({
   env: {
     ORCA_ADMIN_USER_ID: v.optional(v.string()),
     ORCA_ANALYTICS_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
+    ORCA_DEV_DISCORD_ALERTS_WEBHOOK: v.optional(v.string()),
     ORCA_DISCORD_AUTO_SEND_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_INGESTION_CRON_ENABLED: v.optional(v.union(v.literal('true'), v.literal('false'))),
     ORCA_INGESTION_PARALLELISM: v.optional(v.string()),

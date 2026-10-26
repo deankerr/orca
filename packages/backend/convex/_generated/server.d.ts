@@ -32,6 +32,7 @@ type Env = {
   readonly CONVEX_SITE_URL: string;
   readonly ORCA_ADMIN_USER_ID: string | undefined;
   readonly ORCA_ANALYTICS_CRON_ENABLED: "true" | "false" | undefined;
+  readonly ORCA_DEV_DISCORD_ALERTS_WEBHOOK: string | undefined;
   readonly ORCA_DISCORD_AUTO_SEND_ENABLED: "true" | "false" | undefined;
   readonly ORCA_INGESTION_CRON_ENABLED: "true" | "false" | undefined;
   readonly ORCA_INGESTION_PARALLELISM: string | undefined;

@@ -53,7 +53,7 @@
     "@convex-dev/batch-worker": "0.3.3",
     "@orca/config": "workspace:*",
     "@types/node": "catalog:",
-    "convex-test": "0.0.64",
+    "convex-test": "0.0.65",
     "fast-check": "4.10.2",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -30,8 +30,7 @@ bun install --frozen-lockfile
 bun run --cwd packages/backend convex login
 ```
 
-Use `--no-open` for remote CLI login. Use `orca-worktree-setup` when a fresh worktree needs its own backend
-or running app. Start from the root so Next.js and Convex receive the same browser origin:
+Use `--no-open` for remote CLI login. Start from the root so Next.js and Convex receive the same browser origin:
 
 ```sh
 bun run dev          # Web and backend

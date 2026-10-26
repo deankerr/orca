@@ -31,7 +31,8 @@ parent's last-endpoint departure. Ordering applies before batching; `config.md` 
 ## Operator commands
 
 Run from `packages/backend`, selecting the intended deployment. Development uses private development
-webhooks. An eligible webhook must subscribe to `ingestion`:
+webhooks; `init` subscribes `ORCA_DEV_DISCORD_ALERTS_WEBHOOK` when set. An eligible webhook must subscribe
+to `ingestion`:
 
 ```sh
 bunx convex run api:registerWebhook '{"name":"Ingestion alerts","topics":["ingestion"],"url":"<webhook-url>"}' --component discordSender --deployment <deployment>

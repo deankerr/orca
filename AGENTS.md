@@ -4,7 +4,7 @@
 
 - When dependencies are missing, run `bun install --frozen-lockfile` from the repository root.
 - Dependency installation needs no backend setup.
-- Use `orca-worktree-setup` when the task establishes that a fresh worktree needs its own backend or running app.
+- A linked worktree comes with a disposable Convex dev deployment and web env; `bun run worktree:setup` repairs it.
 - The main checkout owns the personal dev deployment.
 - Worktrees must use their own deployment for code pushes, including `convex run --push`.
 - A code push replaces the deployment's functions and auth configuration.
