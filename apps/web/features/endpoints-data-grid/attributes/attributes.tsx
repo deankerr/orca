@@ -38,8 +38,8 @@ type AttributeIcon = LucideIcon
 
 export interface AttributeState {
   active: boolean
-  value?: string
-  details?: { label?: string; value: string }[]
+  value?: string | undefined
+  details?: { label?: string; value: string }[] | undefined
 }
 
 interface AttributeDefinition {

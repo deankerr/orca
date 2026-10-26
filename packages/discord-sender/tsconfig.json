@@ -1,13 +1,8 @@
 {
+  "extends": "@orca/config/tsconfig.base.json",
   "compilerOptions": {
-    "target": "ESNext",
     "lib": ["ESNext", "DOM"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    "module": "ESNext"
   },
   "include": ["src"],
   "exclude": ["src/component/_generated"]

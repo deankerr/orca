@@ -81,12 +81,14 @@ export const serve = httpAction(async (ctx, request) => {
   url.searchParams.set('cursor', result.continueCursor)
   const next = result.isDone ? null : url.href
 
-  const headers = {
+  const headers = new Headers({
     'Cache-Control': 'no-store',
-    ...(next === null ? {} : { Link: `<${next}>; rel="next"` }),
+    'Content-Type': 'application/json; charset=utf-8',
+  })
+
+  if (next !== null) {
+    headers.set('Link', `<${next}>; rel="next"`)
   }
 
-  return new Response(JSON.stringify({ events: result.page, next }, null, 2), {
-    headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' },
-  })
+  return new Response(JSON.stringify({ events: result.page, next }, null, 2), { headers })
 })

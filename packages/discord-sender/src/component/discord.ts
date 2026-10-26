@@ -60,6 +60,12 @@ export function invalidatesWebhook(error: { code: string | number }) {
 }
 
 /** Share one SDK client across an action's lanes so Discord's global limits are shared. */
+/** A stored job message: each kind carries exactly the fields its request needs. */
+type Operation =
+  | { kind: 'send'; payload: string }
+  | { kind: 'edit'; messageId: string; payload: string; threadId?: string }
+  | { kind: 'delete'; messageId: string; threadId?: string }
+
 export function createDiscord() {
   const deadlines = new Map<string, number>()
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: The SDK's browser build declares undici types, but its documented makeRequest hook accepts native fetch for JSON requests.
@@ -85,32 +91,32 @@ export function createDiscord() {
   })
 
   return {
-    async request(input: {
+    async request({
+      url: webhookUrl,
+      operation,
+      expiresAt,
+    }: {
       url: string
-      operation: 'send' | 'edit' | 'delete'
-      payload?: string
-      messageId?: string
-      threadId?: string
+      operation: Operation
       expiresAt: number
     }) {
-      const webhook = parseWebhookUrl(input.url)
+      const webhook = parseWebhookUrl(webhookUrl)
       const url = new URL(webhook.url)
 
       const route =
-        input.operation === 'send'
+        operation.kind === 'send'
           ? webhook.route
-          : (`${webhook.route}/messages/${zSnowflake.parse(input.messageId)}` as const)
+          : (`${webhook.route}/messages/${zSnowflake.parse(operation.messageId)}` as const)
 
-      const body =
-        input.operation === 'delete' ? undefined : parseMessagePayload(input.payload ?? '')
+      const body = operation.kind === 'delete' ? undefined : parseMessagePayload(operation.payload)
 
       url.pathname = `/api/v10${route}`
 
-      if (input.operation !== 'send' && input.threadId !== undefined) {
-        url.searchParams.set('thread_id', zSnowflake.parse(input.threadId))
+      if (operation.kind !== 'send' && operation.threadId !== undefined) {
+        url.searchParams.set('thread_id', zSnowflake.parse(operation.threadId))
       }
 
-      if (input.operation !== 'delete') {
+      if (operation.kind !== 'delete') {
         url.searchParams.set('wait', 'true')
         url.searchParams.set('with_components', 'true')
       }
@@ -121,7 +127,7 @@ export function createDiscord() {
         throw new Error('Requests to a webhook must run sequentially')
       }
 
-      deadlines.set(fullUrl, z.number().parse(input.expiresAt))
+      deadlines.set(fullUrl, z.number().parse(expiresAt))
 
       try {
         const result = await rest.request({
@@ -132,11 +138,11 @@ export function createDiscord() {
             delete: RequestMethod.Delete,
             edit: RequestMethod.Patch,
             send: RequestMethod.Post,
-          }[input.operation],
+          }[operation.kind],
           query: url.searchParams,
         })
 
-        return input.operation === 'delete' ? null : zMessage.parse(result)
+        return operation.kind === 'delete' ? null : zMessage.parse(result)
       } finally {
         deadlines.delete(fullUrl)
       }

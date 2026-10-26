@@ -1,6 +1,15 @@
 import type { AuthConfig } from 'convex/server'
+import { ConvexError } from 'convex/values'
 
 const clientId = process.env.WORKOS_CLIENT_ID
+
+// Without a client ID, token verification would quietly use an `undefined` JWKS URL and audience.
+if (clientId === undefined || clientId === '') {
+  throw new ConvexError({
+    message: 'Auth requires a WorkOS client ID',
+    variable: 'WORKOS_CLIENT_ID',
+  })
+}
 
 export default {
   providers: [

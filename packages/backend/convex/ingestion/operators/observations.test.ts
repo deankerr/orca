@@ -65,7 +65,8 @@ function stateAt(rows: readonly ObservationRow[], at: string) {
   }
 
   return new Map(
-    [...latest]
+    latest
+      .entries()
       .filter(([, row]) => (row.entity_kind === 'endpoint' ? row.detected : row.endpoint_count > 0))
       .map(([key, row]) => {
         const { scan_at: _scanAt, ...state } = row

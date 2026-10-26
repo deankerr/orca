@@ -16,7 +16,7 @@ export const CapturedChange: z.ZodType<CapturedChange> = z.union([
     get changes() {
       return z.array(CapturedChange)
     },
-    embeddedKey: z.string().optional(),
+    embeddedKey: z.string().exactOptional(),
     key: z.string(),
     type: z.literal('UPDATE'),
   }),

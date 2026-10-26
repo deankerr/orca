@@ -42,7 +42,7 @@ export async function prepareBatch(
           })),
         )
 
-  const suppressed = new Set(candidates.filter((_event, index) => frequent[index]))
+  const suppressed = new Set(candidates.filter((_event, index) => frequent[index] === true))
 
   const selected = alerts.flatMap((alert) => {
     if (!suppressed.has(alert) || alert.event.type !== 'endpoint_updated') {

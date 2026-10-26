@@ -3,9 +3,9 @@ export function analyticsConfig({
   key,
   developmentEnabled,
 }: {
-  environment?: string
-  key?: string
-  developmentEnabled?: string
+  environment?: string | undefined
+  key?: string | undefined
+  developmentEnabled?: string | undefined
 }) {
   const ingestionKey = key?.trim()
 

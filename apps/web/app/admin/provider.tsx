@@ -9,6 +9,7 @@ import { ConvexProviderWithAuth, ConvexReactClient, useConvexAuth, useQuery } fr
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
+import * as R from 'remeda'
 
 import { PageLoading } from '@/components/app-layout/pages'
 
@@ -47,7 +48,7 @@ export function AdminProvider({
   )
 
   return (
-    <AuthKitProvider initialAuth={initialAuth}>
+    <AuthKitProvider {...R.pickBy({ initialAuth }, R.isDefined)}>
       {/* oxlint-disable-next-line react/hooks -- Convex's provider API calls this custom auth hook internally. */}
       <ConvexProviderWithAuth client={convex} useAuth={useConvexAuthKit}>
         <ConvexQueryCacheProvider>

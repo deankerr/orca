@@ -13,7 +13,7 @@ export function fieldChange(
     label = fieldName(change.field),
     suffix,
     annotation,
-  }: { label?: string; suffix?: string; annotation?: string } = {},
+  }: { label?: string; suffix?: string | undefined; annotation?: string } = {},
 ): string {
   if (change.kind === 'opaque') {
     return field(label, 'changed')
@@ -107,7 +107,10 @@ export function factsText(
     .join(dot)
 }
 
-export function fieldValue(item: AlertFact, { suffix = '' }: { suffix?: string } = {}): string {
+export function fieldValue(
+  item: AlertFact,
+  { suffix = '' }: { suffix?: string | undefined } = {},
+): string {
   if (item.value === null) {
     return code('null')
   }

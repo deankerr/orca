@@ -89,7 +89,7 @@ test('mixed arrays retain index matching in either direction', () => {
   for (const [previous, next] of [
     [['tools'], ['tools', 1]],
     [['tools', 1], ['tools']],
-  ]) {
+  ] satisfies [JsonValue[], JsonValue[]][]) {
     expect(compare({ values: previous }, { values: next })[0]?.embeddedKey).toBe('$index')
   }
 })

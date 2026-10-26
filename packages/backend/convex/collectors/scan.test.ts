@@ -15,12 +15,12 @@ test('scan flag gates cron admission while manual capture remains available', as
   const { run, scheduled } = await import('./scan')
 
   const scheduledHandler = testDouble<{
-    _handler: (ctx: MutationCtx, args: object) => Promise<null>
+    _handler: (ctx: MutationCtx, args: Record<string, never>) => Promise<null>
   }>(scheduled)._handler
 
-  const runHandler = testDouble<{ _handler: (ctx: ActionCtx, args: object) => Promise<null> }>(
-    run,
-  )._handler
+  const runHandler = testDouble<{
+    _handler: (ctx: ActionCtx, args: Record<string, never>) => Promise<null>
+  }>(run)._handler
 
   const calls: string[] = []
 

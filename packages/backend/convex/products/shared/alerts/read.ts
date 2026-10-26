@@ -2,6 +2,7 @@ import { mergedStream, stream } from 'convex-helpers/server/stream'
 import type { QueryStream } from 'convex-helpers/server/stream'
 import type { PaginationOptions } from 'convex/server'
 import { ConvexError } from 'convex/values'
+import * as R from 'remeda'
 import { z } from 'zod'
 
 import type { Doc } from '#generated/dataModel'
@@ -62,12 +63,18 @@ export async function readPage(
   scope: EventScope,
   paginationOpts: PaginationOptions,
 ) {
+  const { cursor, endCursor, ...page } = paginationOpts
+
   const options = {
-    ...paginationOpts,
-    cursor: paginationOpts.cursor === null ? null : parseCursor(paginationOpts.cursor),
-    ...(paginationOpts.endCursor === undefined || paginationOpts.endCursor === null
-      ? {}
-      : { endCursor: parseCursor(paginationOpts.endCursor) }),
+    ...page,
+    cursor: cursor === null ? null : parseCursor(cursor),
+    ...R.pickBy(
+      {
+        endCursor:
+          endCursor === undefined || endCursor === null ? endCursor : parseCursor(endCursor),
+      },
+      R.isDefined,
+    ),
   }
 
   const cutoff = await cappedCutoff(ctx)

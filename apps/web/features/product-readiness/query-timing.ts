@@ -1,4 +1,5 @@
 import type { QueryCache, QueryCacheNotifyEvent, QueryKey } from '@tanstack/react-query'
+import * as R from 'remeda'
 import { z } from 'zod'
 
 import { captureTiming } from './capture'
@@ -161,7 +162,7 @@ export class ReadinessQueryTimings {
       id: crypto.randomUUID(),
       source:
         fetch?.source ?? (this.restored.has(queryHash) ? 'tanstack_persisted' : 'tanstack_memory'),
-      ...(fetch ? { fetchStarted: fetch.started } : {}),
+      ...R.pickBy({ fetchStarted: fetch?.started }, R.isDefined),
     }
 
     this.results.set(queryHash, result)

@@ -1,3 +1,5 @@
+import * as R from 'remeda'
+
 import type { RawScan, ScanEntry } from '#scans/collection'
 import { extractScan } from '#scans/extract'
 import type { Scan } from '#scans/extraction'
@@ -50,7 +52,7 @@ export function rawScan(scan_at: string, spec: ScanSpec = {}): RawScan {
       provider_slug:
         endpoint.tag === undefined ? endpoint.provider : `${endpoint.provider}/${endpoint.tag}`,
       variant: 'standard',
-      ...(endpoint.stats === undefined ? {} : { statsByTier: endpoint.stats }),
+      ...R.pickBy({ statsByTier: endpoint.stats }, R.isDefined),
     })
     entries.set(endpoint.model, entry)
   }
@@ -115,17 +117,20 @@ export function specs(seed: number, length: number): ScanSpec[] {
 
     for (const endpoint of ['e1', 'e2', 'e3', 'e4']) {
       if (draw() < 0.6) {
-        endpoints[endpoint] = {
+        const spec = {
           model: pick(['m1', 'm2', 'm3']),
           prompt: pick(['0.1', '0.2']),
           provider: pick(['p1', 'p2']),
           tag: pick(['a', 'b']),
-          ...(draw() < 0.7
+        }
+
+        endpoints[endpoint] =
+          draw() < 0.7
             ? {
+                ...spec,
                 stats: { default: { p50_latency: Math.floor(draw() * 100), p50_throughput: null } },
               }
-            : {}),
-        }
+            : spec
       }
     }
 

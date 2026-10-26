@@ -2,6 +2,7 @@ import { TableAggregate } from '@convex-dev/aggregate'
 import type { TableAggregateOperation } from '@convex-dev/aggregate'
 import type { WithoutSystemFields } from 'convex/server'
 import { ConvexError, v } from 'convex/values'
+import * as R from 'remeda'
 
 import { components, internal } from '#generated/api'
 import type { DataModel, Doc, Id } from '#generated/dataModel'
@@ -33,9 +34,12 @@ export const recordCounts = new TableAggregate<RecordCountsType>(components.inge
 
 type RecordKeyField = 'from_scan_at' | 'kind' | 'scan_at'
 
+/** Convex's patch shape: `undefined` on an optional field removes it. */
+type Patch<T> = { [P in keyof T]?: undefined extends T[P] ? T[P] | undefined : T[P] }
+
 // Forbids the fields recordCounts keys on (kind, scan_at), and from_scan_at, which determines kind.
 // `never` rejects them from variables and spreads too, which `Omit` alone would allow.
-type RecordPatch = Partial<Omit<WithoutSystemFields<RecordDoc>, RecordKeyField>> &
+type RecordPatch = Patch<Omit<WithoutSystemFields<RecordDoc>, RecordKeyField>> &
   Partial<Record<RecordKeyField, never>>
 
 export type RecordWrites = {
@@ -75,7 +79,9 @@ export async function writeRecords<Result>(
 
       // RecordPatch cannot change kind or scan_at, so only a state change can move the aggregate entry.
       if (patch.state !== undefined && patch.state !== previous.state) {
-        operations.push({ newDoc: { ...previous, ...patch }, oldDoc: previous, type: 'replace' })
+        // An `undefined` patch value removes its field.
+        const newDoc = R.pickBy({ ...previous, ...patch }, R.isDefined)
+        operations.push({ newDoc, oldDoc: previous, type: 'replace' })
       }
     },
   })

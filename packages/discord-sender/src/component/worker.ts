@@ -215,11 +215,8 @@ export const drain = internalAction({
             try {
               const response = await discord.request({
                 expiresAt: job.expiresAt,
-                operation: message.kind,
+                operation: message,
                 url,
-                ...('payload' in message ? { payload: message.payload } : {}),
-                ...('messageId' in message ? { messageId: message.messageId } : {}),
-                ...('threadId' in message ? { threadId: message.threadId } : {}),
               })
 
               result = { kind: 'succeeded', response }

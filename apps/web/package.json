@@ -37,6 +37,7 @@
     "posthog-js": "^1.438.13",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "remeda": "catalog:",
     "rooks": "^9.9.0",
     "shiki": "^4.5.0",
     "zod": "catalog:"

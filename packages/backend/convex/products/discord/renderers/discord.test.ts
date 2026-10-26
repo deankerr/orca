@@ -1,4 +1,5 @@
 import { ComponentType } from 'discord-api-types/v10'
+import * as R from 'remeda'
 import { expect, vi, test } from 'vitest'
 
 import type { EventRow as CatalogEvent } from '../../../catalog/tables/events'
@@ -468,7 +469,7 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
         entity_id: 'abcdef-123',
         entity_kind: kind,
         type,
-        ...(type === 'ADD' ? { previously_known: false } : {}),
+        ...R.pickBy({ previously_known: type === 'ADD' ? false : undefined }, R.isDefined),
         change_json: JSON.stringify({
           key: 'abcdef-123',
           type,
@@ -696,7 +697,7 @@ test('provider discoveries are announced and departures only announce endpoint a
       entity_id: 'provider',
       entity_kind: 'provider',
       type,
-      ...(type === 'ADD' ? { previously_known: false } : {}),
+      ...R.pickBy({ previously_known: type === 'ADD' ? false : undefined }, R.isDefined),
       change_json: JSON.stringify({
         key: 'provider',
         type,
@@ -780,7 +781,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     [{ dataPolicy: policy }, {}],
     [{ dataPolicy: null }, { dataPolicy: policy }],
     [{ dataPolicy: policy }, { dataPolicy: null }],
-  ]) {
+  ] satisfies [JsonValue, JsonValue][]) {
     const event = providerRow(before, after)
     const captured = event.change_json
     const message = await renderDiscord(event, urls)
@@ -833,7 +834,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
     [{ dataPolicy: { training: false } }, { dataPolicy: { training: true } }],
     [{}, { dataPolicy: { training: true } }],
     [{ dataPolicy: { training: true } }, {}],
-  ]) {
+  ] satisfies [JsonValue, JsonValue][]) {
     expect(await renderDiscord(providerRow(before, after), urls)).toBeNull()
   }
 })
@@ -873,7 +874,7 @@ test('blank text is unknown, so it renders as an addition or removal without rew
     for (const [before, after] of [
       ['Warning.', blank],
       [blank, 'Warning.'],
-    ]) {
+    ] as const) {
       const event: EventRow = {
         ...row({ metadata: { warning_message: before } }, { metadata: { warning_message: after } }),
         entity_kind: 'model',

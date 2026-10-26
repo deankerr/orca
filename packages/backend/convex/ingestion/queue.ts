@@ -1,5 +1,6 @@
 import { literals } from 'convex-helpers/validators'
 import { v } from 'convex/values'
+import * as R from 'remeda'
 
 import { internal } from '#generated/api'
 import type { Id } from '#generated/dataModel'
@@ -225,16 +226,17 @@ async function ingest(
   )
 
   // Independent writes run concurrently; sequential awaits dominated the step's duration.
+  // Work IDs are returned in request order. Only pairs record the scope they were queued with.
   await Promise.all(
-    accepted.map(async ({ request, record }, index) => {
-      await records.patch(record, {
-        error: undefined,
-        ...(record.kind === 'pair'
-          ? { current_scope: request.scope, current_stats: request.current_stats }
-          : {}),
-        state: 'queued',
-        work_id: workIds[index],
-      })
+    R.zip(accepted, workIds).map(async ([{ request, record }, work_id]) => {
+      const queued = { error: undefined, state: 'queued' as const, work_id }
+
+      await records.patch(
+        record,
+        record.kind === 'pair'
+          ? { ...queued, current_scope: request.scope, current_stats: request.current_stats }
+          : queued,
+      )
     }),
   )
 }
@@ -253,12 +255,8 @@ async function withdraw(ctx: MutationCtx, records: RecordWrites, ids: RecordId[]
   )
 
   await Promise.all(
-    accepted.map(async ({ record }, index) => {
-      await records.patch(record, {
-        error: undefined,
-        state: 'withdrawing',
-        work_id: workIds[index],
-      })
+    R.zip(accepted, workIds).map(async ([{ record }, work_id]) => {
+      await records.patch(record, { error: undefined, state: 'withdrawing', work_id })
     }),
   )
 }

@@ -90,12 +90,13 @@ function pricingChange(change: AlertChange): PriceRow | null {
   }
 }
 
+/** A side is absent when the price was added or removed. */
 type PriceRow = {
   path: string
-  before?: string
-  after?: string
+  before?: string | undefined
+  after?: string | undefined
   annotation: string
-  change?: 'added' | 'removed'
+  change?: 'added' | 'removed' | undefined
 }
 
 export function pricingTable(rows: PriceRow[]): string {

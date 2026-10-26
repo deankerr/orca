@@ -110,10 +110,11 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
       await rejects(namesAtOrAfter(ctx, selection), /order\/range/u)
     }
 
+    const { order: _order, ...unordered } = selection
     query.mockResolvedValue(['b', 'c'])
-    expect(await namesAtOrAfter(ctx, { ...selection, order: undefined })).toEqual(['b', 'c'])
+    expect(await namesAtOrAfter(ctx, unordered)).toEqual(['b', 'c'])
     query.mockResolvedValue(['c', 'b'])
-    await rejects(namesAtOrAfter(ctx, { ...selection, order: undefined }), /order\/range/u)
+    await rejects(namesAtOrAfter(ctx, unordered), /order\/range/u)
     query.mockResolvedValue([])
     expect(await namesAtOrAfter(ctx, selection)).toEqual([])
 

@@ -19,11 +19,17 @@ afterEach(() => {
 })
 
 const demoHandler = testDouble<{
-  _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string; message: string }>
+  _handler: (
+    ctx: QueryCtx,
+    args: Record<string, never>,
+  ) => Promise<{ userId: string; message: string }>
 }>(demo)._handler
 
 const viewerHandler = testDouble<{
-  _handler: (ctx: QueryCtx, args: object) => Promise<{ userId: string | null; isAdmin: boolean }>
+  _handler: (
+    ctx: QueryCtx,
+    args: Record<string, never>,
+  ) => Promise<{ userId: string | null; isAdmin: boolean }>
 }>(viewer)._handler
 
 function context(subject: string | null): QueryCtx {

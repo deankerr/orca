@@ -487,13 +487,12 @@ function collectManualSourceCoverageWarnings(args: {
   }
 
   return [...keys]
-    .map((key) => {
+    .flatMap((key) => {
       const present = ASSET_GROUPS.filter((group) => args.resolvedSources[group].has(key))
       const missing = ASSET_GROUPS.filter((group) => !args.resolvedSources[group].has(key))
 
-      return { key, missing, present }
+      return missing.length === 0 ? [] : [{ key, missing, present }]
     })
-    .filter((warning) => warning.missing.length > 0)
     .toSorted((left, right) => left.key.localeCompare(right.key))
 }
 
@@ -724,7 +723,7 @@ async function loadSourceImage(sourcePath: string): Promise<Sharp> {
 
 // The manifest is for audits and tests, not for request-time routing.
 function recordManifestAsset(args: {
-  aliasOf?: string
+  aliasOf?: string | undefined
   asset: SourceAsset
   group: AssetGroup
   height: number
@@ -733,7 +732,12 @@ function recordManifestAsset(args: {
   width: number
 }): void {
   const logo = getManifestLogo(args.manifest, args.key)
-  logo.aliasOf = args.aliasOf
+
+  if (args.aliasOf === undefined) {
+    delete logo.aliasOf
+  } else {
+    logo.aliasOf = args.aliasOf
+  }
 
   logo[args.group] = {
     file: logoAssetManifestPath({ group: args.group, key: args.key }),

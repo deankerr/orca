@@ -3,6 +3,7 @@
 import { api } from '@orca/backend/api'
 import { useMutation, usePaginatedQuery } from 'convex/react'
 import { useState } from 'react'
+import * as R from 'remeda'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +32,7 @@ export function RecordsTable({ failed }: { failed: number }) {
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.ingestion.admin.records,
-    { before, state },
+    R.pickBy({ before, state }, R.isDefined),
     { initialNumItems: PAGE },
   )
 

@@ -1,6 +1,6 @@
 import { zodToConvexFields } from 'convex-helpers/server/zod4'
 import { ConvexError, v } from 'convex/values'
-import { isDeepEqual, pick, unique, uniqueBy } from 'remeda'
+import { isDeepEqual, isDefined, pick, pickBy, unique, uniqueBy } from 'remeda'
 import { z } from 'zod'
 
 import { internal } from './_generated/api'
@@ -136,11 +136,10 @@ export const editMessage = mutation({
       key: args.key,
       messages: [
         {
+          ...target.address,
           key: 'edit',
           kind: 'edit',
-          messageId: target.messageId,
           payload: zSerializedPayload.parse(args.payload),
-          ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
         },
       ],
       webhookId: target.webhookId,
@@ -159,10 +158,9 @@ export const deleteMessage = mutation({
       key: args.key,
       messages: [
         {
+          ...target.address,
           key: 'delete',
           kind: 'delete',
-          messageId: target.messageId,
-          ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
         },
       ],
       webhookId: target.webhookId,
@@ -208,7 +206,10 @@ async function messageTarget(ctx: MutationCtx, resultId: Id<'results'>) {
 
   // The caller supplies a receipt, never a different destination for its message.
   // Original sends and later edits remain immutable evidence of each operation.
-  return { messageId: delivered.data.id, threadId, webhookId: job.webhookId }
+  return {
+    address: pickBy({ messageId: delivered.data.id, threadId }, isDefined),
+    webhookId: job.webhookId,
+  }
 }
 
 type JobInput = Pick<Doc<'jobs'>, 'key' | 'expiresAt' | 'webhookId' | 'messages' | 'topic'>

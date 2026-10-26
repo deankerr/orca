@@ -33,7 +33,7 @@ export function embedCard(
     author: { name: string; url: string; iconURL: string }
     timestamp: string
     color: number
-    footer?: { text: string; iconURL?: string }
+    footer?: { text: string; iconURL?: string } | undefined
   },
 ): Card {
   const author = {
