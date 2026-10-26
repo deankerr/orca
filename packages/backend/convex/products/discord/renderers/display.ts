@@ -4,7 +4,7 @@ const changeMarkers = { added: '+ ', removed: '− ' }
 const arrivalMarkers = { discovered: '✨ ', listed: '+ ', relisted: '↺ ' }
 
 /** Wrap preformatted children in a consistent field row or block; labels are plain text. */
-export function field(
+export function fieldRow(
   label: string,
   children: string,
   {

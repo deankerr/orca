@@ -12,7 +12,7 @@ import { fieldLabel, presentChange } from '../../shared/alerts/present'
 import { prepareBatch as prepareDiscordBatch } from '../prepare'
 import type { DiscordUrls } from './card'
 import { embedCard, componentCard } from './card'
-import { code, escape, field, lifecycleMarker, valueChange } from './display'
+import { code, escape, fieldRow, lifecycleMarker, valueChange } from './display'
 import { delta, fieldChange, factsText, fieldValue, quote } from './fields'
 import { renderDiscordBatch } from './index'
 import { pricingChanges, pricingTable } from './pricing'
@@ -169,10 +169,10 @@ test('prices and other numeric fields share precision and reveal changes hidden 
 test('display pieces compose consistently across facts, changes, pricing, and block children', () => {
   const change = valueChange(code('fp8'), code('fp16'))
 
-  expect(field('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
+  expect(fieldRow('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
 
   expect(fieldChange({ after: 'fp16', before: 'fp8', field: 'quantization', kind: 'text' })).toBe(
-    field('quantization', change),
+    fieldRow('quantization', change),
   )
 
   expect(
@@ -186,12 +186,12 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
     ]),
   ).toBe('`input:       ` `  $1` → `$0.5` ▼ 50%\n+ `cache_read:` `$0.1`')
 
-  expect(field('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
+  expect(fieldRow('description', '> prose', { layout: 'block' })).toBe('`description`\n> prose')
 
-  expect(field('parameters', '+ `tools`', { layout: 'block' })).toBe('`parameters`\n+ `tools`')
+  expect(fieldRow('parameters', '+ `tools`', { layout: 'block' })).toBe('`parameters`\n+ `tools`')
 
-  expect(field('enabled', code('true'), { change: 'added' })).toBe('+ `enabled:` `true`')
-  expect(field('enabled', code('false'), { change: 'removed' })).toBe(
+  expect(fieldRow('enabled', code('true'), { change: 'added' })).toBe('+ `enabled:` `true`')
+  expect(fieldRow('enabled', code('false'), { change: 'removed' })).toBe(
     '− ~~`enabled:`~~ ~~`false`~~',
   )
   expect(code('long_value', { width: 3 })).toBe('`long_value`')

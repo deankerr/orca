@@ -21,12 +21,24 @@ function batchableChanges(event: EntityAlert): BatchAlert['change'][] {
   return 'changes' in event ? event.changes : []
 }
 
+/** Equivalent changes from distinct entities, and where each occurs among the source alerts. */
+type Group = {
+  batch: BatchAlert
+  occurrences: [IndividualAlert, number][]
+  entities: Set<string>
+}
+
+/** Locates a batched change by its alert and its index in that alert's batchable changes. */
+type Batched = Map<IndividualAlert, Map<number, BatchAlert>>
+
 /** Group endpoint unlistings and repeated field items; retain source identities and residual fields. */
 export function batchAlerts(events: IndividualAlert[]): Alert[] {
-  const groups = new Map<
-    string,
-    { batch: BatchAlert; occurrences: [IndividualAlert, number][]; entities: Set<string> }[]
-  >()
+  return emit(events, batched(groupChanges(events)))
+}
+
+/** Equivalent changes share a scan, entity kind, change kind and field. */
+function groupChanges(events: IndividualAlert[]): Group[] {
+  const groups = new Map<string, Group[]>()
 
   for (const bucket of events) {
     const { event } = bucket
@@ -64,50 +76,62 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
     }
   }
 
-  const extracted = new Map<IndividualAlert, Map<number, BatchAlert>>()
+  return [...groups.values()].flat()
+}
 
-  for (const { batch, occurrences } of [...groups.values()].flat()) {
+/** Changes whose group reaches the batching threshold move into that group's batch. */
+function batched(groups: Group[]): Batched {
+  const result: Batched = new Map()
+
+  for (const { batch, occurrences } of groups) {
     if (batch.members.length >= BATCH_THRESHOLD) {
       for (const [bucket, index] of occurrences) {
-        const items = extracted.get(bucket) ?? new Map<number, BatchAlert>()
+        const items = result.get(bucket) ?? new Map<number, BatchAlert>()
         items.set(index, batch)
-        extracted.set(bucket, items)
+        result.set(bucket, items)
       }
     }
   }
 
+  return result
+}
+
+/** Alerts keep source order; each batch appears once, at its first occurrence. */
+function emit(events: IndividualAlert[], batches: Batched): Alert[] {
   const result: Alert[] = []
   const emitted = new Set<BatchAlert>()
 
+  const place = (batch: BatchAlert) => {
+    if (!emitted.has(batch)) {
+      result.push(batch)
+      emitted.add(batch)
+    }
+  }
+
   for (const bucket of events) {
     const { event } = bucket
+    const items = batches.get(bucket)
 
     if (!('changes' in event)) {
-      const batch = extracted.get(bucket)?.get(0)
+      const batch = items?.get(0)
 
       if (batch === undefined) {
         result.push(bucket)
-      } else if (!emitted.has(batch)) {
-        result.push(batch)
-        emitted.add(batch)
+      } else {
+        place(batch)
       }
 
       continue
     }
 
     const changes = event.changes.filter((_change, index) => {
-      const batch = extracted.get(bucket)?.get(index)
+      const batch = items?.get(index)
 
-      if (batch === undefined) {
-        return true
+      if (batch !== undefined) {
+        place(batch)
       }
 
-      if (!emitted.has(batch)) {
-        result.push(batch)
-        emitted.add(batch)
-      }
-
-      return false
+      return batch === undefined
     })
 
     if (changes.length > 0) {

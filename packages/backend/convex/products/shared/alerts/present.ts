@@ -39,7 +39,7 @@ export function fieldLabel(field: string): string {
 export const priceUnit = (field: string): string | undefined => priceFields[field]?.unit
 
 /** A lifecycle fact by Contract field, when it holds the kind the caller presents. */
-export function fact<K extends AlertKind>(
+export function findFact<K extends AlertKind>(
   facts: readonly AlertFact[],
   field: string,
   kind: K,

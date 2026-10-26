@@ -1,22 +1,22 @@
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
 import {
-  fact,
+  findFact,
   fieldLabel,
   formatQuantity,
   presentChange,
   priceFields,
 } from '../../shared/alerts/present'
-import { code, field, valueChange } from './display'
+import { code, fieldRow, valueChange } from './display'
 import { delta, fieldChange } from './fields'
 
 const price = (name: string, value: string) => formatQuantity({ field: name, kind: 'price', value })
 
 export function pricingFacts(facts: readonly AlertFact[], scheduled: boolean | undefined): string {
-  const discount = fact(facts, 'pricing.discount', 'percent')?.value ?? 0
+  const discount = findFact(facts, 'pricing.discount', 'percent')?.value ?? 0
 
   const prices = pricingTable([
     ...Object.keys(priceFields).flatMap((name) => {
-      const rate = fact(facts, name, 'price')?.value
+      const rate = findFact(facts, name, 'price')?.value
 
       return rate === undefined || rate === null
         ? []
@@ -129,7 +129,7 @@ export function pricingTable(rows: PriceRow[]): string {
       const cell = (value: string | undefined) =>
         value === undefined ? undefined : code(value, { align: 'right', width: valueWidth })
 
-      return field(
+      return fieldRow(
         fieldLabel(row.path),
         valueChange(cell(row.before), cell(row.after), { annotation: row.annotation }),
         { change: row.change, width: labelWidth - (row.change === undefined ? 0 : 2) },

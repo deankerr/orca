@@ -2,7 +2,6 @@ import { mergedStream, stream } from 'convex-helpers/server/stream'
 import type { QueryStream } from 'convex-helpers/server/stream'
 import type { PaginationOptions } from 'convex/server'
 import { ConvexError } from 'convex/values'
-import * as R from 'remeda'
 import { z } from 'zod'
 
 import type { Doc } from '#generated/dataModel'
@@ -65,16 +64,13 @@ export async function readPage(
 ) {
   const { cursor, endCursor, ...page } = paginationOpts
 
-  const options = {
+  const options: PaginationOptions = {
     ...page,
     cursor: cursor === null ? null : parseCursor(cursor),
-    ...R.pickBy(
-      {
-        endCursor:
-          endCursor === undefined || endCursor === null ? endCursor : parseCursor(endCursor),
-      },
-      R.isDefined,
-    ),
+  }
+
+  if (endCursor !== undefined && endCursor !== null) {
+    options.endCursor = parseCursor(endCursor)
   }
 
   const cutoff = await cappedCutoff(ctx)
@@ -122,22 +118,24 @@ export async function readPage(
   }
 }
 
-const cursorKey = z.union([z.tuple([]), z.tuple([z.string(), z.number(), z.string()])])
-
-function parseCursorKey(cursor: string) {
-  try {
-    return cursorKey.safeParse(JSON.parse(cursor))
-  } catch {
-    // A non-JSON cursor has no index key; report the same domain error as other invalid keys.
-    return null
-  }
-}
-
 /** These streams share the scan-time, creation-time, document-ID key, without equality prefixes. */
-function parseCursor(cursor: string): string {
-  const result = parseCursorKey(cursor)
+const CursorKey = z
+  .string()
+  .transform((cursor, ctx) => {
+    try {
+      return z.json().parse(JSON.parse(cursor))
+    } catch {
+      ctx.addIssue({ code: 'custom', message: 'Cursor is not JSON' })
 
-  if (result?.success !== true) {
+      return z.NEVER
+    }
+  })
+  .pipe(z.union([z.tuple([]), z.tuple([z.string(), z.number(), z.string()])]))
+
+function parseCursor(cursor: string): string {
+  const result = CursorKey.safeParse(cursor)
+
+  if (!result.success) {
     throw new ConvexError('InvalidCursor: restart the feed without a cursor')
   }
 
