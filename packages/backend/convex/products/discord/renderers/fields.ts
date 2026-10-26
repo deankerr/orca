@@ -1,7 +1,7 @@
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
 import { fieldLabel, formatQuantity, isQuantity, presentChange } from '../../shared/alerts/present'
 import type { Movement } from '../../shared/alerts/present'
-import { code, dot, field, valueChange } from './display'
+import { code, dot, fieldRow, valueChange } from './display'
 
 export function fieldChange(
   change: AlertChange,
@@ -15,7 +15,7 @@ export function fieldChange(
   const presented = presentChange(change, { fractionDigits: 0 })
 
   if (presented.transition === 'opaque') {
-    return field(label, 'changed')
+    return fieldRow(label, 'changed')
   }
 
   if (presented.transition === 'members') {
@@ -24,7 +24,7 @@ export function fieldChange(
       ...presented.removed.map((item) => `− ~~${code(item)}~~`),
     ]
 
-    return field(label, lines.join('\n'), { layout: 'block' })
+    return fieldRow(label, lines.join('\n'), { layout: 'block' })
   }
 
   if (change.kind === 'prose') {
@@ -32,10 +32,10 @@ export function fieldChange(
   }
 
   if (presented.transition === 'added' || presented.transition === 'removed') {
-    return field(label, fieldValue(presented.fact, { suffix }), { change: presented.transition })
+    return fieldRow(label, fieldValue(presented.fact, { suffix }), { change: presented.transition })
   }
 
-  return field(
+  return fieldRow(
     label,
     valueChange(fieldValue(presented.before, { suffix }), fieldValue(presented.after, { suffix }), {
       annotation: annotation ?? (presented.movement === null ? '' : delta(presented.movement)),
@@ -48,14 +48,14 @@ function proseChange(label: string, before: string | null, after: string | null)
   const prose = (text: string | null) => (text === null ? code('null') : quote(text, start))
 
   if (before === null) {
-    return field(label, prose(after), { change: 'added', layout: 'block' })
+    return fieldRow(label, prose(after), { change: 'added', layout: 'block' })
   }
 
   if (after === null) {
-    return field(label, prose(before), { change: 'removed', layout: 'block' })
+    return fieldRow(label, prose(before), { change: 'removed', layout: 'block' })
   }
 
-  return field(label, `Before\n${prose(before)}\n\nAfter\n${prose(after)}`, { layout: 'block' })
+  return fieldRow(label, `Before\n${prose(before)}\n\nAfter\n${prose(after)}`, { layout: 'block' })
 }
 
 /** Prefix excerpts are sufficient until the change falls beyond the visible 800 characters. */
@@ -90,7 +90,7 @@ export function factsText(
         item.value === null ||
         (item.kind === 'list' && item.value.length === 0)
         ? []
-        : [field(label(name), fieldValue(item, { suffix: suffix?.(name) }))]
+        : [fieldRow(label(name), fieldValue(item, { suffix: suffix?.(name) }))]
     })
     .join(dot)
 }

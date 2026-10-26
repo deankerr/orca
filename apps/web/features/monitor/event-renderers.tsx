@@ -12,7 +12,7 @@ import {
 } from '@/components/shared/entity-identity'
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { Badge } from '@/components/ui/badge'
-import { fact, priceFields } from '@/lib/backend'
+import { findFact, priceFields } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
 import { EntityOverviewTrigger } from '../entity-overview/trigger'
@@ -184,8 +184,8 @@ function EventIdentity({
 }
 
 function ModelFacts({ facts }: { facts: readonly AlertFact[] }) {
-  const description = fact(facts, 'description', 'prose')?.value
-  const warning = fact(facts, 'warning_message', 'prose')?.value
+  const description = findFact(facts, 'description', 'prose')?.value
+  const warning = findFact(facts, 'warning_message', 'prose')?.value
 
   return (
     <>
@@ -197,18 +197,18 @@ function ModelFacts({ facts }: { facts: readonly AlertFact[] }) {
       <FieldItemSet>
         <FieldItem label="modalities">
           <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-            {fact(facts, 'input_modalities', 'list')?.value?.map((item) => (
+            {findFact(facts, 'input_modalities', 'list')?.value?.map((item) => (
               <Badge key={`in:${item}`} variant="secondary">
                 {item}
               </Badge>
             ))}
             <span className="text-muted-foreground">→</span>
-            {fact(facts, 'output_modalities', 'list')?.value?.map((item) => (
+            {findFact(facts, 'output_modalities', 'list')?.value?.map((item) => (
               <Badge key={`out:${item}`} variant="secondary">
                 {item}
               </Badge>
             ))}
-            {fact(facts, 'supports_reasoning', 'flag')?.value === true && (
+            {findFact(facts, 'supports_reasoning', 'flag')?.value === true && (
               <Badge variant="secondary">reasoning</Badge>
             )}
           </div>

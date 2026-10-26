@@ -1,8 +1,8 @@
 import type { AlertFact, EntityAlert } from '../../shared/alerts/curate'
-import { fact } from '../../shared/alerts/present'
+import { findFact } from '../../shared/alerts/present'
 import { colors, embedCard, componentCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { code, dot, escape, field, lifecycleMarker } from './display'
+import { code, dot, escape, fieldRow, lifecycleMarker } from './display'
 import { factsText, fieldChange, fieldValue, quote } from './fields'
 
 type ModelAlert = Extract<EntityAlert, { entity_kind: 'model' }>
@@ -62,10 +62,10 @@ function compactContent(event: ModelAlert): string[] {
 
 /** Model facts in display order; all field-specific choices stay beside the card. */
 function modelDetails(facts: readonly AlertFact[]): string {
-  const inputs = fact(facts, 'input_modalities', 'list')
-  const outputs = fact(facts, 'output_modalities', 'list')
-  const description = fact(facts, 'description', 'prose')?.value
-  const warning = fact(facts, 'warning_message', 'prose')?.value
+  const inputs = findFact(facts, 'input_modalities', 'list')
+  const outputs = findFact(facts, 'output_modalities', 'list')
+  const description = findFact(facts, 'description', 'prose')?.value
+  const warning = findFact(facts, 'warning_message', 'prose')?.value
 
   const modalities =
     inputs?.value && outputs?.value
@@ -73,14 +73,17 @@ function modelDetails(facts: readonly AlertFact[]): string {
       : factsText(facts, ['input_modalities', 'output_modalities'])
 
   return [
-    [modalities, fact(facts, 'supports_reasoning', 'flag')?.value === true ? code('reasoning') : '']
+    [
+      modalities,
+      findFact(facts, 'supports_reasoning', 'flag')?.value === true ? code('reasoning') : '',
+    ]
       .filter(Boolean)
       .join(dot),
     description === undefined || description === null ? '' : quote(description),
     factsText(facts, ['knowledge_cutoff']),
     warning === undefined || warning === null
       ? ''
-      : `⚠ ${field('warning_message', quote(warning), { layout: 'block' })}`,
+      : `⚠ ${fieldRow('warning_message', quote(warning), { layout: 'block' })}`,
   ]
     .filter(Boolean)
     .join('\n\n')

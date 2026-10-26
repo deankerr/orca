@@ -12,7 +12,7 @@ export { priceMeters } from '@orca/backend/price-meters'
 export { OrcaPublicApiV2Schema } from '@orca/backend/public-api/v2/schema'
 
 export {
-  fact,
+  findFact,
   fieldLabel,
   formatQuantity,
   isQuantity,

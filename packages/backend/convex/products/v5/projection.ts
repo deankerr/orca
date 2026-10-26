@@ -50,7 +50,11 @@ export type FieldFact<K extends Kind = Kind> = {
   [P in K]: { field: string; kind: P; value: KindValues[P] }
 }[K]
 
-function fact<K extends Kind>(name: string, definition: Field<K>, entity: JsonValue): FieldFact<K> {
+function readFact<K extends Kind>(
+  name: string,
+  definition: Field<K>,
+  entity: JsonValue,
+): FieldFact<K> {
   return {
     field: name,
     kind: definition.kind,
@@ -60,7 +64,7 @@ function fact<K extends Kind>(name: string, definition: Field<K>, entity: JsonVa
 
 /** Every declared field's value in a complete entity, in declaration order. */
 export function facts(fields: Fields, entity: JsonValue): FieldFact[] {
-  return Object.entries(fields).map(([name, definition]) => fact(name, definition, entity))
+  return Object.entries(fields).map(([name, definition]) => readFact(name, definition, entity))
 }
 
 function get(value: Fact, path: Source): Fact {

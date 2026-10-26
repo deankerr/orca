@@ -38,29 +38,29 @@ const values = {
   text: v.union(v.string(), v.null()),
 }
 
-const fact = <K extends AlertKind>(kind: K) =>
+const factValidator = <K extends AlertKind>(kind: K) =>
   v.object({ field: v.string(), kind: v.literal(kind), value: values[kind] })
 
 const alertFact = v.union(
-  fact('count'),
-  fact('flag'),
-  fact('list'),
-  fact('percent'),
-  fact('price'),
-  fact('prose'),
-  fact('text'),
+  factValidator('count'),
+  factValidator('flag'),
+  factValidator('list'),
+  factValidator('percent'),
+  factValidator('price'),
+  factValidator('prose'),
+  factValidator('text'),
 )
 
-const valueChange = <K extends Exclude<AlertKind, 'list'>>(kind: K) =>
+const valueChangeValidator = <K extends Exclude<AlertKind, 'list'>>(kind: K) =>
   v.object({ after: values[kind], before: values[kind], field: v.string(), kind: v.literal(kind) })
 
 const alertChange = v.union(
-  valueChange('count'),
-  valueChange('flag'),
-  valueChange('percent'),
-  valueChange('price'),
-  valueChange('prose'),
-  valueChange('text'),
+  valueChangeValidator('count'),
+  valueChangeValidator('flag'),
+  valueChangeValidator('percent'),
+  valueChangeValidator('price'),
+  valueChangeValidator('prose'),
+  valueChangeValidator('text'),
   v.object({
     added: v.array(v.string()),
     field: v.string(),
