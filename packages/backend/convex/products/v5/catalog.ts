@@ -56,18 +56,21 @@ export const snapshot = query({
     const listings = summarize(rows)
 
     const providerRows = await ctx.db.query(CURRENT_PROVIDERS_TABLE).collect()
-    const providerNames = new Map(providerRows.map((row) => [row.provider_id, row.display_name]))
+
+    const providers = providerRows.map((row) =>
+      toProvider(row, listings.providers.get(row.provider_id)),
+    )
+
+    const providersById = new Map(providers.map((provider) => [provider.id, provider]))
     const modelRows = await ctx.db.query(CURRENT_MODELS_TABLE).collect()
 
     return {
       as_at: scanAt,
       endpoints: rows.map((row) =>
-        toEndpoint(row, readings.get(row.endpoint_id), providerNames.get(row.provider_id)),
+        toEndpoint(row, readings.get(row.endpoint_id), providersById.get(row.provider_id)),
       ),
       models: modelRows.map((row) => toModel(row, listings.models.get(row.model_id))),
-      providers: providerRows.map((row) =>
-        toProvider(row, listings.providers.get(row.provider_id)),
-      ),
+      providers,
     }
   },
   returns: v.object({

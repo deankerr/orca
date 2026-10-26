@@ -63,7 +63,7 @@ function endpoint(overrides: {
       overrides: null,
       web_search: null,
     },
-    provider: { id: providerId, name: providerId, tag: overrides.tag },
+    provider: { display_name: providerId, id: providerId, name: providerId, tag: overrides.tag },
     quantization: null,
     stats: { p50_latency_ms: null, p50_throughput_tps: null },
     supported_parameters: overrides.parameters ?? [],
@@ -138,10 +138,11 @@ const models = [
   model({ created_at: '2026-09-01T00:00:00.000Z', id: 'qwen/qwen3-retired', providers: [] }),
 ]
 
-function provider(id: string, name: string, listed: number): Provider {
+function provider(id: string, name: string, listed: number, display_name = name): Provider {
   return {
     byok_enabled: null,
     datacenters: null,
+    display_name,
     headquarters: null,
     id,
     listed_endpoints: listed,
@@ -154,7 +155,8 @@ function provider(id: string, name: string, listed: number): Provider {
 }
 
 const providers = [
-  provider('novita', 'NovitaAI', 1),
+  // Like `google-vertex` ("Google", "Google Vertex"), names can match neither the slug nor each other.
+  provider('novita', 'Novita Labs', 1, 'NovitaAI'),
   provider('deepinfra', 'DeepInfra', 1),
   provider('phala', 'Phala', 1),
   provider('gone', 'Gone', 0),
@@ -333,7 +335,8 @@ describe('V5 providers', () => {
     expect(await ids('/providers?q=gone')).toEqual(['gone'])
   })
 
-  it('searches provider names as well as slugs', async () => {
+  it('searches provider names and display names as well as slugs', async () => {
+    expect(await ids('/providers?q=labs')).toEqual(['novita'])
     expect(await ids('/providers?q=novitaai')).toEqual(['novita'])
   })
 

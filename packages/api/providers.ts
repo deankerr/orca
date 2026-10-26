@@ -17,20 +17,20 @@ export const ProviderSelection = z.object({
     .optional()
     .meta({
       description:
-        'Search over provider slugs and names, by the same rules as endpoint search. ' +
+        'Search over provider slugs, names and display names, by the same rules as endpoint search. ' +
         'Results rank by match quality unless `sort` is set.',
       example: 'deepinfra',
     }),
   sort: z.enum(sortKeys(providerSorts)).optional().meta({
-    description: 'Sort key; name by default.',
+    description: 'Sort key; display name by default.',
   }),
 })
 
 export type ProviderSelection = z.infer<typeof ProviderSelection>
 
-/** Alphabetical by name, then slug. */
+/** Alphabetical by display name, then slug. */
 function compareDefault(left: Provider, right: Provider) {
-  return left.name.localeCompare(right.name) || left.id.localeCompare(right.id)
+  return left.display_name.localeCompare(right.display_name) || left.id.localeCompare(right.id)
 }
 
 export function selectProviders(providers: readonly Provider[], selection: ProviderSelection) {
@@ -48,6 +48,7 @@ export function selectProviders(providers: readonly Provider[], selection: Provi
           getFields: (provider) => [
             { name: 'provider_id', value: provider.id },
             { name: 'name', value: provider.name },
+            { name: 'display_name', value: provider.display_name },
           ],
         })
           .search(query)

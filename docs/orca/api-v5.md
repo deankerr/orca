@@ -94,6 +94,12 @@ ORCA takes an opinionated view of pricing. `pricing` carries declared meter rate
 - `internal_reasoning` is never published; its values have been misleading across many endpoints.
 - `pricing_json`, `display_pricing`, and `pricing_version_id` are internal representations and are not published.
 
+### Provider names
+
+Providers publish upstream `name` and `displayName` as `name` and `display_name`; an endpoint's
+`provider` carries both. On 2026-10-26, 22 of 84 providers differed, such as `google-vertex`
+("Google" and "Google Vertex") and `xai` ("xAI" and "SpaceXAI"). Listings sort by display name.
+
 ### Variants and tiers
 
 - `:batch` is a variant like any other. It is not a service tier, and ORCA has no reason so far to treat it differently.
