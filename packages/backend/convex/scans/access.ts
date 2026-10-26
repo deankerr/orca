@@ -1,4 +1,5 @@
 import { ConvexError } from 'convex/values'
+import * as R from 'remeda'
 
 import type { ActionCtx } from '#generated/server'
 import * as objects from '#objects'
@@ -15,7 +16,12 @@ export async function times(
     before = null,
     limit,
     order,
-  }: { atOrAfter?: string | null; before?: string | null; limit: number; order: 'asc' | 'desc' },
+  }: {
+    atOrAfter?: string | null | undefined
+    before?: string | null | undefined
+    limit: number
+    order: 'asc' | 'desc'
+  },
 ): Promise<string[]> {
   return await discover(ctx, {
     atOrAfter: atOrAfter === null ? null : IsoDateTime.parse(atOrAfter),
@@ -27,7 +33,7 @@ export async function times(
 
 export async function latest(
   ctx: ActionCtx,
-  { atOrAfter = null }: { atOrAfter?: string | null } = {},
+  { atOrAfter = null }: { atOrAfter?: string | null | undefined } = {},
 ): Promise<string | null> {
   const [scanAt] = await times(ctx, { atOrAfter, limit: 1, order: 'desc' })
 
@@ -47,7 +53,7 @@ async function discover(
 
   const names = await objects.namesAtOrAfter(ctx, {
     atOrAfter: atOrAfter === null ? '' : identity(atOrAfter).name,
-    ...(before === null ? {} : { before: identity(before).name }),
+    ...R.pickBy({ before: before === null ? undefined : identity(before).name }, R.isDefined),
     limit,
     order,
     path: 'scans',

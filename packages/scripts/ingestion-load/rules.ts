@@ -66,5 +66,5 @@ export function findProblems(outcome: RunOutcome): string[] {
     ],
   ]
 
-  return problems.filter(([failed]) => failed).map(([, message]) => message)
+  return problems.flatMap(([failed, message]) => (failed ? [message] : []))
 }

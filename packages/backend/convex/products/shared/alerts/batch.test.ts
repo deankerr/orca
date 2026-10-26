@@ -100,7 +100,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
     ['deepseek/deepseek-v4-pro-0813', 'ca5f0f'],
     ['deepseek/deepseek-v4.1-flash', '054ac2'],
     ['z-ai/glm-5.3-flash', '6b1894'],
-  ]
+  ] as const
 
   const members = endpoints.map(([model_id, prefix], index): IndividualAlert => {
     const { event, ...member } = bucket(index)
@@ -157,10 +157,9 @@ test('batches five endpoint unlistings at one observation and renders their prov
   const paged = batchCards(
     {
       change: { kind: 'endpoint_removed' },
-      members: Array.from({ length: 45 }, (_, index) => ({
-        ...members[index % 5],
-        source_id: `page-${index}`,
-      })),
+      members: Array.from({ length: 9 }, (_, round) =>
+        members.map((member, offset) => ({ ...member, source_id: `page-${round * 5 + offset}` })),
+      ).flat(),
       type: 'batch',
     },
     urls,
@@ -175,9 +174,10 @@ test('batches five endpoint unlistings at one observation and renders their prov
   }
 
   const mixed = structuredClone(members)
+  const [moved] = mixed
 
-  if (mixed[0].event.entity_kind === 'endpoint') {
-    mixed[0].event.context.provider.provider_id = 'another-provider'
+  if (moved?.event.entity_kind === 'endpoint') {
+    moved.event.context.provider.provider_id = 'another-provider'
   }
 
   const mixedEmbed = renderDiscordBatch(batchAlerts(mixed), urls)[0]?.message.embeds?.[0]
@@ -189,7 +189,13 @@ test('batches five endpoint unlistings at one observation and renders their prov
   expect(batchAlerts(members.slice(0, 3))).toEqual([
     { change: { kind: 'endpoint_removed' }, members: members.slice(0, 3), type: 'batch' },
   ])
-  expect(batchAlerts(Array.from({ length: 5 }, () => members[0]))).toHaveLength(5)
+  const [first] = members
+
+  if (first === undefined) {
+    throw new Error('Expected an unlisting')
+  }
+
+  expect(batchAlerts(Array.from({ length: 5 }, () => first))).toHaveLength(5)
 
   const otherScan = members.slice(0, 3).map((member, index) => ({
     ...member,
@@ -386,7 +392,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
     [2, 3],
     [3, 2],
     [2, 2],
-  ]) {
+  ] satisfies [number, number][]) {
     const members = Array.from({ length: 6 }, (_, index) => {
       const member = bucket(index)
 

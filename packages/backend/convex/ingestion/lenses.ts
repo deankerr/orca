@@ -70,12 +70,14 @@ export function endpointEntity(endpoint: ExtractedEndpoint): z.infer<typeof Endp
 const PricingInput = z
   .object({
     discount: z.number(),
-    overrides: z.array(z.record(z.string(), z.json())).optional(),
+    overrides: z.array(z.record(z.string(), z.json())).exactOptional(),
   })
   .catchall(z.json())
 
 /** Complete observed quote shared by current endpoints, pricing history, and Events. */
-export function endpointPricing(value: ExtractedEndpoint['pricing']): z.infer<typeof Pricing> {
+export function endpointPricing(
+  value: ExtractedEndpoint['pricing'] | undefined,
+): z.infer<typeof Pricing> {
   const { discount, overrides, display_pricing: _display, ...source } = PricingInput.parse(value)
   const meters = R.pickBy(source, R.isString)
 

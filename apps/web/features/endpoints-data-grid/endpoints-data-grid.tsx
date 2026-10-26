@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useMemo } from 'react'
+import * as R from 'remeda'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 
@@ -130,12 +131,15 @@ export function EndpointsDataGrid({
       status = 'disabled'
     }
 
-    return {
-      ...(status === undefined ? {} : { 'data-row-status': status }),
-      ...(focus.highlightUuid && row.endpoint_id.startsWith(focus.highlightUuid)
-        ? { 'data-highlighted': 'true' }
-        : {}),
-    }
+    const highlighted =
+      focus.highlightUuid !== undefined &&
+      focus.highlightUuid !== '' &&
+      row.endpoint_id.startsWith(focus.highlightUuid)
+
+    return R.pickBy(
+      { 'data-highlighted': highlighted ? 'true' : undefined, 'data-row-status': status },
+      R.isDefined,
+    )
   }
 
   // oxlint-disable-next-line react-hooks-js/incompatible-library

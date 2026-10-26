@@ -23,7 +23,7 @@ test('provider identity uses slash prefixes and explicit historical repairs, wit
     ['anthropic', 'anthropic'],
     ['amazon-bedrock', 'amazon-bedrock'],
     ['unrecognized-provider/region', 'unrecognized-provider'],
-  ]) {
+  ] as const) {
     expect(providerId(slug)).toBe(id)
     expect(providerId(id)).toBe(id)
     expect(

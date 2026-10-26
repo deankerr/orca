@@ -1,3 +1,5 @@
+import * as R from 'remeda'
+
 import type { Doc } from '#generated/dataModel'
 import type { QueryCtx } from '#generated/server'
 
@@ -122,7 +124,7 @@ async function interpretObservation(
   const fields = {
     entity_id,
     observed_at: scan_at,
-    ...(known === undefined ? {} : { previously_known: known }),
+    ...R.pickBy({ previously_known: known }, R.isDefined),
   }
 
   return entity_kind === 'model'

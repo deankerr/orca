@@ -161,7 +161,7 @@ function EventIdentity({
   type: 'model' | 'provider'
   id: string
   name: string
-  label?: string
+  label?: string | undefined
   unlisted?: boolean
   className?: string
 }) {

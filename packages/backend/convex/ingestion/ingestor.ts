@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import * as R from 'remeda'
 
 import { internal } from '#generated/api'
 import { internalMutation } from '#generated/server'
@@ -134,6 +135,6 @@ async function receipt(ctx: MutationCtx, scan_at: string, process: string) {
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Catch clauses bind unknown; this records whatever was thrown.
 function errorDetails(error: unknown) {
   return error instanceof Error
-    ? { message: error.message, name: error.name, stack: error.stack }
+    ? R.pickBy({ message: error.message, name: error.name, stack: error.stack }, R.isDefined)
     : { message: String(error), name: 'Error' }
 }

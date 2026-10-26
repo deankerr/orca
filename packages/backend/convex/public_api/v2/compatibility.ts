@@ -108,7 +108,9 @@ export function transformScanToV2Models(entries: ScanEntry[]): OrcaPublicApiV2Mo
           id: facts.model_variant_slug,
           version_id: model.permaslug,
           name: model.short_name,
-          author_name: model.name.includes(':') ? model.name.split(':')[0].trim() : model.author,
+          author_name: model.name.includes(':')
+            ? model.name.slice(0, model.name.indexOf(':')).trim()
+            : model.author,
           variant: entry.variant,
           created_at: new Date(model.created_at).toISOString(),
           input_modalities: model.input_modalities.toSorted(),

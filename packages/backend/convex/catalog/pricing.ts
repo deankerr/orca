@@ -1,12 +1,13 @@
 import { v } from 'convex/values'
 import type { Infer } from 'convex/values'
+import * as R from 'remeda'
 import { z } from 'zod'
 
 /** Normalized prices shared by Catalog, History and Events before storage encoding. */
 export const Pricing = z.object({
   discount: z.number(),
   meters: z.record(z.string(), z.string()),
-  overrides: z.array(z.record(z.string(), z.json())).optional(),
+  overrides: z.array(z.record(z.string(), z.json())).exactOptional(),
 })
 
 /** Storage encoding shared by Catalog and price history. */
@@ -28,5 +29,5 @@ export function decodePricing(quote: Infer<typeof pricing>): z.infer<typeof Pric
   const { overrides_json, ...prices } = quote
   const overrides: unknown = overrides_json === undefined ? undefined : JSON.parse(overrides_json)
 
-  return Pricing.parse({ ...prices, ...(overrides === undefined ? {} : { overrides }) })
+  return Pricing.parse(R.pickBy({ ...prices, overrides }, R.isDefined))
 }

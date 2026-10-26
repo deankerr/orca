@@ -14,7 +14,7 @@ export function field(
   }: {
     width?: number
     layout?: 'inline' | 'block'
-    change?: 'added' | 'removed'
+    change?: 'added' | 'removed' | undefined
   } = {},
 ): string {
   const key = code(layout === 'inline' ? `${label}:` : label, {

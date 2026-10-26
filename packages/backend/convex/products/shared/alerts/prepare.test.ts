@@ -1,7 +1,9 @@
 import type { PaginationResult } from 'convex/server'
 import { expect, vi, test } from 'vitest'
+import type { z } from 'zod'
 
 import { encodePricing } from '../../../catalog/pricing'
+import type { Pricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
 import { compare } from '../../../compare'
 import type { JsonValue } from '../../../json'
@@ -89,7 +91,7 @@ test('schedule changes announce an opaque change, including introduction and rem
       { ...base, overrides: schedule },
       { ...base, discount: 0.01, meters: { prompt: '0.000001001' }, overrides: changed },
     ],
-  ]) {
+  ] satisfies [z.infer<typeof Pricing>, z.infer<typeof Pricing>][]) {
     // oxlint-disable sort-keys -- Fixture key order sets the order of the compared change list asserted below.
     const row = update(
       { pricing: before, metadata: { context_length: 100 } },

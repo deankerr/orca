@@ -1,6 +1,6 @@
 import { Endpoint, MeterRate } from '@orca/contract/endpoint'
 import type { Provider } from '@orca/contract/provider'
-import { isPlainObject } from 'remeda'
+import { mergeDeep } from 'remeda'
 import { z } from 'zod'
 
 import { decodePricing } from '../../catalog/pricing'
@@ -104,20 +104,21 @@ export function toEndpoint(
   const fields = project(endpointFields, toEntity(row))
   const listedStats = row.unlisted_at === undefined ? stats : undefined
 
-  return Endpoint.parse({
-    ...fields,
-    // Endpoint labels vary within a provider; the provider entity holds its own names.
-    provider: {
-      ...(isPlainObject(fields.provider) ? fields.provider : {}),
-      display_name: provider?.display_name ?? row.provider_display_name,
-      name: provider?.name ?? row.provider_display_name,
-    },
-    stats: {
-      p50_latency_ms: listedStats?.p50_latency ?? null,
-      p50_throughput_tps: listedStats?.p50_throughput ?? null,
-    },
-    unlisted_at: row.unlisted_at ?? null,
-  })
+  // Context fields join the declared projection, nested beside its own fields.
+  return Endpoint.parse(
+    mergeDeep(fields, {
+      // Endpoint labels vary within a provider; the provider entity holds its own names.
+      provider: {
+        display_name: provider?.display_name ?? row.provider_display_name,
+        name: provider?.name ?? row.provider_display_name,
+      },
+      stats: {
+        p50_latency_ms: listedStats?.p50_latency ?? null,
+        p50_throughput_tps: listedStats?.p50_throughput ?? null,
+      },
+      unlisted_at: row.unlisted_at ?? null,
+    }),
+  )
 }
 
 /** Stored endpoint UPDATE to Contract field changes; its complete quotes resolve pricing. */

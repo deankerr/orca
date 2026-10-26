@@ -172,8 +172,9 @@ type SimRecord = {
   scan_at: string
   alerts: boolean
   state: RecordState
-  scope?: CurrentScope
-  request?: CurrentScope
+  // Like a Convex patch, an `undefined` update clears these fields.
+  scope?: CurrentScope | undefined
+  request?: CurrentScope | undefined
 }
 
 test('acceptance fills only the free capacity, and a full queue defers the baseline', () => {

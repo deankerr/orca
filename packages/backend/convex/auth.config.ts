@@ -2,6 +2,11 @@ import type { AuthConfig } from 'convex/server'
 
 const clientId = process.env.WORKOS_CLIENT_ID
 
+// Without a client ID, token verification would quietly use an `undefined` JWKS URL and audience.
+if (clientId === undefined || clientId === '') {
+  throw new Error('WORKOS_CLIENT_ID is required to deploy auth')
+}
+
 export default {
   providers: [
     {

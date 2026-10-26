@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { ArrowRightIcon, Table2Icon, ActivityIcon, ChartNoAxesCombinedIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import * as R from 'remeda'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
 import {
@@ -68,9 +69,7 @@ function OverviewAction({
         <Link
           href={href}
           scroll={false}
-          onClick={onClick}
-          onMouseEnter={onMouseEnter}
-          onFocus={onFocus}
+          {...R.pickBy({ onClick, onFocus, onMouseEnter }, R.isDefined)}
         />
       }
     >

@@ -110,14 +110,17 @@ test('cache replacement upgrades legacy rows and rejects equal or older scans at
     storage_id: newBlob,
   }
 
-  for (const scanAt of [undefined, '2026-10-01T10:40:04.272Z']) {
-    existing.scan_at = scanAt
+  const { scan_at: _scanAt, ...legacy } = existing
+
+  // A legacy row has no scan time; neither it nor an older scan blocks replacement.
+  for (const row of [legacy, { ...legacy, scan_at: '2026-10-01T10:40:04.272Z' }]) {
+    existing = row
     writes = 0
     expect(await handler(ctx, args)).toBe(oldBlob)
     expect(writes).toBe(2)
   }
 
-  existing.scan_at = args.scan_at
+  existing = { ...legacy, scan_at: args.scan_at }
   writes = 0
   expect(await handler(ctx, args)).toBe(newBlob)
   expect(await handler(ctx, { ...args, scan_at: '2026-10-02T09:40:04.272Z' })).toBe(newBlob)

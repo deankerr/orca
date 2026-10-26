@@ -32,9 +32,9 @@ export const Order = z.enum(['asc', 'desc']).optional().meta({
 })
 
 /** Reject `order` without `sort`, which would otherwise be silently ignored. */
-export function orderRequiresSort<T extends z.ZodType<{ order?: string; sort?: string }>>(
-  schema: T,
-) {
+export function orderRequiresSort<
+  T extends z.ZodType<{ order?: string | undefined; sort?: string | undefined }>,
+>(schema: T) {
   return schema.refine(
     (selection) => selection.order === undefined || selection.sort !== undefined,
     {

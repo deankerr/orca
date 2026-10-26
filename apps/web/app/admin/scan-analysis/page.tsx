@@ -4,6 +4,7 @@ import { api } from '@orca/backend/api'
 import type { ScanReport } from '@orca/backend/scans/analysis'
 import { useAction } from 'convex/react'
 import { useId, useRef, useState } from 'react'
+import * as R from 'remeda'
 
 import { PageContainer, PageHeader, PageTitle } from '@/components/app-layout/pages'
 import { Button } from '@/components/ui/button'
@@ -34,7 +35,7 @@ export default function ScanAnalysisPage() {
 
     try {
       const payload = await analyze({
-        scanAt: scanAt.trim() === '' ? undefined : scanAt.trim(),
+        ...R.pickBy({ scanAt: scanAt.trim() === '' ? undefined : scanAt.trim() }, R.isDefined),
         scope,
       })
 

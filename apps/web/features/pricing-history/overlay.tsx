@@ -1,6 +1,5 @@
 'use client'
 
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/api'
 import { formatPrice } from '@orca/backend/numbers'
 import { useQuery } from '@tanstack/react-query'
@@ -41,6 +40,7 @@ import {
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { convexQueryOptions } from '@/lib/convex-query'
 import { cn } from '@/lib/utils'
 
 import { providerColor } from './colors'
@@ -114,7 +114,7 @@ export function PricingHistoryOverlay() {
 
 function Identity({ modelId }: { modelId: string }) {
   const { data } = useQuery(
-    convexQuery(api.products.entity_overview.models.get, { model_id: modelId }),
+    convexQueryOptions(api.products.entity_overview.models.get, { model_id: modelId }),
   )
 
   const name = data?.display_name

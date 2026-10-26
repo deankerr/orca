@@ -19,6 +19,7 @@ export function viewProfile(profile: JsonProfile, options: ViewOptions = {}) {
   const paths = options.paths === undefined ? null : new Set(options.paths)
 
   const fields = [{ missing: 0, value: profile.root }, ...profileRows(profile)]
+    .values()
     .filter(({ value }) => paths === null || paths.has(value.path))
     .map(({ missing, value }) => ({
       missing,
@@ -26,6 +27,7 @@ export function viewProfile(profile: JsonProfile, options: ViewOptions = {}) {
       population: value.population,
       types: value.types.map((branch) => viewBranch(branch, value, valueLimit)),
     }))
+    .toArray()
 
   return {
     fields,

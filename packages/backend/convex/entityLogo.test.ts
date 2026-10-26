@@ -21,7 +21,7 @@ test('entity logos prefer family brands and fall back for provider suffixes', ()
     ['unknown/mimo', 'unknown'],
     ['unknown/gemini', 'unknown'],
     ['', 'fallback'],
-  ]) {
+  ] as const) {
     expect(entityLogoUrl({ origin: 'https://logos.orb.town/', slug, variant: 'avatar' })).toBe(
       `https://logos.orb.town/v1/avatar/${key}.webp`,
     )

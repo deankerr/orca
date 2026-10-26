@@ -175,6 +175,6 @@ export function curate(row: EventRow): EntityAlert | null {
         ...identity,
         changes: announcedChanges,
         type: `${row.entity_kind}_updated`,
-        ...(pricing_is_scheduled === undefined ? {} : { pricing_is_scheduled }),
+        ...R.pickBy({ pricing_is_scheduled }, R.isDefined),
       }
 }

@@ -1,9 +1,10 @@
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '@orca/backend/api'
+
+import { convexQueryOptions } from '@/lib/convex-query'
 
 export function gridQueryOptions() {
   return {
-    endpoints: convexQuery(api.products.grid.endpoints.grid, {}),
-    stats: convexQuery(api.products.grid.stats.grid, {}),
+    endpoints: convexQueryOptions(api.products.grid.endpoints.grid, {}),
+    stats: convexQueryOptions(api.products.grid.stats.grid, {}),
   }
 }

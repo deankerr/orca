@@ -108,7 +108,7 @@ test('complete scans preserve V2 coverage and legacy field meanings', () => {
   ])
 
   entry.endpoints = [{ ...endpoint, stats: { p50_latency: null, p50_throughput: 42 } }]
-  expect(transformScanToV2Models([entry])[0].providers[0].stats_last_30m).toBeNull()
+  expect(transformScanToV2Models([entry]).at(0)?.providers.at(0)?.stats_last_30m).toBeNull()
   entry.endpoints = null
   expect(transformScanToV2Models([entry])).toEqual([])
 })

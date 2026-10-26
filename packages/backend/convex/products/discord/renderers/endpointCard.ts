@@ -42,13 +42,16 @@ function endpointBody(event: EndpointAlert): string[] {
 function endpointChanges(changes: AlertChange[]): string[] {
   const prices = changes.filter((change) => change.field.startsWith('pricing.'))
 
-  const fields = changes.filter((change) => !change.field.startsWith('pricing.'))
+  const fields = Map.groupBy(
+    changes.filter((change) => !change.field.startsWith('pricing.')),
+    (change) => fieldGroup(change.field),
+  )
 
   const groups = [
     { label: 'Pricing', rows: pricingChanges(prices) },
     ...['Limits', 'Data policy', 'Details'].map((label) => ({
       label,
-      rows: fields.filter((change) => fieldGroup(change.field) === label).map(endpointFieldChange),
+      rows: (fields.get(label) ?? []).map(endpointFieldChange),
     })),
   ].filter((group) => group.rows.length > 0)
 
