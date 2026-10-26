@@ -7,6 +7,7 @@ import { init, use as register } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
+import { z } from 'zod'
 
 import { providerSrgbColor } from './colors'
 import { sampleAt } from './data'
@@ -86,28 +87,24 @@ export function PricingHistoryPlot({
 
     resize.observe(node)
 
-    instance.on('datazoom', (payload: unknown) => {
-      const zoom = zoomEvent(payload)
+    // ECharts leaves action payloads untyped.
+    instance.on('datazoom', (payload) => {
+      const zoom = DataZoom.safeParse(payload)
 
-      if (zoom === null) {
+      if (!zoom.success) {
         return
       }
 
       const bounds = callbacks.current
 
       callbacks.current.onRange([
-        bounds.since + ((bounds.asOf - bounds.since) * zoom.start) / 100,
-        bounds.since + ((bounds.asOf - bounds.since) * zoom.end) / 100,
+        bounds.since + ((bounds.asOf - bounds.since) * zoom.data.start) / 100,
+        bounds.since + ((bounds.asOf - bounds.since) * zoom.data.end) / 100,
       ])
     })
 
-    instance.on('mouseover', (event: unknown) => {
-      if (
-        typeof event === 'object' &&
-        event !== null &&
-        'seriesName' in event &&
-        typeof event.seriesName === 'string'
-      ) {
+    instance.on('mouseover', (event) => {
+      if (event.seriesName !== undefined) {
         callbacks.current.onEmphasis(event.seriesName)
       }
     })
@@ -327,31 +324,16 @@ export function PricingHistoryPlot({
   )
 }
 
-function zoomEvent(value: unknown): { start: number; end: number } | null {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
+/** Zoom window as percentages of the full range. */
+const ZoomRange = z
+  .object({ end: z.number().max(100), start: z.number().min(0) })
+  .refine(({ end, start }) => start <= end)
 
-  if ('batch' in value && Array.isArray(value.batch)) {
-    return zoomEvent(value.batch[0])
-  }
-
-  if (
-    'start' in value &&
-    typeof value.start === 'number' &&
-    'end' in value &&
-    typeof value.end === 'number' &&
-    Number.isFinite(value.start) &&
-    Number.isFinite(value.end) &&
-    value.start >= 0 &&
-    value.end <= 100 &&
-    value.start <= value.end
-  ) {
-    return { end: value.end, start: value.start }
-  }
-
-  return null
-}
+/** Slider drags report the range directly; inside zooming reports a batch. */
+const DataZoom = z.union([
+  ZoomRange,
+  z.object({ batch: z.tuple([ZoomRange], z.unknown()) }).transform(({ batch: [range] }) => range),
+])
 
 function niceCeiling(value: number) {
   const magnitude = 10 ** Math.floor(Math.log10(value / 5))

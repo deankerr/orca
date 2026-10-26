@@ -7,7 +7,7 @@ import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import type { MutationCtx } from './_generated/server'
-import { parseMessagePayload, parseWebhookUrl } from './discord'
+import { parseMessagePayload, parseWebhookUrl, zMessage } from './discord'
 import { pool } from './pool'
 import schema from './schema'
 import * as state from './state'
@@ -173,9 +173,12 @@ export const deleteMessage = mutation({
 
 async function messageTarget(ctx: MutationCtx, resultId: Id<'results'>) {
   const receipt = await ctx.db.get(resultId)
-  const response = receipt?.result.kind === 'succeeded' ? receipt.result.response : null
 
-  if (!receipt || !response || typeof response.id !== 'string') {
+  const delivered = zMessage.safeParse(
+    receipt?.result.kind === 'succeeded' ? receipt.result.response : null,
+  )
+
+  if (!receipt || !delivered.success) {
     throw new ConvexError('A successful message receipt is required')
   }
 
@@ -193,28 +196,19 @@ async function messageTarget(ctx: MutationCtx, resultId: Id<'results'>) {
 
   let threadId = source.kind === 'edit' ? source.threadId : undefined
 
-  if (source.kind === 'send') {
-    const payload = z
-      .object({ thread_name: z.unknown().optional() })
-      .parse(JSON.parse(source.payload))
+  if (source.kind === 'send' && parseMessagePayload(source.payload).thread_name !== undefined) {
+    const webhook = await ctx.db.get(job.webhookId)
 
-    if (typeof payload.thread_name === 'string') {
-      const webhook = await ctx.db.get(job.webhookId)
-
-      if (webhook && !new URL(webhook.url).searchParams.has('thread_id')) {
-        // A forum/media send can create its own thread; later edits must retain
-        // that receipt-derived route even though they no longer carry thread_name.
-        threadId = z
-          .string()
-          .regex(/^\d{17,20}$/u)
-          .parse(response.channel_id)
-      }
+    if (webhook && !new URL(webhook.url).searchParams.has('thread_id')) {
+      // A forum/media send can create its own thread; later edits must retain
+      // that receipt-derived route even though they no longer carry thread_name.
+      threadId = delivered.data.channel_id
     }
   }
 
   // The caller supplies a receipt, never a different destination for its message.
   // Original sends and later edits remain immutable evidence of each operation.
-  return { messageId: response.id, threadId, webhookId: job.webhookId }
+  return { messageId: delivered.data.id, threadId, webhookId: job.webhookId }
 }
 
 type JobInput = Pick<Doc<'jobs'>, 'key' | 'expiresAt' | 'webhookId' | 'messages' | 'topic'>

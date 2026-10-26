@@ -1,4 +1,4 @@
-export { profileJsonRecords } from './profile'
+export { isJsonRecord, profileJsonRecords } from './profile'
 
 export type { JsonProfile, JsonRecord, JsonValue, ValueProfile } from './profile'
 

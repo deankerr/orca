@@ -1,5 +1,7 @@
 import type { ConnectionState } from 'convex/browser'
 
+import type { EmitTiming } from './capture'
+
 export type ConnectionPhase = 'unobserved' | 'connecting' | 'connected' | 'reconnecting'
 
 export type TimingMark = {
@@ -29,12 +31,9 @@ export class ConnectionTimings {
   private connected = 0
   private readonly now: () => number
 
-  private readonly emit: (event: string, properties: Record<string, unknown>) => void
+  private readonly emit: EmitTiming
 
-  constructor(
-    now = () => performance.now(),
-    emit: (event: string, properties: Record<string, unknown>) => void = () => undefined,
-  ) {
+  constructor(now = () => performance.now(), emit: EmitTiming = () => undefined) {
     this.emit = emit
     this.now = now
     this.changedAt = now()

@@ -52,7 +52,10 @@ test('editMessage rejects numeric overflow before creating a delivery job', asyn
     const resultId = await ctx.db.insert('results', {
       jobId,
       messageKey: 'message',
-      result: { kind: 'succeeded', response: { id: '100000000000000002' } },
+      result: {
+        kind: 'succeeded',
+        response: { channel_id: '100000000000000003', id: '100000000000000002' },
+      },
     })
 
     return { jobId, resultId }

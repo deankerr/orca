@@ -63,8 +63,21 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
       }
     }
 
-    case 'boolean':
-    case 'number':
+    case 'boolean': {
+      return { count: branch.count, type: branch.type, values: distribution(branch.values, limit) }
+    }
+
+    case 'number': {
+      // oxlint-disable sort-keys -- The summary follows the distribution it describes.
+      return {
+        count: branch.count,
+        type: branch.type,
+        values: distribution(branch.values, limit),
+        summary: numericSummary(value),
+      }
+      // oxlint-enable sort-keys
+    }
+
     case 'string': {
       return {
         count: branch.count,
@@ -72,9 +85,8 @@ function viewBranch(branch: JsonTypeProfile, value: ValueProfile, limit: number 
         values: distribution(
           branch.values,
           limit,
-          (entry) => limit === null || typeof entry.value !== 'string' || entry.value.length <= 160,
+          (entry) => limit === null || entry.value.length <= 160,
         ),
-        ...(branch.type === 'number' ? { summary: numericSummary(value) } : {}),
       }
     }
 

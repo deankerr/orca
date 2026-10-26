@@ -6,6 +6,26 @@ import type { OrcaPublicApiV2Endpoint, OrcaPublicApiV2Model } from './schema'
 
 const optionalNumber = z.number().nullish()
 
+/** Upstream rates are decimal strings; absent means unmetered. */
+const meter = z.coerce.number().optional()
+
+const stat = { p50_latency: z.number(), p50_throughput: z.number() }
+
+/** V2 publishes median stats only when both are present. */
+const Stats = z.union([
+  z.object(stat).transform(({ p50_latency, p50_throughput }) => ({
+    latency_ms_p50: p50_latency,
+    tokens_per_sec_p50: p50_throughput,
+  })),
+  z
+    .object({
+      p50_latency: stat.p50_latency.nullish(),
+      p50_throughput: stat.p50_throughput.nullish(),
+    })
+    .optional()
+    .transform(() => null),
+])
+
 const Endpoint = z.object({
   context_length: z.number(),
   data_policy: z.object({
@@ -31,14 +51,23 @@ const Endpoint = z.object({
   max_tokens_per_image: optionalNumber,
   model_variant_slug: z.string(),
   moderation_required: z.boolean(),
-  pricing: z.record(z.string(), z.unknown()),
+  pricing: z.object({
+    audio: meter,
+    completion: meter,
+    image: meter,
+    image_output: meter,
+    input_audio_cache: meter,
+    input_cache_read: meter,
+    input_cache_write: meter,
+    internal_reasoning: meter,
+    prompt: meter,
+    request: meter,
+  }),
   provider_info: z.object({ displayName: z.string() }),
   provider_region: z.string().nullish(),
   provider_slug: z.string(),
   quantization: z.string().nullish(),
-  stats: z
-    .object({ p50_latency: z.number().nullish(), p50_throughput: z.number().nullish() })
-    .optional(),
+  stats: Stats,
   supported_parameters: z.array(z.string()),
   supports_reasoning: z.boolean(),
 })
@@ -98,9 +127,7 @@ export function transformScanToV2Models(entries: ScanEntry[]): OrcaPublicApiV2Mo
   return [...output.values()].toSorted((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
-function formatPrice(value: unknown): string | null {
-  const price = value === undefined ? undefined : z.coerce.number().parse(value)
-
+function formatPrice(price: number | undefined): string | null {
   if (price === undefined || price === 0) {
     return null
   }
@@ -110,7 +137,6 @@ function formatPrice(value: unknown): string | null {
 
 function transformEndpoint(facts: z.infer<typeof Endpoint>): OrcaPublicApiV2Endpoint {
   const meters = facts.pricing
-  const { stats } = facts
 
   // oxlint-disable sort-keys -- Published V2 endpoint field order (matches the frozen schema and cached JSON blob).
   return {
@@ -154,10 +180,7 @@ function transformEndpoint(facts: z.infer<typeof Endpoint>): OrcaPublicApiV2Endp
     implicit_caching: facts.features.supports_implicit_caching ?? false,
     moderated: facts.moderation_required,
     native_web_search: facts.features.supports_native_web_search ?? false,
-    stats_last_30m:
-      typeof stats?.p50_latency === 'number' && typeof stats.p50_throughput === 'number'
-        ? { latency_ms_p50: stats.p50_latency, tokens_per_sec_p50: stats.p50_throughput }
-        : null,
+    stats_last_30m: facts.stats,
   }
   // oxlint-enable sort-keys
 }

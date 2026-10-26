@@ -8,24 +8,17 @@ export function percentage(count: number, total: number): string {
   return total === 0 ? '—' : `${((100 * count) / total).toFixed(1)}%`
 }
 
-function display(value: unknown): string {
-  return JSON.stringify(value) ?? ''
-}
-
 /** Ranked values with counts; key sets wrap so every property in a combination stays visible. */
 function Frequencies({
   entries,
   total,
   keySets = false,
 }: {
-  entries: { count: number; value: unknown }[]
+  entries: { count: number; label: string }[]
   total: number
   keySets?: boolean
 }) {
   const noun = keySets ? 'combinations' : 'values'
-
-  const label = (value: unknown) =>
-    keySets && Array.isArray(value) ? value.join(', ') : display(value)
 
   const shown = entries
     .toSorted((left, right) => right.count - left.count)
@@ -39,14 +32,14 @@ function Frequencies({
           : `${entries.length} distinct ${noun}.`}
       </p>
       <div className="grid max-h-72 max-w-3xl grid-cols-[minmax(0,1fr)_auto_8rem] items-center gap-x-3 gap-y-0.5 overflow-y-auto pr-2">
-        {shown.map(({ count, value }, index) => (
+        {shown.map(({ count, label }, index) => (
           // Values are already distinct within one branch; the rank keeps keys stable and short.
           <div key={index} className="contents">
             <code
               className={keySets ? 'py-0.5 font-mono text-xs' : 'truncate font-mono text-xs'}
-              title={label(value)}
+              title={label}
             >
-              {label(value)}
+              {label}
             </code>
             <span className="text-right font-mono text-xs tabular-nums">
               {count.toLocaleString()}{' '}
@@ -79,7 +72,13 @@ function Branch({ branch }: { branch: ValueProfile['types'][number] }) {
     return (
       <div className="flex flex-col gap-1">
         {heading}
-        <Frequencies entries={branch.values} total={branch.count} />
+        <Frequencies
+          entries={branch.values.map(({ count, value }) => ({
+            count,
+            label: JSON.stringify(value),
+          }))}
+          total={branch.count}
+        />
       </div>
     )
   }
@@ -92,7 +91,7 @@ function Branch({ branch }: { branch: ValueProfile['types'][number] }) {
           Array length distribution. Item values appear in the [*] field.
         </p>
         <Frequencies
-          entries={branch.lengths.map(({ count, length }) => ({ count, value: length }))}
+          entries={branch.lengths.map(({ count, length }) => ({ count, label: String(length) }))}
           total={branch.count}
         />
       </div>
@@ -108,7 +107,7 @@ function Branch({ branch }: { branch: ValueProfile['types'][number] }) {
             Explore {branch.key_sets.length} property combinations
           </summary>
           <Frequencies
-            entries={branch.key_sets.map(({ count, keys }) => ({ count, value: keys }))}
+            entries={branch.key_sets.map(({ count, keys }) => ({ count, label: keys.join(', ') }))}
             total={branch.count}
             keySets
           />
@@ -168,8 +167,8 @@ export function FieldDetail({
               <code className="truncate font-mono text-xs text-muted-foreground" title={id}>
                 {id}
               </code>
-              <code className="truncate font-mono text-xs" title={display(example)}>
-                {display(example)}
+              <code className="truncate font-mono text-xs" title={JSON.stringify(example)}>
+                {JSON.stringify(example)}
               </code>
             </div>
           ))}

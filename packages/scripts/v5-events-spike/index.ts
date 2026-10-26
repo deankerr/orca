@@ -6,9 +6,13 @@ import { endpointFields, toEndpoint, translateEndpointUpdate } from '@orca/backe
 import { modelFields, toModel, translateModelUpdate } from '@orca/backend/v5/models'
 import { project } from '@orca/backend/v5/projection'
 import { providerFields, toProvider, translateProviderUpdate } from '@orca/backend/v5/providers'
+import { z } from 'zod'
 
 // Spike: one field declaration set translating complete entities and stored changes.
 const [directory = '/tmp/v5-spike'] = process.argv.slice(2)
+
+/** ADD and REMOVE events carry the complete entity. */
+const Snapshot = z.object({ value: z.json() })
 
 type EndpointRow = Parameters<typeof toEndpoint>[0]
 
@@ -143,13 +147,7 @@ function report(
   for (const row of events) {
     try {
       if (row.type !== 'UPDATE') {
-        const snapshot: unknown = JSON.parse(row.change_json)
-        project(
-          fields,
-          typeof snapshot === 'object' && snapshot !== null && 'value' in snapshot
-            ? snapshot.value
-            : undefined,
-        )
+        project(fields, Snapshot.parse(JSON.parse(row.change_json)).value)
         tally(outcomes, `${row.type} projected`)
         continue
       }

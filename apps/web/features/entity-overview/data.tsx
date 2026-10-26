@@ -9,13 +9,7 @@ import { cn } from '@/lib/utils'
 const textLinkClass =
   'group inline-flex items-center gap-0.5 rounded-sm text-muted-foreground underline decoration-border decoration-dashed underline-offset-4 transition-[color,scale,text-decoration-color] outline-none hover:text-foreground hover:decoration-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/30'
 
-export function DataValue({
-  label,
-  value,
-}: {
-  label: string
-  value: string | boolean | string[] | null
-}) {
+export function DataValue({ label, value }: { label: string; value: string | string[] | null }) {
   if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
     return null
   }
@@ -23,17 +17,11 @@ export function DataValue({
   return (
     <div className="flex items-baseline justify-between gap-4 py-1">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right font-mono break-words">{displayValue(value)}</dd>
+      <dd className="min-w-0 text-right font-mono break-words">
+        {Array.isArray(value) ? value.join(', ') : value}
+      </dd>
     </div>
   )
-}
-
-function displayValue(value: string | boolean | string[]): string {
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No'
-  }
-
-  return Array.isArray(value) ? value.join(', ') : value
 }
 
 export function DataDate({ label, value }: { label: string; value: string | null }) {

@@ -24,12 +24,8 @@ import * as statsHistory from './operators/statsHistory'
 const strip = <T extends { _id: unknown; _creationTime: unknown }>(doc: T) =>
   R.omit(doc, ['_id', '_creationTime'])
 
-/** Rows in a stable order with sorted keys, so stored documents and derived rows compare equal. */
-const sorted = (rows: object[]): unknown[] =>
-  rows
-    .map((row) => canonicalJson(row))
-    .toSorted()
-    .map((text): unknown => JSON.parse(text))
+/** Rows in a canonical order, so stored documents and derived rows compare equal. */
+const sorted = <T extends object>(rows: T[]): T[] => R.sortBy(rows, canonicalJson)
 
 /** Every projection table, as retained rows without document metadata. */
 export async function projections(t: Harness) {

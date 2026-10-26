@@ -1,3 +1,4 @@
+import { isJsonRecord } from '@orca/json-profile'
 import { diff } from 'json-diff-ts'
 
 import type { JsonValue } from './json'
@@ -8,6 +9,7 @@ export function compare(previous: JsonValue, next: JsonValue) {
 
   function visit(value: JsonValue, path: string) {
     if (Array.isArray(value)) {
+      // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Matching strategy depends on whether an array holds only strings.
       const stringArray = value.every((item) => typeof item === 'string')
       // A non-string array on either side makes this path use index matching.
       embeddedObjKeys.set(
@@ -19,7 +21,7 @@ export function compare(previous: JsonValue, next: JsonValue) {
       for (const item of value) {
         visit(item, path)
       }
-    } else if (value !== null && typeof value === 'object') {
+    } else if (isJsonRecord(value)) {
       for (const [key, item] of Object.entries(value)) {
         visit(item, path === '' ? key : `${path}.${key}`)
       }

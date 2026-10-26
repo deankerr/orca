@@ -1,4 +1,4 @@
-import type { RegisteredMutation } from 'convex/server'
+import type { DefaultFunctionArgs, FunctionReference, RegisteredMutation } from 'convex/server'
 /* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal Convex contexts exercise cache transitions without a deployment. */
 import { expect, vi, test } from 'vitest'
 
@@ -22,10 +22,10 @@ test('refresh rebuilds legacy or older captures and skips an unchanged capture',
 
   const logs = vi.spyOn(console, 'log').mockImplementation(() => {})
   let cachedScanAt: string | undefined
-  const replacements: unknown[] = []
+  const replacements: DefaultFunctionArgs[] = []
 
   const ctx = testDouble<ActionCtx>({
-    runMutation: async (_ref: unknown, args: unknown) => {
+    runMutation: async (_ref: FunctionReference<'mutation'>, args: DefaultFunctionArgs) => {
       replacements.push(args)
 
       return null

@@ -161,6 +161,7 @@ export const drain = internalAction({
     const discord = createDiscord()
     let stopped = false
 
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Rejection reasons are untyped; this only rethrows them.
     const stopAfterProgressFailure = (error: unknown): never => {
       // Unlike an unavailable webhook, inability to record progress affects every
       // lane. Other in-flight sends must still finish and attempt their checkpoint.

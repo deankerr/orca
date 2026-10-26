@@ -1,6 +1,6 @@
 import { validate } from 'convex-helpers/validators'
 import { ConvexHttpClient } from 'convex/browser'
-import { ConvexError } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 
 import { api } from '#generated/api'
 
@@ -43,10 +43,16 @@ export function connect({
     async namesAtOrAfter(selection: NameSelection): Promise<string[]> {
       assertReadCount(selection.limit)
 
-      return validateNames(
-        await client.query(api.objects.remote.namesAtOrAfter, { apiKey, ...selection }),
-        selection,
-      )
+      const names: unknown = await client.query(api.objects.remote.namesAtOrAfter, {
+        apiKey,
+        ...selection,
+      })
+
+      if (!validate(v.array(v.string()), names)) {
+        throw new ConvexError('Object source returned invalid names')
+      }
+
+      return validateNames(names, selection)
     },
   }
 }

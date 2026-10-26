@@ -3,6 +3,11 @@
 import { posthog } from 'posthog-js'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { z } from 'zod'
+
+import { appVersion } from '@/lib/app-version'
+
+const PersistedUserId = z.string().optional().catch(undefined)
 
 type AnalyticsUser = { id: string; email: string; name: string } | null
 
@@ -12,17 +17,14 @@ export function syncPostHogIdentity(user: AnalyticsUser) {
     return
   }
 
-  const previousUserId: unknown = posthog.get_property('$user_id')
+  // PostHog types its persisted properties as any.
+  const previousUserId = PersistedUserId.parse(posthog.get_property('$user_id'))
 
-  if (typeof previousUserId === 'string' && previousUserId !== user?.id) {
-    const appVersion: unknown = posthog.get_property('app_version')
-
+  if (previousUserId !== undefined && previousUserId !== user?.id) {
     posthog.reset()
 
     // Reset clears session properties too; the loaded build has not changed.
-    if (typeof appVersion === 'string') {
-      posthog.register_for_session({ app_version: appVersion })
-    }
+    posthog.register_for_session({ app_version: appVersion })
   }
 
   if (user) {

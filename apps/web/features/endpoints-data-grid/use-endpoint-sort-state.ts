@@ -1,4 +1,5 @@
-import type { SortingState } from '@tanstack/react-table'
+import { functionalUpdate } from '@tanstack/react-table'
+import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { useQueryStates } from 'nuqs'
 
 import { endpointGridParsers, endpointGridStateOptions } from './query-state'
@@ -34,11 +35,8 @@ export function useEndpointSortState({ hasActiveQuery }: { hasActiveQuery: boole
     sort: params.sort,
   })
 
-  const onSortingChange = (
-    updaterOrValue: SortingState | ((old: SortingState) => SortingState),
-  ) => {
-    const nextSorting =
-      typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
+  const onSortingChange: OnChangeFn<SortingState> = (updater) => {
+    const nextSorting = functionalUpdate(updater, sorting)
 
     if (nextSorting.length === 0) {
       void setParams({

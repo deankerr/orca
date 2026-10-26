@@ -1,6 +1,6 @@
 import { parseAsString } from 'nuqs'
 
-import { href, toSearchParams } from '@/lib/href'
+import { href } from '@/lib/href'
 
 const PRICING_HISTORY_PARAM = 'pricing-history'
 
@@ -41,7 +41,7 @@ export function buildPricingHistoryHref({
   searchParams: string | URLSearchParams
   modelId: string
 }): string {
-  const next = toSearchParams(searchParams)
+  const next = new URLSearchParams(searchParams)
 
   for (const key of STALE_QUERY_KEYS) {
     next.delete(key)

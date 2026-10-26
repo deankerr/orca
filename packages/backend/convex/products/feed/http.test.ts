@@ -1,3 +1,4 @@
+import type { DefaultFunctionArgs, FunctionReference } from 'convex/server'
 import { expect, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
@@ -10,11 +11,11 @@ const handler = testDouble<{
 }>(serve)._handler
 
 test('HTTP validates scopes and carries opaque cursors across empty JSON pages', async () => {
-  const calls: unknown[] = []
+  const calls: DefaultFunctionArgs[] = []
   let isDone = false
 
   const ctx = testDouble<ActionCtx>({
-    runQuery: async (_reference: unknown, args: unknown) => {
+    runQuery: async (_reference: FunctionReference<'query'>, args: DefaultFunctionArgs) => {
       calls.push(args)
 
       return { continueCursor: 'next-position', isDone, page: [] }

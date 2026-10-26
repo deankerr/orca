@@ -1,6 +1,8 @@
 import { posthog } from 'posthog-js'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import { appVersion } from '@/lib/app-version'
+
 import { syncPostHogIdentity } from './posthog-identity'
 
 const originalToken = posthog.config.token
@@ -27,7 +29,7 @@ it('keeps anonymous sessions, identifies login, and clears identity on logout or
   const register = vi.spyOn(posthog, 'register_for_session').mockImplementation(() => {})
 
   vi.spyOn(posthog, 'get_property').mockImplementation((key) =>
-    key === '$user_id' ? userId : 'build-sha',
+    key === '$user_id' ? userId : undefined,
   )
 
   syncPostHogIdentity(null)
@@ -48,7 +50,7 @@ it('keeps anonymous sessions, identifies login, and clears identity on logout or
   syncPostHogIdentity(null)
   expect(userId).toBeUndefined()
   expect(reset).toHaveBeenCalledTimes(2)
-  expect(register).toHaveBeenLastCalledWith({ app_version: 'build-sha' })
+  expect(register).toHaveBeenLastCalledWith({ app_version: appVersion })
 
   posthog.config.token = ''
   syncPostHogIdentity(user)

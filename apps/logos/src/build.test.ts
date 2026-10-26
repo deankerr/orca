@@ -240,7 +240,10 @@ async function createBuildFixture(args: {
   }
 }
 
-async function writeJson(path: string, value: unknown): Promise<void> {
+/** Alias catalogs and package manifests. */
+type Fixture = Record<string, string | Record<string, string>>
+
+async function writeJson(path: string, value: Fixture): Promise<void> {
   await mkdir(nodePath.dirname(path), { recursive: true })
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`)
 }

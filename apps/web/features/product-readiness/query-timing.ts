@@ -2,6 +2,7 @@ import type { QueryCache, QueryCacheNotifyEvent, QueryKey } from '@tanstack/reac
 import { z } from 'zod'
 
 import { captureTiming } from './capture'
+import type { EmitTiming } from './capture'
 import { ConnectionTimings } from './connection-timing'
 import type { TimingMark } from './connection-timing'
 
@@ -30,14 +31,11 @@ export class ReadinessQueryTimings {
   private readonly results = new Map<string, ReadinessQueryTiming>()
   private readonly fetches = new Map<string, PendingFetch>()
 
-  private readonly emit: (event: string, properties: Record<string, unknown>) => void
+  private readonly emit: EmitTiming
 
   readonly connection: ConnectionTimings
 
-  constructor(
-    now = () => performance.now(),
-    emit: (event: string, properties: Record<string, unknown>) => void = () => undefined,
-  ) {
+  constructor(now = () => performance.now(), emit: EmitTiming = () => undefined) {
     this.emit = emit
     this.connection = new ConnectionTimings(now, emit)
   }
@@ -188,6 +186,7 @@ export function queryName(key: QueryKey) {
   }[String(key[1])]
 }
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- The query cache holds every query's data as unknown; this decodes the timed results.
 export function resultProperties(data: unknown) {
   if (Array.isArray(data)) {
     return { result_count: data.length }

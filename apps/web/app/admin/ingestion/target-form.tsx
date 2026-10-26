@@ -6,6 +6,7 @@ import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { errorMessage } from '@/lib/error-message'
 
 type Target = { start_at: string; end_at: string } | null
 
@@ -19,14 +20,14 @@ export function TargetForm({ target }: { target: Target }) {
   const startId = useId()
   const endId = useId()
 
-  const attempt = async (label: string, run: () => Promise<unknown>) => {
+  const attempt = async (label: string, run: () => Promise<void>) => {
     setStatus(`${label}…`)
 
     try {
       await run()
       setStatus(`${label}: done`)
     } catch (error) {
-      setStatus(`${label}: ${error instanceof Error ? error.message : String(error)}`)
+      setStatus(`${label}: ${errorMessage(error)}`)
     }
   }
 
@@ -58,17 +59,18 @@ export function TargetForm({ target }: { target: Target }) {
         <Button
           variant="outline"
           onClick={() => {
-            void attempt(
-              'Save target',
-              async () => await saveTarget({ end_at: end.trim(), start_at: start.trim() }),
-            )
+            void attempt('Save target', async () => {
+              await saveTarget({ end_at: end.trim(), start_at: start.trim() })
+            })
           }}
         >
           Save target
         </Button>
         <Button
           onClick={() => {
-            void attempt('Run sync', async () => await runSync({}))
+            void attempt('Run sync', async () => {
+              await runSync({})
+            })
           }}
         >
           Run sync
