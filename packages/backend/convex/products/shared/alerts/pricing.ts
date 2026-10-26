@@ -1,8 +1,14 @@
 import type { z } from 'zod'
 
 import type { Pricing } from '../../../catalog/pricing'
-import { compareNumbers, relativeChangeAtLeast } from '../../../numbers'
+import {
+  compareNumbers,
+  multiplyNumbers,
+  relativeChangeAtLeast,
+  subtractNumbers,
+} from '../../../numbers'
 import type { AlertChange } from './curate'
+import { priceFields } from './present'
 
 /** Detect schedule evidence without interpreting or constraining upstream conditions. */
 export function isScheduledPricing(pricing: z.infer<typeof Pricing>): boolean {
@@ -24,9 +30,8 @@ const isSchedule = (change: AlertChange) => change.field === 'pricing.overrides'
  *
  * Under a schedule, only schedule changes are announced; current-band price movement is not, and an
  * update whose only pricing movement is current-band is suppressed. Without a schedule, override
- * changes, such as prompt-length conditions, are not announced. Discount adjustments of at most
- * 2 percentage points suppress the update; otherwise pricing needs a meter moving by 2% or more.
- * A meter ORCA cannot read is unquoted, like an absent one.
+ * changes, such as prompt-length conditions, are not announced. Pricing needs a meter moving by 2% or
+ * more, and only qualifying meters are announced. A meter ORCA cannot read is unquoted, like an absent one.
  *
  * ponytail: suppress the whole update, including any coincident metadata edits.
  * Revisit field-level filtering when missing those edits warrants the complexity.
@@ -50,23 +55,23 @@ export function announcedPricing(
     return announced
   }
 
-  return isMinorDiscountAdjustment(pricing) || !pricing.some(significantMeterChange)
-    ? null
-    : announced
-}
-
-function isMinorDiscountAdjustment(pricing: AlertChange[]): boolean {
   const discount = pricing.find((change) => change.kind === 'percent')
+  const qualifies = (change: AlertChange) => significantMeterChange(change, discount)
 
-  // Discounts are fractions; tolerate floating-point subtraction at the inclusive boundary.
-  return (
-    discount?.kind === 'percent' &&
-    Math.abs(discount.after - discount.before) <= 0.02 + Number.EPSILON
-  )
+  return pricing.some(qualifies)
+    ? announced.filter((change) => change.kind !== 'price' || qualifies(change))
+    : null
 }
 
-/** Unquoted and zero both mean unmetered; a transition between metered and unmetered qualifies. */
-function significantMeterChange(change: AlertChange): boolean {
+/**
+ * Unquoted and zero both mean unmetered; a transition between metered and unmetered qualifies.
+ * Presented discounted rates already include discount, so when discount also moves, the
+ * undiscounted list rate must move too: an 80% → 82% discount alone moves presented rates by 10%.
+ */
+function significantMeterChange(
+  change: AlertChange,
+  discount: Extract<AlertChange, { kind: 'percent' }> | undefined,
+): boolean {
   if (change.kind !== 'price') {
     return false
   }
@@ -79,5 +84,34 @@ function significantMeterChange(change: AlertChange): boolean {
     return metered(before) !== metered(after)
   }
 
-  return relativeChangeAtLeast(before, after, 2)
+  return (
+    relativeChangeAtLeast(before, after, 2) &&
+    (discount === undefined ||
+      priceFields[change.field]?.discounted === false ||
+      listRateChangeAtLeast(before, after, discount, 2))
+  )
+}
+
+/** Compare before/(1 − d₀) with after/(1 − d₁) exactly, by cross-multiplying the complements. */
+function listRateChangeAtLeast(
+  before: string,
+  after: string,
+  discount: Extract<AlertChange, { kind: 'percent' }>,
+  minimumPercent: number,
+): boolean {
+  const beforeComplement = subtractNumbers(1, discount.before)
+  const afterComplement = subtractNumbers(1, discount.after)
+
+  if (beforeComplement === null || afterComplement === null) {
+    return true
+  }
+
+  const scaledBefore = multiplyNumbers(before, afterComplement)
+  const scaledAfter = multiplyNumbers(after, beforeComplement)
+
+  return (
+    scaledBefore === null ||
+    scaledAfter === null ||
+    relativeChangeAtLeast(scaledBefore, scaledAfter, minimumPercent)
+  )
 }

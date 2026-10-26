@@ -26,7 +26,9 @@ and favorable direction; product field names and markup remain presentation choi
 - Use `$` for USD; discount is a percentage adjustment, never a currency meter.
 - Text, audio, and cache rates use MTOK; image rates use KTOK and are per token, not per image.
 - `web_search` is a per-search charge, unaffected by discount.
-- Rounding must preserve small nonzero values; eligibility compares original values before formatting.
+- Prices keep three significant digits, cents at minimum, and at most four decimals; smaller nonzero
+  values keep one significant digit rather than rounding to zero.
+- Eligibility compares original values before formatting.
 - Grid rates and Pricing History traces omit zero; change alerts can display transitions to or from zero.
 
 Alert schedule detection and eligibility belong to `events.md`; quote retention does not depend on them.
