@@ -5,51 +5,49 @@ import type { CurrentModelRow } from '../../catalog/tables/current'
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
-import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
-import type { Fields } from './projection'
+import type { Fields, Kind, KindValues } from './projection'
 
 const text = z.string()
 const strings = z.array(z.string())
 const author = text.transform((id) => id.replace(/\/.*$/su, ''))
 
-const fact = <Value extends JsonValue>(
-  path: string[],
-  schema: z.ZodType<Value>,
-  options?: { set?: true },
-) => field(['metadata', ...path], schema, options)
+const fact = <K extends Kind>(kind: K, path: string[], schema: z.ZodType<KindValues[K]>) =>
+  field(kind, ['metadata', ...path], schema)
 
 /** Model Contract fields read from the catalog entity; listing fields are added by `toModel`. */
 export const modelFields = {
   // The author is the model ID prefix.
-  'author.id': field(['model_id'], author),
-  'author.name': fact(['author_display_name'], textOrNull),
-  created_at: field(['or_created_at'], isoDate),
+  'author.id': field('text', ['model_id'], author),
+  'author.name': fact('text', ['author_display_name'], textOrNull),
+  created_at: field('text', ['or_created_at'], isoDate),
   // Upstream has always supplied a description; a missing one is a source failure, not unknown.
-  description: fact(['description'], z.string().trim().min(1)),
-  hf_slug: fact(['hf_slug'], textOrNull),
-  id: field(['model_id'], text),
-  input_modalities: field(['input_modalities'], strings, { set: true }),
-  knowledge_cutoff: fact(['knowledge_cutoff'], textOrNull),
-  name: field(['display_name'], text),
-  output_modalities: field(['output_modalities'], strings, { set: true }),
-  permaslug: field(['permaslug'], text),
+  description: fact('prose', ['description'], z.string().trim().min(1)),
+  hf_slug: fact('text', ['hf_slug'], textOrNull),
+  id: field('text', ['model_id'], text),
+  input_modalities: field('list', ['input_modalities'], strings),
+  knowledge_cutoff: fact('text', ['knowledge_cutoff'], textOrNull),
+  name: field('text', ['display_name'], text),
+  output_modalities: field('list', ['output_modalities'], strings),
+  permaslug: field('text', ['permaslug'], text),
   'reasoning_config.default_reasoning_effort': fact(
+    'text',
     ['reasoning_config', 'default_reasoning_effort'],
     textOrNull,
   ),
   'reasoning_config.is_mandatory_reasoning': fact(
+    'flag',
     ['reasoning_config', 'is_mandatory_reasoning'],
     flagOrNull,
   ),
   // Stored diffs match string arrays by value, so a reordering alone is not an Event.
   'reasoning_config.supported_reasoning_efforts': fact(
+    'list',
     ['reasoning_config', 'supported_reasoning_efforts'],
     stringsOrNull,
-    { set: true },
   ),
-  supports_reasoning: fact(['supports_reasoning'], flagOrNull),
-  variant: field(['variant'], text),
+  supports_reasoning: fact('flag', ['supports_reasoning'], flagOrNull),
+  variant: field('text', ['variant'], text),
 } satisfies Fields
 
 /** Listed endpoints serving a model, by provider. */

@@ -1,8 +1,8 @@
-import type { EntityAlert, FieldChange, FieldValue } from '../../shared/alerts/curate'
+import type { AlertChange, AlertFact, EntityAlert } from '../../shared/alerts/curate'
 import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { arrival, escape, lifecycleMarker } from './display'
-import { factsText, fieldChange, fieldName, fieldValue } from './fields'
+import { factsText, fieldChange, fieldName } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
 type EndpointAlert = Extract<EntityAlert, { entity_kind: 'endpoint' }>
@@ -36,19 +36,19 @@ function endpointBody(event: EndpointAlert): string[] {
     return endpointChanges(event.changes)
   }
 
-  return 'after' in event ? endpointDetails(event.after) : []
+  return 'after' in event ? endpointDetails(event.after, event.pricing_is_scheduled) : []
 }
 
-function endpointChanges(changes: FieldChange[]): string[] {
-  const prices = changes.filter((change) => change.path.startsWith('pricing.'))
+function endpointChanges(changes: AlertChange[]): string[] {
+  const prices = changes.filter((change) => change.field.startsWith('pricing.'))
 
-  const fields = changes.filter((change) => !change.path.startsWith('pricing.'))
+  const fields = changes.filter((change) => !change.field.startsWith('pricing.'))
 
   const groups = [
     { label: 'Pricing', rows: pricingChanges(prices) },
     ...['Limits', 'Data policy', 'Details'].map((label) => ({
       label,
-      rows: fields.filter((change) => fieldGroup(change.path) === label).map(endpointFieldChange),
+      rows: fields.filter((change) => fieldGroup(change.field) === label).map(endpointFieldChange),
     })),
   ].filter((group) => group.rows.length > 0)
 
@@ -57,37 +57,35 @@ function endpointChanges(changes: FieldChange[]): string[] {
   )
 }
 
-function fieldGroup(path: string): string {
-  if (path.startsWith('data_policy.')) {
+function fieldGroup(name: string): string {
+  if (name.startsWith('data_policy.')) {
     return 'Data policy'
   }
 
-  return /^(?:context_length|max_|limit_)/u.test(path) ? 'Limits' : 'Details'
+  return /^(?:context_length|max_|limit_)/u.test(name) ? 'Limits' : 'Details'
 }
 
 /** Keep endpoint labels and units consistent across individual and batch cards. */
-export function endpointFieldChange(change: FieldChange): string {
-  return fieldChange(change, { formatValue: endpointValue, label: endpointLabel(change.path) })
+export function endpointFieldChange(change: AlertChange): string {
+  return fieldChange(change, { label: endpointLabel(change.field), suffix: unit(change.field) })
 }
 
-function endpointDetails(facts: Record<string, FieldValue>): string[] {
+function endpointDetails(facts: readonly AlertFact[], scheduled: boolean | undefined): string[] {
   return [
     factsText(facts, ['context_length', 'max_completion_tokens', 'quantization'], {
       label: endpointLabel,
     }),
-    pricingFacts(facts),
+    pricingFacts(facts, scheduled),
     factsText(
       facts,
-      ['data_policy.training', 'data_policy.retainsPrompts', 'data_policy.retentionDays'],
-      { formatValue: endpointValue },
+      ['data_policy.training', 'data_policy.retains_prompts', 'data_policy.retention_days'],
+      { suffix: unit },
     ),
   ].filter(Boolean)
 }
 
-function endpointLabel(path: string): string {
-  return path === 'max_completion_tokens' ? 'max_output' : fieldName(path)
+function endpointLabel(name: string): string {
+  return name === 'max_completion_tokens' ? 'max_output' : fieldName(name)
 }
 
-function endpointValue(value: FieldValue, path: string): string {
-  return fieldValue(value, { suffix: path === 'data_policy.retentionDays' ? ' days' : '' })
-}
+const unit = (name: string) => (name === 'data_policy.retention_days' ? ' days' : '')

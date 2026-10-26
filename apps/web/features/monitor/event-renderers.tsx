@@ -1,6 +1,6 @@
 'use client'
 
-import type { EntityAlert, FieldValue } from '@orca/backend/alerts/curate'
+import type { AlertFact, EntityAlert } from '@orca/backend/alerts/curate'
 import { fact } from '@orca/backend/alerts/facts'
 import { priceMeters } from '@orca/backend/alerts/pricing'
 import { InfoIcon, PlusCircleIcon } from 'lucide-react'
@@ -132,18 +132,18 @@ function EventDetails({ event }: { event: EntityAlert }) {
     <div className="px-6 pb-2.5">
       <FactList
         facts={event.after}
-        paths={[
+        fields={[
           'context_length',
           'max_completion_tokens',
           'quantization',
           ...Object.keys(priceMeters),
           'pricing.discount',
           'data_policy.training',
-          'data_policy.retainsPrompts',
-          'data_policy.retentionDays',
+          'data_policy.retains_prompts',
+          'data_policy.retention_days',
         ]}
       />
-      {fact(event.after, 'pricing.is_scheduled') === true && (
+      {event.pricing_is_scheduled === true && (
         <p className="mt-1.5 font-mono text-xs">Price schedule detected.</p>
       )}
     </div>
@@ -184,59 +184,67 @@ function EventIdentity({
   )
 }
 
-function ModelFacts({ facts }: { facts: Record<string, FieldValue> }) {
+function ModelFacts({ facts }: { facts: readonly AlertFact[] }) {
+  const description = fact(facts, 'description', 'prose')?.value
+  const warning = fact(facts, 'warning_message', 'prose')?.value
+
   return (
     <>
-      {typeof facts.description === 'string' && facts.description !== '' && (
+      {description !== undefined && description !== null && (
         <p className="text-xs whitespace-pre-line text-muted-foreground">
-          <InlineMarkdown text={facts.description} />
+          <InlineMarkdown text={description} />
         </p>
       )}
       <FieldItemSet>
         <FieldItem label="modalities">
           <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-            {Array.isArray(facts.input_modalities) &&
-              facts.input_modalities.map((item) => (
-                <Badge key={`in:${item}`} variant="secondary">
-                  {item}
-                </Badge>
-              ))}
+            {fact(facts, 'input_modalities', 'list')?.value?.map((item) => (
+              <Badge key={`in:${item}`} variant="secondary">
+                {item}
+              </Badge>
+            ))}
             <span className="text-muted-foreground">→</span>
-            {Array.isArray(facts.output_modalities) &&
-              facts.output_modalities.map((item) => (
-                <Badge key={`out:${item}`} variant="secondary">
-                  {item}
-                </Badge>
-              ))}
-            {facts.supports_reasoning === true && <Badge variant="secondary">reasoning</Badge>}
+            {fact(facts, 'output_modalities', 'list')?.value?.map((item) => (
+              <Badge key={`out:${item}`} variant="secondary">
+                {item}
+              </Badge>
+            ))}
+            {fact(facts, 'supports_reasoning', 'flag')?.value === true && (
+              <Badge variant="secondary">reasoning</Badge>
+            )}
           </div>
         </FieldItem>
       </FieldItemSet>
-      <FactList facts={facts} paths={['knowledge_cutoff']} />
-      {typeof facts.warning_message === 'string' && facts.warning_message !== '' && (
+      <FactList facts={facts} fields={['knowledge_cutoff']} />
+      {warning !== undefined && warning !== null && (
         <p className="text-xs whitespace-pre-line text-muted-foreground">
-          <InlineMarkdown text={facts.warning_message} />
+          <InlineMarkdown text={warning} />
         </p>
       )}
     </>
   )
 }
 
-function FactList({ facts, paths }: { facts: Record<string, FieldValue>; paths: string[] }) {
+function FactList({ facts, fields }: { facts: readonly AlertFact[]; fields: string[] }) {
   return (
     <FieldItemSet>
-      {paths.map((path) => {
-        const value = fact(facts, path)
+      {fields.map((field) => {
+        const item = facts.find((candidate) => candidate.field === field)
 
-        if (value === undefined || (path === 'pricing.discount' && value === 0)) {
+        // Unknown facts and a zero discount have nothing to show.
+        if (
+          item === undefined ||
+          item.value === null ||
+          (item.kind === 'percent' && item.value === 0)
+        ) {
           return null
         }
 
-        const unit = formatChangeUnit(path, value)
+        const unit = formatChangeUnit(item)
 
         return (
-          <FieldItem key={path} label={fieldLabel(path)}>
-            {formatChangeValue(value, path)}
+          <FieldItem key={field} label={fieldLabel(field)}>
+            {formatChangeValue(item)}
             {unit && <FieldUnit>{unit}</FieldUnit>}
           </FieldItem>
         )

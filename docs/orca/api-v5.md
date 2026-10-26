@@ -203,11 +203,11 @@ Working shape, pending a spike:
 - The same Contract curation applies, so a change to an unpublished field produces no event.
 - Responses state `as_at` as completed ingestion, and continuation follows the feed's cursor semantics.
 
-The first projection reads Retained Events directly because it is simple. Like Discord alerts, events
-will likely gain a secondary curated layer that gives ORCA's interpretation decisions stability.
+The first projection reads Retained Events directly because it is simple. Shared alerts already read
+Events through these declarations; V5 events will likely gain a similar curated layer.
 
 Updates are partial entities, so the Contract translates partial shapes as well as complete ones. Each
-Contract field declares the catalog entity paths it reads and its value mapping. Current rows,
+Contract field declares the catalog entity path it reads, its value mapping, and its kind. Current rows,
 Event snapshots, and Event diffs share the catalog entity shape, so one declaration set serves Listings
 and Events. A changed path that no field reads is curated out, and a change whose mapped sides are equal
 produces nothing. A field that a change touches without supplying its complete sides is unresolved; an

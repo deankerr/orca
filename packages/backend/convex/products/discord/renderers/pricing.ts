@@ -1,37 +1,47 @@
 import { formatPercent, formatPrice } from '../../../numbers'
-import type { FieldChange, FieldValue } from '../../shared/alerts/curate'
+import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
 import { fact } from '../../shared/alerts/facts'
 import { priceMeters as meters } from '../../shared/alerts/pricing'
 import { code, field, valueChange } from './display'
-import { delta, fieldChange, fieldName, fieldValue } from './fields'
+import { delta, fieldChange, fieldName } from './fields'
 
-export const priceLabel = (path: string): string => meters[path]?.label ?? fieldName(path)
+export const priceLabel = (name: string): string => meters[name]?.label ?? fieldName(name)
 
-export function pricingFacts(facts: Record<string, FieldValue>): string {
-  const prices = pricingTable(
-    [...Object.keys(meters), 'pricing.discount'].flatMap((path) => {
-      const input = fact(facts, path)
+const price = (name: string, rate: string) =>
+  formatPrice(rate, meters[name]?.scale ?? 0) ?? `$${rate}`
 
-      const after = input === undefined ? null : priceValue(path, input)
+export function pricingFacts(facts: readonly AlertFact[], scheduled: boolean | undefined): string {
+  const discount = fact(facts, 'pricing.discount', 'percent')?.value ?? 0
 
-      return after === null || (path === 'pricing.discount' && input === 0)
+  const prices = pricingTable([
+    ...Object.keys(meters).flatMap((name) => {
+      const rate = fact(facts, name, 'price')?.value
+
+      return rate === undefined || rate === null
         ? []
-        : [{ after, annotation: '', path }]
+        : [{ after: price(name, rate), annotation: '', path: name }]
     }),
-  )
+    ...(discount === 0
+      ? []
+      : [
+          {
+            after: formatPercent(discount) ?? String(discount),
+            annotation: '',
+            path: 'pricing.discount',
+          },
+        ]),
+  ])
 
-  return [prices, fact(facts, 'pricing.is_scheduled') === true ? 'Price schedule detected.' : '']
-    .filter(Boolean)
-    .join('\n')
+  return [prices, scheduled === true ? 'Price schedule detected.' : ''].filter(Boolean).join('\n')
 }
 
 /** Pricing owns grouping, aliases, unit scaling, and fallback presentation for its fields. */
-export function pricingChanges(changes: FieldChange[]): string[] {
+export function pricingChanges(changes: AlertChange[]): string[] {
   const rows: PriceRow[] = []
   const fallback: string[] = []
 
   for (const change of changes) {
-    if (change.type === 'field_changed' && change.path === 'pricing.overrides') {
+    if (change.kind === 'opaque' && change.field === 'pricing.overrides') {
       fallback.push('Price schedule changed.')
       continue
     }
@@ -39,16 +49,7 @@ export function pricingChanges(changes: FieldChange[]): string[] {
     const row = pricingChange(change)
 
     if (row === null) {
-      fallback.push(
-        fieldChange(change, {
-          annotation:
-            change.type === 'field_updated'
-              ? priceDelta(change.before, change.after, change.path)
-              : '',
-          formatValue: pricingValue,
-          label: priceLabel(change.path),
-        }),
-      )
+      fallback.push(fieldChange(change, { label: priceLabel(change.field) }))
     } else {
       rows.push(row)
     }
@@ -57,50 +58,35 @@ export function pricingChanges(changes: FieldChange[]): string[] {
   return [pricingTable(rows), ...fallback].filter(Boolean)
 }
 
-function pricingValue(value: FieldValue, path: string): string {
-  const price = priceValue(path, value)
+/** Rates and discounts form the price table; anything else uses the ordinary field renderer. */
+function pricingChange(change: AlertChange): PriceRow | null {
+  if (change.kind === 'percent') {
+    // A zero discount is no discount: moving from or to zero adds or removes it.
+    const percent = (value: number) => formatPercent(value) ?? String(value)
 
-  if (price !== null) {
-    return code(price)
+    return {
+      after: change.after === 0 ? undefined : percent(change.after),
+      annotation: '',
+      before: change.before === 0 ? undefined : percent(change.before),
+      change: changeKind(change.after === 0, change.before === 0),
+      path: change.field,
+    }
   }
 
-  return typeof value === 'string' && value.trim() !== '' && meters[path] !== undefined
-    ? fieldValue(`$${value}`)
-    : fieldValue(value)
-}
-
-/** A null row leaves unfamiliar/non-price values to the ordinary field renderer. */
-function pricingChange(change: FieldChange): PriceRow | null {
-  if (change.type === 'set_updated' || change.type === 'field_changed') {
+  if (change.kind !== 'price') {
     return null
   }
 
-  const before = 'before' in change ? priceValue(change.path, change.before) : undefined
-  const after = 'after' in change ? priceValue(change.path, change.after) : undefined
-
-  if (before === null || after === null) {
-    return null
-  }
-
-  const discount = change.path === 'pricing.discount'
-
-  const removed =
-    change.type === 'field_removed' ||
-    (discount && change.type === 'field_updated' && change.after === 0)
-
-  const added =
-    change.type === 'field_added' ||
-    (discount && change.type === 'field_updated' && change.before === 0)
+  const { before, after } = change
 
   return {
-    after: removed ? undefined : after,
+    after: after === null ? undefined : price(change.field, after),
+    // Unquoted prices are not zero-price quotes.
     annotation:
-      !removed && !added && change.type === 'field_updated'
-        ? priceDelta(change.before, change.after, change.path)
-        : '',
-    before: added ? undefined : before,
-    change: changeKind(removed, added),
-    path: change.path,
+      before === null || after === null ? '' : delta(before, after, { lowerIsBetter: true }),
+    before: before === null ? undefined : price(change.field, before),
+    change: changeKind(after === null, before === null),
+    path: change.field,
   }
 }
 
@@ -145,34 +131,6 @@ export function pricingTable(rows: PriceRow[]): string {
       )
     })
     .join('\n')
-}
-
-function priceValue(path: string, input: FieldValue): string | null {
-  if (path === 'pricing.discount' && typeof input === 'number') {
-    return formatPercent(input)
-  }
-
-  const meter = meters[path]
-
-  return meter !== undefined && typeof input === 'string' ? formatPrice(input, meter.scale) : null
-}
-
-function priceDelta(before: FieldValue, after: FieldValue, path: string): string {
-  if (path === 'pricing.discount') {
-    return ''
-  }
-
-  if (meters[path] === undefined) {
-    return delta(before, after)
-  }
-
-  // Unknown/blank prices are not zero-price quotes.
-  return typeof before === 'string' &&
-    before.trim() !== '' &&
-    typeof after === 'string' &&
-    after.trim() !== ''
-    ? delta(before, after, { lowerIsBetter: true })
-    : ''
 }
 
 function changeKind(removed: boolean, added: boolean): 'removed' | 'added' | undefined {

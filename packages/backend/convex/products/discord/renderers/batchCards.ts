@@ -1,5 +1,5 @@
 import type { BatchAlert } from '../../shared/alerts/batch'
-import type { EntityAlert, FieldChange } from '../../shared/alerts/curate'
+import type { AlertChange, EntityAlert } from '../../shared/alerts/curate'
 import { colors, embedCard, gridUrl, logoUrl, truncateContent } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape } from './display'
@@ -33,14 +33,14 @@ function identity(event: EntityAlert, groupByModel: boolean) {
   }
 }
 
-function sharedChange(change: FieldChange, event: EntityAlert): string {
-  if (change.path.startsWith('pricing.')) {
+function sharedChange(change: AlertChange, event: EntityAlert): string {
+  if (change.field.startsWith('pricing.')) {
     return pricingChanges([change]).join('\n')
   }
 
   return event.entity_kind === 'endpoint'
     ? endpointFieldChange(change)
-    : fieldChange(change, { label: change.path })
+    : fieldChange(change, { label: change.field })
 }
 
 /** Page shared changes without dropping affected entities or source IDs. */
@@ -52,8 +52,8 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
   }
 
   const { change } = batch
-  const removed = change.type === 'endpoint_removed'
-  const detail = removed ? '' : sharedChange(change, first.event)
+  const removed = change.kind === 'endpoint_removed'
+  const detail = 'field' in change ? sharedChange(change, first.event) : ''
 
   const endpoints = batch.members
     .map(({ event }) => event)
@@ -97,7 +97,7 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
     label = `− Provider **${escape(truncateContent(provider.display_name, 500, 'batch.provider_name'))}** unlisted ${batch.members.length} endpoints.\n\n`
   }
 
-  const heading = `${truncateContent(detail, 4000 - label.length - longestIdentity, `batch.${removed ? change.type : change.path}`)}${label}`
+  const heading = `${truncateContent(detail, 4000 - label.length - longestIdentity, `batch.${'field' in change ? change.field : change.kind}`)}${label}`
   const pages: { description: string; source_ids: string[] }[] = []
   let page: (typeof pages)[number] = { description: heading, source_ids: [] }
   let previousGroup: string | undefined

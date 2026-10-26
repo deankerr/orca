@@ -8,62 +8,62 @@ import type { CurrentEndpointRow, CurrentStatsRow } from '../../catalog/tables/c
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObject, JsonObjectFromString } from '../../json'
-import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
-import type { Fields } from './projection'
+import type { Fields, Kind, KindValues } from './projection'
 
 // Malformed optional facts are unknown, not invented defaults.
 const count = z.number().int().nonnegative().nullable().catch(null)
 const text = z.string()
 const strings = z.array(z.string())
 
-const Overrides = z.array(JsonObject)
+const Overrides = z
+  .array(JsonObject)
+  .optional()
+  .transform((overrides) => overrides ?? null)
 
 // Declared meters only: a new upstream meter is unpublished until curated. `internal_reasoning` is
 // omitted because its rates have been misleading across many endpoints.
-const meter = (key: string) => field(['pricing', 'meters', key], MeterRate.nullable().catch(null))
+const meter = (key: string) =>
+  field('price', ['pricing', 'meters', key], MeterRate.nullable().catch(null))
 
-const fact = <Value extends JsonValue>(
-  key: string,
-  schema: z.ZodType<Value>,
-  options?: { set?: true },
-) => field(['metadata', key], schema, options)
+const fact = <K extends Kind>(kind: K, key: string, schema: z.ZodType<KindValues[K]>) =>
+  field(kind, ['metadata', key], schema)
 
-const policy = <Value extends JsonValue>(key: string, schema: z.ZodType<Value>) =>
-  field(['metadata', 'data_policy', key], schema)
+const policy = <K extends Kind>(kind: K, key: string, schema: z.ZodType<KindValues[K]>) =>
+  field(kind, ['metadata', 'data_policy', key], schema)
 
 type EndpointEventRow = Extract<EventRow, { entity_kind: 'endpoint' }>
 
 /** Endpoint Contract fields read from the catalog entity; context fields are added by `toEndpoint`. */
 export const endpointFields = {
-  context_length: fact('context_length', count),
-  'data_policy.can_publish': policy('canPublish', flagOrNull),
-  'data_policy.requires_user_ids': policy('requiresUserIDs', flagOrNull),
-  'data_policy.retains_prompts': policy('retainsPrompts', flagOrNull),
-  'data_policy.retention_days': policy('retentionDays', count),
-  'data_policy.training': policy('training', flagOrNull),
-  has_chat_completions: fact('has_chat_completions', flagOrNull),
-  has_completions: fact('has_completions', flagOrNull),
-  id: field(['endpoint_id'], text),
-  input_modalities: field(['input_modalities'], strings, { set: true }),
-  is_deranked: fact('is_deranked', flagOrNull),
-  is_disabled: fact('is_disabled', flagOrNull),
-  is_zdr: fact('is_zdr', flagOrNull),
-  label: field(['provider_display_name'], text),
-  limit_rpd: fact('limit_rpd', count),
-  limit_rpm: fact('limit_rpm', count),
-  max_completion_tokens: fact('max_completion_tokens', count),
-  max_prompt_tokens: fact('max_prompt_tokens', count),
-  max_tokens_per_image: fact('max_tokens_per_image', count),
-  'model.created_at': field(['model_or_created_at'], isoDate),
-  'model.id': field(['model_id'], text),
-  'model.name': field(['model_display_name'], text),
-  'model.variant': field(['variant'], text),
-  moderation_required: fact('moderation_required', flagOrNull),
-  output_modalities: field(['output_modalities'], strings, { set: true }),
+  context_length: fact('count', 'context_length', count),
+  'data_policy.can_publish': policy('flag', 'canPublish', flagOrNull),
+  'data_policy.requires_user_ids': policy('flag', 'requiresUserIDs', flagOrNull),
+  'data_policy.retains_prompts': policy('flag', 'retainsPrompts', flagOrNull),
+  'data_policy.retention_days': policy('count', 'retentionDays', count),
+  'data_policy.training': policy('flag', 'training', flagOrNull),
+  has_chat_completions: fact('flag', 'has_chat_completions', flagOrNull),
+  has_completions: fact('flag', 'has_completions', flagOrNull),
+  id: field('text', ['endpoint_id'], text),
+  input_modalities: field('list', ['input_modalities'], strings),
+  is_deranked: fact('flag', 'is_deranked', flagOrNull),
+  is_disabled: fact('flag', 'is_disabled', flagOrNull),
+  is_zdr: fact('flag', 'is_zdr', flagOrNull),
+  label: field('text', ['provider_display_name'], text),
+  limit_rpd: fact('count', 'limit_rpd', count),
+  limit_rpm: fact('count', 'limit_rpm', count),
+  max_completion_tokens: fact('count', 'max_completion_tokens', count),
+  max_prompt_tokens: fact('count', 'max_prompt_tokens', count),
+  max_tokens_per_image: fact('count', 'max_tokens_per_image', count),
+  'model.created_at': field('text', ['model_or_created_at'], isoDate),
+  'model.id': field('text', ['model_id'], text),
+  'model.name': field('text', ['model_display_name'], text),
+  'model.variant': field('text', ['variant'], text),
+  moderation_required: fact('flag', 'moderation_required', flagOrNull),
+  output_modalities: field('list', ['output_modalities'], strings),
   'pricing.audio': meter('audio'),
   'pricing.audio_output': meter('audio_output'),
-  'pricing.discount': field(['pricing', 'discount'], z.number()),
+  'pricing.discount': field('percent', ['pricing', 'discount'], z.number()),
   'pricing.image': meter('image'),
   'pricing.image_output': meter('image_output'),
   'pricing.input': meter('prompt'),
@@ -72,20 +72,18 @@ export const endpointFields = {
   'pricing.input_cache_write': meter('input_cache_write'),
   'pricing.input_cache_write_1h': meter('input_cache_write_1h'),
   'pricing.output': meter('completion'),
-  'pricing.overrides': {
-    read: (overrides) => (overrides === undefined ? null : Overrides.parse(overrides)),
-    sources: [['pricing', 'overrides']],
-  },
+  'pricing.overrides': field('opaque', ['pricing', 'overrides'], Overrides),
   'pricing.web_search': meter('web_search'),
-  'provider.id': field(['provider_id'], text),
-  'provider.tag': field(['provider_tag'], text),
-  quantization: fact('quantization', textOrNull),
-  supported_parameters: fact('supported_parameters', stringsOrNull, { set: true }),
+  'provider.id': field('text', ['provider_id'], text),
+  'provider.tag': field('text', ['provider_tag'], text),
+  quantization: fact('text', 'quantization', textOrNull),
+  supported_parameters: fact('list', 'supported_parameters', stringsOrNull),
   supports_native_web_search: field(
+    'flag',
     ['metadata', 'features', 'supports_native_web_search'],
     flagOrNull,
   ),
-  supports_reasoning: fact('supports_reasoning', flagOrNull),
+  supports_reasoning: fact('flag', 'supports_reasoning', flagOrNull),
 } satisfies Fields
 
 /** The catalog entity a current row stores, with its storage encodings decoded. */

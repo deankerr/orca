@@ -1,36 +1,46 @@
-import type { FieldValue } from '@orca/backend/alerts/curate'
+import type { AlertChange, AlertFact } from '@orca/backend/alerts/curate'
+import { measured } from '@orca/backend/alerts/facts'
 import { priceMeters } from '@orca/backend/alerts/pricing'
 import { formatNumber, formatPercent, formatPrice, relativeChange } from '@orca/backend/numbers'
 
-export function formatChangeValue(value: FieldValue, path: string): string {
-  if (path === 'pricing.discount' && typeof value === 'number') {
-    return formatPercent(value) ?? String(value)
+export function formatChangeValue(item: AlertFact): string {
+  if (item.value === null) {
+    return 'null'
   }
 
-  const meter = priceMeters[path]
-
-  if (meter !== undefined && typeof value === 'string') {
-    return formatPrice(value, meter.scale) ?? value
+  if (item.kind === 'percent') {
+    return formatPercent(item.value) ?? String(item.value)
   }
 
-  if (typeof value === 'number') {
-    return formatNumber(value) ?? String(value)
+  if (item.kind === 'price') {
+    const meter = priceMeters[item.field]
+
+    return (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? item.value
   }
 
-  return typeof value === 'string' ? value : JSON.stringify(value)
+  if (item.kind === 'count') {
+    return formatNumber(item.value) ?? String(item.value)
+  }
+
+  if (item.kind === 'flag') {
+    return String(item.value)
+  }
+
+  return item.kind === 'list' ? JSON.stringify(item.value) : item.value
 }
 
-export function formatChangeUnit(path: string, ...values: FieldValue[]): string {
-  const meter = priceMeters[path]
+/** Units apply only to quoted prices. */
+export function formatChangeUnit(...items: AlertFact[]): string {
+  const [first] = items
+  const meter = first === undefined ? undefined : priceMeters[first.field]
 
-  return meter !== undefined &&
-    values.every((value) => typeof value === 'string' && formatPrice(value, meter.scale) !== null)
+  return meter !== undefined && items.every((item) => item.kind === 'price' && item.value !== null)
     ? meter.unit
     : ''
 }
 
 interface FieldLabels {
-  [path: string]: string
+  [field: string]: string
 }
 
 const fieldLabels: FieldLabels = {
@@ -38,20 +48,15 @@ const fieldLabels: FieldLabels = {
   'pricing.overrides': 'Price schedule',
 }
 
-export const fieldLabel = (path: string): string =>
-  priceMeters[path]?.label ?? fieldLabels[path] ?? path.split('.').at(-1) ?? path
+export const fieldLabel = (field: string): string =>
+  priceMeters[field]?.label ?? fieldLabels[field] ?? field.split('.').at(-1) ?? field
 
-export function formatChangeDelta(before: FieldValue, after: FieldValue, path: string) {
-  const numeric = typeof before === 'number' && typeof after === 'number'
+/** Lower prices and higher limits are favorable. */
+export function formatChangeDelta(change: AlertChange) {
+  const quantities = measured(change)
+  const delta = quantities === null ? null : relativeChange(quantities.before, quantities.after)
 
-  const price =
-    priceMeters[path] !== undefined && typeof before === 'string' && typeof after === 'string'
-
-  if ((!numeric && !price) || path === 'pricing.discount') {
-    return null
-  }
-
-  const delta = relativeChange(before, after)
-
-  return delta === null ? null : { ...delta, isGood: price ? !delta.isUp : delta.isUp }
+  return delta === null
+    ? null
+    : { ...delta, isGood: change.kind === 'price' ? !delta.isUp : delta.isUp }
 }

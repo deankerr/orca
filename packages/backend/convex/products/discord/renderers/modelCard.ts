@@ -1,4 +1,5 @@
-import type { EntityAlert, FieldValue } from '../../shared/alerts/curate'
+import type { AlertFact, EntityAlert } from '../../shared/alerts/curate'
+import { fact } from '../../shared/alerts/facts'
 import { colors, embedCard, componentCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape, field, lifecycleMarker } from './display'
@@ -54,35 +55,32 @@ function compactContent(event: ModelAlert): string[] {
   return [
     `Model **${name}** updated.`,
     ...event.changes.map(
-      (change) =>
-        `${change.path === 'warning_message' ? '⚠ ' : ''}${fieldChange(change, {
-          prose: change.path === 'description' || change.path === 'warning_message',
-        })}`,
+      (change) => `${change.field === 'warning_message' ? '⚠ ' : ''}${fieldChange(change)}`,
     ),
   ]
 }
 
 /** Model facts in display order; all field-specific choices stay beside the card. */
-function modelDetails(facts: Record<string, FieldValue>): string {
-  const inputs = facts.input_modalities
-  const outputs = facts.output_modalities
+function modelDetails(facts: readonly AlertFact[]): string {
+  const inputs = fact(facts, 'input_modalities', 'list')
+  const outputs = fact(facts, 'output_modalities', 'list')
+  const description = fact(facts, 'description', 'prose')?.value
+  const warning = fact(facts, 'warning_message', 'prose')?.value
 
   const modalities =
-    Array.isArray(inputs) && Array.isArray(outputs)
+    inputs?.value && outputs?.value
       ? `${fieldValue(inputs)} → ${fieldValue(outputs)}`
       : factsText(facts, ['input_modalities', 'output_modalities'])
 
   return [
-    [modalities, facts.supports_reasoning === true ? code('reasoning') : '']
+    [modalities, fact(facts, 'supports_reasoning', 'flag')?.value === true ? code('reasoning') : '']
       .filter(Boolean)
       .join(dot),
-    typeof facts.description === 'string' && facts.description.trim() !== ''
-      ? quote(facts.description)
-      : '',
+    description === undefined || description === null ? '' : quote(description),
     factsText(facts, ['knowledge_cutoff']),
-    typeof facts.warning_message === 'string' && facts.warning_message.trim() !== ''
-      ? `⚠ ${field('warning_message', quote(facts.warning_message), { layout: 'block' })}`
-      : '',
+    warning === undefined || warning === null
+      ? ''
+      : `⚠ ${field('warning_message', quote(warning), { layout: 'block' })}`,
   ]
     .filter(Boolean)
     .join('\n\n')

@@ -35,7 +35,7 @@ function update(kind: 'provider' | 'endpoint', before: JsonValue, after: JsonVal
       }
 }
 
-test('shared selection retains Discord field policy without rewriting captured or generally curated facts', () => {
+test('shared selection keeps provider identity and links, and leaves reasoning to model alerts', () => {
   const provider = update(
     'provider',
     { metadata: {} },
@@ -46,24 +46,26 @@ test('shared selection retains Discord field policy without rewriting captured o
     },
   )
 
-  expect(prepareAlert(provider)).toMatchObject({
-    changes: [
-      {
-        after: 'https://example.com/privacy',
-        path: 'dataPolicy.privacyPolicyURL',
-        type: 'field_added',
-      },
-    ],
-  })
+  // Contract fields read through the added policy object; its unpublished facts never appear.
+  for (const alert of [prepareAlert(provider), curate(provider)]) {
+    expect(alert).toEqual(
+      expect.objectContaining({
+        changes: [
+          {
+            after: 'https://example.com/privacy',
+            before: null,
+            field: 'privacy_policy_url',
+            kind: 'text',
+          },
+        ],
+      }),
+    )
+  }
 
-  expect(curate(provider)).toMatchObject({
-    changes: [
-      {
-        after: { privacyPolicyURL: 'https://example.com/privacy', training: false },
-        path: 'dataPolicy',
-      },
-    ],
-  })
+  const byok = update('provider', { metadata: {} }, { metadata: { byokEnabled: true } })
+
+  expect(curate(byok)).toMatchObject({ changes: [{ field: 'byok_enabled' }] })
+  expect(prepareAlert(byok)).toBeNull()
 
   expect(
     prepareAlert(
@@ -93,5 +95,5 @@ test('shared selection retains Discord field policy without rewriting captured o
         { metadata: { context_length: 200, supports_reasoning: true } },
       ),
     ),
-  ).toMatchObject({ changes: [{ after: 200, before: 100, path: 'context_length' }] })
+  ).toMatchObject({ changes: [{ after: 200, before: 100, field: 'context_length' }] })
 })

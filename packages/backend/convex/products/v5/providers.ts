@@ -5,33 +5,29 @@ import type { CurrentProviderRow } from '../../catalog/tables/current'
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
-import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
-import type { Fields } from './projection'
+import type { Fields, Kind, KindValues } from './projection'
 
 const url = z
   .url({ protocol: /^https?$/u })
   .nullable()
   .catch(null)
 
-const fact = <Value extends JsonValue>(
-  path: string[],
-  schema: z.ZodType<Value>,
-  options?: { set?: true },
-) => field(['metadata', ...path], schema, options)
+const fact = <K extends Kind>(kind: K, path: string[], schema: z.ZodType<KindValues[K]>) =>
+  field(kind, ['metadata', ...path], schema)
 
 /** Provider Contract fields read from the catalog entity; listing fields are added by `toProvider`. */
 export const providerFields = {
-  byok_enabled: fact(['byokEnabled'], flagOrNull),
-  datacenters: fact(['datacenters'], stringsOrNull, { set: true }),
-  display_name: field(['display_name'], z.string()),
-  headquarters: fact(['headquarters'], textOrNull),
-  id: field(['provider_id'], z.string()),
+  byok_enabled: fact('flag', ['byokEnabled'], flagOrNull),
+  datacenters: fact('list', ['datacenters'], stringsOrNull),
+  display_name: field('text', ['display_name'], z.string()),
+  headquarters: fact('text', ['headquarters'], textOrNull),
+  id: field('text', ['provider_id'], z.string()),
   // Upstream has always supplied a name; a missing one is a source failure, not unknown.
-  name: fact(['name'], z.string().trim().min(1)),
-  privacy_policy_url: fact(['dataPolicy', 'privacyPolicyURL'], url),
-  status_page_url: fact(['statusPageUrl'], url),
-  terms_of_service_url: fact(['dataPolicy', 'termsOfServiceURL'], url),
+  name: fact('text', ['name'], z.string().trim().min(1)),
+  privacy_policy_url: fact('text', ['dataPolicy', 'privacyPolicyURL'], url),
+  status_page_url: fact('text', ['statusPageUrl'], url),
+  terms_of_service_url: fact('text', ['dataPolicy', 'termsOfServiceURL'], url),
 } satisfies Fields
 
 /** Listed endpoints from a provider, by model. */

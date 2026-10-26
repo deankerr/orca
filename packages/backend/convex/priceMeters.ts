@@ -7,6 +7,7 @@ export const priceMeters = {
   input_cache_write: { scale: 6, unit: 'MTOK' },
   input_cache_write_1h: { scale: 6, unit: 'MTOK' },
   audio: { scale: 6, unit: 'MTOK' },
+  audio_output: { scale: 6, unit: 'MTOK' },
   input_audio_cache: { scale: 6, unit: 'MTOK' },
   image: { scale: 3, unit: 'KTOK' },
   image_output: { scale: 3, unit: 'KTOK' },

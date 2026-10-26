@@ -11,23 +11,56 @@ export type Source = readonly string[]
 /** A catalog entity fact at a source path; `undefined` is absent. */
 type Fact = JsonValue | undefined
 
-/** One Contract field: the entity paths it reads and how their values become its value. */
-export type Field<Value extends JsonValue = JsonValue> = {
-  sources: readonly Source[]
-  read: (...values: Fact[]) => Value
-  /** String-set fields can translate member changes without either complete side. */
-  set?: true
+/** ORCA's reading of a field's value, which also decides how its changes are expressed. */
+export interface KindValues {
+  count: number | null
+  flag: boolean | null
+  /** A string set: changes are member additions and removals. */
+  list: string[] | null
+  /** A value too volatile to interpret; changes are announced without their values. */
+  opaque: JsonValue
+  percent: number
+  /** An upstream decimal rate; null when upstream quotes none. */
+  price: string | null
+  /** Long-form Markdown text. */
+  prose: string | null
+  text: string | null
 }
+
+export type Kind = keyof KindValues
+
+/** One Contract field: the entity path it reads and how its value becomes the field's value. */
+export type Field<K extends Kind = Kind> = {
+  [P in K]: { kind: P; source: Source; read: (value: Fact) => KindValues[P] }
+}[K]
 
 export type Fields = Record<string, Field>
 
 /** A field read from one entity path through its Contract interpretation. */
-export function field<Value extends JsonValue>(
+export function field<K extends Kind>(
+  kind: K,
   source: Source,
-  schema: z.ZodType<Value>,
-  options: { set?: true } = {},
-): Field<Value> {
-  return { read: (value) => schema.parse(value), sources: [source], ...options }
+  schema: z.ZodType<KindValues[K]>,
+): Field<K> {
+  return { kind, read: (value) => schema.parse(value), source }
+}
+
+/** One field's value in a complete entity. */
+export type FieldFact<K extends Kind = Kind> = {
+  [P in K]: { field: string; kind: P; value: KindValues[P] }
+}[K]
+
+function fact<K extends Kind>(name: string, definition: Field<K>, entity: JsonValue): FieldFact<K> {
+  return {
+    field: name,
+    kind: definition.kind,
+    value: definition.read(get(entity, definition.source)),
+  }
+}
+
+/** Every declared field's value in a complete entity, in declaration order. */
+export function facts(fields: Fields, entity: JsonValue): FieldFact[] {
+  return Object.entries(fields).map(([name, definition]) => fact(name, definition, entity))
 }
 
 function get(value: Fact, path: Source): Fact {
@@ -53,8 +86,8 @@ export interface Projection {
 export function project(fields: Fields, entity: JsonValue): Projection {
   const output: Projection = {}
 
-  for (const [path, { read, sources }] of Object.entries(fields)) {
-    assign(output, path.split('.'), read(...sources.map((source) => get(entity, source))))
+  for (const { field: name, value } of facts(fields, entity)) {
+    assign(output, name.split('.'), value)
   }
 
   return output
@@ -105,7 +138,7 @@ function touches(changes: CapturedChange[], parent: string[] = []): Touch[] {
       return [{ added: members('ADD'), kind: 'members', path, removed: members('REMOVE') }]
     }
 
-    if (change.changes !== undefined) {
+    if ('changes' in change) {
       return touches(change.changes, path)
     }
 
@@ -129,13 +162,20 @@ const related = (a: readonly string[], b: readonly string[]) => startsWith(a, b)
 /** Complete values for some entity paths, supplied alongside a change, such as an Event's pricing. */
 export type Known = { path: Source; before: JsonValue; after: JsonValue }[]
 
-type FieldChange =
-  | { field: string; before: JsonValue; after: JsonValue }
-  | { field: string; added: string[]; removed: string[] }
+type ValueKind = Exclude<Kind, 'list'>
+
+export type ValueChange<K extends ValueKind = ValueKind> = {
+  [P in K]: { field: string; kind: P; before: KindValues[P]; after: KindValues[P] }
+}[K]
+
+/** A Contract field change: complete sides, or added and removed members of a string set. */
+export type FieldChange =
+  | ValueChange
+  | { field: string; kind: 'list'; added: string[]; removed: string[] }
 
 export type Translation = {
   changes: FieldChange[]
-  /** Contract fields whose sources changed, but whose complete sides the change does not supply. */
+  /** Contract fields whose source changed, but whose complete sides the change does not supply. */
   unresolved: string[]
   /** Changed entity paths that no Contract field reads. */
   ignored: string[]
@@ -159,6 +199,23 @@ function sourceValue(source: Source, side: Side, leaves: Leaf[], known: Known) {
   return undefined
 }
 
+function valueChange<K extends ValueKind>(
+  name: string,
+  definition: Field<K>,
+  before: Fact,
+  after: Fact,
+): ValueChange<K> {
+  return {
+    after: definition.read(after),
+    before: definition.read(before),
+    field: name,
+    kind: definition.kind,
+  }
+}
+
+const members = (from: readonly string[], to: readonly string[]) =>
+  to.filter((item) => !from.includes(item))
+
 /** Translate an entity change through the same field declarations as complete entities. */
 function translate(fields: Fields, changes: CapturedChange[], known: Known = []): Translation {
   const touched = touches(changes)
@@ -166,49 +223,50 @@ function translate(fields: Fields, changes: CapturedChange[], known: Known = [])
   const result: Translation = { changes: [], ignored: [], unresolved: [] }
 
   for (const [name, definition] of Object.entries(fields)) {
-    const relevant = touched.filter((touch) =>
-      definition.sources.some((source) => related(source, touch.path)),
-    )
+    const relevant = touched.filter((touch) => related(definition.source, touch.path))
+    const [set] = relevant
 
     if (relevant.length === 0) {
       continue
     }
 
-    const [members] = relevant
-
-    if (definition.set && relevant.length === 1 && members?.kind === 'members') {
-      if (members.added.length > 0 || members.removed.length > 0) {
-        result.changes.push({ added: members.added, field: name, removed: members.removed })
+    if (definition.kind === 'list' && relevant.length === 1 && set?.kind === 'members') {
+      if (set.added.length > 0 || set.removed.length > 0) {
+        result.changes.push({ added: set.added, field: name, kind: 'list', removed: set.removed })
       }
 
       continue
     }
 
-    const sides = (['before', 'after'] as const).map((side) =>
-      definition.sources.map((source) => sourceValue(source, side, leaves, known)),
-    )
+    const before = sourceValue(definition.source, 'before', leaves, known)
+    const after = sourceValue(definition.source, 'after', leaves, known)
 
-    if (sides.flat().some((value) => value === undefined)) {
+    if (before === undefined || after === undefined) {
       result.unresolved.push(name)
       continue
     }
 
-    const [before, after] = sides.map((values) =>
-      definition.read(...values.map((entry) => entry?.value)),
-    )
+    if (definition.kind === 'list') {
+      const from = definition.read(before.value) ?? []
+      const to = definition.read(after.value) ?? []
+      const [added, removed] = [members(from, to), members(to, from)]
 
-    if (!isDeepEqual(before, after)) {
-      result.changes.push({ after, before, field: name })
+      if (added.length > 0 || removed.length > 0) {
+        result.changes.push({ added, field: name, kind: 'list', removed })
+      }
+
+      continue
+    }
+
+    const change = valueChange(name, definition, before.value, after.value)
+
+    if (!isDeepEqual(change.before, change.after)) {
+      result.changes.push(change)
     }
   }
 
   result.ignored = touched
-    .filter(
-      (touch) =>
-        !Object.values(fields).some(({ sources }) =>
-          sources.some((source) => related(source, touch.path)),
-        ),
-    )
+    .filter((touch) => !Object.values(fields).some(({ source }) => related(source, touch.path)))
     .map((touch) => touch.path.join('.'))
 
   return result

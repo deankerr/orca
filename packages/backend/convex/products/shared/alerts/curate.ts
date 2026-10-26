@@ -1,31 +1,73 @@
 import { withoutSystemFields } from 'convex-helpers'
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
-import { isDeepEqual } from 'remeda'
-import { z } from 'zod'
+import * as R from 'remeda'
 
+import { decodePricing } from '../../../catalog/pricing'
 import { eventsTable } from '../../../catalog/tables/events'
 import type { EventRow } from '../../../catalog/tables/events'
-import type { JsonValue } from '../../../json'
-import { decode } from './decode'
-import type { CapturedChange, Snapshot } from './decode'
+import { textOrNull } from '../../../fields'
+import { endpointFields, translateEndpointUpdate } from '../../v5/endpoints'
+import { modelFields } from '../../v5/models'
+import { facts, field, translateStored } from '../../v5/projection'
+import type { FieldChange, FieldFact, Fields, Kind, Translation } from '../../v5/projection'
+import { providerFields } from '../../v5/providers'
+import { decodeSnapshot } from './decode'
 import { isScheduledPricing } from './pricing'
 
-const atom = v.union(v.null(), v.string(), v.number(), v.boolean(), v.array(v.string()))
-const value = v.union(atom, v.record(v.string(), atom))
+/** Alerts announce Contract fields, plus model warnings that the Contract does not yet publish. */
+const alertFields = {
+  endpoint: endpointFields,
+  model: {
+    ...modelFields,
+    warning_message: field('prose', ['metadata', 'warning_message'], textOrNull),
+  },
+  provider: providerFields,
+} satisfies Record<EventRow['entity_kind'], Fields>
 
-const fieldChange = v.union(
-  // Opaque changes are announced without projecting their arbitrary values into alerts.
-  v.object({ path: v.string(), type: v.literal('field_changed') }),
-  v.object({ after: value, before: value, path: v.string(), type: v.literal('field_updated') }),
-  v.object({ after: value, path: v.string(), type: v.literal('field_added') }),
-  v.object({ before: value, path: v.string(), type: v.literal('field_removed') }),
+/** Opaque values are announced as changed, never projected into alerts. */
+export type AlertKind = Exclude<Kind, 'opaque'>
+
+const values = {
+  count: v.union(v.number(), v.null()),
+  flag: v.union(v.boolean(), v.null()),
+  list: v.union(v.array(v.string()), v.null()),
+  percent: v.number(),
+  price: v.union(v.string(), v.null()),
+  prose: v.union(v.string(), v.null()),
+  text: v.union(v.string(), v.null()),
+}
+
+const fact = <K extends AlertKind>(kind: K) =>
+  v.object({ field: v.string(), kind: v.literal(kind), value: values[kind] })
+
+const alertFact = v.union(
+  fact('count'),
+  fact('flag'),
+  fact('list'),
+  fact('percent'),
+  fact('price'),
+  fact('prose'),
+  fact('text'),
+)
+
+const valueChange = <K extends Exclude<AlertKind, 'list'>>(kind: K) =>
+  v.object({ after: values[kind], before: values[kind], field: v.string(), kind: v.literal(kind) })
+
+const alertChange = v.union(
+  valueChange('count'),
+  valueChange('flag'),
+  valueChange('percent'),
+  valueChange('price'),
+  valueChange('prose'),
+  valueChange('text'),
   v.object({
     added: v.array(v.string()),
-    path: v.string(),
+    field: v.string(),
+    kind: v.literal('list'),
     removed: v.array(v.string()),
-    type: v.literal('set_updated'),
   }),
+  v.object({ field: v.string(), kind: v.literal('opaque') }),
 )
 
 export const entityAlert = v.union(
@@ -35,346 +77,104 @@ export const entityAlert = v.union(
     const identity = member.omit('change_json', 'type', 'scan_at').extend({
       observed_at: v.string(),
       previously_known: v.optional(v.boolean()),
+      /** Derived from complete pricing quotes, never persisted on the event. */
+      pricing_is_scheduled: v.optional(v.boolean()),
     })
 
     return [
-      identity.extend({
-        changes: v.array(fieldChange),
-        /** Derived during alert preparation, never persisted on the event. */
-        pricing_is_scheduled: v.optional(v.boolean()),
-        type: v.literal(`${kind}_updated`),
-      }),
-      identity.extend({
-        after: v.record(v.string(), value),
-        type: v.literal(`${kind}_added`),
-      }),
-      identity.extend({
-        before: v.record(v.string(), value),
-        type: v.literal(`${kind}_removed`),
-      }),
+      identity.extend({ changes: v.array(alertChange), type: v.literal(`${kind}_updated`) }),
+      identity.extend({ after: v.array(alertFact), type: v.literal(`${kind}_added`) }),
+      identity.extend({ before: v.array(alertFact), type: v.literal(`${kind}_removed`) }),
     ]
   }),
 )
 
 export type EntityAlert = Infer<typeof entityAlert>
 
-export type FieldChange = Infer<typeof fieldChange>
+export type AlertChange = Infer<typeof alertChange>
 
-export type FieldValue = Infer<typeof value>
+export type AlertFact<K extends AlertKind = AlertKind> = FieldFact<K>
 
-type Selection = Record<string, true | readonly string[]>
+function lifecycleFacts(row: EventRow): { facts: AlertFact[]; pricing_is_scheduled?: boolean } {
+  const snapshot = decodeSnapshot(row)
 
-const fields = (...names: string[]): Record<string, true> =>
-  Object.fromEntries(names.map((name) => [name, true]))
-
-/** Public facts use upstream names; these selections also curate lifecycle values. */
-// oxlint-disable sort-keys -- Key order is the field order of curated added/removed snapshots (entityValue iterates it).
-const selections: Record<EventRow['entity_kind'], Selection> = {
-  endpoint: {
-    ...fields(
-      'id',
-      'model_id',
-      'provider_id',
-      'provider_tag',
-      'provider_display_name',
-      'variant',
-      'context_length',
-      'max_completion_tokens',
-      'max_prompt_tokens',
-      'max_tokens_per_image',
-      'limit_rpm',
-      'limit_rpd',
-      'quantization',
-      'supported_parameters',
-      'supports_reasoning',
-      'has_completions',
-      'has_chat_completions',
-      'moderation_required',
-      'is_deranked',
-      'is_disabled',
-    ),
-    pricing: [
-      'prompt',
-      'completion',
-      'input_cache_read',
-      'input_cache_write',
-      'input_cache_write_1h',
-      'audio',
-      'input_audio_cache',
-      'image',
-      'image_output',
-      'web_search',
-      'discount',
-      'is_scheduled',
-    ],
-    features: ['supports_native_web_search'],
-    data_policy: ['training', 'canPublish', 'requiresUserIDs', 'retainsPrompts', 'retentionDays'],
-  },
-  model: {
-    ...fields(
-      'id',
-      'slug',
-      'permaslug',
-      'variant',
-      'short_name',
-      'created_at',
-      'input_modalities',
-      'output_modalities',
-      'description',
-      'warning_message',
-      'author_display_name',
-      'hf_slug',
-      'knowledge_cutoff',
-      'supports_reasoning',
-    ),
-    reasoning_config: ['is_mandatory_reasoning', 'supported_reasoning_efforts'],
-  },
-  provider: {
-    ...fields(
-      'provider_id',
-      'displayName',
-      'headquarters',
-      'datacenters',
-      'statusPageUrl',
-      'hasChatCompletions',
-      'hasCompletions',
-      'byokEnabled',
-    ),
-    dataPolicy: [
-      'termsOfServiceURL',
-      'privacyPolicyURL',
-      'training',
-      'retainsPrompts',
-      'requiresUserIDs',
-      'canPublish',
-      'retentionDays',
-    ],
-  },
-}
-
-// oxlint-enable sort-keys
-
-const Atom = z.union([z.null(), z.string(), z.number(), z.boolean(), z.array(z.string())])
-
-const StringSet = z.object({
-  changes: z.array(z.object({ type: z.enum(['ADD', 'REMOVE']), value: z.string() })),
-  embeddedKey: z.literal('$value'),
-})
-
-function nativePath(kind: EventRow['entity_kind'], path: string[]): string[] {
-  if (path[0] === 'metadata') {
-    return path.slice(1)
-  }
-
-  if (path[0] === 'pricing' && path[1] === 'meters') {
-    return ['pricing', ...path.slice(2)]
-  }
-
-  const [key, ...rest] = path
-
-  if (kind === 'model') {
-    if (key === 'model_id') {
-      return ['id', ...rest]
-    }
-
-    if (key === 'display_name') {
-      return ['short_name', ...rest]
-    }
-
-    if (key === 'or_created_at') {
-      return ['created_at', ...rest]
-    }
-  }
-
-  if (kind === 'provider' && key === 'display_name') {
-    return ['displayName', ...rest]
-  }
-
-  if (kind === 'endpoint' && key === 'endpoint_id') {
-    return ['id', ...rest]
-  }
-
-  return path
-}
-
-function selectValue(
-  input: JsonValue | undefined,
-  selection: true | readonly string[],
-  path: string,
-): FieldValue {
-  if (selection === true || input === null || typeof input !== 'object' || Array.isArray(input)) {
-    return Atom.parse(input, { error: () => `Unsupported alert value at ${path}` })
-  }
-
-  return Object.fromEntries(
-    selection.flatMap((key) =>
-      Object.hasOwn(input, key)
-        ? [
-            [
-              key,
-              Atom.parse(input[key], { error: () => `Unsupported alert value at ${path}.${key}` }),
-            ],
-          ]
-        : [],
-    ),
+  const selected = facts(alertFields[snapshot.entity_kind], snapshot.value).filter(
+    (item): item is AlertFact => item.kind !== 'opaque',
   )
+
+  return snapshot.entity_kind === 'endpoint'
+    ? { facts: selected, pricing_is_scheduled: isScheduledPricing(snapshot.value.pricing) }
+    : { facts: selected }
 }
 
-function fieldSelection(kind: EventRow['entity_kind'], path: string[]) {
-  const [key, child] = path
-
-  if (key === undefined || !Object.hasOwn(selections[kind], key)) {
-    return undefined
+function translation(row: EventRow): Translation & { pricing_is_scheduled?: boolean } {
+  if (row.entity_kind !== 'endpoint') {
+    return translateStored(alertFields[row.entity_kind], row.change_json)
   }
 
-  const group = selections[kind][key]
+  const { pricing } = row.context
+  const result = translateEndpointUpdate(row)
 
-  if (path.length === 1) {
-    return group
-  }
-
-  return path.length === 2 &&
-    group !== undefined &&
-    group !== true &&
-    child !== undefined &&
-    group.includes(child)
-    ? true
-    : undefined
+  return pricing === undefined
+    ? result
+    : {
+        ...result,
+        pricing_is_scheduled: [pricing.before, pricing.after].some((quote) =>
+          isScheduledPricing(decodePricing(quote)),
+        ),
+      }
 }
 
-function selectedChanges(
-  kind: EventRow['entity_kind'],
-  node: CapturedChange,
-  sourcePath: string[],
-): FieldChange[] {
-  const path = nativePath(kind, sourcePath)
-  const selection = fieldSelection(kind, path)
+/**
+ * Opaque fields are announced as changed, without values, and only under a price schedule.
+ * Override row order has been stable upstream. A reorder intentionally counts as a coarse schedule
+ * change; we do not interpret condition equivalence. Overrides without a schedule are not announced.
+ */
+function announced(
+  changes: FieldChange[],
+  opaque: string[],
+  scheduled: boolean | undefined,
+): AlertChange[] {
+  const changed = (name: string): AlertChange[] =>
+    scheduled === true ? [{ field: name, kind: 'opaque' }] : []
 
-  if (selection === undefined) {
-    return []
-  }
-
-  if (node.changes !== undefined) {
-    if (selection !== true) {
-      // ponytail: indexed arrays in selected object groups silently lose their numeric children.
-      // Reject those shapes if they occur upstream; see docs/orca/events.md.
-      return node.changes.flatMap((nested) =>
-        selectedChanges(kind, nested, [...sourcePath, nested.key]),
-      )
-    }
-
-    const set = StringSet.parse(node, {
-      error: () => `Unsupported array change at ${path.join('.')}`,
-    })
-
-    return [
-      {
-        added: set.changes.filter((item) => item.type === 'ADD').map((item) => item.value),
-        path: path.join('.'),
-        removed: set.changes.filter((item) => item.type === 'REMOVE').map((item) => item.value),
-        type: 'set_updated',
-      },
-    ]
-  }
-
-  const field = path.join('.')
-
-  if (node.type === 'ADD') {
-    return [{ after: selectValue(node.value, selection, field), path: field, type: 'field_added' }]
-  }
-
-  if (node.type === 'REMOVE') {
-    return [
-      { before: selectValue(node.value, selection, field), path: field, type: 'field_removed' },
-    ]
-  }
-
-  const before = selectValue(node.oldValue, selection, field)
-  const after = selectValue(node.value, selection, field)
-
-  return isDeepEqual(before, after) ? [] : [{ after, before, path: field, type: 'field_updated' }]
-}
-
-interface NativeFields {
-  [name: string]: JsonValue
-}
-
-function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
-  const source: Record<string, JsonValue> = snapshot.value
-  const native: NativeFields = { ...snapshot.value.metadata, ...source }
-
-  for (const [key, field] of Object.entries(source)) {
-    const [name] = nativePath(snapshot.entity_kind, [key])
-
-    if (name !== undefined) {
-      native[name] = field
-    }
-  }
-
-  if (snapshot.entity_kind === 'endpoint') {
-    const { discount, meters } = snapshot.value.pricing
-    native.pricing = {
-      discount,
-      ...meters,
-      ...(isScheduledPricing(snapshot.value.pricing) ? { is_scheduled: true } : {}),
-    }
-  }
-
-  return Object.fromEntries(
-    Object.entries(selections[snapshot.entity_kind]).flatMap(([key, selection]) =>
-      Object.hasOwn(native, key) ? [[key, selectValue(native[key], selection, key)]] : [],
-    ),
-  )
+  return [
+    ...changes.flatMap((change) => (change.kind === 'opaque' ? changed(change.field) : [change])),
+    ...opaque.flatMap(changed),
+  ]
 }
 
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */
 export function curate(row: EventRow): EntityAlert | null {
   const { change_json: _json, type: _type, scan_at, ...subject } = withoutSystemFields(row)
   const identity = { ...subject, observed_at: scan_at }
-  const event = decode(row)
 
-  if (event.type === 'ADD') {
-    return {
-      ...identity,
-      after: entityValue(event.after),
-      type: `${row.entity_kind}_added`,
-    }
+  if (row.type !== 'UPDATE') {
+    const { facts: selected, ...scheduled } = lifecycleFacts(row)
+
+    return row.type === 'ADD'
+      ? { ...identity, ...scheduled, after: selected, type: `${row.entity_kind}_added` }
+      : { ...identity, ...scheduled, before: selected, type: `${row.entity_kind}_removed` }
   }
 
-  if (event.type === 'REMOVE') {
-    return {
-      ...identity,
-      before: entityValue(event.before),
-      type: `${row.entity_kind}_removed`,
-    }
+  const fields: Fields = alertFields[row.entity_kind]
+  const { changes, unresolved, pricing_is_scheduled } = translation(row)
+
+  // An opaque change needs no values; any other field must have both sides to be announced.
+  const [opaque, unknown] = R.partition(unresolved, (name) => fields[name]?.kind === 'opaque')
+
+  if (unknown.length > 0) {
+    throw new ConvexError({ message: 'Unresolved alert fields', unresolved: unknown })
   }
 
-  const scheduled =
-    event.pricing === undefined
-      ? undefined
-      : isScheduledPricing(event.pricing.before) || isScheduledPricing(event.pricing.after)
+  const announcedChanges = announced(changes, opaque, pricing_is_scheduled)
 
-  const changes = event.changes.flatMap<FieldChange>(({ path, change }) => {
-    if (
-      row.entity_kind === 'endpoint' &&
-      scheduled === true &&
-      path[0] === 'pricing' &&
-      path[1] === 'overrides'
-    ) {
-      // Override row order has been stable upstream. A reorder intentionally counts as
-      // a coarse schedule change; we do not interpret condition equivalence.
-      return [{ path: 'pricing.overrides', type: 'field_changed' }]
-    }
-
-    return selectedChanges(row.entity_kind, change, path)
-  })
-
-  return changes.length === 0
+  return announcedChanges.length === 0
     ? null
     : {
         ...identity,
-        changes,
+        changes: announcedChanges,
         type: `${row.entity_kind}_updated`,
-        ...(scheduled === undefined ? {} : { pricing_is_scheduled: scheduled }),
+        ...(pricing_is_scheduled === undefined ? {} : { pricing_is_scheduled }),
       }
 }

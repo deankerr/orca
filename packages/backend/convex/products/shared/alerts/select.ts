@@ -1,72 +1,39 @@
-import type { EntityAlert, FieldChange } from './curate'
-import { fact } from './facts'
+import type { AlertChange, EntityAlert } from './curate'
+
+/** Provider activity covers identity, location and public links. */
+const providerFields = new Set([
+  'datacenters',
+  'display_name',
+  'headquarters',
+  'id',
+  'name',
+  'privacy_policy_url',
+  'status_page_url',
+  'terms_of_service_url',
+])
+
+const isPricing = (change: AlertChange) => change.field.startsWith('pricing.')
 
 /** Default field selection shared by all alert products. */
 export function select(event: EntityAlert): EntityAlert | null {
   if (event.type === 'provider_updated') {
-    const changes = providerChanges(event.changes)
+    const changes = event.changes.filter((change) => providerFields.has(change.field))
 
     return changes.length === 0 ? null : { ...event, changes }
   }
 
   if (event.type === 'endpoint_updated') {
+    // Reasoning belongs to model alerts. A schedule makes current-band price movement unannounced.
     const changes = event.changes.filter(
       (change) =>
-        change.path !== 'supports_reasoning' &&
+        change.field !== 'supports_reasoning' &&
         (event.pricing_is_scheduled !== true ||
-          !change.path.startsWith('pricing.') ||
-          change.path === 'pricing.overrides'),
+          !isPricing(change) ||
+          change.field === 'pricing.overrides'),
     )
 
     return changes.length === 0 ? null : { ...event, changes }
   }
 
   return event
-}
-
-/** Provider activity covers identity, location and public links. */
-function providerChanges(changes: FieldChange[]): FieldChange[] {
-  const fields = new Set([
-    'provider_id',
-    'displayName',
-    'headquarters',
-    'datacenters',
-    'statusPageUrl',
-    'dataPolicy.termsOfServiceURL',
-    'dataPolicy.privacyPolicyURL',
-  ])
-
-  return changes.flatMap<FieldChange>((change) => {
-    if (fields.has(change.path)) {
-      return [change]
-    }
-
-    if (
-      change.path !== 'dataPolicy' ||
-      change.type === 'set_updated' ||
-      change.type === 'field_changed'
-    ) {
-      return []
-    }
-
-    // A whole policy object can arrive or disappear; project only its URL children.
-    return ['dataPolicy.termsOfServiceURL', 'dataPolicy.privacyPolicyURL'].flatMap<FieldChange>(
-      (path) => {
-        const before = 'before' in change ? fact({ dataPolicy: change.before }, path) : undefined
-        const after = 'after' in change ? fact({ dataPolicy: change.after }, path) : undefined
-
-        if (before === after) {
-          return []
-        }
-
-        if (after === undefined) {
-          return before === undefined ? [] : [{ before, path, type: 'field_removed' }]
-        }
-
-        return before === undefined
-          ? [{ after, path, type: 'field_added' }]
-          : [{ after, before, path, type: 'field_updated' }]
-      },
-    )
-  })
 }

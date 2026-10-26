@@ -1,95 +1,72 @@
-import { formatNumber, relativeChange } from '../../../numbers'
-import type { FieldChange, FieldValue } from '../../shared/alerts/curate'
-import { fact } from '../../shared/alerts/facts'
+import { formatNumber, formatPercent, formatPrice, relativeChange } from '../../../numbers'
+import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
+import { measured, sides } from '../../shared/alerts/facts'
+import { priceMeters } from '../../shared/alerts/pricing'
 import { code, dot, field, valueChange } from './display'
 
-/** Raw path presentation; callers own any field-specific labels and value formatting. */
-export const fieldName = (path: string): string => path.split('.').at(-1) ?? path
-
-type ValueFormatter = (value: FieldValue, path: string) => string
+/** Raw field presentation; callers own any field-specific labels and units. */
+export const fieldName = (name: string): string => name.split('.').at(-1) ?? name
 
 export function fieldChange(
-  change: FieldChange,
+  change: AlertChange,
   {
-    label = fieldName(change.path),
-    prose = false,
-    formatValue = (value) => fieldValue(value),
+    label = fieldName(change.field),
+    suffix,
     annotation,
-  }: {
-    label?: string
-    prose?: boolean
-    formatValue?: ValueFormatter
-    annotation?: string
-  } = {},
+  }: { label?: string; suffix?: string; annotation?: string } = {},
 ): string {
-  const name = label
-
-  if (change.type === 'field_changed') {
-    return field(name, 'changed')
+  if (change.kind === 'opaque') {
+    return field(label, 'changed')
   }
 
-  if (change.type === 'set_updated') {
+  if (change.kind === 'list') {
     const lines = [
       ...change.added.map((item) => `+ ${code(item)}`),
       ...change.removed.map((item) => `− ~~${code(item)}~~`),
     ]
 
-    return field(name, lines.join('\n'), { layout: 'block' })
+    return field(label, lines.join('\n'), { layout: 'block' })
   }
 
-  const format = (input: FieldValue) => formatValue(input, change.path)
-
-  if (prose || hasLongText(change)) {
+  if (change.kind === 'prose') {
     const start =
-      change.type === 'field_updated' &&
-      typeof change.before === 'string' &&
-      typeof change.after === 'string'
+      change.before !== null && change.after !== null
         ? changedExcerptStart(change.before, change.after)
         : 0
 
-    const proseValue = (input: FieldValue) =>
-      typeof input === 'string' ? quote(input, start) : format(input)
+    const prose = (text: string | null) => (text === null ? code('null') : quote(text, start))
 
-    if (change.type === 'field_added') {
-      return field(name, proseValue(change.after), { change: 'added', layout: 'block' })
+    if (change.before === null) {
+      return field(label, prose(change.after), { change: 'added', layout: 'block' })
     }
 
-    if (change.type === 'field_removed') {
-      return field(name, proseValue(change.before), { change: 'removed', layout: 'block' })
+    if (change.after === null) {
+      return field(label, prose(change.before), { change: 'removed', layout: 'block' })
     }
 
-    return field(
-      name,
-      `Before\n${proseValue(change.before)}\n\nAfter\n${proseValue(change.after)}`,
-      {
-        layout: 'block',
-      },
-    )
+    return field(label, `Before\n${prose(change.before)}\n\nAfter\n${prose(change.after)}`, {
+      layout: 'block',
+    })
   }
 
-  if (change.type === 'field_added') {
-    return field(name, format(change.after), { change: 'added' })
+  const { before, after } = sides(change)
+
+  if (before.value === null) {
+    return field(label, fieldValue(after, { suffix }), { change: 'added' })
   }
 
-  if (change.type === 'field_removed') {
-    return field(name, format(change.before), { change: 'removed' })
+  if (after.value === null) {
+    return field(label, fieldValue(before, { suffix }), { change: 'removed' })
   }
+
+  const quantities = measured(change)
 
   return field(
-    name,
-    valueChange(format(change.before), format(change.after), {
+    label,
+    valueChange(fieldValue(before, { suffix }), fieldValue(after, { suffix }), {
       annotation:
-        annotation ??
-        (typeof change.before === 'number' && typeof change.after === 'number'
-          ? delta(change.before, change.after)
-          : ''),
+        annotation ?? (quantities === null ? '' : delta(quantities.before, quantities.after)),
     }),
-  )
-}
-
-function hasLongText(change: FieldChange): boolean {
-  return ['before' in change ? change.before : null, 'after' in change ? change.after : null].some(
-    (value) => typeof value === 'string' && value.length > 100,
   )
 }
 
@@ -108,63 +85,65 @@ function changedExcerptStart(before: string, after: string): number {
   return firstDifference < 800 ? 0 : firstDifference - 160
 }
 
+/** Facts in the caller's order; unknown and empty facts are omitted. */
 export function factsText(
-  facts: Record<string, FieldValue>,
-  paths: string[],
+  facts: readonly AlertFact[],
+  fields: string[],
   {
-    formatValue = (value) => fieldValue(value),
     label = fieldName,
-  }: { formatValue?: ValueFormatter; label?: (path: string) => string } = {},
+    suffix,
+  }: { label?: (field: string) => string; suffix?: (field: string) => string } = {},
 ): string {
-  return paths
-    .flatMap((path) => {
-      const input = fact(facts, path)
+  return fields
+    .flatMap((name) => {
+      const item = facts.find((candidate) => candidate.field === name)
 
-      return input === undefined || input === null || (Array.isArray(input) && input.length === 0)
+      return item === undefined ||
+        item.value === null ||
+        (item.kind === 'list' && item.value.length === 0)
         ? []
-        : [field(label(path), formatValue(input, path))]
+        : [field(label(name), fieldValue(item, { suffix: suffix?.(name) }))]
     })
     .join(dot)
 }
 
-export function fieldValue(value: FieldValue, { suffix = '' }: { suffix?: string } = {}): string {
-  const input = normalizeValue(value)
-
-  if (input === null || typeof input === 'boolean') {
-    return code(String(input))
+export function fieldValue(item: AlertFact, { suffix = '' }: { suffix?: string } = {}): string {
+  if (item.value === null) {
+    return code('null')
   }
 
-  if (typeof input === 'number') {
-    const formatted = formatNumber(input) ?? String(input)
-
-    return code(`${formatted}${suffix}`)
+  if (item.kind === 'flag') {
+    return code(String(item.value))
   }
 
-  if (Array.isArray(input)) {
-    return code(input.length === 0 ? '[]' : input.join(', '))
+  if (item.kind === 'count') {
+    return code(`${formatNumber(item.value) ?? String(item.value)}${suffix}`)
   }
 
-  if (typeof input === 'string') {
-    return code(excerpt(input))
+  if (item.kind === 'percent') {
+    return code(formatPercent(item.value) ?? String(item.value))
   }
 
-  return code(excerpt(JSON.stringify(input)))
+  if (item.kind === 'price') {
+    const meter = priceMeters[item.field]
+
+    return code(
+      (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? `$${item.value}`,
+    )
+  }
+
+  if (item.kind === 'list') {
+    return code(item.value.length === 0 ? '[]' : item.value.join(', '))
+  }
+
+  return code(excerpt(item.value))
 }
 
 /** Upstream Markdown uses OpenRouter-relative links; restore their origin for Discord. */
 export function quote(text: string, start = 0): string {
-  if (normalizeValue(text) === null) {
-    return fieldValue(null)
-  }
-
   const markdown = excerpt(text, start).replaceAll(/\]\(\/(?!\/)/gu, '](https://openrouter.ai/')
 
   return `> ${markdown.replaceAll('\n', '\n> ')}`
-}
-
-/** Empty upstream text is presented as null only in Discord; captured facts stay intact. */
-function normalizeValue(value: FieldValue): FieldValue {
-  return typeof value === 'string' && value.trim() === '' ? null : value
 }
 
 function excerpt(text: string, start = 0, limit = 800): string {
@@ -181,17 +160,10 @@ const deltaSymbols = {
 
 /** Numeric interpretation is shared; Discord owns symbols and favorable direction. */
 export function delta(
-  before: FieldValue,
-  after: FieldValue,
+  before: number | string,
+  after: number | string,
   { lowerIsBetter = false }: { lowerIsBetter?: boolean } = {},
 ): string {
-  if (
-    (typeof before !== 'number' && typeof before !== 'string') ||
-    (typeof after !== 'number' && typeof after !== 'string')
-  ) {
-    return ''
-  }
-
   // Round the original ratio once: 8.49% → 8%, 18.6% → 19%. Keep only the
   // pointer below 0.5%, rather than claiming a real change was 0%.
   const change = relativeChange(before, after, { fractionDigits: 0 })

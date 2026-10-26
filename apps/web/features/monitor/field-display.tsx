@@ -1,6 +1,7 @@
 'use client'
 
-import type { FieldChange } from '@orca/backend/alerts/curate'
+import type { AlertChange, AlertFact } from '@orca/backend/alerts/curate'
+import { sides } from '@orca/backend/alerts/facts'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { cn } from '@/lib/utils'
@@ -8,7 +9,6 @@ import { cn } from '@/lib/utils'
 import { fieldLabel, formatChangeValue, formatChangeUnit, formatChangeDelta } from './field-format'
 
 const TRUNCATE_LENGTH = 800
-const LONG_STRING_LENGTH = 30
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
@@ -83,48 +83,41 @@ function DiffSymbol({ children, className }: { children: React.ReactNode; classN
 
 function FieldUpdatedItem({
   fieldKey,
-  field,
+  change,
+  before,
+  after,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { type: 'field_updated' }>
+  change: AlertChange
+  before: AlertFact
+  after: AlertFact
 }) {
-  const isLong =
-    !field.path.startsWith('pricing.') &&
-    ((typeof field.before === 'string' && field.before.length > LONG_STRING_LENGTH) ||
-      (typeof field.after === 'string' && field.after.length > LONG_STRING_LENGTH))
-
-  if (isLong) {
-    const before = truncate(formatChangeValue(field.before, field.path), TRUNCATE_LENGTH)
-    const after = truncate(formatChangeValue(field.after, field.path), TRUNCATE_LENGTH)
-
+  if (change.kind === 'prose') {
     return (
-      <div data-field={field.path}>
+      <div data-field={change.field}>
         <FieldLabel>{fieldKey}</FieldLabel>
         <div className="mt-0.5 space-y-0.5 border-l-2 border-border-solid pl-2 font-sans">
           <p className="whitespace-pre-line text-muted-foreground line-through">
-            <InlineMarkdown text={before} />
+            <InlineMarkdown text={truncate(formatChangeValue(before), TRUNCATE_LENGTH)} />
           </p>
           <p className="whitespace-pre-line text-muted-foreground">
-            <InlineMarkdown text={after} />
+            <InlineMarkdown text={truncate(formatChangeValue(after), TRUNCATE_LENGTH)} />
           </p>
         </div>
       </div>
     )
   }
 
-  const before = formatChangeValue(field.before, field.path)
-  const after = formatChangeValue(field.after, field.path)
-  const delta = formatChangeDelta(field.before, field.after, field.path)
-  const unit = formatChangeUnit(field.path, field.before, field.after)
-  const hasUnit = unit !== ''
+  const delta = formatChangeDelta(change)
+  const unit = formatChangeUnit(before, after)
 
   return (
-    <div className="flex flex-wrap items-center gap-x-1.5" data-field={field.path}>
+    <div className="flex flex-wrap items-center gap-x-1.5" data-field={change.field}>
       <FieldLabel>{fieldKey}</FieldLabel>
-      <span className={cn(label, 'line-through')}>{before}</span>
+      <span className={cn(label, 'line-through')}>{formatChangeValue(before)}</span>
       <span className={labelDimmer}>→</span>
-      <span className="text-foreground">{after}</span>
-      {hasUnit && <FieldUnit>{unit}</FieldUnit>}
+      <span className="text-foreground">{formatChangeValue(after)}</span>
+      {unit !== '' && <FieldUnit>{unit}</FieldUnit>}
       {delta && <DeltaBadge delta={delta} />}
     </div>
   )
@@ -132,25 +125,22 @@ function FieldUpdatedItem({
 
 function FieldPresenceItem({
   fieldKey,
-  field,
+  item,
+  removed,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { type: 'field_added' | 'field_removed' }>
+  item: AlertFact
+  removed: boolean
 }) {
-  const removed = field.type === 'field_removed'
-  const input = removed ? field.before : field.after
-  const value = formatChangeValue(input, field.path)
-
-  const isLong =
-    !field.path.startsWith('pricing.') && typeof input === 'string' && input.length > 80
-
+  const value = formatChangeValue(item)
+  const isLong = item.kind === 'prose'
   const color = removed ? 'text-negative-soft-foreground' : 'text-positive-soft-foreground'
-  const unit = formatChangeUnit(field.path, input)
+  const unit = formatChangeUnit(item)
 
   return (
     <div
       className={cn(!isLong && 'flex flex-wrap items-baseline gap-x-1.5')}
-      data-field={field.path}
+      data-field={item.field}
     >
       <DiffSymbol className={color}>{removed ? '-' : '+'}</DiffSymbol>
       <FieldLabel>{fieldKey}</FieldLabel>
@@ -181,19 +171,19 @@ function FieldPresenceItem({
 
 function FieldSetUpdatedItem({
   fieldKey,
-  field,
+  change,
 }: {
   fieldKey: string
-  field: Extract<FieldChange, { type: 'set_updated' }>
+  change: Extract<AlertChange, { kind: 'list' }>
 }) {
-  const { added, removed } = field
+  const { added, removed } = change
 
   if (added.length === 0 && removed.length === 0) {
     return null
   }
 
   return (
-    <div data-field={field.path}>
+    <div data-field={change.field}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <div className="mt-0.5 space-y-px pl-2">
         {removed.map((item) => (
@@ -213,35 +203,41 @@ function FieldSetUpdatedItem({
 
 // -- Change item router
 
-function ChangeItem({ field }: { field: FieldChange }) {
-  const key = fieldLabel(field.path)
+function ChangeItem({ change }: { change: AlertChange }) {
+  const key = fieldLabel(change.field)
 
-  if (field.type === 'field_changed') {
-    return <div data-field={field.path}>{key} changed.</div>
+  if (change.kind === 'opaque') {
+    return <div data-field={change.field}>{key} changed.</div>
   }
 
-  if (field.type === 'set_updated') {
-    return <FieldSetUpdatedItem fieldKey={key} field={field} />
+  if (change.kind === 'list') {
+    return <FieldSetUpdatedItem fieldKey={key} change={change} />
   }
 
-  if (field.type === 'field_added' || field.type === 'field_removed') {
-    return <FieldPresenceItem fieldKey={key} field={field} />
+  const { before, after } = sides(change)
+
+  if (before.value === null) {
+    return <FieldPresenceItem fieldKey={key} item={after} removed={false} />
   }
 
-  return <FieldUpdatedItem fieldKey={key} field={field} />
+  if (after.value === null) {
+    return <FieldPresenceItem fieldKey={key} item={before} removed />
+  }
+
+  return <FieldUpdatedItem fieldKey={key} change={change} before={before} after={after} />
 }
 
 // -- Field change list
 
-export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
+export function FieldChangeList({ fields }: { fields: AlertChange[] }) {
   if (fields.length === 0) {
     return null
   }
 
-  const grouped = Map.groupBy(fields, ({ path }) => {
-    const dotIndex = path.indexOf('.')
+  const grouped = Map.groupBy(fields, ({ field }) => {
+    const dotIndex = field.indexOf('.')
 
-    return dotIndex === -1 ? null : path.slice(0, dotIndex)
+    return dotIndex === -1 ? null : field.slice(0, dotIndex)
   })
 
   const topLevel = grouped.get(null) ?? []
@@ -252,7 +248,7 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
       {topLevel.length > 0 && (
         <FieldCategory>
           {topLevel.map((f) => (
-            <ChangeItem key={f.path} field={f} />
+            <ChangeItem key={f.field} change={f} />
           ))}
         </FieldCategory>
       )}
@@ -260,7 +256,7 @@ export function FieldChangeList({ fields }: { fields: FieldChange[] }) {
       {categories.map(([category, items]) => (
         <FieldCategory key={category} name={category}>
           {items.map((f) => (
-            <ChangeItem key={f.path} field={f} />
+            <ChangeItem key={f.field} change={f} />
           ))}
         </FieldCategory>
       ))}

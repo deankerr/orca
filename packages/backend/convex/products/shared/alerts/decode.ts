@@ -1,25 +1,29 @@
-import { ConvexError } from 'convex/values'
 import { z } from 'zod'
 
 import { Endpoint, Model, Provider } from '../../../catalog/entities'
-import { decodePricing } from '../../../catalog/pricing'
-import type { Pricing } from '../../../catalog/pricing'
 import type { EventRow } from '../../../catalog/tables/events'
+import type { JsonValue } from '../../../json'
 
-export const CapturedChange = z.object({
-  get changes() {
-    return z.array(CapturedChange).optional()
-  },
-  embeddedKey: z.string().optional(),
-  key: z.string(),
-  oldValue: z.json().optional(),
-  type: z.enum(['ADD', 'REMOVE', 'UPDATE']),
-  value: z.json().optional(),
-})
+/** A stored json-diff-ts node: a container of child changes, or a leaf carrying its values. */
+export type CapturedChange =
+  | { key: string; type: 'UPDATE'; changes: CapturedChange[]; embeddedKey?: string }
+  | { key: string; type: 'UPDATE'; oldValue: JsonValue; value: JsonValue }
+  | { key: string; type: 'ADD'; value: JsonValue }
+  | { key: string; type: 'REMOVE'; value: JsonValue }
 
-export type CapturedChange = z.infer<typeof CapturedChange>
-
-const Update = z.object({ changes: z.array(CapturedChange) })
+export const CapturedChange: z.ZodType<CapturedChange> = z.union([
+  z.object({
+    get changes() {
+      return z.array(CapturedChange)
+    },
+    embeddedKey: z.string().optional(),
+    key: z.string(),
+    type: z.literal('UPDATE'),
+  }),
+  z.object({ key: z.string(), oldValue: z.json(), type: z.literal('UPDATE'), value: z.json() }),
+  z.object({ key: z.string(), type: z.literal('ADD'), value: z.json() }),
+  z.object({ key: z.string(), type: z.literal('REMOVE'), value: z.json() }),
+])
 
 const snapshots = {
   endpoint: z.object({ value: Endpoint }),
@@ -32,72 +36,15 @@ export type Snapshot =
   | { entity_kind: 'provider'; value: z.infer<typeof Provider> }
   | { entity_kind: 'endpoint'; value: z.infer<typeof Endpoint> }
 
-type Field = { path: string[]; change: CapturedChange }
+/** A lifecycle Event's complete entity; the row supplies the authoritative kind. */
+export function decodeSnapshot(row: EventRow): Snapshot {
+  const payload = row.change_json
 
-type DecodedEvent =
-  | { type: 'ADD'; after: Snapshot }
-  | { type: 'REMOVE'; before: Snapshot }
-  | {
-      type: 'UPDATE'
-      changes: Field[]
-      pricing?: { before: z.infer<typeof Pricing>; after: z.infer<typeof Pricing> }
-    }
-
-function decodeSnapshot(entity_kind: EventRow['entity_kind'], payload: unknown): Snapshot {
-  if (entity_kind === 'model') {
-    return { entity_kind, value: snapshots.model.parse(payload).value }
+  if (row.entity_kind === 'model') {
+    return { entity_kind: 'model', value: snapshots.model.parse(JSON.parse(payload)).value }
   }
 
-  return entity_kind === 'provider'
-    ? { entity_kind, value: snapshots.provider.parse(payload).value }
-    : { entity_kind, value: snapshots.endpoint.parse(payload).value }
-}
-
-/** Decode once; the row supplies the authoritative root operation and identity. */
-export function decode(row: EventRow): DecodedEvent {
-  const payload: unknown = JSON.parse(row.change_json)
-
-  if (row.type === 'UPDATE') {
-    const pricing = row.entity_kind === 'endpoint' ? row.context.pricing : undefined
-
-    return {
-      changes: fields(Update.parse(payload).changes),
-      type: 'UPDATE',
-      ...(pricing === undefined
-        ? {}
-        : {
-            pricing: {
-              after: decodePricing(pricing.after),
-              before: decodePricing(pricing.before),
-            },
-          }),
-    }
-  }
-
-  const snapshot = decodeSnapshot(row.entity_kind, payload)
-
-  return row.type === 'ADD'
-    ? { after: snapshot, type: 'ADD' }
-    : { before: snapshot, type: 'REMOVE' }
-}
-
-/** Consume structural wrappers here so curation never has to rediscover their shape. */
-function fields(changes: CapturedChange[], parent: string[] = []): Field[] {
-  return changes.flatMap((change) => {
-    const path = [...parent, change.key]
-
-    const wrapper =
-      (path.length === 1 && (change.key === 'metadata' || change.key === 'pricing')) ||
-      (path.length === 2 && parent[0] === 'pricing' && change.key === 'meters')
-
-    if (!wrapper) {
-      return [{ change, path }]
-    }
-
-    if (change.type !== 'UPDATE' || change.changes === undefined) {
-      throw new ConvexError({ message: 'Invalid event container', path: path.join('.') })
-    }
-
-    return fields(change.changes, path)
-  })
+  return row.entity_kind === 'provider'
+    ? { entity_kind: 'provider', value: snapshots.provider.parse(JSON.parse(payload)).value }
+    : { entity_kind: 'endpoint', value: snapshots.endpoint.parse(JSON.parse(payload)).value }
 }
