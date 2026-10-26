@@ -870,6 +870,20 @@ test('provider updates stay classic and include only legacy metadata and policy 
     `- **status_page_url**\n> ~~<https://old.example>~~\n> <https://example.com/${'a'.repeat(120)}>`,
   )
 
+  // A URL longer than an excerpt is clipped as text, so it cannot crowd out the rest of the card.
+  const longUrl = `https://example.com/${'a'.repeat(1000)}`
+
+  expect(
+    fieldChange({
+      after: longUrl,
+      before: 'https://example.com/',
+      field: 'status_page_url',
+      kind: 'text',
+    }),
+  ).toBe(
+    `- **status_page_url**\n> ~~<https://example.com/>~~\n> ${escape(`${longUrl.slice(0, 800)}… [excerpt]`)}`,
+  )
+
   expect(text).not.toContain('byok_enabled')
 
   for (const [before, after] of [

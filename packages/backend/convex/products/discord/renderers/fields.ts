@@ -84,7 +84,10 @@ function proseChange(label: string, before: string | null, after: string | null)
   })
 }
 
-/** Prefix excerpts are sufficient until the change falls beyond the visible 800 characters. */
+/** Each value shows at most this many characters, so one value cannot crowd out the rest of a card. */
+const excerptLength = 800
+
+/** Prefix excerpts are sufficient until the change falls beyond the visible excerpt. */
 function changedExcerptStart(before: string, after: string): number {
   let firstDifference = 0
 
@@ -96,7 +99,7 @@ function changedExcerptStart(before: string, after: string): number {
     firstDifference += 1
   }
 
-  return firstDifference < 800 ? 0 : firstDifference - 160
+  return firstDifference < excerptLength ? 0 : firstDifference - 160
 }
 
 /** Change values are plain text: escaped, with links left clickable. */
@@ -120,9 +123,12 @@ function changeValue(item: AlertFact, suffix = ''): string {
   return link(item.value) ?? escape(excerpt(item.value))
 }
 
-/** Angle brackets bound an http(s) URL so adjacent Markdown, such as `~~`, stays outside the link. */
+/**
+ * Angle brackets bound an http(s) URL so adjacent Markdown, such as `~~`, stays outside the link.
+ * URLs longer than an excerpt are excerpted as text instead, since a clipped link would be broken.
+ */
 function link(text: string): string | null {
-  return /^https?:\/\/[^\s<>]+$/iu.test(text) ? `<${text}>` : null
+  return text.length <= excerptLength && /^https?:\/\/[^\s<>]+$/iu.test(text) ? `<${text}>` : null
 }
 
 /** Upstream Markdown uses OpenRouter-relative links; restore their origin for Discord. */
@@ -132,7 +138,7 @@ export function quote(text: string, start = 0): string {
   return `> ${markdown.replaceAll('\n', '\n> ')}`
 }
 
-function excerpt(text: string, start = 0, limit = 800): string {
+function excerpt(text: string, start = 0, limit = excerptLength): string {
   const end = start + limit
   const clipped = start > 0 || text.length > end
 
