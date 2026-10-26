@@ -143,7 +143,8 @@ authenticated Convex CLI. WorkOS owns login policy and sign-out allowlists outsi
 
 `portless.json` owns the app name. Portless allocates ports and forwarding; `turbo.json` passes the port,
 host, CA certificate, and browser origin to dev tasks. `PORTLESS_TAILSCALE=1` enables tailnet sharing.
-Web startup runs `convex dev --once` before Next.js, pushing code and registering the callback.
+Backend pushes register the origin's callback and CORS origin in WorkOS; registration is additive and
+persists. Web-only startup pushes nothing, so a new origin needs one `dev` or `dev:backend` run before login.
 
 The maintained shared dev/preview WorkOS sign-out allowlist is:
 
