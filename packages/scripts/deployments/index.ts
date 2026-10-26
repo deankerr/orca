@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import {
   Deployments,
-  parseDotenv,
+  dotenvKeys,
   parseRemoteBranches,
   parseWorktreePaths,
   selectStale,
@@ -81,26 +81,57 @@ async function management() {
   }
 }
 
-async function isLinkedWorktree() {
-  const [gitDir, commonDir] = await Promise.all([
-    run(['git', 'rev-parse', '--git-dir']),
-    run(['git', 'rev-parse', '--git-common-dir']),
+const GitPaths = z.tuple([z.string(), z.string(), z.string()])
+
+/** This checkout's owner and absolute worktree path, comparable with `git worktree list`. */
+async function checkout() {
+  const output = await run([
+    'git',
+    'rev-parse',
+    '--path-format=absolute',
+    '--show-toplevel',
+    '--git-dir',
+    '--git-common-dir',
   ])
 
-  return gitDir.trim() !== commonDir.trim()
+  const [worktree, gitDir, clone] = GitPaths.parse(output.trim().split('\n'))
+
+  return { linked: gitDir !== clone, owner: { clone, host: hostname() }, worktree }
+}
+
+/** The reference of this linked worktree; the main checkout owns the personal dev deployment. */
+async function ownReference(command: string) {
+  const { linked, owner, worktree } = await checkout()
+
+  if (!linked) {
+    throw new Error(
+      `The main checkout owns the personal dev deployment; run ${command} in a worktree`,
+    )
+  }
+
+  return worktreeReference(owner, worktree)
+}
+
+/** Web app keys setup manages; an existing cookie secret is left untouched. */
+type WebEnv = {
+  NEXT_PUBLIC_CONVEX_URL: string
+  WORKOS_API_KEY: string
+  WORKOS_CLIENT_ID: string
+  WORKOS_COOKIE_PASSWORD?: string
 }
 
 type Management = Awaited<ReturnType<typeof management>>
 
 async function prune(api: Management, { dryRun }: { dryRun: boolean }) {
-  const [deployments, worktrees, heads] = await Promise.all([
+  const [{ owner }, deployments, worktrees, heads] = await Promise.all([
+    checkout(),
     api.list(),
     run(['git', 'worktree', 'list', '--porcelain']),
     run(['git', 'ls-remote', '--heads', 'origin']),
   ])
 
   const stale = selectStale(deployments, {
-    host: hostname(),
+    ...owner,
     remoteBranches: parseRemoteBranches(heads),
     worktreePaths: parseWorktreePaths(worktrees),
   })
@@ -118,10 +149,7 @@ async function prune(api: Management, { dryRun }: { dryRun: boolean }) {
 
 /** Create or reselect this worktree's deployment, push, initialize, and configure the web app. */
 async function setup({ prune: pruneFirst }: { prune: boolean }) {
-  if (!(await isLinkedWorktree())) {
-    throw new Error('The main checkout owns the personal dev deployment; run setup in a worktree')
-  }
-
+  const reference = await ownReference('setup')
   const api = await management()
 
   if (pruneFirst) {
@@ -132,7 +160,6 @@ async function setup({ prune: pruneFirst }: { prune: boolean }) {
     }
   }
 
-  const reference = worktreeReference(hostname(), ROOT_DIR)
   const qualified = `${TEAM}:${PROJECT}:${reference}`
 
   const find = async () => {
@@ -177,30 +204,26 @@ async function setup({ prune: pruneFirst }: { prune: boolean }) {
   const web = Bun.file(WEB_ENV)
   const webText = (await web.exists()) ? await web.text() : ''
 
-  await Bun.write(
-    WEB_ENV,
-    writeDotenv(webText, {
-      NEXT_PUBLIC_CONVEX_URL: deployment.deploymentUrl,
-      WORKOS_API_KEY: await deploymentEnv('WORKOS_API_KEY'),
-      WORKOS_CLIENT_ID: await deploymentEnv('WORKOS_CLIENT_ID'),
-      WORKOS_COOKIE_PASSWORD:
-        parseDotenv(webText).get('WORKOS_COOKIE_PASSWORD') ?? randomBytes(32).toString('hex'),
-    }),
-  )
+  const values: WebEnv = {
+    NEXT_PUBLIC_CONVEX_URL: deployment.deploymentUrl,
+    WORKOS_API_KEY: await deploymentEnv('WORKOS_API_KEY'),
+    WORKOS_CLIENT_ID: await deploymentEnv('WORKOS_CLIENT_ID'),
+  }
+
+  // An existing session secret is kept verbatim, whatever its quoting.
+  if (!dotenvKeys(webText).has('WORKOS_COOKIE_PASSWORD')) {
+    values.WORKOS_COOKIE_PASSWORD = randomBytes(32).toString('hex')
+  }
+
+  await Bun.write(WEB_ENV, writeDotenv(webText, values))
 
   console.log(`Ready: ${reference} (${deployment.deploymentUrl}), expires ${EXPIRATION}`)
 }
 
 /** Delete this worktree's deployment; a later setup creates a fresh one. */
 async function teardown() {
-  if (!(await isLinkedWorktree())) {
-    throw new Error(
-      'The main checkout owns the personal dev deployment; run teardown in a worktree',
-    )
-  }
-
+  const reference = await ownReference('teardown')
   const api = await management()
-  const reference = worktreeReference(hostname(), ROOT_DIR)
   const deployments = await api.list()
   const deployment = deployments.find((candidate) => candidate.reference === reference)
 

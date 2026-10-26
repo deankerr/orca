@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 
 import {
   Deployments,
-  parseDotenv,
+  dotenvKeys,
   parseRemoteBranches,
   parseWorktreePaths,
   selectStale,
@@ -20,23 +20,33 @@ const cloud = (overrides: Partial<Record<string, boolean | string>>) => ({
   ...overrides,
 })
 
+const owner = { clone: '/home/dean/code/orca/.git', host: 'fserv' }
+const otherClone = { clone: '/home/dean/code/orca-copy/.git', host: 'fserv' }
+const livePath = '/home/dean/.t3/worktrees/orca/t3-live'
+
 const live = {
-  host: 'fserv',
+  ...owner,
   remoteBranches: new Set(['main', 'feat/open']),
-  worktreePaths: ['/home/dean/code/orca', '/home/dean/.t3/worktrees/orca/t3-live'],
+  worktreePaths: ['/home/dean/code/orca', livePath],
 }
 
-test('worktree references are owned per host and directory', () => {
-  expect(worktreeReference('FServ.local', '/a/b/t3-3555E62C')).toBe(
-    'dev/wt/fserv-local/t3-3555e62c',
+test('worktree references are owned per host and clone, and unique per path', () => {
+  const reference = worktreeReference({ ...owner, host: 'FServ.local' }, '/a/b/T3_live')
+
+  expect(reference).toMatch(/^dev\/wt\/fserv-local\/[0-9a-f]{8}\/t3-live-[0-9a-f]{6}$/u)
+  expect(worktreeReference(owner, '/a/feature_one')).not.toBe(
+    worktreeReference(owner, '/a/feature-one'),
   )
+  expect(worktreeReference(owner, '/a/x')).not.toBe(worktreeReference(owner, '/b/x'))
+  expect(worktreeReference(owner, `/a/${'x'.repeat(200)}`).length).toBeLessThanOrEqual(100)
 })
 
 test('prunes only owned dev deployments without a worktree and previews without a branch', () => {
   const deployments = Deployments.parse([
-    cloud({ reference: 'dev/wt/fserv/t3-live' }),
-    cloud({ name: 'gone', reference: 'dev/wt/fserv/t3-gone' }),
-    cloud({ reference: 'dev/wt/fserv-2/t3-other-host' }),
+    cloud({ reference: worktreeReference(owner, livePath) }),
+    cloud({ name: 'gone', reference: worktreeReference(owner, '/gone') }),
+    cloud({ reference: worktreeReference(otherClone, '/other-clone-worktree') }),
+    cloud({ reference: worktreeReference({ ...owner, host: 'fserv-2' }, '/other-host') }),
     cloud({ reference: 'dev/api-v5' }),
     cloud({ isDefault: true, reference: 'dev/dean-kerr' }),
     cloud({ deploymentType: 'preview', previewIdentifier: 'feat/open', reference: 'preview/a' }),
@@ -48,7 +58,7 @@ test('prunes only owned dev deployments without a worktree and previews without 
   expect(
     selectStale(deployments, live).map(({ deployment, reason }) => [deployment.reference, reason]),
   ).toEqual([
-    ['dev/wt/fserv/t3-gone', 'worktree removed'],
+    [worktreeReference(owner, '/gone'), 'worktree removed'],
     ['preview/b', 'branch feat/merged deleted'],
   ])
 })
@@ -66,15 +76,12 @@ test('worktree paths come from porcelain output', () => {
   expect(parseWorktreePaths(output)).toEqual(['/repo', '/wt/a'])
 })
 
-test('dotenv writes replace managed keys and keep the rest', () => {
-  const text = '# comment\nA=1\nB="two"\n'
+test('dotenv writes replace managed keys, drop their repeats, and keep the rest', () => {
+  const text = '# comment\nA=1\nB=old\nSECRET="long#suffix"\nB=older\n'
 
-  expect(parseDotenv(text)).toEqual(
-    new Map([
-      ['A', '1'],
-      ['B', 'two'],
-    ]),
+  expect(dotenvKeys(text)).toEqual(new Set(['A', 'B', 'SECRET']))
+  expect(writeDotenv(text, { B: '2', C: '3' })).toBe(
+    '# comment\nA=1\nB=2\nSECRET="long#suffix"\nC=3\n',
   )
-  expect(writeDotenv(text, { B: '2', C: '3' })).toBe('# comment\nA=1\nB=2\nC=3\n')
   expect(writeDotenv('', { A: '1' })).toBe('A=1\n')
 })
