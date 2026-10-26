@@ -153,7 +153,10 @@ export function describe(event: EntityAlert): string[] {
     ...describedFields[event.entity_kind].flatMap((field) => {
       const item = facts.find((candidate) => candidate.field === field)
 
-      return item === undefined ? [] : [`${labels[field] ?? field}${observed}: ${value(item)}.`]
+      // Unknown facts have nothing to describe.
+      return item === undefined || item.value === null
+        ? []
+        : [`${labels[field] ?? field}${observed}: ${value(item)}.`]
     }),
     ...(event.pricing_is_scheduled === true ? ['Price schedule detected.'] : []),
   ]

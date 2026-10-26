@@ -513,6 +513,9 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
         }[type][kind],
       )
 
+      // Unknown facts, such as an absent knowledge cutoff, are not described in the feed.
+      expect(render(event)?.details.join('\n')).not.toContain('null')
+
       if (kind === 'model') {
         expect(content).toContain('excerpt')
       } else {

@@ -9,6 +9,13 @@ import { cn } from '@/lib/utils'
 import { fieldLabel, formatChangeValue, formatChangeUnit, formatChangeDelta } from './field-format'
 
 const TRUNCATE_LENGTH = 800
+const LONG_UPDATE_LENGTH = 30
+const LONG_PRESENCE_LENGTH = 80
+
+/** Prose, and text too long for one row, such as URLs, take the wrapped block layout. */
+function isLongText(item: AlertFact, length: number): boolean {
+  return item.kind === 'prose' || (item.kind === 'text' && (item.value?.length ?? 0) > length)
+}
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
@@ -92,7 +99,7 @@ function FieldUpdatedItem({
   before: AlertFact
   after: AlertFact
 }) {
-  if (change.kind === 'prose') {
+  if (isLongText(before, LONG_UPDATE_LENGTH) || isLongText(after, LONG_UPDATE_LENGTH)) {
     return (
       <div data-field={change.field}>
         <FieldLabel>{fieldKey}</FieldLabel>
@@ -133,7 +140,7 @@ function FieldPresenceItem({
   removed: boolean
 }) {
   const value = formatChangeValue(item)
-  const isLong = item.kind === 'prose'
+  const isLong = isLongText(item, LONG_PRESENCE_LENGTH)
   const color = removed ? 'text-negative-soft-foreground' : 'text-positive-soft-foreground'
   const unit = formatChangeUnit(item)
 
