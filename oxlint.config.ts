@@ -29,7 +29,6 @@ export default defineConfig({
         'packages/backend/convex/products/discord/renderers/{fields,modelCard,pricing}.ts',
         'packages/backend/convex/products/feed/text.ts',
         'packages/backend/convex/products/shared/alerts/{curate,decode,facts,filter}.ts',
-        'packages/backend/convex/products/v5/projection.ts',
       ],
       rules: {
         'anti-slop/no-runtime-typeof': 'off',

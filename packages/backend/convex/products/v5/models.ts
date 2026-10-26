@@ -5,22 +5,24 @@ import type { CurrentModelRow } from '../../catalog/tables/current'
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
+import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
 import type { Fields } from './projection'
 
 const text = z.string()
 const strings = z.array(z.string())
+const author = text.transform((id) => id.replace(/\/.*$/su, ''))
 
-const fact = (path: string[], schema: z.ZodType, options?: { set?: true }) =>
-  field(['metadata', ...path], schema, options)
+const fact = <Value extends JsonValue>(
+  path: string[],
+  schema: z.ZodType<Value>,
+  options?: { set?: true },
+) => field(['metadata', ...path], schema, options)
 
 /** Model Contract fields read from the catalog entity; listing fields are added by `toModel`. */
 export const modelFields = {
   // The author is the model ID prefix.
-  'author.id': {
-    read: (id) => text.parse(id).split('/')[0],
-    sources: [['model_id']],
-  },
+  'author.id': field(['model_id'], author),
   'author.name': fact(['author_display_name'], textOrNull),
   created_at: field(['or_created_at'], isoDate),
   // Upstream has always supplied a description; a missing one is a source failure, not unknown.

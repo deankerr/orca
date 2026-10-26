@@ -5,6 +5,7 @@ import type { CurrentProviderRow } from '../../catalog/tables/current'
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObjectFromString } from '../../json'
+import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
 import type { Fields } from './projection'
 
@@ -13,16 +14,21 @@ const url = z
   .nullable()
   .catch(null)
 
-const fact = (path: string[], schema: z.ZodType, options?: { set?: true }) =>
-  field(['metadata', ...path], schema, options)
+const fact = <Value extends JsonValue>(
+  path: string[],
+  schema: z.ZodType<Value>,
+  options?: { set?: true },
+) => field(['metadata', ...path], schema, options)
 
 /** Provider Contract fields read from the catalog entity; listing fields are added by `toProvider`. */
 export const providerFields = {
   byok_enabled: fact(['byokEnabled'], flagOrNull),
   datacenters: fact(['datacenters'], stringsOrNull, { set: true }),
+  display_name: field(['display_name'], z.string()),
   headquarters: fact(['headquarters'], textOrNull),
   id: field(['provider_id'], z.string()),
-  name: field(['display_name'], z.string()),
+  // Upstream has always supplied a name; a missing one is a source failure, not unknown.
+  name: fact(['name'], z.string().trim().min(1)),
   privacy_policy_url: fact(['dataPolicy', 'privacyPolicyURL'], url),
   status_page_url: fact(['statusPageUrl'], url),
   terms_of_service_url: fact(['dataPolicy', 'termsOfServiceURL'], url),

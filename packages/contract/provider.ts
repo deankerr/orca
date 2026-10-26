@@ -13,6 +13,10 @@ export const Provider = z
       .array(z.string())
       .nullable()
       .meta({ description: 'Upstream datacenter country codes.', example: ['US'] }),
+    display_name: z.string().meta({
+      description: 'Upstream display name, which can differ from `name`.',
+      example: 'Google Vertex',
+    }),
     headquarters: z
       .string()
       .nullable()
@@ -26,7 +30,7 @@ export const Provider = z
       .int()
       .nonnegative()
       .meta({ description: 'Models with a listed endpoint from this provider.' }),
-    name: z.string().meta({ description: 'Provider display name.', example: 'DeepInfra' }),
+    name: z.string().meta({ description: 'Upstream provider name.', example: 'Google' }),
     privacy_policy_url: url('Provider privacy policy.'),
     status_page_url: url('Provider status page.'),
     terms_of_service_url: url('Provider terms of service.'),

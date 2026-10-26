@@ -1,4 +1,5 @@
 import { Endpoint, MeterRate } from '@orca/contract/endpoint'
+import type { Provider } from '@orca/contract/provider'
 import { isPlainObject } from 'remeda'
 import { z } from 'zod'
 
@@ -7,6 +8,7 @@ import type { CurrentEndpointRow, CurrentStatsRow } from '../../catalog/tables/c
 import type { EventRow } from '../../catalog/tables/events'
 import { flagOrNull, isoDate, stringsOrNull, textOrNull } from '../../fields'
 import { JsonObject, JsonObjectFromString } from '../../json'
+import type { JsonValue } from '../../json'
 import { field, project, translateStored } from './projection'
 import type { Fields } from './projection'
 
@@ -21,10 +23,14 @@ const Overrides = z.array(JsonObject)
 // omitted because its rates have been misleading across many endpoints.
 const meter = (key: string) => field(['pricing', 'meters', key], MeterRate.nullable().catch(null))
 
-const fact = (key: string, schema: z.ZodType, options?: { set?: true }) =>
-  field(['metadata', key], schema, options)
+const fact = <Value extends JsonValue>(
+  key: string,
+  schema: z.ZodType<Value>,
+  options?: { set?: true },
+) => field(['metadata', key], schema, options)
 
-const policy = (key: string, schema: z.ZodType) => field(['metadata', 'data_policy', key], schema)
+const policy = <Value extends JsonValue>(key: string, schema: z.ZodType<Value>) =>
+  field(['metadata', 'data_policy', key], schema)
 
 type EndpointEventRow = Extract<EventRow, { entity_kind: 'endpoint' }>
 
@@ -95,17 +101,18 @@ function toEntity(row: CurrentEndpointRow) {
 export function toEndpoint(
   row: CurrentEndpointRow,
   stats: CurrentStatsRow | undefined,
-  providerName: string | undefined,
+  provider: Pick<Provider, 'display_name' | 'name'> | undefined,
 ): Endpoint {
   const fields = project(endpointFields, toEntity(row))
   const listedStats = row.unlisted_at === undefined ? stats : undefined
 
   return Endpoint.parse({
     ...fields,
-    // Endpoint labels vary within a provider; the provider entity holds its own name.
+    // Endpoint labels vary within a provider; the provider entity holds its own names.
     provider: {
       ...(isPlainObject(fields.provider) ? fields.provider : {}),
-      name: providerName ?? row.provider_display_name,
+      display_name: provider?.display_name ?? row.provider_display_name,
+      name: provider?.name ?? row.provider_display_name,
     },
     stats: {
       p50_latency_ms: listedStats?.p50_latency ?? null,

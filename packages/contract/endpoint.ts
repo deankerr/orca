@@ -27,8 +27,11 @@ export const EndpointModel = z
 
 export const EndpointProvider = z
   .object({
+    display_name: z.string().meta({
+      description: 'Provider display name, shared by all its endpoints.',
+    }),
     id: z.string().meta({ description: 'ORCA-normalized provider slug.', example: 'deepinfra' }),
-    name: z.string().meta({ description: 'Provider display name, shared by all its endpoints.' }),
+    name: z.string().meta({ description: 'Upstream provider name, shared by all its endpoints.' }),
     tag: z.string().meta({
       description: 'Upstream routing key for this endpoint; it can change or be shared.',
       example: 'deepinfra/fp4',

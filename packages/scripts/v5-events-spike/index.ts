@@ -50,11 +50,8 @@ const top = (counts: Map<string, number>) =>
 // Complete entities: the declared fields must reproduce the deployed V5 snapshot.
 const rows = new Map(load<EndpointRow[]>('endpoints.json').map((row) => [row.endpoint_id, row]))
 
-const providerNames = new Map(
-  load<{ provider_id: string; display_name: string }[]>('providers.json').map((row) => [
-    row.provider_id,
-    row.display_name,
-  ]),
+const providersById = new Map(
+  load<ProviderRow[]>('providers.json').map((row) => [row.provider_id, toProvider(row, undefined)]),
 )
 
 const [statsDocument] = load<{ rows: StatsRow[] }[]>('stats.json')
@@ -68,7 +65,7 @@ for (const expected of load<{ endpoints: { id: string }[] }>('snapshot.json').en
   const actual =
     row === undefined
       ? undefined
-      : toEndpoint(row, stats.get(expected.id), providerNames.get(row.provider_id))
+      : toEndpoint(row, stats.get(expected.id), providersById.get(row.provider_id))
 
   if (isDeepStrictEqual(actual, expected)) {
     matched += 1

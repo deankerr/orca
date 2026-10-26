@@ -1,15 +1,20 @@
-import { isDeepEqual, isPlainObject } from 'remeda'
+import { isJsonRecord } from '@orca/json-profile'
+import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
 
+import type { JsonValue } from '../../json'
 import { CapturedChange } from '../shared/alerts/decode'
 
 /** A path into a catalog entity, the shape shared by current rows, Event snapshots, and Event diffs. */
 export type Source = readonly string[]
 
+/** A catalog entity fact at a source path; `undefined` is absent. */
+type Fact = JsonValue | undefined
+
 /** One Contract field: the entity paths it reads and how their values become its value. */
-export type Field = {
+export type Field<Value extends JsonValue = JsonValue> = {
   sources: readonly Source[]
-  read: (...values: unknown[]) => unknown
+  read: (...values: Fact[]) => Value
   /** String-set fields can translate member changes without either complete side. */
   set?: true
 }
@@ -17,15 +22,19 @@ export type Field = {
 export type Fields = Record<string, Field>
 
 /** A field read from one entity path through its Contract interpretation. */
-export function field(source: Source, schema: z.ZodType, options: { set?: true } = {}): Field {
+export function field<Value extends JsonValue>(
+  source: Source,
+  schema: z.ZodType<Value>,
+  options: { set?: true } = {},
+): Field<Value> {
   return { read: (value) => schema.parse(value), sources: [source], ...options }
 }
 
-function get(value: unknown, path: Source): unknown {
+function get(value: Fact, path: Source): Fact {
   let current = value
 
   for (const key of path) {
-    if (!isPlainObject(current)) {
+    if (current === undefined || !isJsonRecord(current)) {
       return undefined
     }
 
@@ -35,13 +44,13 @@ function get(value: unknown, path: Source): unknown {
   return current
 }
 
-/** A Contract entity nested from dotted field paths. */
+/** A Contract entity nested from dotted field paths, before its Contract schema parses it. */
 export interface Projection {
-  [key: PropertyKey]: unknown
+  [key: string]: JsonValue
 }
 
 /** Translate a complete entity: every declared field, nested by its dotted Contract path. */
-export function project(fields: Fields, entity: unknown): Projection {
+export function project(fields: Fields, entity: JsonValue): Projection {
   const output: Projection = {}
 
   for (const [path, { read, sources }] of Object.entries(fields)) {
@@ -51,7 +60,7 @@ export function project(fields: Fields, entity: unknown): Projection {
   return output
 }
 
-function assign(target: Record<PropertyKey, unknown>, path: string[], value: unknown) {
+function assign(target: Projection, path: string[], value: JsonValue) {
   const [key, ...rest] = path
 
   if (key === undefined) {
@@ -65,28 +74,33 @@ function assign(target: Record<PropertyKey, unknown>, path: string[], value: unk
   }
 
   const child = target[key]
-  const next = isPlainObject(child) ? child : {}
+  const next = child !== undefined && isJsonRecord(child) ? child : {}
   target[key] = next
   assign(next, rest, value)
 }
 
 /** A changed entity path with complete values on each side; absent is `undefined`. */
-type Leaf = { kind: 'leaf'; path: string[]; before: unknown; after: unknown }
+type Leaf = { kind: 'leaf'; path: string[]; before: Fact; after: Fact }
 
 /** A string-set change: members only, neither complete side. */
 type Members = { kind: 'members'; path: string[]; added: string[]; removed: string[] }
 
 type Touch = Leaf | Members
 
+/** Stored diffs key string arrays by value, so their changes are member additions and removals. */
+const StringSetChange = z.object({
+  changes: z.array(z.object({ type: z.enum(['ADD', 'REMOVE']), value: z.string() })),
+  embeddedKey: z.literal('$value'),
+})
+
 function touches(changes: CapturedChange[], parent: string[] = []): Touch[] {
   return changes.flatMap((change): Touch[] => {
     const path = [...parent, change.key]
+    const set = StringSetChange.safeParse(change)
 
-    if (change.embeddedKey === '$value' && change.changes !== undefined) {
-      const members = (type: string) =>
-        change.changes?.flatMap((item) =>
-          item.type === type && typeof item.value === 'string' ? [item.value] : [],
-        ) ?? []
+    if (set.success) {
+      const members = (type: 'ADD' | 'REMOVE') =>
+        set.data.changes.flatMap((item) => (item.type === type ? [item.value] : []))
 
       return [{ added: members('ADD'), kind: 'members', path, removed: members('REMOVE') }]
     }
@@ -113,10 +127,10 @@ const startsWith = (path: readonly string[], prefix: readonly string[]) =>
 const related = (a: readonly string[], b: readonly string[]) => startsWith(a, b) || startsWith(b, a)
 
 /** Complete values for some entity paths, supplied alongside a change, such as an Event's pricing. */
-export type Known = { path: Source; before: unknown; after: unknown }[]
+export type Known = { path: Source; before: JsonValue; after: JsonValue }[]
 
 type FieldChange =
-  | { field: string; before: unknown; after: unknown }
+  | { field: string; before: JsonValue; after: JsonValue }
   | { field: string; added: string[]; removed: string[] }
 
 export type Translation = {
