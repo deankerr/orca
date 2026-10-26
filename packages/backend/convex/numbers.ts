@@ -3,6 +3,7 @@ type Numeric = number | string
 type Precision = {
   minimumFractionDigits?: number
   fractionDigits?: number
+  maximumFractionDigits?: number
   significantDigits?: number
 }
 
@@ -29,7 +30,8 @@ export function compareNumbers(left: Numeric, right: Numeric): -1 | 0 | 1 | null
 /**
  * Keep integer counts intact and give fractions three significant digits by default.
  * 0.000396 stays 0.000396; 0.016156 becomes 0.0162; 128001 stays 128,001.
- * Fraction digits are a baseline, not a cap that could erase a small nonzero value.
+ * Fraction digits are a baseline; a maximum trims significant digits but never erases
+ * a small nonzero value, which keeps its leading digit.
  * Decimal strings never pass through Number: 0.004455 must round to 0.00446,
  * and distinct prices can differ beyond the precision of a JavaScript number.
  */
@@ -42,9 +44,12 @@ export function formatNumber(
   return ratio === null ? null : formatRatio(ratio, precision)
 }
 
-/** Money keeps cents for familiar prices ($1.40), without turning $0.000198 into $0.00. */
+/**
+ * Money keeps cents for familiar prices ($1.40) and stops at $0.0001: $0.00235 becomes $0.0024.
+ * Smaller amounts keep one significant digit, so $0.000198 becomes $0.0002, never $0.00.
+ */
 export function formatPrice(value: Numeric, scale = 0): string | null {
-  const amount = formatNumber(value, { minimumFractionDigits: 2, scale })
+  const amount = formatNumber(value, { maximumFractionDigits: 4, minimumFractionDigits: 2, scale })
 
   return amount === null ? null : `$${amount}`
 }
@@ -80,6 +85,32 @@ export function relativeChange(
       : formatRatio(ratio, { fractionDigits, significantDigits: 0 })
 
   return { isUp: ratio.isUp, percent: amount === '0' ? '' : `${amount}%` }
+}
+
+/** Exact decimal product, for scaling by a factor such as a discount's complement. */
+export function multiplyNumbers(left: Numeric, right: Numeric): string | null {
+  const a = decimal(left)
+  const b = decimal(right)
+
+  return a === null || b === null
+    ? null
+    : decimalString({
+        denominator: a.denominator * b.denominator,
+        numerator: a.numerator * b.numerator,
+      })
+}
+
+/** Exact decimal difference; `1 - 0.51` is 0.49, not 0.49000000000000005. */
+export function subtractNumbers(left: Numeric, right: Numeric): string | null {
+  const a = decimal(left)
+  const b = decimal(right)
+
+  return a === null || b === null
+    ? null
+    : decimalString({
+        denominator: a.denominator * b.denominator,
+        numerator: a.numerator * b.denominator - b.numerator * a.denominator,
+      })
 }
 
 /** Threshold decisions use exact ratios, independently of any renderer's precision. */
@@ -157,6 +188,20 @@ function decimal(value: Numeric, scale = 0): Ratio | null {
   }
 }
 
+/** Write a ratio whose denominator is a power of ten without rounding or trailing zeros. */
+function decimalString({ numerator, denominator }: Ratio): string {
+  const places = denominator.toString().length - 1
+
+  const digits = abs(numerator)
+    .toString()
+    .padStart(places + 1, '0')
+
+  const whole = digits.slice(0, digits.length - places)
+  const fraction = digits.slice(digits.length - places).replace(/0+$/u, '')
+
+  return `${numerator < 0n ? '-' : ''}${whole}${fraction === '' ? '' : `.${fraction}`}`
+}
+
 /** Unpinned precision keeps changes below 0.001% visible as a bound rather than zero. */
 function formatSmallRatio(ratio: Ratio): string {
   return ratio.numerator * 1000n < ratio.denominator
@@ -169,6 +214,7 @@ function formatRatio(
   {
     minimumFractionDigits = 0,
     fractionDigits = minimumFractionDigits,
+    maximumFractionDigits = Number.POSITIVE_INFINITY,
     significantDigits = 3,
   }: Precision,
 ): string {
@@ -184,7 +230,9 @@ function formatRatio(
   const places = Math.max(
     minimumFractionDigits,
     fractionDigits,
-    magnitude === 0n || significantDigits === 0 ? 0 : significantDigits - 1 - order,
+    magnitude === 0n || significantDigits === 0
+      ? 0
+      : Math.min(significantDigits - 1 - order, Math.max(maximumFractionDigits, -order)),
   )
 
   // Round half away from zero once, using integer arithmetic even at decimal ties.

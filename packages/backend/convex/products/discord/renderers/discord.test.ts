@@ -143,8 +143,8 @@ test('prices and other numeric fields share precision and reveal changes hidden 
 
   // oxlint-disable sort-keys -- Fixture key order sets the order of the rendered and compared price changes.
   const event = row(
-    { pricing: { meters: { prompt: '0.000000141953', input_cache_read: '0.00000001708' } } },
-    { pricing: { meters: { prompt: '0.000000142', input_cache_read: '0.000000016156' } } },
+    { pricing: { meters: { prompt: '0.00000000011', input_cache_read: '0.00000001708' } } },
+    { pricing: { meters: { prompt: '0.00000000012', input_cache_read: '0.000000016156' } } },
   )
 
   // oxlint-enable sort-keys
@@ -152,15 +152,15 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   const card = await renderDiscord(event, urls)
   const description = card?.embeds?.[0]?.description ?? ''
 
-  expect(description).toContain('`input:     ` `≈ $0.142` 🔺')
-  expect(description).toContain('`cache_read:` ` $0.0171` → ` $0.0162` ▼ 5%')
+  expect(description).toContain('`input:     ` `≈ $0.0001` 🔺 9%')
+  expect(description).toContain('`cache_read:` `  $0.0171` → `  $0.0162` ▼ 5%')
   expect(description).not.toContain('~~')
   expect(description).not.toContain('◇')
   expect(description).not.toContain('0.016156')
   expect(event.change_json).toBe(captured)
   expect(render(event)).toMatchObject({
     changes: [
-      { after: '0.000000142', before: '0.000000141953' },
+      { after: '0.00000000012', before: '0.00000000011' },
       { after: '0.000000016156', before: '0.00000001708' },
     ],
   })

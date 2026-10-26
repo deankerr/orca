@@ -295,7 +295,7 @@ test('a remainder keeps its original event eligibility when its shared change is
     stored(
       i,
       { pricing: { meters: { completion: '1', prompt: '1' } } },
-      { pricing: { meters: { completion: i === 0 ? '1.001' : '1', prompt: '2' } } },
+      { pricing: { meters: { completion: i === 0 ? '1.5' : '1', prompt: '2' } } },
     ),
   )
 

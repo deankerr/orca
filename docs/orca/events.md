@@ -68,8 +68,10 @@ Models also announce `warning_message`, which the Contract does not yet publish.
 
 Thresholds live in `products/shared/alerts/pricing.ts` and are recorded in `config.md`.
 
-1. Suppress small numeric discount adjustments.
-2. Require a qualifying meter movement; discount alone is insufficient because presented rates already include it.
+1. Require a qualifying meter movement; discount alone is insufficient.
+2. Presented rates already include discount, so when discount also changes, the undiscounted rate must
+   move too. Discount jitter on heavily discounted endpoints otherwise moves presented rates.
+3. Announce only qualifying meters; smaller coincident movements are omitted.
 
 - A transition between a positive rate and zero or no quote qualifies.
 - A rate ORCA cannot read is unquoted: it may express an upstream intention ORCA does not yet understand.

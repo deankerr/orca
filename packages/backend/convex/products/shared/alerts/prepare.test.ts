@@ -229,19 +229,24 @@ test('pricing notifications require a qualifying meter; unreadable rates are unq
   expect(await renderDiscord(metadataOnly, urls)).not.toBeNull()
 })
 
-test('discount micro-adjustments suppress notifications before the relative price threshold', async () => {
+test('discount changes qualify presented meter movement only when the undiscounted rate moves too', async () => {
   const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
   for (const [before, after, priceBefore, priceAfter, visible] of [
+    // Discount jitter moves presented rates while the undiscounted rate holds.
     [0.82, 0.828, '0.238', '0.227', false],
     [0.883, 0.895, '0.198', '0.177', false],
-    [0.8, 0.82, '1', '0.5', false],
-    [0.82, 0.8, '0.5', '1', false],
-    [0, 0.02, '1', '0.5', false],
-    [0.02, 0, '0.5', '1', false],
-    [0.8, 0.820001, '1', '0.5', true],
-    [0.820001, 0.8, '0.5', '1', true],
+    [0.5, 0.6, '1', '0.8', false],
+    // Presented rates must still move.
     [0.8, 0.83, '1', '1.001', false],
+    [0.5, 0.6, '1', '1', false],
+    // Repricing announces alongside small and large discount changes.
+    [0.8, 0.82, '1', '0.5', true],
+    [0.82, 0.8, '0.5', '1', true],
+    [0, 0.02, '1', '0.5', true],
+    [0.02, 0, '0.5', '1', true],
+    [0.51, 0.5, '0.000000098', '0.0000001', false],
+    [0.51, 0.5, '0.000000098', '0.000000102', true],
     [0.8, 0.8, '1', '0.5', true],
   ] as const) {
     const row = update(
@@ -255,6 +260,19 @@ test('discount micro-adjustments suppress notifications before the relative pric
   }
 })
 
+test('a qualifying meter announces only the meters that qualify themselves', () => {
+  const event = render(
+    update(
+      { pricing: { discount: 0, meters: { completion: '0.000001', prompt: '0.0000001' } } },
+      { pricing: { discount: 0, meters: { completion: '0.000001004', prompt: '0.00000013' } } },
+    ),
+  )
+
+  expect(event).toMatchObject({
+    changes: [{ after: '0.00000013', before: '0.0000001', field: 'pricing.input', kind: 'price' }],
+  })
+})
+
 test('curated updates retain precise values, quoting, unknowns, and membership in Contract fields', () => {
   const row = update(
     {
@@ -265,7 +283,7 @@ test('curated updates retain precise values, quoting, unknowns, and membership i
         supported_parameters: ['tools', 'temperature'],
         supports_reasoning: true,
       },
-      pricing: { discount: 0, meters: { completion: '0.000002', prompt: '0.0000001' } },
+      pricing: { discount: 0, meters: { completion: '0.000002', prompt: '0.00000000011' } },
     },
     {
       metadata: {
@@ -277,7 +295,7 @@ test('curated updates retain precise values, quoting, unknowns, and membership i
         supported_parameters: ['tools', 'response_format'],
         supports_reasoning: false,
       },
-      pricing: { discount: 0, meters: { input_cache_read: '0', prompt: '0.0000001001' } },
+      pricing: { discount: 0, meters: { input_cache_read: '0', prompt: '0.00000000012' } },
     },
   )
 
@@ -296,12 +314,12 @@ test('curated updates retain precise values, quoting, unknowns, and membership i
   expect(event.observed_at).toBe(row.scan_at)
   expect(event).not.toHaveProperty('scan_at')
   // An absent and a null limit are both unknown, so `limit_rpm` has not changed.
-  expect(event.changes).toHaveLength(6)
+  // Unquoted to zero stays unmetered, so the cache-read change does not qualify for announcement.
+  expect(event.changes).toHaveLength(5)
 
   for (const expected of [
-    { after: '0.0000001001', before: '0.0000001', field: 'pricing.input', kind: 'price' },
+    { after: '0.00000000012', before: '0.00000000011', field: 'pricing.input', kind: 'price' },
     { after: null, before: '0.000002', field: 'pricing.output', kind: 'price' },
-    { after: '0', before: null, field: 'pricing.input_cache_read', kind: 'price' },
     { after: null, before: 'fp8', field: 'quantization', kind: 'text' },
     { after: 256_000, before: 128_000, field: 'context_length', kind: 'count' },
     {
@@ -314,12 +332,12 @@ test('curated updates retain precise values, quoting, unknowns, and membership i
     expect(event.changes).toContainEqual(expected)
   }
 
-  expect(event.details).toContain('Input price is approximately $0.10 (increased by 0.1%).')
+  expect(event.details).toContain('Input price is approximately $0.0001 (increased by 9.1%).')
   expect(event.details).not.toContain('Reasoning support changed from yes to no.')
   expect(event.details).toContain('Supported parameters added: "response_format".')
   expect(event.details).toContain('Supported parameters removed: "temperature".')
   expect(event.details).toContain('Output price was removed; previously $2.00.')
-  expect(event.details).toContain('Cache-read price was added: $0.00.')
+  expect(event.details).not.toContain('Cache-read price')
   expect(event.details).toContain('Quantization was removed; previously "fp8".')
 })
 

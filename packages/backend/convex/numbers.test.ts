@@ -1,16 +1,28 @@
 import { expect, test } from 'vitest'
 
-import { formatNumber, formatPercent, formatPrice, relativeChange } from './numbers'
+import {
+  formatNumber,
+  formatPercent,
+  formatPrice,
+  multiplyNumbers,
+  relativeChange,
+  subtractNumbers,
+} from './numbers'
 
-test('numeric precision keeps small values useful, familiar money tidy, and integer counts intact', () => {
+test('numeric precision keeps small values nonzero, money to at most four decimals, and integer counts intact', () => {
   for (const [source, expected] of [
     ['1.4', '$1.40'],
     ['0.2', '$0.20'],
     ['0.022', '$0.022'],
     ['0.016156', '$0.0162'],
-    ['0.000396', '$0.000396'],
-    ['0.000198', '$0.000198'],
-    ['0.004455', '$0.00446'],
+    ['0.000396', '$0.0004'],
+    ['0.000198', '$0.0002'],
+    ['0.00004', '$0.00004'],
+    ['0.004455', '$0.0045'],
+    ['0.00235', '$0.0024'],
+    ['0.0165', '$0.0165'],
+    ['0.0784', '$0.0784'],
+    ['0.147', '$0.147'],
     ['0.3317', '$0.332'],
     ['0.2888', '$0.289'],
     ['0.141953', '$0.142'],
@@ -29,6 +41,7 @@ test('numeric precision keeps small values useful, familiar money tidy, and inte
   expect(formatPrice('1.6156e-8', 6)).toBe('$0.0162')
   expect(formatNumber(128_001)).toBe('128,001')
   expect(formatNumber('9007199254740993')).toBe('9,007,199,254,740,993')
+  expect(formatNumber('0.004455')).toBe('0.00446')
   expect(formatNumber(0.141953)).toBe('0.142')
   expect(formatNumber(-0.000198)).toBe('-0.000198')
   expect(formatNumber(Number.MIN_VALUE)).not.toBe('0')
@@ -84,4 +97,13 @@ test('relative changes use original decimals and never round real movement to ze
   ] as const) {
     expect(relativeChange('100', after, { fractionDigits: 0 })).toEqual({ isUp: true, percent })
   }
+})
+
+test('decimal arithmetic is exact where binary floating point is not', () => {
+  expect(subtractNumbers(1, 0.51)).toBe('0.49')
+  expect(subtractNumbers('0.000000098', '0.0000001')).toBe('-0.000000002')
+  expect(subtractNumbers(1, 1)).toBe('0')
+  expect(multiplyNumbers('0.000000098', '0.5')).toBe('0.000000049')
+  expect(multiplyNumbers(-2, '1e-3')).toBe('-0.002')
+  expect(multiplyNumbers(1, 'not a number')).toBeNull()
 })
