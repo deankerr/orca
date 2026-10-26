@@ -1,132 +1,130 @@
 import { formatNumber, formatPercent, formatPrice, relativeChange } from '../../numbers'
-import type { EntityAlert, FieldChange, FieldValue } from '../shared/alerts/curate'
-import { fact } from '../shared/alerts/facts'
+import type { AlertChange, AlertFact, EntityAlert } from '../shared/alerts/curate'
+import { measured, sides } from '../shared/alerts/facts'
 import { priceMeters } from '../shared/alerts/pricing'
 
 interface Labels {
-  [path: string]: string
+  [field: string]: string
 }
 
 const labels: Labels = {
   context_length: 'Context length',
-  'data_policy.canPublish': 'May publish data',
-  'data_policy.requiresUserIDs': 'Shares user ID',
-  'data_policy.retainsPrompts': 'May retain data',
-  'data_policy.retentionDays': 'Data retention days',
+  'data_policy.can_publish': 'May publish data',
+  'data_policy.requires_user_ids': 'Shares user ID',
+  'data_policy.retains_prompts': 'May retain data',
+  'data_policy.retention_days': 'Data retention days',
   'data_policy.training': 'May train on data',
   datacenters: 'Datacenters',
   description: 'Description',
-  displayName: 'Name',
-  'features.supports_implicit_caching': 'Implicit caching support',
-  'features.supports_native_web_search': 'Native web search support',
+  display_name: 'Display name',
   has_chat_completions: 'Chat completions support',
   has_completions: 'Completions support',
   headquarters: 'Headquarters',
   input_modalities: 'Input modalities',
   is_disabled: 'Disabled',
   knowledge_cutoff: 'Knowledge cutoff',
+  label: 'Provider name',
   limit_rpd: 'Requests per day',
   limit_rpm: 'Requests per minute',
   max_completion_tokens: 'Maximum completion tokens',
-  max_prompt_images: 'Maximum images per prompt',
   max_prompt_tokens: 'Maximum prompt tokens',
   max_tokens_per_image: 'Maximum tokens per image',
   moderation_required: 'Moderation required',
+  name: 'Name',
   output_modalities: 'Output modalities',
-  'pricing.completion': 'Output price',
   'pricing.discount': 'Discount',
+  'pricing.input': 'Input price',
   'pricing.input_cache_read': 'Cache-read price',
   'pricing.input_cache_write': 'Cache-write price',
   'pricing.input_cache_write_1h': 'Cache-write 1h price',
+  'pricing.output': 'Output price',
   'pricing.overrides': 'Price schedule',
-  'pricing.prompt': 'Input price',
-  provider_display_name: 'Provider name',
   quantization: 'Quantization',
-  short_name: 'Name',
-  statusPageUrl: 'Status page',
+  status_page_url: 'Status page',
   supported_parameters: 'Supported parameters',
+  supports_native_web_search: 'Native web search support',
   supports_reasoning: 'Reasoning support',
 }
 
-function value(input: FieldValue, path: string): string {
-  if (input === null) {
+function value(item: AlertFact): string {
+  if (item.value === null) {
     return 'null'
   }
 
-  if (typeof input === 'boolean') {
-    return input ? 'yes' : 'no'
+  if (item.kind === 'flag') {
+    return item.value ? 'yes' : 'no'
   }
 
-  if (typeof input === 'number') {
-    return (
-      (path === 'pricing.discount' ? formatPercent(input) : formatNumber(input)) ?? String(input)
-    )
+  if (item.kind === 'count') {
+    return formatNumber(item.value) ?? String(item.value)
   }
 
-  const meter = priceMeters[path]
-
-  if (typeof input === 'string' && meter !== undefined) {
-    return formatPrice(input, meter.scale) ?? `$${input}`
+  if (item.kind === 'percent') {
+    return formatPercent(item.value) ?? String(item.value)
   }
 
-  if (Array.isArray(input)) {
-    return input.map((item) => JSON.stringify(item)).join(', ') || '[]'
+  if (item.kind === 'price') {
+    const meter = priceMeters[item.field]
+
+    return (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? `$${item.value}`
   }
 
-  return JSON.stringify(input)
+  if (item.kind === 'list') {
+    return item.value.map((member) => JSON.stringify(member)).join(', ') || '[]'
+  }
+
+  return JSON.stringify(item.value)
 }
 
-function describeChange(change: FieldChange): string[] {
-  const name = labels[change.path] ?? change.path
+const members = (field: string, items: string[]) => value({ field, kind: 'list', value: items })
 
-  if (change.type === 'field_changed') {
+function describeChange(change: AlertChange): string[] {
+  const name = labels[change.field] ?? change.field
+
+  if (change.kind === 'opaque') {
     return [`${name} changed.`]
   }
 
-  if (change.type === 'field_added') {
-    return [`${name} was added: ${value(change.after, change.path)}.`]
+  if (change.kind === 'list') {
+    return [
+      ...(change.added.length === 0
+        ? []
+        : [`${name} added: ${members(change.field, change.added)}.`]),
+      ...(change.removed.length === 0
+        ? []
+        : [`${name} removed: ${members(change.field, change.removed)}.`]),
+    ]
   }
 
-  if (change.type === 'field_removed') {
-    return [`${name} was removed; previously ${value(change.before, change.path)}.`]
+  const { before, after } = sides(change)
+
+  if (before.value === null) {
+    return [`${name} was added: ${value(after)}.`]
   }
 
-  if (change.type === 'field_updated') {
-    const before = value(change.before, change.path)
-    const after = value(change.after, change.path)
+  if (after.value === null) {
+    return [`${name} was removed; previously ${value(before)}.`]
+  }
 
-    if (
-      before === after &&
-      ((typeof change.before === 'number' && typeof change.after === 'number') ||
-        (priceMeters[change.path] !== undefined &&
-          typeof change.before === 'string' &&
-          typeof change.after === 'string'))
-    ) {
-      const delta = relativeChange(change.before, change.after)
+  const quantities = measured(change)
 
-      if (delta !== null) {
-        return [
-          `${name} is approximately ${after} (${delta.isUp ? 'increased' : 'decreased'} by ${delta.percent}).`,
-        ]
-      }
+  if (quantities !== null && value(before) === value(after)) {
+    const delta = relativeChange(quantities.before, quantities.after)
+
+    if (delta !== null) {
+      return [
+        `${name} is approximately ${value(after)} (${delta.isUp ? 'increased' : 'decreased'} by ${delta.percent}).`,
+      ]
     }
-
-    return [`${name} changed from ${before} to ${after}.`]
   }
 
-  return [
-    ...(change.added.length === 0 ? [] : [`${name} added: ${value(change.added, change.path)}.`]),
-    ...(change.removed.length === 0
-      ? []
-      : [`${name} removed: ${value(change.removed, change.path)}.`]),
-  ]
+  return [`${name} changed from ${value(before)} to ${value(after)}.`]
 }
 
-const describedPaths = {
+const describedFields = {
   endpoint: [
-    'pricing.prompt',
-    'pricing.completion',
-    'pricing.is_scheduled',
+    'pricing.input',
+    'pricing.output',
     'context_length',
     'max_completion_tokens',
     'quantization',
@@ -139,7 +137,7 @@ const describedPaths = {
     'knowledge_cutoff',
     'supports_reasoning',
   ],
-  provider: ['headquarters', 'datacenters', 'statusPageUrl'],
+  provider: ['headquarters', 'datacenters', 'status_page_url'],
 }
 
 /** Plain-text items remain independent of a product's markup, grouping, and navigation. */
@@ -149,20 +147,19 @@ export function describe(event: EntityAlert): string[] {
   }
 
   const facts = 'after' in event ? event.after : event.before
+  const observed = 'before' in event ? ' when last observed' : ''
 
-  return describedPaths[event.entity_kind].flatMap((path) => {
-    const field = fact(facts, path)
+  return [
+    ...describedFields[event.entity_kind].flatMap((field) => {
+      const item = facts.find((candidate) => candidate.field === field)
 
-    if (path === 'pricing.is_scheduled') {
-      return field === true ? ['Price schedule detected.'] : []
-    }
-
-    const name = labels[path] ?? path
-
-    return field === undefined
-      ? []
-      : [`${name}${'before' in event ? ' when last observed' : ''}: ${value(field, path)}.`]
-  })
+      // Unknown facts have nothing to describe.
+      return item === undefined || item.value === null
+        ? []
+        : [`${labels[field] ?? field}${observed}: ${value(item)}.`]
+    }),
+    ...(event.pricing_is_scheduled === true ? ['Price schedule detected.'] : []),
+  ]
 }
 
 function endpointListing(row: EntityAlert): string {

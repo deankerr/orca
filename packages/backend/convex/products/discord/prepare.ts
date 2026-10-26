@@ -28,8 +28,8 @@ export async function prepareBatch(
   const candidates = alerts.filter(
     ({ event }) =>
       event.type === 'endpoint_updated' &&
-      event.changes.some((change) => change.path.startsWith('pricing.')) &&
-      !event.changes.some((change) => change.path === 'pricing.overrides'),
+      event.changes.some((change) => change.field.startsWith('pricing.')) &&
+      !event.changes.some((change) => change.field === 'pricing.overrides'),
   )
 
   const frequent =
@@ -49,7 +49,7 @@ export async function prepareBatch(
       return [alert]
     }
 
-    const changes = alert.event.changes.filter((change) => !change.path.startsWith('pricing.'))
+    const changes = alert.event.changes.filter((change) => !change.field.startsWith('pricing.'))
 
     if (changes.length === 0) {
       skippedEvents.push({ reason: 'frequent_pricing', source_id: alert.source_id })

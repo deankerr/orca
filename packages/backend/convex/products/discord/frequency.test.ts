@@ -151,8 +151,8 @@ test('frequency removes pricing only, preserves quiet endpoints, and does not ch
   expect(result.skipped).toBe(1)
 
   expect(result.alerts).toMatchObject([
-    { event: { changes: [{ path: 'context_length' }] }, source_id: 'mixed' },
-    { event: { changes: [{ path: 'pricing.prompt' }] }, source_id: 'quiet' },
+    { event: { changes: [{ field: 'context_length' }] }, source_id: 'mixed' },
+    { event: { changes: [{ field: 'pricing.input' }] }, source_id: 'quiet' },
   ])
 
   expect(
@@ -223,7 +223,7 @@ test('cheap exclusions, lifecycle and schedule changes do not read history', asy
 
   expect(result.skipped).toBe(1)
   expect(result.alerts).toHaveLength(3)
-  expect(result.alerts[1]).toMatchObject({ event: { changes: [{ path: 'pricing.overrides' }] } })
+  expect(result.alerts[1]).toMatchObject({ event: { changes: [{ field: 'pricing.overrides' }] } })
 })
 
 test('filtering precedes batching and database failures propagate', async () => {

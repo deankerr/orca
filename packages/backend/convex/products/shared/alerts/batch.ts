@@ -1,11 +1,11 @@
 import { compare } from '../../../compare'
-import type { EntityAlert, FieldChange } from './curate'
+import type { AlertChange, EntityAlert } from './curate'
 
 export type IndividualAlert = { type: 'event'; source_id: string; event: EntityAlert }
 
 export type BatchAlert = {
   type: 'batch'
-  change: FieldChange | { type: 'endpoint_removed' }
+  change: AlertChange | { kind: 'endpoint_removed' }
   members: IndividualAlert[]
 }
 
@@ -15,7 +15,7 @@ const BATCH_THRESHOLD = 3
 
 function batchableChanges(event: EntityAlert): BatchAlert['change'][] {
   if (event.type === 'endpoint_removed') {
-    return [{ type: 'endpoint_removed' }]
+    return [{ kind: 'endpoint_removed' }]
   }
 
   return 'changes' in event ? event.changes : []
@@ -35,8 +35,8 @@ export function batchAlerts(events: IndividualAlert[]): Alert[] {
       const key = JSON.stringify([
         event.observed_at,
         event.entity_kind,
-        change.type,
-        'path' in change ? change.path : null,
+        change.kind,
+        'field' in change ? change.field : null,
       ])
 
       const candidates = groups.get(key) ?? []

@@ -152,14 +152,14 @@ function modelAlert(
   return added
     ? {
         ...fields,
-        after: snapshot !== null && 'after' in snapshot ? snapshot.after : {},
+        after: snapshot !== null && 'after' in snapshot ? snapshot.after : [],
         context,
         entity_kind: 'model',
         type: 'model_added',
       }
     : {
         ...fields,
-        before: snapshot !== null && 'before' in snapshot ? snapshot.before : {},
+        before: snapshot !== null && 'before' in snapshot ? snapshot.before : [],
         context,
         entity_kind: 'model',
         type: 'model_removed',
@@ -182,14 +182,14 @@ function providerAlert(
   return added
     ? {
         ...fields,
-        after: snapshot !== null && 'after' in snapshot ? snapshot.after : {},
+        after: snapshot !== null && 'after' in snapshot ? snapshot.after : [],
         context,
         entity_kind: 'provider',
         type: 'provider_added',
       }
     : {
         ...fields,
-        before: snapshot !== null && 'before' in snapshot ? snapshot.before : {},
+        before: snapshot !== null && 'before' in snapshot ? snapshot.before : [],
         context,
         entity_kind: 'provider',
         type: 'provider_removed',

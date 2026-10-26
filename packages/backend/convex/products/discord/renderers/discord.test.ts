@@ -48,7 +48,7 @@ const snapshots = {
   model: {
     display_name: 'Model',
     input_modalities: ['text'],
-    metadata: {},
+    metadata: { description: 'A model.' },
     model_id: 'abcdef-123',
     or_created_at: '2026-09-30T01:00:00Z',
     output_modalities: ['text'],
@@ -56,25 +56,29 @@ const snapshots = {
     slug: 'author/model',
     variant: 'standard',
   },
-  provider: { display_name: 'Provider', metadata: {}, provider_id: 'provider' },
+  provider: { display_name: 'Provider', metadata: { name: 'Provider' }, provider_id: 'provider' },
 }
 
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
   expect(delta(100, 150)).toBe('▲ 50%')
   expect(delta(100, 50)).toBe('🔻 50%')
 
-  for (const [path, before, after, symbol] of [
-    ['pricing.prompt', '0.000001', '0.000002', '🔺'],
-    ['pricing.prompt', '0.000002', '0.000001', '▼'],
+  for (const [before, after, symbol] of [
+    ['0.000001', '0.000002', '🔺'],
+    ['0.000002', '0.000001', '▼'],
   ] as const) {
-    expect(pricingChanges([{ after, before, path, type: 'field_updated' }]).join('\n')).toContain(
-      symbol,
-    )
+    expect(
+      pricingChanges([{ after, before, field: 'pricing.input', kind: 'price' }]).join('\n'),
+    ).toContain(symbol)
   }
 
   expect(delta(0, 10)).toBe('')
   expect(delta(10, 10)).toBe('')
-  expect(delta(null, 10)).toBe('')
+
+  // An unquoted price is not a zero-price quote, so it has no delta.
+  expect(
+    pricingChanges([{ after: '0.000001', before: null, field: 'pricing.input', kind: 'price' }]),
+  ).not.toContain('🔺')
 })
 
 test('update headings are sentences for every entity', async () => {
@@ -93,8 +97,8 @@ test('update headings are sentences for every entity', async () => {
     ],
     [
       'provider',
-      { displayName: 'Old' },
-      { displayName: 'New' },
+      { headquarters: 'US' },
+      { headquarters: 'GB' },
       'Δ Provider **Provider** updated.',
     ],
   ] as const) {
@@ -110,9 +114,9 @@ test('update headings are sentences for every entity', async () => {
 })
 
 test('prices and other numeric fields share precision and reveal changes hidden by rounding', async () => {
-  expect(
-    fieldChange({ after: 0.142, before: 0.141953, path: 'limit_rpm', type: 'field_updated' }),
-  ).toBe('`limit_rpm:` ≈`0.142` ▲')
+  expect(fieldChange({ after: 0.142, before: 0.141953, field: 'limit_rpm', kind: 'count' })).toBe(
+    '`limit_rpm:` ≈`0.142` ▲',
+  )
   expect(delta(1_000_000, 1_000_001)).toBe('▲')
   expect(delta(1_000_001, 1_000_000)).toBe('🔻')
   expect(delta('100', '100.0999')).toBe('▲')
@@ -153,15 +157,17 @@ test('display pieces compose consistently across facts, changes, pricing, and bl
 
   expect(field('quantization', change)).toBe('`quantization:` `fp8` → `fp16`')
 
-  expect(
-    fieldChange({ after: 'fp16', before: 'fp8', path: 'quantization', type: 'field_updated' }),
-  ).toBe(field('quantization', change))
+  expect(fieldChange({ after: 'fp16', before: 'fp8', field: 'quantization', kind: 'text' })).toBe(
+    field('quantization', change),
+  )
 
-  expect(factsText({ quantization: 'fp16' }, ['quantization'])).toBe('`quantization:` `fp16`')
+  expect(
+    factsText([{ field: 'quantization', kind: 'text', value: 'fp16' }], ['quantization']),
+  ).toBe('`quantization:` `fp16`')
 
   expect(
     pricingTable([
-      { after: '$0.5', annotation: '▼ 50%', before: '$1', path: 'pricing.prompt' },
+      { after: '$0.5', annotation: '▼ 50%', before: '$1', path: 'pricing.input' },
       { after: '$0.1', annotation: '', change: 'added', path: 'pricing.input_cache_read' },
     ]),
   ).toBe('`input:       ` `  $1` → `$0.5` ▼ 50%\n+ `cache_read:` `$0.1`')
@@ -185,15 +191,15 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
   for (const [path, label] of [
     ['reasoning_config.is_mandatory_reasoning', 'is_mandatory_reasoning'],
     ['reasoning_config.supported_reasoning_efforts', 'supported_reasoning_efforts'],
-    ['dataPolicy.retainsPrompts', 'retainsPrompts'],
+    ['data_policy.retains_prompts', 'retains_prompts'],
     ['quantization', 'quantization'],
     ['warning_message', 'warning_message'],
-    ['pricing.prompt', 'prompt'],
+    ['pricing.input', 'input'],
   ]) {
     expect(fieldName(path ?? '')).toBe(label)
   }
 
-  expect(priceLabel('pricing.prompt')).toBe('input')
+  expect(priceLabel('pricing.input')).toBe('input')
   expect(priceLabel('pricing.input_cache_read')).toBe('cache_read')
   expect(priceLabel('pricing.discount')).toBe('discount')
 
@@ -220,12 +226,12 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
   expect(card?.embeds?.[0]?.author?.name).toBe('qwen/qwen3.6-max-preview')
   expect(text).not.toContain('reasoning_config')
   expect(text).toContain('`is_mandatory_reasoning:`')
-  expect(text).toContain('⚠ `warning_message`')
+  expect(text).toContain('⚠ + `warning_message`\\n> Preview only.')
 })
 
 test('pricing uses separate value spans without reserving blank old-value columns', () => {
   const lines = pricingTable([
-    { after: '$0.452', annotation: '▼', before: '$0.453', path: 'pricing.prompt' },
+    { after: '$0.452', annotation: '▼', before: '$0.453', path: 'pricing.input' },
     { after: '$0.123', annotation: '▼', before: '$0.123', path: 'pricing.input_cache_read' },
     { after: '24%', annotation: '', change: 'added', path: 'pricing.discount' },
   ]).split('\n')
@@ -247,15 +253,12 @@ test('long prose excerpts include late replacements, additions, and removals', (
     ['', 'New constraint.'],
     ['Old constraint.', ''],
   ]) {
-    const text = fieldChange(
-      {
-        after: prefix + newEnding,
-        before: prefix + oldEnding,
-        path: 'description',
-        type: 'field_updated',
-      },
-      { prose: true },
-    )
+    const text = fieldChange({
+      after: prefix + newEnding,
+      before: prefix + oldEnding,
+      field: 'description',
+      kind: 'prose',
+    })
 
     const [before, after] = text.split('\nBefore\n')[1]?.split('\n\nAfter\n') ?? []
 
@@ -268,12 +271,9 @@ test('long prose excerpts include late replacements, additions, and removals', (
 
   expect(quote(`${prefix}Later facts.`)).not.toContain('Later facts.')
 
-  expect(
-    fieldChange(
-      { after: 'New.', before: 'Old.', path: 'description', type: 'field_updated' },
-      { prose: true },
-    ),
-  ).toBe('`description`\nBefore\n> Old.\n\nAfter\n> New.')
+  expect(fieldChange({ after: 'New.', before: 'Old.', field: 'description', kind: 'prose' })).toBe(
+    '`description`\nBefore\n> Old.\n\nAfter\n> New.',
+  )
 })
 
 test('quoted prose restores OpenRouter-relative links without changing absolute destinations', async () => {
@@ -379,7 +379,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     const captured = event.change_json
 
     const text = pricingChanges([
-      { after, before, path: 'pricing.discount', type: 'field_updated' },
+      { after, before, field: 'pricing.discount', kind: 'percent' },
     ]).join('\n')
 
     expect(text).toContain(expected)
@@ -393,7 +393,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     }
 
     expect(curate(event)).toMatchObject({
-      changes: [{ after, before, path: 'pricing.discount', type: 'field_updated' }],
+      changes: [{ after, before, field: 'pricing.discount', kind: 'percent' }],
     })
 
     expect(event.change_json).toBe(captured)
@@ -437,7 +437,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
   expect(table[2]).toBe('− ~~`discount:`~~ ~~`   8%`~~')
 })
 
-test('Discord preserves absence, nulls and set changes, escapes markup, and skips unselected fields', async () => {
+test('Discord presents unknown sides as additions and removals, escapes set members, and skips unpublished fields', async () => {
   const message = await renderDiscord(
     row(
       { metadata: { is_disabled: false, quantization: 'fp8', supported_parameters: ['seed'] } },
@@ -449,7 +449,7 @@ test('Discord preserves absence, nulls and set changes, escapes markup, and skip
   const text = message?.embeds?.[0]?.description
 
   expect(text).toContain('`supported_parameters`\n+ `**tools**`\n− ~~`seed`~~')
-  expect(text).toContain('`fp8` → `null`')
+  expect(text).toContain('− ~~`quantization:`~~ ~~`fp8`~~')
   expect(text).toContain('+ `limit_rpm:` `0`')
   expect(text).toContain('− ~~`is_disabled:`~~ ~~`false`~~')
 
@@ -512,6 +512,9 @@ test('Discord lifecycle embeds use captured facts and oversized updates truncate
           },
         }[type][kind],
       )
+
+      // Unknown facts, such as an absent knowledge cutoff, are not described in the feed.
+      expect(render(event)?.details.join('\n')).not.toContain('null')
 
       if (kind === 'model') {
         expect(content).toContain('excerpt')
@@ -660,8 +663,8 @@ test('prose updates use embeds, preserve warning facts, and truncate aggregate o
 
   expect(render(event)).toMatchObject({
     changes: [
-      { after: 'New.', before: 'Old.', path: 'description' },
-      { after: 'Preview only.', before: null, path: 'warning_message' },
+      { after: 'New.', before: 'Old.', field: 'description' },
+      { after: 'Preview only.', before: null, field: 'warning_message' },
     ],
   })
 
@@ -699,7 +702,7 @@ test('provider discoveries are announced and departures only announce endpoint a
         type,
         value: {
           ...snapshots.provider,
-          metadata: { dataPolicy: { training: true }, headquarters: 'Earth' },
+          metadata: { dataPolicy: { training: true }, headquarters: 'Earth', name: 'Provider' },
         },
       }),
       context: { provider: context.provider },
@@ -785,7 +788,7 @@ test('provider updates stay classic and include only legacy metadata and policy 
 
     expect(message?.components).toBeUndefined()
     expect(message?.embeds).toHaveLength(1)
-    expect(text).toContain('`privacyPolicyURL:`')
+    expect(text).toContain('`privacy_policy_url:`')
     expect(text).not.toContain('training')
     expect(text).not.toContain('retainsPrompts')
     expect(event.change_json).toBe(captured)
@@ -797,15 +800,15 @@ test('provider updates stay classic and include only legacy metadata and policy 
       {
         byokEnabled: false,
         datacenters: ['US'],
-        displayName: 'Old',
         headquarters: 'US',
+        name: 'Old',
         statusPageUrl: 'https://old.example',
       },
       {
         byokEnabled: true,
         datacenters: ['AU'],
-        displayName: 'New',
         headquarters: 'AU',
+        name: 'New',
         statusPageUrl: `https://example.com/${'a'.repeat(120)}`,
       },
     ),
@@ -816,11 +819,11 @@ test('provider updates stay classic and include only legacy metadata and policy 
 
   expect(message?.components).toBeUndefined()
 
-  for (const label of ['displayName:', 'headquarters:', 'datacenters', 'statusPageUrl']) {
+  for (const label of ['name:', 'headquarters:', 'datacenters', 'status_page_url:']) {
     expect(text).toContain(`\`${label}\``)
   }
 
-  expect(text).not.toContain('byokEnabled')
+  expect(text).not.toContain('byok_enabled')
 
   for (const [before, after] of [
     [
@@ -835,18 +838,18 @@ test('provider updates stay classic and include only legacy metadata and policy 
   }
 })
 
-test('endpoint prose remains an embed and inline code has no bold wrappers', async () => {
+test('endpoint updates remain embeds and inline code has no bold wrappers', async () => {
   const endpoint = await renderDiscord(
     row(
-      { metadata: { provider_tag: 'old', quantization: 'fp8' } },
-      { metadata: { provider_tag: 'tag'.repeat(50), quantization: 'fp16' } },
+      { metadata: { quantization: 'fp8' }, provider_tag: 'old' },
+      { metadata: { quantization: 'fp16' }, provider_tag: 'tag'.repeat(50) },
     ),
     urls,
   )
 
   expect(endpoint?.components).toBeUndefined()
   expect(endpoint?.embeds).toHaveLength(1)
-  expect(endpoint?.embeds?.[0]?.description).toContain('After\n> ')
+  expect(endpoint?.embeds?.[0]?.description).toContain(`\`tag:\` \`old\` → \`${'tag'.repeat(50)}\``)
   expect(endpoint?.embeds?.[0]?.description).not.toContain('**`')
   expect(endpoint?.embeds?.[0]?.footer?.text).toBe('provider/fp8')
 
@@ -865,7 +868,7 @@ test('endpoint prose remains an embed and inline code has no bold wrappers', asy
   expect(model?.embeds?.[0]?.timestamp).toBe('2026-09-30T01:00:00.000Z')
 })
 
-test('blank scalar and prose values render null without rewriting the captured event', async () => {
+test('blank text is unknown, so it renders as an addition or removal without rewriting the event', async () => {
   for (const blank of ['', '  \n\t']) {
     for (const [before, after] of [
       ['Warning.', blank],
@@ -880,26 +883,35 @@ test('blank scalar and prose values render null without rewriting the captured e
       const card = await renderDiscord(event, urls)
       const description = card?.embeds?.[0]?.description
 
-      expect(description).toContain(before === blank ? 'Before\n`null`' : 'After\n`null`')
+      expect(description).toContain(
+        before === blank
+          ? '⚠ + `warning_message`\n> Warning.'
+          : '⚠ − ~~`warning_message`~~\n> ~~Warning.~~',
+      )
       expect(event.change_json).toBe(captured)
-      expect(render(event)).toMatchObject({ changes: [{ after, before }] })
+      expect(render(event)).toMatchObject({
+        changes: [
+          { after: after === blank ? null : after, before: before === blank ? null : before },
+        ],
+      })
     }
-
-    expect(fieldValue(blank)).toBe('`null`')
   }
 
-  expect(fieldValue(['tools', 'temperature'])).toBe('`tools, temperature`')
-  expect(fieldValue([])).toBe('`[]`')
+  const list = (value: string[]) => ({
+    field: 'supported_parameters',
+    kind: 'list' as const,
+    value,
+  })
+
+  expect(fieldValue(list(['tools', 'temperature']))).toBe('`tools, temperature`')
+  expect(fieldValue(list([]))).toBe('`[]`')
 
   expect(
-    fieldChange(
-      { before: 'Old prose.', path: 'description', type: 'field_removed' },
-      { prose: true },
-    ),
+    fieldChange({ after: null, before: 'Old prose.', field: 'description', kind: 'prose' }),
   ).toBe('− ~~`description`~~\n> ~~Old prose.~~')
 
   expect(
-    fieldChange({ after: 'New prose.', path: 'description', type: 'field_added' }, { prose: true }),
+    fieldChange({ after: 'New prose.', before: null, field: 'description', kind: 'prose' }),
   ).toBe('+ `description`\n> New prose.')
 })
 
@@ -925,7 +937,7 @@ test('endpoint output limits use max_output without changing the captured field 
   const card = await renderDiscord(event, urls)
 
   expect(card?.embeds?.[0]?.description).toContain('`max_output:` `4,096` → `8,192` ▲ 100%')
-  expect(render(event)).toMatchObject({ changes: [{ path: 'max_completion_tokens' }] })
+  expect(render(event)).toMatchObject({ changes: [{ field: 'max_completion_tokens' }] })
 })
 
 test('one-hour cache writes survive curation and render without pricing units or branding', async () => {
@@ -937,7 +949,7 @@ test('one-hour cache writes survive curation and render without pricing units or
   const message = await renderDiscord(event, urls)
 
   expect(message?.embeds?.[0]?.description).toContain('`cache_write_1h:` `$2.00` → `$4.00` 🔺 100%')
-  expect(render(event)).toMatchObject({ changes: [{ path: 'pricing.input_cache_write_1h' }] })
+  expect(render(event)).toMatchObject({ changes: [{ field: 'pricing.input_cache_write_1h' }] })
 
   const lifecycle: EventRow = {
     ...event,
@@ -957,9 +969,9 @@ test('one-hour cache writes survive curation and render without pricing units or
   expect(added?.embeds?.[0]?.description).toContain('`web_search:    ` `$0.01`')
   expect(added?.embeds?.[0]?.description).not.toContain('per ')
 
-  expect(pricingChanges([{ after: '1e-6', path: 'pricing.prompt', type: 'field_added' }])).toEqual([
-    '+ `input:` `$1.00`',
-  ])
+  expect(
+    pricingChanges([{ after: '1e-6', before: null, field: 'pricing.input', kind: 'price' }]),
+  ).toEqual(['+ `input:` `$1.00`'])
 
   for (const payload of [message, added]) {
     expect(payload).not.toHaveProperty('username')
@@ -980,32 +992,18 @@ test('web search is a pricing row across updates, additions, and removals withou
 
     expect(text).toContain(expected)
     expect(text).not.toContain('per ')
-    expect(render(event)).toMatchObject({ changes: [{ path: 'pricing.web_search' }] })
+    expect(render(event)).toMatchObject({ changes: [{ field: 'pricing.web_search' }] })
   }
 })
 
-test('cards supply prose and duration rules while generic formatters only follow options', async () => {
-  const warning = {
-    after: 'New.',
-    before: 'Old.',
-    path: 'warning_message',
-    type: 'field_updated',
-  } as const
+test('field kinds decide prose layout; cards add units and price tables', async () => {
+  expect(
+    fieldChange({ after: 'New.', before: 'Old.', field: 'warning_message', kind: 'prose' }),
+  ).toBe('`warning_message`\nBefore\n> Old.\n\nAfter\n> New.')
 
-  expect(fieldChange(warning)).toBe('`warning_message:` `Old.` → `New.`')
-
-  expect(fieldChange(warning, { prose: true })).toBe(
-    '`warning_message`\nBefore\n> Old.\n\nAfter\n> New.',
-  )
-
-  const change = {
-    after: 2,
-    before: 1,
-    path: 'data_policy.retentionDays',
-    type: 'field_updated',
-  } as const
-
-  expect(fieldChange(change)).toBe('`retentionDays:` `1` → `2` ▲ 100%')
+  expect(
+    fieldChange({ after: 2, before: 1, field: 'data_policy.retention_days', kind: 'count' }),
+  ).toBe('`retention_days:` `1` → `2` ▲ 100%')
 
   const event = row(
     { metadata: { data_policy: { retentionDays: 1 } } },
@@ -1014,15 +1012,12 @@ test('cards supply prose and duration rules while generic formatters only follow
 
   const card = await renderDiscord(event, urls)
 
-  expect(card?.embeds?.[0]?.description).toContain('`retentionDays:` `1 days` → `2 days` ▲ 100%')
+  expect(card?.embeds?.[0]?.description).toContain('`retention_days:` `1 days` → `2 days` ▲ 100%')
 
-  for (const after of ['', '  ', null]) {
-    expect(
-      pricingChanges([
-        { after, before: '0.000001', path: 'pricing.prompt', type: 'field_updated' },
-      ]),
-    ).toEqual(['`input:` `$1.00` → `null`'])
-  }
+  // A price that becomes unquoted is removed from the table.
+  expect(
+    pricingChanges([{ after: null, before: '0.000001', field: 'pricing.input', kind: 'price' }]),
+  ).toEqual(['− ~~`input:`~~ ~~`$1.00`~~'])
 })
 
 test('lifecycle markers distinguish arrivals, returns, departures, and routine updates', () => {
@@ -1038,9 +1033,9 @@ test('lifecycle markers distinguish arrivals, returns, departures, and routine u
 test('array changes use compact rows and escape embedded Markdown instead of fenced blocks', () => {
   const text = fieldChange({
     added: ['tools', '`**literal**'],
-    path: 'supported_parameters',
+    field: 'supported_parameters',
+    kind: 'list',
     removed: ['seed'],
-    type: 'set_updated',
   })
 
   expect(text).toContain('+ `tools`')
@@ -1052,7 +1047,7 @@ test('array changes use compact rows and escape embedded Markdown instead of fen
 test('pricing label widths include external addition and removal markers', () => {
   for (const change of ['added', 'removed'] as const) {
     const lines = pricingTable([
-      { after: '$2', annotation: '', before: '$1', path: 'pricing.prompt' },
+      { after: '$2', annotation: '', before: '$1', path: 'pricing.input' },
       { after: '$1', annotation: '', change, path: 'pricing.input_cache_read' },
       { after: '10%', annotation: '', change, path: 'pricing.discount' },
     ]).split('\n')

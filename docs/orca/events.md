@@ -41,14 +41,18 @@ Retained lifecycle Events and presented lifecycle alerts have different meanings
 - Observation-only lifecycle alerts use historical Event identity, falling back to the ID.
 - Metadata details require a matching lifecycle Event snapshot.
 
-### Field selection and failures
+### Fields and failures
 
+Alerts read Events through the V5 Contract field declarations, so alert fields use Contract names and
+values. Each field's kind, such as price, count, flag, text, prose, or string set, decides its presentation.
+Models also announce `warning_message`, which the Contract does not yet publish.
+
+- Optional facts ORCA cannot read are unknown (null), like absent ones; absent and null are the same value.
 - Provider updates select identity, location, status-page, and terms/privacy URLs.
 - Reasoning belongs to model alerts; endpoint reasoning-only changes are omitted.
-- Malformed selected changes log the Event identity and error, then omit that Event while neighbors continue.
-
-⚠️ Indexed-array diffs in selected object groups can silently lose numeric children.
-No upstream occurrence is known. If encountered, reject that group shape to avoid incomplete changes.
+- Overrides are announced as changed, without values, only under a price schedule.
+- A required fact ORCA cannot read, or a changed field without both sides, fails its Event.
+- Failed Events log their identity and error and are omitted while neighbors continue.
 
 ## Pricing eligibility
 
@@ -67,8 +71,8 @@ Thresholds live in `products/shared/alerts/filter.ts` and are recorded in `confi
 1. Suppress small numeric discount adjustments.
 2. Require a qualifying meter movement; discount alone is insufficient because presented rates already include it.
 
-- A valid transition between zero/absence and a positive rate qualifies.
-- Negative, invalid, or non-string meter values do not qualify.
+- A transition between a positive rate and zero or no quote qualifies.
+- A rate ORCA cannot read is unquoted: it may express an upstream intention ORCA does not yet understand.
 - Opaque pricing, presentation-only, and revision-only changes do not independently qualify.
 - Lifecycle and updates without pricing changes bypass this rule.
 

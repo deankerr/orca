@@ -69,7 +69,7 @@ test('scheduled pricing suppresses unchanged overrides regardless of the price o
     { metadata: { context_length: 200 } },
   )
 
-  expect(prepareAlert(metadataOnly)).toMatchObject({ changes: [{ path: 'context_length' }] })
+  expect(prepareAlert(metadataOnly)).toMatchObject({ changes: [{ field: 'context_length' }] })
 })
 
 test('schedule changes announce an opaque change, including introduction and removal without meter movement', async () => {
@@ -100,15 +100,16 @@ test('schedule changes announce an opaque change, including introduction and rem
     row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
     const captured = row.change_json
 
+    // Changes follow Contract field order.
     expect(prepareAlert(row)).toMatchObject({
       changes: [
-        { path: 'pricing.overrides', type: 'field_changed' },
-        { after: 200, before: 100, path: 'context_length', type: 'field_updated' },
+        { after: 200, before: 100, field: 'context_length', kind: 'count' },
+        { field: 'pricing.overrides', kind: 'opaque' },
       ],
     })
     expect(render(row)?.details).toEqual([
-      'Price schedule changed.',
       'Context length changed from 100 to 200.',
+      'Price schedule changed.',
     ])
     expect(JSON.stringify(await renderDiscord(row, urls))).toContain('Price schedule changed.')
     expect(row.change_json).toBe(captured)
@@ -152,9 +153,11 @@ test('schedule detection accepts open UTC conditions and keeps unknown context d
   expect(prepareAlert(legacy)).not.toBeNull()
 })
 
-test('pricing notifications require a qualifying meter; invalid values cannot bypass the coarse rule', async () => {
+test('pricing notifications require a qualifying meter; unreadable rates are unquoted', async () => {
   const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
 
+  // A rate ORCA cannot read may be an upstream intention we do not yet understand, so it reads as
+  // unquoted, like an absent rate. Moving between quoted and unquoted is a metering change.
   for (const [before, after, visible] of [
     [{ prompt: '1' }, { prompt: '1.01999999999999999999' }, false],
     [{ prompt: '1' }, { prompt: '1.02' }, true],
@@ -162,15 +165,14 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
     [{ prompt: '1e-400' }, { prompt: '1.019e-400' }, false],
     [{ prompt: '1e-400' }, { prompt: '1.02e-400' }, true],
     [{ completion: '1', prompt: '1' }, { completion: '1.5', prompt: '1.001' }, true],
-    [{ completion: '1', prompt: '1' }, { completion: 'invalid', prompt: '1.001' }, false],
+    [{ completion: '1', prompt: '1' }, { completion: 'invalid', prompt: '1.001' }, true],
     [{ completion: '1', prompt: '1' }, { completion: 'invalid', prompt: '1.5' }, true],
-    [{ prompt: '1' }, { prompt: null }, false],
-    [{ prompt: 'invalid' }, { prompt: '1' }, false],
-    [{ prompt: '1' }, { prompt: '' }, false],
-    [{ prompt: '1' }, { prompt: 'Infinity' }, false],
-    [{ prompt: '1' }, { prompt: '-1' }, false],
-    [{}, { prompt: 'invalid' }, false],
-    [{ prompt: 'invalid' }, {}, false],
+    [{ prompt: '1' }, { prompt: null }, true],
+    [{ prompt: 'invalid' }, { prompt: '1' }, true],
+    [{ prompt: '1' }, { prompt: '' }, true],
+    [{ prompt: '1' }, { prompt: 'Infinity' }, true],
+    [{ prompt: '1' }, { prompt: '-1' }, true],
+    [{ prompt: 'invalid' }, { prompt: '-1' }, false],
     [{}, { prompt: '1' }, true],
     [{ prompt: '1' }, {}, true],
     [{ prompt: '0' }, { prompt: '1' }, true],
@@ -183,9 +185,13 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
 
     expect(render(row) !== null).toBe(visible)
     expect((await renderDiscord(row, urls)) !== null).toBe(visible)
-    expect(curate(row)).not.toBeNull()
     expect(row.change_json).toBe(captured)
   }
+
+  // Two unreadable rates are the same unquoted rate, so there is no Contract change.
+  expect(
+    curate(update({ pricing: { meters: {} } }, { pricing: { meters: { prompt: 'x' } } })),
+  ).toBeNull()
 
   const micro = update(
     { metadata: { context_length: 100 }, pricing: { discount: 0.1, meters: { prompt: '1' } } },
@@ -199,8 +205,8 @@ test('pricing notifications require a qualifying meter; invalid values cannot by
   expect(captured?.type === 'endpoint_updated' ? captured.changes : []).toContainEqual({
     after: 200,
     before: 100,
-    path: 'context_length',
-    type: 'field_updated',
+    field: 'context_length',
+    kind: 'count',
   })
   expect(renderPage({ continueCursor: 'next', isDone: false, page: [micro] })).toEqual({
     continueCursor: 'next',
@@ -247,7 +253,7 @@ test('discount micro-adjustments suppress notifications before the relative pric
   }
 })
 
-test('curated updates retain precise values, presence, nulls, and membership while selecting native fields', () => {
+test('curated updates retain precise values, quoting, unknowns, and membership in Contract fields', () => {
   const row = update(
     {
       metadata: {
@@ -287,20 +293,20 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   expect(event).not.toHaveProperty('change_json')
   expect(event.observed_at).toBe(row.scan_at)
   expect(event).not.toHaveProperty('scan_at')
-  expect(event.changes).toHaveLength(7)
+  // An absent and a null limit are both unknown, so `limit_rpm` has not changed.
+  expect(event.changes).toHaveLength(6)
 
   for (const expected of [
-    { after: '0.0000001001', before: '0.0000001', path: 'pricing.prompt', type: 'field_updated' },
-    { before: '0.000002', path: 'pricing.completion', type: 'field_removed' },
-    { after: '0', path: 'pricing.input_cache_read', type: 'field_added' },
-    { after: null, before: 'fp8', path: 'quantization', type: 'field_updated' },
-    { after: 256_000, before: 128_000, path: 'context_length', type: 'field_updated' },
-    { after: null, path: 'limit_rpm', type: 'field_added' },
+    { after: '0.0000001001', before: '0.0000001', field: 'pricing.input', kind: 'price' },
+    { after: null, before: '0.000002', field: 'pricing.output', kind: 'price' },
+    { after: '0', before: null, field: 'pricing.input_cache_read', kind: 'price' },
+    { after: null, before: 'fp8', field: 'quantization', kind: 'text' },
+    { after: 256_000, before: 128_000, field: 'context_length', kind: 'count' },
     {
       added: ['response_format'],
-      path: 'supported_parameters',
+      field: 'supported_parameters',
+      kind: 'list',
       removed: ['temperature'],
-      type: 'set_updated',
     },
   ] satisfies Extract<FeedEvent, { changes: unknown }>['changes']) {
     expect(event.changes).toContainEqual(expected)
@@ -312,21 +318,25 @@ test('curated updates retain precise values, presence, nulls, and membership whi
   expect(event.details).toContain('Supported parameters removed: "temperature".')
   expect(event.details).toContain('Output price was removed; previously $2.00.')
   expect(event.details).toContain('Cache-read price was added: $0.00.')
-  expect(event.details).toContain('Quantization changed from "fp8" to null.')
+  expect(event.details).toContain('Quantization was removed; previously "fp8".')
 })
 
-test('nested fields are curated on addition/removal and empty pages retain native pagination metadata', () => {
+test('nested fields are read through added and removed groups; empty pages retain pagination metadata', () => {
   const added = render(
     update({ metadata: {} }, { metadata: { data_policy: { hidden: true, training: false } } }),
   )
 
-  expect(added).toMatchObject({ changes: [{ after: { training: false }, path: 'data_policy' }] })
+  expect(added).toMatchObject({
+    changes: [{ after: false, before: null, field: 'data_policy.training', kind: 'flag' }],
+  })
 
   const removed = render(
     update({ metadata: { data_policy: { hidden: true, training: false } } }, { metadata: {} }),
   )
 
-  expect(removed).toMatchObject({ changes: [{ before: { training: false }, path: 'data_policy' }] })
+  expect(removed).toMatchObject({
+    changes: [{ after: null, before: false, field: 'data_policy.training', kind: 'flag' }],
+  })
 
   expect(
     render(
@@ -335,7 +345,7 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
         { metadata: { data_policy: { training: null } } },
       ),
     ),
-  ).toMatchObject({ changes: [{ after: null, before: false, path: 'data_policy.training' }] })
+  ).toMatchObject({ changes: [{ after: null, before: false, field: 'data_policy.training' }] })
 
   const ignored = update(
     { metadata: { capacity_tpm: 10, data_policy: { hidden: false } } },
@@ -360,22 +370,18 @@ test('nested fields are curated on addition/removal and empty pages retain nativ
 })
 
 test('text preserves tiny prices and literal upstream content; malformed events fail visibly', () => {
-  // oxlint-disable sort-keys -- Fixture key order sets the order of the detail lines asserted below.
+  // Details follow Contract field order, not fixture key order.
   const row = update(
-    {
-      pricing: { meters: { prompt: '0.00000001' } },
-      metadata: { provider_display_name: 'old_name' },
-    },
+    { pricing: { meters: { prompt: '0.00000001' } }, provider_display_name: 'old_name' },
     {
       pricing: { meters: { prompt: '0.000000000000000000001' } },
-      metadata: { provider_display_name: 'new_`name`' },
+      provider_display_name: 'new_`name`',
     },
   )
-  // oxlint-enable sort-keys
 
   expect(render(row)?.details).toEqual([
-    'Input price changed from $0.01 to $0.000000000000001.',
     'Provider name changed from "old_name" to "new_`name`".',
+    'Input price changed from $0.01 to $0.000000000000001.',
   ])
 
   expect(() => curate({ ...row, change_json: '{broken' })).toThrow()
@@ -443,10 +449,11 @@ test('failed events are logged and omitted before batching; healthy events keep 
     _id: `event-${index}`,
   }))
 
+  // Optional facts ORCA cannot read are unknown, but a required one fails its event.
   const unsupported = {
     ...update(
-      before,
-      { metadata: { context_length: 300, supported_parameters: [{ name: 'tools' }] } },
+      { ...before, model_or_created_at: '2026-09-30T01:00:00Z' },
+      { ...after, model_or_created_at: 'not a date' },
       'bad-endpoint',
     ),
     _id: 'unsupported-event',
@@ -479,7 +486,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
     expect(result.skipped).toBe(3)
     expect(result.alerts.map((alert) => alert.type)).toEqual(['batch', 'event'])
     expect(result.alerts[0]).toMatchObject({
-      change: { path: 'supported_parameters' },
+      change: { field: 'supported_parameters' },
       type: 'batch',
     })
     expect(
@@ -488,7 +495,7 @@ test('failed events are logged and omitted before batching; healthy events keep 
         : [],
     ).toEqual(good.map((row) => row._id))
     expect(result.alerts[1]).toMatchObject({
-      event: { changes: [{ after: 200, path: 'context_length' }] },
+      event: { changes: [{ after: 200, field: 'context_length' }] },
       source_id: 'event-0',
     })
     expect(JSON.stringify(input)).toBe(original)
@@ -506,8 +513,8 @@ test('failed events are logged and omitted before batching; healthy events keep 
       )
     }
 
-    expect(() => curate(unsupported)).toThrow('supported_parameters')
-    expect(() => curate(missingValue)).toThrow('context_length')
+    expect(() => curate(unsupported)).toThrow('Invalid input')
+    expect(() => curate(missingValue)).toThrow('Invalid input')
 
     // A failed third entity cannot make two healthy entities eligible for a batch.
     const two = await prepareBatch([...good.slice(0, 2), unsupported])
@@ -542,7 +549,7 @@ test('unselected external objects and indexed arrays remain valid captured data'
 
   const alert = curate(row)
 
-  expect(alert).toMatchObject({ changes: [{ after: 200, before: 100, path: 'context_length' }] })
+  expect(alert).toMatchObject({ changes: [{ after: 200, before: 100, field: 'context_length' }] })
   expect(alert?.type === 'endpoint_updated' ? alert.changes : []).toHaveLength(1)
 })
 

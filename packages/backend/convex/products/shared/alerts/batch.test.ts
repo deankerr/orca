@@ -12,24 +12,24 @@ import { renderDiscordBatch } from '../../discord/renderers/index'
 import { renderPage as renderAlertsPage } from '../../feed/render'
 import { batchAlerts } from './batch'
 import type { Alert, IndividualAlert } from './batch'
-import type { EntityAlert, FieldChange } from './curate'
+import type { AlertChange, EntityAlert } from './curate'
 import { prepare as prepareAlert } from './prepare'
 
-const shared: FieldChange = {
+const shared: AlertChange = {
   added: [],
-  path: 'supported_parameters',
+  field: 'supported_parameters',
+  kind: 'list',
   removed: ['audio', 'image'],
-  type: 'set_updated',
 }
 
-const unique: FieldChange = {
+const unique: AlertChange = {
   after: 131_072,
   before: 943_718,
-  path: 'max_completion_tokens',
-  type: 'field_updated',
+  field: 'max_completion_tokens',
+  kind: 'count',
 }
 
-function bucket(index: number, changes: FieldChange[] = [shared]): IndividualAlert {
+function bucket(index: number, changes: AlertChange[] = [shared]): IndividualAlert {
   const entity_id = `abcdef${index}-endpoint`
 
   return {
@@ -67,7 +67,7 @@ function occurrenceCount(item: Alert): number {
 }
 
 test('extracts each shared item independently, keeps unique fields, and drops only empty updates', () => {
-  const second: FieldChange = { after: false, path: 'is_disabled', type: 'field_added' }
+  const second: AlertChange = { after: false, before: null, field: 'is_disabled', kind: 'flag' }
 
   const input = Array.from({ length: 5 }, (_, i) =>
     bucket(i, [
@@ -112,7 +112,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
     return {
       ...member,
       event: {
-        before: {},
+        before: [],
         context: {
           endpoint: {
             ...event.context.endpoint,
@@ -134,7 +134,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
   const cards = renderDiscordBatch(result, urls)
   const embed = cards[0]?.message.embeds?.[0]
 
-  expect(result).toEqual([{ change: { type: 'endpoint_removed' }, members, type: 'batch' }])
+  expect(result).toEqual([{ change: { kind: 'endpoint_removed' }, members, type: 'batch' }])
   expect(cards).toHaveLength(1)
   expect(cards[0]?.source_ids.toSorted()).toEqual(
     members.map((member) => member.source_id).toSorted(),
@@ -156,7 +156,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
 
   const paged = batchCards(
     {
-      change: { type: 'endpoint_removed' },
+      change: { kind: 'endpoint_removed' },
       members: Array.from({ length: 45 }, (_, index) => ({
         ...members[index % 5],
         source_id: `page-${index}`,
@@ -187,7 +187,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
 
   expect(batchAlerts(members.slice(0, 2))).toEqual(members.slice(0, 2))
   expect(batchAlerts(members.slice(0, 3))).toEqual([
-    { change: { type: 'endpoint_removed' }, members: members.slice(0, 3), type: 'batch' },
+    { change: { kind: 'endpoint_removed' }, members: members.slice(0, 3), type: 'batch' },
   ])
   expect(batchAlerts(Array.from({ length: 5 }, () => members[0]))).toHaveLength(5)
 
@@ -205,7 +205,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
     const departures: IndividualAlert[] = members.map((member, index) => ({
       ...member,
       event: {
-        before: {},
+        before: [],
         entity_id: `${entity_kind}-${index}`,
         observed_at: member.event.observed_at,
         ...(entity_kind === 'model'
@@ -250,7 +250,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   const arrival: IndividualAlert = {
     ...provider,
     event: {
-      after: {},
+      after: [],
       context: { provider: { display_name: 'New', provider_id: 'new-provider' } },
       entity_id: 'new-provider',
       entity_kind: 'provider',
@@ -270,13 +270,13 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   expect(batchAlerts(all)).toEqual(all)
 
   const numeric = Array.from({ length: 2 }, (_, i) =>
-    bucket(i, [{ after: 2, before: 1, path: 'context_length', type: 'field_updated' }]),
+    bucket(i, [{ after: 2, before: 1, field: 'context_length', kind: 'count' }]),
   )
 
-  const distinct: FieldChange[] = [
-    { after: '2', before: '1', path: 'context_length', type: 'field_updated' },
-    { after: 2, path: 'context_length', type: 'field_added' },
-    { after: 2, before: null, path: 'context_length', type: 'field_updated' },
+  const distinct: AlertChange[] = [
+    { after: 3, before: 1, field: 'context_length', kind: 'count' },
+    { after: 2, before: null, field: 'context_length', kind: 'count' },
+    { after: 2, before: 1, field: 'limit_rpm', kind: 'count' },
   ]
 
   expect(
@@ -284,23 +284,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   ).toHaveLength(5)
 })
 
-test('normalizes record keys and preserves eligibility when rendering a remainder', async () => {
-  const records = Array.from({ length: 5 }, (_, i) =>
-    bucket(i, [
-      {
-        after:
-          i % 2 === 0
-            ? // oxlint-disable-next-line sort-keys -- Differently ordered records must still batch together.
-              { training: false, retentionDays: 0 }
-            : { retentionDays: 0, training: false },
-        path: 'data_policy',
-        type: 'field_added',
-      },
-    ]),
-  )
-
-  expect(batchAlerts(records)).toHaveLength(1)
-
+test('a remainder keeps its original event eligibility when its shared change is batched', async () => {
   const rows = Array.from({ length: 5 }, (_, i) =>
     stored(
       i,
@@ -338,17 +322,17 @@ test('batch cards identify all three entity types and page long lists without lo
     type: 'provider_updated',
   }
 
-  const cases: [EntityAlert, FieldChange, string[]][] = [
-    [model, { ...shared, path: 'input_modalities' }, ['author/model', 'image', 'audio']],
+  const cases: [EntityAlert, AlertChange, string[]][] = [
+    [model, { ...shared, field: 'input_modalities' }, ['author/model', 'image', 'audio']],
     [
       provider,
       {
         after: 'https://example.com/legal/privacy',
         before: 'https://example.com/privacy',
-        path: 'dataPolicy.privacyPolicyURL',
-        type: 'field_updated',
+        field: 'privacy_policy_url',
+        kind: 'text',
       },
-      ['Provider • `provider`', 'dataPolicy.privacyPolicyURL', 'https://example.com/legal/privacy'],
+      ['Provider • `provider`', 'privacy_policy_url', 'https://example.com/legal/privacy'],
     ],
     [
       bucket(0).event,
@@ -357,8 +341,8 @@ test('batch cards identify all three entity types and page long lists without lo
     ],
     [
       bucket(0).event,
-      { after: 7, before: 30, path: 'data_policy.retentionDays', type: 'field_updated' },
-      ['retentionDays', '30 days', '7 days'],
+      { after: 7, before: 30, field: 'data_policy.retention_days', kind: 'count' },
+      ['retention_days', '30 days', '7 days'],
     ],
   ]
 
@@ -512,11 +496,11 @@ test('provider URL batches pass shared selection and retain individual changes',
   expect(skipped).toBe(0)
   expect(notifications).toHaveLength(2)
   expect(batch?.source_ids).toEqual(rows.map((row) => row._id))
-  expect(JSON.stringify(batch?.message)).toContain('dataPolicy.privacyPolicyURL')
+  expect(JSON.stringify(batch?.message)).toContain('privacy_policy_url')
   expect(JSON.stringify(batch?.message)).toContain('https://example.com/legal/privacy')
   expect(remainder?.source_ids).toEqual(['event-0'])
   expect(JSON.stringify(remainder?.message)).toContain('headquarters')
-  expect(JSON.stringify(remainder?.message)).not.toContain('privacyPolicyURL')
+  expect(JSON.stringify(remainder?.message)).not.toContain('privacy_policy_url')
   expect(JSON.stringify(notifications)).not.toContain('training')
 
   // Monitor and Feed share selected content and retain individual events.
@@ -528,8 +512,8 @@ test('provider URL batches pass shared selection and retain individual changes',
   const [first] = monitor
 
   expect(
-    first?.type === 'provider_updated' ? first.changes.map((change) => change.path) : [],
-  ).toEqual(['headquarters', 'dataPolicy.privacyPolicyURL'])
+    first?.type === 'provider_updated' ? first.changes.map((change) => change.field) : [],
+  ).toEqual(['headquarters', 'privacy_policy_url'])
   expect(JSON.stringify(monitor)).not.toContain('training')
   expect(feed.every((alert) => alert?.type === 'provider_updated')).toBe(true)
   expect(JSON.stringify(feed)).not.toContain('training')

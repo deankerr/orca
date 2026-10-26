@@ -22,22 +22,6 @@ export default defineConfig({
   },
   overrides: [
     {
-      // TODO: alert changes carry untyped JSON values; remove once changes are decoded by field kind
-      files: [
-        'apps/web/features/monitor/{event-renderers,field-display}.tsx',
-        'apps/web/features/monitor/field-format.ts',
-        'packages/backend/convex/products/discord/renderers/{fields,modelCard,pricing}.ts',
-        'packages/backend/convex/products/feed/text.ts',
-        'packages/backend/convex/products/shared/alerts/{curate,decode,facts,filter}.ts',
-      ],
-      rules: {
-        'anti-slop/no-runtime-typeof': 'off',
-        'anti-slop/no-unknown-parameters': 'off',
-        'anti-slop/no-unknown-returns': 'off',
-        'anti-slop/no-unsafe-dictionary-type': 'off',
-      },
-    },
-    {
       files: ['packages/backend/**/*', 'packages/discord-sender/**/*'],
       rules: {
         'unicorn/filename-case': 'off',
