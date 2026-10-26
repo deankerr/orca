@@ -260,6 +260,22 @@ test('discount changes qualify presented meter movement only when the undiscount
   }
 })
 
+test('discount changes do not adjust the undiscounted search rate', () => {
+  const event = render(
+    update(
+      { pricing: { discount: 0.5, meters: { prompt: '0.000001', web_search: '0.01' } } },
+      { pricing: { discount: 0.6, meters: { prompt: '0.0000008', web_search: '0.008' } } },
+    ),
+  )
+
+  expect(event).toMatchObject({
+    changes: [
+      { after: 0.6, before: 0.5, field: 'pricing.discount', kind: 'percent' },
+      { after: '0.008', before: '0.01', field: 'pricing.web_search', kind: 'price' },
+    ],
+  })
+})
+
 test('a qualifying meter announces only the meters that qualify themselves', () => {
   const event = render(
     update(

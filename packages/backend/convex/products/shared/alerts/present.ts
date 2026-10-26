@@ -4,7 +4,7 @@ import type { KindValues, ValueChange, ValueKind } from '../../v5/projection'
 import type { AlertChange, AlertFact, AlertKind } from './curate'
 
 interface PriceFields {
-  [field: string]: { label: string; scale: number; unit: string }
+  [field: string]: { label: string; scale: number; unit: string; discounted: boolean }
 }
 
 /** Contract price fields and their alert labels use the shared meter units and decimal scaling. */

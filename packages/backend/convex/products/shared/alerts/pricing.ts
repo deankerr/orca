@@ -8,6 +8,7 @@ import {
   subtractNumbers,
 } from '../../../numbers'
 import type { AlertChange } from './curate'
+import { priceFields } from './present'
 
 /** Detect schedule evidence without interpreting or constraining upstream conditions. */
 export function isScheduledPricing(pricing: z.infer<typeof Pricing>): boolean {
@@ -64,8 +65,8 @@ export function announcedPricing(
 
 /**
  * Unquoted and zero both mean unmetered; a transition between metered and unmetered qualifies.
- * Presented rates already include discount, so when discount also moves, the undiscounted list
- * rate must move too: an 80% → 82% discount alone moves presented rates by 10%.
+ * Presented discounted rates already include discount, so when discount also moves, the
+ * undiscounted list rate must move too: an 80% → 82% discount alone moves presented rates by 10%.
  */
 function significantMeterChange(
   change: AlertChange,
@@ -85,7 +86,9 @@ function significantMeterChange(
 
   return (
     relativeChangeAtLeast(before, after, 2) &&
-    (discount === undefined || listRateChangeAtLeast(before, after, discount, 2))
+    (discount === undefined ||
+      priceFields[change.field]?.discounted === false ||
+      listRateChangeAtLeast(before, after, discount, 2))
   )
 }
 
