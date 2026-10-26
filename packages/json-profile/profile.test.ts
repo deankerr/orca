@@ -20,6 +20,7 @@ describe('profileJsonRecords', () => {
       { nested: {}, status: 'ready' },
       { nested: { enabled: false } },
     ])
+
     const root = findType(report.root, 'object')
     const status = findField(root, 'status')
     const nested = findType(findField(root, 'nested'), 'object')
@@ -72,6 +73,7 @@ describe('profileJsonRecords', () => {
       },
       { items: [{ kind: 'a' }], tags: [] },
     ]
+
     const report = profileJsonRecords(records)
     const root = findType(report.root, 'object')
     const items = findType(findField(root, 'items'), 'array')
@@ -124,6 +126,7 @@ describe('profileJsonRecords', () => {
       { id: 'one', values: [2, 1] },
       { id: 'two', values: [3] },
     ])
+
     const right = profileJsonRecords([
       { id: 'two', values: [3] },
       { id: 'one', values: [1, 2] },
@@ -138,6 +141,7 @@ describe('profileJsonRecords', () => {
       { payload: [{ item_value: true }], score: 0 },
       { payload: 'primitive' },
     ])
+
     const root = findType(report.root, 'object')
     const payload = findField(root, 'payload')
     const payloadObject = findType(payload, 'object')
@@ -174,6 +178,7 @@ describe('profileJsonRecords', () => {
         },
       },
     ]
+
     const report = profileJsonRecords(records)
 
     assertPathsSelectObservedValues(report.root, records, report.root.population)
@@ -218,9 +223,11 @@ function assertPathsSelectObservedValues(
 
 function findField(object: ObjectProfile, name: string): FieldProfile {
   const field = object.fields.find((candidate) => candidate.name === name)
+
   if (field === undefined) {
     throw new Error(`Missing field: ${name}`)
   }
+
   return field
 }
 
@@ -231,8 +238,10 @@ function findType<Type extends JsonType>(
   const found = profile.types.find(
     (candidate): candidate is Extract<JsonTypeProfile, { type: Type }> => candidate.type === type,
   )
+
   if (found === undefined) {
     throw new Error(`Missing type: ${type}`)
   }
+
   return found
 }

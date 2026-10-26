@@ -15,6 +15,7 @@ const START = Date.UTC(2026, 9, 9)
 function setup() {
   const t = convexTest({ modules: sender.modules, schema: sender.schema, transactionLimits: true })
   workpool.register(t)
+
   return t
 }
 
@@ -55,8 +56,10 @@ function requests(handler: (content: string) => Promise<Response>) {
     const request = new Request(input, init)
     const { content } = z.object({ content: z.string() }).parse(await request.json())
     sent.push(content)
+
     return await handler(content)
   })
+
   return sent
 }
 
@@ -66,6 +69,7 @@ async function results(t: Harness, jobId: Id<'jobs'>) {
 
 async function outcome(t: Harness, jobId: Id<'jobs'>) {
   const stored = await t.query(api.api.getJob, { jobId })
+
   return stored?.outcome
 }
 
@@ -89,19 +93,24 @@ test('jobs and messages stay ordered per webhook while another webhook progresse
   const other = await job(t, await webhook(t, 2), 'other')
   const otherSent = Promise.withResolvers<null>()
   const release = Promise.withResolvers<Response>()
+
   const sent = requests(async (content) => {
     if (content === 'first:0') {
       return await release.promise
     }
+
     if (content === 'first:1') {
       const committed = await results(t, first)
       expect(committed.map((result) => result.messageKey)).toEqual(['first:0'])
     }
+
     if (content === 'other:1') {
       otherSent.resolve(null)
     }
+
     return receipt()
   })
+
   const drain = t.action(internal.worker.drain, {})
 
   try {
@@ -119,6 +128,7 @@ test('jobs and messages stay ordered per webhook while another webhook progresse
     'next:1',
   ])
   expect(sent.filter((content) => content.startsWith('other'))).toEqual(['other:0', 'other:1'])
+
   for (const jobId of [first, next, other]) {
     expect(await outcome(t, jobId)).toBe('succeeded')
     expect(await results(t, jobId)).toHaveLength(2)
@@ -129,11 +139,14 @@ test('transient HTTP failure retries without recording duplicate terminal receip
   const t = setup()
   const jobId = await job(t, await webhook(t), 'retry')
   let unavailable = true
+
   const sent = requests(async () => {
     if (unavailable) {
       unavailable = false
+
       return new Response('Unavailable', { status: 503 })
     }
+
     return receipt()
   })
 
@@ -151,6 +164,7 @@ test('exhausted outage leaves a resumable prefix and public recovery runs throug
   const failed = await job(t, await webhook(t), 'outage')
   const independent = await job(t, await webhook(t, 2), 'independent')
   let unavailable = true
+
   const sent = requests(async (content) =>
     content === 'outage:1' && unavailable
       ? new Response('Unavailable', { status: 503 })
@@ -181,10 +195,13 @@ test('cancelling an in-flight send retains its receipt without reopening the job
   const jobId = await job(t, await webhook(t), 'cancel')
   const started = Promise.withResolvers<null>()
   const release = Promise.withResolvers<Response>()
+
   const sent = requests(async () => {
     started.resolve(null)
+
     return await release.promise
   })
+
   const drain = t.action(internal.worker.drain, {})
   await started.promise
   await t.mutation(api.api.cancelJob, { jobId })
@@ -208,8 +225,10 @@ test('expiry after a request begins retains its receipt but prevents further HTT
   const destination = await webhook(t)
   const active = await job(t, destination, 'active', START + 100)
   const expired = await job(t, destination, 'expired', START - 1)
+
   const sent = requests(async () => {
     vi.setSystemTime(START + 101)
+
     return receipt()
   })
 
@@ -225,8 +244,10 @@ test('expiry after a request begins retains its receipt but prevents further HTT
 test('expiry between SDK attempts prevents retrying HTTP and leaves no transient receipt', async () => {
   const t = setup()
   const jobId = await job(t, await webhook(t), 'retry-expiry', START + 100)
+
   const sent = requests(async () => {
     vi.setSystemTime(START + 101)
+
     return new Response('Unavailable', { status: 503 })
   })
 
@@ -248,6 +269,7 @@ for (const invalidCredentials of [false, true]) {
       const rejected = await job(t, destination, 'rejected')
       const next = await job(t, destination, 'next')
       const code = invalidCredentials ? 10_015 : 50_035
+
       const sent = requests(async (content) =>
         content === 'rejected:0'
           ? Response.json({ code, message: 'Rejected' }, { status: invalidCredentials ? 404 : 400 })

@@ -57,6 +57,7 @@ export function endpointRoutes(load: LoadCatalog) {
     const { limit, offset, ...selection } = c.req.valid('query')
     const catalog = await load()
     const selected = selectEndpoints(catalog.endpoints, selection)
+
     return c.json(paginate(c.req.url, catalog.as_at, selected, { limit, offset }), 200, cached)
   })
 
@@ -64,10 +65,13 @@ export function endpointRoutes(load: LoadCatalog) {
     const { id } = c.req.valid('param')
     const catalog = await load()
     const endpoint = catalog.endpoints.find((candidate) => candidate.id === id)
+
     if (endpoint === undefined) {
       const problemBody = notFound('Endpoint not found', `No current endpoint has ID ${id}.`)
+
       return c.json(problemBody, 404, problemHeaders)
     }
+
     return c.json({ as_at: catalog.as_at, data: endpoint }, 200, cached)
   })
 

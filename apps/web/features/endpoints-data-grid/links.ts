@@ -42,10 +42,12 @@ export function buildEndpointsHref({
     }
 
     next.set('q', slug)
+
     return href('/', next)
   }
 
   const next = new URLSearchParams()
   next.set('q', slug)
+
   return href('/', next)
 }

@@ -19,6 +19,7 @@ import { renderDiscordBatch } from './renderers/index'
 type Operation = Doc<typeof EVENTS_TABLE>['type']
 
 const operationOrder = { ADD: 0, REMOVE: 2, UPDATE: 1 } satisfies Record<Operation, number>
+
 const entityOrder = {
   ADD: { endpoint: 2, model: 1, provider: 0 },
   REMOVE: { endpoint: 0, model: 1, provider: 2 },
@@ -31,6 +32,7 @@ export function canonicalJson(value: unknown): string {
     if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
       return Object.fromEntries(Object.entries(item).toSorted(([a], [b]) => a.localeCompare(b)))
     }
+
     return item
   })
 }
@@ -66,6 +68,7 @@ export async function renderRecord(ctx: QueryCtx, recordId: Id<typeof INGESTION_
     .query(OBSERVATIONS_TABLE)
     .withIndex('by_scan_at', (q) => q.eq('scan_at', record.scan_at))
     .collect()
+
   return { scan_at: record.scan_at, ...(await renderRows(ctx, [...rows, ...observations])) }
 }
 
@@ -76,6 +79,7 @@ function operation(row: AlertSource): Operation {
   }
 
   const present = row.entity_kind === 'endpoint' ? row.detected : row.endpoint_count > 0
+
   return present ? 'ADD' : 'REMOVE'
 }
 
@@ -90,6 +94,7 @@ export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {
       a.entity_id.localeCompare(b.entity_id) ||
       a._id.localeCompare(b._id),
   )
+
   const { alerts, skippedEvents } = await prepareBatch(
     await Promise.all(
       ordered.map(async (row) => ({
@@ -99,20 +104,25 @@ export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {
     ),
     async (candidates) => await readFrequency(ctx, candidates),
   )
+
   const notifications = renderDiscordBatch(alerts, {
     logoOrigin: env.ORCA_LOGO_ORIGIN,
     publicUrl: env.ORCA_WEB_ORIGIN,
   })
+
   const occurrences = new Map<string, number>()
+
   const messages = notifications.map(({ message, source_ids }) => {
     const hash = contentKey(message)
     const occurrence = (occurrences.get(hash) ?? 0) + 1
     occurrences.set(hash, occurrence)
+
     return {
       key: occurrence === 1 ? hash : `${hash}:${occurrence}`,
       payload: canonicalJson(message),
       source_ids,
     }
   })
+
   return { messages, skippedEvents }
 }

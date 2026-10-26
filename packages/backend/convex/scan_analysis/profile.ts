@@ -7,10 +7,12 @@ import type { RawScan } from '#scans/collection'
 import { extractScan } from '#scans/extract'
 
 export type Selection = { scope: 'orca' | 'collected' }
+
 export type Population = {
   examples: Record<string, { id: string; value: JsonValue }[]>
   profile: JsonProfile
 }
+
 export type ScanReport = {
   endpoints: Population
   models: Population
@@ -86,6 +88,7 @@ export function profileScan(scan: RawScan, selection: Selection): ScanReport {
 }
 
 type PopulationName = 'models' | 'endpoints' | 'providers'
+
 export type ScanViewOptions = ViewOptions & { population?: PopulationName }
 
 /** Refine the same full report for agents; selection never changes how profiling is performed. */

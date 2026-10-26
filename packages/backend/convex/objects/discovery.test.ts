@@ -1,11 +1,11 @@
 import { rejects } from 'node:assert/strict'
 
 import { ConvexHttpClient } from 'convex/browser'
-/* oxlint-disable typescript/no-unsafe-type-assertion -- Minimal contexts exercise discovery without a deployment or stored blobs. */
 import { expect, vi, test } from 'vitest'
 
 import type { ActionCtx, QueryCtx } from '#generated/server'
 
+import { testDouble } from '../doubles.testing'
 import { findLocalNames } from './local'
 import { namesAtOrAfter } from './storage'
 
@@ -13,34 +13,42 @@ test('local discovery applies direction before limiting and preserves both bound
   let lowerBound = ''
   let upperBound: string | null = null
   let direction = 'asc'
+
   const range = {
     eq: (_field: string, value: string) => {
       expect(value).toBe('scans')
+
       return range
     },
     gte: (_field: string, value: string) => {
       lowerBound = value
       upperBound = null
+
       return range
     },
     lt: (_field: string, value: string) => {
       upperBound = value
+
       return range
     },
   }
-  const ctx = {
+
+  const ctx = testDouble<QueryCtx>({
     db: {
       query: () => ({
         withIndex: (_index: string, select: (range: unknown) => unknown) => {
           select(range)
+
           return {
             order: (order: string) => {
               direction = order
+
               return {
                 take: (limit: number) => {
                   const names = ['a', 'b', 'c'].filter(
                     (name) => name >= lowerBound && (upperBound === null || name < upperBound),
                   )
+
                   return (direction === 'desc' ? names.toReversed() : names)
                     .slice(0, limit)
                     .map((name) => ({ name }))
@@ -51,7 +59,8 @@ test('local discovery applies direction before limiting and preserves both bound
         },
       }),
     },
-  } as unknown as QueryCtx
+  })
+
   const selection = { atOrAfter: 'b', limit: 2, path: 'scans' }
 
   expect(await findLocalNames(ctx, selection)).toEqual(['b', 'c'])
@@ -81,9 +90,11 @@ test('remote discovery forwards direction and rejects unordered, duplicate and o
   process.env.ORCA_OBJECTS_API_KEY = 'test-key'
 
   const query = vi.spyOn(ConvexHttpClient.prototype, 'query').mockResolvedValue(['c', 'b'])
-  const ctx = {
+
+  const ctx = testDouble<ActionCtx>({
     meta: { getDeploymentMetadata: () => ({ name: 'consumer-deployment' }) },
-  } as unknown as ActionCtx
+  })
+
   const selection = { atOrAfter: 'b', limit: 2, order: 'desc' as const, path: 'scans' }
 
   try {

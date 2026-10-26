@@ -37,6 +37,7 @@ type SourceRange = { earliest: string | null; latest: string | null }
 function useSourceScans() {
   const fetchRange = useAction(api.ingestion.admin.sourceScans)
   const [range, setRange] = useState<SourceRange | undefined>(undefined)
+
   const refresh = () => {
     setRange(undefined)
     void fetchRange({}).then(setRange)
@@ -45,6 +46,7 @@ function useSourceScans() {
   useEffect(() => {
     void fetchRange({}).then(setRange)
   }, [fetchRange])
+
   return { range, refresh }
 }
 
@@ -64,16 +66,20 @@ function useCompletionRate(complete: number | undefined) {
   useEffect(() => {
     const sample = () => {
       const value = latest.current
+
       if (value === undefined) {
         return
       }
+
       const at = Date.now()
       setSamples((previous) => [
         ...previous.filter((item) => item.at >= at - RATE_WINDOW_MS),
         { at, complete: value },
       ])
     }
+
     const timer = setInterval(sample, SAMPLE_INTERVAL_MS)
+
     return () => {
       clearInterval(timer)
     }
@@ -85,6 +91,7 @@ function useCompletionRate(complete: number | undefined) {
   if (first === undefined || last === undefined || last.at - first.at < 30_000) {
     return null
   }
+
   return ((last.complete - first.complete) * 60_000) / (last.at - first.at)
 }
 
@@ -103,6 +110,7 @@ function registryNote(
   }
 
   const hours = (Date.parse(latest) - Date.parse(registered)) / 3_600_000
+
   return hours <= 0 ? 'Registry caught up' : `Registry ${hours.toFixed(1)} h behind`
 }
 
@@ -114,11 +122,13 @@ function histogramRange(
   pairs: { earliest: string | null; latest: string | null },
 ): Range | null {
   const start_at = target?.start_at ?? pairs.earliest
+
   if (start_at === null) {
     return null
   }
 
   const latest = pairs.latest !== null && pairs.latest > start_at ? pairs.latest : start_at
+
   return { end_at: target !== null && target.end_at < latest ? target.end_at : latest, start_at }
 }
 

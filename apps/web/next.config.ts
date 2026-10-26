@@ -10,6 +10,7 @@ function appOrigin() {
   if (process.env.NODE_ENV === 'development') {
     return process.env.ORCA_DEV_URL ?? ''
   }
+
   return process.env.VERCEL_ENV === 'preview'
     ? `https://${process.env.VERCEL_BRANCH_URL}`
     : 'https://orca.orb.town'

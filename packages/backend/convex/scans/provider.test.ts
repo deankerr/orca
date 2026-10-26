@@ -73,6 +73,7 @@ test('omits endpoint policy defaults while preserving other provider facts', () 
     slug: 'provider',
     statusPageUrl: null,
   }
+
   const before = structuredClone(input)
   const provider = assembleProviders([ProviderInput.parse(input)]).get('provider')
   ok(provider)
@@ -125,6 +126,7 @@ test('canonical observations outrank variants; name frequency and ties ignore in
     ProviderInput.parse({ displayName: 'Azure US', slug: 'azure/us' }),
     ProviderInput.parse({ displayName: 'Azure EU', slug: 'azure/eu' }),
   ]
+
   expect(assembleProviders(fallback).get('azure')).toEqual({
     displayName: 'Azure EU',
     provider_id: 'azure',
@@ -140,6 +142,7 @@ test('metadata cannot split name votes or select the representative; source chan
     endpoint('d', 'azure', { displayName: 'Azure (BYOK Only)' }),
     endpoint('e', 'azure', { displayName: 'Azure (BYOK Only)' }),
   ]
+
   const before = structuredClone(endpoints)
   const selected = fromCollected(captured(endpoints)).providers.get('azure')
 
@@ -160,6 +163,7 @@ test('metadata cannot split name votes or select the representative; source chan
         })
       : item,
   )
+
   expect(fromCollected(captured(unselectedChanged)).providers.get('azure')).toEqual(selected)
 
   const selectedChanged = endpoints.map((item) =>
@@ -171,6 +175,7 @@ test('metadata cannot split name votes or select the representative; source chan
         })
       : item,
   )
+
   expect(fromCollected(captured(selectedChanged)).providers.get('azure')).toEqual({
     displayName: 'Azure',
     futureFact: ['z', 'a'],
@@ -181,10 +186,12 @@ test('metadata cannot split name votes or select the representative; source chan
 
 test('extraction preserves endpoint facts and raw inputs while grouping providers', () => {
   const base = endpoint('base', 'azure', { name: 'Azure' })
+
   const regional = endpoint('regional', 'azure/eu', {
     displayName: 'Azure EU',
     name: 'An inconsistent upstream name',
   })
+
   regional.provider_slug = 'azure/swedencentral'
   regional.data_policy = { retainsPrompts: true, training: true }
   const raw = captured([base, regional])

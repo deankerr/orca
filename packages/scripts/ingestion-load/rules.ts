@@ -65,5 +65,6 @@ export function findProblems(outcome: RunOutcome): string[] {
       'log stream ended before the run finished, so contention is unverified',
     ],
   ]
+
   return problems.filter(([failed]) => failed).map(([, message]) => message)
 }

@@ -47,12 +47,14 @@ test('views retain exact populations, missing/null distinctions, and array occur
 
 test('bounded views account for omitted long strings and frequencies without changing full detail', () => {
   const long = 'a'.repeat(161)
+
   const profile = profileJsonRecords([
     { value: long },
     { value: long },
     { value: 'b' },
     { value: 'c' },
   ])
+
   const original = JSON.stringify(profile)
   const paths = ['$[*]["value"]']
   const compact = viewProfile(profile, { paths, valueLimit: 1 })

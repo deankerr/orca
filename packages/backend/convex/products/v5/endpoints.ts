@@ -23,6 +23,7 @@ const meter = (key: string) => field(['pricing', 'meters', key], MeterRate.nulla
 
 const fact = (key: string, schema: z.ZodType, options?: { set?: true }) =>
   field(['metadata', key], schema, options)
+
 const policy = (key: string, schema: z.ZodType) => field(['metadata', 'data_policy', key], schema)
 
 type EndpointEventRow = Extract<EventRow, { entity_kind: 'endpoint' }>
@@ -117,6 +118,7 @@ export function toEndpoint(
 /** Stored endpoint UPDATE to Contract field changes; its complete quotes resolve pricing. */
 export function translateEndpointUpdate(row: EndpointEventRow) {
   const { pricing } = row.context
+
   const known =
     pricing === undefined
       ? []

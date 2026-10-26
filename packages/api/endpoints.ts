@@ -60,6 +60,7 @@ function atMost(value: number | null, bound: number | undefined) {
 
 function matches(endpoint: Endpoint, selection: EndpointSelection, scope: EndpointScope) {
   const providerId = scope.providerId ?? selection.provider
+
   return (
     matchesStatus(endpoint.unlisted_at === null, selection.status) &&
     (scope.modelId === undefined || endpoint.model.id === scope.modelId) &&

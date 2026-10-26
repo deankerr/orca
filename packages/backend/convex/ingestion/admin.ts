@@ -44,19 +44,23 @@ export const overview = query({
   handler: async (ctx) => {
     await requireAdmin(ctx)
     const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
+
     const totals = await recordCounts.countBatch(
       ctx,
       namespaces.map((namespace) => ({ namespace })),
       { stale: true },
     )
+
     const pairs = () =>
       ctx.db
         .query(INGESTION_RECORDS_TABLE)
         .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair'))
+
     const earliest = await pairs().order('asc').first()
     const newest = await pairs().order('desc').first()
     // The queue accepts newest first, so the newest pending pair marks how far it has reached.
     const frontier = await latest(ctx, 'pending')
+
     const full = await ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .withIndex('by_current_scope_and_state_and_scan_at', (q) =>
@@ -64,6 +68,7 @@ export const overview = query({
       )
       .order('desc')
       .first()
+
     const baselines = await ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'baseline'))
@@ -132,7 +137,9 @@ export const histogram = query({
     const edges = Array.from({ length: buckets + 1 }, (_, index) =>
       new Date(start + ((end - start) * index) / buckets).toISOString(),
     )
+
     const states = recordState.members.map(({ value }) => value)
+
     const bounds = states.flatMap((state) =>
       edges.slice(0, -1).map((lower, index) => ({
         bounds: {
@@ -140,9 +147,10 @@ export const histogram = query({
           // The final bucket includes the range end.
           upper: { inclusive: index === buckets - 1, key: edges[index + 1] ?? lower },
         },
-        namespace: ['pair', state] as [RecordKind, RecordState],
+        namespace: ['pair', state] satisfies [RecordKind, RecordState],
       })),
     )
+
     const totals = await recordCounts.countBatch(ctx, bounds, { stale: true })
 
     return {
@@ -171,6 +179,7 @@ export const records = query({
   handler: async (ctx, { state, before, paginationOpts }) => {
     await requireAdmin(ctx)
     const recordStream = stream(ctx.db, schema).query(INGESTION_RECORDS_TABLE)
+
     // A state filter covers both kinds, so failed baselines stay visible and retryable.
     const page = await (
       state === undefined
@@ -182,6 +191,7 @@ export const records = query({
               recordStream
                 .withIndex('by_kind_and_state_and_scan_at', (q) => {
                   const range = q.eq('kind', kind).eq('state', state)
+
                   return before === undefined ? range : range.lt('scan_at', before)
                 })
                 .order('desc'),
@@ -221,6 +231,7 @@ export const records = query({
 
 async function sourceScanRange(ctx: ActionCtx) {
   const [earliest] = await scans.times(ctx, { limit: 1, order: 'asc' })
+
   return { earliest: earliest ?? null, latest: await scans.latest(ctx) }
 }
 
@@ -231,6 +242,7 @@ export const sourceScans = action({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx)
+
     return await sourceScanRange(ctx)
   },
   returns: sourceScanRangeReturns,
@@ -248,6 +260,7 @@ export const saveTarget = mutation({
   handler: async (ctx, range) => {
     await requireAdmin(ctx)
     await setTarget(ctx, range)
+
     return null
   },
   returns: v.null(),
@@ -259,6 +272,7 @@ export const runSync = mutation({
     await requireAdmin(ctx)
     await kickoff(ctx)
     await requestSweep(ctx)
+
     return null
   },
   returns: v.null(),
@@ -269,6 +283,7 @@ export const retry = mutation({
   args: { record_id: v.optional(v.id(INGESTION_RECORDS_TABLE)) },
   handler: async (ctx, { record_id }) => {
     await requireAdmin(ctx)
+
     return await retryFailed(ctx, record_id)
   },
   returns: v.number(),

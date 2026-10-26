@@ -5,26 +5,32 @@ import { expect, vi, test } from 'vitest'
 import type { ActionCtx, MutationCtx } from '#generated/server'
 import * as scans from '#scans'
 
+import { testDouble } from '../doubles.testing'
+
 test('scan flag gates cron admission while manual capture remains available', async () => {
   const previous = process.env.ORCA_SCAN_CRON_ENABLED
   const fetch = vi.fn(async () => Response.json({ data: [] }))
   vi.stubGlobal('fetch', fetch)
   const store = vi.spyOn(scans, 'store').mockResolvedValue(undefined)
   const { run, scheduled } = await import('./scan')
-  const scheduledHandler = (
-    scheduled as unknown as { _handler: (ctx: MutationCtx, args: object) => Promise<null> }
+
+  const scheduledHandler = testDouble<{
+    _handler: (ctx: MutationCtx, args: object) => Promise<null>
+  }>(scheduled)._handler
+
+  const runHandler = testDouble<{ _handler: (ctx: ActionCtx, args: object) => Promise<null> }>(
+    run,
   )._handler
-  const runHandler = (
-    run as unknown as { _handler: (ctx: ActionCtx, args: object) => Promise<null> }
-  )._handler
+
   const calls: string[] = []
-  const ctx = {
+
+  const ctx = testDouble<MutationCtx>({
     scheduler: {
       runAfter: async (_delay: number, ref: Parameters<typeof getFunctionName>[0]) => {
         calls.push(getFunctionName(ref))
       },
     },
-  } as unknown as MutationCtx
+  })
 
   try {
     delete process.env.ORCA_SCAN_CRON_ENABLED

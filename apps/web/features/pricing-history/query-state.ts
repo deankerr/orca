@@ -20,12 +20,15 @@ const STALE_QUERY_KEYS = ['overviewModel', 'overviewProvider', 'chart', 'history
 
 export function pricingHistoryModelIdFromParams(value: string | null): string | null {
   const trimmed = value?.trim() ?? ''
+
   return trimmed === '' ? null : trimmed
 }
 
-export function pricingHistoryQueryPatch(modelId: string | null): {
+interface PricingHistoryQueryPatch {
   pricingHistory: string | null
-} {
+}
+
+export function pricingHistoryQueryPatch(modelId: string | null): PricingHistoryQueryPatch {
   return { pricingHistory: modelId }
 }
 
@@ -39,10 +42,13 @@ export function buildPricingHistoryHref({
   modelId: string
 }): string {
   const next = toSearchParams(searchParams)
+
   for (const key of STALE_QUERY_KEYS) {
     next.delete(key)
   }
+
   next.set(PRICING_HISTORY_PARAM, modelId)
+
   return href(pathname, next)
 }
 

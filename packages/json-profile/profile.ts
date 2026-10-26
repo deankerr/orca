@@ -1,7 +1,9 @@
 // oxlint-disable sort-keys -- Property order is part of the serialized JSON profile format.
 
 type JsonPrimitive = boolean | null | number | string
+
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+
 export type JsonRecord = Record<string, JsonValue>
 
 export type JsonType = 'array' | 'boolean' | 'null' | 'number' | 'object' | 'string'
@@ -121,6 +123,7 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
 
   if (value === null) {
     getOrCreateNull(profile).count += 1
+
     return
   }
 
@@ -128,6 +131,7 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
     const typeProfile = getOrCreatePrimitive(profile, 'boolean')
     typeProfile.count += 1
     observePrimitive(typeProfile, value)
+
     return
   }
 
@@ -135,6 +139,7 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
     const typeProfile = getOrCreatePrimitive(profile, 'number')
     typeProfile.count += 1
     observePrimitive(typeProfile, value)
+
     return
   }
 
@@ -142,6 +147,7 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
     const typeProfile = getOrCreatePrimitive(profile, 'string')
     typeProfile.count += 1
     observePrimitive(typeProfile, value)
+
     return
   }
 
@@ -149,6 +155,7 @@ function observeValue(profile: MutableValueProfile, value: JsonValue): void {
     const typeProfile = getOrCreateArray(profile)
     typeProfile.count += 1
     observeArray(typeProfile, value)
+
     return
   }
 
@@ -166,6 +173,7 @@ function observePrimitive(
 
 function observeArray(profile: MutableArrayProfile, value: JsonValue[]): void {
   increment(profile.lengths, value.length)
+
   for (const item of value) {
     observeValue(profile.items, item)
   }
@@ -181,9 +189,11 @@ function observeObject(profile: MutableObjectProfile, value: JsonRecord): void {
   for (const key of keys) {
     const field = profile.fields.get(key) ?? createValueProfile(appendField(profile, key))
     const fieldValue = value[key]
+
     if (fieldValue === undefined) {
       throw new TypeError('JSON object properties cannot contain undefined')
     }
+
     observeValue(field, fieldValue)
     profile.fields.set(key, field)
   }
@@ -191,11 +201,14 @@ function observeObject(profile: MutableObjectProfile, value: JsonRecord): void {
 
 function getOrCreateNull(profile: MutableValueProfile): MutableNullProfile {
   const existing = profile.types.get('null')
+
   if (existing?.type === 'null') {
     return existing
   }
+
   const created: MutableNullProfile = { count: 0, type: 'null' }
   profile.types.set('null', created)
+
   return created
 }
 
@@ -204,19 +217,24 @@ function getOrCreatePrimitive(
   type: MutablePrimitiveProfile['type'],
 ): MutablePrimitiveProfile {
   const existing = profile.types.get(type)
+
   if (existing?.type === 'boolean' || existing?.type === 'number' || existing?.type === 'string') {
     return existing
   }
+
   const created: MutablePrimitiveProfile = { count: 0, type, values: new Map() }
   profile.types.set(type, created)
+
   return created
 }
 
 function getOrCreateObject(profile: MutableValueProfile): MutableObjectProfile {
   const existing = profile.types.get('object')
+
   if (existing?.type === 'object') {
     return existing
   }
+
   const created: MutableObjectProfile = {
     count: 0,
     fields: new Map(),
@@ -224,22 +242,28 @@ function getOrCreateObject(profile: MutableValueProfile): MutableObjectProfile {
     path: profile.path,
     type: 'object',
   }
+
   profile.types.set('object', created)
+
   return created
 }
 
 function getOrCreateArray(profile: MutableValueProfile): MutableArrayProfile {
   const existing = profile.types.get('array')
+
   if (existing?.type === 'array') {
     return existing
   }
+
   const created: MutableArrayProfile = {
     count: 0,
     items: createValueProfile(`${profile.path}[*]`),
     lengths: new Map(),
     type: 'array',
   }
+
   profile.types.set('array', created)
+
   return created
 }
 
@@ -264,6 +288,7 @@ function finalizeField(name: string, field: MutableValueProfile, population: num
 function finalizeTypes(profile: MutableValueProfile): JsonTypeProfile[] {
   return JSON_TYPE_ORDER.flatMap((type) => {
     const typeProfile = profile.types.get(type)
+
     return typeProfile === undefined ? [] : [finalizeType(typeProfile)]
   })
 }
@@ -321,9 +346,11 @@ function comparePrimitives(
   if (typeof left === 'number' && typeof right === 'number') {
     return left - right
   }
+
   if (typeof left === 'boolean' && typeof right === 'boolean') {
     return Number(left) - Number(right)
   }
+
   return compareStrings(String(left), String(right))
 }
 
@@ -331,5 +358,6 @@ function compareStrings(left: string, right: string): number {
   if (left < right) {
     return -1
   }
+
   return left > right ? 1 : 0
 }

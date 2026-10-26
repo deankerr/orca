@@ -39,10 +39,13 @@ export const sweep = internalMutation({
         ACCEPTED.map(async (state) => await accepted(ctx, kind, state)),
       ),
     )
+
     const records = groups.flat()
+
     const suspects = records.flatMap((record) =>
       record.work_id === undefined ? [] : [{ record, work_id: record.work_id }],
     )
+
     const statuses = await pool().statusBatch(
       ctx,
       suspects.map(({ work_id }) => work_id),
@@ -60,6 +63,7 @@ export const sweep = internalMutation({
           : [],
       ),
     )
+
     return null
   },
   returns: v.null(),
@@ -96,6 +100,7 @@ export const confirmLost = internalMutation({
       await records.patch(record, { error, state: 'failed' })
     })
     await requestQueueStep(ctx)
+
     return null
   },
   returns: v.null(),

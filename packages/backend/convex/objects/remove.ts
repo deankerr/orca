@@ -21,6 +21,7 @@ export const run = internalAction({
     }
 
     await ctx.runMutation(internal.objects.remove.finish, { locator })
+
     return null
   },
   returns: v.null(),
@@ -54,6 +55,7 @@ export const finish = internalMutation({
     }
 
     await ctx.db.delete(row._id)
+
     return null
   },
   returns: v.null(),

@@ -7,6 +7,7 @@ import { assertReadCount, nameSelection, objectIdentity, storedBatch } from './p
 
 function requireApiKey(apiKey: string): void {
   const expected = env.ORCA_OBJECTS_API_KEY
+
   if (expected === undefined || expected === '' || !sameKey(apiKey, expected)) {
     throw new ConvexError('Unauthorized object source request')
   }
@@ -23,6 +24,7 @@ function sameKey(a: string, b: string): boolean {
     // oxlint-disable-next-line no-bitwise -- XOR accumulation keeps the comparison constant-time.
     diff |= byte ^ (right[index] ?? 0)
   }
+
   return diff === 0
 }
 
@@ -31,6 +33,7 @@ export const namesAtOrAfter = query({
   args: { apiKey: v.string(), ...nameSelection.fields },
   handler: async (ctx, { apiKey, ...selection }) => {
     requireApiKey(apiKey)
+
     return await findLocalNames(ctx, selection)
   },
   returns: v.array(v.string()),
@@ -42,6 +45,7 @@ export const loadMany = action({
   handler: async (ctx, { apiKey, objects }) => {
     requireApiKey(apiKey)
     assertReadCount(objects.length)
+
     return await Promise.all(objects.map(async (identity) => await readLocal(ctx, identity)))
   },
   returns: storedBatch,

@@ -37,6 +37,7 @@ function sharedChange(change: FieldChange, event: EntityAlert): string {
   if (change.path.startsWith('pricing.')) {
     return pricingChanges([change]).join('\n')
   }
+
   return event.entity_kind === 'endpoint'
     ? endpointFieldChange(change)
     : fieldChange(change, { label: change.path })
@@ -53,18 +54,23 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
   const { change } = batch
   const removed = change.type === 'endpoint_removed'
   const detail = removed ? '' : sharedChange(change, first.event)
+
   const endpoints = batch.members
     .map(({ event }) => event)
     .filter((event) => event.entity_kind === 'endpoint')
+
   const providerIds = new Set(endpoints.map((event) => event.context.provider.provider_id))
   const provider = removed && providerIds.size === 1 ? endpoints[0]?.context.provider : undefined
+
   // Prefer the dimension with fewer headings; ties group by provider.
   const groupByModel =
     new Set(endpoints.map((event) => event.context.model.model_id)).size < providerIds.size
+
   // Bound each identity field while retaining every member, source ID and endpoint UUID prefix.
   const members = batch.members
     .map((member) => {
       const { group, line } = identity(member.event, groupByModel)
+
       const groupLabel =
         !groupByModel && member.event.entity_kind === 'endpoint'
           ? `**${escape(truncateContent(member.event.context.provider.display_name, 500, 'batch.provider_name'))}**${dot}${code(truncateContent(group, 500, 'batch.group'))}`
@@ -78,6 +84,7 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
       }
     })
     .toSorted((a, b) => a.group.localeCompare(b.group) || a.line.localeCompare(b.line))
+
   let longestIdentity = 0
 
   for (const member of members) {
@@ -89,9 +96,10 @@ export function batchCards(batch: BatchAlert, urls: DiscordUrls): Notification[]
   if (provider !== undefined) {
     label = `− Provider **${escape(truncateContent(provider.display_name, 500, 'batch.provider_name'))}** unlisted ${batch.members.length} endpoints.\n\n`
   }
+
   const heading = `${truncateContent(detail, 4000 - label.length - longestIdentity, `batch.${removed ? change.type : change.path}`)}${label}`
   const pages: { description: string; source_ids: string[] }[] = []
-  let page = { description: heading, source_ids: [] as string[] }
+  let page: (typeof pages)[number] = { description: heading, source_ids: [] }
   let previousGroup: string | undefined
 
   for (const { group, heading: groupHeading, line, source_id } of members) {

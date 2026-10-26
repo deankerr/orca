@@ -4,7 +4,9 @@ import type { FunctionReturnType } from 'convex/server'
 type ObservedEndpoint = FunctionReturnType<
   typeof api.products.pricing_history.query.observations
 >[number]
+
 type PricedEndpoint = FunctionReturnType<typeof api.products.pricing_history.query.prices>[number]
+
 export type PricingHistory = {
   modelId: string
   asOf: number
@@ -12,7 +14,9 @@ export type PricingHistory = {
 }
 
 export const DAY = 86_400_000
+
 export type Sample = [at: number, price: number]
+
 export type Trace = {
   id: string
   tag: string
@@ -38,13 +42,16 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
       if (at > pricingHistory.asOf) {
         break
       }
+
       const observation = observations.get(at)
 
       if (observation !== undefined) {
         context = observation
+
         if (!observation.detected) {
           quote = undefined
         }
+
         if (trace) {
           trace.end = at
           trace.current = false
@@ -53,6 +60,7 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
       }
 
       const row = prices.get(at)
+
       if (context?.detected === true && row) {
         quote = row
       }
@@ -98,6 +106,7 @@ export function pricingHistoryTraces(pricingHistory: PricingHistory, meter: stri
 
 export function sampleAt(samples: Sample[], at: number): number | undefined {
   let value: number | undefined
+
   for (const sample of samples) {
     if (sample[0] > at) {
       break
@@ -106,6 +115,7 @@ export function sampleAt(samples: Sample[], at: number): number | undefined {
     const [, price] = sample
     value = price
   }
+
   return value
 }
 
@@ -120,15 +130,19 @@ export function dailyTrace(trace: Trace, asOf: number): Trace {
   const samples: Sample[] = [first]
   let current = first
   let index = 0
+
   for (let at = (Math.floor(trace.start / DAY) + 1) * DAY; at < trace.end; at += DAY) {
     let next = trace.samples[index + 1]
+
     while (index + 1 < trace.samples.length && next[0] <= at) {
       current = next
       index += 1
       next = trace.samples[index + 1]
     }
+
     samples.push([at, current[1]])
   }
+
   const latest = trace.samples.at(-1)
 
   if (latest && latest[0] > (samples.at(-1)?.[0] ?? trace.start)) {
@@ -155,6 +169,7 @@ export function tagPrices(traces: Trace[], tag: string, at: number, asOf: number
         )
         .flatMap((trace) => {
           const price = sampleAt(trace.samples, at)
+
           return price === undefined ? [] : [price]
         }),
     ),

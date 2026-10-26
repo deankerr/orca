@@ -14,6 +14,7 @@ import { FieldDetail, percentage } from './field-detail'
 import { readablePath } from './field-path'
 
 const POPULATIONS = ['endpoints', 'models', 'providers'] as const
+
 type PopulationName = (typeof POPULATIONS)[number]
 
 const POPULATION_LABELS: Record<PopulationName, string> = {
@@ -24,6 +25,7 @@ const POPULATION_LABELS: Record<PopulationName, string> = {
 
 // oxlint-disable-next-line sort-keys -- Display order of the sort options.
 const SORTS = { path: 'Field path', missing: 'Most absent', distinct: 'Most distinct' } as const
+
 type Sort = keyof typeof SORTS
 
 const COLUMNS = 'grid grid-cols-[minmax(0,1fr)_12rem_5rem_5rem_6rem] items-center gap-3 px-3'
@@ -48,6 +50,7 @@ function exportReport(report: ScanReport) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
   )
+
   const link = document.createElement('a')
   link.href = url
   link.download = `scan-profile.${report.scan_at}.json`
@@ -66,9 +69,11 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
   const deferredQuery = useDeferredValue(query).trim().toLowerCase()
   const population = report[populationName]
   const all = profileRows(population.profile)
+
   const rows = all
     .filter(({ value }) => {
       const { parent, leaf } = readablePath(value.path)
+
       return [value.path, parent + leaf].some((path) => path.toLowerCase().includes(deferredQuery))
     })
     .toSorted(compare(sort))
@@ -99,6 +104,7 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
           value={[populationName]}
           onValueChange={(value: string[]) => {
             const next = POPULATIONS.find((name) => name === value[0])
+
             if (next !== undefined) {
               setPopulationName(next)
             }
@@ -128,6 +134,7 @@ export function ReportExplorer({ report }: { report: ScanReport }) {
           value={[sort]}
           onValueChange={(value: string[]) => {
             const next = Object.keys(SORTS).find((key): key is Sort => key === value[0])
+
             if (next !== undefined) {
               setSort(next)
             }

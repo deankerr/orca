@@ -9,10 +9,12 @@ import { EndpointsDataGrid } from './endpoints-data-grid'
 
 export function EndpointsDataGridPage() {
   const options = gridQueryOptions()
+
   const measurement = useGridLoadTimingStart({
     endpoints: options.endpoints.queryKey,
     stats: options.stats.queryKey,
   })
+
   const endpoints = useQuery(options.endpoints)
   const stats = useQuery(options.stats)
   const rows = buildGridEndpoints(endpoints.data ?? [], stats.data?.rows ?? [])

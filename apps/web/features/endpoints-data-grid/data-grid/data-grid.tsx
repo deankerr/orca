@@ -55,9 +55,11 @@ const DataGridContext = createContext<DataGridContextProps<any> | undefined>(und
 
 function useDataGrid() {
   const context = useContext(DataGridContext)
+
   if (!context) {
     throw new Error('useDataGrid must be used within a DataGridProvider')
   }
+
   return context
 }
 
@@ -78,6 +80,7 @@ function DataGridProvider<TData extends object>({
 
 function DataGrid<TData extends object>({ children, table, ...props }: DataGridProps<TData>) {
   'use no memo'
+
   const defaultProps: Partial<DataGridProviderProps<TData>> = {
     tableClassNames: {
       base: '',

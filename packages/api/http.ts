@@ -74,6 +74,7 @@ export function paginate<T>(url: string, asAt: string | null, selected: T[], pag
   const end = paging.offset + paging.limit
   const nextUrl = new URL(url)
   nextUrl.searchParams.set('offset', String(end))
+
   return {
     as_at: asAt,
     data: selected.slice(paging.offset, end),

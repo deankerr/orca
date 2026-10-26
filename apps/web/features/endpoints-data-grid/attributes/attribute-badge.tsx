@@ -92,6 +92,7 @@ export function AttributeBadgeSet({
       {slots.map((slot) => {
         const slotKey = slot.join('|')
         const resolved = resolveEndpointAttributeSlot(endpoint, slot)
+
         if (resolved) {
           return (
             <AttributeBadge

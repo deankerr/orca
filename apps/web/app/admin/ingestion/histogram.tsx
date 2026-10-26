@@ -62,6 +62,7 @@ export function Histogram({ range }: { range: Range }) {
   const [zoom, setZoom] = useState<Range[]>([])
   const [hovered, setHovered] = useState<number | null>(null)
   const view = bucketing(zoom.at(-1) ?? range)
+
   const data = useQuery(api.ingestion.admin.histogram, {
     buckets: view.buckets,
     end_at: view.end_at,
@@ -75,6 +76,7 @@ export function Histogram({ range }: { range: Range }) {
   const totals = data.edges
     .slice(0, -1)
     .map((_, bucket) => STATES.reduce((sum, state) => sum + (data.counts[state]?.[bucket] ?? 0), 0))
+
   const max = Math.max(1, ...totals)
   const detail = hovered ?? null
 
@@ -116,6 +118,7 @@ export function Histogram({ range }: { range: Range }) {
             >
               {STATES.map((state) => {
                 const value = data.counts[state]?.[bucket] ?? 0
+
                 return value === 0 ? null : (
                   <span
                     key={state}

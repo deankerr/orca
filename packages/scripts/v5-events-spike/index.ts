@@ -11,19 +11,28 @@ import { providerFields, toProvider, translateProviderUpdate } from '@orca/backe
 const [directory = '/tmp/v5-spike'] = process.argv.slice(2)
 
 type EndpointRow = Parameters<typeof toEndpoint>[0]
+
 type StatsRow = NonNullable<Parameters<typeof toEndpoint>[1]>
+
 type EndpointEvent = Parameters<typeof translateEndpointUpdate>[0]
+
 type ModelRow = Parameters<typeof toModel>[0]
+
 type Model = ReturnType<typeof toModel>
+
 type ModelEvent = Parameters<typeof translateModelUpdate>[0]
+
 type ProviderRow = Parameters<typeof toProvider>[0]
+
 type Provider = ReturnType<typeof toProvider>
+
 type ProviderEvent = Parameters<typeof translateProviderUpdate>[0]
 
 // oxlint-disable-next-line no-unnecessary-type-parameters -- Each call names the export it reads.
 function load<T>(name: string): T {
   const value: unknown = JSON.parse(readFileSync(path.join(directory, name), 'utf-8'))
-  // oxlint-disable-next-line no-unsafe-type-assertion -- Exports of the deployment's own validated tables.
+
+  // oxlint-disable-next-line no-unsafe-type-assertion -- SAFETY: Exports of the deployment's own validated tables.
   return value as T
 }
 
@@ -36,12 +45,14 @@ const top = (counts: Map<string, number>) =>
 
 // Complete entities: the declared fields must reproduce the deployed V5 snapshot.
 const rows = new Map(load<EndpointRow[]>('endpoints.json').map((row) => [row.endpoint_id, row]))
+
 const providerNames = new Map(
   load<{ provider_id: string; display_name: string }[]>('providers.json').map((row) => [
     row.provider_id,
     row.display_name,
   ]),
 )
+
 const [statsDocument] = load<{ rows: StatsRow[] }[]>('stats.json')
 const stats = new Map((statsDocument?.rows ?? []).map((row) => [row.endpoint_id, row]))
 let matched = 0
@@ -49,6 +60,7 @@ const mismatched: string[] = []
 
 for (const expected of load<{ endpoints: { id: string }[] }>('snapshot.json').endpoints) {
   const row = rows.get(expected.id)
+
   const actual =
     row === undefined
       ? undefined
@@ -70,10 +82,12 @@ let modelsMatched = 0
 
 for (const expected of load<{ models: Model[] }>('snapshot.json').models) {
   const row = modelRows.get(expected.id)
+
   const listing = {
     endpoints: expected.listed_endpoints,
     providerIds: new Set(expected.provider_ids),
   }
+
   const actual = row === undefined ? undefined : toModel(row, listing)
 
   if (isDeepStrictEqual(actual, expected)) {
@@ -89,11 +103,13 @@ console.log('complete models', { matched: modelsMatched, mismatched: modelMismat
 const providerRows = new Map(
   load<ProviderRow[]>('providers.json').map((row) => [row.provider_id, row]),
 )
+
 let providersMatched = 0
 let providerMismatches = 0
 
 for (const expected of load<{ providers: Provider[] }>('snapshot.json').providers) {
   const row = providerRows.get(expected.id)
+
   const listing = {
     endpoints: expected.listed_endpoints,
     modelIds: new Set(Array.from({ length: expected.listed_models }, (_, index) => String(index))),
@@ -138,17 +154,21 @@ function report(
         continue
       }
 
-      // oxlint-disable-next-line no-unsafe-type-assertion -- Rows are filtered to the translator's entity kind.
+      // oxlint-disable-next-line no-unsafe-type-assertion -- SAFETY: Rows are filtered to the translator's entity kind.
       const result = translateUpdate(row as never)
+
       for (const change of result.changes) {
         tally(changed, change.field)
+
         if (!examples.has(change.field)) {
           examples.set(change.field, change)
         }
       }
+
       for (const name of result.unresolved) {
         tally(unresolved, name)
       }
+
       for (const source of result.ignored) {
         tally(ignored, source.replaceAll(/\.\d+(?=\.|$)/gu, '.#'))
       }
@@ -181,7 +201,9 @@ report(
   endpointFields,
   translateEndpointUpdate,
 )
+
 report('model events', load<ModelEvent[]>('model-events.json'), modelFields, translateModelUpdate)
+
 report(
   'provider events',
   load<ProviderEvent[]>('provider-events.json'),

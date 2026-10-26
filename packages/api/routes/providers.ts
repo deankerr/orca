@@ -87,6 +87,7 @@ export function providerRoutes(load: LoadCatalog) {
     const { limit, offset, ...selection } = c.req.valid('query')
     const catalog = await load()
     const selected = selectProviders(catalog.providers, selection)
+
     return c.json(paginate(c.req.url, catalog.as_at, selected, { limit, offset }), 200, cached)
   })
 
@@ -94,9 +95,11 @@ export function providerRoutes(load: LoadCatalog) {
     const { id } = c.req.valid('param')
     const catalog = await load()
     const provider = catalog.providers.find((candidate) => candidate.id === id)
+
     if (provider === undefined) {
       return c.json(providerNotFound(id), 404, problemHeaders)
     }
+
     return c.json({ as_at: catalog.as_at, data: provider }, 200, cached)
   })
 
@@ -104,10 +107,13 @@ export function providerRoutes(load: LoadCatalog) {
     const { id } = c.req.valid('param')
     const { limit, offset, ...selection } = c.req.valid('query')
     const catalog = await load()
+
     if (!catalog.providers.some((provider) => provider.id === id)) {
       return c.json(providerNotFound(id), 404, problemHeaders)
     }
+
     const selected = selectEndpoints(catalog.endpoints, selection, { providerId: id })
+
     return c.json(paginate(c.req.url, catalog.as_at, selected, { limit, offset }), 200, cached)
   })
 

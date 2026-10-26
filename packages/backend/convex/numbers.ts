@@ -22,6 +22,7 @@ export function compareNumbers(left: Numeric, right: Numeric): -1 | 0 | 1 | null
   if (difference === 0n) {
     return 0
   }
+
   return difference > 0n ? 1 : -1
 }
 
@@ -190,6 +191,7 @@ function formatRatio(
   const rounded = (magnitude * power(places) * 2n + denominator) / (denominator * 2n)
   const digits = rounded.toString().padStart(places + 1, '0')
   const whole = places === 0 ? digits : digits.slice(0, -places)
+
   const fraction = (places === 0 ? '' : digits.slice(-places))
     .replace(/0+$/u, '')
     .padEnd(minimumFractionDigits, '0')

@@ -24,8 +24,10 @@ export function withEnvironmentPrefix(text: string) {
   if (process.env.NODE_ENV === 'development') {
     return `🚧 ${text}`
   }
+
   if (process.env.VERCEL_ENV === 'preview') {
     return `🔍 ${text}`
   }
+
   return text
 }

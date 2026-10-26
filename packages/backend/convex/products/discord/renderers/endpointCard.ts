@@ -27,6 +27,7 @@ function endpointState(event: EndpointAlert): string {
   if ('after' in event) {
     return arrival(event.previously_known)
   }
+
   return 'before' in event ? 'unlisted' : 'updated'
 }
 
@@ -34,6 +35,7 @@ function endpointBody(event: EndpointAlert): string[] {
   if ('changes' in event) {
     return endpointChanges(event.changes)
   }
+
   return 'after' in event ? endpointDetails(event.after) : []
 }
 
@@ -59,6 +61,7 @@ function fieldGroup(path: string): string {
   if (path.startsWith('data_policy.')) {
     return 'Data policy'
   }
+
   return /^(?:context_length|max_|limit_)/u.test(path) ? 'Limits' : 'Details'
 }
 

@@ -5,6 +5,7 @@ import { fact } from './facts'
 export function select(event: EntityAlert): EntityAlert | null {
   if (event.type === 'provider_updated') {
     const changes = providerChanges(event.changes)
+
     return changes.length === 0 ? null : { ...event, changes }
   }
 
@@ -16,6 +17,7 @@ export function select(event: EntityAlert): EntityAlert | null {
           !change.path.startsWith('pricing.') ||
           change.path === 'pricing.overrides'),
     )
+
     return changes.length === 0 ? null : { ...event, changes }
   }
 

@@ -9,6 +9,7 @@ export const grid = query({
   args: {},
   handler: async (ctx) => {
     const snapshot = await ctx.db.query(CURRENT_STATS_TABLE).unique()
+
     return { as_of: snapshot?.scan_at ?? null, rows: snapshot?.rows ?? [] }
   },
   returns: v.object({

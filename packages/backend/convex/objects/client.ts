@@ -42,6 +42,7 @@ export function connect({
     },
     async namesAtOrAfter(selection: NameSelection): Promise<string[]> {
       assertReadCount(selection.limit)
+
       return validateNames(
         await client.query(api.objects.remote.namesAtOrAfter, { apiKey, ...selection }),
         selection,

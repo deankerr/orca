@@ -33,6 +33,7 @@ import type { ColorIconBadgeColor } from './color-icon-badge'
 import { InlineCode } from './inline-code'
 
 type EndpointPartial = Partial<GridEndpoint>
+
 type AttributeIcon = LucideIcon
 
 export interface AttributeState {
@@ -316,6 +317,7 @@ export const attributes = defineAttributes({
       const active = endpoint.data_policy?.may_retain_data === true
       const days = endpoint.data_policy?.data_retention_days?.toLocaleString()
       const value = days === undefined ? '? days' : `${days} days`
+
       return {
         active,
         value,
@@ -510,7 +512,9 @@ export const attributes = defineAttributes({
 })
 
 export type AttributeKey = keyof typeof attributes
+
 export type AttributeSlots = AttributeKey[][]
+
 export type Attribute = (typeof attributes)[AttributeKey]
 
 export function isAttributeKey(value: string): value is AttributeKey {
@@ -527,6 +531,7 @@ function resolveEndpointAttribute(endpoint: EndpointPartial, key: AttributeKey) 
 export function resolveEndpointAttributeSlot(endpoint: EndpointPartial, slot: AttributeKey[]) {
   for (const key of slot) {
     const result = resolveEndpointAttribute(endpoint, key)
+
     if (result.data.active) {
       return result
     }

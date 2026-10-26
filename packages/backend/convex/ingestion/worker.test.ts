@@ -30,6 +30,7 @@ const SPECS = specs(7, 40).map((spec, index) =>
     ? { ...spec, endpoints: { ...spec.endpoints, retired: { model: 'm9', provider: 'p9' } } }
     : spec,
 )
+
 const environment = [
   'ORCA_OBJECTS_SOURCE_DEPLOYMENT',
   'ORCA_OBJECTS_BACKEND',
@@ -40,6 +41,7 @@ const environment = [
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(Date.parse(hour(48)))
+
   for (const key of environment) {
     vi.stubEnv(key, undefined)
   }
@@ -79,6 +81,7 @@ async function settle(t: Harness, options?: { receipts: boolean }) {
 
 async function records(t: Harness) {
   const all = await t.run(async (ctx) => await ctx.db.query(INGESTION_RECORDS_TABLE).collect())
+
   return all
     .map(({ from_scan_at, scan_at, alerts, state }) => ({ alerts, from_scan_at, scan_at, state }))
     .toSorted((a, b) => a.scan_at.localeCompare(b.scan_at) || (a.from_scan_at === null ? -1 : 1))
@@ -182,10 +185,12 @@ test('a failed request waits for an explicit retry, then completes without dupli
   await collect(t, range(0, 8))
 
   const { load } = scans
+
   const broken = vi.spyOn(scans, 'load').mockImplementation(async (ctx, scanAt) => {
     if (scanAt === hour(4)) {
       throw new Error('Source unavailable')
     }
+
     return await load(ctx, scanAt)
   })
 
@@ -201,6 +206,7 @@ test('a failed request waits for an explicit retry, then completes without dupli
         )
         .collect(),
   )
+
   // Pairs reading the unavailable scan fail; the others, and the baseline, complete.
   expect(failed.map(({ scan_at }) => scan_at)).toEqual([hour(4), hour(5)])
   expect(failed[0]?.error).toContain('Source unavailable')
@@ -249,6 +255,7 @@ test('completing an alerting pair schedules automatic Discord delivery', async (
   const { delivered, alerting } = await t.run(async (ctx) => {
     const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
     const all = await ctx.db.query(INGESTION_RECORDS_TABLE).collect()
+
     return {
       alerting: all
         .filter(({ alerts }) => alerts)
@@ -301,6 +308,7 @@ test('completion commits before queue coordination and its wakeup survives until
   const t = setup()
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Synthetic work ID isolates settlement from Workpool execution.
   const workId = 'completed-work' as WorkId
+
   const id = await t.run(
     async (ctx) =>
       await writeRecords(
@@ -344,9 +352,11 @@ test('completion commits before queue coordination and its wakeup survives until
 
 test('kickoff, queue steps, and retries wake the queue without touching its schedule', async () => {
   const t = setup()
+
   const inspect = async () =>
     await t.run(async (ctx) => {
       const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
+
       return {
         schedule: await ctx.db.query(QUEUE_SCHEDULE_TABLE).unique(),
         wakes: scheduled.filter(
@@ -354,6 +364,7 @@ test('kickoff, queue steps, and retries wake the queue without touching its sche
         ).length,
       }
     })
+
   const insert = async (state: 'failed' | 'pending') => {
     await t.run(async (ctx) => {
       await writeRecords(ctx, async (writer) => {
@@ -376,6 +387,7 @@ test('kickoff, queue steps, and retries wake the queue without touching its sche
     for (const record of await ctx.db.query(INGESTION_RECORDS_TABLE).collect()) {
       await ctx.db.delete(INGESTION_RECORDS_TABLE, record._id)
     }
+
     for (const row of await ctx.db.query(QUEUE_SCHEDULE_TABLE).collect()) {
       await ctx.db.delete(QUEUE_SCHEDULE_TABLE, row._id)
     }
@@ -403,9 +415,11 @@ test('kickoff, queue steps, and retries wake the queue without touching its sche
 
 test('repeated wakeups leave at most one queue step waiting', async () => {
   const t = setup()
+
   const waiting = async () =>
     await t.run(async (ctx) => {
       const scheduled = await ctx.db.system.query('_scheduled_functions').collect()
+
       return scheduled.filter(
         ({ name, state }) => name === 'ingestion/queue:run' && state.kind === 'pending',
       ).length
@@ -414,6 +428,7 @@ test('repeated wakeups leave at most one queue step waiting', async () => {
   for (const _ of range(1, 5)) {
     await t.mutation(internal.ingestion.queue.wake, {})
   }
+
   expect(await waiting()).toBe(1)
 
   await settle(t)
@@ -424,6 +439,7 @@ test('repeated wakeups leave at most one queue step waiting', async () => {
 test('a retry assigned a broader scope writes past a narrower receipt', async () => {
   const t = setup()
   const source = { next: scan(hour(1), SPECS[1]), previous: scan(hour(0), SPECS[0]) }
+
   const write = async (scope: CurrentScope) =>
     await t.mutation(internal.ingestion.catalog.currentEndpoints.write, {
       process: 'currentEndpoints',

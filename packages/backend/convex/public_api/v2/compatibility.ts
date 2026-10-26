@@ -5,6 +5,7 @@ import type { ScanEntry } from '#scans/collection'
 import type { OrcaPublicApiV2Endpoint, OrcaPublicApiV2Model } from './schema'
 
 const optionalNumber = z.number().nullish()
+
 const Endpoint = z.object({
   context_length: z.number(),
   data_policy: z.object({
@@ -41,6 +42,7 @@ const Endpoint = z.object({
   supported_parameters: z.array(z.string()),
   supports_reasoning: z.boolean(),
 })
+
 const Model = z.object({
   author: z.string(),
   created_at: z.string(),

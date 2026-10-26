@@ -58,6 +58,7 @@ async function insertQueued(t: Harness, work_id: WorkId) {
 async function scheduledCalls(t: Harness, name: string) {
   return await t.run(async (ctx) => {
     const all = await ctx.db.system.query('_scheduled_functions').collect()
+
     return all.filter((fn) => fn.name === name).length
   })
 }
@@ -70,6 +71,7 @@ async function record(t: Harness, id: Id<typeof INGESTION_RECORDS_TABLE>) {
 async function finishedWork(t: Harness) {
   const workId = await enqueue(t)
   await drainScheduledFunctions(t)
+
   return workId
 }
 
@@ -90,6 +92,7 @@ test('a record whose work finished without settling it fails after the grace per
 
   const sweptAt = Date.now()
   await t.mutation(internal.ingestion.reconcile.sweep, {})
+
   const confirmations = await t.run(
     async (ctx) =>
       await ctx.db.system
@@ -97,6 +100,7 @@ test('a record whose work finished without settling it fails after the grace per
         .filter((q) => q.eq(q.field('name'), 'ingestion/reconcile:confirmLost'))
         .collect(),
   )
+
   // Normal completions get five minutes to settle before the record is judged lost.
   expect(confirmations).toHaveLength(1)
   const delay = (confirmations[0]?.scheduledTime ?? 0) - sweptAt
@@ -126,9 +130,11 @@ test('a record settled or retried during the grace period is left alone', async 
     await writeRecords(ctx, async (writer) => {
       const first = await ctx.db.get(INGESTION_RECORDS_TABLE, settled)
       const second = await ctx.db.get(INGESTION_RECORDS_TABLE, retried)
+
       if (first === null || second === null) {
         throw new Error('Records missing')
       }
+
       await writer.patch(first, { state: 'complete' })
       await writer.patch(second, { state: 'pending', work_id: undefined })
     })

@@ -16,6 +16,7 @@ const zSerializedPayload = z.string().transform((payload) => {
   // Keep the supplied JSON for inspection. Reject values the sender cannot parse
   // before admitting a job; content limits and card construction belong to callers.
   parseMessagePayload(payload)
+
   return payload
 })
 
@@ -38,6 +39,7 @@ export const registerWebhook = mutation({
   handler: async (ctx, args) => {
     const { url } = parseWebhookUrl(args.url)
     const topics = zTopics.parse(args.topics)
+
     const existing = await ctx.db
       .query('webhooks')
       .withIndex('by_url_and_invalidatedAt', (q) => q.eq('url', url).eq('invalidatedAt', undefined))
@@ -62,6 +64,7 @@ export const setWebhookTopics = mutation({
     // Subscription changes select future submissions only. They never inspect,
     // cancel, backfill or reopen jobs that were already admitted.
     await ctx.db.patch(webhookId, { topics: zTopics.parse(topics) })
+
     return null
   },
   returns: v.null(),
@@ -71,6 +74,7 @@ export const invalidateWebhook = mutation({
   args: { webhookId: v.id('webhooks') },
   handler: async (ctx, { webhookId }) => {
     await state.invalidateWebhook(ctx, webhookId)
+
     return null
   },
   returns: v.null(),
@@ -80,6 +84,7 @@ export const cancelJob = mutation({
   args: { jobId: v.id('jobs') },
   handler: async (ctx, { jobId }) => {
     await state.finishJob(ctx, jobId, 'cancelled')
+
     return null
   },
   returns: v.null(),
@@ -125,6 +130,7 @@ export const editMessage = mutation({
   args: { expiresAt: v.number(), key: v.string(), payload: v.string(), resultId: v.id('results') },
   handler: async (ctx, args) => {
     const target = await messageTarget(ctx, args.resultId)
+
     return await submitOperation(ctx, {
       expiresAt: args.expiresAt,
       key: args.key,
@@ -147,6 +153,7 @@ export const deleteMessage = mutation({
   args: { expiresAt: v.number(), key: v.string(), resultId: v.id('results') },
   handler: async (ctx, args) => {
     const target = await messageTarget(ctx, args.resultId)
+
     return await submitOperation(ctx, {
       expiresAt: args.expiresAt,
       key: args.key,
@@ -250,6 +257,7 @@ async function submit(ctx: MutationCtx, input: JobInput) {
     ) {
       throw new ConvexError('Job key already exists with different input')
     }
+
     return { created: false, jobId: existing._id }
   }
 
@@ -292,6 +300,7 @@ export const listJobs = query({
       })
       .refine((range) => range.to >= range.from, 'to must be at or after from')
       .parse(args)
+
     const jobs = await ctx.db
       .query('jobs')
       .withIndex('by_creation_time', (q) => q.gte('_creationTime', from).lt('_creationTime', to))
@@ -312,6 +321,7 @@ export const resume = mutation({
   args: {},
   handler: async (ctx) => {
     await ctx.runMutation(internal.worker.recover, {})
+
     return null
   },
   returns: v.null(),

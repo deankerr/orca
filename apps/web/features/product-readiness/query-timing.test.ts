@@ -29,9 +29,11 @@ test('result metadata counts rows without reading their contents', () => {
 
 function setup(localResult = false) {
   let now = 100
+
   const client = new QueryClient({
     defaultOptions: { queries: { gcTime: Infinity, retry: false } },
   })
+
   const timings = new ReadinessQueryTimings(() => now)
   timings.connection.update({ hasEverConnected: true, isWebSocketConnected: true })
   timings.observe(client.getQueryCache(), () => localResult)
@@ -50,6 +52,7 @@ test('subscription updates do not rewrite the completed fetch span', async () =>
   await client.query({
     queryFn: () => {
       advance()
+
       return ['first']
     },
     queryKey: key,
@@ -102,6 +105,7 @@ test('distinct query arguments have independent results', async () => {
 
 test('failed queries are not reported as completed', async () => {
   const { client, timings } = setup()
+
   const result = await client
     .query({
       queryFn: () => {
@@ -110,6 +114,7 @@ test('failed queries are not reported as completed', async () => {
       queryKey: key,
     })
     .catch((error: unknown) => error)
+
   expect(result).toBeInstanceOf(Error)
   expect(timings.get(hashKey(key))).toBeUndefined()
 })
@@ -140,6 +145,7 @@ test('overview queries are observed without a preceding grid query', async () =>
     await client.query({
       queryFn: () => {
         advance()
+
         return { display_name: 'Example' }
       },
       queryKey,
@@ -153,16 +159,19 @@ test('each actual refetch gets a new run and ignores old cached data during fetc
   let now = 0
   const events: { event: string; properties: Record<string, unknown> }[] = []
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
   const timings = new ReadinessQueryTimings(
     () => now,
     (event, properties) => {
       events.push({ event, properties })
     },
   )
+
   timings.observe(client.getQueryCache(), () => false)
   await client.query({
     queryFn: () => {
       now += 10
+
       return ['first']
     },
     queryKey: key,
@@ -171,6 +180,7 @@ test('each actual refetch gets a new run and ignores old cached data during fetc
   await client.query({
     queryFn: () => {
       now += 30
+
       return ['second']
     },
     queryKey: key,
@@ -187,6 +197,7 @@ test('each actual refetch gets a new run and ignores old cached data during fetc
 test('inactive completions are excludable and errors emit no completed event', async () => {
   const events: Record<string, unknown>[] = []
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
   const timings = new ReadinessQueryTimings(
     () => 0,
     (event, properties) => {
@@ -195,6 +206,7 @@ test('inactive completions are excludable and errors emit no completed event', a
       }
     },
   )
+
   timings.observe(client.getQueryCache(), () => false)
   await client
     .query({
@@ -214,12 +226,14 @@ test('connection overlap is per query; connection lifecycle is emitted separatel
   let now = 0
   const events: { event: string; properties: Record<string, unknown> }[] = []
   const client = new QueryClient()
+
   const timings = new ReadinessQueryTimings(
     () => now,
     (event, properties) => {
       events.push({ event, properties })
     },
   )
+
   timings.connection.update({ hasEverConnected: false, isWebSocketConnected: false })
   timings.observe(client.getQueryCache(), () => false)
   await client.query({
@@ -227,6 +241,7 @@ test('connection overlap is per query; connection lifecycle is emitted separatel
       now = 20
       timings.connection.update({ hasEverConnected: true, isWebSocketConnected: true })
       now = 70
+
       return ['loaded']
     },
     queryKey: key,

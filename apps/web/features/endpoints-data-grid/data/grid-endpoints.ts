@@ -7,6 +7,7 @@ export function buildGridEndpoints(
   stats: FunctionReturnType<typeof api.products.grid.stats.grid>['rows'],
 ) {
   const readings = new Map(stats.map((reading) => [reading.endpoint_id, reading]))
+
   return endpoints.map((endpoint) => ({
     ...endpoint,
     stats: endpoint.unlisted_at === undefined ? readings.get(endpoint.endpoint_id) : undefined,

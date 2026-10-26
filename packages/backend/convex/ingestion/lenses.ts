@@ -36,6 +36,7 @@ export function modelEntity(model: ExtractedModel): z.infer<typeof Model> {
 
 export function providerEntity(provider: ExtractedProvider): z.infer<typeof Provider> {
   const { provider_id, displayName, ...metadata } = provider
+
   return { display_name: displayName, metadata, provider_id }
 }
 

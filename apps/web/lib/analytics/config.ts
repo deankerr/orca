@@ -8,6 +8,7 @@ export function analyticsConfig({
   developmentEnabled?: string
 }) {
   const ingestionKey = key?.trim()
+
   const enabledEnvironment =
     environment === 'production' ||
     environment === 'preview' ||

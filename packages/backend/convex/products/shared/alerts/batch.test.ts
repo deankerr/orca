@@ -21,6 +21,7 @@ const shared: FieldChange = {
   removed: ['audio', 'image'],
   type: 'set_updated',
 }
+
 const unique: FieldChange = {
   after: 131_072,
   before: 943_718,
@@ -61,11 +62,13 @@ function occurrenceCount(item: Alert): number {
   if (item.type === 'batch') {
     return item.members.length
   }
+
   return 'changes' in item.event ? item.event.changes.length : 0
 }
 
 test('extracts each shared item independently, keeps unique fields, and drops only empty updates', () => {
   const second: FieldChange = { after: false, path: 'is_disabled', type: 'field_added' }
+
   const input = Array.from({ length: 5 }, (_, i) =>
     bucket(i, [
       { ...shared, removed: i % 2 === 0 ? ['image', 'audio'] : ['audio', 'image'] },
@@ -73,6 +76,7 @@ test('extracts each shared item independently, keeps unique fields, and drops on
       ...(i === 0 ? [unique] : []),
     ]),
   )
+
   const before = JSON.stringify(input)
   const result = batchAlerts(input)
 
@@ -97,6 +101,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
     ['deepseek/deepseek-v4.1-flash', '054ac2'],
     ['z-ai/glm-5.3-flash', '6b1894'],
   ]
+
   const members = endpoints.map(([model_id, prefix], index): IndividualAlert => {
     const { event, ...member } = bucket(index)
 
@@ -124,6 +129,7 @@ test('batches five endpoint unlistings at one observation and renders their prov
       },
     }
   })
+
   const result = batchAlerts(members)
   const cards = renderDiscordBatch(result, urls)
   const embed = cards[0]?.message.embeds?.[0]
@@ -223,10 +229,12 @@ test('batches five endpoint unlistings at one observation and renders their prov
 test('keeps scans, kinds, operations, values, and lifecycle events separate', () => {
   const input = Array.from({ length: 2 }, (_, i) => bucket(i))
   const base = bucket(4)
+
   const otherScan: IndividualAlert = {
     ...base,
     event: { ...base.event, observed_at: '2026-10-01T18:40:00Z' },
   }
+
   const provider: IndividualAlert = {
     ...base,
     event: {
@@ -238,6 +246,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
       type: 'provider_updated',
     },
   }
+
   const arrival: IndividualAlert = {
     ...provider,
     event: {
@@ -249,6 +258,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
       type: 'provider_added',
     },
   }
+
   const all = [
     ...input,
     otherScan,
@@ -262,6 +272,7 @@ test('keeps scans, kinds, operations, values, and lifecycle events separate', ()
   const numeric = Array.from({ length: 2 }, (_, i) =>
     bucket(i, [{ after: 2, before: 1, path: 'context_length', type: 'field_updated' }]),
   )
+
   const distinct: FieldChange[] = [
     { after: '2', before: '1', path: 'context_length', type: 'field_updated' },
     { after: 2, path: 'context_length', type: 'field_added' },
@@ -297,6 +308,7 @@ test('normalizes record keys and preserves eligibility when rendering a remainde
       { pricing: { meters: { completion: i === 0 ? '1.001' : '1', prompt: '2' } } },
     ),
   )
+
   const { alerts, skipped } = await prepareBatch(rows)
   const notifications = renderDiscordBatch(alerts, urls)
 
@@ -316,6 +328,7 @@ test('batch cards identify all three entity types and page long lists without lo
     observed_at: '2026-10-01T17:40:05.451Z',
     type: 'model_updated',
   }
+
   const provider: EntityAlert = {
     changes: [],
     context: { provider: { display_name: 'Provider', provider_id: 'provider' } },
@@ -358,6 +371,7 @@ test('batch cards identify all three entity types and page long lists without lo
       },
       urls,
     )
+
     const text = JSON.stringify(cards)
 
     for (const part of expected) {
@@ -401,6 +415,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
 
       return member
     })
+
     const cards = batchCards({ change: shared, members, type: 'batch' }, urls)
     const description = cards[0]?.message.embeds?.[0]?.description ?? ''
     const groupByModel = modelCount < providerCount
@@ -415,6 +430,7 @@ test('endpoint batch cards group by the smaller dimension and keep each identity
       const group = groupByModel
         ? `author/model-${index % modelCount}`
         : `provider-${index % providerCount}`
+
       const label = groupByModel ? `route-${index}/flex` : `author/model-${index % modelCount}`
 
       expect(description).toContain(
@@ -439,6 +455,7 @@ function stored(
 ): EventRow & { _id: string } {
   const entity_id = `entity-${index}`
   const [change] = compare({ [entity_id]: before }, { [entity_id]: after })
+
   const fields = {
     _id: `event-${index}`,
     change_json: JSON.stringify(change),
@@ -446,6 +463,7 @@ function stored(
     scan_at: '2026-10-01T17:40:05.451Z',
     type: 'UPDATE' as const,
   }
+
   const provider = { display_name: 'Provider', provider_id: `provider-${index}` }
 
   return kind === 'provider'
@@ -486,6 +504,7 @@ test('provider URL batches pass shared selection and retain individual changes',
       'provider',
     ),
   )
+
   const { alerts, skipped } = await prepareBatch(rows)
   const notifications = renderDiscordBatch(alerts, urls)
   const [batch, remainder] = notifications
@@ -534,6 +553,7 @@ test('oversized batch details and identity fields truncate without losing member
 
       return member
     })
+
     const cards = batchCards(
       {
         change: { ...shared, removed: Array.from({ length: 200 }, (_, i) => `parameter-${i}`) },
@@ -573,6 +593,7 @@ function renderPage(result: PaginationResult<EventRow>) {
     ...result,
     page: result.page.flatMap((row) => {
       const alert = prepareAlert(row)
+
       return alert === null ? [] : [alert]
     }),
   })

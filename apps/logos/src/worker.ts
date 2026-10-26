@@ -12,11 +12,13 @@ export default {
 
     const url = new URL(request.url)
     const group = logoImageGroupForPathname(url.pathname)
+
     if (group === undefined) {
       return new Response('Not found', { status: 404 })
     }
 
     const fallbackUrl = new URL(fallbackAssetPath(group), request.url)
+
     const fallbackRequest = new Request(fallbackUrl.toString(), {
       headers: request.headers,
       method: request.method,

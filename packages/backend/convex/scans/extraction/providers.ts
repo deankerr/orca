@@ -18,6 +18,7 @@ const overrides = new Map([
 export function providerId(slug: string): string {
   const slash = slug.indexOf('/')
   const prefix = slash === -1 ? slug : slug.slice(0, slash)
+
   return overrides.get(slug) ?? overrides.get(prefix) ?? prefix
 }
 
@@ -52,6 +53,7 @@ export function assembleProviders(providers: ProviderInput[]): Map<string, Extra
   return new Map(
     R.entries(groups).map(([id, group]) => {
       const { slug: _slug, ...provider } = selectProvider(id, group)
+
       return [id, { ...provider, provider_id: id }]
     }),
   )
@@ -71,6 +73,7 @@ function selectProvider(id: string, providers: ProviderInput[]): ProviderInput {
       ([name]) => name,
     ),
   )
+
   const representative = winner?.[1][0]
 
   if (representative === undefined) {

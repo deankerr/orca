@@ -8,11 +8,14 @@ import { useQueryResult } from '@/features/product-readiness/use-query-result'
 
 export function useGridLoadTimingStart(keys: { endpoints: QueryKey; stats: QueryKey }) {
   const client = useQueryClient()
+
   // oxlint-disable-next-line react/hook-use-state -- Immutable span identity per mount.
   const [load] = useState(() => {
     const endpoints = startReadiness(client, keys.endpoints, 'grid')
+
     return { endpoints, stats: { ...startReadiness(client, keys.stats, 'grid'), id: endpoints.id } }
   })
+
   return load
 }
 
@@ -28,6 +31,7 @@ export function useGridLoadTiming(
     if (reported.current || !endpoints.isSuccess || !stats.isSuccess) {
       return
     }
+
     reported.current = true
     captureTiming('grid ready', {
       elapsed_ms: performance.now() - load.endpoints.started.at,

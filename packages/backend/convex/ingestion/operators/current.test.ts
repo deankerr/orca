@@ -12,10 +12,12 @@ import type { Source } from './source'
 import { hour, random, scan, sequence } from './testing'
 
 const served = (model: string) => ({ model, provider: 'p1' })
+
 const previous = scan(hour(0), {
   endpoints: { e1: served('kept'), e2: served('renamed'), e3: served('departed') },
   names: { departed: 'Gone', renamed: 'Old' },
 })
+
 const next = scan(hour(1), {
   endpoints: { e1: served('kept'), e2: served('renamed'), e4: served('arrived') },
   names: { renamed: 'New' },
@@ -56,9 +58,11 @@ test('newer versions win; equal or older candidates leave the retained row', () 
 /** Commit every record in a random order, assigning scopes as the queue worker would. */
 function commitInRandomOrder(table: CurrentTable, scans: Scan[], seed: number) {
   const draw = random(seed)
+
   const records = scans
     .map((current, index) => ({ next: current, previous: scans[index - 1] ?? null }))
     .toSorted(() => draw() - 0.5)
+
   const retained = new Retained(table)
   const fullScans: string[] = []
 

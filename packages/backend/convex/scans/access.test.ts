@@ -106,6 +106,7 @@ test('navigation selects scans independently of loading and extraction', async (
     const selected = [...stored.keys()].filter(
       (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
     )
+
     return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
   })
 
@@ -175,9 +176,11 @@ test('discovery finds the newest capture in one read and handles exhausted navig
 
   const discovery = vi.spyOn(objects, 'namesAtOrAfter').mockImplementation(async (_, args) => {
     expect(args.path).toBe('scans')
+
     const selected = names.filter(
       (name) => name >= args.atOrAfter && (args.before === undefined || name < args.before),
     )
+
     return (args.order === 'desc' ? selected.toReversed() : selected).slice(0, args.limit)
   })
 

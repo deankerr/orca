@@ -49,9 +49,11 @@ export function compareBy<T>(key: (entity: T) => number | null, order: 'asc' | '
   return (left: T, right: T) => {
     const a = key(left)
     const b = key(right)
+
     if (a === null || b === null) {
       return Number(a === null) - Number(b === null)
     }
+
     return order === 'asc' ? a - b : b - a
   }
 }

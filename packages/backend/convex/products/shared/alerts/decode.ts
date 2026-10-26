@@ -16,9 +16,11 @@ export const CapturedChange = z.object({
   type: z.enum(['ADD', 'REMOVE', 'UPDATE']),
   value: z.json().optional(),
 })
+
 export type CapturedChange = z.infer<typeof CapturedChange>
 
 const Update = z.object({ changes: z.array(CapturedChange) })
+
 const snapshots = {
   endpoint: z.object({ value: Endpoint }),
   model: z.object({ value: Model }),
@@ -31,6 +33,7 @@ export type Snapshot =
   | { entity_kind: 'endpoint'; value: z.infer<typeof Endpoint> }
 
 type Field = { path: string[]; change: CapturedChange }
+
 type DecodedEvent =
   | { type: 'ADD'; after: Snapshot }
   | { type: 'REMOVE'; before: Snapshot }
@@ -44,6 +47,7 @@ function decodeSnapshot(entity_kind: EventRow['entity_kind'], payload: unknown):
   if (entity_kind === 'model') {
     return { entity_kind, value: snapshots.model.parse(payload).value }
   }
+
   return entity_kind === 'provider'
     ? { entity_kind, value: snapshots.provider.parse(payload).value }
     : { entity_kind, value: snapshots.endpoint.parse(payload).value }
@@ -81,6 +85,7 @@ export function decode(row: EventRow): DecodedEvent {
 function fields(changes: CapturedChange[], parent: string[] = []): Field[] {
   return changes.flatMap((change) => {
     const path = [...parent, change.key]
+
     const wrapper =
       (path.length === 1 && (change.key === 'metadata' || change.key === 'pricing')) ||
       (path.length === 2 && parent[0] === 'pricing' && change.key === 'meters')

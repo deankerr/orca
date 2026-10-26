@@ -36,16 +36,19 @@ function scopedEvents(
         .lte('scan_at', cutoff),
     )
   }
+
   if (scope.kind === 'model' || scope.kind === 'pair') {
     return events.withIndex('by_model_id_and_scan_at', (q) =>
       q.eq('context.model.model_id', scope.model_id).lte('scan_at', cutoff),
     )
   }
+
   if (scope.kind === 'provider') {
     return events.withIndex('by_provider_id_and_scan_at', (q) =>
       q.eq('context.provider.provider_id', scope.provider_id).lte('scan_at', cutoff),
     )
   }
+
   return events.withIndex('by_scan_at', (q) => q.lte('scan_at', cutoff))
 }
 
@@ -66,6 +69,7 @@ export async function readPage(
       ? {}
       : { endCursor: parseCursor(paginationOpts.endCursor) }),
   }
+
   const cutoff = await cappedCutoff(ctx)
 
   if (cutoff === null) {
@@ -113,17 +117,22 @@ export async function readPage(
 
 const cursorKey = z.union([z.tuple([]), z.tuple([z.string(), z.number(), z.string()])])
 
-/** These streams share the scan-time, creation-time, document-ID key, without equality prefixes. */
-function parseCursor(cursor: string): string {
-  let value: unknown = null
+function parseCursorKey(cursor: string) {
   try {
-    value = JSON.parse(cursor)
+    return cursorKey.safeParse(JSON.parse(cursor))
   } catch {
     // A non-JSON cursor has no index key; report the same domain error as other invalid keys.
+    return null
   }
-  const result = cursorKey.safeParse(value)
-  if (!result.success) {
+}
+
+/** These streams share the scan-time, creation-time, document-ID key, without equality prefixes. */
+function parseCursor(cursor: string): string {
+  const result = parseCursorKey(cursor)
+
+  if (result?.success !== true) {
     throw new ConvexError('InvalidCursor: restart the feed without a cursor')
   }
+
   return JSON.stringify(result.data)
 }

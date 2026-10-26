@@ -61,8 +61,10 @@ export default function Page() {
   const modelChoices = useEntityChoices(api.products.monitor.query.models, {})
   const providerChoices = useEntityChoices(api.products.monitor.query.providers, {})
   const models = modelChoices.status === 'LoadingFirstPage' ? undefined : modelChoices.results
+
   const providers =
     providerChoices.status === 'LoadingFirstPage' ? undefined : providerChoices.results
+
   const [entityKind, setEntityKind] = useState<EntityKind>('models')
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
@@ -78,6 +80,7 @@ export default function Page() {
   )?.toSorted((a, b) => a.name.localeCompare(b.name))
 
   const normalizedQuery = deferredQuery.trim().toLocaleLowerCase()
+
   const filteredEntities = entities?.filter(
     (entity) =>
       entity.name.toLocaleLowerCase().includes(normalizedQuery) ||

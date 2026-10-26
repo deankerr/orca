@@ -116,6 +116,7 @@ function Identity({ modelId }: { modelId: string }) {
   const { data } = useQuery(
     convexQuery(api.products.entity_overview.models.get, { model_id: modelId }),
   )
+
   const name = data?.display_name
 
   return (
@@ -315,6 +316,7 @@ function chartEmptyMessage(hasProviders: boolean, canWiden: boolean): string {
   if (hasProviders) {
     return 'Select a provider below to show its pricing history.'
   }
+
   return canWiden ? 'No metered prices in this period.' : 'No metered prices for this meter.'
 }
 

@@ -35,6 +35,7 @@ export const ingest = internalAction({
       from_scan_at === null ? null : scans.load(ctx, from_scan_at),
       scans.load(ctx, scan_at),
     ])
+
     const results = await Promise.all(
       ingestors.map(
         async (process) => await process(ctx, { current_stats, scope, source: { next, previous } }),
@@ -69,6 +70,7 @@ export const onIngested = internalMutation({
         })
       }
     })
+
     return null
   },
   returns: v.null(),
@@ -80,6 +82,7 @@ export const onWithdrawn = internalMutation({
     await settle(ctx, workId, result, async (records, record) => {
       await records.delete(record)
     })
+
     return null
   },
   returns: v.null(),

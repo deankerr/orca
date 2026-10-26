@@ -4,6 +4,7 @@ import type { Infer } from 'convex/values'
 import { gunzipSync } from 'fflate'
 
 export const objectIdentity = v.object({ name: v.string(), path: v.string() })
+
 export type ObjectIdentity = Infer<typeof objectIdentity>
 
 export const nameSelection = v.object({
@@ -14,6 +15,7 @@ export const nameSelection = v.object({
   order: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   path: v.string(),
 })
+
 export type NameSelection = Infer<typeof nameSelection>
 
 /** Logical reads shared by deployment and standalone consumers. */
@@ -27,6 +29,7 @@ export interface ObjectReader {
 /** Wire representation stays private to objects; consumers receive decoded text. */
 const storedObject = v.object({ bytes: v.bytes(), codec: v.literal('gzip') })
 export const storedBatch = v.array(v.union(v.null(), storedObject))
+
 export type StoredObject = Infer<typeof storedObject>
 
 export function assertReadCount(count: number): void {
@@ -43,6 +46,7 @@ export function validateNames(names: unknown, selection: NameSelection): string[
 
   for (const [index, name] of names.entries()) {
     const previous = names[index - 1]
+
     const outOfOrder =
       previous !== undefined && (selection.order === 'desc' ? name >= previous : name <= previous)
 

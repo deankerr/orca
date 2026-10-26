@@ -25,6 +25,7 @@ export async function AccountMenu() {
   }
 
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
+
   const initials =
     [user.firstName?.[0], user.lastName?.[0]].filter(Boolean).join('').toUpperCase() ||
     user.email.slice(0, 1).toUpperCase()

@@ -17,6 +17,7 @@ function endpoint(overrides: {
   unlisted_at?: string
 }): Endpoint {
   const [providerId = overrides.tag] = overrides.tag.split('/')
+
   return {
     context_length: overrides.context_length ?? 131_072,
     data_policy: {
@@ -98,6 +99,7 @@ function model(overrides: {
   reasoning?: boolean
 }): Model {
   const [author = overrides.id] = overrides.id.split('/')
+
   return {
     author: { id: author, name: author },
     created_at: overrides.created_at,
@@ -169,9 +171,11 @@ const Page = z.object({
   next: z.string().nullable(),
   total: z.number(),
 })
+
 const One = z.object({ data: Endpoint })
 const OneModel = z.object({ data: Model })
 const Problem = z.object({ detail: z.string().optional(), title: z.string() })
+
 const Spec = z.object({
   components: z.object({
     schemas: z.record(z.string(), z.looseObject({ properties: z.object({}).loose() })),
@@ -181,16 +185,19 @@ const Spec = z.object({
 
 async function get<T extends z.ZodType>(path: string, schema: T) {
   const response = await app.request(`http://orca.test/api/v5-alpha${path}`)
+
   return { body: schema.parse(await response.json()), response }
 }
 
 async function status(path: string) {
   const response = await app.request(`http://orca.test/api/v5-alpha${path}`)
+
   return response.status
 }
 
 async function ids(path: string) {
   const { body } = await get(path, Page)
+
   return body.data.map((item) => item.id)
 }
 
@@ -213,13 +220,16 @@ describe('V5 endpoints', () => {
 
   it('filters exponent-form rates by value', async () => {
     const exponent = endpoint({ id: 'e', input: '5e-7', model: 'qwen/qwen4', tag: 'novita' })
+
     const exponentApp = createApp({
       basePath: '/api/v5-alpha',
       loadCatalog: async () => ({ as_at: null, endpoints: [exponent], models, providers }),
     })
+
     const response = await exponentApp.request(
       'http://orca.test/api/v5-alpha/endpoints?max_input_price=0.000001',
     )
+
     const body = Page.parse(await response.json())
     expect(body.data.map((item) => item.id)).toEqual(['e'])
   })

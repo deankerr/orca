@@ -128,6 +128,7 @@ test('prices and other numeric fields share precision and reveal changes hidden 
     { pricing: { meters: { prompt: '0.000000141953', input_cache_read: '0.00000001708' } } },
     { pricing: { meters: { prompt: '0.000000142', input_cache_read: '0.000000016156' } } },
   )
+
   // oxlint-enable sort-keys
   const captured = event.change_json
   const card = await renderDiscord(event, urls)
@@ -228,6 +229,7 @@ test('pricing uses separate value spans without reserving blank old-value column
     { after: '$0.123', annotation: '▼', before: '$0.123', path: 'pricing.input_cache_read' },
     { after: '24%', annotation: '', change: 'added', path: 'pricing.discount' },
   ]).split('\n')
+
   expect(lines).toEqual([
     '`input:     ` `  $0.453` → `  $0.452` ▼',
     '`cache_read:` `≈ $0.123` ▼',
@@ -375,6 +377,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
   ] as const) {
     const event = row({ pricing: { discount: before } }, { pricing: { discount: after } })
     const captured = event.change_json
+
     const text = pricingChanges([
       { after, before, path: 'pricing.discount', type: 'field_updated' },
     ]).join('\n')
@@ -400,6 +403,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     row({ pricing: { meters: { prompt: '0.000001' } } }, { pricing: { meters: { prompt: '0' } } }),
     urls,
   )
+
   const free = freeCard?.embeds?.[0]?.description
 
   expect(free).toContain('$0.00`')
@@ -421,6 +425,7 @@ test('Discord presents zero discount transitions as added/removed without rewrit
     ),
     urls,
   )
+
   const combined = combinedCard?.embeds?.[0]?.description ?? ''
 
   expect(combined).toContain('◇ **Pricing**')
@@ -810,9 +815,11 @@ test('provider updates stay classic and include only legacy metadata and policy 
   const text = message?.embeds?.[0]?.description ?? ''
 
   expect(message?.components).toBeUndefined()
+
   for (const label of ['displayName:', 'headquarters:', 'datacenters', 'statusPageUrl']) {
     expect(text).toContain(`\`${label}\``)
   }
+
   expect(text).not.toContain('byokEnabled')
 
   for (const [before, after] of [
@@ -877,8 +884,10 @@ test('blank scalar and prose values render null without rewriting the captured e
       expect(event.change_json).toBe(captured)
       expect(render(event)).toMatchObject({ changes: [{ after, before }] })
     }
+
     expect(fieldValue(blank)).toBe('`null`')
   }
+
   expect(fieldValue(['tools', 'temperature'])).toBe('`tools, temperature`')
   expect(fieldValue([])).toBe('`[]`')
 
@@ -1071,6 +1080,7 @@ test('oversized card text logs and respects individual and total Discord limits'
       footer: { iconURL: urls.logoOrigin, text: 'f'.repeat(3000) },
       timestamp: '2026-10-01T00:00:00Z',
     })
+
     const embed = message.embeds?.[0]
 
     expect(embed?.author?.name).toHaveLength(256)
@@ -1133,6 +1143,7 @@ async function prepareBatch(rows: (EventRow & { _id: string })[]) {
 
 function prepareAlert(source: EventRow) {
   const alert = prepareEvent(source)
+
   return alert !== null && source.previously_known !== undefined
     ? { ...alert, previously_known: source.previously_known }
     : alert

@@ -19,6 +19,7 @@ export const recordState = literals('pending', 'queued', 'complete', 'failed', '
 export const currentScope = literals('full', 'changes', 'departures')
 
 export type RecordKind = Infer<typeof recordKind>
+
 export type RecordState = Infer<typeof recordState>
 
 /**

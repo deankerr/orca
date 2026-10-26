@@ -21,11 +21,14 @@ export async function windowedEndpointRows(ctx: QueryCtx) {
     .collect()
 
   const scanAt = await clock(ctx)
+
   // Before the clock starts, listed baseline rows need no time window.
   if (scanAt === null) {
     return { rows: listed, scanAt }
   }
+
   const cutoff = new Date(Date.parse(scanAt) - UNLISTED_WINDOW_MS).toISOString()
+
   const unlisted = await ctx.db
     .query(CURRENT_ENDPOINTS_TABLE)
     .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', cutoff))
@@ -38,6 +41,7 @@ export const grid = query({
   args: {},
   handler: async (ctx) => {
     const { rows } = await windowedEndpointRows(ctx)
+
     return rows.map((row) => Endpoint.parse(row))
   },
   returns: v.array(zodOutputToConvex(Endpoint)),

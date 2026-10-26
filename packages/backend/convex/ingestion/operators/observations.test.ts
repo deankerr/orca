@@ -69,6 +69,7 @@ function stateAt(rows: readonly ObservationRow[], at: string) {
       .filter(([, row]) => (row.entity_kind === 'endpoint' ? row.detected : row.endpoint_count > 0))
       .map(([key, row]) => {
         const { scan_at: _scanAt, ...state } = row
+
         // A pair's previous count describes the comparison, not the state at the scan.
         return [
           key,
@@ -85,6 +86,7 @@ function byScanAt(a: ObservationRow, b: ObservationRow) {
 test('a baseline and its following pairs reproduce every scan as its own baseline would', () => {
   for (let seed = 0; seed < 200; seed += 1) {
     const scans = sequence(seed, 8)
+
     const rows = scans.flatMap((next, index) =>
       derive({ next, previous: scans[index - 1] ?? null }),
     )

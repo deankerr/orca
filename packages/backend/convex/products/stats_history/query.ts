@@ -11,9 +11,11 @@ export const list = query({
   args: { endpoint_id: v.string(), ...pageArgs },
   handler: async (ctx, args) => {
     const cutoff = await cappedCutoff(ctx, args.cutoff)
+
     if (cutoff === null) {
       return emptyPage()
     }
+
     const result = await ctx.db
       .query(ENDPOINT_STATS_TABLE)
       .withIndex('by_endpoint_id_and_scan_at_and_tier', (q) =>
@@ -21,6 +23,7 @@ export const list = query({
       )
       .order('desc')
       .paginate(args.paginationOpts)
+
     return { ...result, as_of: cutoff, page: result.page.map(withoutSystemFields) }
   },
   returns: pageResult(endpointStatsTable.validator),

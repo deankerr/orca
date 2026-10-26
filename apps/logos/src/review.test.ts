@@ -28,6 +28,7 @@ test('uses only pure black and white review surfaces and an avatar alpha grid', 
     }
 
     const outputPath = await createLogoReviewSheet({ appRoot, key: 'sample' })
+
     const { data, info } = await sharp(outputPath).ensureAlpha().raw().toBuffer({
       resolveWithObject: true,
     })
@@ -50,5 +51,6 @@ function readPixel(args: {
   y: number
 }): number[] {
   const offset = (args.y * args.info.width + args.x) * args.info.channels
+
   return [...args.data.subarray(offset, offset + args.info.channels)]
 }

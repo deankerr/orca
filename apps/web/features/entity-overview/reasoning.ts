@@ -19,5 +19,6 @@ export function reasoningLabel(supported: boolean | null, required: boolean | nu
 export function orderEfforts(values: string[] | null) {
   const levels = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
   const rank = (value: string) => (levels.includes(value) ? levels.indexOf(value) : levels.length)
+
   return values?.toSorted((a, b) => rank(a) - rank(b)) ?? null
 }

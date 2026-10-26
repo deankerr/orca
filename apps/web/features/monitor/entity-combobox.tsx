@@ -60,6 +60,7 @@ function EntityCombobox({
             const idRank = rankItem(item.id, search, { threshold: rankings.CONTAINS })
             const nameRank = rankItem(item.name, search, { threshold: rankings.CONTAINS })
             const bestRank = idRank.rank >= nameRank.rank ? idRank : nameRank
+
             return { item, rank: bestRank }
           })
           .filter((rankedItem) => rankedItem.rank.passed)
@@ -97,9 +98,11 @@ function EntityCombobox({
     if (selected) {
       return <FilterIdentity name={selected.name} id={selected.id} />
     }
+
     if (value && isPending) {
       return <FilterIdentitySkeleton />
     }
+
     return <span className="w-full truncate text-muted-foreground">{value || placeholder}</span>
   })()
 

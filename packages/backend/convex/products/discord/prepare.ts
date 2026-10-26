@@ -53,6 +53,7 @@ export async function prepareBatch(
 
     if (changes.length === 0) {
       skippedEvents.push({ reason: 'frequent_pricing', source_id: alert.source_id })
+
       return []
     }
 

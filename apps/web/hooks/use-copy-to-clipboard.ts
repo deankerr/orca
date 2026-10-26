@@ -13,6 +13,7 @@ export function useCopyToClipboard() {
         title: 'Unable to copy to clipboard',
         type: 'error',
       })
+
       return
     }
 

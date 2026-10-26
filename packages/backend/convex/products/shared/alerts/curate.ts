@@ -13,6 +13,7 @@ import { isScheduledPricing } from './pricing'
 
 const atom = v.union(v.null(), v.string(), v.number(), v.boolean(), v.array(v.string()))
 const value = v.union(atom, v.record(v.string(), atom))
+
 const fieldChange = v.union(
   // Opaque changes are announced without projecting their arbitrary values into alerts.
   v.object({ path: v.string(), type: v.literal('field_changed') }),
@@ -30,10 +31,12 @@ const fieldChange = v.union(
 export const entityAlert = v.union(
   ...eventsTable.validator.members.flatMap((member) => {
     const kind = member.fields.entity_kind.value
+
     const identity = member.omit('change_json', 'type', 'scan_at').extend({
       observed_at: v.string(),
       previously_known: v.optional(v.boolean()),
     })
+
     return [
       identity.extend({
         changes: v.array(fieldChange),
@@ -52,9 +55,13 @@ export const entityAlert = v.union(
     ]
   }),
 )
+
 export type EntityAlert = Infer<typeof entityAlert>
+
 export type FieldChange = Infer<typeof fieldChange>
+
 export type FieldValue = Infer<typeof value>
+
 type Selection = Record<string, true | readonly string[]>
 
 const fields = (...names: string[]): Record<string, true> =>
@@ -148,6 +155,7 @@ const selections: Record<EventRow['entity_kind'], Selection> = {
 // oxlint-enable sort-keys
 
 const Atom = z.union([z.null(), z.string(), z.number(), z.boolean(), z.array(z.string())])
+
 const StringSet = z.object({
   changes: z.array(z.object({ type: z.enum(['ADD', 'REMOVE']), value: z.string() })),
   embeddedKey: z.literal('$value'),
@@ -157,27 +165,35 @@ function nativePath(kind: EventRow['entity_kind'], path: string[]): string[] {
   if (path[0] === 'metadata') {
     return path.slice(1)
   }
+
   if (path[0] === 'pricing' && path[1] === 'meters') {
     return ['pricing', ...path.slice(2)]
   }
+
   const [key, ...rest] = path
+
   if (kind === 'model') {
     if (key === 'model_id') {
       return ['id', ...rest]
     }
+
     if (key === 'display_name') {
       return ['short_name', ...rest]
     }
+
     if (key === 'or_created_at') {
       return ['created_at', ...rest]
     }
   }
+
   if (kind === 'provider' && key === 'display_name') {
     return ['displayName', ...rest]
   }
+
   if (kind === 'endpoint' && key === 'endpoint_id') {
     return ['id', ...rest]
   }
+
   return path
 }
 
@@ -206,13 +222,17 @@ function selectValue(
 
 function fieldSelection(kind: EventRow['entity_kind'], path: string[]) {
   const [key, child] = path
+
   if (key === undefined || !Object.hasOwn(selections[kind], key)) {
     return undefined
   }
+
   const group = selections[kind][key]
+
   if (path.length === 1) {
     return group
   }
+
   return path.length === 2 &&
     group !== undefined &&
     group !== true &&
@@ -229,6 +249,7 @@ function selectedChanges(
 ): FieldChange[] {
   const path = nativePath(kind, sourcePath)
   const selection = fieldSelection(kind, path)
+
   if (selection === undefined) {
     return []
   }
@@ -241,6 +262,7 @@ function selectedChanges(
         selectedChanges(kind, nested, [...sourcePath, nested.key]),
       )
     }
+
     const set = StringSet.parse(node, {
       error: () => `Unsupported array change at ${path.join('.')}`,
     })
@@ -273,9 +295,13 @@ function selectedChanges(
   return isDeepEqual(before, after) ? [] : [{ after, before, path: field, type: 'field_updated' }]
 }
 
+interface NativeFields {
+  [name: string]: JsonValue
+}
+
 function entityValue(snapshot: Snapshot): Record<string, FieldValue> {
   const source: Record<string, JsonValue> = snapshot.value
-  const native: Record<string, JsonValue> = { ...snapshot.value.metadata, ...source }
+  const native: NativeFields = { ...snapshot.value.metadata, ...source }
 
   for (const [key, field] of Object.entries(source)) {
     const [name] = nativePath(snapshot.entity_kind, [key])
@@ -314,6 +340,7 @@ export function curate(row: EventRow): EntityAlert | null {
       type: `${row.entity_kind}_added`,
     }
   }
+
   if (event.type === 'REMOVE') {
     return {
       ...identity,
@@ -321,6 +348,7 @@ export function curate(row: EventRow): EntityAlert | null {
       type: `${row.entity_kind}_removed`,
     }
   }
+
   const scheduled =
     event.pricing === undefined
       ? undefined
@@ -340,6 +368,7 @@ export function curate(row: EventRow): EntityAlert | null {
 
     return selectedChanges(row.entity_kind, change, path)
   })
+
   return changes.length === 0
     ? null
     : {

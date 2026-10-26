@@ -84,6 +84,7 @@ export const refresh = internalAction({
       scan_at: scanAt,
       size: compressed.byteLength,
     })
+
     return null
   },
   returns: v.null(),

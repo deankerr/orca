@@ -55,8 +55,10 @@ export async function createLogoReviewSheet(options: ReviewSheetOptions): Promis
   assertSafeKey(options.key)
 
   const appRoot = options.appRoot ?? APP_ROOT
+
   const outputPath =
     options.outputPath ?? nodePath.join(appRoot, 'dist', 'review', `${options.key}.png`)
+
   const tiles = await Promise.all(
     TILE_SPECS.map(
       async (spec) =>
@@ -98,6 +100,7 @@ export async function createLogoReviewSheet(options: ReviewSheetOptions): Promis
 async function createTile(args: { assetPath: string; spec: TileSpec }): Promise<Buffer> {
   const asset = sharp(args.assetPath)
   const metadata = await asset.metadata()
+
   if (metadata.width !== IMAGE_SIZE_PX || metadata.height !== IMAGE_SIZE_PX) {
     throw new Error(
       `Cannot review ${args.spec.group} asset with dimensions ${metadata.width}x${metadata.height}; expected ${IMAGE_SIZE_PX}x${IMAGE_SIZE_PX}`,
@@ -105,6 +108,7 @@ async function createTile(args: { assetPath: string; spec: TileSpec }): Promise<
   }
 
   const assetPng = await asset.png().toBuffer()
+
   const layers: OverlayOptions[] = [
     {
       input: createLabelSvg({
@@ -191,6 +195,7 @@ function assertSafeKey(key: string): void {
 
 if (import.meta.main) {
   const [key] = process.argv.slice(2)
+
   if (key === undefined) {
     throw new Error('Usage: bun run review <logo-key>')
   }

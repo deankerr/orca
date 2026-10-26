@@ -19,6 +19,7 @@ const navigationLinks = [
 
 export function AppHeader({ accountMenu }: { accountMenu: ReactNode }) {
   const pathname = usePathname()
+
   return (
     <header className="shrink-0 border-b px-4 md:px-6">
       <div className="flex h-12 items-center justify-between gap-4">
@@ -35,6 +36,7 @@ export function AppHeader({ accountMenu }: { accountMenu: ReactNode }) {
             <NavigationMenuList className="gap-2">
               {navigationLinks.map((link) => {
                 const isActive = pathname === link.href
+
                 return (
                   <NavigationMenuItem key={link.href}>
                     <NavigationMenuLink

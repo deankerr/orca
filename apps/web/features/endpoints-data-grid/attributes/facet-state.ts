@@ -6,7 +6,9 @@ import { isAttributeKey } from './attributes'
 export type FilterMode = 'include' | 'exclude' | 'any'
 
 export type FacetFilterState = Partial<Record<AttributeKey, FilterMode>>
+
 type AttributeFilterState = Partial<Record<AttributeKey, FilterMode>>
+
 type ModalityFilterState = Record<EndpointModalityAttribute, FilterMode>
 
 const modalityNameSet = new Set<string>(endpointModalityAttributes)
@@ -68,6 +70,7 @@ export function toFacetFilters(has: string[], not: string[]): FacetFilterState {
     if (!isAttributeKey(key)) {
       continue
     }
+
     filters[key] = 'include'
   }
 
@@ -75,6 +78,7 @@ export function toFacetFilters(has: string[], not: string[]): FacetFilterState {
     if (!isAttributeKey(key)) {
       continue
     }
+
     filters[key] = 'exclude'
   }
 
@@ -88,6 +92,7 @@ export function toAttributeFilters(has: string[], not: string[]): AttributeFilte
     if (!isAttributeKey(key) || isModalityName(key)) {
       continue
     }
+
     filters[key] = 'include'
   }
 
@@ -95,6 +100,7 @@ export function toAttributeFilters(has: string[], not: string[]): AttributeFilte
     if (!isAttributeKey(key) || isModalityName(key)) {
       continue
     }
+
     filters[key] = 'exclude'
   }
 

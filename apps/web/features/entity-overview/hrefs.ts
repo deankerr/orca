@@ -19,10 +19,12 @@ export function buildMonitorHref({
   if (pathname === '/monitor') {
     const next = pickParams(toSearchParams(searchParams), MONITOR_QUERY_KEYS)
     next.set(key, value)
+
     return href('/monitor', next)
   }
 
   const next = new URLSearchParams()
   next.set(key, value)
+
   return href('/monitor', next)
 }

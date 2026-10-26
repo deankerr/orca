@@ -1,27 +1,29 @@
-/* oxlint-disable typescript/no-unsafe-type-assertion -- The HTTP handler only needs runQuery; this minimal action double checks parsing and continuation without a deployment. */
 import { expect, test } from 'vitest'
 
 import type { ActionCtx } from '#generated/server'
 
+import { testDouble } from '../../doubles.testing'
 import { serve } from './http'
 
-const handler = (
-  serve as unknown as {
-    _handler: (ctx: ActionCtx, request: Request) => Promise<Response>
-  }
-)._handler
+const handler = testDouble<{
+  _handler: (ctx: ActionCtx, request: Request) => Promise<Response>
+}>(serve)._handler
 
 test('HTTP validates scopes and carries opaque cursors across empty JSON pages', async () => {
   const calls: unknown[] = []
   let isDone = false
-  const ctx = {
+
+  const ctx = testDouble<ActionCtx>({
     runQuery: async (_reference: unknown, args: unknown) => {
       calls.push(args)
+
       return { continueCursor: 'next-position', isDone, page: [] }
     },
-  } as unknown as ActionCtx
+  })
+
   const address =
     'https://example.com/events/feed?model_id=author%2Fmodel&limit=3&cursor=previous-position'
+
   const response = await handler(ctx, new Request(address))
   const body: unknown = await response.json()
   const next = address.replace('previous-position', 'next-position')
@@ -42,6 +44,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
   expect(last).toEqual({ events: [], next: null })
   expect(end.headers.has('Link')).toBe(false)
   const validCalls = calls.length
+
   for (const search of [
     'limit=0',
     'limit=101',
@@ -56,6 +59,7 @@ test('HTTP validates scopes and carries opaque cursors across empty JSON pages',
     const invalid = await handler(ctx, new Request(`https://example.com/events/feed?${search}`))
     expect(invalid.status).toBe(400)
   }
+
   expect(calls).toHaveLength(validCalls)
 })
 
@@ -64,24 +68,28 @@ test('bad continuation cursors are client errors; unrelated query failures remai
     'Uncaught Error: Failed to parse cursor',
     'InvalidCursor: query changed',
   ]) {
-    const ctx = {
+    const ctx = testDouble<ActionCtx>({
       runQuery: async () => {
         throw new Error(message)
       },
-    } as unknown as ActionCtx
+    })
+
     const response = await handler(
       ctx,
       new Request('https://example.com/events/feed?cursor=invalid'),
     )
+
     expect(response.status).toBe(400)
     const body: unknown = await response.json()
     expect(body).toEqual({ error: 'Invalid cursor. Restart from the feed without a cursor.' })
   }
-  const ctx = {
+
+  const ctx = testDouble<ActionCtx>({
     runQuery: async () => {
       throw new Error('Database unavailable')
     },
-  } as unknown as ActionCtx
+  })
+
   const response = await handler(ctx, new Request('https://example.com/events/feed?cursor=valid'))
   expect(response.status).toBe(500)
   const body: unknown = await response.json()

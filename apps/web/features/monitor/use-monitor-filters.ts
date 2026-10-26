@@ -14,12 +14,15 @@ function monitorScope({
   if (endpoint) {
     return { endpoint_id: endpoint, kind: 'endpoint' }
   }
+
   if (model && provider) {
     return { kind: 'pair', model_id: model, provider_id: provider }
   }
+
   if (model) {
     return { kind: 'model', model_id: model }
   }
+
   return provider ? { kind: 'provider', provider_id: provider } : { kind: 'all' }
 }
 

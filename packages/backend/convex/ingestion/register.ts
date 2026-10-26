@@ -28,6 +28,7 @@ export const run = internalAction({
   args: {},
   handler: async (ctx): Promise<Infer<typeof step>> => {
     const state = await ctx.runQuery(internal.ingestion.register.read, {})
+
     const plan = await planRegister(
       state,
       async (listing) => await scans.times(ctx, listing),
@@ -60,6 +61,7 @@ export const read = internalQuery({
   handler: async (ctx) => {
     const target = await ctx.db.query(INGESTION_TARGET_TABLE).unique()
     const edges = await readEdges(ctx)
+
     const baseline =
       edges.earliest !== null &&
       (await ctx.db
@@ -105,6 +107,7 @@ export const commitPairs = internalMutation({
 
     // Registration repeats until idle and makes new records candidates for the queue worker.
     await kickoff(ctx)
+
     return true
   },
   returns: v.boolean(),
@@ -114,6 +117,7 @@ export const commitBaseline = internalMutation({
   args: { edges: edgesValidator, scan_at: v.string() },
   handler: async (ctx, { edges, scan_at }) => {
     const current = await readEdges(ctx)
+
     const existing = await ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'baseline').eq('scan_at', scan_at))
@@ -139,6 +143,7 @@ export const commitBaseline = internalMutation({
         }),
     )
     await kickoff(ctx)
+
     return true
   },
   returns: v.boolean(),
@@ -149,6 +154,7 @@ async function readEdges(ctx: QueryCtx): Promise<Edges> {
     ctx.db
       .query(INGESTION_RECORDS_TABLE)
       .withIndex('by_kind_and_scan_at', (q) => q.eq('kind', 'pair'))
+
   const latest = await pairs().order('desc').first()
   const earliest = await pairs().order('asc').first()
 

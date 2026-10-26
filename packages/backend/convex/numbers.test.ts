@@ -47,6 +47,7 @@ test('numeric precision keeps small values useful, familiar money tidy, and inte
     expect(formatNumber(invalid)).toBeNull()
     expect(relativeChange('1', invalid)).toBeNull()
   }
+
   expect(formatNumber(Number.POSITIVE_INFINITY)).toBeNull()
 })
 

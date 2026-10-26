@@ -182,9 +182,11 @@ test('numeric summaries weight frequencies and keep nested absence, array occurr
 test('only the configured administrator can request a full report', async () => {
   vi.stubEnv('ORCA_ADMIN_USER_ID', 'user_admin')
   const scan = sampleScan()
+
   const text = scan.entries
     .map((entry) => `${JSON.stringify({ ...entry, scan_at: scan.scan_at })}\n`)
     .join('')
+
   const source = vi.spyOn(objects, 'loadMany').mockResolvedValue([text])
   const t = setup()
 

@@ -90,6 +90,7 @@ export class ReadinessQueryTimings {
 
     if (event.type === 'removed') {
       this.forget(queryHash)
+
       return
     }
 
@@ -102,23 +103,29 @@ export class ReadinessQueryTimings {
 
     if (action?.type === 'error') {
       this.fetches.delete(queryHash)
+
       return
     }
 
     const success = action?.type === 'success'
+
     if (!success && this.fetches.has(queryHash)) {
       return
     }
+
     if (state.data === undefined || (!success && this.results.has(queryHash))) {
       return
     }
 
     const fetch = this.fetches.get(queryHash)
     const manual = action?.type === 'success' && action.manual === true
+
     if (fetch && manual) {
       return
     }
+
     const previous = this.results.get(queryHash)
+
     if (manual && previous) {
       // A live update supersedes persisted content, but must not rewrite the fetch span.
       this.observed.add(queryHash)
@@ -129,8 +136,10 @@ export class ReadinessQueryTimings {
         query_run_id: previous.id,
         received_at_ms: this.connection.mark().at,
       })
+
       return
     }
+
     this.complete(event, queryKey, fetch)
   }
 
@@ -148,6 +157,7 @@ export class ReadinessQueryTimings {
   ) {
     const { queryHash, state } = event.query
     const available = this.connection.mark()
+
     const result: ReadinessQueryTiming = {
       available,
       id: crypto.randomUUID(),
@@ -155,8 +165,10 @@ export class ReadinessQueryTimings {
         fetch?.source ?? (this.restored.has(queryHash) ? 'tanstack_persisted' : 'tanstack_memory'),
       ...(fetch ? { fetchStarted: fetch.started } : {}),
     }
+
     this.results.set(queryHash, result)
     this.fetches.delete(queryHash)
+
     if (fetch) {
       this.emit('query completed', {
         ...queryProperties(queryKey, result),
@@ -201,6 +213,7 @@ export function resultProperties(data: unknown) {
 export function queryProperties(key: QueryKey, result: ReadinessQueryTiming) {
   const start = result.fetchStarted ?? result.available
   const end = result.available
+
   return {
     client_cache_hit: result.source !== 'server',
     completed_at_ms: end.at,

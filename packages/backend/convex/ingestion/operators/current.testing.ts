@@ -18,7 +18,7 @@ export type CurrentTable<R extends Row = Row> = {
 
 function eraseRowType<R extends Row>(definition: CurrentTable<R>): CurrentTable {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Each table only receives its own rows back.
-  return definition as unknown as CurrentTable
+  return definition as never
 }
 
 export const currentTables: CurrentTable[] = [

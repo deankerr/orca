@@ -16,6 +16,7 @@ export type Ingestor = {
 }
 
 type Prepare<Prepared> = (ctx: ActionCtx, input: IngestInput) => Prepared | Promise<Prepared>
+
 type Remove = (ctx: ActionCtx, args: { scan_at: string; process: string }) => Promise<RemoveResult>
 
 /**

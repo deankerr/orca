@@ -2,6 +2,7 @@
 
 const OCC_PATTERN = /changed while this mutation was being run|write conflict|\bOCC\b/iu
 const RETRIES_EXHAUSTED_PATTERN = /retried too many times|too many (?:retries|conflicts)/iu
+
 const LINE_PATTERNS = {
   completionLost: /completion lost/iu,
   requestFailed: /\[ingestion\] request failed/iu,
@@ -57,14 +58,18 @@ function functionStats(report: ContentionReport, event: Record<string, unknown>)
     typeof event.componentPath === 'string' && event.componentPath !== ''
       ? `${event.componentPath}:`
       : ''
+
   const key = `${path}${String(event.identifier)}`
+
   const stats = report.functions[key] ?? {
     executions: 0,
     occExhausted: 0,
     occRetries: 0,
     otherErrors: 0,
   }
+
   report.functions[key] = stats
+
   return stats
 }
 
@@ -126,8 +131,10 @@ export function addLogLine(report: ContentionReport, line: string): void {
 
 export function totals(report: ContentionReport) {
   const stats = Object.values(report.functions)
+
   const sum = (key: keyof FunctionContention) =>
     stats.reduce((total, entry) => total + entry[key], 0)
+
   return {
     executions: sum('executions'),
     occExhausted: sum('occExhausted'),
