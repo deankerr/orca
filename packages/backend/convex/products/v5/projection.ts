@@ -162,20 +162,27 @@ const related = (a: readonly string[], b: readonly string[]) => startsWith(a, b)
 /** Complete values for some entity paths, supplied alongside a change, such as an Event's pricing. */
 export type Known = { path: Source; before: JsonValue; after: JsonValue }[]
 
-type ValueKind = Exclude<Kind, 'list'>
+export type ValueKind = Exclude<Kind, 'list' | 'opaque'>
 
 export type ValueChange<K extends ValueKind = ValueKind> = {
   [P in K]: { field: string; kind: P; before: KindValues[P]; after: KindValues[P] }
 }[K]
 
-/** A Contract field change: complete sides, or added and removed members of a string set. */
-export type FieldChange =
+/**
+ * A Contract field change: complete sides, added and removed members of a string set, or an opaque
+ * field that changed without values.
+ */
+type FieldChange =
   | ValueChange
   | { field: string; kind: 'list'; added: string[]; removed: string[] }
+  | { field: string; kind: 'opaque' }
 
 export type Translation = {
   changes: FieldChange[]
-  /** Contract fields whose source changed, but whose complete sides the change does not supply. */
+  /**
+   * Non-opaque Contract fields whose source changed, but whose complete sides the change does
+   * not supply.
+   */
   unresolved: string[]
   /** Changed entity paths that no Contract field reads. */
   ignored: string[]
@@ -213,6 +220,19 @@ function valueChange<K extends ValueKind>(
   }
 }
 
+/** A touched opaque source without both sides still changed; its values are never announced. */
+function opaqueChanged(
+  definition: Field<'opaque'>,
+  before: { value: Fact } | undefined,
+  after: { value: Fact } | undefined,
+): boolean {
+  return (
+    before === undefined ||
+    after === undefined ||
+    !isDeepEqual(definition.read(before.value), definition.read(after.value))
+  )
+}
+
 const members = (from: readonly string[], to: readonly string[]) =>
   to.filter((item) => !from.includes(item))
 
@@ -240,6 +260,14 @@ function translate(fields: Fields, changes: CapturedChange[], known: Known = [])
 
     const before = sourceValue(definition.source, 'before', leaves, known)
     const after = sourceValue(definition.source, 'after', leaves, known)
+
+    if (definition.kind === 'opaque') {
+      if (opaqueChanged(definition, before, after)) {
+        result.changes.push({ field: name, kind: 'opaque' })
+      }
+
+      continue
+    }
 
     if (before === undefined || after === undefined) {
       result.unresolved.push(name)

@@ -1,25 +1,14 @@
-import type { AlertChange, AlertFact } from '@orca/backend/alerts/curate'
-import { measured } from '@orca/backend/alerts/facts'
-import { priceMeters } from '@orca/backend/alerts/pricing'
-import { formatNumber, formatPercent, formatPrice, relativeChange } from '@orca/backend/numbers'
+import type { AlertFact } from '@orca/backend/alerts/curate'
+
+import { fieldLabel as compactLabel, formatQuantity, isQuantity, priceUnit } from '@/lib/backend'
 
 export function formatChangeValue(item: AlertFact): string {
   if (item.value === null) {
     return 'null'
   }
 
-  if (item.kind === 'percent') {
-    return formatPercent(item.value) ?? String(item.value)
-  }
-
-  if (item.kind === 'price') {
-    const meter = priceMeters[item.field]
-
-    return (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? item.value
-  }
-
-  if (item.kind === 'count') {
-    return formatNumber(item.value) ?? String(item.value)
+  if (isQuantity(item)) {
+    return formatQuantity(item)
   }
 
   if (item.kind === 'flag') {
@@ -32,31 +21,13 @@ export function formatChangeValue(item: AlertFact): string {
 /** Units apply only to quoted prices. */
 export function formatChangeUnit(...items: AlertFact[]): string {
   const [first] = items
-  const meter = first === undefined ? undefined : priceMeters[first.field]
+  const unit = first === undefined ? undefined : priceUnit(first.field)
 
-  return meter !== undefined && items.every((item) => item.kind === 'price' && item.value !== null)
-    ? meter.unit
+  return unit !== undefined && items.every((item) => item.kind === 'price' && item.value !== null)
+    ? unit
     : ''
 }
 
-interface FieldLabels {
-  [field: string]: string
-}
-
-const fieldLabels: FieldLabels = {
-  max_completion_tokens: 'max_output',
-  'pricing.overrides': 'Price schedule',
-}
-
+/** The Monitor names the opaque override field by what it carries. */
 export const fieldLabel = (field: string): string =>
-  priceMeters[field]?.label ?? fieldLabels[field] ?? field.split('.').at(-1) ?? field
-
-/** Lower prices and higher limits are favorable. */
-export function formatChangeDelta(change: AlertChange) {
-  const quantities = measured(change)
-  const delta = quantities === null ? null : relativeChange(quantities.before, quantities.after)
-
-  return delta === null
-    ? null
-    : { ...delta, isGood: change.kind === 'price' ? !delta.isUp : delta.isUp }
-}
+  field === 'pricing.overrides' ? 'Price schedule' : compactLabel(field)

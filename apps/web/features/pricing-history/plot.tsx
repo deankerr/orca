@@ -1,6 +1,5 @@
 'use client'
 
-import { formatPrice } from '@orca/backend/numbers'
 import { LineChart } from 'echarts/charts'
 import { AxisPointerComponent, DataZoomComponent, GridComponent } from 'echarts/components'
 import { init, use as register } from 'echarts/core'
@@ -8,6 +7,8 @@ import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 import { z } from 'zod'
+
+import { formatPrice } from '@/lib/backend'
 
 import { providerSrgbColor } from './colors'
 import { sampleAt } from './data'

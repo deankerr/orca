@@ -8,13 +8,14 @@ import type { JsonValue } from '../../../json'
 import { render as renderPrepared } from '../../feed/render'
 import { curate } from '../../shared/alerts/curate'
 import { prepare as prepareEvent } from '../../shared/alerts/prepare'
+import { fieldLabel, presentChange } from '../../shared/alerts/present'
 import { prepareBatch as prepareDiscordBatch } from '../prepare'
 import type { DiscordUrls } from './card'
 import { embedCard, componentCard } from './card'
 import { code, escape, field, lifecycleMarker, valueChange } from './display'
-import { delta, fieldChange, factsText, fieldName, fieldValue, quote } from './fields'
+import { delta, fieldChange, factsText, fieldValue, quote } from './fields'
 import { renderDiscordBatch } from './index'
-import { priceLabel, pricingChanges, pricingTable } from './pricing'
+import { pricingChanges, pricingTable } from './pricing'
 
 type EventRow = CatalogEvent & { previously_known?: boolean }
 
@@ -60,9 +61,21 @@ const snapshots = {
   provider: { display_name: 'Provider', metadata: { name: 'Provider' }, provider_id: 'provider' },
 }
 
+/** Discord's annotation for a count change, where higher is favorable. */
+function countDelta(before: number, after: number): string {
+  const presented = presentChange(
+    { after, before, field: 'limit_rpm', kind: 'count' },
+    { fractionDigits: 0 },
+  )
+
+  return presented.transition === 'updated' && presented.movement !== null
+    ? delta(presented.movement)
+    : ''
+}
+
 test('delta symbols distinguish favorable changes from unfavorable changes like legacy embeds', () => {
-  expect(delta(100, 150)).toBe('▲ 50%')
-  expect(delta(100, 50)).toBe('🔻 50%')
+  expect(countDelta(100, 150)).toBe('▲ 50%')
+  expect(countDelta(100, 50)).toBe('🔻 50%')
 
   for (const [before, after, symbol] of [
     ['0.000001', '0.000002', '🔺'],
@@ -73,8 +86,8 @@ test('delta symbols distinguish favorable changes from unfavorable changes like 
     ).toContain(symbol)
   }
 
-  expect(delta(0, 10)).toBe('')
-  expect(delta(10, 10)).toBe('')
+  expect(countDelta(0, 10)).toBe('')
+  expect(countDelta(10, 10)).toBe('')
 
   // An unquoted price is not a zero-price quote, so it has no delta.
   expect(
@@ -118,15 +131,15 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   expect(fieldChange({ after: 0.142, before: 0.141953, field: 'limit_rpm', kind: 'count' })).toBe(
     '`limit_rpm:` ≈`0.142` ▲',
   )
-  expect(delta(1_000_000, 1_000_001)).toBe('▲')
-  expect(delta(1_000_001, 1_000_000)).toBe('🔻')
-  expect(delta('100', '100.0999')).toBe('▲')
-  expect(delta('100', '100.1')).toBe('▲')
-  expect(delta('100', '100.4999')).toBe('▲')
-  expect(delta('100', '100.5')).toBe('▲ 1%')
-  expect(delta('100', '108.49')).toBe('▲ 8%')
-  expect(delta('100', '108.5')).toBe('▲ 9%')
-  expect(delta('100', '81.4')).toBe('🔻 19%')
+  expect(countDelta(1_000_000, 1_000_001)).toBe('▲')
+  expect(countDelta(1_000_001, 1_000_000)).toBe('🔻')
+  expect(countDelta(100, 100.0999)).toBe('▲')
+  expect(countDelta(100, 100.1)).toBe('▲')
+  expect(countDelta(100, 100.4999)).toBe('▲')
+  expect(countDelta(100, 100.5)).toBe('▲ 1%')
+  expect(countDelta(100, 108.49)).toBe('▲ 8%')
+  expect(countDelta(100, 108.5)).toBe('▲ 9%')
+  expect(countDelta(100, 81.4)).toBe('🔻 19%')
 
   // oxlint-disable sort-keys -- Fixture key order sets the order of the rendered and compared price changes.
   const event = row(
@@ -197,12 +210,12 @@ test('Discord keeps slug punctuation and renders raw final keys with lowercase p
     ['warning_message', 'warning_message'],
     ['pricing.input', 'input'],
   ]) {
-    expect(fieldName(path ?? '')).toBe(label)
+    expect(fieldLabel(path ?? '')).toBe(label)
   }
 
-  expect(priceLabel('pricing.input')).toBe('input')
-  expect(priceLabel('pricing.input_cache_read')).toBe('cache_read')
-  expect(priceLabel('pricing.discount')).toBe('discount')
+  expect(fieldLabel('pricing.input')).toBe('input')
+  expect(fieldLabel('pricing.input_cache_read')).toBe('cache_read')
+  expect(fieldLabel('pricing.discount')).toBe('discount')
 
   const event: EventRow = {
     ...row(

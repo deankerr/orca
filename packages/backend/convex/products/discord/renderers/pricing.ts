@@ -1,20 +1,21 @@
-import { formatPercent, formatPrice } from '../../../numbers'
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
-import { fact } from '../../shared/alerts/facts'
-import { priceMeters as meters } from '../../shared/alerts/pricing'
+import {
+  fact,
+  fieldLabel,
+  formatQuantity,
+  presentChange,
+  priceFields,
+} from '../../shared/alerts/present'
 import { code, field, valueChange } from './display'
-import { delta, fieldChange, fieldName } from './fields'
+import { delta, fieldChange } from './fields'
 
-export const priceLabel = (name: string): string => meters[name]?.label ?? fieldName(name)
-
-const price = (name: string, rate: string) =>
-  formatPrice(rate, meters[name]?.scale ?? 0) ?? `$${rate}`
+const price = (name: string, value: string) => formatQuantity({ field: name, kind: 'price', value })
 
 export function pricingFacts(facts: readonly AlertFact[], scheduled: boolean | undefined): string {
   const discount = fact(facts, 'pricing.discount', 'percent')?.value ?? 0
 
   const prices = pricingTable([
-    ...Object.keys(meters).flatMap((name) => {
+    ...Object.keys(priceFields).flatMap((name) => {
       const rate = fact(facts, name, 'price')?.value
 
       return rate === undefined || rate === null
@@ -25,7 +26,7 @@ export function pricingFacts(facts: readonly AlertFact[], scheduled: boolean | u
       ? []
       : [
           {
-            after: formatPercent(discount) ?? String(discount),
+            after: formatQuantity({ field: 'pricing.discount', kind: 'percent', value: discount }),
             annotation: '',
             path: 'pricing.discount',
           },
@@ -49,7 +50,7 @@ export function pricingChanges(changes: AlertChange[]): string[] {
     const row = pricingChange(change)
 
     if (row === null) {
-      fallback.push(fieldChange(change, { label: priceLabel(change.field) }))
+      fallback.push(fieldChange(change))
     } else {
       rows.push(row)
     }
@@ -62,30 +63,33 @@ export function pricingChanges(changes: AlertChange[]): string[] {
 function pricingChange(change: AlertChange): PriceRow | null {
   if (change.kind === 'percent') {
     // A zero discount is no discount: moving from or to zero adds or removes it.
-    const percent = (value: number) => formatPercent(value) ?? String(value)
+    const percent = (value: number) =>
+      value === 0 ? undefined : formatQuantity({ field: change.field, kind: 'percent', value })
 
-    return {
-      after: change.after === 0 ? undefined : percent(change.after),
-      annotation: '',
-      before: change.before === 0 ? undefined : percent(change.before),
-      change: changeKind(change.after === 0, change.before === 0),
-      path: change.field,
-    }
+    const [before, after] = [percent(change.before), percent(change.after)]
+
+    return { after, annotation: '', before, change: presence(before, after), path: change.field }
   }
 
   if (change.kind !== 'price') {
     return null
   }
 
-  const { before, after } = change
+  // Unquoted prices are not zero-price quotes.
+  const rate = (value: string | null) => (value === null ? undefined : price(change.field, value))
+  const presented = presentChange(change, { fractionDigits: 0 })
 
   return {
-    after: after === null ? undefined : price(change.field, after),
-    // Unquoted prices are not zero-price quotes.
+    after: rate(change.after),
     annotation:
-      before === null || after === null ? '' : delta(before, after, { lowerIsBetter: true }),
-    before: before === null ? undefined : price(change.field, before),
-    change: changeKind(after === null, before === null),
+      presented.transition === 'updated' && presented.movement !== null
+        ? delta(presented.movement)
+        : '',
+    before: rate(change.before),
+    change:
+      presented.transition === 'added' || presented.transition === 'removed'
+        ? presented.transition
+        : undefined,
     path: change.field,
   }
 }
@@ -110,7 +114,7 @@ export function pricingTable(rows: PriceRow[]): string {
 
   // Include the external marker in the row width, then subtract it from code-span padding.
   const labelWidth = Math.max(
-    ...rows.map((row) => priceLabel(row.path).length + (row.change === undefined ? 0 : 2)),
+    ...rows.map((row) => fieldLabel(row.path).length + (row.change === undefined ? 0 : 2)),
   )
 
   const valueWidth = Math.max(
@@ -126,7 +130,7 @@ export function pricingTable(rows: PriceRow[]): string {
         value === undefined ? undefined : code(value, { align: 'right', width: valueWidth })
 
       return field(
-        priceLabel(row.path),
+        fieldLabel(row.path),
         valueChange(cell(row.before), cell(row.after), { annotation: row.annotation }),
         { change: row.change, width: labelWidth - (row.change === undefined ? 0 : 2) },
       )
@@ -134,10 +138,11 @@ export function pricingTable(rows: PriceRow[]): string {
     .join('\n')
 }
 
-function changeKind(removed: boolean, added: boolean): 'removed' | 'added' | undefined {
-  if (removed) {
+/** A row whose side is absent was added or removed. */
+function presence(before: string | undefined, after: string | undefined) {
+  if (after === undefined) {
     return 'removed'
   }
 
-  return added ? 'added' : undefined
+  return before === undefined ? 'added' : undefined
 }

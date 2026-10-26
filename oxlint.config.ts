@@ -26,6 +26,26 @@ export default defineConfig({
       },
     },
     {
+      // Web code reaches backend values through one reviewed entry point, keeping server code out of bundles.
+      excludeFiles: ['apps/web/lib/backend.ts', 'apps/web/scripts/**'],
+      files: ['apps/web/**'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                allowTypeImports: true,
+                group: ['@orca/backend/**', '!@orca/backend/api'],
+                message:
+                  'Import backend values through `@/lib/backend`; use `import type` for backend types.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
       files: ['**/*.test.{ts,tsx}', '**/*.testing.ts'],
       rules: {
         // fixtures and assertions cast test doubles routinely

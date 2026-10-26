@@ -1,8 +1,6 @@
 'use client'
 
 import type { AlertFact, EntityAlert } from '@orca/backend/alerts/curate'
-import { fact } from '@orca/backend/alerts/facts'
-import { priceMeters } from '@orca/backend/alerts/pricing'
 import { InfoIcon, PlusCircleIcon } from 'lucide-react'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -14,6 +12,7 @@ import {
 } from '@/components/shared/entity-identity'
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
 import { Badge } from '@/components/ui/badge'
+import { fact, priceFields } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
 import { EntityOverviewTrigger } from '../entity-overview/trigger'
@@ -136,7 +135,7 @@ function EventDetails({ event }: { event: EntityAlert }) {
           'context_length',
           'max_completion_tokens',
           'quantization',
-          ...Object.keys(priceMeters),
+          ...Object.keys(priceFields),
           'pricing.discount',
           'data_policy.training',
           'data_policy.retains_prompts',

@@ -1,4 +1,3 @@
-import { formatPrice } from '@orca/backend/numbers'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlarmClock,
@@ -27,6 +26,8 @@ import {
   Video,
   Wrench,
 } from 'lucide-react'
+
+import { formatPrice } from '@/lib/backend'
 
 import type { GridEndpoint } from '../data/grid-endpoints'
 import type { ColorIconBadgeColor } from './color-icon-badge'

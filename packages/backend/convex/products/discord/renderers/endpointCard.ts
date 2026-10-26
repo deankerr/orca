@@ -2,7 +2,7 @@ import type { AlertChange, AlertFact, EntityAlert } from '../../shared/alerts/cu
 import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { arrival, escape, lifecycleMarker } from './display'
-import { factsText, fieldChange, fieldName } from './fields'
+import { factsText, fieldChange } from './fields'
 import { pricingChanges, pricingFacts } from './pricing'
 
 type EndpointAlert = Extract<EntityAlert, { entity_kind: 'endpoint' }>
@@ -70,14 +70,12 @@ function fieldGroup(name: string): string {
 
 /** Keep endpoint labels and units consistent across individual and batch cards. */
 export function endpointFieldChange(change: AlertChange): string {
-  return fieldChange(change, { label: endpointLabel(change.field), suffix: unit(change.field) })
+  return fieldChange(change, { suffix: unit(change.field) })
 }
 
 function endpointDetails(facts: readonly AlertFact[], scheduled: boolean | undefined): string[] {
   return [
-    factsText(facts, ['context_length', 'max_completion_tokens', 'quantization'], {
-      label: endpointLabel,
-    }),
+    factsText(facts, ['context_length', 'max_completion_tokens', 'quantization']),
     pricingFacts(facts, scheduled),
     factsText(
       facts,
@@ -85,10 +83,6 @@ function endpointDetails(facts: readonly AlertFact[], scheduled: boolean | undef
       { suffix: unit },
     ),
   ].filter(Boolean)
-}
-
-function endpointLabel(name: string): string {
-  return name === 'max_completion_tokens' ? 'max_output' : fieldName(name)
 }
 
 const unit = (name: string) => (name === 'data_policy.retention_days' ? ' days' : '')

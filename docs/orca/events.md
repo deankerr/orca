@@ -66,7 +66,7 @@ Models also announce `warning_message`, which the Contract does not yet publish.
 
 ### Ordinary pricing
 
-Thresholds live in `products/shared/alerts/filter.ts` and are recorded in `config.md`.
+Thresholds live in `products/shared/alerts/pricing.ts` and are recorded in `config.md`.
 
 1. Suppress small numeric discount adjustments.
 2. Require a qualifying meter movement; discount alone is insufficient because presented rates already include it.

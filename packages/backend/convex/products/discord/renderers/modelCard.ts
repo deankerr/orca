@@ -1,5 +1,5 @@
 import type { AlertFact, EntityAlert } from '../../shared/alerts/curate'
-import { fact } from '../../shared/alerts/facts'
+import { fact } from '../../shared/alerts/present'
 import { colors, embedCard, componentCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
 import { code, dot, escape, field, lifecycleMarker } from './display'

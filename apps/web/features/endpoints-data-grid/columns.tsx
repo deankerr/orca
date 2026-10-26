@@ -1,4 +1,3 @@
-import { formatPrice } from '@orca/backend/numbers'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { EntityAvatar } from '@/components/shared/entity-avatar'
@@ -10,6 +9,7 @@ import {
 } from '@/components/shared/entity-identity'
 import { Badge } from '@/components/ui/badge'
 import { EntityOverviewTrigger } from '@/features/entity-overview/trigger'
+import { formatPrice } from '@/lib/backend'
 
 import { AttributeBadgeSet } from './attributes/attribute-badge'
 import { endpointAttributeSets } from './attributes/attribute-groups'

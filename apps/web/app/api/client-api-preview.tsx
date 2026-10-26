@@ -1,11 +1,11 @@
 'use client'
 
-import { OrcaPublicApiV2Schema } from '@orca/backend/public-api/v2/schema'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
+import { OrcaPublicApiV2Schema } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
 import { highlightJson } from './highlight-json'

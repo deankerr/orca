@@ -20,7 +20,8 @@ without choosing a base band or interpreting `pricing_json`.
 ## Presentation
 
 `priceMeters.ts` owns supported units and scaling. `numbers.ts` supplies shared decimal formatting and
-exact relative comparisons; alert labels and product field names are presentation choices.
+exact relative comparisons. `alerts/present.ts` gives every alert product the same price labels, quantity text,
+and favorable direction; product field names and markup remain presentation choices.
 
 - Use `$` for USD; discount is a percentage adjustment, never a currency meter.
 - Text, audio, and cache rates use MTOK; image rates use KTOK and are per token, not per image.
