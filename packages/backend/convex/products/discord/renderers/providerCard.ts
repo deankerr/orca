@@ -1,7 +1,7 @@
 import type { EntityAlert } from '../../shared/alerts/curate'
 import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { arrival, escape, lifecycleMarker } from './display'
+import { arrival, escape, lifecycleMarker, stackRows } from './display'
 import { fieldChange } from './fields'
 
 type ProviderAlert = Extract<EntityAlert, { entity_kind: 'provider' }>
@@ -38,5 +38,5 @@ function providerContent(event: ProviderAlert): string {
     return `${subject} has no more listed endpoints.`
   }
 
-  return [`${subject} updated.`, ...event.changes.map((change) => fieldChange(change))].join('\n\n')
+  return `${subject} updated.\n\n${stackRows(event.changes.map((change) => fieldChange(change)))}`
 }

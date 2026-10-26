@@ -230,10 +230,11 @@ function FactList({ facts, fields }: { facts: readonly AlertFact[]; fields: stri
       {fields.map((field) => {
         const item = facts.find((candidate) => candidate.field === field)
 
-        // Unknown facts and a zero discount have nothing to show.
+        // Unknown facts, false flags, and a zero discount have nothing to show.
         if (
           item === undefined ||
           item.value === null ||
+          item.value === false ||
           (item.kind === 'percent' && item.value === 0)
         ) {
           return null

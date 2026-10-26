@@ -19,11 +19,13 @@ equivalent changes within one scan and entity kind. Residual changes keep their 
 Within each scan, ordering introduces parents before endpoints and announces endpoint unlistings before a
 parent's last-endpoint departure. Ordering applies before batching; `config.md` records the priorities.
 
-| Arrival         | Presentation                                               |
-| --------------- | ---------------------------------------------------------- |
-| Model discovery | Introductory card.                                         |
-| Known entity    | Endpoint relisting or model/provider serving availability. |
-| Unclassified    | Neutral wording.                                           |
+| Arrival      | Presentation                                               |
+| ------------ | ---------------------------------------------------------- |
+| Discovery    | ✨ heading; model discoveries are titled by name alone.    |
+| Known entity | Endpoint relisting or model/provider serving availability. |
+| Unclassified | Neutral wording.                                           |
+
+Only discoveries carry a heading marker. Departures announce absence without last-known details.
 
 - Batching threshold and delivery age are maintained in `config.md`.
 - Submitted payloads and sender receipts record output; later history or rendering changes do not update Discord.

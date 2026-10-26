@@ -1,39 +1,69 @@
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
-import {
-  findFact,
-  fieldLabel,
-  formatQuantity,
-  presentChange,
-  priceFields,
-} from '../../shared/alerts/present'
-import { code, fieldRow, valueChange } from './display'
+import { findFact, fieldLabel, formatQuantity, presentChange } from '../../shared/alerts/present'
+import { changeRow, dot, presence, valueChange } from './display'
 import { delta, fieldChange } from './fields'
 
 const price = (name: string, value: string) => formatQuantity({ field: name, kind: 'price', value })
 
-export function pricingFacts(facts: readonly AlertFact[], scheduled: boolean | undefined): string {
-  const discount = findFact(facts, 'pricing.discount', 'percent')?.value ?? 0
+/** A family's rates share a line in key order; `carry` families fold an unlisted rate's label into the next. */
+type PriceFamily = { carry: boolean; labels: Record<string, string> }
 
-  const prices = pricingTable([
-    ...Object.keys(priceFields).flatMap((name) => {
-      const rate = findFact(facts, name, 'price')?.value
+/** Listing lines in order; text rates come first and carry the discount. Web search is not listed. */
+const priceFamilies: PriceFamily[] = [
+  { carry: false, labels: { 'pricing.input': 'Input', 'pricing.output': 'Output' } },
+  {
+    carry: true,
+    labels: {
+      'pricing.input_cache_read': 'Cache',
+      'pricing.input_cache_write': 'Write',
+      'pricing.input_cache_write_1h': '1Hr',
+    },
+  },
+  { carry: true, labels: { 'pricing.image': 'Image', 'pricing.image_output': 'Output' } },
+  {
+    carry: true,
+    labels: {
+      'pricing.audio': 'Audio',
+      'pricing.audio_output': 'Output',
+      'pricing.input_audio_cache': 'Cache',
+    },
+  },
+]
 
-      return rate === undefined || rate === null
-        ? []
-        : [{ after: price(name, rate), annotation: '', path: name }]
-    }),
-    ...(discount === 0
-      ? []
-      : [
-          {
-            after: formatQuantity({ field: 'pricing.discount', kind: 'percent', value: discount }),
-            annotation: '',
-            path: 'pricing.discount',
-          },
-        ]),
-  ])
+/** Listing price lines, such as `**Input** $2.00 • **Output** $10.00 • **Discount** 50%`. */
+export function pricingSummary(facts: readonly AlertFact[]): string[] {
+  const discount = findFact(facts, 'pricing.discount', 'percent')
 
-  return [prices, scheduled === true ? 'Price schedule detected.' : ''].filter(Boolean).join('\n')
+  const [textRates = [], ...otherRates] = priceFamilies.map((family) => familyRates(facts, family))
+
+  const lines = [
+    discount === undefined || discount.value === 0
+      ? textRates
+      : [...textRates, `**Discount** ${formatQuantity(discount)}`],
+    ...otherRates,
+  ]
+
+  return lines.flatMap((rates) => (rates.length === 0 ? [] : [rates.join(dot)]))
+}
+
+/** `**Cache** **Write** $2.50`: without a cache-read rate, its label introduces the write rate. */
+function familyRates(facts: readonly AlertFact[], { carry, labels }: PriceFamily): string[] {
+  const rates: string[] = []
+  let carried: string[] = []
+
+  for (const [name, label] of Object.entries(labels)) {
+    const rate = findFact(facts, name, 'price')?.value
+    const heading = [...carried, label]
+
+    if (rate === undefined || rate === null) {
+      carried = carry ? heading : []
+    } else {
+      rates.push(`${heading.map((word) => `**${word}**`).join(' ')} ${price(name, rate)}`)
+      carried = []
+    }
+  }
+
+  return rates
 }
 
 /** Pricing owns grouping, aliases, unit scaling, and fallback presentation for its fields. */
@@ -43,7 +73,7 @@ export function pricingChanges(changes: AlertChange[]): string[] {
 
   for (const change of changes) {
     if (change.kind === 'opaque' && change.field === 'pricing.overrides') {
-      fallback.push('Price schedule changed.')
+      fallback.push('- Price schedule changed.')
       continue
     }
 
@@ -56,10 +86,10 @@ export function pricingChanges(changes: AlertChange[]): string[] {
     }
   }
 
-  return [pricingTable(rows), ...fallback].filter(Boolean)
+  return [priceList(rows), ...fallback].filter(Boolean)
 }
 
-/** Rates and discounts form the price table; anything else uses the ordinary field renderer. */
+/** Rates and discounts form the price list; anything else uses the ordinary field renderer. */
 function pricingChange(change: AlertChange): PriceRow | null {
   if (change.kind === 'percent') {
     // A zero discount is no discount: moving from or to zero adds or removes it.
@@ -68,7 +98,7 @@ function pricingChange(change: AlertChange): PriceRow | null {
 
     const [before, after] = [percent(change.before), percent(change.after)]
 
-    return { after, annotation: '', before, change: presence(before, after), path: change.field }
+    return { after, annotation: '', before, change: transition(before, after), path: change.field }
   }
 
   if (change.kind !== 'price') {
@@ -103,43 +133,58 @@ type PriceRow = {
   change?: 'added' | 'removed' | undefined
 }
 
-export function pricingTable(rows: PriceRow[]): string {
-  // Collapse before measuring/padding: `≈ $0.684` must occupy the same value
-  // column as `$2.50`, rather than an outside ≈ shifting the code span right.
-  const displayRows = rows.map((row) =>
-    row.before !== undefined && row.before === row.after
-      ? { ...row, after: `≈ ${row.after}`, before: undefined }
-      : row,
-  )
+/** Listing order, then fields outside it, such as web search, then any discount. */
+const priceOrder = priceFamilies.flatMap(({ labels }) => Object.keys(labels))
 
-  // Include the external marker in the row width, then subtract it from code-span padding.
-  const labelWidth = Math.max(
-    ...rows.map((row) => fieldLabel(row.path).length + (row.change === undefined ? 0 : 2)),
-  )
+function rank(field: string): number {
+  if (field === 'pricing.discount') {
+    return priceOrder.length + 1
+  }
 
-  const valueWidth = Math.max(
-    ...displayRows.flatMap((row) => [row.before?.length ?? 0, row.after?.length ?? 0]),
-  )
+  const index = priceOrder.indexOf(field)
 
-  return displayRows
-    .toSorted(
-      (a, b) => Number(a.path === 'pricing.discount') - Number(b.path === 'pricing.discount'),
-    )
-    .map((row) => {
-      const cell = (value: string | undefined) =>
-        value === undefined ? undefined : code(value, { align: 'right', width: valueWidth })
+  return index === -1 ? priceOrder.length : index
+}
 
-      return fieldRow(
-        fieldLabel(row.path),
-        valueChange(cell(row.before), cell(row.after), { annotation: row.annotation }),
-        { change: row.change, width: labelWidth - (row.change === undefined ? 0 : 2) },
-      )
-    })
+/** `- **Input** $0.02 → $0.0691 🔺245%`, one bullet per rate. */
+export function priceList(rows: PriceRow[]): string {
+  return rows
+    .toSorted((a, b) => rank(a.path) - rank(b.path))
+    .map((row) => changeRow(priceLabel(row.path), priceRowValue(row)))
     .join('\n')
 }
 
+function priceRowValue({ before, after, annotation, change }: PriceRow): string {
+  if (change === 'removed' && before !== undefined) {
+    return presence(before, 'removed')
+  }
+
+  if (change === 'added' && after !== undefined) {
+    return presence(after, 'added')
+  }
+
+  return valueChange(before, after, { annotation })
+}
+
+/** A rate's full listing label, such as Cache Write or Image Output, when it stands alone. */
+function priceLabel(field: string): string {
+  if (field === 'pricing.discount') {
+    return 'Discount'
+  }
+
+  if (field === 'pricing.web_search') {
+    return 'Web search'
+  }
+
+  const family = priceFamilies.find(({ labels }) => field in labels)
+  const [first] = Object.values(family?.labels ?? {})
+  const label = family?.labels[field] ?? fieldLabel(field)
+
+  return family?.carry === true && label !== first ? `${first} ${label}` : label
+}
+
 /** A row whose side is absent was added or removed. */
-function presence(before: string | undefined, after: string | undefined) {
+function transition(before: string | undefined, after: string | undefined) {
   if (after === undefined) {
     return 'removed'
   }

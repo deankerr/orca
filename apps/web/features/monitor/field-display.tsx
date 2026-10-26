@@ -4,19 +4,12 @@ import type { AlertChange, AlertFact } from '@orca/backend/alerts/curate'
 import type { Movement } from '@orca/backend/alerts/present'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
-import { presentChange } from '@/lib/backend'
+import { isBlockText, presentChange } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
 import { fieldLabel, formatChangeValue, formatChangeUnit } from './field-format'
 
 const TRUNCATE_LENGTH = 800
-const LONG_UPDATE_LENGTH = 30
-const LONG_PRESENCE_LENGTH = 80
-
-/** Prose, and text too long for one row, such as URLs, take the wrapped block layout. */
-function isLongText(item: AlertFact, length: number): boolean {
-  return item.kind === 'prose' || (item.kind === 'text' && (item.value?.length ?? 0) > length)
-}
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
@@ -100,7 +93,7 @@ function FieldUpdatedItem({
   after: AlertFact
   movement: Movement | null
 }) {
-  if (isLongText(before, LONG_UPDATE_LENGTH) || isLongText(after, LONG_UPDATE_LENGTH)) {
+  if (isBlockText(before, 'pair') || isBlockText(after, 'pair')) {
     return (
       <div data-field={after.field}>
         <FieldLabel>{fieldKey}</FieldLabel>
@@ -140,7 +133,7 @@ function FieldPresenceItem({
   removed: boolean
 }) {
   const value = formatChangeValue(item)
-  const isLong = isLongText(item, LONG_PRESENCE_LENGTH)
+  const isLong = isBlockText(item, 'single')
   const color = removed ? 'text-negative-soft-foreground' : 'text-positive-soft-foreground'
   const unit = formatChangeUnit(item)
 

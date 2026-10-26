@@ -1,90 +1,92 @@
 import type { AlertFact, EntityAlert } from '../../shared/alerts/curate'
 import { findFact } from '../../shared/alerts/present'
-import { colors, embedCard, componentCard, gridUrl, lifecycleColor, logoUrl } from './card'
+import { embedCard, gridUrl, lifecycleColor, logoUrl } from './card'
 import type { Card, DiscordUrls } from './card'
-import { code, dot, escape, fieldRow, lifecycleMarker } from './display'
-import { factsText, fieldChange, fieldValue, quote } from './fields'
+import { bulletList, dot, escape, isDiscovery, lifecycleMarker, stackRows } from './display'
+import { fieldChange, quote } from './fields'
 
 type ModelAlert = Extract<EntityAlert, { entity_kind: 'model' }>
 
-/** Discoveries introduce models; known arrivals, updates and departures use compact cards. */
+/** Arrivals describe the model; updates list changes; departures only announce absence. */
 export function modelCard(event: ModelAlert, urls: DiscordUrls): Card {
   const { model } = event.context
-  const name = model.display_name
   const slug = model.model_id
-  const url = gridUrl(slug, urls)
-  const logo = logoUrl(slug, urls)
 
-  if ('after' in event && event.previously_known === false) {
-    const content = [
-      `### ${escape(name)} ✨\n[${escape(slug)}](${url})\nModel discovered.`,
-      modelDetails(event.after),
-      `-# <t:${Math.floor(Date.parse(event.observed_at) / 1000)}:f>`,
-    ]
-      .filter(Boolean)
-      .join('\n\n')
-
-    return componentCard(content, {
-      color: colors.added,
-      thumbnail: { description: `${name} logo`, url: logo },
-    })
-  }
-
-  return embedCard(lifecycleMarker(event) + compactContent(event).filter(Boolean).join('\n\n'), {
-    author: { iconURL: logo, name: slug, url },
+  return embedCard(modelContent(event).filter(Boolean).join('\n\n'), {
+    author: { iconURL: logoUrl(slug, urls), name: slug, url: gridUrl(slug, urls) },
     color: lifecycleColor(event),
     timestamp: event.observed_at,
+    // A discovery is introduced by name alone in the title; the details say what the model is.
+    title: isDiscovery(event) ? `${lifecycleMarker(event)}${model.display_name}` : undefined,
   })
 }
 
-function compactContent(event: ModelAlert): string[] {
-  const name = escape(event.context.model.display_name)
+function modelContent(event: ModelAlert): string[] {
+  const name = `**${escape(event.context.model.display_name)}**`
 
   if ('after' in event) {
-    return [`Model **${name}** now has listed endpoints.`, modelDetails(event.after)]
-  }
-
-  if ('before' in event) {
     return [
-      `Model **${name}** has no more listed endpoints.`,
-      Object.keys(event.before).length > 0 ? 'Last known model details:' : '',
-      modelDetails(event.before),
+      isDiscovery(event) ? '' : `Model ${name} now has listed endpoints.`,
+      modelDetails(event.after),
     ]
   }
 
+  if ('before' in event) {
+    return [`Model ${name} has no more listed endpoints.`]
+  }
+
   return [
-    `Model **${name}** updated.`,
-    ...event.changes.map(
-      (change) => `${change.field === 'warning_message' ? '⚠ ' : ''}${fieldChange(change)}`,
+    `Model ${name} updated.`,
+    stackRows(
+      event.changes.map((change) =>
+        change.field === 'warning_message'
+          ? fieldChange(change, { label: '⚠ warning_message' })
+          : fieldChange(change),
+      ),
     ),
   ]
 }
 
-/** Model facts in display order; all field-specific choices stay beside the card. */
+/** Facts as bullets directly above the description, then any warning. */
 function modelDetails(facts: readonly AlertFact[]): string {
-  const inputs = findFact(facts, 'input_modalities', 'list')
-  const outputs = findFact(facts, 'output_modalities', 'list')
   const description = findFact(facts, 'description', 'prose')?.value
   const warning = findFact(facts, 'warning_message', 'prose')?.value
+  const cutoff = findFact(facts, 'knowledge_cutoff', 'text')?.value
+
+  return stackRows([
+    bulletList([
+      modalitiesSummary(facts),
+      cutoff === undefined || cutoff === null ? '' : `**Knowledge cutoff** ${escape(cutoff)}`,
+    ]),
+    description === undefined || description === null ? '' : quote(description),
+    warning === undefined || warning === null ? '' : `**⚠ Warning**\n${quote(warning)}`,
+  ])
+}
+
+/** `**Modalities** image, text → text • reasoning`; a missing side keeps the other labelled. */
+function modalitiesSummary(facts: readonly AlertFact[]): string {
+  const side = (field: string) => {
+    const value = findFact(facts, field, 'list')?.value
+
+    return value === undefined || value === null || value.length === 0
+      ? undefined
+      : value.map(escape).join(', ')
+  }
+
+  const [inputs, outputs] = [side('input_modalities'), side('output_modalities')]
 
   const modalities =
-    inputs?.value && outputs?.value
-      ? `${fieldValue(inputs)} → ${fieldValue(outputs)}`
-      : factsText(facts, ['input_modalities', 'output_modalities'])
+    inputs !== undefined && outputs !== undefined
+      ? [`**Modalities** ${inputs} → ${outputs}`]
+      : [
+          inputs === undefined ? '' : `**Input** ${inputs}`,
+          outputs === undefined ? '' : `**Output** ${outputs}`,
+        ]
 
   return [
-    [
-      modalities,
-      findFact(facts, 'supports_reasoning', 'flag')?.value === true ? code('reasoning') : '',
-    ]
-      .filter(Boolean)
-      .join(dot),
-    description === undefined || description === null ? '' : quote(description),
-    factsText(facts, ['knowledge_cutoff']),
-    warning === undefined || warning === null
-      ? ''
-      : `⚠ ${fieldRow('warning_message', quote(warning), { layout: 'block' })}`,
+    ...modalities,
+    findFact(facts, 'supports_reasoning', 'flag')?.value === true ? 'reasoning' : '',
   ]
     .filter(Boolean)
-    .join('\n\n')
+    .join(dot)
 }
