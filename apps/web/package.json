@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "dev": "bun run --cwd ../../packages/backend dev --once && next dev",
+    "dev": "next dev",
     "start": "next start",
     "test": "bun run --cwd ../.. test --project web"
   },
@@ -31,6 +31,7 @@
     "convex-helpers": "catalog:",
     "date-fns": "^4.4.0",
     "echarts": "^6.1.0",
+    "env.style": "1.0.1",
     "lucide-react": "^1.61.0",
     "next": "16.4.2",
     "nuqs": "^2.10.2",
