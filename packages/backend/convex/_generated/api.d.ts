@@ -102,10 +102,9 @@ import type * as products_pricing_history_query from "../products/pricing_histor
 import type * as products_shared_alerts_batch from "../products/shared/alerts/batch.js";
 import type * as products_shared_alerts_curate from "../products/shared/alerts/curate.js";
 import type * as products_shared_alerts_decode from "../products/shared/alerts/decode.js";
-import type * as products_shared_alerts_facts from "../products/shared/alerts/facts.js";
-import type * as products_shared_alerts_filter from "../products/shared/alerts/filter.js";
 import type * as products_shared_alerts_interpret from "../products/shared/alerts/interpret.js";
 import type * as products_shared_alerts_prepare from "../products/shared/alerts/prepare.js";
+import type * as products_shared_alerts_present from "../products/shared/alerts/present.js";
 import type * as products_shared_alerts_pricing from "../products/shared/alerts/pricing.js";
 import type * as products_shared_alerts_read from "../products/shared/alerts/read.js";
 import type * as products_shared_alerts_select from "../products/shared/alerts/select.js";
@@ -232,10 +231,9 @@ declare const fullApi: ApiFromModules<{
   "products/shared/alerts/batch": typeof products_shared_alerts_batch;
   "products/shared/alerts/curate": typeof products_shared_alerts_curate;
   "products/shared/alerts/decode": typeof products_shared_alerts_decode;
-  "products/shared/alerts/facts": typeof products_shared_alerts_facts;
-  "products/shared/alerts/filter": typeof products_shared_alerts_filter;
   "products/shared/alerts/interpret": typeof products_shared_alerts_interpret;
   "products/shared/alerts/prepare": typeof products_shared_alerts_prepare;
+  "products/shared/alerts/present": typeof products_shared_alerts_present;
   "products/shared/alerts/pricing": typeof products_shared_alerts_pricing;
   "products/shared/alerts/read": typeof products_shared_alerts_read;
   "products/shared/alerts/select": typeof products_shared_alerts_select;

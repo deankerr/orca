@@ -1,12 +1,13 @@
 'use client'
 
 import type { AlertChange, AlertFact } from '@orca/backend/alerts/curate'
-import { sides } from '@orca/backend/alerts/facts'
+import type { Movement } from '@orca/backend/alerts/present'
 
 import { InlineMarkdown } from '@/components/shared/inline-markdown'
+import { presentChange } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
-import { fieldLabel, formatChangeValue, formatChangeUnit, formatChangeDelta } from './field-format'
+import { fieldLabel, formatChangeValue, formatChangeUnit } from './field-format'
 
 const TRUNCATE_LENGTH = 800
 const LONG_UPDATE_LENGTH = 30
@@ -90,18 +91,18 @@ function DiffSymbol({ children, className }: { children: React.ReactNode; classN
 
 function FieldUpdatedItem({
   fieldKey,
-  change,
   before,
   after,
+  movement,
 }: {
   fieldKey: string
-  change: AlertChange
   before: AlertFact
   after: AlertFact
+  movement: Movement | null
 }) {
   if (isLongText(before, LONG_UPDATE_LENGTH) || isLongText(after, LONG_UPDATE_LENGTH)) {
     return (
-      <div data-field={change.field}>
+      <div data-field={after.field}>
         <FieldLabel>{fieldKey}</FieldLabel>
         <div className="mt-0.5 space-y-0.5 border-l-2 border-border-solid pl-2 font-sans">
           <p className="whitespace-pre-line text-muted-foreground line-through">
@@ -115,17 +116,16 @@ function FieldUpdatedItem({
     )
   }
 
-  const delta = formatChangeDelta(change)
   const unit = formatChangeUnit(before, after)
 
   return (
-    <div className="flex flex-wrap items-center gap-x-1.5" data-field={change.field}>
+    <div className="flex flex-wrap items-center gap-x-1.5" data-field={after.field}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <span className={cn(label, 'line-through')}>{formatChangeValue(before)}</span>
       <span className={labelDimmer}>→</span>
       <span className="text-foreground">{formatChangeValue(after)}</span>
       {unit !== '' && <FieldUnit>{unit}</FieldUnit>}
-      {delta && <DeltaBadge delta={delta} />}
+      {movement && <DeltaBadge movement={movement} />}
     </div>
   )
 }
@@ -177,20 +177,22 @@ function FieldPresenceItem({
 }
 
 function FieldSetUpdatedItem({
+  field,
   fieldKey,
-  change,
+  added,
+  removed,
 }: {
+  field: string
   fieldKey: string
-  change: Extract<AlertChange, { kind: 'list' }>
+  added: string[]
+  removed: string[]
 }) {
-  const { added, removed } = change
-
   if (added.length === 0 && removed.length === 0) {
     return null
   }
 
   return (
-    <div data-field={change.field}>
+    <div data-field={field}>
       <FieldLabel>{fieldKey}</FieldLabel>
       <div className="mt-0.5 space-y-px pl-2">
         {removed.map((item) => (
@@ -212,26 +214,41 @@ function FieldSetUpdatedItem({
 
 function ChangeItem({ change }: { change: AlertChange }) {
   const key = fieldLabel(change.field)
+  const presented = presentChange(change)
 
-  if (change.kind === 'opaque') {
+  if (presented.transition === 'opaque') {
     return <div data-field={change.field}>{key} changed.</div>
   }
 
-  if (change.kind === 'list') {
-    return <FieldSetUpdatedItem fieldKey={key} change={change} />
+  if (presented.transition === 'members') {
+    return (
+      <FieldSetUpdatedItem
+        field={change.field}
+        fieldKey={key}
+        added={presented.added}
+        removed={presented.removed}
+      />
+    )
   }
 
-  const { before, after } = sides(change)
-
-  if (before.value === null) {
-    return <FieldPresenceItem fieldKey={key} item={after} removed={false} />
+  if (presented.transition === 'added' || presented.transition === 'removed') {
+    return (
+      <FieldPresenceItem
+        fieldKey={key}
+        item={presented.fact}
+        removed={presented.transition === 'removed'}
+      />
+    )
   }
 
-  if (after.value === null) {
-    return <FieldPresenceItem fieldKey={key} item={before} removed />
-  }
-
-  return <FieldUpdatedItem fieldKey={key} change={change} before={before} after={after} />
+  return (
+    <FieldUpdatedItem
+      fieldKey={key}
+      before={presented.before}
+      after={presented.after}
+      movement={presented.movement}
+    />
+  )
 }
 
 // -- Field change list
@@ -273,15 +290,17 @@ export function FieldChangeList({ fields }: { fields: AlertChange[] }) {
 
 // -- Delta badge
 
-function DeltaBadge({ delta }: { delta: { percent: string; isUp: boolean; isGood: boolean } }) {
-  const arrow = delta.isUp ? '\u25B2' : '\u25BC'
-  const pct = delta.percent
-  const color = delta.isGood ? 'text-positive-soft-foreground' : 'text-negative-soft-foreground'
+function DeltaBadge({ movement }: { movement: Movement }) {
+  const arrow = movement.isUp ? '\u25B2' : '\u25BC'
+
+  const color = movement.isFavorable
+    ? 'text-positive-soft-foreground'
+    : 'text-negative-soft-foreground'
 
   return (
     <span className={cn('inline-flex items-center gap-0.5 text-xs', color)}>
       <span className="translate-y-px text-[8px]">{arrow}</span>
-      {pct}
+      {movement.percent}
     </span>
   )
 }

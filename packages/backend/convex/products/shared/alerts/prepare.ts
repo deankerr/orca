@@ -1,12 +1,11 @@
 import type { EventRow } from '../../../catalog/tables/events'
 import { curate } from './curate'
 import type { EntityAlert } from './curate'
-import { isEligible } from './filter'
 import { select } from './select'
 
 /** The current default content policy, explicitly selected by each alert product. */
 export function selectDefault(alert: EntityAlert | null): EntityAlert | null {
-  return alert !== null && isEligible(alert) ? select(alert) : null
+  return alert === null ? null : select(alert)
 }
 
 /** Pure convenience for preparing individual captured Events. */

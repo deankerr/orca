@@ -1,7 +1,6 @@
 'use client'
 
 import { api } from '@orca/backend/api'
-import { formatPrice } from '@orca/backend/numbers'
 import { useQuery } from '@tanstack/react-query'
 import dynamic from 'next/dynamic'
 import { startTransition, useEffect, useState } from 'react'
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { formatPrice } from '@/lib/backend'
 import { convexQueryOptions } from '@/lib/convex-query'
 import { cn } from '@/lib/utils'
 

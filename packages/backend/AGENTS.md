@@ -25,7 +25,7 @@
 - Keep each product's queries, rendering, delivery, storage, and helpers together.
 - Put code shared by multiple products in the domain it belongs to.
 - Write domain logic as ordinary pure functions; Convex functions handle database access and scheduling.
-- Pure modules shared by backend and web code can live at the `convex/` root.
+- Modules the web app bundles live in their own domain and must not import Convex server runtime values.
 - Compose functions directly; avoid generic pipelines and product registries.
 
 ### Objects and Scan

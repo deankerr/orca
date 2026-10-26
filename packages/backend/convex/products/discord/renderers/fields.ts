@@ -1,73 +1,61 @@
-import { formatNumber, formatPercent, formatPrice, relativeChange } from '../../../numbers'
 import type { AlertChange, AlertFact } from '../../shared/alerts/curate'
-import { measured, sides } from '../../shared/alerts/facts'
-import { priceMeters } from '../../shared/alerts/pricing'
+import { fieldLabel, formatQuantity, isQuantity, presentChange } from '../../shared/alerts/present'
+import type { Movement } from '../../shared/alerts/present'
 import { code, dot, field, valueChange } from './display'
-
-/** Raw field presentation; callers own any field-specific labels and units. */
-export const fieldName = (name: string): string => name.split('.').at(-1) ?? name
 
 export function fieldChange(
   change: AlertChange,
   {
-    label = fieldName(change.field),
+    label = fieldLabel(change.field),
     suffix,
     annotation,
   }: { label?: string; suffix?: string | undefined; annotation?: string } = {},
 ): string {
-  if (change.kind === 'opaque') {
+  // Discord rounds movement to whole percentages.
+  const presented = presentChange(change, { fractionDigits: 0 })
+
+  if (presented.transition === 'opaque') {
     return field(label, 'changed')
   }
 
-  if (change.kind === 'list') {
+  if (presented.transition === 'members') {
     const lines = [
-      ...change.added.map((item) => `+ ${code(item)}`),
-      ...change.removed.map((item) => `− ~~${code(item)}~~`),
+      ...presented.added.map((item) => `+ ${code(item)}`),
+      ...presented.removed.map((item) => `− ~~${code(item)}~~`),
     ]
 
     return field(label, lines.join('\n'), { layout: 'block' })
   }
 
   if (change.kind === 'prose') {
-    const start =
-      change.before !== null && change.after !== null
-        ? changedExcerptStart(change.before, change.after)
-        : 0
-
-    const prose = (text: string | null) => (text === null ? code('null') : quote(text, start))
-
-    if (change.before === null) {
-      return field(label, prose(change.after), { change: 'added', layout: 'block' })
-    }
-
-    if (change.after === null) {
-      return field(label, prose(change.before), { change: 'removed', layout: 'block' })
-    }
-
-    return field(label, `Before\n${prose(change.before)}\n\nAfter\n${prose(change.after)}`, {
-      layout: 'block',
-    })
+    return proseChange(label, change.before, change.after)
   }
 
-  const { before, after } = sides(change)
-
-  if (before.value === null) {
-    return field(label, fieldValue(after, { suffix }), { change: 'added' })
+  if (presented.transition === 'added' || presented.transition === 'removed') {
+    return field(label, fieldValue(presented.fact, { suffix }), { change: presented.transition })
   }
-
-  if (after.value === null) {
-    return field(label, fieldValue(before, { suffix }), { change: 'removed' })
-  }
-
-  const quantities = measured(change)
 
   return field(
     label,
-    valueChange(fieldValue(before, { suffix }), fieldValue(after, { suffix }), {
-      annotation:
-        annotation ?? (quantities === null ? '' : delta(quantities.before, quantities.after)),
+    valueChange(fieldValue(presented.before, { suffix }), fieldValue(presented.after, { suffix }), {
+      annotation: annotation ?? (presented.movement === null ? '' : delta(presented.movement)),
     }),
   )
+}
+
+function proseChange(label: string, before: string | null, after: string | null): string {
+  const start = before !== null && after !== null ? changedExcerptStart(before, after) : 0
+  const prose = (text: string | null) => (text === null ? code('null') : quote(text, start))
+
+  if (before === null) {
+    return field(label, prose(after), { change: 'added', layout: 'block' })
+  }
+
+  if (after === null) {
+    return field(label, prose(before), { change: 'removed', layout: 'block' })
+  }
+
+  return field(label, `Before\n${prose(before)}\n\nAfter\n${prose(after)}`, { layout: 'block' })
 }
 
 /** Prefix excerpts are sufficient until the change falls beyond the visible 800 characters. */
@@ -90,7 +78,7 @@ export function factsText(
   facts: readonly AlertFact[],
   fields: string[],
   {
-    label = fieldName,
+    label = fieldLabel,
     suffix,
   }: { label?: (field: string) => string; suffix?: (field: string) => string } = {},
 ): string {
@@ -119,20 +107,8 @@ export function fieldValue(
     return code(String(item.value))
   }
 
-  if (item.kind === 'count') {
-    return code(`${formatNumber(item.value) ?? String(item.value)}${suffix}`)
-  }
-
-  if (item.kind === 'percent') {
-    return code(formatPercent(item.value) ?? String(item.value))
-  }
-
-  if (item.kind === 'price') {
-    const meter = priceMeters[item.field]
-
-    return code(
-      (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? `$${item.value}`,
-    )
+  if (isQuantity(item)) {
+    return code(`${formatQuantity(item)}${item.kind === 'count' ? suffix : ''}`)
   }
 
   if (item.kind === 'list') {
@@ -161,22 +137,10 @@ const deltaSymbols = {
   up: { favorable: '▲', unfavorable: '🔺' },
 }
 
-/** Numeric interpretation is shared; Discord owns symbols and favorable direction. */
-export function delta(
-  before: number | string,
-  after: number | string,
-  { lowerIsBetter = false }: { lowerIsBetter?: boolean } = {},
-): string {
-  // Round the original ratio once: 8.49% → 8%, 18.6% → 19%. Keep only the
-  // pointer below 0.5%, rather than claiming a real change was 0%.
-  const change = relativeChange(before, after, { fractionDigits: 0 })
+/** Movement is shared; Discord owns its symbols. */
+export function delta({ isUp, isFavorable, percent }: Movement): string {
+  const direction = deltaSymbols[isUp ? 'up' : 'down']
+  const symbol = isFavorable ? direction.favorable : direction.unfavorable
 
-  if (change === null) {
-    return ''
-  }
-
-  const direction = deltaSymbols[change.isUp ? 'up' : 'down']
-  const symbol = change.isUp === lowerIsBetter ? direction.unfavorable : direction.favorable
-
-  return change.percent === '' ? symbol : `${symbol} ${change.percent}`
+  return percent === '' ? symbol : `${symbol} ${percent}`
 }

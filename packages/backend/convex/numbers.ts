@@ -66,7 +66,7 @@ export function formatPercent(value: Numeric): string | null {
 export function relativeChange(
   before: Numeric,
   after: Numeric,
-  { fractionDigits }: { fractionDigits?: number } = {},
+  { fractionDigits }: { fractionDigits?: number | undefined } = {},
 ): { isUp: boolean; percent: string } | null {
   const ratio = relativeDifference(before, after)
 

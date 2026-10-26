@@ -10,7 +10,7 @@ import { textOrNull } from '../../../fields'
 import { endpointFields, translateEndpointUpdate } from '../../v5/endpoints'
 import { modelFields } from '../../v5/models'
 import { facts, field, translateStored } from '../../v5/projection'
-import type { FieldChange, FieldFact, Fields, Kind, Translation } from '../../v5/projection'
+import type { FieldFact, Fields, Kind, Translation } from '../../v5/projection'
 import { providerFields } from '../../v5/providers'
 import { decodeSnapshot } from './decode'
 import { isScheduledPricing } from './pricing'
@@ -125,25 +125,6 @@ function translation(row: EventRow): Translation & { pricing_is_scheduled?: bool
       }
 }
 
-/**
- * Opaque fields are announced as changed, without values, and only under a price schedule.
- * Override row order has been stable upstream. A reorder intentionally counts as a coarse schedule
- * change; we do not interpret condition equivalence. Overrides without a schedule are not announced.
- */
-function announced(
-  changes: FieldChange[],
-  opaque: string[],
-  scheduled: boolean | undefined,
-): AlertChange[] {
-  const changed = (name: string): AlertChange[] =>
-    scheduled === true ? [{ field: name, kind: 'opaque' }] : []
-
-  return [
-    ...changes.flatMap((change) => (change.kind === 'opaque' ? changed(change.field) : [change])),
-    ...opaque.flatMap(changed),
-  ]
-}
-
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */
 export function curate(row: EventRow): EntityAlert | null {
   const { change_json: _json, type: _type, scan_at, ...subject } = withoutSystemFields(row)
@@ -157,23 +138,18 @@ export function curate(row: EventRow): EntityAlert | null {
       : { ...identity, ...scheduled, before: selected, type: `${row.entity_kind}_removed` }
   }
 
-  const fields: Fields = alertFields[row.entity_kind]
   const { changes, unresolved, pricing_is_scheduled } = translation(row)
 
-  // An opaque change needs no values; any other field must have both sides to be announced.
-  const [opaque, unknown] = R.partition(unresolved, (name) => fields[name]?.kind === 'opaque')
-
-  if (unknown.length > 0) {
-    throw new ConvexError({ message: 'Unresolved alert fields', unresolved: unknown })
+  // A field must have both sides to be announced.
+  if (unresolved.length > 0) {
+    throw new ConvexError({ message: 'Unresolved alert fields', unresolved })
   }
 
-  const announcedChanges = announced(changes, opaque, pricing_is_scheduled)
-
-  return announcedChanges.length === 0
+  return changes.length === 0
     ? null
     : {
         ...identity,
-        changes: announcedChanges,
+        changes,
         type: `${row.entity_kind}_updated`,
         ...R.pickBy({ pricing_is_scheduled }, R.isDefined),
       }

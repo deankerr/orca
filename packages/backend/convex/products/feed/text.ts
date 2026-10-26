@@ -1,7 +1,5 @@
-import { formatNumber, formatPercent, formatPrice, relativeChange } from '../../numbers'
 import type { AlertChange, AlertFact, EntityAlert } from '../shared/alerts/curate'
-import { measured, sides } from '../shared/alerts/facts'
-import { priceMeters } from '../shared/alerts/pricing'
+import { formatQuantity, isQuantity, presentChange } from '../shared/alerts/present'
 
 interface Labels {
   [field: string]: string
@@ -55,18 +53,8 @@ function value(item: AlertFact): string {
     return item.value ? 'yes' : 'no'
   }
 
-  if (item.kind === 'count') {
-    return formatNumber(item.value) ?? String(item.value)
-  }
-
-  if (item.kind === 'percent') {
-    return formatPercent(item.value) ?? String(item.value)
-  }
-
-  if (item.kind === 'price') {
-    const meter = priceMeters[item.field]
-
-    return (meter === undefined ? null : formatPrice(item.value, meter.scale)) ?? `$${item.value}`
+  if (isQuantity(item)) {
+    return formatQuantity(item)
   }
 
   if (item.kind === 'list') {
@@ -80,42 +68,37 @@ const members = (field: string, items: string[]) => value({ field, kind: 'list',
 
 function describeChange(change: AlertChange): string[] {
   const name = labels[change.field] ?? change.field
+  const presented = presentChange(change)
 
-  if (change.kind === 'opaque') {
+  if (presented.transition === 'opaque') {
     return [`${name} changed.`]
   }
 
-  if (change.kind === 'list') {
+  if (presented.transition === 'members') {
     return [
-      ...(change.added.length === 0
+      ...(presented.added.length === 0
         ? []
-        : [`${name} added: ${members(change.field, change.added)}.`]),
-      ...(change.removed.length === 0
+        : [`${name} added: ${members(change.field, presented.added)}.`]),
+      ...(presented.removed.length === 0
         ? []
-        : [`${name} removed: ${members(change.field, change.removed)}.`]),
+        : [`${name} removed: ${members(change.field, presented.removed)}.`]),
     ]
   }
 
-  const { before, after } = sides(change)
-
-  if (before.value === null) {
-    return [`${name} was added: ${value(after)}.`]
+  if (presented.transition === 'added') {
+    return [`${name} was added: ${value(presented.fact)}.`]
   }
 
-  if (after.value === null) {
-    return [`${name} was removed; previously ${value(before)}.`]
+  if (presented.transition === 'removed') {
+    return [`${name} was removed; previously ${value(presented.fact)}.`]
   }
 
-  const quantities = measured(change)
+  const { before, after, movement } = presented
 
-  if (quantities !== null && value(before) === value(after)) {
-    const delta = relativeChange(quantities.before, quantities.after)
-
-    if (delta !== null) {
-      return [
-        `${name} is approximately ${value(after)} (${delta.isUp ? 'increased' : 'decreased'} by ${delta.percent}).`,
-      ]
-    }
+  if (movement !== null && value(before) === value(after)) {
+    return [
+      `${name} is approximately ${value(after)} (${movement.isUp ? 'increased' : 'decreased'} by ${movement.percent}).`,
+    ]
   }
 
   return [`${name} changed from ${value(before)} to ${value(after)}.`]

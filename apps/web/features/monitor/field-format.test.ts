@@ -1,6 +1,15 @@
+import type { AlertChange } from '@orca/backend/alerts/curate'
 import { expect, test } from 'vitest'
 
-import { fieldLabel, formatChangeDelta, formatChangeUnit, formatChangeValue } from './field-format'
+import { presentChange } from '@/lib/backend'
+
+import { fieldLabel, formatChangeUnit, formatChangeValue } from './field-format'
+
+const movement = (change: AlertChange) => {
+  const presented = presentChange(change)
+
+  return presented.transition === 'updated' ? presented.movement : null
+}
 
 const input = (value: string | null) => ({ field: 'pricing.input', kind: 'price' as const, value })
 
@@ -9,13 +18,13 @@ test('Monitor formats native decimal prices and distinguishes null, false and ze
   expect(formatChangeValue(input('0.00000015'))).toBe('$0.15')
 
   expect(
-    formatChangeDelta({
+    movement({
       after: '0.00000015',
       before: '0.0000001',
       field: 'pricing.input',
       kind: 'price',
     }),
-  ).toEqual({ isGood: false, isUp: true, percent: '50%' })
+  ).toEqual({ isFavorable: false, isUp: true, percent: '50%' })
 
   expect(formatChangeValue(input('1e-400'))).not.toBe('$0.00')
   expect(
@@ -27,11 +36,9 @@ test('Monitor formats native decimal prices and distinguishes null, false and ze
 
   // Discounts are fractions, and an unquoted price is not a zero-price quote.
   expect(
-    formatChangeDelta({ after: 0.15, before: 0.1, field: 'pricing.discount', kind: 'percent' }),
+    movement({ after: 0.15, before: 0.1, field: 'pricing.discount', kind: 'percent' }),
   ).toBeNull()
-  expect(
-    formatChangeDelta({ after: '1', before: null, field: 'pricing.input', kind: 'price' }),
-  ).toBeNull()
+  expect(movement({ after: '1', before: null, field: 'pricing.input', kind: 'price' })).toBeNull()
 
   expect(
     [

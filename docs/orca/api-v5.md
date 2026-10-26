@@ -210,8 +210,10 @@ Updates are partial entities, so the Contract translates partial shapes as well 
 Contract field declares the catalog entity path it reads, its value mapping, and its kind. Current rows,
 Event snapshots, and Event diffs share the catalog entity shape, so one declaration set serves Listings
 and Events. A changed path that no field reads is curated out, and a change whose mapped sides are equal
-produces nothing. A field that a change touches without supplying its complete sides is unresolved; an
-Event's complete pricing quotes resolve `pricing.overrides`. String-set fields translate as added and removed members.
+produces nothing. String-set fields translate as added and removed members. Opaque fields, such as
+`pricing.overrides`, change without values: when their mapped sides differ or the change cannot supply them.
+Any other field that a change touches without supplying its complete sides is unresolved; an Event's complete
+pricing quotes resolve endpoint pricing.
 
 The 2026-10-25 spike, `v5-events-spike` in `packages/scripts`, ran on the worktree deployment's data:
 

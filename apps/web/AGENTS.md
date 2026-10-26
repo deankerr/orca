@@ -4,6 +4,7 @@
 - Desktop-first design.
 - nuqs requires the client component to be wrapped in a `Suspense` boundary.
 - Customise `shadcn` components via `className`, avoid direct modification.
+- Import backend values through `@/lib/backend`, `api` from `@orca/backend/api`, and types directly; lint enforces this.
 
 ## React Compiler
 

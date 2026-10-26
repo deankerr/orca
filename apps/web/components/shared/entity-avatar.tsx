@@ -1,5 +1,4 @@
-import { entityLogoUrl } from '@orca/backend/entity-logo'
-
+import { entityLogoUrl } from '@/lib/backend'
 import { cn } from '@/lib/utils'
 
 const LOGO_SERVICE_ORIGIN = process.env.NEXT_PUBLIC_ORCA_LOGO_ORIGIN ?? 'https://logos.orb.town'
