@@ -13,6 +13,8 @@ type EndpointSpec = {
   /** Offering suffix of the provider slug; omitted means the bare provider slug. */
   tag?: string
   prompt?: string
+  /** Upstream creation time; omitted means the endpoint reports none. */
+  created?: string | undefined
   /** Supplied readings by tier. */
   stats?: Record<string, Sample>
 }
@@ -52,7 +54,7 @@ export function rawScan(scan_at: string, spec: ScanSpec = {}): RawScan {
       provider_slug:
         endpoint.tag === undefined ? endpoint.provider : `${endpoint.provider}/${endpoint.tag}`,
       variant: 'standard',
-      ...R.pickBy({ statsByTier: endpoint.stats }, R.isDefined),
+      ...R.pickBy({ created_at: endpoint.created, statsByTier: endpoint.stats }, R.isDefined),
     })
     entries.set(endpoint.model, entry)
   }

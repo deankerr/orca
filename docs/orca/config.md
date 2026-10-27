@@ -96,6 +96,7 @@ Backend paths below are relative to `packages/backend/convex`.
 | Ingestion lost-completion grace | 5 minutes after the sweep before a finished, unsettled record fails              | `ingestion/reconcile.ts`            |
 | Initialization lookback         | 24 hours before `init`; only when no target exists                               | `init.ts`                           |
 | Grid unlisting window           | 30 days before the ingestion clock                                               | `products/grid/endpoints.ts`        |
+| Grid unlisting age cap          | Hidden once time since unlisting ≥ `created_at` → `unlisted_at`; unaged stay     | `products/grid/endpoints.ts`        |
 | Discord alert age               | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`      |
 | Discord batching                | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`   |
 | Discord message order           | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`        |
