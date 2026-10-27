@@ -1,5 +1,7 @@
 import * as R from 'remeda'
 
+import type { ExtractedEndpoint } from '#scans/extraction'
+
 import { encodePricing } from '../../catalog/pricing'
 import type { CurrentEndpointRow } from '../../catalog/tables/current'
 import { endpointEntity } from '../lenses'
@@ -12,7 +14,6 @@ const omittedMetadataKeys = [
   'allowed_passthrough_parameters',
   'can_abort',
   'capacity_tpm',
-  'created_at',
   'declared_region',
   'deprecation_date',
   'display_pricing',
@@ -40,19 +41,20 @@ const omittedMetadataKeys = [
 ] as const
 
 export function derive(source: Source, scope: CurrentScope): CurrentEndpointRow[] {
-  return deriveCurrent(
-    source,
-    scope,
-    (scan) => scan.endpoints,
-    (endpoint, version) => {
-      const { metadata, pricing, ...fields } = endpointEntity(endpoint)
+  return deriveCurrent(source, scope, (scan) => scan.endpoints, endpointRow)
+}
 
-      return {
-        ...fields,
-        ...version,
-        metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
-        pricing: encodePricing(pricing),
-      }
-    },
-  )
+/** One endpoint's current row at a version; refreshes reuse it to restate retained rows. */
+export function endpointRow(
+  endpoint: ExtractedEndpoint,
+  version: { scan_at: string; unlisted_at?: string },
+): CurrentEndpointRow {
+  const { metadata, pricing, ...fields } = endpointEntity(endpoint)
+
+  return {
+    ...fields,
+    ...version,
+    metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
+    pricing: encodePricing(pricing),
+  }
 }

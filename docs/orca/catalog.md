@@ -23,7 +23,20 @@ Events record changes; `scan_at` does not establish when an entity's facts last 
 - Model and provider presence means serving: each exists in a scan only through its listed endpoints.
 - Endpoint unlisting retains its facts and records the disappearance scan in both `scan_at` and `unlisted_at`.
 - Grid includes listed endpoints and a recent-unlisting window, configured in `config.md`.
+- Grid hides an unlisting once it is older than the endpoint was at unlisting, aged from upstream `created_at`.
+- That age cap is a coarse noise filter; rows without `created_at` cannot be aged and remain for the whole window.
+- 🔭 2026-10-27 prod, 221 windowed unlistings: `created_at` never followed first observation; 142 were within 1 day.
 - Older rows remain available to entity and history queries.
+
+Ingestion never rewrites an unlisted row, so a metadata selection change reaches existing unlistings only
+through a restatement. It rederives each row from the scan before its unlisting, newest unlisting first:
+
+```sh
+bunx convex run ingestion/catalog/refreshUnlistedEndpoints:run '{"atOrAfter":"<iso-time>"}' --deployment <deployment>
+```
+
+It runs in scheduled pages of 100 rows and logs `Refreshed unlisted endpoints` with rows read and restated, plus
+endpoint IDs absent from their source scan. Rows relisted or unlisted again since the read are skipped.
 
 ### Current stats
 
