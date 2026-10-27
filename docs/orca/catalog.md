@@ -35,8 +35,8 @@ through a restatement. It rederives each row from the scan before its unlisting,
 bunx convex run ingestion/catalog/refreshUnlistedEndpoints:run '{"atOrAfter":"<iso-time>"}' --deployment <deployment>
 ```
 
-It reports rows read and restated, plus endpoint IDs absent from their source scan. Rows relisted or unlisted
-again since the read are skipped.
+It runs in scheduled pages of 100 rows and logs `Refreshed unlisted endpoints` with rows read and restated, plus
+endpoint IDs absent from their source scan. Rows relisted or unlisted again since the read are skipped.
 
 ### Current stats
 

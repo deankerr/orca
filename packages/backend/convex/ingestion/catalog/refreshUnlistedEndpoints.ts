@@ -4,11 +4,15 @@ import * as R from 'remeda'
 
 import { internal } from '#generated/api'
 import { internalAction, internalMutation, internalQuery } from '#generated/server'
+import type { ActionCtx } from '#generated/server'
 import * as scans from '#scans'
 import type { Scan } from '#scans/extraction'
 
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../../catalog/tables/current'
 import { endpointRow } from '../operators/currentEndpoints'
+
+/** Unlisted rows per page; one page bounds each read, restate mutation, and scheduled step. */
+const PAGE_SIZE = 100
 
 const unlistedRow = v.object({
   _id: v.id(CURRENT_ENDPOINTS_TABLE),
@@ -22,25 +26,31 @@ const restatement = v.object({ _id: unlistedRow.fields._id, row: currentEndpoint
 
 type Restatement = Infer<typeof restatement>
 
-const refreshResult = v.object({
-  missing: v.array(v.string()),
-  read: v.number(),
-  restated: v.number(),
-})
+const progress = v.object({ missing: v.array(v.string()), read: v.number(), restated: v.number() })
 
-export const unlistedRows = internalQuery({
-  args: { atOrAfter: v.string() },
-  handler: async (ctx, { atOrAfter }) => {
-    const rows = await ctx.db
+/** Newest unlistings first, so the grid's window changes from its most recent unlistings. */
+export const unlistedPage = internalQuery({
+  args: { atOrAfter: v.string(), cursor: v.union(v.null(), v.string()) },
+  handler: async (ctx, { atOrAfter, cursor }) => {
+    const { page, continueCursor, isDone } = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.gte('unlisted_at', atOrAfter))
-      .collect()
+      .order('desc')
+      .paginate({ cursor, numItems: PAGE_SIZE })
 
-    return rows.flatMap(({ _id, endpoint_id, unlisted_at }) =>
-      unlisted_at === undefined ? [] : [{ _id, endpoint_id, unlisted_at }],
-    )
+    return {
+      continueCursor,
+      isDone,
+      rows: page.flatMap(({ _id, endpoint_id, unlisted_at }) =>
+        unlisted_at === undefined ? [] : [{ _id, endpoint_id, unlisted_at }],
+      ),
+    }
   },
-  returns: v.array(unlistedRow),
+  returns: v.object({
+    continueCursor: v.string(),
+    isDone: v.boolean(),
+    rows: v.array(unlistedRow),
+  }),
 })
 
 /** Rows relisted or unlisted again since the read were written under the current policy; skip them. */
@@ -63,7 +73,14 @@ export const restate = internalMutation({
   returns: v.number(),
 })
 
-/** Departure rows as ingestion now derives them from the scan before their unlisting. */
+/** The scan before an unlisting holds the last-known facts ingestion derived its departure from. */
+async function departureSource(ctx: ActionCtx, unlistedAt: string): Promise<Scan | null> {
+  const [sourceAt] = await scans.times(ctx, { before: unlistedAt, limit: 1, order: 'desc' })
+
+  return sourceAt === undefined ? null : await scans.load(ctx, sourceAt)
+}
+
+/** Departure rows as ingestion now derives them from their source scan. */
 function restateFrom(source: Scan | null, rows: UnlistedRow[]) {
   const restatements: Restatement[] = []
   const missing: string[] = []
@@ -81,26 +98,23 @@ function restateFrom(source: Scan | null, rows: UnlistedRow[]) {
   return { missing, restatements }
 }
 
-/**
- * Restate unlisted rows under the current metadata selection, newest unlisting first.
- * Ingestion never rewrites an unlisted row, so selection changes reach existing unlistings only here.
- */
-export const run = internalAction({
-  args: { atOrAfter: v.string() },
-  handler: async (ctx, { atOrAfter }): Promise<Infer<typeof refreshResult>> => {
-    const rows: UnlistedRow[] = await ctx.runQuery(
-      internal.ingestion.catalog.refreshUnlistedEndpoints.unlistedRows,
-      { atOrAfter },
+/** One bounded page of the refresh; schedules the next until the range is exhausted. */
+export const refreshPage = internalAction({
+  args: { atOrAfter: v.string(), cursor: v.union(v.null(), v.string()), progress },
+  handler: async (ctx, { atOrAfter, cursor, progress: before }) => {
+    const page = await ctx.runQuery(
+      internal.ingestion.catalog.refreshUnlistedEndpoints.unlistedPage,
+      {
+        atOrAfter,
+        cursor,
+      },
     )
 
-    const unlistings = R.groupBy(rows, R.prop('unlisted_at'))
-    const missing: string[] = []
-    let restated = 0
+    const missing = [...before.missing]
+    let { restated } = before
 
-    for (const unlistedAt of Object.keys(unlistings).toSorted().toReversed()) {
-      const [sourceAt] = await scans.times(ctx, { before: unlistedAt, limit: 1, order: 'desc' })
-      const source = sourceAt === undefined ? null : await scans.load(ctx, sourceAt)
-      const group = restateFrom(source, unlistings[unlistedAt] ?? [])
+    for (const [unlistedAt, rows] of Object.entries(R.groupBy(page.rows, R.prop('unlisted_at')))) {
+      const group = restateFrom(await departureSource(ctx, unlistedAt), rows)
 
       missing.push(...group.missing)
       restated += await ctx.runMutation(
@@ -109,7 +123,41 @@ export const run = internalAction({
       )
     }
 
-    return { missing, read: rows.length, restated }
+    const after = { missing, read: before.read + page.rows.length, restated }
+
+    if (page.isDone) {
+      console.log('Refreshed unlisted endpoints', after)
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.ingestion.catalog.refreshUnlistedEndpoints.refreshPage,
+        {
+          atOrAfter,
+          cursor: page.continueCursor,
+          progress: after,
+        },
+      )
+    }
   },
-  returns: refreshResult,
+  returns: v.null(),
+})
+
+/**
+ * Restate unlisted rows under the current metadata selection, in scheduled pages.
+ * Ingestion never rewrites an unlisted row, so selection changes reach existing unlistings only here.
+ */
+export const run = internalMutation({
+  args: { atOrAfter: v.string() },
+  handler: async (ctx, { atOrAfter }) => {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.ingestion.catalog.refreshUnlistedEndpoints.refreshPage,
+      {
+        atOrAfter,
+        cursor: null,
+        progress: { missing: [], read: 0, restated: 0 },
+      },
+    )
+  },
+  returns: v.null(),
 })
