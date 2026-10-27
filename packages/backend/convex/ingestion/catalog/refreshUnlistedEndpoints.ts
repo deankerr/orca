@@ -26,6 +26,12 @@ const restatement = v.object({ _id: unlistedRow.fields._id, row: currentEndpoint
 
 type Restatement = Infer<typeof restatement>
 
+const unlistedPageResult = v.object({
+  continueCursor: v.string(),
+  isDone: v.boolean(),
+  rows: v.array(unlistedRow),
+})
+
 const progress = v.object({ missing: v.array(v.string()), read: v.number(), restated: v.number() })
 
 /** Newest unlistings first, so the grid's window changes from its most recent unlistings. */
@@ -46,11 +52,7 @@ export const unlistedPage = internalQuery({
       ),
     }
   },
-  returns: v.object({
-    continueCursor: v.string(),
-    isDone: v.boolean(),
-    rows: v.array(unlistedRow),
-  }),
+  returns: unlistedPageResult,
 })
 
 /** Rows relisted or unlisted again since the read were written under the current policy; skip them. */
@@ -102,7 +104,7 @@ function restateFrom(source: Scan | null, rows: UnlistedRow[]) {
 export const refreshPage = internalAction({
   args: { atOrAfter: v.string(), cursor: v.union(v.null(), v.string()), progress },
   handler: async (ctx, { atOrAfter, cursor, progress: before }) => {
-    const page = await ctx.runQuery(
+    const page: Infer<typeof unlistedPageResult> = await ctx.runQuery(
       internal.ingestion.catalog.refreshUnlistedEndpoints.unlistedPage,
       {
         atOrAfter,
