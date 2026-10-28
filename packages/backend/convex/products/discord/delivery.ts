@@ -56,7 +56,7 @@ export const prepareRecord = internalQuery({
     scan_at: v.string(),
     skippedEvents: v.array(
       v.object({
-        reason: v.union(v.literal('ineligible'), v.literal('frequent_pricing')),
+        reason: v.union(v.literal('ineligible'), v.literal('frequent_pricing'), v.literal('muted')),
         source_id: v.string(),
       }),
     ),

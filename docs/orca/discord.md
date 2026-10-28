@@ -14,10 +14,12 @@ alerts. Recent replay can still send: disable automatic sending for a silent reb
 
 ## Message policy
 
-Preparation applies shared eligibility and Discord's frequency rule to the complete scan, then batches
-equivalent changes within one scan and entity kind. Residual changes keep their individual identities.
-Within each scan, ordering introduces parents before endpoints and announces endpoint unlistings before a
-parent's last-endpoint departure. Ordering applies before batching; `config.md` records the priorities.
+Preparation applies shared eligibility, temporary muting, and Discord's frequency rule to the complete scan,
+then batches equivalent changes within one scan and entity kind. Residual changes keep their individual
+identities. Within each scan, ordering groups each model with its endpoints, sorting variants such as
+`:batch` beside their standard model. Within a group, parents precede endpoint arrivals and endpoint
+unlistings precede a parent's last-endpoint departure. Ordering applies before batching; `config.md`
+records the priorities.
 
 | Arrival      | Presentation                                               |
 | ------------ | ---------------------------------------------------------- |
@@ -29,6 +31,13 @@ Only discoveries carry a heading marker. Departures announce absence without las
 
 - Batching threshold and delivery age are maintained in `config.md`.
 - Submitted payloads and sender receipts record output; later history or rendering changes do not update Discord.
+
+### Temporary muting
+
+Discord proved too noisy to be useful, so muting temporarily withholds pricing changes, endpoint unlistings,
+and endpoint relistings. A `:batch` model card is withheld when its standard model has the same arrival or
+departure, because the cards differ only by name; the variant's endpoints still announce. Updates keep their
+unmuted fields. The muted alerts' preparation and rendering remain intact, so removing the filter restores them.
 
 ## Operator commands
 
@@ -47,7 +56,7 @@ Preview current filtering and cards without submitting jobs:
 bunx convex run products/discord/delivery:prepareRecord '{"record_id":"<record-id>"}' --deployment <deployment>
 ```
 
-This returns ordered serialized messages, source IDs, and filtering reasons. It requires a completed
+This returns ordered serialized messages, source IDs, and filtering reasons, including `muted`. It requires a completed
 record but ignores age, auto-send, and subscriptions. Baselines produce no messages.
 
 Send intentionally, including with auto-send disabled:

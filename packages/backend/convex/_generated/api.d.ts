@@ -78,6 +78,7 @@ import type * as objects_table from "../objects/table.js";
 import type * as priceMeters from "../priceMeters.js";
 import type * as products_discord_delivery from "../products/discord/delivery.js";
 import type * as products_discord_frequency from "../products/discord/frequency.js";
+import type * as products_discord_mute from "../products/discord/mute.js";
 import type * as products_discord_prepare from "../products/discord/prepare.js";
 import type * as products_discord_render from "../products/discord/render.js";
 import type * as products_discord_renderers_batchCards from "../products/discord/renderers/batchCards.js";
@@ -208,6 +209,7 @@ declare const fullApi: ApiFromModules<{
   priceMeters: typeof priceMeters;
   "products/discord/delivery": typeof products_discord_delivery;
   "products/discord/frequency": typeof products_discord_frequency;
+  "products/discord/mute": typeof products_discord_mute;
   "products/discord/prepare": typeof products_discord_prepare;
   "products/discord/render": typeof products_discord_render;
   "products/discord/renderers/batchCards": typeof products_discord_renderers_batchCards;
