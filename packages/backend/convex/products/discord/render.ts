@@ -14,6 +14,7 @@ import { interpret } from '../shared/alerts/interpret'
 import { selectDefault } from '../shared/alerts/prepare'
 import type { AlertSource } from '../shared/alerts/read'
 import { readFrequency } from './frequency'
+import { muteNoise } from './mute'
 import { prepareBatch } from './prepare'
 import { renderDiscordBatch } from './renderers/index'
 
@@ -87,29 +88,75 @@ function operation(row: AlertSource): Operation {
   return present ? 'ADD' : 'REMOVE'
 }
 
-export async function renderRows(ctx: QueryCtx, rows: AlertSource[]) {
-  // Introduce parents before endpoints; announce endpoint unlistings before parent departures.
+/** The model a source belongs to; providers belong to none. */
+function modelOf(row: AlertSource): string | null {
+  if (row.entity_kind === 'provider') {
+    return null
+  }
+
+  if (row.entity_kind === 'model') {
+    return row.entity_id
+  }
+
+  return 'change_json' in row ? row.context.model.model_id : row.model_id
+}
+
+/** Providers arrive before every model and depart after them. */
+function modelGroup(row: AlertSource): number {
+  if (modelOf(row) !== null) {
+    return 1
+  }
+
+  return operation(row) === 'REMOVE' ? 2 : 0
+}
+
+/** Variants such as `author/model:batch` sort beside `author/model`, not after `author/model-mini`. */
+function compareModels(a: string | null, b: string | null): number {
+  if (a === null || b === null) {
+    return 0
+  }
+
+  const base = (model: string) => model.split(':')[0] ?? model
+
+  return base(a).localeCompare(base(b)) || a.localeCompare(b)
+}
+
+export async function renderRows(ctx: QueryCtx, rows: AlertSource[], mute = muteNoise) {
+  // Group each model with its endpoints. Within a group, introduce parents before endpoints and
+  // announce endpoint unlistings before parent departures.
   // Sort before batching so grouped unlistings retain the same lifecycle order.
   const ordered = rows.toSorted(
     (a, b) =>
       a.scan_at.localeCompare(b.scan_at) ||
+      modelGroup(a) - modelGroup(b) ||
+      compareModels(modelOf(a), modelOf(b)) ||
       operationOrder[operation(a)] - operationOrder[operation(b)] ||
       entityOrder[operation(a)][a.entity_kind] - entityOrder[operation(b)][b.entity_kind] ||
       a.entity_id.localeCompare(b.entity_id) ||
       a._id.localeCompare(b._id),
   )
 
-  const { alerts, skippedEvents } = await prepareBatch(
-    await Promise.all(
-      ordered.map(async (row) => ({
-        event: selectDefault(await interpret(ctx, row)),
-        source_id: row._id,
-      })),
-    ),
+  const interpreted = await Promise.all(
+    ordered.map(async (row) => ({
+      event: selectDefault(await interpret(ctx, row)),
+      source_id: row._id,
+    })),
+  )
+
+  // TEMPORARY: see `muteNoise`. Muting precedes frequency and batching, which still run unchanged.
+  const { rows: audible, muted } = mute(interpreted)
+
+  const prepared = await prepareBatch(
+    audible,
     async (candidates) => await readFrequency(ctx, candidates),
   )
 
-  const notifications = renderDiscordBatch(alerts, {
+  const skippedEvents = [
+    ...muted.map((source_id) => ({ reason: 'muted' as const, source_id })),
+    ...prepared.skippedEvents,
+  ]
+
+  const notifications = renderDiscordBatch(prepared.alerts, {
     logoOrigin: env.ORCA_LOGO_ORIGIN,
     publicUrl: env.ORCA_WEB_ORIGIN,
   })

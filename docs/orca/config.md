@@ -99,7 +99,8 @@ Backend paths below are relative to `packages/backend/convex`.
 | Grid unlisting age cap          | Hidden once time since unlisting ≥ `created_at` → `unlisted_at`; unaged stay     | `products/grid/endpoints.ts`        |
 | Discord alert age               | 3,600,000 ms; automatic deadline from scan time, manual deadline from invocation | `products/discord/delivery.ts`      |
 | Discord batching                | 3 distinct entities with equivalent changes at one scan and entity kind          | `products/shared/alerts/batch.ts`   |
-| Discord message order           | Per scan: additions, updates, removals; parents first, removals endpoints first  | `products/discord/render.ts`        |
+| Discord message order           | Per scan: arriving providers, models with their endpoints, departing providers   | `products/discord/render.ts`        |
+| Discord temporary muting        | Pricing, endpoint unlistings/relistings, duplicate `:batch` model cards          | `products/discord/mute.ts`          |
 | Discord frequent pricing        | Suppress after 2 prior quotes within 24 hours                                    | `products/discord/frequency.ts`     |
 | Ordinary pricing eligibility    | Presented and, when discount changes, undiscounted meter rates move ≥2%          | `products/shared/alerts/pricing.ts` |
 | Feed page request               | Default 20, range 1–100 source rows before selection                             | `products/feed/http.ts`             |

@@ -16,6 +16,7 @@ import { setup } from '../../harness.testing'
 import { INGESTION_RECORDS_TABLE } from '../../ingestion/tables'
 import type { JsonValue } from '../../json'
 import type { AlertSource } from '../shared/alerts/read'
+import { muteNoise } from './mute'
 import { canonicalJson, contentKey, renderRows } from './render'
 
 function eventRow(id: string, before: JsonValue, after: JsonValue): Doc<'catalog_events'> {
@@ -52,14 +53,20 @@ type Kind = EventRow['entity_kind']
 type Operation = EventRow['type']
 
 /** Endpoint lifecycle and every update are Events; parent lifecycle is an endpoint-count observation. */
-function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, scan_at = SCAN_AT) {
+function lifecycleSource(
+  kind: Kind,
+  type: Operation,
+  id = `${kind}-${type}`,
+  scan_at = SCAN_AT,
+  model_id = 'author/model',
+) {
   const context = {
     endpoint: {
       endpoint_id: id,
       provider_display_name: 'Tenstorrent',
       provider_tag: 'tenstorrent/fp8',
     },
-    model: { display_name: 'Model', model_id: kind === 'model' ? id : 'author/model' },
+    model: { display_name: 'Model', model_id: kind === 'model' ? id : model_id },
     provider: {
       display_name: 'Tenstorrent',
       provider_id: kind === 'provider' ? id : 'tenstorrent',
@@ -132,7 +139,7 @@ function lifecycleSource(kind: Kind, type: Operation, id = `${kind}-${type}`, sc
 }
 
 /** Store sources with their prior state and a forward pair, then render them in the given order. */
-async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
+async function renderStored(sources: ReturnType<typeof lifecycleSource>[], mute = muteNoise) {
   const t = setup()
 
   return await t.run(async (ctx) => {
@@ -165,11 +172,15 @@ async function renderStored(sources: ReturnType<typeof lifecycleSource>[]) {
       rows.push(doc)
     }
 
-    const rendered = await renderRows(ctx, rows)
-    const reversed = await renderRows(ctx, rows.toReversed())
+    const rendered = await renderRows(ctx, rows, mute)
+    const reversed = await renderRows(ctx, rows.toReversed(), mute)
+    const label = (id: string) => labels.get(id)
 
     return {
-      order: rendered.messages.map(({ source_ids }) => source_ids.map((id) => labels.get(id))),
+      muted: rendered.skippedEvents.flatMap(({ reason, source_id }) =>
+        reason === 'muted' ? [label(source_id)] : [],
+      ),
+      order: rendered.messages.map(({ source_ids }) => source_ids.map(label)),
       rendered,
       reversed,
     }
@@ -244,27 +255,81 @@ test('content identities canonicalize objects but preserve message and array ord
   // oxlint-enable sort-keys
 })
 
-test('Discord announces additions, updates and removals in dependency order regardless of input order', async () => {
-  const sources = (['endpoint', 'model', 'provider'] as const).flatMap((kind) =>
-    (['REMOVE', 'UPDATE', 'ADD'] as const).map((type) => lifecycleSource(kind, type)),
-  )
+/** Disables the temporary Discord filter to exercise the alerts it hides. */
+const unmuted: typeof muteNoise = (rows) => ({ muted: [], rows })
 
+/** Each model with its endpoints, across every lifecycle operation, plus provider bookends. */
+const modelGroups = () => [
+  lifecycleSource('provider', 'REMOVE'),
+  lifecycleSource('endpoint', 'REMOVE', 'gone-endpoint', SCAN_AT, 'c/gone'),
+  lifecycleSource('model', 'REMOVE', 'c/gone'),
+  lifecycleSource('endpoint', 'ADD', 'new-endpoint', SCAN_AT, 'b/new'),
+  lifecycleSource('model', 'ADD', 'b/new'),
+  lifecycleSource('endpoint', 'UPDATE', 'old-endpoint', SCAN_AT, 'a/old'),
+  lifecycleSource('model', 'UPDATE', 'a/old'),
+  lifecycleSource('provider', 'UPDATE'),
+  lifecycleSource('provider', 'ADD'),
+]
+
+test('Discord groups each model with its endpoints in dependency order regardless of input order', async () => {
   await withOrigins(async () => {
-    const { rendered, reversed, order } = await renderStored(sources)
+    const { rendered, reversed, order } = await renderStored(modelGroups(), unmuted)
 
     expect(rendered.skippedEvents).toEqual([])
     expect(order).toEqual([
       ['provider-ADD'],
-      ['model-ADD'],
-      ['endpoint-ADD'],
       ['provider-UPDATE'],
-      ['model-UPDATE'],
-      ['endpoint-UPDATE'],
-      ['endpoint-REMOVE'],
-      ['model-REMOVE'],
+      ['a/old'],
+      ['old-endpoint'],
+      ['b/new'],
+      ['new-endpoint'],
+      ['gone-endpoint'],
+      ['c/gone'],
       ['provider-REMOVE'],
     ])
     expect(reversed).toEqual(rendered)
+  })
+})
+
+test('temporarily muted endpoint unlistings leave the remaining model order intact', async () => {
+  await withOrigins(async () => {
+    const { muted, order } = await renderStored(modelGroups())
+
+    expect(muted).toEqual(['gone-endpoint'])
+    expect(order).toEqual([
+      ['provider-ADD'],
+      ['provider-UPDATE'],
+      ['a/old'],
+      ['old-endpoint'],
+      ['b/new'],
+      ['new-endpoint'],
+      ['c/gone'],
+      ['provider-REMOVE'],
+    ])
+  })
+})
+
+test('variants sort beside their standard model, and a duplicate batch model card is muted', async () => {
+  const terra = 'openai/gpt-6.1-terra'
+
+  await withOrigins(async () => {
+    const { muted, order } = await renderStored([
+      lifecycleSource('endpoint', 'ADD', 'batch-endpoint', SCAN_AT, `${terra}:batch`),
+      lifecycleSource('model', 'ADD', `${terra}:batch`),
+      lifecycleSource('endpoint', 'ADD', 'mini-endpoint', SCAN_AT, `${terra}-mini`),
+      lifecycleSource('model', 'ADD', `${terra}-mini`),
+      lifecycleSource('endpoint', 'ADD', 'standard-endpoint', SCAN_AT, terra),
+      lifecycleSource('model', 'ADD', terra),
+    ])
+
+    expect(muted).toEqual([`${terra}:batch`])
+    expect(order).toEqual([
+      [terra],
+      ['standard-endpoint'],
+      ['batch-endpoint'],
+      [`${terra}-mini`],
+      ['mini-endpoint'],
+    ])
   })
 })
 
@@ -273,12 +338,15 @@ test('individual and batched endpoint unlistings precede last-endpoint departure
     for (const count of [1, 3]) {
       const unlistings = Array.from({ length: count }, (_, i) => `endpoint-${i}`)
 
-      const { rendered, order } = await renderStored([
-        lifecycleSource('provider', 'REMOVE'),
-        lifecycleSource('endpoint', 'UPDATE', 'unrelated-update'),
-        ...unlistings.toReversed().map((id) => lifecycleSource('endpoint', 'REMOVE', id)),
-        lifecycleSource('model', 'REMOVE'),
-      ])
+      const { rendered, order } = await renderStored(
+        [
+          lifecycleSource('provider', 'REMOVE'),
+          lifecycleSource('endpoint', 'UPDATE', 'unrelated-update'),
+          ...unlistings.toReversed().map((id) => lifecycleSource('endpoint', 'REMOVE', id)),
+          lifecycleSource('model', 'REMOVE'),
+        ],
+        unmuted,
+      )
 
       expect(order).toEqual([
         ['unrelated-update'],
