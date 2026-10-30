@@ -182,6 +182,18 @@
         "vitest": "catalog:",
       },
     },
+    "packages/properties": {
+      "name": "@orca/properties",
+      "dependencies": {
+        "@orca/contract": "workspace:*",
+      },
+      "devDependencies": {
+        "@orca/config": "workspace:*",
+        "@types/node": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:",
+      },
+    },
     "packages/scripts": {
       "name": "@orca/scripts",
       "dependencies": {
@@ -535,6 +547,8 @@
     "@orca/json-profile": ["@orca/json-profile@workspace:packages/json-profile"],
 
     "@orca/logos": ["@orca/logos@workspace:apps/logos"],
+
+    "@orca/properties": ["@orca/properties@workspace:packages/properties"],
 
     "@orca/scripts": ["@orca/scripts@workspace:packages/scripts"],
 

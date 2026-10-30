@@ -76,7 +76,7 @@ and shapes change freely until then.
 - File, video, and audio input-form flags, which may describe OpenRouter's delivery to providers.
 - `is_hidden` and `is_private`: ORCA observes only public offerings.
 - `excluded_parameters`, `default_order`, `model_version_group_id`, and `group`, which carry no end-user value.
-- `capacity_tpm`, a volatile provider-side traffic allowance or limit rather than an endpoint property.
+- `capacity_tpm`, a volatile provider-side traffic allowance or limit rather than an endpoint field.
 - Adapter names, base URLs, pricing strategies, icons, and other OpenRouter-internal wiring.
 
 Flags that have only ever been null or false in ORCA's scope, such as `is_hipaa_eligible`, are not published for now.
@@ -114,29 +114,32 @@ so they move into shared code rather than being reimplemented:
 - Pricing-history interpretation of membership spans and quote continuity.
 - Model reasoning interpretation.
 
-The grid's boolean "attributes" and their `has`/`not` facets are not part of V5 pending a rethink of that concept.
-Its predicates treat unknown as a non-match, so `not` includes unknowns and cannot promise a known negative.
+### Properties
+
+`@orca/properties` declares endpoint properties: compact facts beyond identity, pricing, and stats, derived
+from the Contract for filters and display. Each definition's comments record its upstream knowledge.
+
+- A property is active, optionally with a value, or inactive; null, false, and absent are all inactive.
+- A model or provider property holds for each of its endpoints; endpoint properties may also read their model.
+- Properties are groundwork for a product redesign. They are not published in V5, and the grid still resolves
+  its own attributes.
+- `@orca/properties` is the catalogue.
+
+Current rows gained the metadata these fields read on 2026-10-31, and a selection change reaches only rows written
+afterwards. Until a row is restated, these fields are null and properties reading them are inactive:
+
+| Entity   | Fields                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| Endpoint | `allowed_passthrough_parameters`, `can_abort`, `deprecation_date`, `is_byok_only`, `provider_region` |
+| Model    | `default_parameters`, `deprecation_date`, `merges_system_messages`, `warning_message`                |
 
 ### Curation candidates
 
 Proposals that follow from upstream observations; they are not accepted policy.
 
-- Deprecation dates: past dates almost always preceded removal, although dates can move later.
-- BYOK-only endpoints, which cannot be used with OpenRouter credits.
-- Tool-choice modes only where `tools` is supported; elsewhere all four modes are boilerplate.
-- Forced tool choice matters to agents and is missing on many tool-capable endpoints.
-- Endpoint `service_tier`, kept separate from provider-facing labels and tag suffixes.
-- Mandatory reasoning at endpoint level where present, since it can differ from the model.
-- Reasoning configuration with default enabled state, effort, and token-budget support.
 - Stats history's percentile ladder, windows, and request counts beside p50 values.
 - Conditional pricing: context-length thresholds and UTC schedules from `overrides`.
-
-Some candidates need their meanings checked first:
-
-- Endpoint `created_at`, `provider_model_id`, and `provider_region`.
-- Region labels mix broad areas and cloud regions and do not establish residency.
-- Model `default_parameters` and `warning_message` carry provider guidance.
-- Warnings include data-logging terms for free endpoints, which are relevant to data policy.
+- Endpoint `provider_model_id`, once its meaning is checked.
 
 Represent effort selection explicitly: unknown, unavailable, unrestricted, or enumerated. Preserve
 upstream effort ordering when it drives a selector. Keep provider names separate from endpoint

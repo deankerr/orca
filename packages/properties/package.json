@@ -1,0 +1,18 @@
+{
+  "name": "@orca/properties",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "test": "bun run --cwd ../.. test --project properties"
+  },
+  "dependencies": {
+    "@orca/contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

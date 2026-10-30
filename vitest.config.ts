@@ -52,6 +52,10 @@ export default defineConfig({
         test: { environment: 'node', include: ['**/*.test.ts'], name: 'json-profile' },
       },
       {
+        root: 'packages/properties',
+        test: { environment: 'node', include: ['**/*.test.ts'], name: 'properties' },
+      },
+      {
         root: 'packages/scripts',
         test: { environment: 'node', include: ['**/*.test.ts'], name: 'scripts' },
       },

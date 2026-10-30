@@ -6,22 +6,17 @@ import * as R from 'remeda'
 import { decodePricing } from '../../../catalog/pricing'
 import { eventsTable } from '../../../catalog/tables/events'
 import type { EventRow } from '../../../catalog/tables/events'
-import { textOrNull } from '../../../fields'
 import { endpointFields, translateEndpointUpdate } from '../../v5/endpoints'
 import { modelFields } from '../../v5/models'
-import { facts, field, translateStored } from '../../v5/projection'
+import { facts, translateStored } from '../../v5/projection'
 import type { FieldFact, Fields, Kind, Translation } from '../../v5/projection'
 import { providerFields } from '../../v5/providers'
 import { decodeSnapshot } from './decode'
 import { isScheduledPricing } from './pricing'
 
-/** Alerts announce Contract fields, plus model warnings that the Contract does not yet publish. */
 const alertFields = {
   endpoint: endpointFields,
-  model: {
-    ...modelFields,
-    warning_message: field('prose', ['metadata', 'warning_message'], textOrNull),
-  },
+  model: modelFields,
   provider: providerFields,
 } satisfies Record<EventRow['entity_kind'], Fields>
 

@@ -11,15 +11,11 @@ import type { Source } from './source'
 
 const omittedMetadataKeys = [
   'adapter_name',
-  'allowed_passthrough_parameters',
-  'can_abort',
   'capacity_tpm',
   'declared_region',
-  'deprecation_date',
   'display_pricing',
   'excluded_parameters',
   'is_byok',
-  'is_byok_only',
   'is_free',
   'is_hidden',
   'is_hipaa_eligible',
@@ -32,7 +28,6 @@ const omittedMetadataKeys = [
   'pricing_version_id',
   'provider_model_id',
   'provider_name',
-  'provider_region',
   'server_tool_costs_discount_exempt',
   'supported_image_parameters',
   'supported_video_parameters',

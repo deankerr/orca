@@ -29,8 +29,16 @@ It can become unlisted and later listed again under the same identity.
 An upstream accessor key for routing to an endpoint, which can change or be shared by endpoints.
 _Avoid_: Provider ID, endpoint ID (when referring to this routing key)
 
+**Field**:
+One explicitly defined data value of an entity, such as an endpoint's context length.
+_Avoid_: Property, attribute (when referring to a data value)
+
 **Metadata**:
-The open-ended entity facts retained alongside ORCA's explicitly defined entity properties.
+The open-ended entity facts retained alongside ORCA's explicitly defined entity fields.
+
+**Property**:
+A notable trait of an endpoint, derived from fields of the endpoint, its model, or its provider, that is either active, optionally with a value, or inactive.
+_Avoid_: Attribute, feature, capability (when referring to this derived trait)
 
 **Endpoint stats**:
 The metrics data derived exclusively from the `stats` and/or `statsByTier` fields on upstream endpoint records.

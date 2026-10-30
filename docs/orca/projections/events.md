@@ -6,7 +6,7 @@ Proposed semantics using the shared operations and notation in `model.md`.
 
 **Question answered:** What selected facts changed between two known scans?
 
-| Property         | Meaning                                                                           |
+| Aspect           | Meaning                                                                           |
 | ---------------- | --------------------------------------------------------------------------------- |
 | Input            | The record's two source scans, compared earlier → later as A → B.                 |
 | Event time       | B: the scan that detects the difference.                                          |
