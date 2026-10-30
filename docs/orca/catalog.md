@@ -38,6 +38,17 @@ bunx convex run ingestion/catalog/refreshUnlistedEndpoints:run '{"atOrAfter":"<i
 It runs in scheduled pages of 100 rows and logs `Refreshed unlisted endpoints` with rows read and restated, plus
 endpoint IDs absent from their source scan. Rows relisted or unlisted again since the read are skipped.
 
+Ingestion compares both sides of a pair under the current selection, so a selection change alone never rewrites a
+listed row either. A separate restatement rederives listed endpoints from the latest scan with committed output:
+
+```sh
+bunx convex run ingestion/catalog/refreshListedEndpoints:run --deployment <deployment>
+```
+
+It logs `Refreshed listed endpoints` the same way. Rows unlisted, or ingested past that scan, since the read are
+skipped. Listed endpoints absent from the scan are reported, and left for ingestion. Models and providers have no
+restatement.
+
 ### Current stats
 
 Current stats replace the default-tier snapshot only for a newer scan. Missing, negative, or nonfinite
