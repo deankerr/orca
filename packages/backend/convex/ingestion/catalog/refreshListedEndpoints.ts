@@ -1,4 +1,5 @@
-import { v } from 'convex/values'
+import { paginationOptsValidator, paginationResultValidator } from 'convex/server'
+import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { internal } from '#generated/api'
@@ -21,27 +22,19 @@ const restatement = v.object({ _id: listedRow.fields._id, row: currentEndpointsT
 
 type Restatement = Infer<typeof restatement>
 
-const listedPageResult = v.object({
-  continueCursor: v.string(),
-  isDone: v.boolean(),
-  rows: v.array(listedRow),
-})
+const listedPageResult = paginationResultValidator(listedRow)
 
 const progress = v.object({ missing: v.array(v.string()), read: v.number(), restated: v.number() })
 
 export const listedPage = internalQuery({
-  args: { cursor: v.union(v.null(), v.string()) },
-  handler: async (ctx, { cursor }) => {
-    const { page, continueCursor, isDone } = await ctx.db
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const result = await ctx.db
       .query(CURRENT_ENDPOINTS_TABLE)
       .withIndex('by_unlisted_at', (q) => q.eq('unlisted_at', undefined))
-      .paginate({ cursor, numItems: PAGE_SIZE })
+      .paginate(paginationOpts)
 
-    return {
-      continueCursor,
-      isDone,
-      rows: page.map(({ _id, endpoint_id }) => ({ _id, endpoint_id })),
-    }
+    return { ...result, page: result.page.map(({ _id, endpoint_id }) => ({ _id, endpoint_id })) }
   },
   returns: listedPageResult,
 })
@@ -92,12 +85,12 @@ function restateFrom(source: Scan, rows: ListedRow[]) {
 export const refreshPage = internalAction({
   args: { cursor: v.union(v.null(), v.string()), progress, scanAt: v.string() },
   handler: async (ctx, { cursor, progress: before, scanAt }) => {
-    const page: Infer<typeof listedPageResult> = await ctx.runQuery(
+    const result: Infer<typeof listedPageResult> = await ctx.runQuery(
       internal.ingestion.catalog.refreshListedEndpoints.listedPage,
-      { cursor },
+      { paginationOpts: { cursor, numItems: PAGE_SIZE } },
     )
 
-    const { missing, restatements } = restateFrom(await scans.load(ctx, scanAt), page.rows)
+    const { missing, restatements } = restateFrom(await scans.load(ctx, scanAt), result.page)
 
     const restated: number = await ctx.runMutation(
       internal.ingestion.catalog.refreshListedEndpoints.restate,
@@ -106,17 +99,17 @@ export const refreshPage = internalAction({
 
     const after = {
       missing: [...before.missing, ...missing],
-      read: before.read + page.rows.length,
+      read: before.read + result.page.length,
       restated: before.restated + restated,
     }
 
-    if (page.isDone) {
+    if (result.isDone) {
       console.log('Refreshed listed endpoints', after)
     } else {
       await ctx.scheduler.runAfter(
         0,
         internal.ingestion.catalog.refreshListedEndpoints.refreshPage,
-        { cursor: page.continueCursor, progress: after, scanAt },
+        { cursor: result.continueCursor, progress: after, scanAt },
       )
     }
   },
@@ -134,7 +127,7 @@ export const run = internalMutation({
     const scanAt = await clock(ctx)
 
     if (scanAt === null) {
-      throw new Error('No committed scan to refresh from')
+      throw new ConvexError('No committed scan to refresh from')
     }
 
     await ctx.scheduler.runAfter(0, internal.ingestion.catalog.refreshListedEndpoints.refreshPage, {

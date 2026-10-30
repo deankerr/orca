@@ -1,4 +1,5 @@
-import { v } from 'convex/values'
+import { paginationOptsValidator, paginationResultValidator } from 'convex/server'
+import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
 
 import { internal } from '#generated/api'
@@ -21,26 +22,16 @@ const restatement = v.object({ _id: retainedRow.fields._id, row: currentModelsTa
 
 type Restatement = Infer<typeof restatement>
 
-const pageResult = v.object({
-  continueCursor: v.string(),
-  isDone: v.boolean(),
-  rows: v.array(retainedRow),
-})
+const pageResult = paginationResultValidator(retainedRow)
 
 const progress = v.object({ absent: v.number(), read: v.number(), restated: v.number() })
 
 export const modelPage = internalQuery({
-  args: { cursor: v.union(v.null(), v.string()) },
-  handler: async (ctx, { cursor }) => {
-    const { page, continueCursor, isDone } = await ctx.db
-      .query(CURRENT_MODELS_TABLE)
-      .paginate({ cursor, numItems: PAGE_SIZE })
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const result = await ctx.db.query(CURRENT_MODELS_TABLE).paginate(paginationOpts)
 
-    return {
-      continueCursor,
-      isDone,
-      rows: page.map(({ _id, model_id }) => ({ _id, model_id })),
-    }
+    return { ...result, page: result.page.map(({ _id, model_id }) => ({ _id, model_id })) }
   },
   returns: pageResult,
 })
@@ -84,12 +75,12 @@ function restateFrom(source: Scan, rows: RetainedRow[]) {
 export const refreshPage = internalAction({
   args: { cursor: v.union(v.null(), v.string()), progress, scanAt: v.string() },
   handler: async (ctx, { cursor, progress: before, scanAt }) => {
-    const page: Infer<typeof pageResult> = await ctx.runQuery(
+    const result: Infer<typeof pageResult> = await ctx.runQuery(
       internal.ingestion.catalog.refreshModels.modelPage,
-      { cursor },
+      { paginationOpts: { cursor, numItems: PAGE_SIZE } },
     )
 
-    const restatements = restateFrom(await scans.load(ctx, scanAt), page.rows)
+    const restatements = restateFrom(await scans.load(ctx, scanAt), result.page)
 
     const restated: number = await ctx.runMutation(
       internal.ingestion.catalog.refreshModels.restate,
@@ -97,16 +88,16 @@ export const refreshPage = internalAction({
     )
 
     const after = {
-      absent: before.absent + page.rows.length - restatements.length,
-      read: before.read + page.rows.length,
+      absent: before.absent + result.page.length - restatements.length,
+      read: before.read + result.page.length,
       restated: before.restated + restated,
     }
 
-    if (page.isDone) {
+    if (result.isDone) {
       console.log('Refreshed models', after)
     } else {
       await ctx.scheduler.runAfter(0, internal.ingestion.catalog.refreshModels.refreshPage, {
-        cursor: page.continueCursor,
+        cursor: result.continueCursor,
         progress: after,
         scanAt,
       })
@@ -126,7 +117,7 @@ export const run = internalMutation({
     const scanAt = await clock(ctx)
 
     if (scanAt === null) {
-      throw new Error('No committed scan to refresh from')
+      throw new ConvexError('No committed scan to refresh from')
     }
 
     await ctx.scheduler.runAfter(0, internal.ingestion.catalog.refreshModels.refreshPage, {
