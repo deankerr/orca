@@ -22,7 +22,7 @@ establishes these transitions in `endpoint-identity-changes.md`.
 
 ## Provider relationship
 
-⚠️ These are endpoint properties. They are not reliable denormalized attributes of the embedded
+⚠️ These are endpoint fields. They are not reliable denormalized fields of the embedded
 provider record.
 
 - `provider_name` — observed values include `Anthropic` and `Google`.

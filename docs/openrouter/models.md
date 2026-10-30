@@ -76,8 +76,8 @@ Source: `https://openrouter.ai/docs/guides/best-practices/reasoning-tokens`.
 
 ## Limits
 
-- `limit_rpm` — 💤
-- `limit_rpd` — 💤
+- `limit_rpm` — 🚫 does not describe endpoint limits; nonzero only on GLM 5.3 Flash and Gemini Flash, 2026-10-28.
+- `limit_rpd` — 🚫 does not describe endpoint limits.
 
 ## Messages and OpenRouter presentation
 
@@ -85,7 +85,7 @@ Source: `https://openrouter.ai/docs/guides/best-practices/reasoning-tokens`.
 `null` for absence. Whitespace-only strings also occur in `reasoning_config.system_prompt`.
 
 - `warning_message` — provider guidance; texts include data-logging terms for free endpoints.
-- `promotion_message` — 🚫 OpenRouter promotional copy rather than a model property; substantive in 2 sampled records.
+- `promotion_message` — 🚫 OpenRouter promotional copy rather than a model fact; substantive in 2 sampled records.
 - `routing_error_message` — 🚫 ⚠️ often misattributed; see below.
 - `quick_start_example_type` — 💤
 - `preview_audio` — 💤 null in every sample.

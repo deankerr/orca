@@ -10,3 +10,14 @@ export const isoDate = z
   .string()
   .pipe(z.coerce.date())
   .transform((value) => value.toISOString())
+
+/** An optional upstream timestamp; invalid values are unknown. */
+export const isoDateOrNull = isoDate.nullable().catch(null)
+
+/** Upstream deprecation dates from this year on are placeholders; 2098 has been seen. */
+const PLACEHOLDER_YEAR = 2050
+
+/** A scheduled deprecation; placeholder and invalid dates are unknown. */
+export const deprecationDateOrNull = isoDateOrNull.transform((value) =>
+  value !== null && new Date(value).getUTCFullYear() >= PLACEHOLDER_YEAR ? null : value,
+)

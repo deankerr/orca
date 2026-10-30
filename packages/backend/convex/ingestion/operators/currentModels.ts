@@ -12,11 +12,9 @@ const omittedMetadataKeys = [
   'author_icon_uri',
   'context_length',
   'default_order',
-  'default_parameters',
   'default_stops',
   'default_system',
   'display_required_attestation_types',
-  'features',
   'group',
   'has_text_output',
   'hf_updated_at',
@@ -39,8 +37,6 @@ const omittedMetadataKeys = [
   'routing_error_message',
   'supported_tts_voices',
   'updated_at',
-  'variant_deprecation_date',
-  'warning_message',
 ] as const
 
 export function derive(source: Source, scope: CurrentScope): CurrentModelRow[] {

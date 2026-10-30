@@ -45,7 +45,11 @@ export const EndpointDataPolicy = z
     requires_user_ids: flag('Requests must carry a user ID.'),
     retains_prompts: flag('The provider retains prompts.'),
     retention_days: count('Prompt retention period in days.'),
+    safety_retention: flag(
+      'The provider retains prompts for safety review; upstream `safetyRetention`.',
+    ),
     training: flag('The provider may train on prompts.'),
+    training_openrouter: flag('OpenRouter may train on prompts; upstream `trainingOpenRouter`.'),
   })
   .meta({ description: 'Upstream data policy for this endpoint.' })
 
@@ -91,16 +95,38 @@ export const EndpointStats = z
   })
   .meta({ description: 'Default-tier readings at the latest processed scan; null while unlisted.' })
 
+export const EndpointToolChoice = z
+  .object({
+    auto: flag('Accepts `tool_choice: "auto"`.'),
+    function: flag('Accepts `tool_choice` naming one function.'),
+    none: flag('Accepts `tool_choice: "none"`.'),
+    required: flag('Accepts `tool_choice: "required"`.'),
+  })
+  .meta({ description: 'Upstream `features.supports_tool_choice` modes.' })
+
+const date = (description: string) => z.iso.datetime().nullable().meta({ description })
+
+const text = (description: string) => z.string().nullable().meta({ description })
+
 export const Endpoint = z
   .object({
+    allowed_passthrough_parameters: z
+      .array(z.string())
+      .nullable()
+      .meta({ description: 'Provider-specific request parameters forwarded unchanged.' }),
+    can_abort: flag('Cancelling a request stops generation upstream.'),
     context_length: count('Maximum context length in tokens.'),
+    created_at: date('Upstream endpoint creation time; not always when the offering began.'),
     data_policy: EndpointDataPolicy,
+    deprecation_date: date('Scheduled removal; upstream placeholder dates are null.'),
     has_chat_completions: flag('Serves the chat completions API.'),
     has_completions: flag('Serves the legacy completions API.'),
     id: z.string().meta({ description: 'Upstream endpoint UUID; stable across relistings.' }),
     input_modalities: z.array(z.string()).meta({ description: 'Accepted input modalities.' }),
+    is_byok_only: flag('Requires the caller’s own provider key; OpenRouter credits cannot pay.'),
     is_deranked: flag('OpenRouter routes to this endpoint only as a fallback.'),
     is_disabled: flag('OpenRouter has disabled this endpoint.'),
+    is_mandatory_reasoning: flag('Reasoning cannot be disabled on this endpoint.'),
     is_zdr: flag('Zero data retention.'),
     label: z.string().meta({
       description:
@@ -117,18 +143,23 @@ export const Endpoint = z
     output_modalities: z.array(z.string()).meta({ description: 'Produced output modalities.' }),
     pricing: EndpointPricing,
     provider: EndpointProvider,
-    quantization: z.string().nullable().meta({ description: 'Upstream quantization label.' }),
+    provider_region: text('Reported serving region label; it does not establish data residency.'),
+    quantization: text('Upstream quantization label.'),
+    service_tier: text('Upstream service tier, such as `priority` or `flex`.'),
+    service_tier_label: text(
+      'Provider name for the service tier, such as `fast`; upstream `derived_service_tier`.',
+    ),
     stats: EndpointStats,
     supported_parameters: z
       .array(z.string())
       .nullable()
       .meta({ description: 'Request parameters the endpoint accepts.' }),
+    supports_native_apply_patch: flag('Offers the provider’s native file-patch tool.'),
+    supports_native_web_fetch: flag('Fetches URLs natively.'),
     supports_native_web_search: flag('Searches the web natively.'),
     supports_reasoning: flag('Produces reasoning tokens.'),
-    unlisted_at: z.iso
-      .datetime()
-      .nullable()
-      .meta({ description: 'Scan time at which ORCA observed unlisting; null while listed.' }),
+    tool_choice: EndpointToolChoice,
+    unlisted_at: date('Scan time at which ORCA observed unlisting; null while listed.'),
   })
   .meta({ description: 'A provider’s serving resource for a model.', id: 'Endpoint' })
 
