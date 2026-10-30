@@ -1,5 +1,7 @@
 import * as R from 'remeda'
 
+import type { ExtractedModel } from '#scans/extraction'
+
 import type { CurrentModelRow } from '../../catalog/tables/current'
 import { modelEntity } from '../lenses'
 import { deriveCurrent } from './current'
@@ -40,18 +42,16 @@ const omittedMetadataKeys = [
 ] as const
 
 export function derive(source: Source, scope: CurrentScope): CurrentModelRow[] {
-  return deriveCurrent(
-    source,
-    scope,
-    (scan) => scan.models,
-    (model, { scan_at }) => {
-      const { metadata, ...fields } = modelEntity(model)
+  return deriveCurrent(source, scope, (scan) => scan.models, modelRow)
+}
 
-      return {
-        ...fields,
-        metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
-        scan_at,
-      }
-    },
-  )
+/** One model's current row at a version; refreshes reuse it to restate retained rows. */
+export function modelRow(model: ExtractedModel, { scan_at }: { scan_at: string }): CurrentModelRow {
+  const { metadata, ...fields } = modelEntity(model)
+
+  return {
+    ...fields,
+    metadata_json: JSON.stringify(R.omit(metadata, omittedMetadataKeys)),
+    scan_at,
+  }
 }
