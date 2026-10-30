@@ -126,7 +126,7 @@ from the Contract for filters and display. Each definition's comments record its
 - `@orca/properties` is the catalogue.
 
 Current rows gained the metadata these fields read on 2026-10-31, and a selection change reaches only rows written
-afterwards; `catalog.md` covers endpoint restatement. Until a row is restated, these fields are null and
+afterwards; `catalog.md` covers restatement. Until a row is restated, these fields are null and
 properties reading them are inactive:
 
 | Entity   | Fields                                                                                               |

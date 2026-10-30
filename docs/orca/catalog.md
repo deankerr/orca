@@ -46,8 +46,15 @@ bunx convex run ingestion/catalog/refreshListedEndpoints:run --deployment <deplo
 ```
 
 It logs `Refreshed listed endpoints` the same way. Rows unlisted, or ingested past that scan, since the read are
-skipped. Listed endpoints absent from the scan are reported, and left for ingestion. Models and providers have no
-restatement.
+skipped. Listed endpoints absent from the scan are reported, and left for ingestion.
+
+Models have the same restatement. Models absent from the scan keep their last-known row and are counted as `absent`:
+
+```sh
+bunx convex run ingestion/catalog/refreshModels:run --deployment <deployment>
+```
+
+Providers have no restatement.
 
 ### Current stats
 

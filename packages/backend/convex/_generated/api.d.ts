@@ -33,6 +33,7 @@ import type * as ingestion_catalog_events from "../ingestion/catalog/events.js";
 import type * as ingestion_catalog_observations from "../ingestion/catalog/observations.js";
 import type * as ingestion_catalog_pricingHistory from "../ingestion/catalog/pricingHistory.js";
 import type * as ingestion_catalog_refreshListedEndpoints from "../ingestion/catalog/refreshListedEndpoints.js";
+import type * as ingestion_catalog_refreshModels from "../ingestion/catalog/refreshModels.js";
 import type * as ingestion_catalog_refreshUnlistedEndpoints from "../ingestion/catalog/refreshUnlistedEndpoints.js";
 import type * as ingestion_catalog_statsHistory from "../ingestion/catalog/statsHistory.js";
 import type * as ingestion_decide from "../ingestion/decide.js";
@@ -165,6 +166,7 @@ declare const fullApi: ApiFromModules<{
   "ingestion/catalog/observations": typeof ingestion_catalog_observations;
   "ingestion/catalog/pricingHistory": typeof ingestion_catalog_pricingHistory;
   "ingestion/catalog/refreshListedEndpoints": typeof ingestion_catalog_refreshListedEndpoints;
+  "ingestion/catalog/refreshModels": typeof ingestion_catalog_refreshModels;
   "ingestion/catalog/refreshUnlistedEndpoints": typeof ingestion_catalog_refreshUnlistedEndpoints;
   "ingestion/catalog/statsHistory": typeof ingestion_catalog_statsHistory;
   "ingestion/decide": typeof ingestion_decide;
