@@ -213,6 +213,16 @@ function ChangeItem({ change }: { change: AlertChange }) {
     return <div data-field={change.field}>{key} changed.</div>
   }
 
+  if (presented.transition === 'conditions') {
+    return (
+      <div data-field={change.field}>
+        {presented.lines.map((line) => (
+          <div key={line}>{line}</div>
+        ))}
+      </div>
+    )
+  }
+
   if (presented.transition === 'members') {
     return (
       <FieldSetUpdatedItem

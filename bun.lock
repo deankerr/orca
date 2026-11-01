@@ -44,6 +44,7 @@
         "@orca/backend": "workspace:*",
         "@orca/contract": "workspace:*",
         "@orca/json-profile": "workspace:*",
+        "@orca/pricing": "workspace:*",
         "@posthog/nextjs-config": "^1.11.5",
         "@shikijs/langs": "4.5.0",
         "@shikijs/themes": "4.5.0",
@@ -113,6 +114,7 @@
         "@orca/contract": "workspace:*",
         "@orca/discord-sender": "workspace:*",
         "@orca/json-profile": "workspace:*",
+        "@orca/pricing": "workspace:*",
         "aws4fetch": "^1.0.20",
         "convex": "catalog:",
         "convex-helpers": "catalog:",
@@ -182,10 +184,23 @@
         "vitest": "catalog:",
       },
     },
+    "packages/pricing": {
+      "name": "@orca/pricing",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@orca/config": "workspace:*",
+        "@types/node": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:",
+      },
+    },
     "packages/properties": {
       "name": "@orca/properties",
       "dependencies": {
         "@orca/contract": "workspace:*",
+        "@orca/pricing": "workspace:*",
       },
       "devDependencies": {
         "@orca/config": "workspace:*",
@@ -547,6 +562,8 @@
     "@orca/json-profile": ["@orca/json-profile@workspace:packages/json-profile"],
 
     "@orca/logos": ["@orca/logos@workspace:apps/logos"],
+
+    "@orca/pricing": ["@orca/pricing@workspace:packages/pricing"],
 
     "@orca/properties": ["@orca/properties@workspace:packages/properties"],
 

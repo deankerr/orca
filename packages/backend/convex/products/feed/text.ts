@@ -46,7 +46,7 @@ const labels: Labels = {
   'pricing.input_cache_write': 'Cache-write price',
   'pricing.input_cache_write_1h': 'Cache-write 1h price',
   'pricing.output': 'Output price',
-  'pricing.overrides': 'Price schedule',
+  'pricing.overrides': 'Conditional pricing',
   provider_region: 'Region',
   quantization: 'Quantization',
   'reasoning_config.default_reasoning_enabled': 'Reasoning on by default',
@@ -95,6 +95,10 @@ function describeChange(change: AlertChange): string[] {
 
   if (presented.transition === 'opaque') {
     return [`${name} changed.`]
+  }
+
+  if (presented.transition === 'conditions') {
+    return presented.lines.map((line) => `${line}.`)
   }
 
   if (presented.transition === 'members') {

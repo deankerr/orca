@@ -53,10 +53,10 @@ export default async function Page() {
         </p>
 
         <p>
-          Data not available in the standard OpenRouter API is included: long context pricing tiers,
-          data retention policies, hidden usage limits, moderation requirements, completions vs chat
-          completions support, provider ids with variant tags, and configuration details for
-          reasoning, caching, and web search.
+          Data not available in the standard OpenRouter API is included: data retention policies,
+          hidden usage limits, moderation requirements, completions vs chat completions support,
+          provider ids with variant tags, and configuration details for reasoning, caching, and web
+          search.
         </p>
 
         <p>

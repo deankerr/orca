@@ -1,5 +1,6 @@
+import { priceMeters as meters } from '@orca/pricing'
+
 import { formatNumber, formatPercent, formatPrice, relativeChange } from '../../../numbers'
-import { priceMeters as meters } from '../../../priceMeters'
 import type { KindValues, ValueChange, ValueKind } from '../../v5/projection'
 import type { AlertChange, AlertFact, AlertKind } from './curate'
 
@@ -28,7 +29,10 @@ interface Labels {
   [field: string]: string
 }
 
-const labels: Labels = { max_completion_tokens: 'max_output' }
+const labels: Labels = {
+  max_completion_tokens: 'max_output',
+  'pricing.overrides': 'conditional_pricing',
+}
 
 /** A compact field label: the price label, a curated alias, or the field's last path segment. */
 export function fieldLabel(field: string): string {
@@ -94,6 +98,8 @@ export type Movement = { isUp: boolean; isFavorable: boolean; percent: string }
 export type PresentedChange =
   /** An opaque field changed; its values are never presented. */
   | { transition: 'opaque'; field: string }
+  /** Conditional pricing changed in ways already written as lines. */
+  | { transition: 'conditions'; field: string; lines: string[] }
   | { transition: 'members'; field: string; added: string[]; removed: string[] }
   | { transition: 'added'; field: string; fact: AlertFact }
   | { transition: 'removed'; field: string; fact: AlertFact }
@@ -115,6 +121,10 @@ export function presentChange(
 
   if (change.kind === 'opaque') {
     return { field, transition: 'opaque' }
+  }
+
+  if (change.kind === 'conditions') {
+    return { field, lines: change.lines, transition: 'conditions' }
   }
 
   if (change.kind === 'list') {

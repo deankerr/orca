@@ -9,8 +9,8 @@ export const priceMeters = {
   audio: { scale: 6, unit: 'MTOK', discounted: true },
   audio_output: { scale: 6, unit: 'MTOK', discounted: true },
   input_audio_cache: { scale: 6, unit: 'MTOK', discounted: true },
-  image: { scale: 3, unit: 'KTOK', discounted: true },
-  image_output: { scale: 3, unit: 'KTOK', discounted: true },
+  image: { scale: 6, unit: 'MTOK', discounted: true },
+  image_output: { scale: 6, unit: 'MTOK', discounted: true },
   web_search: { scale: 0, unit: 'search', discounted: false },
 }
 // oxlint-enable sort-keys

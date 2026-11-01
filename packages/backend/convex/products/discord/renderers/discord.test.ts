@@ -604,7 +604,7 @@ test('entity templates use captured model and endpoint facts with one timestamp 
 
   const endpointText = JSON.stringify(endpoint)
   expect(endpoint?.embeds?.[0]?.description).toBe(
-    '✨ **Regional offering** endpoint (abcdef) discovered.\n\n- **Context** 128K (4K)\n- **Input** $0.00\n- **Image** $0.001\n- **Audio** $1.00 • **Output** **Cache** $0.000001',
+    '✨ **Regional offering** endpoint (abcdef) discovered.\n\n- **Context** 128K (4K)\n- **Input** $0.00\n- **Image** $1.00\n- **Audio** $1.00 • **Output** **Cache** $0.000001',
   )
   expect(endpointText).toContain('/v1/avatar/author.webp')
   expect(endpointText).toContain('/v1/avatar/provider.webp')
@@ -680,7 +680,7 @@ test('endpoint listings list limits, price families, and affirmative data polici
       ),
     ),
   ).toBe(
-    '**Regional offering** endpoint (abcdef) relisted.\n\n- **Max output** 1.04M\n- **Input** $2.00 • **Discount** 50%\n- **Cache** **Write** $2.50 • **1Hr** $5.00\n- **Image** **Output** $2.50\n\n- Trains on prompts • Retains prompts: 30 days',
+    '**Regional offering** endpoint (abcdef) relisted.\n\n- **Max output** 1.04M\n- **Input** $2.00 • **Discount** 50%\n- **Cache** **Write** $2.50 • **1Hr** $5.00\n- **Image** **Output** $2,500.00\n\n- Trains on prompts • Retains prompts: 30 days',
   )
 })
 

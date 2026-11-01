@@ -1,0 +1,18 @@
+{
+  "name": "@orca/pricing",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "test": "bun run --cwd ../.. test --project pricing"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@orca/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

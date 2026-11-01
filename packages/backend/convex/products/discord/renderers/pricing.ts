@@ -73,7 +73,7 @@ export function pricingChanges(changes: AlertChange[]): string[] {
 
   for (const change of changes) {
     if (change.kind === 'opaque' && change.field === 'pricing.overrides') {
-      fallback.push('- Price schedule changed.')
+      fallback.push('- Conditional pricing changed.')
       continue
     }
 

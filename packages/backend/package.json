@@ -13,7 +13,6 @@
   "exports": {
     "./api": "./convex/_generated/api.js",
     "./numbers": "./convex/numbers.ts",
-    "./price-meters": "./convex/priceMeters.ts",
     "./entity-logo": "./convex/entityLogo.ts",
     "./alerts/curate": "./convex/products/shared/alerts/curate.ts",
     "./alerts/present": "./convex/products/shared/alerts/present.ts",
@@ -39,6 +38,7 @@
     "@orca/contract": "workspace:*",
     "@orca/discord-sender": "workspace:*",
     "@orca/json-profile": "workspace:*",
+    "@orca/pricing": "workspace:*",
     "aws4fetch": "^1.0.20",
     "convex": "catalog:",
     "convex-helpers": "catalog:",

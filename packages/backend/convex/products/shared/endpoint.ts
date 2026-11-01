@@ -20,23 +20,29 @@ const price = z
 
 const EndpointPricing = z
   .object({
+    discount: z.number(),
     meters: z.object({
       audio: price,
+      audio_output: price,
       completion: price,
       image: price,
       image_output: price,
       input_audio_cache: price,
       input_cache_read: price,
       input_cache_write: price,
+      input_cache_write_1h: price,
       prompt: price,
       web_search: price,
     }),
   })
-  .transform(({ meters }) => ({
+  .transform(({ discount, meters }) => ({
     audio_cache_read: meters.input_audio_cache,
     audio_input: meters.audio,
+    audio_output: meters.audio_output,
     cache_read: meters.input_cache_read,
     cache_write: meters.input_cache_write,
+    cache_write_1h: meters.input_cache_write_1h,
+    discount,
     image_input: meters.image,
     image_output: meters.image_output,
     text_input: meters.prompt,

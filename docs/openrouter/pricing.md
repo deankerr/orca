@@ -7,7 +7,7 @@ signals with different purposes, not interchangeable copies or a consistency hie
 | ----------------------- | ---------------------------------------------------------- |
 | `pricing.*` rate fields | Normalized rates currently presented                       |
 | `pricing.discount`      | Fractional adjustment already reflected in presented rates |
-| `pricing.overrides`     | Opaque conditional-pricing definition                      |
+| `pricing.overrides`     | Documented conditional rate rows                           |
 | `display_pricing` 🚫    | Presentation-oriented pricing data                         |
 | `pricing_json` 🚫       | Opaque adapter-specific source pricing object              |
 | `pricing_version_id` 🚫 | Opaque upstream pricing revision identity                  |
@@ -71,9 +71,22 @@ does not imply low cost or low importance for workloads that use them.
 - `web_search` is a flat service charge rather than a token rate; `0.01` is the predominant observed value.
 - `web_search` is a passthrough charge and is not adjusted by `pricing.discount`.
 - `image` prices image input; `image_output` prices provider-side image generation.
-- OpenRouter presents `image` and `image_output` per thousand tokens rather than per million tokens.
 - `audio` prices audio input; `input_audio_cache` prices cached audio input.
 - `internal_reasoning` 🚫 prices native reasoning tokens when an endpoint exposes a distinct reasoning rate.
+
+### Meter units
+
+Upstream's stated units do not match its values, and `pricing` carries no per-endpoint unit.
+
+| Meter          | OpenAPI schema (`PublicPricing`) | 📊 `display_pricing` units, 2026-10-27, 1,484 text endpoints |
+| -------------- | -------------------------------- | ------------------------------------------------------------ |
+| `image`        | Per input image                  | `/M tokens` on all 90                                        |
+| `image_output` | Per output image                 | `/M tokens` on all 15                                        |
+| `audio`        | Per audio input token            | `/M tokens` on 92; `/minute` on 3                            |
+
+- The multimodal guide says images are "typically priced per image or as input tokens".
+- ⚠️ Mistral Voxtral's 3 `audio` rates are per second: `display_pricing` shows them `/minute` with multiplier 60.
+- 📊 Outside text endpoints, `image_output` was `/image` on 37 and `/megapixel` on 4.
 
 ## `pricing.discount`
 
@@ -96,36 +109,35 @@ Periodic discount movements therefore do not establish that an endpoint exposes 
 
 ## `pricing.overrides`
 
-`pricing.overrides` is an array of conditional rate rows. The key is absent when no conditional
-pricing is exposed. It is part of the public endpoint API's `pricing` structure, not only the
-frontend bundle. Rows have no schedule discriminator and remain open to additional conditions.
+`pricing.overrides` is an array of conditional rate rows, documented in the public API and models guide.
+The key is absent when no conditional pricing is exposed.
 
-- Prompt-length rows contain `min_prompt_tokens` and rates above that threshold.
-- The normalized `pricing.*` fields present the active schedule band or the default prompt-length band.
+| Rule                   | Upstream statement                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| Matching               | A row applies when all its condition fields match the request                                   |
+| Precedence             | Among applicable rows, later rows win per key                                                   |
+| Inheritance            | Price keys absent from a row inherit the base price                                             |
+| Same units             | Row rates use the same keys and units as the base `pricing` object                              |
+| `min_prompt_tokens`    | Total prompt tokens are strictly greater than the threshold                                     |
+| `utc_start`, `utc_end` | HHMM clocks forming `[start, end)`; an end not after start wraps past midnight                  |
+| `utc_days`             | Lowercase UTC weekdays scoping the window, or the whole day without one; absent means every day |
+| Schedule tiling        | Time rows are non-overlapping and exhaustive, so exactly one matches any instant                |
+| Top-level rates        | Reflect default conditions, and the window that applies right now                               |
 
-📊 Across 169 captures from 2026-09-26 through 2026-10-03 UTC, 213 endpoint UUIDs exposed overrides:
-206 with prompt-length conditions and seven with schedules. No mixed schedule/context arrays
-appeared in that corpus; this does not constrain future representations.
+📊 On 2026-10-27, 226 of 1,750 endpoints carried 247 rows, all on text endpoints: 216 with prompt-length
+conditions and 10 with schedules. No row combined the two, and no endpoint mixed them.
 
-📊 On 2026-10-23, 216 of 1,457 text endpoints carried 237 override rows. 209 rows conditioned on
-`min_prompt_tokens`, most often 272,000 (129) or 200,000 (51); 26 carried `utc_start`/`utc_end`.
+- Several rows can repeat the same rates, so a row is not necessarily a distinct price band.
+- 🔄 The schema allows unknown `utc_days` values, and its condition list is given by example.
+- 📊 The same scan contained no endpoint with both overrides and a nonzero discount.
 
-Schedules vary and do not provide a universal base price or default band.
-
-The scheduled rows in that corpus used three condition shapes:
+The scheduled rows used three condition shapes:
 
 | Conditions                         | Observed use                                              |
 | ---------------------------------- | --------------------------------------------------------- |
 | `utc_start`, `utc_end`             | Daily clock windows on Alibaba and Tencent                |
 | `utc_days`                         | Whole-day weekend rates on DeepSeek, without clock fields |
 | `utc_days`, `utc_start`, `utc_end` | Weekday clock windows on DeepSeek                         |
-
-- Clocks were integer HHMM values, including `utc_end: 0` for a window ending at midnight.
-- `utc_days` contained lowercase weekday names. Requiring both clock fields misses whole-day rows.
-- Several rows can repeat the same rates; a condition row is not necessarily a distinct price band.
-
-Observed schedule rates covered `prompt`, `completion`, and `input_cache_read`; context rows also
-varied in cache-write and audio meter coverage. These are observations, not a closed schema.
 
 ## `display_pricing`
 
