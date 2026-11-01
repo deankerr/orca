@@ -50,7 +50,7 @@ Models also announce `warning_message`, which the Contract does not yet publish.
 - Optional facts ORCA cannot read are unknown (null), like absent ones; absent and null are the same value.
 - Provider updates select identity, location, status-page, and terms/privacy URLs.
 - Reasoning belongs to model alerts; endpoint reasoning-only changes are omitted.
-- Overrides are announced as changed, without values, only under a price schedule.
+- Override changes present what changed; rows ORCA cannot read are announced as changed, without values.
 - A required fact ORCA cannot read, or a changed field without both sides, fails its Event.
 - Failed Events log their identity and error and are omitted while neighbors continue.
 
@@ -61,8 +61,17 @@ Models also announce `warning_message`, which the Contract does not yet publish.
 - An override key starting with `utc` establishes schedule evidence; prompt-length overrides alone do not.
 - Detection neither interprets conditions nor selects an active band.
 - If either complete quote is scheduled, only override changes qualify, including introduction/removal.
-- Updates say “Price schedule changed” and omit current-band deltas; listings can say “Price schedule detected”.
+- Updates omit current-band deltas; listings can say “Price schedule detected”.
 - Without complete quote context, ordinary numeric eligibility applies.
+
+### Conditional pricing
+
+Quotes are compared by what their conditions say, using `@orca/pricing`.
+
+- Prompt-length and schedule conditions follow the same rules; an added or removed condition qualifies.
+- A condition's rate qualifies by the meter threshold, and a condition change qualifies an update.
+- Row order and repeated rates are not changes, and neither is a movement under the threshold.
+- Without complete quote context, override changes are not announced.
 
 ### Ordinary pricing
 

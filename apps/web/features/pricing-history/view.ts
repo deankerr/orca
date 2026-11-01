@@ -1,4 +1,4 @@
-import { priceMeters } from '@/lib/backend'
+import { priceMeters } from '@orca/pricing'
 
 import { DAY, dailyTrace, pricingHistoryTraces } from './data'
 import type { PricingHistory } from './data'

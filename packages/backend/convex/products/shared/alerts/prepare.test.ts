@@ -74,7 +74,7 @@ test('scheduled pricing suppresses unchanged overrides regardless of the price o
   expect(prepareAlert(metadataOnly)).toMatchObject({ changes: [{ field: 'context_length' }] })
 })
 
-test('schedule changes announce an opaque change, including introduction and removal without meter movement', async () => {
+test('schedule changes announce, including introduction and removal without meter movement', async () => {
   const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
   const schedule = [{ prompt: '0.000001', utc_days: ['saturday'] }]
   const changed = [{ extension: { future: true }, prompt: '0.000001', utc_days: ['sunday'] }]
@@ -106,23 +106,115 @@ test('schedule changes announce an opaque change, including introduction and rem
     expect(prepareAlert(row)).toMatchObject({
       changes: [
         { after: 200, before: 100, field: 'context_length', kind: 'count' },
-        { field: 'pricing.overrides', kind: 'opaque' },
+        { field: 'pricing.overrides' },
       ],
     })
-    expect(render(row)?.details).toEqual([
-      'Context length changed from 100 to 200.',
-      'Price schedule changed.',
-    ])
-    expect(JSON.stringify(await renderDiscord(row, urls))).toContain('Price schedule changed.')
     expect(row.change_json).toBe(captured)
   }
 
-  const contextPrice = update(
-    { pricing: { ...base, overrides: [{ min_prompt_tokens: 100, prompt: '0.000002' }] } },
-    { pricing: { ...base, overrides: [{ min_prompt_tokens: 200, prompt: '0.000002' }] } },
-  )
+  const unreadable = priced({ ...base, overrides: schedule }, { ...base, overrides: changed })
 
-  expect(prepareAlert(contextPrice)).toBeNull()
+  expect(render(unreadable)?.details).toEqual(['Conditional pricing changed.'])
+  expect(JSON.stringify(await renderDiscord(unreadable, urls))).toContain(
+    'Conditional pricing changed.',
+  )
+})
+
+test('condition changes present what changed for prompt-length and scheduled rates', async () => {
+  const urls = { logoOrigin: 'https://logos.orb.town', publicUrl: 'https://orca.orb.town' }
+  const base = { discount: 0, meters: { prompt: '0.000001' } }
+
+  const long = (min_prompt_tokens: number, prompt: string, completion = '0.00001') => ({
+    completion,
+    min_prompt_tokens,
+    prompt,
+  })
+
+  const peak = { prompt: '0.000002', utc_end: 0, utc_start: 1630 }
+
+  const clocked = (utc_start: number, utc_end: number) => ({
+    prompt: '0.000002',
+    utc_days: ['tuesday', 'monday'],
+    utc_end,
+    utc_start,
+  })
+
+  for (const [before, after, details] of [
+    [
+      [long(200_000, '0.000002')],
+      [long(200_000, '0.000003')],
+      ['Above 200,000 tokens: Input $2.00 → $3.00.'],
+    ],
+    [[], [long(200_000, '0.000002')], ['Above 200,000 tokens added: Input $2.00, Output $10.00.']],
+    [
+      [long(200_000, '0.000002')],
+      [],
+      ['Above 200,000 tokens removed: Input $2.00, Output $10.00.'],
+    ],
+    [
+      [long(200_000, '0.000002')],
+      [long(272_000, '0.000002')],
+      [
+        'Above 200,000 tokens removed: Input $2.00, Output $10.00.',
+        'Above 272,000 tokens added: Input $2.00, Output $10.00.',
+      ],
+    ],
+    [[peak], [{ ...peak, prompt: '0.000004' }], ['16:30–00:00 UTC: Input $2.00 → $4.00.']],
+    [
+      [clocked(100, 400), clocked(600, 1000), { prompt: '0.000002', utc_days: ['sunday'] }],
+      [],
+      ['Mon, Tue 01:00–04:00, 06:00–10:00; Sun UTC removed: Input $2.00.'],
+    ],
+  ] satisfies [Record<string, JsonValue>[], Record<string, JsonValue>[], string[]][]) {
+    const row = priced({ ...base, overrides: before }, { ...base, overrides: after })
+
+    expect(render(row)?.details).toEqual(details)
+    expect(JSON.stringify(await renderDiscord(row, urls))).toContain(details[0]?.slice(0, 20))
+  }
+})
+
+test('condition changes that say nothing new are not announced', () => {
+  const base = { discount: 0, meters: { prompt: '0.000001' } }
+  const first = { min_prompt_tokens: 100, prompt: '0.000002' }
+  const second = { completion: '0.000003', min_prompt_tokens: 200 }
+  const bare = (overrides: Record<string, JsonValue>[]) => ({ ...base, overrides })
+
+  // A reorder, the same band restated, and movement under the threshold.
+  for (const [before, after] of [
+    [bare([first, second]), bare([second, first])],
+    [
+      bare([
+        { prompt: '1', utc_end: 800, utc_start: 0 },
+        { prompt: '1', utc_days: ['sunday'] },
+      ]),
+      bare([
+        { prompt: '1', utc_days: ['sunday'] },
+        { prompt: '1', utc_end: 800, utc_start: 0 },
+      ]),
+    ],
+    [bare([first]), bare([{ ...first, prompt: '0.00000201' }])],
+  ] as const) {
+    expect(prepareAlert(priced(before, after))).toBeNull()
+  }
+
+  // Old projections have no complete quotes, so there is nothing to compare.
+  expect(prepareAlert(update({ pricing: bare([first]) }, { pricing: bare([second]) }))).toBeNull()
+})
+
+test('a condition change keeps only the meters that qualify themselves', () => {
+  const before = {
+    discount: 0,
+    meters: { prompt: '0.000001' },
+    overrides: [{ min_prompt_tokens: 100, prompt: '0.000002' }],
+  }
+
+  const after = {
+    discount: 0,
+    meters: { prompt: '0.000001001' },
+    overrides: [{ min_prompt_tokens: 100, prompt: '0.000003' }],
+  }
+
+  expect(render(priced(before, after))?.details).toEqual(['Above 100 tokens: Input $2.00 → $3.00.'])
 })
 
 test('schedule detection accepts open UTC conditions and keeps unknown context distinct from no schedule', () => {
@@ -588,6 +680,14 @@ test('unselected external objects and indexed arrays remain valid captured data'
   expect(alert).toMatchObject({ changes: [{ after: 200, before: 100, field: 'context_length' }] })
   expect(alert?.type === 'endpoint_updated' ? alert.changes : []).toHaveLength(1)
 })
+
+/** An update carrying the complete quotes that pricing Events retain. */
+function priced(before: z.infer<typeof Pricing>, after: z.infer<typeof Pricing>) {
+  const row = update({ pricing: before }, { pricing: after })
+  row.context.pricing = { after: encodePricing(after), before: encodePricing(before) }
+
+  return row
+}
 
 function render(row: EventRow) {
   const alert = prepareAlert(row)

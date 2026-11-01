@@ -24,6 +24,10 @@ export function fieldChange(
     return changeRow(label, 'changed')
   }
 
+  if (presented.transition === 'conditions') {
+    return presented.lines.map((line) => `- ${escape(line)}`).join('\n')
+  }
+
   if (presented.transition === 'members') {
     const members = (items: string[], transition: 'added' | 'removed') =>
       items.length === 0 ? [] : [presence(items.map(escape).join(', '), transition)]

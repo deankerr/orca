@@ -28,6 +28,6 @@ export function formatChangeUnit(...items: AlertFact[]): string {
     : ''
 }
 
-/** The Monitor names the opaque override field by what it carries. */
+/** The Monitor names the override field by what it carries. */
 export const fieldLabel = (field: string): string =>
-  field === 'pricing.overrides' ? 'Price schedule' : compactLabel(field)
+  field === 'pricing.overrides' ? 'Conditional pricing' : compactLabel(field)

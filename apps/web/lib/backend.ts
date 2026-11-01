@@ -7,8 +7,6 @@ export { entityLogoUrl } from '@orca/backend/entity-logo'
 
 export { formatPrice } from '@orca/backend/numbers'
 
-export { priceMeters } from '@orca/backend/price-meters'
-
 export { OrcaPublicApiV2Schema } from '@orca/backend/public-api/v2/schema'
 
 export {

@@ -398,7 +398,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageInputPrice)) {
         items.push({
           label: 'Input',
-          value: `${formatPrice(imageInputPrice, 3) ?? String(imageInputPrice)}/KTOK`,
+          value: `${formatPrice(imageInputPrice, 6) ?? String(imageInputPrice)}/MTOK`,
         })
       }
 
@@ -423,7 +423,7 @@ export const attributes = defineAttributes({
       if (hasValue(imageOutputPrice)) {
         items.push({
           label: 'Output',
-          value: `${formatPrice(imageOutputPrice, 3) ?? String(imageOutputPrice)}/KTOK`,
+          value: `${formatPrice(imageOutputPrice, 6) ?? String(imageOutputPrice)}/MTOK`,
         })
       }
 

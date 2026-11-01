@@ -1,3 +1,4 @@
+import { isSchedulePriced } from '@orca/pricing'
 import { withoutSystemFields } from 'convex-helpers'
 import { ConvexError, v } from 'convex/values'
 import type { Infer } from 'convex/values'
@@ -11,8 +12,8 @@ import { modelFields } from '../../v5/models'
 import { facts, translateStored } from '../../v5/projection'
 import type { FieldFact, Fields, Kind, Translation } from '../../v5/projection'
 import { providerFields } from '../../v5/providers'
+import { conditionChange } from './conditions'
 import { decodeSnapshot } from './decode'
-import { isScheduledPricing } from './pricing'
 
 const alertFields = {
   endpoint: endpointFields,
@@ -22,6 +23,13 @@ const alertFields = {
 
 /** Opaque values are announced as changed, never projected into alerts. */
 export type AlertKind = Exclude<Kind, 'opaque'>
+
+/** Readable override changes carry finished lines; unreadable ones stay opaque. */
+const conditionsChange = v.object({
+  field: v.string(),
+  kind: v.literal('conditions'),
+  lines: v.array(v.string()),
+})
 
 const values = {
   count: v.union(v.number(), v.null()),
@@ -63,6 +71,7 @@ const alertChange = v.union(
     removed: v.array(v.string()),
   }),
   v.object({ field: v.string(), kind: v.literal('opaque') }),
+  conditionsChange,
 )
 
 export const entityAlert = v.union(
@@ -98,11 +107,14 @@ function lifecycleFacts(row: EventRow): { facts: AlertFact[]; pricing_is_schedul
   )
 
   return snapshot.entity_kind === 'endpoint'
-    ? { facts: selected, pricing_is_scheduled: isScheduledPricing(snapshot.value.pricing) }
+    ? { facts: selected, pricing_is_scheduled: isSchedulePriced(snapshot.value.pricing.overrides) }
     : { facts: selected }
 }
 
-function translation(row: EventRow): Translation & { pricing_is_scheduled?: boolean } {
+function translation(row: EventRow): Omit<Translation, 'changes'> & {
+  changes: AlertChange[]
+  pricing_is_scheduled?: boolean
+} {
   if (row.entity_kind !== 'endpoint') {
     return translateStored(alertFields[row.entity_kind], row.change_json)
   }
@@ -110,14 +122,25 @@ function translation(row: EventRow): Translation & { pricing_is_scheduled?: bool
   const { pricing } = row.context
   const result = translateEndpointUpdate(row)
 
-  return pricing === undefined
-    ? result
-    : {
-        ...result,
-        pricing_is_scheduled: [pricing.before, pricing.after].some((quote) =>
-          isScheduledPricing(decodePricing(quote)),
-        ),
+  if (pricing === undefined) {
+    return result
+  }
+
+  const quotes = [decodePricing(pricing.before), decodePricing(pricing.after)] as const
+
+  return {
+    ...result,
+    changes: result.changes.flatMap((change): AlertChange[] => {
+      if (change.field !== 'pricing.overrides') {
+        return [change]
       }
+
+      const condition = conditionChange(...quotes)
+
+      return condition === null ? [] : [condition]
+    }),
+    pricing_is_scheduled: quotes.some(({ overrides }) => isSchedulePriced(overrides)),
+  }
 }
 
 /** Interpret captured facts only; curation never reads current Catalog or modifies stored events. */

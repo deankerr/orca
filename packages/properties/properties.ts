@@ -1,4 +1,5 @@
 import type { Endpoint } from '@orca/contract/endpoint'
+import { isLongContextPriced, isSchedulePriced } from '@orca/pricing'
 
 import { defineProperties, flag, value } from './define'
 import type { Scope, Value } from './define'
@@ -673,33 +674,22 @@ export const properties = defineProperties({
     resolve: (endpoint) => endpoint.pricing.input_cache_write_1h !== null,
   }),
 
-  /**
-   * An override with `min_prompt_tokens`. Upstream also prices long context through meters in
-   * `pricing_json`, which ORCA does not publish, so this undercounts.
-   */
+  /** An override with `min_prompt_tokens`. */
   long_context_pricing: flag('endpoint', {
     description: 'Long prompts are billed at higher rates.',
     group: 'pricing',
     name: 'Long-Context Pricing',
     polarity: 'negative',
-    resolve: (endpoint) =>
-      endpoint.pricing.overrides?.some((override) => 'min_prompt_tokens' in override),
+    resolve: (endpoint) => isLongContextPriced(endpoint.pricing.overrides),
   }),
 
-  /**
-   * An override with any `utc` condition, as alerts judge schedules; some state only `utc_days`.
-   * Upstream also states schedules in `display_pricing`, which ORCA does not publish. Schedules are
-   * not parsed yet.
-   */
+  /** An override with any `utc` condition, as alerts judge schedules. */
   peak_pricing: flag('endpoint', {
     description: 'Rates change on a UTC schedule.',
     group: 'pricing',
     name: 'Peak Pricing',
     polarity: 'neutral',
-    resolve: (endpoint) =>
-      endpoint.pricing.overrides?.some((override) =>
-        Object.keys(override).some((key) => key.startsWith('utc')),
-      ),
+    resolve: (endpoint) => isSchedulePriced(endpoint.pricing.overrides),
   }),
 
   /** A negative discount is a surcharge; like OpenRouter, ORCA shows it only through the price. */

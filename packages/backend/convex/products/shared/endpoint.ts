@@ -1,10 +1,11 @@
+import { conditionalPricing } from '@orca/pricing'
 import { convexToZod } from 'convex-helpers/server/zod4'
 import { docValidator } from 'convex/server'
 import { z } from 'zod'
 
 import { CURRENT_ENDPOINTS_TABLE, currentEndpointsTable } from '../../catalog/tables/current'
 import { flagOrNull, stringsOrNull, isoDate } from '../../fields'
-import { JsonObjectFromString } from '../../json'
+import { JsonObject, JsonObjectFromString } from '../../json'
 
 // Malformed optional facts are unknown, not invented defaults.
 const quantity = z.number().nonnegative().nullable().catch(null)
@@ -18,25 +19,35 @@ const price = z
   .optional()
   .catch(undefined)
 
+const Overrides = z.string().transform((json) => z.array(JsonObject).parse(JSON.parse(json)))
+
 const EndpointPricing = z
   .object({
+    discount: z.number(),
     meters: z.object({
       audio: price,
+      audio_output: price,
       completion: price,
       image: price,
       image_output: price,
       input_audio_cache: price,
       input_cache_read: price,
       input_cache_write: price,
+      input_cache_write_1h: price,
       prompt: price,
       web_search: price,
     }),
+    overrides_json: Overrides.optional(),
   })
-  .transform(({ meters }) => ({
+  .transform(({ discount, meters, overrides_json: overrides }) => ({
     audio_cache_read: meters.input_audio_cache,
     audio_input: meters.audio,
+    audio_output: meters.audio_output,
     cache_read: meters.input_cache_read,
     cache_write: meters.input_cache_write,
+    cache_write_1h: meters.input_cache_write_1h,
+    conditional: overrides === undefined ? undefined : conditionalPricing(overrides),
+    discount,
     image_input: meters.image,
     image_output: meters.image_output,
     text_input: meters.prompt,
