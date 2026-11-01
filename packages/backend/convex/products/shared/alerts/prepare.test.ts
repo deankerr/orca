@@ -201,6 +201,27 @@ test('condition changes that say nothing new are not announced', () => {
   expect(prepareAlert(update({ pricing: bare([first]) }, { pricing: bare([second]) }))).toBeNull()
 })
 
+test('schedule windows are compared on their own when a shared band splits', () => {
+  const window = (prompt: string) => ({ prompt, utc_days: ['monday'] })
+  const sunday = { prompt: '0.000002', utc_days: ['sunday'] }
+
+  const quote = (overrides: Record<string, JsonValue>[]) => ({
+    discount: 0,
+    meters: { prompt: '0.000001' },
+    overrides,
+  })
+
+  const before = quote([window('0.000002'), sunday])
+
+  for (const prompt of ['0.00000201', '2e-6']) {
+    expect(prepareAlert(priced(before, quote([window(prompt), sunday])))).toBeNull()
+  }
+
+  expect(render(priced(before, quote([window('0.000003'), sunday])))?.details).toEqual([
+    'Mon UTC: Input $2.00 → $3.00.',
+  ])
+})
+
 test('a condition change keeps only the meters that qualify themselves', () => {
   const before = {
     discount: 0,

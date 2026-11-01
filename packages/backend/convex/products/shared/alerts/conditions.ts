@@ -1,5 +1,5 @@
 import { conditionalPricing } from '@orca/pricing'
-import type { PriceBand, PriceBracket, PriceRates, PriceWindow } from '@orca/pricing'
+import type { PriceBand, PriceRates, PriceWindow } from '@orca/pricing'
 import * as R from 'remeda'
 import type { z } from 'zod'
 
@@ -77,25 +77,25 @@ const week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 
 const dayLabel = (day: string) => day.slice(0, 1).toUpperCase() + day.slice(1, 3)
 
-const daysLabel = (days: string[] | null) =>
+const daysLabel = (days: string[]) =>
   days
-    ?.toSorted((a, b) => week.indexOf(a) - week.indexOf(b) || a.localeCompare(b))
+    .filter(Boolean)
+    .toSorted((a, b) => week.indexOf(a) - week.indexOf(b) || a.localeCompare(b))
     .map(dayLabel)
-    .join(', ') ?? ''
+    .join(', ')
 
 const hoursLabel = ({ end, start }: PriceWindow) =>
   start === null || end === null ? [] : [`${clock(start)}–${clock(end)}`]
 
-const bracketLabel = ({ above_prompt_tokens: above }: PriceBracket) =>
-  `Above ${above.toLocaleString('en-US')} tokens`
+/** Days sharing their hours share a clause, such as `Sat, Sun` or `Mon, Tue 01:00–04:00, 06:00–10:00`. */
+function windowsLabel(windows: PriceWindow[]): string {
+  const hoursByDay = Object.entries(R.groupBy(windows, ({ days }) => days?.[0] ?? '')).map(
+    ([day, group]) => ({ day, hours: group.flatMap(hoursLabel).toSorted().join(', ') }),
+  )
 
-/** Windows sharing their days share a clause, such as `Sat, Sun` or `Mon, Tue 01:00–04:00, 06:00–10:00`. */
-function bandLabel({ windows }: PriceBand): string {
-  const clauses = R.groupBy(windows, ({ days }) => daysLabel(days))
-
-  const label = Object.entries(clauses)
-    .map(([days, group]) =>
-      [days, group.flatMap(hoursLabel).toSorted().join(', ')].filter(Boolean).join(' '),
+  const label = Object.entries(R.groupBy(hoursByDay, ({ hours }) => hours))
+    .map(([hours, group]) =>
+      [daysLabel(group.map(({ day }) => day)), hours].filter(Boolean).join(' '),
     )
     .toSorted()
     .join('; ')
@@ -103,21 +103,63 @@ function bandLabel({ windows }: PriceBand): string {
   return `${label} UTC`
 }
 
+interface Condition {
+  rates: PriceRates
+}
+
+/** Each scheduled day keeps its own identity, so a band splitting or merging is not a change. */
+function scheduleSlots(bands: PriceBand[]) {
+  return new Map(
+    bands.flatMap(({ rates, windows }) =>
+      windows.flatMap(({ days, end, start }) =>
+        (days ?? [null]).map((day): [string, Condition & { window: PriceWindow }] => {
+          const window = { days: day === null ? null : [day], end, start }
+
+          return [JSON.stringify(window), { rates, window }]
+        }),
+      ),
+    ),
+  )
+}
+
 /** Conditions by what they say, so row order and repeated rates are not changes. */
 function conditions(pricing: z.infer<typeof Pricing>) {
   const { bands, brackets, unrecognized } = conditionalPricing(pricing.overrides ?? [])
 
   return {
-    rates: new Map<string, PriceRates>([
-      ...brackets.map((bracket): [string, PriceRates] => [bracketLabel(bracket), bracket.rates]),
-      ...bands.map((band): [string, PriceRates] => [bandLabel(band), band.rates]),
-    ]),
+    brackets: new Map(
+      brackets.map(({ above_prompt_tokens: above, rates }) => {
+        const label = `Above ${above.toLocaleString('en-US')} tokens`
+
+        return [label, { label, rates }]
+      }),
+    ),
     readable: unrecognized.length === 0,
+    slots: scheduleSlots(bands),
   }
 }
 
-const presence = (label: string, rates: PriceRates, transition: 'added' | 'removed') =>
-  [`${label} ${transition}`, rateList(rates).join(', ')].filter(Boolean).join(': ')
+const presence = (rates: PriceRates, transition: 'added' | 'removed') =>
+  [` ${transition}`, rateList(rates).join(', ')].filter(Boolean).join(': ')
+
+/** What happened to each condition, written as the text following its label. */
+function conditionOutcomes<C extends Condition>(before: Map<string, C>, after: Map<string, C>) {
+  return [...new Set([...before.keys(), ...after.keys()])].flatMap((key) => {
+    const [from, to] = [before.get(key), after.get(key)]
+
+    if (from === undefined) {
+      return to === undefined ? [] : [{ condition: to, outcome: presence(to.rates, 'added') }]
+    }
+
+    if (to === undefined) {
+      return [{ condition: from, outcome: presence(from.rates, 'removed') }]
+    }
+
+    const moved = rateChanges(from.rates, to.rates)
+
+    return moved.length === 0 ? [] : [{ condition: to, outcome: `: ${moved.join(', ')}` }]
+  })
+}
 
 /**
  * What changed between two quotes' conditions, or null when nothing worth announcing did.
@@ -135,21 +177,20 @@ export function conditionChange(
     return { field: 'pricing.overrides', kind: 'opaque' }
   }
 
-  const lines = [...new Set([...before.rates.keys(), ...after.rates.keys()])].flatMap((label) => {
-    const [from, to] = [before.rates.get(label), after.rates.get(label)]
+  const slotOutcomes = R.groupBy(
+    conditionOutcomes(before.slots, after.slots),
+    ({ outcome }) => outcome,
+  )
 
-    if (from === undefined) {
-      return to === undefined ? [] : [presence(label, to, 'added')]
-    }
-
-    if (to === undefined) {
-      return [presence(label, from, 'removed')]
-    }
-
-    const moved = rateChanges(from, to)
-
-    return moved.length === 0 ? [] : [`${label}: ${moved.join(', ')}`]
-  })
+  const lines = [
+    ...conditionOutcomes(before.brackets, after.brackets).map(
+      ({ condition, outcome }) => `${condition.label}${outcome}`,
+    ),
+    ...Object.entries(slotOutcomes).map(
+      ([outcome, group]) =>
+        `${windowsLabel(group.map(({ condition }) => condition.window))}${outcome}`,
+    ),
+  ]
 
   return lines.length === 0 ? null : { field: 'pricing.overrides', kind: 'conditions', lines }
 }
