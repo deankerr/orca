@@ -1,0 +1,244 @@
+model,provider,variant,service_tier,override_class,override_rows,distinct_prompt_rates,thresholds,source_thresholds,source_prompt_meter,display_context_tiers,schedule_source_style,schedule_active_rows,schedule_active_matches_current,discount,max_prompt_multiple
+google/gemini-2.5-flash,google-ai-studio,standard,,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash,google-ai-studio,standard,priority,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash,google-ai-studio,standard,flex,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash-image,google-vertex,standard,,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash-lite,google-ai-studio,standard,flex,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash-lite,google-ai-studio,standard,,,0,0,,,False,,,,,0,
+google/gemini-2.5-flash-lite,google-ai-studio,standard,priority,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-ai-studio,standard,,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-ai-studio,standard,priority,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-ai-studio,standard,flex,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-vertex,standard,flex,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-vertex,standard,priority,,0,0,,,False,,,,,0,
+google/gemini-3-flash-preview,google-vertex,standard,,,0,0,,,False,,,,,0,
+google/gemini-3-pro-image-preview,google-ai-studio,standard,flex,,0,0,,,True,,,,,0,
+google/gemini-3-pro-image-preview,google-ai-studio,standard,,,0,0,,,True,,,,,0,
+minimax/minimax-m3,gmicloud,standard,,,0,0,,512000,True,,,,,0.2,
+tencent/hy3-preview,gmicloud,standard,,,0,0,,16384 32768,True,,,,,0,
+anthropic/claude-haiku-5.5,amazon-bedrock,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,amazon-bedrock,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,amazon-bedrock/us-east-1,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,anthropic,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,azure,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,azure/us,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,claude-on-aws,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,google-vertex,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,google-vertex/europe,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5,google-vertex/us,standard,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-haiku-5.5:batch,anthropic,batch,,prompt-length,1,1,100000,100000,True,≤100K >100K,,,,0,5.00
+anthropic/claude-sonnet-4.5,amazon-bedrock,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5,amazon-bedrock,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5,anthropic,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5,claude-on-aws,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5,google-vertex,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5,google-vertex/global,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+anthropic/claude-sonnet-4.5:batch,anthropic,batch,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+bytedance-seed/seed-1.6,seed,standard,,prompt-length,1,1,128000,128000,True,≤128K >128K,,,,0,2.00
+bytedance-seed/seed-1.6-flash,seed,standard,,prompt-length,1,1,128000,128000,True,≤128K >128K,,,,0,1.33
+bytedance-seed/seed-2.0-code,seed,standard,,prompt-length,1,1,128000,128000,True,≤128K >128K,,,,0,2.00
+bytedance-seed/seed-2.0-lite,seed,standard,,prompt-length,1,1,128000,128000,True,≤128K >128K,,,,0,2.00
+bytedance-seed/seed-2.0-mini,seed,standard,,prompt-length,1,1,128000,128000,True,≤128K >128K,,,,0,2.00
+google/gemini-2.5-pro,google-ai-studio,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-2.5-pro,google-ai-studio,standard,flex,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-2.5-pro,google-ai-studio,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-2.5-pro-preview,google-vertex,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-ai-studio,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-ai-studio,standard,flex,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-ai-studio,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-vertex,standard,flex,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-vertex,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview,google-vertex,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview-customtools,google-ai-studio,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+google/gemini-3.1-pro-preview:batch,google-vertex,batch,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+openai/gpt-5.4,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.4:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.5:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-luna:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-sol:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-5.6-terra:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,openai,standard,ultrafast,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,openai,standard,ultrafast,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-astra:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-luna:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6-sol:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,amazon-bedrock,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,openai,standard,ultrafast,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,azure,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,azure/us,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro,openai,standard,ultrafast,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-sol:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra-pro,azure/eu,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra-pro,openai,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra-pro,openai,standard,flex,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra-pro,openai,standard,priority,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra-pro:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+openai/gpt-6.1-terra:batch,openai,batch,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+qwen/qwen-plus,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,3.00
+qwen/qwen3-coder-flash,alibaba,standard,,prompt-length,2,2,32000 128000,32000 128000,True,≤32K ≤128K >128K,,,,0,2.67
+qwen/qwen3.5-plus-02-15,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,1.25
+qwen/qwen3.5-plus-20260420,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,1.25
+qwen/qwen3.6-flash,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,4.00
+qwen/qwen3.6-plus,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,4.00
+qwen/qwen3.7-flash,alibaba,standard,,prompt-length,2,2,32000 256000,32000 256000,True,≤32K ≤256K >256K,,,,0,6.67
+qwen/qwen3.7-flash,alibaba,standard,,prompt-length,2,2,32000 256000,32000 256000,True,≤32K ≤256K >256K,,,,0,6.67
+qwen/qwen3.7-plus,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,3.00
+qwen/qwen3.7-plus,alibaba,standard,,prompt-length,1,1,256000,256000,True,≤256K >256K,,,,0,3.00
+sakana/fugu-ultra,sakana,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+sakana/fugu-ultra-v2,sakana,standard,,prompt-length,1,1,272000,272000,True,≤272K >272K,,,,0,2.00
+x-ai/grok-4.20,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20-multi-agent,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20-multi-agent,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20-multi-agent,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.20-multi-agent,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.3,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.3,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.3,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.3,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.3:batch,xai,batch,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.5,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.5,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.5,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.5,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,amazon-bedrock,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.6,xai/zdr/us,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.7,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.7,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.7,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.7,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-4.7,xai/zdr/us,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-build-0.1,xai,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-build-0.1,xai,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-build-0.1,xai/zdr,standard,,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+x-ai/grok-build-0.1,xai/zdr,standard,priority,prompt-length,1,1,200000,200000,True,≤200K >200K,,,,0,2.00
+deepseek/deepseek-v4-flash-0731,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the dearer band,1,True,0,
+deepseek/deepseek-v4-flash-0731,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the dearer band,1,True,0,
+deepseek/deepseek-v4-pro-0813,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the dearer band,1,True,0,
+deepseek/deepseek-v4-pro-0813,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the dearer band,1,True,0,
+deepseek/deepseek-v4-pro-0813,deepseek,standard,,schedule,6,2,,,False,,"cache-hit/miss, two windows, Asia/Shanghai weekend flags",1,True,0,
+deepseek/deepseek-v4.1-flash,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the cheaper band,1,True,0,
+deepseek/deepseek-v4.1-flash-1017,alibaba,standard,,schedule,2,2,,,False,,peak_* holds the cheaper band,1,True,0,
+deepseek/deepseek-v4.1-flash-1017,deepseek,standard,,schedule,6,2,,,False,,"cache-hit/miss, two windows, Asia/Shanghai weekend flags",1,True,0,
+tencent/hy3,tencent,standard,,schedule,2,2,,,False,,peak_* holds the cheaper band,1,True,0,
+tencent/hy4-preview,tencent,standard,,schedule,2,2,,,False,,peak_* holds the cheaper band,1,True,0,

@@ -1,0 +1,11 @@
+field,value
+collected_at,2026-10-28T00:08:34Z
+deployment,dependable-husky-550 (production object source)
+object,scans/scan.2026-10-27T23:40:40.374Z.jsonl
+tool,packages/scripts scan-download load (read-only object API)
+convex_cli,1.48.0
+revision,2cdf65fcba
+latest_scan_at_collection,2026-10-27T23:40:40.374Z
+jsonl_bytes,10290841
+jsonl_sha256,11a96b76aa4dab2c1d00e2b28a4b18776950eb56b9f9028641598e555d8ff392
+gzip_sha256,bd47583ffd01619e4a9060b49f02f7bc5f974a72ef10ead25007c9235c6bd5ae

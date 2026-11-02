@@ -1,0 +1,85 @@
+key,name,entity,group,polarity,kind,endpoints,share,models,providers,models_varying,values,source,description,notes
+image_input,Image Input,model,modality,positive,flag,983,0.6624,287,74,0,,model.input_modalities has 'image',Accepts image content in requests.,
+file_input,File Input,model,modality,positive,flag,517,0.3484,176,18,0,,model.input_modalities has 'file',Accepts file content in requests.,
+video_input,Video Input,model,modality,positive,flag,363,0.2446,83,61,0,,model.input_modalities has 'video',Accepts video content in requests.,
+audio_input,Audio Input,model,modality,positive,flag,122,0.0822,40,25,0,,model.input_modalities has 'audio',Accepts audio content in requests.,
+image_output,Image Output,model,modality,positive,flag,15,0.0101,10,3,0,,model.output_modalities has 'image',Can return image content alongside text.,
+audio_output,Audio Output,model,modality,positive,flag,2,0.0013,2,1,0,,model.output_modalities has 'audio',Can return audio content alongside text.,
+reasoning,Reasoning,model,reasoning,positive,flag,1270,0.8558,322,81,0,,supports_reasoning on model or endpoint,Produces reasoning tokens before its answer.,
+reasoning_mandatory,Mandatory Reasoning,model,reasoning,neutral,flag,434,0.2925,128,65,0,,is_mandatory_reasoning on model reasoning_config or endpoint features,Reasoning cannot be turned off.,
+reasoning_default_off,Reasoning Off by Default,model,reasoning,neutral,flag,113,0.0761,27,35,0,,reasoning_config.default_reasoning_enabled false,Reasons only when a request enables it.,
+reasoning_effort,Reasoning Effort,model,reasoning,positive,value,886,0.5970,191,76,0,low high max 152; low medium high xhigh max 122; high max low 107; high low medium xhigh max 87; low medium high 64; high xhigh 51; medium minimal low high 37; high low medium xhigh 31,reasoning_config.supported_reasoning_efforts,Accepts these reasoning effort levels.,
+reasoning_default_effort,Default Effort,model,reasoning,neutral,value,779,0.5249,159,73,0,high 307; medium 264; max 143; xhigh 32; minimal 28; low 5,reasoning_config.default_reasoning_effort,Effort level used when a request does not set one.,
+reasoning_budget,Reasoning Budget,model,reasoning,positive,flag,23,0.0155,10,13,0,,reasoning_config.supports_reasoning_max_tokens,Accepts a reasoning token budget (reasoning.max_tokens).,
+reasoning_hidden,Hidden Reasoning,model,reasoning,negative,flag,3,0.0020,3,2,0,,reasoning_return_mechanism 'none' on model or endpoint,"Reasons, but does not return its reasoning.",
+tools,Tools,endpoint,tools,positive,flag,1345,0.9063,373,81,33,,supported_parameters has 'tools',Function calling through the tools parameter.,
+tool_choice,Tool Choice,endpoint,tools,positive,flag,1325,0.8929,365,78,40,,supported_parameters has 'tool_choice',Accepts the tool_choice parameter.,
+tool_choice_required,Required Tool Choice,endpoint,tools,positive,flag,986,0.6644,310,74,67,,"tools, and features.supports_tool_choice.literal_required",Can force a tool call with tool_choice 'required'.,
+tool_choice_named,Named Tool Choice,endpoint,tools,positive,flag,1013,0.6826,312,74,71,,"tools, and features.supports_tool_choice.type_function",Can force a call to one named function.,
+parallel_tool_calls,Parallel Tool Calls,endpoint,tools,positive,flag,19,0.0128,14,5,11,,supported_parameters has 'parallel_tool_calls',Accepts parallel_tool_calls to allow or prevent several tool calls in one turn.,"Control parameter, not a sampling parameter. Absence does not establish that calls are never parallel."
+native_web_search,Native Web Search,endpoint,tools,positive,flag,341,0.2298,149,10,37,,features.supports_native_web_search,The provider runs web search itself instead of OpenRouter's plugin.,A web-search price does not imply this.
+native_web_fetch,Native Web Fetch,endpoint,tools,positive,flag,28,0.0189,18,3,9,,features.supports_native_web_fetch,The provider fetches URLs itself.,
+native_apply_patch,Native Apply Patch,endpoint,tools,positive,flag,176,0.1186,64,2,9,,features.supports_native_apply_patch,The provider's native file-patch tool is available.,
+response_format,Response Format,endpoint,output,positive,flag,1319,0.8888,374,75,57,,supported_parameters has 'response_format',JSON mode: response_format type json_object.,
+structured_outputs,Structured Outputs,endpoint,output,positive,flag,1204,0.8113,365,73,69,,supported_parameters has 'structured_outputs',Enforces a JSON schema: response_format type json_schema.,
+logprobs,Logprobs,endpoint,output,positive,flag,445,0.2999,143,51,73,,supported_parameters has 'logprobs',Returns token log probabilities.,Listed together with 'top_logprobs' on every endpoint.
+predicted_outputs,Predicted Outputs,endpoint,output,positive,flag,10,0.0067,9,2,4,,supported_parameters has 'prediction',"Accepts predicted output text to speed up mostly-known responses, such as code edits.",OpenAI's Predicted Outputs; listed on GPT-4o (openai) and Codestral (mistral).
+web_search_options,Web Search Options,endpoint,output,positive,flag,22,0.0148,17,4,0,,supported_parameters has 'web_search_options',Accepts web_search_options for search-augmented models.,"OpenAI, Azure, Perplexity, and Sakana search-style models."
+verbosity,Verbosity,endpoint,output,positive,flag,298,0.2008,91,6,1,,supported_parameters has 'verbosity',Accepts a verbosity level for response length.,
+param_temperature,Temperature,endpoint,parameter,neutral,flag,1165,0.7850,328,81,6,,supported_parameters has 'temperature',Accepts temperature.,
+param_top_p,Top P,endpoint,parameter,neutral,flag,1137,0.7662,311,77,11,,supported_parameters has 'top_p',Accepts top_p.,
+param_top_k,Top K,endpoint,parameter,neutral,flag,720,0.4852,198,52,59,,supported_parameters has 'top_k',Accepts top_k.,
+param_min_p,Min P,endpoint,parameter,neutral,flag,267,0.1799,106,22,74,,supported_parameters has 'min_p',Accepts min_p.,
+param_top_a,Top A,endpoint,parameter,neutral,flag,11,0.0074,11,2,8,,supported_parameters has 'top_a',Accepts top_a.,Mostly Mancer.
+param_frequency_penalty,Frequency Penalty,endpoint,parameter,neutral,flag,789,0.5317,217,57,55,,supported_parameters has 'frequency_penalty',Accepts frequency_penalty.,
+param_presence_penalty,Presence Penalty,endpoint,parameter,neutral,flag,754,0.5081,205,56,56,,supported_parameters has 'presence_penalty',Accepts presence_penalty.,
+param_repetition_penalty,Repetition Penalty,endpoint,parameter,neutral,flag,497,0.3349,138,39,70,,supported_parameters has 'repetition_penalty',Accepts repetition_penalty.,
+param_seed,Seed,endpoint,parameter,neutral,flag,994,0.6698,325,50,79,,supported_parameters has 'seed',Accepts seed.,
+param_stop,Stop Sequences,endpoint,parameter,neutral,flag,1004,0.6765,274,65,73,,supported_parameters has 'stop',Accepts stop.,
+param_logit_bias,Logit Bias,endpoint,parameter,neutral,flag,350,0.2358,127,25,72,,supported_parameters has 'logit_bias',Accepts logit_bias.,
+param_max_tokens,Max Tokens,endpoint,parameter,neutral,flag,1401,0.9441,425,82,36,,supported_parameters has 'max_tokens',Accepts max_tokens.,
+param_max_completion_tokens,Max Completion Tokens,endpoint,parameter,neutral,flag,115,0.0775,72,5,58,,supported_parameters has 'max_completion_tokens',Accepts max_completion_tokens.,Alias of max_tokens; mostly Azure.
+param_reasoning_effort,Reasoning Effort Parameter,endpoint,parameter,neutral,flag,20,0.0135,12,6,11,,supported_parameters has 'reasoning_effort',Accepts reasoning_effort.,Top-level alias of reasoning.effort on 20 endpoints.
+passthrough,Passthrough Parameters,endpoint,parameter,neutral,value,25,0.0168,20,7,3,cachedContent 12; chat_template_kwargs reasoning_budget 4; frequency_penalty presence_penalty repetition_pe 3; moderation 3; chat_template_kwargs 1; enable_audio_in_video 1; entities threshold top_n 1,allowed_passthrough_parameters,Forwards these provider-specific parameters unchanged.,
+completions,Completions,endpoint,protocol,neutral,flag,673,0.4535,272,32,125,,has_completions,Legacy /completions endpoint for raw text continuation.,
+no_abort,No Abort,endpoint,protocol,negative,flag,481,0.3241,220,31,92,,can_abort false,"Cancelling a request may not stop generation upstream, and the full response can still be billed.",Description follows OpenRouter's stream-cancellation guide; recheck before publishing.
+system_merged,System Prompt Merged,model,protocol,neutral,flag,39,0.0263,12,16,0,,features.chat_template_config.should_hoist_and_merge_system_messages,System messages are moved to the start and merged into one.,
+recommended_sampling,Recommended Sampling,model,protocol,neutral,value,503,0.3389,91,68,0,temperature top_p 290; temperature top_k top_p 102; temperature 54; top_p 33; frequency_penalty temperature top_p 16; repetition_penalty temperature top_k top_p 4; repetition_penalty temperature top_k 3; repetition_penalty temperature top_p 1,default_parameters (non-null keys),Has recommended sampling defaults for these parameters.,
+zdr,ZDR,endpoint,data policy,positive,flag,952,0.6415,270,59,132,,is_zdr,Zero data retention: prompts are not retained.,Equals not retainsPrompts on every endpoint. The 'zdr' tag segment marks 33 of these.
+prompt_retention,Prompt Retention,endpoint,data policy,negative,value,532,0.3585,297,36,132,unstated 310; 30 171; 55 49; 90 2,"data_policy.retainsPrompts, with retentionDays","Retains prompts, for this many days when stated.",
+training,Training,endpoint,data policy,negative,flag,16,0.0108,16,7,2,,data_policy.training,The provider may train on prompts.,
+training_openrouter,OpenRouter Training,endpoint,data policy,negative,flag,7,0.0047,7,2,0,,data_policy.trainingOpenRouter,OpenRouter may train on prompts.,Undocumented key; only free variants.
+safety_retention,Safety Retention,endpoint,data policy,negative,flag,58,0.0391,29,1,26,,data_policy.safetyRetention,Retains prompts for safety review.,"Undocumented key; only google-vertex, each with retainsPrompts false."
+user_id_required,User ID Required,endpoint,data policy,neutral,flag,453,0.3053,211,12,72,,data_policy.requiresUserIDs,Requests must identify the end user.,
+moderated,Moderated,endpoint,data policy,neutral,flag,269,0.1813,156,6,64,,moderation_required,OpenRouter screens content before forwarding.,
+limit_rpm,Requests/Min,endpoint,limits,negative,value,137,0.0923,59,28,39,250 31; 300 24; 450 12; 150 10; 20 5; 50 5; 2000 4; 90 4,limit_rpm,Rate limited to this many requests per minute.,Model-level values are ignored.
+limit_rpd,Requests/Day,endpoint,limits,negative,value,4,0.0027,4,3,1,1000 2; 3000 1; 2000 1,limit_rpd,Rate limited to this many requests per day.,Model-level values are ignored.
+input_limit,Input Limit,endpoint,limits,negative,value,147,0.0991,61,7,28,922000 88; 272000 28; 983616 17; 258048 5; 128000 1; 4096 1; 229376 1; 868928 1,max_prompt_tokens below context_length,Prompts are capped below the context length.,
+image_token_limit,Image Token Limit,endpoint,limits,negative,value,2,0.0013,2,2,2,3342 2,max_tokens_per_image,Each image is limited to this many tokens.,
+output_limit_unstated,Output Limit Unstated,endpoint,limits,neutral,flag,204,0.1375,99,20,70,,max_completion_tokens null,No maximum output length is stated.,
+reduced_context,Reduced Context,endpoint,limits,negative,value,230,0.1550,68,50,68,1000000/1048576 32; 202752/204800 18; 262144/1000000 17; 262144/1048576 16; 256000/262144 16; 1024000/1048576 10; 1048576/1050000 10; 1048575/1048576 9,context_length below the widest endpoint of the model,Shorter context than another endpoint of the same model.,Value is endpoint/widest context.
+free,Free,model,commercial,positive,flag,16,0.0108,16,9,0,,variant 'free',Free variant. Usually stricter limits and logging terms.,is_free agrees on every endpoint.
+batch,Batch,model,commercial,neutral,flag,73,0.0492,71,8,0,,variant 'batch',Asynchronous batch variant.,
+byok_only,BYOK Only,endpoint,commercial,negative,flag,37,0.0249,36,5,4,,is_byok_only,Requires your own provider key; OpenRouter credits cannot pay for it.,
+byok,BYOK,provider,commercial,positive,flag,1419,0.9562,420,68,27,,provider_info.byokEnabled,The provider accepts your own API key.,
+deranked,Deranked,endpoint,status,negative,flag,9,0.0061,3,1,0,,is_deranked,Deprioritized in routing; used as a fallback.,
+disabled,Disabled,endpoint,status,negative,flag,0,0.0000,0,0,0,,is_disabled,Listed but not serving requests.,False on every endpoint in this scan.
+deprecating,Deprecating,endpoint,status,negative,value,29,0.0195,26,11,13,2026-12-31 6; 2027-09-29 4; 2026-10-31 4; 2026-11-11 3; 2027-05-07 3; 2026-11-02 2; 2027-01-01 2; 2026-10-28 1,"deprecation_date or model variant_deprecation_date, before 2090",Scheduled for removal on this date.,Model variant dates apply to endpoints.
+new_endpoint,New Endpoint,endpoint,status,neutral,flag,271,0.1826,90,65,50,,created_at within 30 days,Added recently.,created_at is not always first offering.
+new_model,New Model,model,status,neutral,flag,148,0.0997,38,55,0,,model created_at within 30 days,Model added recently.,
+warning,Warning,model,status,negative,value,58,0.0391,20,27,0,"For the free endpoint, please do not upload any  27; The free launch period ended Oct 22, 2026. MiniM 13; By using Claude Fable 5, you consent to data ret 7; By using Claude Fable 5.1, you consent to data r 5; Please do not upload any confidential informatio 2; The free Inkling endpoint is only available for  2; The free Inkling Small endpoint is only availabl 2",warning_message,OpenRouter's warning for this model.,"Some messages describe one endpoint, such as Bedrock BYOK-only on Claude Fable."
+quantization,Quantization,endpoint,facet,neutral,value,615,0.4144,166,57,81,fp8 344; fp4 138; bf16 77; int4 18; mxfp4 14; nvfp4 14; fp16 9; fp32 1,quantization other than 'unknown',Weight precision.,
+region,Region,endpoint,facet,neutral,value,367,0.2473,178,15,148,us 151; global 74; eu 36; us-east-1 26; swedencentral 24; eastus2 23; eu-west-1 16; us-east5 4,provider_region,Reported serving region; does not establish residency.,
+service_tier,Service Tier,endpoint,facet,neutral,value,155,0.1044,73,16,73,priority 68; flex 62; fast 13; highspeed 5; ultrafast 4; turbo 2; prime 1,"derived_service_tier, else service_tier","Paid speed or priority tier, or discounted flex tier.",
+open_weights,Open Weights,model,model facts,positive,flag,872,0.5876,176,69,0,,hf_slug present,Weights are published on Hugging Face.,
+knowledge_cutoff,Knowledge Cutoff,model,model facts,neutral,value,382,0.2574,159,44,0,2024-06 67; 2026-02 42; 2025-03 35; 2025-01 33; 2023-12 28; 2024-08 24; 2023-10 24; 2025-06 19,knowledge_cutoff,Training data extends to this month.,
+headquarters,Headquarters,provider,provider,neutral,value,1385,0.9333,401,65,69,US 1117; SG 124; FR 53; CN 45; NL 17; ID 11; IL 6; SE 6,provider_info.headquarters,Country of the provider's headquarters.,
+datacenters,Datacenters,provider,provider,neutral,value,276,0.1860,117,23,70,US 178; SG CN 45; SG 27; ID 11; FI 6; ES 6; SG NL 3,provider_info.datacenters,Countries where the provider reports datacenters.,
+status_page,Status Page,provider,provider,neutral,flag,976,0.6577,332,34,89,,provider_info.statusPageUrl,The provider publishes a status page.,
+caching,Caching,endpoint,pricing,positive,flag,1214,0.8181,309,74,43,,pricing.input_cache_read,Cache hits are billed at a reduced rate.,
+cache_write,Cache Write,endpoint,pricing,neutral,flag,342,0.2305,95,8,9,,pricing.input_cache_write,Writing to the cache is billed separately.,
+cache_write_1h,1h Cache Write,endpoint,pricing,neutral,flag,131,0.0883,30,5,0,,pricing.input_cache_write_1h,Offers a one-hour cache write rate.,
+web_search_price,Web Search Price,endpoint,pricing,neutral,flag,490,0.3302,172,11,0,,pricing.web_search,Web search requests are billed.,
+long_context_pricing,Long-Context Pricing,endpoint,pricing,negative,flag,233,0.1570,79,12,2,,"long/high-context or tiered pricing_json meters, or min_prompt_tokens overrides",Long prompts are billed at higher rates.,
+peak_pricing,Peak Pricing,endpoint,pricing,neutral,flag,10,0.0067,6,3,6,,utc_start overrides or scheduleWindows,Rates change by time of day.,Schedules are not parsed yet.
+discount,Discount,endpoint,pricing,positive,value,128,0.0863,57,22,40,0.5 35; 0.3 11; 0.1 8; 0.4 7; 0.15 7; 0.25 6; 0.2 6; 0.51 5,pricing.discount above 0,Currently discounted by this fraction.,
