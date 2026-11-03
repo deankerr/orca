@@ -31,13 +31,32 @@ describe('buildRows', () => {
     })
   })
 
-  it('treats zero rates as absent, leaving no blend', () => {
+  it('keeps zero rates as a price of $0, blending to 0', () => {
     expect(row('gpt-free')).toMatchObject({
-      blend: null,
-      input: null,
-      output: null,
-      rates: { input: null, output: null },
+      blend: 0,
+      input: 0,
+      output: 0,
+      rates: { input: '0', output: '0' },
     })
+  })
+
+  it('treats missing, negative, and malformed rates as absent', () => {
+    for (const input of [null, '-0.000001', 'free']) {
+      const [absent] = buildRows({
+        ...snapshot,
+        endpoints: [
+          endpoint({
+            id: 'absent',
+            input,
+            model: models.gpt,
+            output: '0.00001',
+            provider: providers.openai,
+          }),
+        ],
+      })
+
+      expect(absent).toMatchObject({ blend: null, input: null, output: 10, rates: { input: null } })
+    }
   })
 
   it('leaves unrepresentable rates unquoted for sorting but keeps their strings for display', () => {

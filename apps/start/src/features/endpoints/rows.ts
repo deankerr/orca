@@ -14,7 +14,7 @@ export interface Snapshot {
   providers: readonly Provider[]
 }
 
-/** Quoted rates as upstream decimal strings for exact display; zero is absent. */
+/** Quoted rates as upstream decimal strings for exact display; a zero rate is a real price of $0. */
 export interface QuotedRates {
   input: string | null
   output: string | null
@@ -29,15 +29,15 @@ export interface EndpointRow {
   model: Model
   provider: Provider
   properties: ReadonlyMap<PropertyId, Value | true>
-  /** Display with `formatPrice(rate, 6)` from `@orca/backend/numbers`. */
+  /** Per-token rates; display with `formatRate`. Null when the endpoint states none. */
   rates: QuotedRates
-  /** Input $/M. */
+  /** Input $/M; 0 for a free endpoint. */
   input: number | null
   /** Output $/M. */
   output: number | null
   /** Cache-read $/M. */
   cacheRead: number | null
-  /** Blended $/M: `(3 × input + output) / 4`. */
+  /** Blended $/M: `(3 × input + output) / 4`; 0 when both rates are zero. */
   blend: number | null
   /** Median tokens per second. */
   throughput: number | null

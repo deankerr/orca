@@ -11,8 +11,8 @@ import type { EndpointFilters } from './search'
  * - The universe is listed endpoints, plus unlisted ones when `unlisted` is set.
  * - Values within a list facet (model, provider) combine with OR; facets combine with AND.
  * - Each property is its own facet: `with` requires it active, `without` requires it inactive.
- * - Range bounds are inclusive. A row whose value is absent fails any bound on it, so a free
- *   endpoint, whose zero input rate is absent, fails a maximum input price.
+ * - Range bounds are inclusive. A row whose value is absent fails any bound on it. A free endpoint's
+ *   input rate is 0, not absent, so it passes any maximum input price.
  * - Release windows count back calendar months from the reference time.
  */
 
@@ -204,7 +204,7 @@ export interface Histogram {
   missing: number
 }
 
-/** Thresholds by factors of about two and a half. */
+/** Thresholds by factors of about two and a half; free endpoints, at $0, fall in the first bin. */
 const PRICE_THRESHOLDS = [0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50]
 
 const THROUGHPUT_THRESHOLDS = [10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000]

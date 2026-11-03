@@ -40,9 +40,24 @@ describe('applyFilters', () => {
   })
 
   it('applies inclusive range bounds, failing absent values', () => {
-    expect(ids({ maxInput: 0.6 })).toEqual(['kimi-deepinfra', 'kimi-azure'])
+    expect(ids({ maxInput: 0.6 })).toEqual(['gpt-free', 'kimi-deepinfra', 'kimi-azure'])
     expect(ids({ minTps: 80 })).toEqual(['gpt-openai', 'kimi-deepinfra'])
     expect(ids({ minContext: 256_000 })).toEqual(['gpt-openai', 'gpt-azure', 'kimi-deepinfra'])
+  })
+
+  it('lets a free endpoint pass a maximum input price, however small', () => {
+    expect(ids({ maxInput: 0.001 })).toEqual(['gpt-free'])
+  })
+
+  it('fails an endpoint with no input rate on any maximum input price', () => {
+    const unpriced = buildRows({
+      ...snapshot,
+      endpoints: [
+        endpoint({ id: 'unpriced', input: null, model: models.gpt, provider: providers.azure }),
+      ],
+    })
+
+    expect(applyFilters(unpriced, filters({ maxInput: 1000 }), AT).map((row) => row.id)).toEqual([])
   })
 
   it('keeps models released within the window before the reference time', () => {
@@ -232,6 +247,13 @@ describe('rangeHistograms', () => {
     expect(histograms.minTps.counts.reduce((sum, count) => sum + count, 0)).toBe(2)
     // Both bounds hold only kimi-deepinfra.
     expect(histograms.minContext.counts.reduce((sum, count) => sum + count, 0)).toBe(1)
+  })
+
+  it('counts free endpoints in the lowest price bin', () => {
+    const { counts, missing } = rangeHistograms(rows, filters(), AT).maxInput
+
+    expect(counts[0]).toBe(1)
+    expect(missing).toBe(0)
   })
 
   it('counts rows without a value as missing', () => {
