@@ -6,6 +6,8 @@ import { XIcon } from 'lucide-react'
 import { EntityAvatar } from '#components/entity-avatar'
 import { useEndpointSearchActions, useFilteredRows } from '#features/endpoints/hooks'
 import type { EndpointRow } from '#features/endpoints/rows'
+import { returnFocusToTable } from '#features/table/focus'
+import { panelClosesOnEscape } from '#features/table/key-scope'
 
 import {
   endpointTag,
@@ -28,10 +30,25 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
   const tag = endpointTag(row)
   const unlisted = unlistedLine(row)
 
+  // Focus moves first: closing unmounts the panel, and the focused element with it.
+  const close = () => {
+    returnFocusToTable(row.id, (selector) => document.querySelector<HTMLElement>(selector))
+    selectEndpoint(undefined)
+  }
+
   return (
     <aside
       aria-label="Endpoint"
       className="flex w-85 shrink-0 flex-col overflow-clip rounded-xl border border-border bg-popover"
+      // Esc closes the panel from anywhere inside it. The Table's document-level key rule skips the
+      // tab list, so the panel owns Esc and keeps it from also reaching the Table. It listens in the
+      // capture phase because a description tooltip's trigger stops Esc before it can bubble here.
+      onKeyDownCapture={(event) => {
+        if (panelClosesOnEscape(event.nativeEvent)) {
+          event.stopPropagation()
+          close()
+        }
+      }}
     >
       <TooltipProvider delay={250}>
         <Tabs className="min-h-0 grow gap-0" defaultValue="Endpoint">
@@ -44,9 +61,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                 ↑↓ move · esc close
                 <Button
                   aria-label="Close endpoint panel"
-                  onClick={() => {
-                    selectEndpoint(undefined)
-                  }}
+                  onClick={close}
                   size="icon-xs"
                   variant="ghost"
                 >

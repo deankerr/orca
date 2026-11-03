@@ -95,7 +95,12 @@ function overrideRows(
   row: Pick<FactRow, 'description' | 'id' | 'label'>,
   rates: PriceRates,
 ): FactRow[] {
-  const headline: FactRow = { ...row, emphasis: true, value: formatOverrideRates(rates) }
+  const headline: FactRow = {
+    ...row,
+    emphasis: true,
+    rate: true,
+    value: formatOverrideRates(rates),
+  }
 
   if (!restatesInputAndOutput(rates)) {
     return [headline]
@@ -107,6 +112,7 @@ function overrideRows(
       id: `${row.id}-${key}`,
       indent: true,
       label: meterName(key),
+      rate: true,
       value: rateText(rates, key),
     }))
 
@@ -148,11 +154,20 @@ function bandRows({ rates, windows }: PriceBand, index: number): FactRow[] {
   )
 }
 
+/** What about the endpoint, beyond its pricing, decides which rows show. */
+export interface PricingContext {
+  /** The provider runs web search itself: the `native_web_search` property is active. */
+  nativeWebSearch: boolean
+}
+
 /**
  * Pricing rows: each meter the endpoint quotes, a positive discount, then its conditional prices as
  * extra detail. Rates already reflect the discount, and override rates take none.
+ *
+ * Web search shows only on an endpoint with native search. Elsewhere OpenRouter falls back to its
+ * own search, so a price the endpoint quotes would mislead; see `native_web_search`.
  */
-export function pricingRows(pricing: Pricing): FactRow[] {
+export function pricingRows(pricing: Pricing, { nativeWebSearch }: PricingContext): FactRow[] {
   const rows: FactRow[] = []
 
   for (const key of Object.keys(priceMeters)) {
@@ -160,11 +175,15 @@ export function pricingRows(pricing: Pricing): FactRow[] {
       continue
     }
 
+    if (key === 'web_search' && !nativeWebSearch) {
+      continue
+    }
+
     const { description, field, label } = meters[key]
     const rate = pricing[field]
 
     if (rate !== null) {
-      const row: FactRow = { id: key, label, value: formatMeterRate(rate, key) ?? rate }
+      const row: FactRow = { id: key, label, rate: true, value: formatMeterRate(rate, key) ?? rate }
 
       if (description !== undefined) {
         row.description = description
@@ -179,6 +198,7 @@ export function pricingRows(pricing: Pricing): FactRow[] {
       description: 'Already reflected in the rates above.',
       id: 'discount',
       label: 'Discount',
+      rate: true,
       value: `${formatPercent(pricing.discount) ?? pricing.discount} off`,
     })
   }

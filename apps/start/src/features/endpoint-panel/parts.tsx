@@ -1,8 +1,10 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@orca/ui/components/tooltip'
 import { cn } from 'cn'
 import { ExternalLinkIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
+
+import { FOCUS_RING } from '#components/facet'
 
 import type { FactRow, Section } from './rows'
 
@@ -19,8 +21,15 @@ function Description({ text }: { text: string }) {
   )
 }
 
+/** A description as plain text, for assistive technology: backticks only mark code visually. */
+const plainText = (text: string) => text.replaceAll('`', '')
+
 function Value({ row }: { row: FactRow }) {
-  const className = 'min-w-0 text-right font-mono text-xs/[18px] wrap-anywhere'
+  // A rate never breaks across lines; a line too short for it moves it under its label instead.
+  const className = cn(
+    'text-right font-mono text-xs/[18px]',
+    row.rate === true ? 'ml-auto shrink-0 whitespace-nowrap' : 'min-w-0 wrap-anywhere',
+  )
 
   return row.href === undefined ? (
     <span className={className}>{row.value}</span>
@@ -39,13 +48,28 @@ function Value({ row }: { row: FactRow }) {
   )
 }
 
-/** One label and value. A row with a description shows it on hover, because short labels mislead. */
+/**
+ * One label and value. A row with a description shows it in a tooltip on hover or keyboard focus,
+ * because short labels mislead.
+ *
+ * The row is the tab stop, with the description attached as its accessible description, so a screen
+ * reader reads it with the row whether or not the tooltip is open. That costs a tab stop for each
+ * described row, as the Filters panel's property rows do; Esc leaves them all at once by closing
+ * the panel. A single stop with arrow keys between rows would need ↑ and ↓, which step the Table.
+ */
 export function FactLine({ row }: { row: FactRow }) {
-  const line = (
-    <div className="flex items-baseline justify-between gap-4">
+  const descriptionId = useId()
+
+  const lineClass = cn(
+    'flex items-baseline justify-between gap-x-4',
+    row.rate === true && 'flex-wrap',
+  )
+
+  const content = (
+    <>
       <span
         className={cn(
-          'text-[13px]/[18px]',
+          'min-w-0 text-[13px]/[18px]',
           row.emphasis === true ? 'text-foreground' : 'text-muted-foreground',
           row.indent === true && 'pl-3',
         )}
@@ -53,22 +77,38 @@ export function FactLine({ row }: { row: FactRow }) {
         {row.label}
       </span>
       <Value row={row} />
-    </div>
+    </>
   )
 
   if (row.description === undefined) {
-    return line
+    return <div className={lineClass}>{content}</div>
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger render={line} />
-      <TooltipContent align="end" side="left">
-        <span>
-          <Description text={row.description} />
-        </span>
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <div
+              aria-describedby={descriptionId}
+              className={cn(lineClass, 'rounded-sm', FOCUS_RING)}
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The row is the keyboard target for its description tooltip, which a screen reader reads through aria-describedby.
+              tabIndex={0}
+            >
+              {content}
+            </div>
+          }
+        />
+        <TooltipContent align="end" side="left">
+          <span>
+            <Description text={row.description} />
+          </span>
+        </TooltipContent>
+      </Tooltip>
+      <span hidden id={descriptionId}>
+        {plainText(row.description)}
+      </span>
+    </>
   )
 }
 

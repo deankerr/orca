@@ -26,3 +26,20 @@ export function tableOwnsKeys(active: FocusProbe | null, body: FocusProbe): bool
 
   return active.closest(`[${TABLE_KEYS_ATTRIBUTE}]`) !== null
 }
+
+/** The key event, as far as the Endpoint panel's Esc rule needs to see it. */
+export interface EscapeEvent {
+  isComposing: boolean
+  key: string
+}
+
+/**
+ * Whether Esc closes the Endpoint panel, for a key pressed anywhere inside it: its tabs, header,
+ * and bodies alike. The panel handles this itself instead of through `tableOwnsKeys`, whose
+ * allowlist and `ignoreInputs` skip the tab list on purpose, because tabs use the arrow keys. Esc
+ * is not one of them, so the panel claims it everywhere, even with a description tooltip open, which
+ * has already used the key to close itself. An input method composing text keeps its Esc.
+ */
+export function panelClosesOnEscape(event: EscapeEvent): boolean {
+  return event.key === 'Escape' && !event.isComposing
+}

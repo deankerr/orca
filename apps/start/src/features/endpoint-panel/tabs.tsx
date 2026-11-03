@@ -15,8 +15,8 @@ export const TAB_NAMES = ['Endpoint', 'Model', 'Provider', 'History'] as const
 type TabName = (typeof TAB_NAMES)[number]
 
 /**
- * A tab's scrolling body. It carries the Table's key marker, so ↑, ↓, and Esc work from it; the tab
- * list does not, because tabs use the arrow keys themselves. A different endpoint starts at the top.
+ * A tab's scrolling body. It carries the Table's key marker, so ↑ and ↓ work from it; the tab list
+ * does not, because tabs use the arrow keys themselves. Esc is the panel's own: see `EndpointPanel`. A different endpoint starts at the top.
  */
 function TabBody({
   children,

@@ -12,7 +12,7 @@ import {
   formatValue,
   sentenceCase,
 } from './format'
-import { formatMeterRate, pricingRows } from './pricing'
+import { pricingRows } from './pricing'
 import type { FactRow, Section } from './rows'
 
 /** The groups with a section of their own, in order; every other endpoint property goes to More. */
@@ -54,12 +54,8 @@ const wording: Partial<Record<PropertyId, { label?: string; value?: string }>> =
 
 /** A property's value in the panel; a few carry a price or date rather than plain text. */
 function propertyValue(id: PropertyId, value: Value | true): string {
-  if (value === true) {
-    return wording[id]?.value ?? formatValue(value)
-  }
-
-  if (id === 'native_web_search') {
-    return formatMeterRate(String(value), 'web_search') ?? String(value)
+  if (value === true || id === 'native_web_search') {
+    return wording[id]?.value ?? formatValue(true)
   }
 
   if (id === 'deprecating') {
@@ -69,11 +65,27 @@ function propertyValue(id: PropertyId, value: Value | true): string {
   return id === 'prompt_retention' ? formatDays(Number(value)) : formatValue(value)
 }
 
+/**
+ * A property's description in the panel. Native web search's own says the value is a price; here
+ * the price is under Pricing, so the row reads `yes`.
+ */
+function propertyDescription(id: PropertyId, value: Value | true): string {
+  const { description } = properties[id]
+
+  if (id !== 'native_web_search') {
+    return description
+  }
+
+  return value === true
+    ? 'The provider runs web search itself.'
+    : 'The provider runs web search itself. Its price per search is under Pricing.'
+}
+
 function propertyRow(id: PropertyId, value: Value | true): FactRow {
-  const { description, name } = properties[id]
+  const { name } = properties[id]
 
   return {
-    description,
+    description: propertyDescription(id, value),
     id,
     label: wording[id]?.label ?? sentenceCase(name),
     value: propertyValue(id, value),
@@ -197,7 +209,9 @@ export function endpointSections(row: EndpointRow): Section[] {
     {
       id: 'pricing',
       note: '$/M tokens',
-      rows: pricingRows(row.endpoint.pricing),
+      rows: pricingRows(row.endpoint.pricing, {
+        nativeWebSearch: row.properties.has('native_web_search'),
+      }),
       title: 'Pricing',
     },
     {

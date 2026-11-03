@@ -10,6 +10,8 @@ export interface FactRow {
   href?: string
   /** A detail of the row above it, set in from the label. */
   indent?: boolean
+  /** A price. It never breaks across lines, and drops under a label too long to share a line. */
+  rate?: boolean
   /** Reads in the foreground colour rather than muted, for detail beside the plain rates. */
   emphasis?: boolean
 }

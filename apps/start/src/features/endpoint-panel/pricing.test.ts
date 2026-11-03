@@ -5,6 +5,13 @@ import { formatMeterRate, formatOverrideRates, pricingRows } from './pricing'
 
 const pricingOf = (pricing: Parameters<typeof rowWith>[0] = {}) => rowWith(pricing).endpoint.pricing
 
+const NATIVE = { nativeWebSearch: true }
+const NOT_NATIVE = { nativeWebSearch: false }
+
+/** Pricing rows for an endpoint with native web search, unless a test says otherwise. */
+const rowsOf = (pricing: Parameters<typeof pricingRows>[0], context = NATIVE) =>
+  pricingRows(pricing, context)
+
 const values = (rows: { id: string; value: string }[]) =>
   Object.fromEntries(rows.map(({ id, value }) => [id, value]))
 
@@ -30,7 +37,7 @@ describe('formatMeterRate', () => {
 
 describe('pricingRows', () => {
   it('lists each quoted meter in display order and skips unquoted ones', () => {
-    const rows = pricingRows(
+    const rows = rowsOf(
       pricingOf({
         pricing: {
           input: '0.0000001',
@@ -61,32 +68,62 @@ describe('pricingRows', () => {
     })
   })
 
+  it('shows the web search price only where the provider searches natively', () => {
+    const quoted = pricingOf({ pricing: { web_search: '0.01' } })
+
+    expect(rowsOf(quoted, NATIVE).map(({ id }) => id)).toContain('web_search')
+    expect(rowsOf(quoted, NOT_NATIVE).map(({ id }) => id)).not.toContain('web_search')
+  })
+
+  it('marks every price so it never breaks across lines', () => {
+    const rows = rowsOf(
+      pricingOf({
+        pricing: {
+          discount: 0.1,
+          input: '0.000001',
+          output: '0.000002',
+          overrides: [
+            {
+              completion: '0.000002',
+              input_cache_read: '0.0000001',
+              prompt: '0.000001',
+              utc_end: 1600,
+              utc_start: 800,
+            },
+          ],
+        },
+      }),
+    )
+
+    expect(rows.filter(({ rate }) => rate !== true)).toEqual([])
+  })
+
   it('shows a free endpoint as $0', () => {
-    const rows = pricingRows(pricingOf({ pricing: { input: '0', output: '0' } }))
+    const rows = rowsOf(pricingOf({ pricing: { input: '0', output: '0' } }))
 
     expect(values(rows)).toMatchObject({ completion: '$0', prompt: '$0' })
   })
 
   it('includes image and audio meters when quoted', () => {
-    const rows = pricingRows(pricingOf({ pricing: { audio: '0.000001', image: '0.000002' } }))
+    const rows = rowsOf(pricingOf({ pricing: { audio: '0.000001', image: '0.000002' } }))
 
     expect(values(rows)).toMatchObject({ audio: '$1.00', image: '$2.00' })
   })
 
   it('shows a positive discount, but not zero or a surcharge', () => {
-    expect(values(pricingRows(pricingOf({ pricing: { discount: 0.1 } })))).toMatchObject({
+    expect(values(rowsOf(pricingOf({ pricing: { discount: 0.1 } })))).toMatchObject({
       discount: '10% off',
     })
-    expect(pricingRows(pricingOf({ pricing: { discount: 0 } })).map(({ id }) => id)).not.toContain(
+    expect(rowsOf(pricingOf({ pricing: { discount: 0 } })).map(({ id }) => id)).not.toContain(
       'discount',
     )
-    expect(
-      pricingRows(pricingOf({ pricing: { discount: -0.1 } })).map(({ id }) => id),
-    ).not.toContain('discount')
+    expect(rowsOf(pricingOf({ pricing: { discount: -0.1 } })).map(({ id }) => id)).not.toContain(
+      'discount',
+    )
   })
 
   it('shows long-context prices as a row after the plain rates', () => {
-    const rows = pricingRows(
+    const rows = rowsOf(
       pricingOf({
         pricing: {
           overrides: [{ completion: '0.0000025', min_prompt_tokens: 100_000, prompt: '0.0000005' }],
@@ -102,7 +139,7 @@ describe('pricingRows', () => {
   })
 
   it('shows each prompt-length bracket with the rates in force there', () => {
-    const rows = pricingRows(
+    const rows = rowsOf(
       pricingOf({
         pricing: {
           overrides: [
@@ -124,7 +161,7 @@ describe('pricingRows', () => {
   })
 
   it('describes a schedule by its UTC window', () => {
-    const rows = pricingRows(
+    const rows = rowsOf(
       pricingOf({
         pricing: {
           overrides: [
@@ -138,7 +175,7 @@ describe('pricingRows', () => {
   })
 
   it('counts override rows it cannot read', () => {
-    const rows = pricingRows(pricingOf({ pricing: { overrides: [{ surprise: 'yes' }] } }))
+    const rows = rowsOf(pricingOf({ pricing: { overrides: [{ surprise: 'yes' }] } }))
 
     expect(rows.at(-1)).toMatchObject({ label: 'Other conditions', value: '1 unread' })
   })
@@ -146,7 +183,7 @@ describe('pricingRows', () => {
 
 describe('pricing overrides with further meters', () => {
   it('sets cache and audio rates under the input and output headline', () => {
-    const rows = pricingRows(
+    const rows = rowsOf(
       pricingOf({
         pricing: {
           overrides: [

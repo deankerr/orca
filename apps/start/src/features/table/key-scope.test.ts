@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { TABLE_KEYS_ATTRIBUTE, tableOwnsKeys } from './key-scope'
+import { TABLE_KEYS_ATTRIBUTE, panelClosesOnEscape, tableOwnsKeys } from './key-scope'
 import type { FocusProbe } from './key-scope'
 
 const body: FocusProbe = { closest: () => null }
@@ -23,5 +23,24 @@ describe('tableOwnsKeys', () => {
   it('leaves the keys to focus anywhere else', () => {
     expect(tableOwnsKeys(insideRegion(), body)).toBe(false)
     expect(tableOwnsKeys(insideRegion('data-other'), body)).toBe(false)
+  })
+})
+
+describe('panelClosesOnEscape', () => {
+  const press = (key: string, changes: { isComposing?: boolean } = {}) =>
+    panelClosesOnEscape({ isComposing: false, key, ...changes })
+
+  it('closes on Esc', () => {
+    expect(press('Escape')).toBe(true)
+  })
+
+  it('leaves the tab list’s and Table’s other keys alone', () => {
+    for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter']) {
+      expect(press(key)).toBe(false)
+    }
+  })
+
+  it('yields to an input method', () => {
+    expect(press('Escape', { isComposing: true })).toBe(false)
   })
 })
