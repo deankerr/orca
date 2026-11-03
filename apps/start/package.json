@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@convex-dev/react-query": "0.1.0",
+    "@date-fns/utc": "^2.1.1",
     "@orca/backend": "workspace:*",
     "@orca/contract": "workspace:*",
     "@orca/pricing": "workspace:*",

@@ -1,21 +1,7 @@
-import { cn } from 'cn'
-
 import { ScopeBar } from '#components/scope-bar'
 import { StatusBar } from '#components/status-bar'
 
-const columns = [
-  { className: 'w-[186px]', label: 'Model' },
-  { className: 'grow basis-0', label: 'Provider' },
-  { className: 'w-[58px] text-right', label: 'Input ↑' },
-  { className: 'w-[58px] text-right', label: 'Output' },
-  { className: 'w-16 text-right', label: 'Cache R' },
-  { className: 'w-14 text-right', label: 'Tok/s' },
-  { className: 'w-[66px] text-right', label: 'Latency' },
-  { className: 'w-[66px] text-right', label: 'Context' },
-]
-
-const rows = Array.from({ length: 24 }, (_, index) => index + 1)
-const selectedRow = 11
+import { EndpointTable } from '../features/table/endpoint-table'
 
 function PlotPlaceholder() {
   return (
@@ -38,48 +24,6 @@ function PlotPlaceholder() {
   )
 }
 
-function TableHeaderRow() {
-  return (
-    <div className="sticky top-0 z-10 flex h-[30px] shrink-0 items-center border-b border-border bg-background px-5 font-mono text-[10px] leading-3.5 tracking-[0.06em] text-muted-foreground uppercase">
-      {columns.map(({ className, label }) => (
-        <span className={cn('shrink-0', className)} key={label}>
-          {label}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function TableRowPlaceholder({ selected }: { selected: boolean }) {
-  return (
-    <div
-      data-selected={selected || undefined}
-      className={cn(
-        'flex h-8 shrink-0 items-center border-b border-border px-5',
-        selected && 'bg-selection-surface shadow-[inset_2px_0_0_var(--selection)]',
-      )}
-    >
-      {columns.map(({ className, label }) => (
-        <span
-          className={cn(
-            'flex shrink-0',
-            className,
-            label !== 'Model' && label !== 'Provider' && 'justify-end',
-          )}
-          key={label}
-        >
-          <span
-            className={cn(
-              'h-2 rounded-sm bg-muted',
-              label === 'Model' || label === 'Provider' ? 'w-24' : 'w-8',
-            )}
-          />
-        </span>
-      ))}
-    </div>
-  )
-}
-
 export function ResultsPanel() {
   return (
     <section
@@ -88,18 +32,8 @@ export function ResultsPanel() {
     >
       <ScopeBar />
       <PlotPlaceholder />
-      <section
-        aria-label="Results table"
-        className="min-h-0 grow overflow-auto"
-        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Scrollable region must be keyboard focusable.
-        tabIndex={0}
-      >
-        <div className="flex min-w-180 flex-col">
-          <TableHeaderRow />
-          {rows.map((row) => (
-            <TableRowPlaceholder key={row} selected={row === selectedRow} />
-          ))}
-        </div>
+      <section aria-label="Results table" className="min-h-0 grow overflow-auto">
+        <EndpointTable />
       </section>
       <StatusBar />
     </section>
