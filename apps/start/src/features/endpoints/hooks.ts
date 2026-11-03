@@ -10,7 +10,7 @@ import { snapshotQuery } from './query'
 import { buildCatalog } from './rows'
 import type { Catalog, EndpointRow } from './rows'
 import { clearedFilters } from './search'
-import type { EndpointSearch, SortKey } from './search'
+import type { EndpointFilters, EndpointSearch, SortKey } from './search'
 import { sortRows } from './sort'
 
 const routeApi = getRouteApi('/')
@@ -25,15 +25,54 @@ export function useEndpointSearch(): EndpointSearch {
   return routeApi.useSearch()
 }
 
-function useFilters(): [Catalog, EndpointSearch] {
-  return [useCatalog(), useEndpointSearch()]
+/**
+ * The search params that narrow or widen the rows. The router hands out a new search object for every
+ * change, selection and plot included, but keeps each unchanged param's value, so this object changes
+ * only when a filter does.
+ */
+function useFilterParams(): EndpointFilters {
+  const {
+    maxInput,
+    minContext,
+    minTps,
+    model,
+    provider,
+    released,
+    unlisted,
+    with: withProperties,
+    without,
+  } = useEndpointSearch()
+
+  return useMemo(
+    () => ({
+      maxInput,
+      minContext,
+      minTps,
+      model,
+      provider,
+      released,
+      unlisted,
+      with: withProperties,
+      without,
+    }),
+    [maxInput, minContext, minTps, model, provider, released, unlisted, withProperties, without],
+  )
 }
 
-/** Rows matching every filter, in the URL's sort order. */
-export function useFilteredRows(): EndpointRow[] {
-  const [{ at, rows }, search] = useFilters()
+function useFilters(): [Catalog, EndpointFilters] {
+  return [useCatalog(), useFilterParams()]
+}
 
-  return useMemo(() => sortRows(applyFilters(rows, search, at), search.sort), [at, rows, search])
+/**
+ * Rows matching every filter, in the URL's sort order. The array changes only with the catalogue, a
+ * filter, the sort, or the reference time, so selecting an endpoint or toggling the plot leaves it
+ * alone and nothing downstream filters, sorts, or re-renders.
+ */
+export function useFilteredRows(): EndpointRow[] {
+  const [{ at, rows }, filters] = useFilters()
+  const { sort } = useEndpointSearch()
+
+  return useMemo(() => sortRows(applyFilters(rows, filters, at), sort), [at, rows, filters, sort])
 }
 
 export function useFacetCounts(): FacetCounts {

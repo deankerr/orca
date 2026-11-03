@@ -15,10 +15,10 @@ import { setHoveredEndpoint } from '#features/endpoints/hover'
 import type { EndpointRow } from '#features/endpoints/rows'
 
 import { columns, features } from './columns'
+import { tableOwnsKeys } from './key-scope'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting'
-import { useStableList } from './stable-rows'
 
 type TableRowModel = Row<typeof features, EndpointRow>
 
@@ -160,11 +160,31 @@ function eventRowId(event: { target: EventTarget }): string | undefined {
 }
 
 /**
+ * Options for the keys the Table binds at document level. A widget that claims a key (a text field,
+ * slider, or other ARIA widget) is skipped by `ignoreInputs`; `tableOwnsKeys` then limits the keys
+ * to focus in the Table's region. The library would prevent the default and stop propagation for
+ * every match, which would swallow the key before a widget outside the region could use it, so both
+ * wait until the Table has taken the key.
+ */
+const tableKeyOptions = {
+  ignoreInputs: true,
+  preventDefault: false,
+  stopPropagation: false,
+} as const
+
+function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
+  if (tableOwnsKeys(document.activeElement, document.body)) {
+    event.preventDefault()
+    act()
+  }
+}
+
+/**
  * Endpoints as a table, sorted by the URL. The rows arrive filtered and sorted, so the table only
  * lays them out; its sorting state mirrors the URL and header clicks write back to it.
  */
 export function EndpointTable() {
-  const rows = useStableList(useFilteredRows())
+  const rows = useFilteredRows()
   const { endpoint: selectedId, sort } = useEndpointSearch()
   const { clearFilters, selectEndpoint, setSort } = useEndpointSearchActions()
   const body = useRef<HTMLTableSectionElement>(null)
@@ -205,18 +225,32 @@ export function EndpointTable() {
     }
   }
 
-  useHotkey('ArrowDown', () => {
-    moveSelection('next')
-  })
-  useHotkey('ArrowUp', () => {
-    moveSelection('previous')
-  })
+  useHotkey(
+    'ArrowDown',
+    (event) => {
+      ifTableOwnsKeys(event, () => {
+        moveSelection('next')
+      })
+    },
+    tableKeyOptions,
+  )
+  useHotkey(
+    'ArrowUp',
+    (event) => {
+      ifTableOwnsKeys(event, () => {
+        moveSelection('previous')
+      })
+    },
+    tableKeyOptions,
+  )
   useHotkey(
     'Escape',
-    () => {
-      selectEndpoint(undefined)
+    (event) => {
+      ifTableOwnsKeys(event, () => {
+        selectEndpoint(undefined)
+      })
     },
-    { enabled: selectedId !== undefined, ignoreInputs: true },
+    { ...tableKeyOptions, enabled: selectedId !== undefined },
   )
 
   // Keep the selection in view below the sticky header, and keep keyboard focus on it when the

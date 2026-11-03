@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ABSENT, formatContext, formatCount, formatRate, formatScanTime } from './format'
+import { ABSENT, formatContext, formatCount, formatRateCell, formatScanTime } from './format'
 
 describe('formatContext', () => {
   it.each([
@@ -35,14 +35,19 @@ describe('formatCount', () => {
   })
 })
 
-describe('formatRate', () => {
+describe('formatRateCell', () => {
   it('prices a per-token rate per million tokens', () => {
-    expect(formatRate('0.0000025')).toBe('$2.50')
-    expect(formatRate('0.000000119')).toBe('$0.119')
+    expect(formatRateCell('0.0000025')).toBe('$2.50')
+    expect(formatRateCell('0.000000119')).toBe('$0.119')
+  })
+
+  it('shows a free rate as $0 in any spelling', () => {
+    expect(formatRateCell('0')).toBe('$0')
+    expect(formatRateCell('0E-7')).toBe('$0')
   })
 
   it('shows absent rates as a dash', () => {
-    expect(formatRate(null)).toBe(ABSENT)
+    expect(formatRateCell(null)).toBe(ABSENT)
   })
 })
 

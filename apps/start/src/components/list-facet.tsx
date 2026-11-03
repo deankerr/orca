@@ -1,5 +1,6 @@
 import { Checkbox } from '@orca/ui/components/checkbox'
 import { cn } from 'cn'
+import { useMemo } from 'react'
 
 import { EntityAvatar } from '#components/entity-avatar'
 import { FACET_COUNT_CLASS, Facet } from '#components/facet'
@@ -37,7 +38,12 @@ export function ListFacet({
   const { update } = useEndpointSearchActions()
   const copy = COPY[kind]
 
-  const shown = visibleOptions(kind, options[kind], counts, selected, TOP_VALUES)
+  // Ranking every option is the facet's costly step, so it waits for the counts or selection to change.
+  const shown = useMemo(
+    () => visibleOptions(kind, options[kind], counts, selected, TOP_VALUES),
+    [counts, kind, options, selected],
+  )
+
   const shownKeys = new Set(shown.map(optionKey))
 
   const toggle = (id: string) => {

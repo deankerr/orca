@@ -1,6 +1,8 @@
 import { UTCDateMini } from '@date-fns/utc'
-import { formatNumber, formatPrice } from '@orca/backend/numbers'
+import { formatNumber } from '@orca/backend/numbers'
 import { format, isValid } from 'date-fns'
+
+import { formatRate } from '#features/endpoints/rate'
 
 /** Shown where an endpoint has no value. */
 export const ABSENT = '—'
@@ -20,9 +22,9 @@ export function formatCount(value: number | null): string {
   return (value === null ? null : formatNumber(Math.round(value))) ?? ABSENT
 }
 
-/** A quoted rate in $/M from its upstream decimal string. */
-export function formatRate(rate: string | null): string {
-  return (rate === null ? null : formatPrice(rate, 6)) ?? ABSENT
+/** A quoted rate in $/M from its upstream decimal string: `$0` when free, a dash when absent. */
+export function formatRateCell(rate: string | null): string {
+  return formatRate(rate) ?? ABSENT
 }
 
 /** The scan time as shown in the status bar: `scan 2026-10-27 23:40 UTC`. */

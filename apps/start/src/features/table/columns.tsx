@@ -4,7 +4,7 @@ import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#features/endpoints/rows'
 
-import { formatContext, formatCount, formatRate } from './format'
+import { formatContext, formatCount, formatRateCell } from './format'
 import { providerTags } from './tags'
 
 declare module '@tanstack/react-table' {
@@ -39,8 +39,8 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      {/* The routing tag keeps provider variants, such as `amazon-bedrock/claude-on-aws`, apart. */}
-      <EntityAvatar slug={row.endpoint.provider.tag} />
+      {/* The provider's slug, as in the Filters panel: the cell names the provider, and a routing tag such as `sambanova-turbo` can resolve to a different logo. */}
+      <EntityAvatar slug={row.provider.id} />
       <span className="truncate text-[13px] leading-4">{row.provider.display_name}</span>
       {tags.map((tag) => (
         <span
@@ -70,19 +70,19 @@ export const columns = helper.columns([
     sortDescFirst: false,
   }),
   helper.accessor('input', {
-    cell: ({ row }) => formatRate(row.original.rates.input),
+    cell: ({ row }) => formatRateCell(row.original.rates.input),
     header: 'Input',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('output', {
-    cell: ({ row }) => formatRate(row.original.rates.output),
+    cell: ({ row }) => formatRateCell(row.original.rates.output),
     header: 'Output',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('cacheRead', {
-    cell: ({ row }) => formatRate(row.original.rates.cacheRead),
+    cell: ({ row }) => formatRateCell(row.original.rates.cacheRead),
     header: 'Cache R',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,

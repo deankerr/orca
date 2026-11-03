@@ -28,6 +28,7 @@ export function ResultsPanel() {
   return (
     <section
       aria-label="Results"
+      data-table-keys=""
       className="flex min-w-0 grow basis-0 flex-col overflow-clip rounded-xl border border-border bg-background"
     >
       <ScopeBar />
