@@ -1,95 +1,101 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@orca/ui/components/tabs'
-import type { ReactNode } from 'react'
+import { Button } from '@orca/ui/components/button'
+import { Tabs, TabsList, TabsTrigger } from '@orca/ui/components/tabs'
+import { TooltipProvider } from '@orca/ui/components/tooltip'
+import { XIcon } from 'lucide-react'
 
-const tabs = ['Endpoint', 'Model', 'Provider', 'History']
-const placeholderTabs = tabs.filter((tab) => tab !== 'Endpoint')
+import { EntityAvatar } from '#components/entity-avatar'
+import { useEndpointSearchActions, useFilteredRows } from '#features/endpoints/hooks'
+import type { EndpointRow } from '#features/endpoints/rows'
 
-function Section({ children, note, title }: { children: ReactNode; note?: string; title: string }) {
-  return (
-    <section className="flex flex-col gap-[3px] border-b border-border px-4 py-2.5">
-      <div className="flex h-[18px] shrink-0 justify-between font-mono text-[10px] leading-3.5 text-muted-foreground">
-        <h2 className="font-normal tracking-[0.08em] uppercase">{title}</h2>
-        {note === undefined ? null : <span>{note}</span>}
-      </div>
-      {children}
-    </section>
-  )
+import {
+  endpointTag,
+  endpointTagDescription,
+  slugLine,
+  unlistedLine,
+} from '../features/endpoint-panel/identity'
+import { NOT_IN_FILTERS, positionText } from '../features/endpoint-panel/position'
+import { PanelTabs, TAB_NAMES } from '../features/endpoint-panel/tabs'
+
+function Position({ id }: { id: string }) {
+  const text = positionText(useFilteredRows(), id)
+
+  return <span className={text === NOT_IN_FILTERS ? 'text-foreground' : undefined}>{text}</span>
 }
 
-function FactRow({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-between text-[13px]/[18px]">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="h-2 w-10 rounded-sm bg-muted" />
-    </div>
-  )
-}
+/** The selected endpoint: its curated facts, with its model and provider a tab away. */
+export function EndpointPanel({ row }: { row: EndpointRow }) {
+  const { selectEndpoint } = useEndpointSearchActions()
+  const tag = endpointTag(row)
+  const unlisted = unlistedLine(row)
 
-export function EndpointPanel() {
   return (
     <aside
       aria-label="Endpoint"
       className="flex w-85 shrink-0 flex-col overflow-clip rounded-xl border border-border bg-popover"
     >
-      <Tabs className="min-h-0 grow gap-0" defaultValue="Endpoint">
-        <header className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 pt-3">
-          <div className="flex justify-between font-mono text-[10px] leading-3.5 text-muted-foreground">
-            <span className="tracking-[0.08em]">ENDPOINT 11 OF 103</span>
-            <span>↑↓ move · esc close</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <div className="size-8 shrink-0 rounded-md bg-muted" />
-            <div className="flex flex-col">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-base/5 font-semibold tracking-[-0.01em]">Google Vertex</span>
-                <span className="font-mono text-[11px] leading-[18px] text-muted-foreground">
-                  global
-                </span>
-              </div>
-              <span className="text-xs/4 text-muted-foreground">Claude Haiku 5.5</span>
+      <TooltipProvider delay={250}>
+        <Tabs className="min-h-0 grow gap-0" defaultValue="Endpoint">
+          <header className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 pt-3">
+            <div className="flex h-5 items-center justify-between font-mono text-[10px] leading-3.5 text-muted-foreground">
+              <span className="tracking-[0.08em]">
+                <Position id={row.id} />
+              </span>
+              <span className="flex items-center gap-1.5">
+                ↑↓ move · esc close
+                <Button
+                  aria-label="Close endpoint panel"
+                  onClick={() => {
+                    selectEndpoint(undefined)
+                  }}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <XIcon aria-hidden />
+                </Button>
+              </span>
             </div>
-          </div>
-          <TabsList className="h-auto gap-4 p-0" variant="line">
-            {tabs.map((tab) => (
-              <TabsTrigger
-                className="h-auto flex-none rounded-none px-0 pt-0 pb-2 text-[13px] leading-4 after:bottom-0"
-                key={tab}
-                value={tab}
-              >
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </header>
-        <TabsContent className="min-h-0 flex-none grow basis-0 overflow-y-auto" value="Endpoint">
-          <Section note="$/M tokens" title="Pricing">
-            {['Input', 'Output', 'Cache read', 'Cache write'].map((label) => (
-              <FactRow key={label} label={label} />
-            ))}
-          </Section>
-          <Section note="p50 · 30 min" title="Speed">
-            {['Tokens/sec', 'Latency'].map((label) => (
-              <FactRow key={label} label={label} />
-            ))}
-          </Section>
-          <Section title="Data policy">
-            {['ZDR', 'Prompt retention', 'User ID'].map((label) => (
-              <FactRow key={label} label={label} />
-            ))}
-          </Section>
-        </TabsContent>
-        {placeholderTabs.map((tab) => (
-          <TabsContent
-            className="min-h-0 flex-none grow basis-0 overflow-y-auto"
-            key={tab}
-            value={tab}
-          >
-            <Section title={tab}>
-              <FactRow label="Placeholder" />
-            </Section>
-          </TabsContent>
-        ))}
-      </Tabs>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2.5">
+                <EntityAvatar className="size-8 rounded-md" slug={row.provider.id} />
+                <div className="flex min-w-0 flex-col">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="truncate text-base/5 font-semibold tracking-[-0.01em]">
+                      {row.provider.display_name}
+                    </span>
+                    {tag === null ? null : (
+                      <span
+                        className="shrink-0 font-mono text-[11px] leading-[18px] text-muted-foreground"
+                        title={endpointTagDescription(row)}
+                      >
+                        {tag}
+                      </span>
+                    )}
+                  </div>
+                  <span className="truncate text-xs/4 text-muted-foreground">{row.model.name}</span>
+                </div>
+              </div>
+              <span className="truncate font-mono text-[11px]/4 text-muted-foreground">
+                {slugLine(row)}
+              </span>
+              {unlisted === null ? null : (
+                <span className="text-xs/4 text-muted-foreground">{unlisted}</span>
+              )}
+            </div>
+            <TabsList className="h-auto gap-4 p-0" variant="line">
+              {TAB_NAMES.map((tab) => (
+                <TabsTrigger
+                  className="h-auto flex-none rounded-none px-0 pt-0 pb-2 text-[13px] leading-4 after:bottom-0"
+                  key={tab}
+                  value={tab}
+                >
+                  {tab}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </header>
+          <PanelTabs row={row} />
+        </Tabs>
+      </TooltipProvider>
     </aside>
   )
 }
