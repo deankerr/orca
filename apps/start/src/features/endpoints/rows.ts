@@ -15,7 +15,7 @@ export interface Snapshot {
 }
 
 /** Quoted rates as upstream decimal strings for exact display; a zero rate is a real price of $0. */
-export interface QuotedRates {
+interface QuotedRates {
   input: string | null
   output: string | null
   cacheRead: string | null
@@ -56,6 +56,8 @@ export interface Catalog {
   byId: ReadonlyMap<string, EndpointRow>
   /** Reference time for recency and release windows: the snapshot scan time, else build time. */
   at: string
+  /** When the snapshot was scanned; null before the first scan, unlike `at`, which is never null. */
+  scanAt: string | null
 }
 
 /** The time properties and release windows are judged at; `as_at` is null before the first scan. */
@@ -118,7 +120,13 @@ export function buildCatalog(snapshot: Snapshot): Catalog {
 
   const at = referenceTime(snapshot)
   const rows = buildRows(snapshot, at)
-  const catalog = { at, byId: new Map(rows.map((row) => [row.id, row])), rows }
+
+  const catalog = {
+    at,
+    byId: new Map(rows.map((row) => [row.id, row])),
+    rows,
+    scanAt: snapshot.as_at,
+  }
 
   catalogs.set(snapshot, catalog)
 

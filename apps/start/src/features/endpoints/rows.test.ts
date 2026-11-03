@@ -112,6 +112,7 @@ describe('buildCatalog', () => {
 
     expect(buildCatalog(snapshot)).toBe(catalog)
     expect(catalog.at).toBe(AT)
+    expect(catalog.scanAt).toBe(AT)
     expect(catalog.byId.get('gpt-openai')?.provider.id).toBe('openai')
   })
 
@@ -129,5 +130,11 @@ describe('buildCatalog', () => {
 
     expect(Date.parse(catalog.at)).toBeGreaterThanOrEqual(before)
     expect(Date.parse(catalog.at)).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('has no scan time before the first scan, however the reference time falls back', () => {
+    const catalog = buildCatalog({ as_at: null, endpoints: [], models: [], providers: [] })
+
+    expect(catalog.scanAt).toBeNull()
   })
 })

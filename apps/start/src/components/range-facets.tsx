@@ -1,4 +1,5 @@
 import { cn } from 'cn'
+import { useRef } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 
 import { FACET_COUNT_CLASS, FOCUS_RING, Facet } from '#components/facet'
@@ -18,6 +19,8 @@ import {
 } from '#features/filters/bars'
 import { formatBound, formatMonths, formatReleaseWindow } from '#features/filters/format'
 import type { BoundFacet } from '#features/filters/format'
+import { advanceGesture, startGesture } from '#features/filters/gesture'
+import type { BoundGesture } from '#features/filters/gesture'
 
 const BOUND_ROWS: { facet: BoundFacet; label: string }[] = [
   { facet: 'maxInput', label: 'Input $/M' },
@@ -69,10 +72,22 @@ function HistogramRow({ facet, label }: { facet: BoundFacet; label: string }) {
   const bars = histogramBars(histogram, direction, bound)
   const text = bound === undefined ? undefined : formatBound(facet, bound)
   const labelId = `range-${facet}`
+  const gesture = useRef<BoundGesture>(startGesture(undefined))
 
   const setBound = (next: number | undefined, replace: boolean) => {
     if (next !== bound) {
       update(() => ({ [facet]: next }), { replace })
+    }
+  }
+
+  // A press and its drag are one history entry: the first change pushes, the rest replace.
+  const dragTo = (event: PointerEvent<HTMLDivElement>) => {
+    const { change, gesture: next } = advanceGesture(gesture.current, barAt(event)?.stop)
+
+    gesture.current = next
+
+    if (change !== undefined) {
+      update(() => ({ [facet]: change.value }), { replace: change.replace })
     }
   }
 
@@ -144,11 +159,12 @@ function HistogramRow({ facet, label }: { facet: BoundFacet; label: string }) {
         onKeyDown={onKeyDown}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
-          setBound(barAt(event)?.stop, false)
+          gesture.current = startGesture(bound)
+          dragTo(event)
         }}
         onPointerMove={(event) => {
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            setBound(barAt(event)?.stop, true)
+            dragTo(event)
           }
         }}
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- The slider is a histogram; a native range input cannot draw the bars.

@@ -134,7 +134,7 @@ function matchingOthers(evaluation: Evaluation, facet: Facet): EndpointRow[] {
 }
 
 /** Rows matching every other facet that have a property active (`with`) or inactive (`without`). */
-export interface PropertyCounts {
+interface PropertyCounts {
   with: number
   without: number
 }
@@ -278,7 +278,7 @@ export function rangeHistograms(
   )
 }
 
-export interface ScopeCount {
+interface ScopeCount {
   inScope: number
   total: number
 }

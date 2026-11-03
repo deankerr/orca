@@ -1,6 +1,6 @@
 import { cn } from 'cn'
 import { Search } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode, Ref } from 'react'
 
 import { EntityAvatar } from '#components/entity-avatar'
@@ -44,6 +44,7 @@ export function OptionSearch({
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const results = search(query)
   const active = Math.min(activeIndex, results.length - 1)
@@ -65,7 +66,11 @@ export function OptionSearch({
       if (results.length > 0) {
         const step = event.key === 'ArrowDown' ? 1 : -1
 
-        setActiveIndex((active + step + results.length) % results.length)
+        const next = (active + step + results.length) % results.length
+
+        setActiveIndex(next)
+        // Only the keyboard scrolls: hover also moves the active option, and must not shift the list.
+        listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' })
       }
     } else if (event.key === 'Enter') {
       const option = results[active]
@@ -96,7 +101,7 @@ export function OptionSearch({
         <output className="block px-2 py-1.5 text-xs text-muted-foreground">{noMatches}</output>
       ) : (
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- A combobox popup needs a listbox of custom rows, which a native select cannot render.
-        <div aria-label={label} id={listId} role="listbox">
+        <div aria-label={label} id={listId} ref={listRef} role="listbox">
           {results.map((option, index) => (
             // Keyboard users act through the input, which owns focus; the options are for the pointer.
             // oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- The combobox input handles keys.

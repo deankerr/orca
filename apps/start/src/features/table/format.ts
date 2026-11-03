@@ -27,8 +27,12 @@ export function formatRateCell(rate: string | null): string {
   return formatRate(rate) ?? ABSENT
 }
 
-/** The scan time as shown in the status bar: `scan 2026-10-27 23:40 UTC`. */
-export function formatScanTime(at: string): string {
+/** The scan time as shown in the status bar: `scan 2026-10-27 23:40 UTC`, or `no scan yet`. */
+export function formatScanTime(at: string | null): string {
+  if (at === null) {
+    return 'no scan yet'
+  }
+
   const time = new UTCDateMini(at)
 
   return isValid(time) ? `scan ${format(time, 'yyyy-MM-dd HH:mm')} UTC` : ABSENT

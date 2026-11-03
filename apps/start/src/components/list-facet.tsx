@@ -20,8 +20,9 @@ const COPY = {
 } as const
 
 /**
- * The Model or Provider facet. Checked values combine with OR. The count beside each value is how many
- * endpoints would match with it added, so a zero count is dim: choosing it would show nothing.
+ * The Model or Provider facet. Checked values combine with OR. The count beside each value is the
+ * endpoints with that value that match every other facet, ignoring this facet's own selection, so a
+ * zero count is dim: choosing it would add nothing.
  */
 export function ListFacet({
   inScope,

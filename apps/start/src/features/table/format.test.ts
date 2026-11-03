@@ -60,4 +60,8 @@ describe('formatScanTime', () => {
   it('shows an unreadable time as a dash', () => {
     expect(formatScanTime('not a time')).toBe(ABSENT)
   })
+
+  it('says so before the first scan', () => {
+    expect(formatScanTime(null)).toBe('no scan yet')
+  })
 })
