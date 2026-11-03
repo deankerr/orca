@@ -1,6 +1,6 @@
 import { entityLogoUrl } from '@orca/backend/entity-logo'
+import { Avatar, AvatarFallback, AvatarImage } from '@orca/ui/components/avatar'
 import { cn } from 'cn'
-import { useState } from 'react'
 import type { ComponentProps } from 'react'
 
 const configuredOrigin = import.meta.env.VITE_ORCA_LOGO_ORIGIN
@@ -17,35 +17,29 @@ export function EntityAvatar({
   ...props
 }: {
   slug: string
-} & ComponentProps<'span'>) {
+} & ComponentProps<typeof Avatar>) {
   const logoUrl = entityLogoUrl({ origin: LOGO_SERVICE_ORIGIN, slug, variant: 'avatar' })
-  const [failedUrl, setFailedUrl] = useState<string>()
-  const failed = failedUrl === logoUrl
 
   return (
-    <span
+    <Avatar
       data-slot="entity-avatar"
-      className={cn(
-        'inline-flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-[3px] select-none',
-        failed && 'bg-muted font-mono text-[10px] leading-none text-muted-foreground uppercase',
-        className,
-      )}
+      className={cn('inline-flex size-4 overflow-hidden rounded-[3px] after:hidden', className)}
       {...props}
     >
-      {failed ? (
-        slug.charAt(0)
-      ) : (
-        <img
-          src={logoUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="size-full object-contain"
-          onError={() => {
-            setFailedUrl(logoUrl)
-          }}
-        />
-      )}
-    </span>
+      {/* `keepMounted` lets the browser's own lazy loading decide when to fetch; Base UI otherwise preloads
+          every logo eagerly and mounts the image only once it has loaded. */}
+      <AvatarImage
+        alt=""
+        className="peer rounded-none object-contain data-error:hidden"
+        decoding="async"
+        keepMounted
+        loading="lazy"
+        src={logoUrl}
+      />
+      {/* Hidden until the image has failed, so a logo still loading never flashes its letter. */}
+      <AvatarFallback className="hidden rounded-none font-mono text-[10px] leading-none uppercase peer-data-error:flex">
+        {slug.charAt(0)}
+      </AvatarFallback>
+    </Avatar>
   )
 }

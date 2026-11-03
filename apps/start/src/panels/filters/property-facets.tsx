@@ -15,7 +15,6 @@ import { cn } from 'cn'
 import { Check, ChevronRight, Minus } from 'lucide-react'
 import { Fragment, useId, useState } from 'react'
 
-import { FOCUS_RING } from '#components/focus-ring'
 import type { PropertyFacet, PropertyFacetGroup } from '#endpoints/facets'
 import {
   useSnapshot,
@@ -97,7 +96,7 @@ function PropertyRow({
             className={cn(
               'flex h-6 w-full items-center gap-2 rounded-sm text-left text-[13px] leading-4',
               count === 0 && state === 'off' && 'opacity-50',
-              FOCUS_RING,
+              'outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
             )}
             onClick={() => {
               toggle(id, nextPropertyState(state))
@@ -164,7 +163,7 @@ function PropertyGroup({
               aria-disabled={active > 0}
               className={cn(
                 'flex h-5 w-full items-center gap-1 rounded-sm text-left font-normal tracking-[0.08em] uppercase',
-                FOCUS_RING,
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
               )}
             >
               <ChevronRight

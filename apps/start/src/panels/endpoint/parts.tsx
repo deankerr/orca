@@ -4,8 +4,6 @@ import { ExternalLinkIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { FOCUS_RING } from '#components/focus-ring'
-
 import type { FactRow, Section } from './facts'
 
 /** A description with its backtick-marked code set in mono. */
@@ -91,7 +89,11 @@ export function FactLine({ row }: { row: FactRow }) {
           render={
             <div
               aria-describedby={descriptionId}
-              className={cn(lineClass, 'rounded-sm', FOCUS_RING)}
+              className={cn(
+                lineClass,
+                'rounded-sm',
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+              )}
               // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The row is the keyboard target for its description tooltip, which a screen reader reads through aria-describedby.
               tabIndex={0}
             >

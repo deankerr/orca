@@ -12,7 +12,6 @@ import { useId, useLayoutEffect, useRef } from 'react'
 
 import { returnFocusFromPanel, panelClosesOnEscape } from '#app/keyboard'
 import { EntityAvatar } from '#components/entity-avatar'
-import { FOCUS_RING } from '#components/focus-ring'
 import { useScopeActions, useScopedRows } from '#endpoints/hooks'
 import type { EndpointRow } from '#endpoints/snapshot'
 
@@ -116,7 +115,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                                 aria-describedby={tagDescriptionId}
                                 className={cn(
                                   'shrink-0 rounded-sm font-mono text-[11px] leading-[18px] text-muted-foreground',
-                                  FOCUS_RING,
+                                  'outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                                 )}
                                 // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The tag is the keyboard target for its description tooltip, which a screen reader reads through aria-describedby.
                                 tabIndex={0}
