@@ -199,9 +199,10 @@ export function facetCounts(
 }
 
 /**
- * Counts of row values in bins. `counts[i]` covers values from `thresholds[i - 1]` inclusive to
- * `thresholds[i]` exclusive, so the first and last bins are open-ended. Rows without a value are
- * `missing`.
+ * Counts of row values in bins. `counts[i]` covers values from `thresholds[i - 1]` to `thresholds[i]`,
+ * so the first and last bins are open-ended. Each bin holds the threshold its facet's bound keeps: a
+ * minimum's bins include their lower threshold, a maximum's their upper, so a bound on a threshold
+ * keeps whole bins. Rows without a value are `missing`.
  */
 export interface Histogram {
   thresholds: readonly number[]
@@ -224,6 +225,8 @@ const releaseThresholds = (at: string) =>
   R.range(0, 12).map((index) => releaseCutoff(at, 12 - index))
 
 interface RangeDefinition {
+  /** Which threshold each bin includes: the one a bound on it keeps. */
+  closed: BinClosed
   value: (row: EndpointRow) => number | null
   /** Whether a value lies within a bound. */
   within: (bound: number, at: string) => (value: number | null) => boolean
@@ -231,27 +234,39 @@ interface RangeDefinition {
 }
 
 const RANGE_FACETS: Record<RangeFacet, RangeDefinition> = {
-  maxInput: { thresholds: () => PRICE_THRESHOLDS, value: (row) => row.input, within: atMost },
+  maxInput: {
+    closed: 'upper',
+    thresholds: () => PRICE_THRESHOLDS,
+    value: (row) => row.input,
+    within: atMost,
+  },
   minContext: {
+    closed: 'lower',
     thresholds: () => CONTEXT_THRESHOLDS,
     value: (row) => row.context,
     within: atLeast,
   },
   minTps: {
+    closed: 'lower',
     thresholds: () => THROUGHPUT_THRESHOLDS,
     value: (row) => row.throughput,
     within: atLeast,
   },
   released: {
+    closed: 'lower',
     thresholds: releaseThresholds,
     value: (row) => row.released,
     within: (months, at) => atLeast(releaseCutoff(at, months)),
   },
 }
 
+/** Which threshold a histogram bin includes. */
+export type BinClosed = 'lower' | 'upper'
+
 export function histogram(
   values: readonly (number | null)[],
   thresholds: readonly number[],
+  closed: BinClosed,
 ): Histogram {
   const counts = Array.from({ length: thresholds.length + 1 }, () => 0)
   let missing = 0
@@ -260,7 +275,10 @@ export function histogram(
     if (value === null) {
       missing += 1
     } else {
-      const found = thresholds.findIndex((threshold) => value < threshold)
+      const found = thresholds.findIndex((threshold) =>
+        closed === 'lower' ? value < threshold : value <= threshold,
+      )
+
       const bin = found === -1 ? thresholds.length : found
 
       counts[bin] = (counts[bin] ?? 0) + 1
@@ -278,8 +296,8 @@ export function rangeHistograms(
 ): Record<RangeFacet, Histogram> {
   const evaluation = evaluate(rows, filters, at)
 
-  return R.mapValues(RANGE_FACETS, ({ thresholds, value }, facet) =>
-    histogram(matchingOthers(evaluation, facet).map(value), thresholds(at)),
+  return R.mapValues(RANGE_FACETS, ({ closed, thresholds, value }, facet) =>
+    histogram(matchingOthers(evaluation, facet).map(value), thresholds(at), closed),
   )
 }
 

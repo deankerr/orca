@@ -4,6 +4,8 @@ import { ExternalLinkIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 
+import { CopyText } from './copy-text'
+import { linkText } from './facts'
 import type { FactRow, Section } from './facts'
 
 /** A description with its backtick-marked code set in mono. */
@@ -22,6 +24,22 @@ function Description({ text }: { text: string }) {
 /** A description as plain text, for assistive technology: backticks only mark code visually. */
 const plainText = (text: string) => text.replaceAll('`', '')
 
+/** A list's items as small chips, wrapping under their label. */
+function Chips({ items }: { items: string[] }) {
+  return (
+    <ul className="flex flex-wrap gap-1 pt-0.5 pb-0.5">
+      {items.map((item) => (
+        <li
+          className="rounded-[3px] border border-border-solid px-1 font-mono text-[10px] leading-4 text-muted-foreground"
+          key={item}
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function Value({ row }: { row: FactRow }) {
   // A rate never breaks across lines; a line too short for it moves it under its label instead.
   const className = cn(
@@ -29,21 +47,23 @@ function Value({ row }: { row: FactRow }) {
     row.rate === true ? 'ml-auto shrink-0 whitespace-nowrap' : 'min-w-0 wrap-anywhere',
   )
 
-  return row.href === undefined ? (
-    <span className={className}>{row.value}</span>
-  ) : (
-    <a
-      className={cn(
-        className,
-        'underline decoration-border-solid underline-offset-2 hover:decoration-foreground',
-      )}
-      href={row.href}
-      rel="noreferrer"
-      target="_blank"
-    >
-      {row.value}
-    </a>
-  )
+  if (row.href !== undefined) {
+    return (
+      <ExternalLink className={className} href={row.href}>
+        {row.value}
+      </ExternalLink>
+    )
+  }
+
+  if (row.copyLabel !== undefined) {
+    return (
+      <CopyText className={className} label={row.copyLabel} text={row.value}>
+        {row.value}
+      </CopyText>
+    )
+  }
+
+  return <span className={className}>{row.value}</span>
 }
 
 /**
@@ -55,12 +75,15 @@ function Value({ row }: { row: FactRow }) {
  * described row, as the Filters panel's property rows do; Esc leaves them all at once by closing
  * the panel. A single stop with arrow keys between rows would need ↑ and ↓, which step the Table.
  */
-export function FactLine({ row }: { row: FactRow }) {
+function FactLine({ row }: { row: FactRow }) {
   const descriptionId = useId()
+
+  const stacked = row.items !== undefined
 
   const lineClass = cn(
     'flex items-baseline justify-between gap-x-4',
     row.rate === true && 'flex-wrap',
+    stacked && 'flex-col items-stretch gap-y-0.5',
   )
 
   const content = (
@@ -74,7 +97,7 @@ export function FactLine({ row }: { row: FactRow }) {
       >
         {row.label}
       </span>
-      <Value row={row} />
+      {row.items === undefined ? <Value row={row} /> : <Chips items={row.items} />}
     </>
   )
 
@@ -137,6 +160,10 @@ export function SectionBlock({
 export function RowsSection({ section }: { section: Section }) {
   return (
     <SectionBlock note={section.note} title={section.title}>
+      {section.links?.map((href) => (
+        <PageLink href={href} key={href} />
+      ))}
+      {section.text === undefined ? null : <ClampedText text={section.text} />}
       {section.rows.map((row) => (
         <FactLine key={row.id} row={row} />
       ))}
@@ -144,18 +171,44 @@ export function RowsSection({ section }: { section: Section }) {
   )
 }
 
-/** A link out to OpenRouter, in a new tab. */
-export function PageLink({ href, children }: { children: ReactNode; href: string }) {
+/**
+ * A link out, in a new tab, labelled with its hostname and an external-link icon. The full address
+ * is the tooltip (the native `title`), which also says where the link goes before it is followed.
+ */
+function ExternalLink({
+  children,
+  className,
+  href,
+}: {
+  children: ReactNode
+  className?: string
+  href: string
+}) {
   return (
     <a
-      className="flex items-center gap-1.5 text-[13px]/[18px] text-muted-foreground hover:text-foreground"
+      className={cn(
+        'inline-flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50',
+        className,
+      )}
       href={href}
       rel="noreferrer"
       target="_blank"
+      title={href}
     >
-      {children}
-      <ExternalLinkIcon aria-hidden className="size-3" />
+      <span className="min-w-0 wrap-anywhere underline decoration-border-solid underline-offset-2 hover:decoration-foreground">
+        {children}
+      </span>
+      <ExternalLinkIcon aria-hidden className="size-3 shrink-0" />
     </a>
+  )
+}
+
+/** A link of its own, named by its hostname: `openrouter.ai`. */
+function PageLink({ href }: { href: string }) {
+  return (
+    <ExternalLink className="self-start font-mono text-xs/[18px] text-muted-foreground" href={href}>
+      {linkText(href)}
+    </ExternalLink>
   )
 }
 
@@ -163,7 +216,7 @@ export function PageLink({ href, children }: { children: ReactNode; href: string
 const CLAMP_THRESHOLD = 240
 
 /** Text clamped to a few lines, with a control to read the rest. */
-export function ClampedText({ text }: { text: string }) {
+function ClampedText({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
   const long = text.length > CLAMP_THRESHOLD
 

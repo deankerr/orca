@@ -1,3 +1,5 @@
+import { ScrollArea } from '@orca/ui/components/scroll-area'
+
 import { HeaderBar } from '#app/header-bar'
 import { useScope, useScopeSummary } from '#endpoints/hooks'
 
@@ -17,12 +19,18 @@ export function FiltersPanel() {
     >
       <HeaderBar />
       <SearchBar />
-      <div className="flex min-h-0 grow flex-col overflow-y-auto border-t border-border">
-        <ListFacet inScope={scope.models.inScope} kind="model" selected={filters.model} />
-        <ListFacet inScope={scope.providers.inScope} kind="provider" selected={filters.provider} />
-        <RangeFacets />
-        <PropertyFacets />
-      </div>
+      <ScrollArea className="min-h-0 grow border-t border-border">
+        <div className="flex flex-col">
+          <ListFacet inScope={scope.models.inScope} kind="model" selected={filters.model} />
+          <ListFacet
+            inScope={scope.providers.inScope}
+            kind="provider"
+            selected={filters.provider}
+          />
+          <RangeFacets />
+          <PropertyFacets />
+        </div>
+      </ScrollArea>
     </aside>
   )
 }

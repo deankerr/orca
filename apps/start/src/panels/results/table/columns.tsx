@@ -54,19 +54,21 @@ function ProviderCell({ row }: { row: EndpointRow }) {
   )
 }
 
-/** Columns in display order. Lower is better for prices and latency; higher is better for the rest. */
+/**
+ * Columns in display order. Model, the one column without a width, takes the space left over;
+ * Provider is fitted to a typical name with its quantization and tier tags. Lower is better for prices and latency; higher is better for the rest. */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
     cell: ({ row }) => <ModelCell row={row.original} />,
     header: 'Model',
     id: 'model',
-    meta: { width: 190 },
     sortDescFirst: false,
   }),
   helper.accessor((row) => row.provider.display_name, {
     cell: ({ row }) => <ProviderCell row={row.original} />,
     header: 'Provider',
     id: 'provider',
+    meta: { width: 184 },
     sortDescFirst: false,
   }),
   helper.accessor('input', {

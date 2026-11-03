@@ -1,6 +1,8 @@
 import { Autocomplete as AutocompletePrimitive } from '@base-ui/react/autocomplete'
 import { cn } from 'cn'
 
+import { ScrollArea } from '#components/scroll-area'
+
 /**
  * A text field that suggests items as you type. Unlike a Combobox, the text stays free-form and no
  * item is remembered as selected, which suits a search that acts on an item and starts over.
@@ -14,9 +16,10 @@ const Autocomplete = AutocompletePrimitive.Root
  */
 const AutocompleteInput = AutocompletePrimitive.Input
 
-/** The floating list: a popup anchored below `anchor`, as wide as it. */
+/** The floating list: a popup anchored below `anchor`, as wide as it, scrolling when its list is long. */
 function AutocompleteContent({
   anchor,
+  children,
   className,
   side = 'bottom',
   sideOffset = 4,
@@ -34,11 +37,16 @@ function AutocompleteContent({
         <AutocompletePrimitive.Popup
           data-slot="autocomplete-content"
           className={cn(
-            'max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) overflow-y-auto overscroll-contain rounded-md border border-border-solid bg-popover p-1 text-popover-foreground shadow-lg outline-none',
+            'flex max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) flex-col overflow-hidden rounded-md border border-border-solid bg-popover p-1 text-popover-foreground shadow-lg outline-none',
             className,
           )}
           {...props}
-        />
+        >
+          {/* The popup's own limit (`max-h-…`) bounds the viewport, which then shrinks to the padding. */}
+          <ScrollArea className="min-h-0" viewportClassName="max-h-[inherit]">
+            {children}
+          </ScrollArea>
+        </AutocompletePrimitive.Popup>
       </AutocompletePrimitive.Positioner>
     </AutocompletePrimitive.Portal>
   )

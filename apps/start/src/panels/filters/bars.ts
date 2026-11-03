@@ -12,9 +12,10 @@ export const BOUND_DIRECTIONS: Record<BoundFacet, BoundDirection> = {
 }
 
 /**
- * The bounds a histogram can set, one per bin, in bin order. Bin `i` covers values from
- * `thresholds[i - 1]` to `thresholds[i]`, so a maximum that keeps bin `i` is its upper threshold and a
- * minimum that keeps it is its lower threshold. The open end has no threshold: no bound.
+ * The bounds a histogram's bars set, one per bin, in bin order. Bin `i` covers values from
+ * `thresholds[i - 1]` to `thresholds[i]`, so the maximum that keeps bins up to `i` is its upper
+ * threshold and the minimum that keeps bins from `i` up is its lower threshold. The bar at the open end
+ * has no threshold: it sets no bound.
  */
 export function boundStops(
   thresholds: readonly number[],
@@ -29,7 +30,7 @@ export interface Bar {
   share: number
   /** Whether the bin lies inside the current bound. */
   within: boolean
-  /** The bound clicking this bar sets; undefined clears it. */
+  /** The bound this bar stands for, which pressing it sets (see `pressedBound`); undefined is none. */
   stop: number | undefined
 }
 
@@ -55,7 +56,10 @@ export function histogramBars(
   })
 }
 
-/** The stop nearest a bound, for a bound that came from the URL and sits between thresholds. */
+/**
+ * The stop a bound sits on, or the stop nearest it when it came from the URL between thresholds. It
+ * is the bar that takes the row's tab stop.
+ */
 export function nearestStopIndex(
   stops: readonly (number | undefined)[],
   bound: number | undefined,
@@ -77,25 +81,33 @@ export function nearestStopIndex(
   return nearest
 }
 
-/** The stop one step along, clamped to the ends; `delta` is +1 toward higher values. */
-export function stepStop(
-  stops: readonly (number | undefined)[],
+/**
+ * The bound a press on a bar with `stop` sets: the stop's exact threshold, or no bound when the bound
+ * already sits on that stop. A bound between thresholds sits on no stop, so any press sets a threshold.
+ */
+export function pressedBound(
+  stop: number | undefined,
   bound: number | undefined,
-  delta: -1 | 1,
 ): number | undefined {
-  const index = nearestStopIndex(stops, bound)
-
-  return stops[Math.min(Math.max(index + delta, 0), stops.length - 1)]
+  return stop === bound ? undefined : stop
 }
 
 /**
- * The stop index under a pointer, `offset` px from the left of a row of `count` bars `gap` px apart and
- * `width` px wide in all. It is the mapping an inset slider with a bar-wide thumb applies, so it agrees
- * with the slider's own: the stop of the bar under the pointer.
+ * How many endpoints a bound on a stop keeps. No bound keeps them all, including those with no value.
+ * A bound between thresholds would count the bin it cuts through whole.
  */
-export function stopIndexAt(offset: number, width: number, count: number, gap: number): number {
-  const thumb = (width - (count - 1) * gap) / count
-  const fraction = Math.min(Math.max((offset - thumb / 2) / (width - thumb), 0), 1)
+export function keptCount(
+  histogram: Pick<Histogram, 'counts' | 'missing' | 'thresholds'>,
+  direction: BoundDirection,
+  bound: number | undefined,
+): number {
+  let kept = bound === undefined ? histogram.missing : 0
 
-  return Math.round(fraction * (count - 1))
+  for (const { count, within } of histogramBars(histogram, direction, bound)) {
+    if (within) {
+      kept += count
+    }
+  }
+
+  return kept
 }

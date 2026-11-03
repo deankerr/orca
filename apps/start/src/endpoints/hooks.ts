@@ -109,7 +109,7 @@ export function useSelectedEndpoint(): EndpointRow | null {
 }
 
 export interface ScopeUpdateOptions {
-  /** Replace the history entry: for typing, dragging, and view state. Discrete filter changes push. */
+  /** Replace the history entry: for typing and view state. Discrete filter changes push. */
   replace?: boolean
 }
 

@@ -15,10 +15,11 @@ import { EntityAvatar } from '#components/entity-avatar'
 import { useScopeActions, useScopedRows } from '#endpoints/hooks'
 import type { EndpointRow } from '#endpoints/snapshot'
 
+import { CopyText } from './copy-text'
 import {
   endpointTag,
   endpointTagDescription,
-  slugLine,
+  slugParts,
   unlistedLine,
   NOT_IN_FILTERS,
   positionText,
@@ -35,6 +36,7 @@ function Position({ id }: { id: string }) {
 export function EndpointPanel({ row }: { row: EndpointRow }) {
   const { selectEndpoint } = useScopeActions()
   const tag = endpointTag(row)
+  const slug = slugParts(row)
   const unlisted = unlistedLine(row)
   const tagDescriptionId = useId()
 
@@ -137,8 +139,14 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                   <span className="truncate text-xs/4 text-muted-foreground">{row.model.name}</span>
                 </div>
               </div>
-              <span className="truncate font-mono text-[11px]/4 text-muted-foreground">
-                {slugLine(row)}
+              <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px]/4 text-muted-foreground">
+                <CopyText className="min-w-0" label="Copy provider tag" text={slug.tag}>
+                  {slug.tag}
+                </CopyText>
+                ·
+                <CopyText label="Copy endpoint ID" text={slug.id}>
+                  {slug.shortId}
+                </CopyText>
               </span>
               {unlisted === null ? null : (
                 <span className="text-xs/4 text-muted-foreground">{unlisted}</span>

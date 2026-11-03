@@ -1,13 +1,13 @@
+import { ScrollArea } from '@orca/ui/components/scroll-area'
 import { TabsContent } from '@orca/ui/components/tabs'
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 import { TABLE_KEYS_ATTRIBUTE } from '#app/keyboard'
 import type { EndpointRow } from '#endpoints/snapshot'
-import { modelPageUrl, providerPageUrl } from '#lib/openrouter'
 
-import { modelRows, providerRows } from './facts'
-import { ClampedText, FactLine, PageLink, RowsSection, SectionBlock } from './parts'
+import { modelSections, providerSections } from './facts'
+import { RowsSection, SectionBlock } from './parts'
 import { endpointSections } from './sections'
 
 export const TAB_NAMES = ['Endpoint', 'Model', 'Provider', 'History'] as const
@@ -36,19 +36,18 @@ function TabBody({
 
   return (
     <TabsContent
-      className="min-h-0 flex-none grow basis-0 overflow-y-auto"
-      ref={body}
+      className="min-h-0 flex-none grow basis-0"
       value={value}
       {...{ [TABLE_KEYS_ATTRIBUTE]: '' }}
     >
-      {children}
+      <ScrollArea className="h-full" viewportRef={body}>
+        {children}
+      </ScrollArea>
     </TabsContent>
   )
 }
 
 export function PanelTabs({ row }: { row: EndpointRow }) {
-  const { description, id: modelId } = row.model
-
   return (
     <>
       <TabBody endpointId={row.id} value="Endpoint">
@@ -57,29 +56,14 @@ export function PanelTabs({ row }: { row: EndpointRow }) {
         ))}
       </TabBody>
       <TabBody endpointId={row.id} value="Model">
-        <SectionBlock title="Model">
-          {modelRows(row).map((fact) => (
-            <FactLine key={fact.id} row={fact} />
-          ))}
-        </SectionBlock>
-        {description.trim() === '' ? null : (
-          <SectionBlock title="Description">
-            <ClampedText text={description.trim()} />
-          </SectionBlock>
-        )}
-        <SectionBlock title="Links">
-          <PageLink href={modelPageUrl(modelId)}>OpenRouter model page</PageLink>
-        </SectionBlock>
+        {modelSections(row).map((section) => (
+          <RowsSection key={section.id} section={section} />
+        ))}
       </TabBody>
       <TabBody endpointId={row.id} value="Provider">
-        <SectionBlock title="Provider">
-          {providerRows(row).map((fact) => (
-            <FactLine key={fact.id} row={fact} />
-          ))}
-        </SectionBlock>
-        <SectionBlock title="Links">
-          <PageLink href={providerPageUrl(row.provider.id)}>OpenRouter provider page</PageLink>
-        </SectionBlock>
+        {providerSections(row).map((section) => (
+          <RowsSection key={section.id} section={section} />
+        ))}
       </TabBody>
       <TabBody endpointId={row.id} value="History">
         <SectionBlock title="History">

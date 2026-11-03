@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { rowWith } from './fixtures.testing'
-import { NOT_IN_FILTERS, endpointTag, positionText, slugLine, unlistedLine } from './header'
+import { NOT_IN_FILTERS, endpointTag, positionText, slugParts, unlistedLine } from './header'
 
 describe('endpointTag', () => {
   it('joins the region and tier an endpoint states', () => {
@@ -16,8 +16,8 @@ describe('endpointTag', () => {
   })
 })
 
-describe('slugLine', () => {
-  it('shows the provider tag and the first eight characters of the endpoint ID', () => {
+describe('slugParts', () => {
+  it('splits the provider tag from the endpoint ID, with its first eight characters for display', () => {
     const row = rowWith({
       endpoint: {
         provider: {
@@ -29,7 +29,11 @@ describe('slugLine', () => {
       },
     })
 
-    expect(slugLine(row)).toBe('openai/global · 90d0dbe6')
+    expect(slugParts(row)).toEqual({
+      id: '90d0dbe6-0000-4000-8000-000000000000',
+      shortId: '90d0dbe6',
+      tag: 'openai/global',
+    })
   })
 })
 

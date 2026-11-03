@@ -4,6 +4,7 @@ import type { Group, PropertyId, Value } from '@orca/properties'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { ABSENT } from '#lib/format'
 
+import { listRow } from './facts'
 import type { FactRow, Section } from './facts'
 import {
   formatDate,
@@ -190,12 +191,14 @@ function moreRows(row: EndpointRow): FactRow[] {
   const accepted = [...row.properties.keys()].filter(isFlagParameter)
 
   if (accepted.length > 0) {
-    rows.push({
-      description: 'Request parameters this endpoint accepts, beyond tools and output formats.',
-      id: 'parameters',
-      label: 'Parameters',
-      value: accepted.map((id) => properties[id].name).join(', '),
-    })
+    rows.push(
+      listRow(
+        'parameters',
+        'Parameters',
+        accepted.map((id) => properties[id].name),
+        'Request parameters this endpoint accepts, beyond tools and output formats.',
+      ),
+    )
   }
 
   return rows

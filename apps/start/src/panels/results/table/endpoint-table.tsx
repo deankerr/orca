@@ -95,7 +95,7 @@ function TableRow({
     <tr
       aria-selected={selected}
       className={cn(
-        'scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+        'cursor-pointer scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
         selected ? 'bg-selection-surface' : 'hover:bg-muted-hover',
         row.original.unlisted && 'opacity-50',
       )}

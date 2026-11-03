@@ -24,9 +24,12 @@ export function endpointTagDescription({ properties: active }: EndpointRow): str
     .join(' ')
 }
 
-/** The provider tag and the start of the endpoint UUID: `google-vertex/global · 90d0dbe6`. */
-export function slugLine({ endpoint }: EndpointRow): string {
-  return `${endpoint.provider.tag} · ${endpoint.id.slice(0, 8)}`
+/**
+ * The provider tag and the endpoint UUID, shown as `google-vertex/global · 90d0dbe6`: the UUID is
+ * cut to its first eight characters for display, and copies whole.
+ */
+export function slugParts({ endpoint }: EndpointRow) {
+  return { id: endpoint.id, shortId: endpoint.id.slice(0, 8), tag: endpoint.provider.tag }
 }
 
 /** `Unlisted since 2026-10-24` for an unlisted endpoint, else null. */

@@ -1,5 +1,4 @@
 import { Button } from '@orca/ui/components/button'
-import { Slider, SliderControl, SliderThumb } from '@orca/ui/components/slider'
 import { ToggleGroup, ToggleGroupItem } from '@orca/ui/components/toggle-group'
 import {
   Tooltip,
@@ -8,28 +7,32 @@ import {
   TooltipTrigger,
 } from '@orca/ui/components/tooltip'
 import { cn } from 'cn'
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 
 import { RELEASE_WINDOWS } from '#endpoints/filtering'
 import type { ReleaseWindow } from '#endpoints/filtering'
 import { useScope, useScopeActions, useRangeHistograms } from '#endpoints/hooks'
 import type { ScopeFilters } from '#endpoints/scope'
 
-import { BOUND_DIRECTIONS, boundStops, histogramBars, nearestStopIndex, stopIndexAt } from './bars'
+import { barKeyAction } from './bar-keys'
+import {
+  BOUND_DIRECTIONS,
+  boundStops,
+  histogramBars,
+  keptCount,
+  nearestStopIndex,
+  pressedBound,
+} from './bars'
 import { formatBound, formatMonths, formatReleaseWindow } from './bound-labels'
 import type { BoundFacet } from './bound-labels'
 import { FACET_COUNT_CLASS, Facet } from './facet'
-import { advanceGesture, pressShownStop, startGesture } from './gesture'
-import type { BoundGesture, GestureStep } from './gesture'
 
 const BOUND_ROWS: { facet: BoundFacet; label: string }[] = [
   { facet: 'maxInput', label: 'Input $/M' },
   { facet: 'minTps', label: 'Tok/s' },
   { facet: 'minContext', label: 'Context' },
 ]
-
-/** The gap between histogram bars, in px; the thumb's width depends on it. */
-const BAR_GAP = 2
 
 /** The bound shown beside a row's label: its value, which clears the bound, or "any". */
 function BoundValue({
@@ -64,14 +67,26 @@ function BoundValue({
   )
 }
 
+/** A bar's name, as a screen reader reads its radio: `≤ $0.50, 412 endpoints`. */
+function barName(facet: BoundFacet, stop: number | undefined, kept: number): string {
+  return `${stop === undefined ? 'any' : formatBound(facet, stop)}, ${kept} ${kept === 1 ? 'endpoint' : 'endpoints'}`
+}
+
 /**
- * A bound over a histogram of the endpoints that match every other facet. Pressing or dragging along
- * the bars sets the bound at the bar's threshold; arrows step the bound through the thresholds, Home
- * and End jump to the ends of the range.
+ * A bound over a histogram of the endpoints that match every other facet. Each bar is a threshold to
+ * choose: pointing at a bar previews the bound pressing it would set, lighting the bars it keeps and
+ * showing its value beside the label, and pressing sets it. Pressing the bar the bound sits on clears
+ * it, so hovering that bar previews "any".
  *
- * The bars are the control of a Slider whose value is a stop index, one stop per bar (`boundStops`),
- * with "any" the stop at the open end. The thumb is as wide as one bar and the slider is inset, so the
- * pointer maps to a stop exactly as it maps to a bar: the bar under the pointer is the stop it sets.
+ * It is a radio group rather than a slider. A slider's value is continuous and its gesture is a drag,
+ * whose intermediate values the URL and history would have to absorb; here every change is one press,
+ * one history entry, and the preview does what dragging did, showing the result before it happens. The
+ * bars are one tab stop, a roving one on the bar the bound sits on. Arrows, Home, and End move focus
+ * and the preview without changing the bound, and Enter or Space press, as in a radio group inside a
+ * toolbar, so stepping across ten bars leaves no trail of history (`barKeyAction`).
+ *
+ * A bound from the URL between thresholds checks no radio; its nearest bar takes the tab stop, and
+ * pressing any bar sets that bar's exact threshold.
  */
 function HistogramRow({ facet, label }: { facet: BoundFacet; label: string }) {
   const histogram = useRangeHistograms()[facet]
@@ -79,131 +94,165 @@ function HistogramRow({ facet, label }: { facet: BoundFacet; label: string }) {
   const { update } = useScopeActions()
   const direction = BOUND_DIRECTIONS[facet]
   const stops = boundStops(histogram.thresholds, direction)
-  const bars = histogramBars(histogram, direction, bound)
-  const text = bound === undefined ? undefined : formatBound(facet, bound)
   const labelId = `range-${facet}`
   const noteId = useId()
-  const gesture = useRef<BoundGesture | undefined>(undefined)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+  const [hovered, setHovered] = useState<number | undefined>(undefined)
+  // The bar the keyboard previews, until a press, Esc, or focus leaving the row drops it.
+  const [cursor, setCursor] = useState<number | undefined>(undefined)
+
+  const home = nearestStopIndex(stops, bound)
+  const previewed = hovered ?? cursor
+  const preview = previewed === undefined ? undefined : pressedBound(stops[previewed], bound)
+  const shown = previewed === undefined ? bound : preview
+  const bars = histogramBars(histogram, direction, shown)
 
   const note =
     histogram.missing > 0
       ? `${histogram.missing} endpoints have no value and never match a bound`
       : undefined
 
-  const setBound = (next: number | undefined, replace: boolean) => {
+  // Sets the bound and keeps focus, if the row has it, on the bar that now holds the tab stop.
+  const commit = (next: number | undefined) => {
+    setCursor(undefined)
+
     if (next !== bound) {
-      update(() => ({ [facet]: next }), { replace })
+      update(() => ({ [facet]: next }))
+    }
+
+    if (buttons.current.some((button) => button === document.activeElement)) {
+      buttons.current[stops.indexOf(next)]?.focus()
     }
   }
 
-  const shown = nearestStopIndex(stops, bound)
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const action = barKeyAction(event.key, {
+      bounded: bound !== undefined,
+      count: stops.length,
+      cursor,
+      home,
+      hovered,
+    })
 
-  // Writes a gesture step's change to the URL.
-  const apply = ({ change, gesture: next }: GestureStep) => {
-    gesture.current = next
+    if (action === undefined) {
+      return
+    }
 
-    if (change !== undefined) {
-      update(() => ({ [facet]: change.value }), { replace: change.replace })
+    event.preventDefault()
+    event.stopPropagation()
+    // Every key action ends the pointer's preview; a cancel ends the keyboard's too.
+    setHovered(undefined)
+
+    if (action.kind === 'preview') {
+      setCursor(action.index)
+      buttons.current[action.index]?.focus()
+    } else if (action.kind === 'press') {
+      commit(pressedBound(stops[action.index], bound))
+    } else if (action.kind === 'cancel') {
+      setCursor(undefined)
+      buttons.current[home]?.focus()
+    } else {
+      commit(undefined)
     }
   }
 
-  const control = (
-    <SliderControl
-      className="h-6 cursor-pointer items-end rounded-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/50"
-      // A press and its drag are one history entry: the first change pushes, the rest replace. A press
-      // on the stop the slider already shows reports no change, so when the bound sits off that stop's
-      // threshold the press sets the threshold itself, here, before the slider sees the press.
-      onPointerDownCapture={(event) => {
-        gesture.current = undefined
+  /** A bar the bound or preview keeps; bars light up while a preview shows what a press would keep. */
+  const keptClass = previewed === undefined ? 'bg-foreground/70' : 'bg-foreground'
 
-        if (event.button === 0) {
-          const { left, width } = event.currentTarget.getBoundingClientRect()
-          const pressed = stopIndexAt(event.clientX - left, width, bars.length, BAR_GAP)
-
-          apply(pressShownStop(startGesture(bound), stops, shown, pressed))
-        }
-      }}
-      style={{ gap: BAR_GAP }}
-    >
-      {bars.map(({ share, within }, index) => (
-        <div
-          className={cn(
-            'min-h-px flex-1 rounded-[1px]',
-            within ? 'bg-foreground' : 'bg-foreground/25',
-          )}
-          key={index}
-          style={{ height: `${share * 100}%` }}
-        />
-      ))}
-      <SliderThumb
-        aria-describedby={note === undefined ? undefined : noteId}
-        aria-valuetext={text ?? 'any'}
-        className="h-full"
-        style={{ width: `calc((100% - ${(bars.length - 1) * BAR_GAP}px) / ${bars.length})` }}
-      >
-        {bound !== undefined && (
-          // A line in the gap at the threshold the bound sits on.
-          <span
-            aria-hidden="true"
-            className={cn(
-              'absolute -inset-y-0.5 w-0.5 rounded-full bg-foreground',
-              direction === 'min' ? '-left-0.5' : '-right-0.5',
-            )}
-          />
-        )}
-      </SliderThumb>
-    </SliderControl>
-  )
+  const heading =
+    note === undefined ? (
+      <span id={labelId}>{label}</span>
+    ) : (
+      <>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className="cursor-help underline decoration-muted-foreground/50 decoration-dotted underline-offset-2"
+                id={labelId}
+              />
+            }
+          >
+            {label}
+          </TooltipTrigger>
+          <TooltipContent>{note}</TooltipContent>
+        </Tooltip>
+        <span hidden id={noteId}>
+          {note}
+        </span>
+      </>
+    )
 
   return (
-    <div className="flex flex-col gap-1 py-0.5">
+    <div className="flex flex-col gap-1.5">
       <div className="flex h-5 items-center justify-between text-[13px] leading-4">
-        <span id={labelId}>{label}</span>
-        <BoundValue
-          clear={() => {
-            setBound(undefined, false)
-          }}
-          label={label}
-          text={text}
-        />
-      </div>
-      <Slider
-        aria-labelledby={labelId}
-        max={stops.length - 1}
-        min={0}
-        onValueChange={(index, { reason }) => {
-          const next = stops[index]
-
-          if (reason !== 'track-press' && reason !== 'drag') {
-            setBound(next, true)
-
-            return
-          }
-
-          // The slider compares each change with its own, controlled value, which trails the URL by a
-          // render. A drag that returns to its starting stop within that render is dropped, and the
-          // bound stays at the stop it last reached.
-          apply(advanceGesture(gesture.current ?? startGesture(bound), next))
-        }}
-        onValueCommitted={() => {
-          gesture.current = undefined
-        }}
-        value={shown}
-      >
-        {note === undefined ? (
-          control
+        {heading}
+        {previewed === undefined ? (
+          <BoundValue
+            clear={() => {
+              commit(undefined)
+            }}
+            label={label}
+            text={bound === undefined ? undefined : formatBound(facet, bound)}
+          />
         ) : (
-          <>
-            <Tooltip>
-              <TooltipTrigger render={control} />
-              <TooltipContent>{note}</TooltipContent>
-            </Tooltip>
-            <span hidden id={noteId}>
-              {note}
-            </span>
-          </>
+          <span className={cn(FACET_COUNT_CLASS, preview !== undefined && 'text-foreground')}>
+            {preview === undefined ? 'any' : formatBound(facet, preview)}
+          </span>
         )}
-      </Slider>
+      </div>
+      {/* oxlint-disable-next-line jsx-a11y/interactive-supports-focus -- Focus roves among the radios; the group itself is no tab stop. */}
+      <div
+        aria-describedby={note === undefined ? undefined : noteId}
+        aria-labelledby={labelId}
+        className="flex h-7 items-stretch rounded-sm border-b border-border has-focus-visible:ring-2 has-focus-visible:ring-ring/50"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setCursor(undefined)
+          }
+        }}
+        onKeyDown={onKeyDown}
+        onPointerLeave={() => {
+          setHovered(undefined)
+        }}
+        role="radiogroup"
+      >
+        {bars.map(({ share, stop, within }, index) => (
+          <button
+            aria-checked={stop === bound}
+            aria-label={barName(facet, stop, keptCount(histogram, direction, stop))}
+            // The bars abut, each with a pixel of padding either side, so the pointer never falls between
+            // two of them and re-enters the bar it has just pressed.
+            className="flex flex-1 cursor-pointer items-end rounded-t-[2px] px-px outline-none hover:bg-muted focus-visible:bg-muted"
+            key={index}
+            onClick={() => {
+              // The pointer is still on the pressed bar, which now previews clearing the bound
+              // again; the preview returns when the pointer moves to another bar.
+              setHovered(undefined)
+              commit(pressedBound(stop, bound))
+            }}
+            onPointerEnter={() => {
+              setHovered(index)
+            }}
+            ref={(button) => {
+              buttons.current[index] = button
+            }}
+            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- A native radio checks on arrow keys and cannot be pressed again to clear.
+            role="radio"
+            tabIndex={index === (cursor ?? home) ? 0 : -1}
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'min-h-px w-full rounded-[1px] transition-colors duration-75',
+                within ? keptClass : 'bg-foreground/20',
+              )}
+              style={{ height: `${share * 100}%` }}
+            />
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -242,7 +291,7 @@ function ReleasedRow({ released }: { released: ScopeFilters['released'] }) {
   const labelId = 'range-released'
 
   return (
-    <div className="flex flex-col gap-1 py-0.5">
+    <div className="flex flex-col gap-1.5">
       <div className="flex h-5 items-center justify-between text-[13px] leading-4">
         <span id={labelId}>Released</span>
         <BoundValue
@@ -277,10 +326,12 @@ export function RangeFacets() {
   return (
     <TooltipProvider delay={250}>
       <Facet title="Price and speed">
-        {BOUND_ROWS.map(({ facet, label }) => (
-          <HistogramRow facet={facet} key={facet} label={label} />
-        ))}
-        <ReleasedRow released={released} />
+        <div className="flex flex-col gap-3.5 pt-1 pb-1">
+          {BOUND_ROWS.map(({ facet, label }) => (
+            <HistogramRow facet={facet} key={facet} label={label} />
+          ))}
+          <ReleasedRow released={released} />
+        </div>
       </Facet>
     </TooltipProvider>
   )

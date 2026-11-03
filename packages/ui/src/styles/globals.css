@@ -143,11 +143,24 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* The app is a fixed layout of scroll areas: the page itself never scrolls, chains, or bounces. */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground;
   }
+  /* Base UI renders most controls as plain elements with an ARIA role, and Tailwind leaves their cursor at the default. */
   button:not(:disabled),
-  [role='button']:not(:disabled) {
+  [role='button']:not(:disabled),
+  [role='tab']:not([aria-disabled='true'], [data-disabled]),
+  [role='checkbox']:not([aria-disabled='true'], [data-disabled]),
+  [role='switch']:not([aria-disabled='true'], [data-disabled]),
+  [role='menuitem']:not([aria-disabled='true'], [data-disabled]),
+  [role='option']:not([aria-disabled='true'], [data-disabled]),
+  label:has(input:not(:disabled)),
+  summary {
     cursor: pointer;
   }
 }

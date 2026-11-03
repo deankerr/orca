@@ -229,11 +229,15 @@ describe('an empty snapshot', () => {
 
 describe('histogram', () => {
   it('bins values between thresholds, open-ended at both ends', () => {
-    expect(histogram([0, 1, 1.5, 2, 9, null], [1, 2])).toEqual({
+    expect(histogram([0, 1, 1.5, 2, 9, null], [1, 2], 'lower')).toEqual({
       counts: [1, 2, 2],
       missing: 1,
       thresholds: [1, 2],
     })
+  })
+
+  it('puts a value on a threshold in the bin below when bins include their upper threshold', () => {
+    expect(histogram([0, 1, 1.5, 2, 9], [1, 2], 'upper').counts).toEqual([2, 2, 1])
   })
 })
 

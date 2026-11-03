@@ -1,3 +1,5 @@
+import { ScrollArea } from '@orca/ui/components/scroll-area'
+
 import { RESULTS_REGION_ID } from '#app/keyboard'
 import { StatusBar } from '#app/status-bar'
 import { PlotRegion } from '#panels/results/plot/price-plot'
@@ -17,9 +19,14 @@ export function ResultsPanel() {
     >
       <ScopeBar />
       <PlotRegion />
-      <section aria-label="Results table" className="min-h-0 grow overflow-auto">
+      {/* The sticky header lives in this viewport, which never bounces, so the header holds still. */}
+      <ScrollArea
+        className="min-h-0 grow"
+        horizontal
+        render={<section aria-label="Results table" />}
+      >
         <EndpointTable />
-      </section>
+      </ScrollArea>
       <StatusBar />
     </section>
   )

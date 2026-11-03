@@ -7,6 +7,7 @@ import {
   AutocompleteList,
 } from '@orca/ui/components/autocomplete'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@orca/ui/components/input-group'
+import { ScrollArea } from '@orca/ui/components/scroll-area'
 import { cn } from 'cn'
 import { Search } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -64,10 +65,7 @@ export function OptionSearch({
   const list = (
     <>
       <AutocompleteEmpty>{noMatches}</AutocompleteEmpty>
-      <AutocompleteList
-        aria-label={label}
-        className={cn(inline && 'max-h-40 overflow-y-auto pb-1')}
-      >
+      <AutocompleteList aria-label={label} className={cn(inline && 'pb-1')}>
         {(option: FacetOption) => (
           <AutocompleteItem
             key={optionKey(option)}
@@ -86,6 +84,9 @@ export function OptionSearch({
       </AutocompleteList>
     </>
   )
+
+  // The popup of the bar variant scrolls itself; the inline list takes its own space up to a limit.
+  const inlineList = <ScrollArea viewportClassName="max-h-40">{list}</ScrollArea>
 
   const fieldProps = {
     'aria-label': label,
@@ -145,7 +146,7 @@ export function OptionSearch({
             onKeyDown={onKeyDown}
             ref={inputRef}
           />
-          {showList && list}
+          {showList && inlineList}
         </div>
       ) : (
         <div className="shrink-0 px-3 pb-2.5">
