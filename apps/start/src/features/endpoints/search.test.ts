@@ -1,5 +1,10 @@
+import { stripSearchParams } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
+import { stringifySearch } from '#lib/search'
+
+import type { EndpointSearch } from './search'
 import {
   activeFilterCount,
   clearedFilters,
@@ -74,6 +79,48 @@ describe('endpointSearchSchema', () => {
         without: ['zdr'],
       },
     )
+  })
+})
+
+describe('stripping defaults from URLs', () => {
+  const strip = (search: EndpointSearch) =>
+    z
+      .looseObject({})
+      .parse(stripSearchParams(endpointSearchDefaults)({ next: (next) => next, search }))
+
+  it('removes every param at its default', () => {
+    expect(strip(endpointSearchSchema.parse({}))).toEqual({})
+    expect(stringifySearch(strip(endpointSearchSchema.parse({})))).toBe('')
+  })
+
+  it('keeps params away from their defaults, and those with no default', () => {
+    expect(
+      strip(
+        endpointSearchSchema.parse({
+          endpoint: 'gpt-openai',
+          maxInput: 2.5,
+          model: ['openai/gpt-5'],
+          plot: false,
+          sort: '-blend',
+          unlisted: true,
+          with: ['tools'],
+        }),
+      ),
+    ).toEqual({
+      endpoint: 'gpt-openai',
+      maxInput: 2.5,
+      model: ['openai/gpt-5'],
+      plot: false,
+      sort: '-blend',
+      unlisted: true,
+      with: ['tools'],
+    })
+  })
+
+  it('strips only the defaults from a mixed search', () => {
+    expect(
+      stringifySearch(strip(endpointSearchSchema.parse({ model: 'a', plot: true, sort: 'input' }))),
+    ).toBe('?model=a')
   })
 })
 

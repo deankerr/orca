@@ -40,6 +40,24 @@ describe('buildRows', () => {
     })
   })
 
+  it('leaves unrepresentable rates unquoted for sorting but keeps their strings for display', () => {
+    const [extreme] = buildRows({
+      ...snapshot,
+      endpoints: [
+        endpoint({
+          id: 'extreme',
+          input: '1e309',
+          model: models.gpt,
+          output: '0.00001',
+          provider: providers.openai,
+        }),
+      ],
+    })
+
+    expect(extreme).toMatchObject({ blend: null, input: null, output: 10 })
+    expect(extreme?.rates.input).toBe('1e309')
+  })
+
   it('carries stats, context, release time, and listing', () => {
     expect(row('kimi-deepinfra')).toMatchObject({
       context: 256_000,
@@ -76,5 +94,21 @@ describe('buildCatalog', () => {
     expect(buildCatalog(snapshot)).toBe(catalog)
     expect(catalog.at).toBe(AT)
     expect(catalog.byId.get('gpt-openai')?.provider.id).toBe('openai')
+  })
+
+  it('builds an empty catalogue from an empty snapshot', () => {
+    const catalog = buildCatalog({ as_at: AT, endpoints: [], models: [], providers: [] })
+
+    expect(catalog.rows).toEqual([])
+    expect(catalog.byId.size).toBe(0)
+    expect(catalog.at).toBe(AT)
+  })
+
+  it('falls back to the build time before the first scan', () => {
+    const before = Date.now()
+    const catalog = buildCatalog({ as_at: null, endpoints: [], models: [], providers: [] })
+
+    expect(Date.parse(catalog.at)).toBeGreaterThanOrEqual(before)
+    expect(Date.parse(catalog.at)).toBeLessThanOrEqual(Date.now())
   })
 })

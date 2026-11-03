@@ -12,16 +12,41 @@ const READABLE = new Map([
 /** Text items without commas join losslessly. */
 const TextList = z.array(z.string().regex(/^[^,]*$/u))
 
-/** Lists of text become comma-joined values; other objects stay JSON, as the router's default. */
+/**
+ * Whether the router's parser would turn text into something other than the string: it JSON-parses
+ * every value it can, so `null`, `1e3`, and `"a,b"` come back as a null, a number, and a string.
+ */
+function parsesAsJson(text: string) {
+  try {
+    JSON.parse(text)
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Lists of text become comma-joined values, unless the router's parser would reinterpret the joined
+ * text, and then a JSON array, which it parses back to the same list. Other objects stay JSON, as the
+ * router's default.
+ */
 const stringifyJson = stringifySearchWith((value) => {
   const list = TextList.safeParse(value)
 
-  return list.success ? list.data.join(',') : JSON.stringify(value)
+  if (!list.success) {
+    return JSON.stringify(value)
+  }
+
+  const joined = list.data.join(',')
+
+  return parsesAsJson(joined) ? JSON.stringify(list.data) : joined
 }, JSON.parse)
 
 /**
  * Compact, readable search strings: `?model=openai/gpt-5,openai/gpt-5:free` rather than
- * `?model=%5B%22openai%2Fgpt-5%22%5D`. Routes split comma lists in their search schemas.
+ * `?model=%5B%22openai%2Fgpt-5%22%5D`. Routes split comma lists in their search schemas. Pair with the
+ * router's default parser: every list round-trips exactly.
  */
 export const stringifySearch: SearchSerializer = (search) =>
   stringifyJson(search).replaceAll(

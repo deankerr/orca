@@ -79,8 +79,9 @@ interface Evaluation {
 const evaluations = new WeakMap<readonly EndpointRow[], { key: string; evaluation: Evaluation }>()
 
 /**
- * One pass serves filtering, facet counts, and histograms: the rows that would match if one facet
- * changed are those that fail only that facet. The latest result per row set is cached.
+ * One pass serves filtering, facet counts, and histograms: the rows matching every facet except one
+ * are the matching rows plus those that fail only that facet. The latest result per row set is
+ * cached.
  */
 function evaluate(rows: readonly EndpointRow[], filters: EndpointFilters, at: string): Evaluation {
   const key = JSON.stringify([filters, at])
@@ -132,16 +133,16 @@ function matchingOthers(evaluation: Evaluation, facet: Facet): EndpointRow[] {
   return [...evaluation.matching, ...(evaluation.nearMisses.get(facet) ?? [])]
 }
 
-/** Rows a property facet would match while required active (`with`) or inactive (`without`). */
+/** Rows matching every other facet that have a property active (`with`) or inactive (`without`). */
 export interface PropertyCounts {
   with: number
   without: number
 }
 
 /**
- * Counts of the rows each facet value would match, given every other facet.
- * Each row has one model and one provider, so a list value's count is also how many rows adding it
- * would bring into scope.
+ * Per-value counts: for each value, the rows matching every other facet that have that value.
+ * A list value's count ignores the list facet's own selection, so it is not a total over the
+ * selected values, and it includes rows already in scope.
  */
 export interface FacetCounts {
   model: Map<string, number>

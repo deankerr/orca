@@ -21,23 +21,30 @@ export function quotedRate(rate: string | null): string | null {
 /**
  * A quoted per-token rate in USD per million tokens, for sorting, filtering, and plotting; display
  * formats the original string instead. Shifting the exponent before parsing keeps `0.0000025` at
- * exactly 2.5. Null when the rate is absent or zero.
+ * exactly 2.5. Null when the rate is absent, zero, or not a finite positive number of dollars per
+ * million, such as `1e-330`, which underflows to 0, or `1e309`, which overflows to Infinity.
  */
 export function perMillion(rate: string | null): number | null {
   const parts = nonzero(rate)
 
-  return parts === null ? null : Number(`${parts.mantissa}e${parts.exponent + 6}`)
+  if (parts === null) {
+    return null
+  }
+
+  const value = Number(`${parts.mantissa}e${parts.exponent + 6}`)
+
+  return Number.isFinite(value) && value > 0 ? value : null
 }
 
-/** Input parts per output part in the blended price. */
-const BLEND_INPUT_PARTS = 3
+/** Share of the blended price from input: three parts input to one part output. */
+const BLEND_INPUT_WEIGHT = 0.75
 
 /**
- * Blended price: three parts input to one part output, `(3 × input + output) / 4`, in the rates' unit.
- * Null when either rate is absent.
+ * Blended price: three parts input to one part output, `0.75 × input + 0.25 × output`, in the rates'
+ * unit. Weighting before adding keeps two huge finite rates finite. Null when either rate is absent.
  */
 export function blendedPrice(input: number | null, output: number | null): number | null {
   return input === null || output === null
     ? null
-    : (BLEND_INPUT_PARTS * input + output) / (BLEND_INPUT_PARTS + 1)
+    : BLEND_INPUT_WEIGHT * input + (1 - BLEND_INPUT_WEIGHT) * output
 }
