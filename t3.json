@@ -8,6 +8,13 @@
       "runOnWorktreeCreate": true
     },
     {
+      "name": "dev",
+      "command": "bunx turbo run dev --filter=@orca/start --filter=@orca/backend",
+      "icon": "play",
+      "async": true,
+      "previewUrl": "https://orca-start.localhost"
+    },
+    {
       "name": "teardown",
       "command": "bun run worktree:teardown",
       "icon": "configure",
