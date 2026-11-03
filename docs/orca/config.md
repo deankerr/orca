@@ -40,8 +40,11 @@ React Compiler runs through the Vite React preset and Rolldown Babel plugin, inc
 Theme defaults to the system preference. The Light/Dark/System menu stores the choice under
 `orca-theme` in local storage. A `ScriptOnce` initializes the HTML class and color scheme before
 hydration; system mode tracks OS changes. If storage is unavailable, changes last for the current visit.
-Local aliases in Start and UI use `package.json#imports` (`#components`, `#lib`, `#hooks`);
-shared UI imports use the `@orca/ui` package exports. Both shadcn configs follow these mappings.
+Local aliases in Start and UI use `package.json#imports`. Start's are `#app`, `#components`, `#endpoints`, `#lib`,
+and `#panels`, mapped without extensions because each folder mixes `.ts` and `.tsx`; UI's are `#components`,
+`#lib`, and `#hooks`. Start's `tsconfig.json#paths` repeats its aliases, because TypeScript does not probe
+extensions for `imports` targets.
+Shared UI imports use the `@orca/ui` package exports. Both shadcn configs follow these mappings.
 Its public `VITE_CONVEX_URL` points to the same Convex deployment as the checkout's backend.
 Set it in `apps/start/.env.local`; `bun run worktree:setup` writes it for linked worktrees.
 For the main checkout, copy the public `CONVEX_URL` from `packages/backend/.env.local`.

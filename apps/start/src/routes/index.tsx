@@ -1,20 +1,20 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { EndpointPanel } from '#components/endpoint-panel'
-import { FiltersPanel } from '#components/filters-panel'
-import { ResultsPanel } from '#components/results-panel'
-import { useSelectedEndpoint } from '#features/endpoints/hooks'
-import { snapshotQuery } from '#features/endpoints/query'
-import { endpointSearchDefaults, endpointSearchSchema } from '#features/endpoints/search'
+import { useSelectedEndpoint } from '#endpoints/hooks'
+import { scopeDefaults, scopeSchema } from '#endpoints/scope'
+import { snapshotQuery } from '#endpoints/snapshot'
+import { EndpointPanel } from '#panels/endpoint/endpoint-panel'
+import { FiltersPanel } from '#panels/filters/filters-panel'
+import { ResultsPanel } from '#panels/results/results-panel'
 
 export const Route = createFileRoute('/')({
   component: Home,
   // The whole catalogue loads in the browser; server rendering it would inline megabytes of JSON.
   loader: async ({ context }) => await context.queryClient.query(snapshotQuery),
   pendingComponent: Pending,
-  search: { middlewares: [stripSearchParams(endpointSearchDefaults)] },
+  search: { middlewares: [stripSearchParams(scopeDefaults)] },
   ssr: false,
-  validateSearch: endpointSearchSchema,
+  validateSearch: scopeSchema,
 })
 
 function Pending() {

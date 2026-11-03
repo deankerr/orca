@@ -5,7 +5,7 @@ import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/reac
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import type { ReactNode } from 'react'
 
-import { ThemeProvider } from '#components/theme-provider'
+import { ThemeProvider } from '#app/theme-provider'
 
 import appCss from '@orca/ui/globals.css?url'
 

@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#components/*": "./src/components/*.tsx",
-    "#lib/*": "./src/lib/*.ts",
-    "#hooks/*": "./src/hooks/*.ts",
-    "#features/*": "./src/features/*.ts"
+    "#app/*": "./src/app/*",
+    "#components/*": "./src/components/*",
+    "#endpoints/*": "./src/endpoints/*",
+    "#lib/*": "./src/lib/*",
+    "#panels/*": "./src/panels/*"
   },
   "scripts": {
     "build": "vite build",

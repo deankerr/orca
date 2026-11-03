@@ -4,7 +4,7 @@ import { createRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { ConvexProvider } from 'convex/react'
 
-import { stringifySearch } from '#lib/search'
+import { stringifySearch } from '#lib/url-search-serializer'
 
 import { routeTree } from './routeTree.gen'
 

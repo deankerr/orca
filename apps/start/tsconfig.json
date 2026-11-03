@@ -3,7 +3,16 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    // TypeScript does not probe `.ts` and `.tsx` for `package.json#imports` targets, so it reads
+    // the same aliases here. Vite, Rolldown, and Vitest resolve them from `package.json`.
+    "paths": {
+      "#app/*": ["./src/app/*"],
+      "#components/*": ["./src/components/*"],
+      "#endpoints/*": ["./src/endpoints/*"],
+      "#lib/*": ["./src/lib/*"],
+      "#panels/*": ["./src/panels/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }
