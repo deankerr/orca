@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest'
+
+import { AT, endpoint, models, providers, snapshot } from './fixtures.testing'
+import { buildCatalog, buildRows, referenceTime } from './rows'
+
+describe('buildRows', () => {
+  const rows = buildRows(snapshot)
+  const row = (id: string) => rows.find((candidate) => candidate.id === id)
+
+  it('joins every endpoint to its model and provider', () => {
+    expect(rows).toHaveLength(6)
+    expect(row('kimi-deepinfra')).toMatchObject({
+      model: { id: 'moonshotai/kimi-k3' },
+      provider: { id: 'deepinfra' },
+    })
+  })
+
+  it('skips endpoints whose model or provider does not resolve', () => {
+    const orphan = endpoint({ id: 'orphan', model: models.gpt, provider: providers.openai })
+
+    expect(buildRows({ ...snapshot, endpoints: [orphan], providers: [] })).toEqual([])
+  })
+
+  it('converts rates to $/M and blends them three to one', () => {
+    expect(row('gpt-azure')).toMatchObject({
+      blend: (3 * 1.25 + 10) / 4,
+      cacheRead: 0.125,
+      input: 1.25,
+      output: 10,
+      rates: { cacheRead: '0.000000125', input: '0.00000125', output: '0.00001' },
+    })
+  })
+
+  it('treats zero rates as absent, leaving no blend', () => {
+    expect(row('gpt-free')).toMatchObject({
+      blend: null,
+      input: null,
+      output: null,
+      rates: { input: null, output: null },
+    })
+  })
+
+  it('carries stats, context, release time, and listing', () => {
+    expect(row('kimi-deepinfra')).toMatchObject({
+      context: 256_000,
+      latency: 500,
+      released: Date.parse('2025-06-01T00:00:00.000Z'),
+      throughput: 120,
+      unlisted: false,
+    })
+    expect(row('kimi-old')).toMatchObject({ latency: null, throughput: null, unlisted: true })
+  })
+
+  it('resolves active properties', () => {
+    expect([...(row('gpt-openai')?.properties.keys() ?? [])]).toEqual(
+      expect.arrayContaining(['tools', 'zdr', 'new_model']),
+    )
+    expect(row('gpt-free')?.properties.has('free')).toBe(true)
+    expect(row('kimi-old')?.properties.has('unlisted')).toBe(true)
+  })
+})
+
+describe('reference time', () => {
+  it('is the scan time, else now', () => {
+    const now = new Date('2026-11-03T00:00:00.000Z')
+
+    expect(referenceTime({ as_at: AT }, now)).toBe(AT)
+    expect(referenceTime({ as_at: null }, now)).toBe('2026-11-03T00:00:00.000Z')
+  })
+})
+
+describe('buildCatalog', () => {
+  it('builds once per snapshot and indexes rows by endpoint ID', () => {
+    const catalog = buildCatalog(snapshot)
+
+    expect(buildCatalog(snapshot)).toBe(catalog)
+    expect(catalog.at).toBe(AT)
+    expect(catalog.byId.get('gpt-openai')?.provider.id).toBe('openai')
+  })
+})

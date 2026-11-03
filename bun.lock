@@ -40,6 +40,9 @@
       "dependencies": {
         "@convex-dev/react-query": "0.1.0",
         "@orca/backend": "workspace:*",
+        "@orca/contract": "workspace:*",
+        "@orca/pricing": "workspace:*",
+        "@orca/properties": "workspace:*",
         "@orca/ui": "workspace:*",
         "@tanstack/charts": "^1.2.0",
         "@tanstack/match-sorter-utils": "9.2.6",
@@ -61,6 +64,7 @@
         "react": "19.3.1",
         "react-dom": "19.3.1",
         "remeda": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@babel/core": "8.0.10",

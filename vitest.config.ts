@@ -36,6 +36,10 @@ export default defineConfig({
         test: { environment: 'node', include: ['**/*.test.ts'], name: 'web' },
       },
       {
+        root: 'apps/start',
+        test: { environment: 'node', include: ['src/**/*.test.ts'], name: 'start' },
+      },
+      {
         root: 'apps/logos',
         test: { environment: 'node', include: ['src/**/*.test.ts'], name: 'logos' },
       },

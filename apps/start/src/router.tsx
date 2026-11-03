@@ -4,6 +4,8 @@ import { createRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { ConvexProvider } from 'convex/react'
 
+import { stringifySearch } from '#lib/search'
+
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
@@ -30,6 +32,7 @@ export function getRouter() {
     defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true,
+    stringifySearch,
   })
 
   setupRouterSsrQueryIntegration({ queryClient, router })

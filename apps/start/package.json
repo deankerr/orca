@@ -5,7 +5,8 @@
   "imports": {
     "#components/*": "./src/components/*.tsx",
     "#lib/*": "./src/lib/*.ts",
-    "#hooks/*": "./src/hooks/*.ts"
+    "#hooks/*": "./src/hooks/*.ts",
+    "#features/*": "./src/features/*.ts"
   },
   "scripts": {
     "build": "vite build",
@@ -15,6 +16,9 @@
   "dependencies": {
     "@convex-dev/react-query": "0.1.0",
     "@orca/backend": "workspace:*",
+    "@orca/contract": "workspace:*",
+    "@orca/pricing": "workspace:*",
+    "@orca/properties": "workspace:*",
     "@orca/ui": "workspace:*",
     "@tanstack/charts": "^1.2.0",
     "@tanstack/match-sorter-utils": "9.2.6",
@@ -35,7 +39,8 @@
     "lucide-react": "catalog:",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "remeda": "catalog:"
+    "remeda": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@babel/core": "8.0.10",

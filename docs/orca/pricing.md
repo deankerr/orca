@@ -36,6 +36,16 @@ and favorable direction; product field names and markup remain presentation choi
   values keep one significant digit rather than rounding to zero.
 - Eligibility compares original values before formatting.
 - Grid rates and Pricing History traces omit zero; change alerts can display transitions to or from zero.
+- `@orca/pricing` owns the grid rule: `quotedRate` drops absent and zero rates, and `perMillion` converts the rest.
+- `perMillion` values are `Number`s for sorting, filtering, and plotting; display formats the original string.
+
+### Blended price
+
+Blended price weighs three parts input to one part output: `(3 × input + output) / 4`, in $/M tokens.
+It summarizes a text endpoint's cost in one number for comparing and plotting endpoints.
+
+- Blend is absent when either rate is absent, so endpoints with zero rates, such as free variants, have none.
+- Blend ignores cache, audio, image, and conditional rates.
 
 Alert schedule detection and eligibility belong to `events.md`; quote retention does not depend on them.
 
