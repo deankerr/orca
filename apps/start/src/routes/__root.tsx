@@ -34,7 +34,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
           <TanStackDevtools
-            config={{ position: 'bottom-right' }}
+            config={{ hideUntilHover: true, position: 'bottom-left', triggerMode: 'fixed' }}
             plugins={[{ name: 'TanStack Router', render: <TanStackRouterDevtoolsPanel /> }]}
           />
         </ThemeProvider>

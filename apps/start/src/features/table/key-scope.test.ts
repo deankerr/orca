@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { TABLE_KEYS_ATTRIBUTE, panelClosesOnEscape, tableOwnsKeys } from './key-scope'
+import {
+  KEYS_RESERVED_ATTRIBUTE,
+  TABLE_KEYS_ATTRIBUTE,
+  panelClosesOnEscape,
+  tableOwnsKeys,
+} from './key-scope'
 import type { FocusProbe } from './key-scope'
 
 const body: FocusProbe = { closest: () => null }
 
 /** An element that sits inside a region with the given attribute, or inside none. */
-function insideRegion(attribute?: string): FocusProbe {
-  return { closest: (selector) => (selector === `[${attribute}]` ? {} : null) }
+function insideRegion(...attributes: string[]): FocusProbe {
+  return {
+    closest: (selector) =>
+      attributes.some((attribute) => selector === `[${attribute}]`) ? {} : null,
+  }
 }
 
 describe('tableOwnsKeys', () => {
@@ -18,6 +26,12 @@ describe('tableOwnsKeys', () => {
 
   it('owns the keys inside a marked region', () => {
     expect(tableOwnsKeys(insideRegion(TABLE_KEYS_ATTRIBUTE), body)).toBe(true)
+  })
+
+  it('leaves the keys to a reserved widget inside a marked region', () => {
+    expect(tableOwnsKeys(insideRegion(TABLE_KEYS_ATTRIBUTE, KEYS_RESERVED_ATTRIBUTE), body)).toBe(
+      false,
+    )
   })
 
   it('leaves the keys to focus anywhere else', () => {
