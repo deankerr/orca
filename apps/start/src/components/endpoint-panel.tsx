@@ -2,11 +2,12 @@ import { Button } from '@orca/ui/components/button'
 import { Tabs, TabsList, TabsTrigger } from '@orca/ui/components/tabs'
 import { TooltipProvider } from '@orca/ui/components/tooltip'
 import { XIcon } from 'lucide-react'
+import { useLayoutEffect, useRef } from 'react'
 
 import { EntityAvatar } from '#components/entity-avatar'
 import { useEndpointSearchActions, useFilteredRows } from '#features/endpoints/hooks'
 import type { EndpointRow } from '#features/endpoints/rows'
-import { returnFocusToTable } from '#features/table/focus'
+import { returnFocusFromPanel } from '#features/table/focus'
 import { panelClosesOnEscape } from '#features/table/key-scope'
 
 import {
@@ -30,15 +31,36 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
   const tag = endpointTag(row)
   const unlisted = unlistedLine(row)
 
-  // Focus moves first: closing unmounts the panel, and the focused element with it.
+  const panelRef = useRef<HTMLElement>(null)
+  const endpointId = useRef(row.id)
+
+  useLayoutEffect(() => {
+    endpointId.current = row.id
+  })
+
+  // The panel unmounts whenever nothing is selected, however that came about, and takes the focused
+  // element with it. A layout effect's cleanup runs before the DOM is removed, so focus is still
+  // readable here. Empty deps: moving the selection between endpoints keeps the panel mounted.
+  useLayoutEffect(() => {
+    const panel = panelRef.current
+
+    return () => {
+      if (panel !== null) {
+        returnFocusFromPanel(panel, document.activeElement, endpointId.current, (selector) =>
+          document.querySelector<HTMLElement>(selector),
+        )
+      }
+    }
+  }, [])
+
   const close = () => {
-    returnFocusToTable(row.id, (selector) => document.querySelector<HTMLElement>(selector))
     selectEndpoint(undefined)
   }
 
   return (
     <aside
       aria-label="Endpoint"
+      ref={panelRef}
       className="flex w-85 shrink-0 flex-col overflow-clip rounded-xl border border-border bg-popover"
       // Esc closes the panel from anywhere inside it. The Table's document-level key rule skips the
       // tab list, so the panel owns Esc and keeps it from also reaching the Table. It listens in the

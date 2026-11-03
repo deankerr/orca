@@ -34,3 +34,27 @@ export function returnFocusToTable(
 
   return 'region'
 }
+
+/** A container that can say whether a node sits inside it, as far as the panel's focus check sees. */
+interface Container<Candidate> {
+  contains: (candidate: Candidate | null) => boolean
+}
+
+/**
+ * Hands focus back to the table when the Endpoint panel goes away holding it. Whatever cleared the
+ * selection (the close button, Esc, history navigation) leaves the focused element to be unmounted
+ * with the panel, and focus would fall to the page. Focus already outside the panel stays where it
+ * is, as does focus that has already left it. Returns what took focus, or null if nothing moved.
+ */
+export function returnFocusFromPanel<Candidate>(
+  panel: Container<Candidate>,
+  active: Candidate | null,
+  endpointId: string,
+  query: (selector: string) => Focusable | null,
+): 'region' | 'row' | null {
+  if (active === null || !panel.contains(active)) {
+    return null
+  }
+
+  return returnFocusToTable(endpointId, query)
+}

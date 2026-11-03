@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { RESULTS_REGION_ID, returnFocusToTable } from './focus'
+import { RESULTS_REGION_ID, returnFocusFromPanel, returnFocusToTable } from './focus'
 
 /** A document with the given selectors present, recording which element took focus. */
 function documentWith(present: string[]) {
@@ -39,5 +39,43 @@ describe('returnFocusToTable', () => {
         vi.fn(() => null),
       ),
     ).toBeNull()
+  })
+})
+
+describe('returnFocusFromPanel', () => {
+  beforeAll(() => {
+    vi.stubGlobal('CSS', { escape: (text: string) => text })
+  })
+
+  const inside = 'inside'
+  const outside = 'outside'
+  const panel = { contains: (candidate: string | null) => candidate === inside }
+
+  it('returns focus to the row when the panel holds it', () => {
+    const { focused, query } = documentWith(['tr[data-endpoint-id="abc"]'])
+
+    expect(returnFocusFromPanel(panel, inside, 'abc', query)).toBe('row')
+    expect(focused).toEqual(['tr[data-endpoint-id="abc"]'])
+  })
+
+  it('falls back to the Results region when the row is filtered out', () => {
+    const { focused, query } = documentWith([`#${RESULTS_REGION_ID}`])
+
+    expect(returnFocusFromPanel(panel, inside, 'abc', query)).toBe('region')
+    expect(focused).toEqual([`#${RESULTS_REGION_ID}`])
+  })
+
+  it('leaves focus alone when it is outside the panel', () => {
+    const { focused, query } = documentWith(['tr[data-endpoint-id="abc"]'])
+
+    expect(returnFocusFromPanel(panel, outside, 'abc', query)).toBeNull()
+    expect(focused).toEqual([])
+  })
+
+  it('leaves focus alone when nothing has it', () => {
+    const { focused, query } = documentWith(['tr[data-endpoint-id="abc"]'])
+
+    expect(returnFocusFromPanel(panel, null, 'abc', query)).toBeNull()
+    expect(focused).toEqual([])
   })
 })
