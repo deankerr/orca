@@ -3,6 +3,7 @@ import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { EndpointPanel } from '#components/endpoint-panel'
 import { FiltersPanel } from '#components/filters-panel'
 import { ResultsPanel } from '#components/results-panel'
+import { useSelectedEndpoint } from '#features/endpoints/hooks'
 import { snapshotQuery } from '#features/endpoints/query'
 import { endpointSearchDefaults, endpointSearchSchema } from '#features/endpoints/search'
 
@@ -25,11 +26,14 @@ function Pending() {
 }
 
 function Home() {
+  // With nothing selected the panel is gone and the Results panel takes its width.
+  const selected = useSelectedEndpoint()
+
   return (
     <main className="flex h-svh gap-2 bg-background p-2">
       <FiltersPanel />
       <ResultsPanel />
-      <EndpointPanel />
+      {selected === null ? null : <EndpointPanel row={selected} />}
     </main>
   )
 }
