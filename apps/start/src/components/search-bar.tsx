@@ -1,20 +1,41 @@
-import { Search } from 'lucide-react'
+import { formatForDisplay, useHotkey } from '@tanstack/react-hotkeys'
+import { useRef } from 'react'
 
+import { OptionSearch } from '#components/option-search'
+import { useEndpointSearch, useEndpointSearchActions } from '#features/endpoints/hooks'
+import { useCatalogOptions } from '#features/filters/hooks'
+
+/** The Filters panel's search: finds a model or provider and adds it as a filter value. */
 export function SearchBar() {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { search } = useCatalogOptions()
+  const { update } = useEndpointSearchActions()
+  const filters = useEndpointSearch()
+
+  useHotkey('Mod+K', () => {
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  })
+
   return (
-    <div className="shrink-0 px-3 pb-2.5">
-      <label className="flex h-8 items-center gap-2 rounded-md border border-input bg-background px-2.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
-        <Search aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-        <input
-          aria-label="Search models, providers"
-          className="min-w-0 grow bg-transparent text-[13px] leading-4 outline-none placeholder:text-muted-foreground"
-          placeholder="Search models, providers"
-          type="search"
-        />
+    <OptionSearch
+      hint={
         <kbd className="rounded-sm border border-border px-1 py-px font-mono text-[10px] leading-3 text-muted-foreground">
-          ⌘K
+          {formatForDisplay('Mod+K')}
         </kbd>
-      </label>
-    </div>
+      }
+      inputRef={inputRef}
+      label="Search models, providers"
+      meta={({ id, kind }) => (filters[kind].includes(id) ? 'added' : kind)}
+      noMatches="No models or providers match."
+      onSelect={({ id, kind }) => {
+        if (!filters[kind].includes(id)) {
+          update((current) => ({ [kind]: [...current[kind], id] }))
+        }
+      }}
+      placeholder="Search models, providers"
+      search={(query) => search.any(query, 8)}
+      variant="bar"
+    />
   )
 }
