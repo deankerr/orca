@@ -4,6 +4,7 @@ import {
   ABSENT,
   formatContext,
   formatCount,
+  formatLatency,
   formatRate,
   formatRateCell,
   formatScanTime,
@@ -43,9 +44,22 @@ describe('formatCount', () => {
 })
 
 describe('formatRateCell', () => {
-  it('prices a per-token rate per million tokens', () => {
-    expect(formatRateCell('0.0000025')).toBe('$2.50')
+  it('prices a per-token rate per million tokens at three fixed decimals', () => {
+    expect(formatRateCell('0.0000025')).toBe('$2.500')
+    expect(formatRateCell('0.0000005')).toBe('$0.500')
+    expect(formatRateCell('0.000015')).toBe('$15.000')
     expect(formatRateCell('0.000000119')).toBe('$0.119')
+  })
+
+  it('rounds half away from zero on the decimal string', () => {
+    expect(formatRateCell('0.0000000011')).toBe('$0.001')
+    expect(formatRateCell('0.0000000015')).toBe('$0.002')
+    expect(formatRateCell('0.0000009996')).toBe('$1.000')
+  })
+
+  it('falls back to the full display when three decimals would show $0.000', () => {
+    expect(formatRateCell('0.0000000004')).toBe('$0.0004')
+    expect(formatRateCell('0.000000000198')).toBe('$0.0002')
   })
 
   it('shows a free rate as $0 in any spelling', () => {
@@ -55,6 +69,29 @@ describe('formatRateCell', () => {
 
   it('shows absent rates as a dash', () => {
     expect(formatRateCell(null)).toBe(ABSENT)
+  })
+})
+
+describe('formatLatency', () => {
+  it.each([
+    [122, '0.12s'],
+    [1850, '1.85s'],
+    [0, '0.00s'],
+    [9994, '9.99s'],
+    [9996, '10.0s'],
+    [10_000, '10.0s'],
+    [54_662, '54.7s'],
+    [99_949, '99.9s'],
+    [99_950, '100s'],
+    [100_400, '100s'],
+    [123_456, '123s'],
+    [1_234_567, '1,235s'],
+  ])('shows %d ms as %s', (milliseconds, text) => {
+    expect(formatLatency(milliseconds)).toBe(text)
+  })
+
+  it('shows absent latency as a dash', () => {
+    expect(formatLatency(null)).toBe(ABSENT)
   })
 })
 

@@ -2,7 +2,7 @@ import { properties } from '@orca/properties'
 import type { Group, PropertyId, Value } from '@orca/properties'
 
 import type { EndpointRow } from '#endpoints/snapshot'
-import { ABSENT } from '#lib/format'
+import { ABSENT, formatLatency } from '#lib/format'
 
 import { listRow } from './facts'
 import type { FactRow, Section } from './facts'
@@ -231,7 +231,7 @@ export function endpointSections(row: EndpointRow): Section[] {
           description: 'Median time to first token.',
           id: 'latency',
           label: 'Latency',
-          value: latency === null ? ABSENT : `${formatTokens(Math.round(latency))} ms`,
+          value: formatLatency(latency),
         },
       ],
       title: 'Speed',

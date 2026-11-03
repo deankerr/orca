@@ -3,7 +3,7 @@ import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
-import { formatContext, formatCount, formatRateCell } from '#lib/format'
+import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
 
 import { providerTags } from './tags'
 
@@ -96,7 +96,7 @@ export const columns = helper.columns([
     sortDescFirst: true,
   }),
   helper.accessor('latency', {
-    cell: ({ row }) => formatCount(row.original.latency),
+    cell: ({ row }) => formatLatency(row.original.latency),
     header: 'Latency',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
