@@ -56,6 +56,23 @@ test('pricing changes are muted while other fields of the same update remain', (
   expect(kept).toEqual([{ ...endpoint, changes: [limitChange], type: 'endpoint_updated' }])
 })
 
+test('tool choice changes are muted while other fields of the same update remain', () => {
+  const toolChoice: AlertChange = {
+    after: true,
+    before: false,
+    field: 'tool_choice.auto',
+    kind: 'flag',
+  }
+
+  const { kept, muted } = run([
+    { ...endpoint, changes: [toolChoice], type: 'endpoint_updated' },
+    { ...endpoint, changes: [toolChoice, limitChange], type: 'endpoint_updated' },
+  ])
+
+  expect(muted).toEqual(['0'])
+  expect(kept).toEqual([{ ...endpoint, changes: [limitChange], type: 'endpoint_updated' }])
+})
+
 test('endpoint unlistings and relistings are muted; discoveries and unclassified arrivals remain', () => {
   const discovered: EntityAlert = {
     ...endpoint,
