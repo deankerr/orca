@@ -198,6 +198,7 @@ Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_U
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                     |
 | `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                    |
+| `VITE_ORCA_LOGO_ORIGIN`             | Start browser avatar origin; unset or empty → `https://logos.orb.town`.                         |
 | `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.        |
 | `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.             |
 | `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.       |
@@ -209,7 +210,7 @@ Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_U
 | `NODE_ENV`                          | Development enables favicon tint, breakpoint display, and detailed errors.                      |
 
 The public query cache persists for 24 hours in browser local storage; its build key discards older
-builds' entries before hydration. Browser and Discord logo origins are configured separately.
+builds' entries before hydration. Browser (Next.js and Start) and Discord logo origins are configured separately.
 
 `env.style` tints the favicon blue in development and amber in preview, leaving white pixels untinted;
 production serves the original. The tint is fixed at build time.
