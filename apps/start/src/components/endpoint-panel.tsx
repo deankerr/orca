@@ -1,10 +1,17 @@
 import { Button } from '@orca/ui/components/button'
 import { Tabs, TabsList, TabsTrigger } from '@orca/ui/components/tabs'
-import { TooltipProvider } from '@orca/ui/components/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@orca/ui/components/tooltip'
+import { cn } from 'cn'
 import { XIcon } from 'lucide-react'
-import { useLayoutEffect, useRef } from 'react'
+import { useId, useLayoutEffect, useRef } from 'react'
 
 import { EntityAvatar } from '#components/entity-avatar'
+import { FOCUS_RING } from '#components/facet'
 import { useEndpointSearchActions, useFilteredRows } from '#features/endpoints/hooks'
 import type { EndpointRow } from '#features/endpoints/rows'
 import { returnFocusFromPanel } from '#features/table/focus'
@@ -30,6 +37,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
   const { selectEndpoint } = useEndpointSearchActions()
   const tag = endpointTag(row)
   const unlisted = unlistedLine(row)
+  const tagDescriptionId = useId()
 
   const panelRef = useRef<HTMLElement>(null)
   const endpointId = useRef(row.id)
@@ -100,12 +108,31 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                       {row.provider.display_name}
                     </span>
                     {tag === null ? null : (
-                      <span
-                        className="shrink-0 font-mono text-[11px] leading-[18px] text-muted-foreground"
-                        title={endpointTagDescription(row)}
-                      >
-                        {tag}
-                      </span>
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <span
+                                aria-describedby={tagDescriptionId}
+                                className={cn(
+                                  'shrink-0 rounded-sm font-mono text-[11px] leading-[18px] text-muted-foreground',
+                                  FOCUS_RING,
+                                )}
+                                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The tag is the keyboard target for its description tooltip, which a screen reader reads through aria-describedby.
+                                tabIndex={0}
+                              />
+                            }
+                          >
+                            {tag}
+                          </TooltipTrigger>
+                          <TooltipContent align="start">
+                            {endpointTagDescription(row)}
+                          </TooltipContent>
+                        </Tooltip>
+                        <span hidden id={tagDescriptionId}>
+                          {endpointTagDescription(row)}
+                        </span>
+                      </>
                     )}
                   </div>
                   <span className="truncate text-xs/4 text-muted-foreground">{row.model.name}</span>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { boundStops, histogramBars, nearestStopIndex, stepStop } from './bars'
+import { boundStops, histogramBars, nearestStopIndex, stepStop, stopIndexAt } from './bars'
 
 const thresholds = [10, 20, 30]
 const histogram = { counts: [1, 4, 2, 0], thresholds }
@@ -79,5 +79,18 @@ describe('stepping', () => {
 
   it('steps a maximum from no bound back to the highest threshold', () => {
     expect(stepStop(boundStops(thresholds, 'max'), undefined, -1)).toBe(30)
+  })
+})
+
+describe('stopIndexAt', () => {
+  // Four bars 2px apart in a 106px row: each is 25px wide, so bar `i` spans 27i to 27i + 25.
+  const at = (offset: number) => stopIndexAt(offset, 106, 4, 2)
+
+  it('gives the bar under the pointer', () => {
+    expect([1, 12, 25, 29, 52, 60, 85, 100].map(at)).toEqual([0, 0, 0, 1, 1, 2, 3, 3])
+  })
+
+  it('clamps a pointer beyond either end', () => {
+    expect([at(-20), at(200)]).toEqual([0, 3])
   })
 })

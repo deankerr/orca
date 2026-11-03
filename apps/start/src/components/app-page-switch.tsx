@@ -12,10 +12,7 @@ const pages: { active: boolean; icon: LucideIcon; label: string }[] = [
 /** Segmented control that switches between the app's pages. Only Endpoints exists so far. */
 export function AppPageSwitch() {
   return (
-    <nav
-      aria-label="App pages"
-      className="flex gap-0.5 rounded-lg border border-border bg-background p-0.5"
-    >
+    <nav aria-label="App pages" className="flex gap-0.5 rounded-lg border border-border p-0.5">
       {pages.map(({ active, icon: Icon, label }) => (
         <Tooltip key={label}>
           <TooltipTrigger

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { advanceGesture, startGesture } from './gesture'
+import { boundStops, nearestStopIndex } from './bars'
+import { advanceGesture, pressShownStop, startGesture } from './gesture'
 import type { BoundChange, BoundGesture } from './gesture'
 
 /** Replay a gesture's pointer positions and collect the changes it makes. */
@@ -58,5 +59,59 @@ describe('advanceGesture', () => {
 
   it('starts the next gesture afresh', () => {
     expect(run(150, [200])).toEqual([{ replace: false, value: 200 }])
+  })
+})
+
+describe('pressShownStop', () => {
+  /** A press on the bar the slider shows for an off-grid bound, then the drags that follow. */
+  function press(
+    thresholds: number[],
+    direction: 'max' | 'min',
+    bound: number,
+    drags: (number | undefined)[],
+  ) {
+    const stops = boundStops(thresholds, direction)
+    const shown = nearestStopIndex(stops, bound)
+    const first = pressShownStop(startGesture(bound), stops, shown, shown)
+    let { gesture } = first
+    const changes = first.change === undefined ? [] : [first.change]
+
+    for (const position of drags) {
+      const step = advanceGesture(gesture, position)
+
+      ;({ gesture } = step)
+
+      if (step.change !== undefined) {
+        changes.push(step.change)
+      }
+    }
+
+    return changes
+  }
+
+  it('snaps a maximum between thresholds to the pressed bar, in one push', () => {
+    expect(press([0.1, 0.5, 1], 'max', 0.37, [])).toEqual([{ replace: false, value: 0.5 }])
+  })
+
+  it('snaps a minimum between thresholds to the pressed bar, in one push', () => {
+    expect(press([10, 50, 100], 'min', 40, [])).toEqual([{ replace: false, value: 50 }])
+  })
+
+  it('replaces for the drags that follow the snap', () => {
+    expect(press([0.1, 0.5, 1], 'max', 0.37, [1, undefined])).toEqual([
+      { replace: false, value: 0.5 },
+      { replace: true, value: 1 },
+      { replace: true, value: undefined },
+    ])
+  })
+
+  it('makes no change when the bound is on its threshold', () => {
+    expect(press([10, 50, 100], 'min', 50, [])).toEqual([])
+  })
+
+  it('leaves a press on another bar to the slider', () => {
+    const stops = boundStops([10, 50, 100], 'min')
+
+    expect(pressShownStop(startGesture(40), stops, 2, 3).change).toBeUndefined()
   })
 })

@@ -87,3 +87,15 @@ export function stepStop(
 
   return stops[Math.min(Math.max(index + delta, 0), stops.length - 1)]
 }
+
+/**
+ * The stop index under a pointer, `offset` px from the left of a row of `count` bars `gap` px apart and
+ * `width` px wide in all. It is the mapping an inset slider with a bar-wide thumb applies, so it agrees
+ * with the slider's own: the stop of the bar under the pointer.
+ */
+export function stopIndexAt(offset: number, width: number, count: number, gap: number): number {
+  const thumb = (width - (count - 1) * gap) / count
+  const fraction = Math.min(Math.max((offset - thumb / 2) / (width - thumb), 0), 1)
+
+  return Math.round(fraction * (count - 1))
+}

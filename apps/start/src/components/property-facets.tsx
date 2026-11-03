@@ -1,6 +1,11 @@
 import type { PropertyId, Group } from '@orca/properties'
 import { Checkbox } from '@orca/ui/components/checkbox'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@orca/ui/components/collapsible'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -127,49 +132,50 @@ function PropertyGroup({
   const { update } = useEndpointSearchActions()
   const active = activeInGroup(group, filters)
   const headingId = useId()
-  const listId = `property-group-${group.group}`
 
   const toggle = (id: PropertyId, state: PropertyState) => {
     update((current) => setPropertyState(current, id, state))
   }
 
   return (
-    <Facet
-      className={open ? undefined : 'pb-1'}
-      heading={
-        <h2 className={FACET_HEADING_CLASS} id={headingId}>
-          <button
-            aria-controls={listId}
-            // A group with an active filter stays open, so its toggle does nothing.
-            aria-disabled={active > 0}
-            aria-expanded={open}
-            className={cn(
-              'flex h-5 w-full items-center gap-1 rounded-sm text-left font-normal tracking-[0.08em] uppercase',
-              FOCUS_RING,
-            )}
-            onClick={() => {
-              if (active === 0) {
-                onToggle()
-              }
-            }}
-            type="button"
-          >
-            <ChevronRight
-              aria-hidden="true"
-              className={cn('size-3 shrink-0 transition-transform', open && 'rotate-90')}
-            />
-            <span className="grow">{group.label}</span>
-            <span aria-hidden={active === 0} className="tracking-normal normal-case tabular-nums">
-              {active > 0 ? `${active} active` : group.facets.length}
-            </span>
-          </button>
-        </h2>
-      }
-      headingId={headingId}
-      title={group.label}
+    // The Collapsible is the source of truth's mirror: `open` comes from `isGroupOpen`, so a group with
+    // an active filter cannot be closed, and its trigger stays focusable.
+    <Collapsible
+      className="contents"
+      onOpenChange={() => {
+        if (active === 0) {
+          onToggle()
+        }
+      }}
+      open={open}
     >
-      {open && (
-        <div id={listId}>
+      <Facet
+        className={open ? undefined : 'pb-1'}
+        heading={
+          <h2 className={FACET_HEADING_CLASS} id={headingId}>
+            <CollapsibleTrigger
+              // A group with an active filter stays open, so its toggle does nothing.
+              aria-disabled={active > 0}
+              className={cn(
+                'flex h-5 w-full items-center gap-1 rounded-sm text-left font-normal tracking-[0.08em] uppercase',
+                FOCUS_RING,
+              )}
+            >
+              <ChevronRight
+                aria-hidden="true"
+                className={cn('size-3 shrink-0 transition-transform', open && 'rotate-90')}
+              />
+              <span className="grow">{group.label}</span>
+              <span aria-hidden={active === 0} className="tracking-normal normal-case tabular-nums">
+                {active > 0 ? `${active} active` : group.facets.length}
+              </span>
+            </CollapsibleTrigger>
+          </h2>
+        }
+        headingId={headingId}
+        title={group.label}
+      >
+        <CollapsibleContent className="h-(--collapsible-panel-height) transition-[height] duration-150 ease-out data-ending-style:h-0 data-ending-style:overflow-hidden data-starting-style:h-0 data-starting-style:overflow-hidden motion-reduce:transition-none">
           {group.facets.map((facet) => (
             <PropertyRow
               count={counts.get(facet.id)?.with ?? 0}
@@ -179,9 +185,9 @@ function PropertyGroup({
               toggle={toggle}
             />
           ))}
-        </div>
-      )}
-    </Facet>
+        </CollapsibleContent>
+      </Facet>
+    </Collapsible>
   )
 }
 
@@ -212,29 +218,43 @@ export function PropertyFacets() {
   )
 }
 
+const UNLISTED_NOTE = 'Also show endpoints OpenRouter no longer lists.'
+
 /** Unlisted endpoints stay out of scope unless shown. */
 function StatusFacet() {
   const { rows } = useCatalog()
   const { unlisted } = useEndpointSearch()
   const { update } = useEndpointSearchActions()
+  const noteId = useId()
   const unlistedCount = rows.filter((row) => row.unlisted).length
 
   return (
     <Facet className="border-b-0" title="Listing">
-      <label
-        className="flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4"
-        title="Also show endpoints OpenRouter no longer lists."
-      >
-        <Checkbox
-          checked={unlisted}
-          className="size-3.5 after:hidden"
-          onCheckedChange={(checked) => {
-            update(() => ({ unlisted: checked }))
-          }}
-        />
-        <span className="grow">Show unlisted</span>
-        <span className={FACET_COUNT_CLASS}>{unlistedCount}</span>
-      </label>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            // oxlint-disable-next-line jsx-a11y/label-has-associated-control -- The label's text and checkbox are the trigger's children, which the rule cannot see.
+            <label className="flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4" />
+          }
+        >
+          <Checkbox
+            aria-describedby={noteId}
+            checked={unlisted}
+            className="size-3.5 after:hidden"
+            onCheckedChange={(checked) => {
+              update(() => ({ unlisted: checked }))
+            }}
+          />
+          <span className="grow">Show unlisted</span>
+          <span className={FACET_COUNT_CLASS}>{unlistedCount}</span>
+        </TooltipTrigger>
+        <TooltipContent align="start" side="right">
+          {UNLISTED_NOTE}
+        </TooltipContent>
+      </Tooltip>
+      <span hidden id={noteId}>
+        {UNLISTED_NOTE}
+      </span>
     </Facet>
   )
 }

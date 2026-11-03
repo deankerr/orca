@@ -42,3 +42,19 @@ export function advanceGesture(gesture: BoundGesture, next: number | undefined):
     gesture: { last: next, pushed: true },
   }
 }
+
+/**
+ * Begin a gesture with a press on `pressed`, a stop index. A slider shows a bound that sits between
+ * thresholds, such as one from the URL, at its nearest stop, and reports no change when that stop is
+ * pressed, so the bound would stay off its threshold. A press on the shown stop therefore sets the
+ * stop's exact threshold itself, as the first change of the gesture. A press elsewhere is left to the
+ * slider, which reports it as a change.
+ */
+export function pressShownStop(
+  gesture: BoundGesture,
+  stops: readonly (number | undefined)[],
+  shown: number,
+  pressed: number,
+): GestureStep {
+  return pressed === shown ? advanceGesture(gesture, stops[shown]) : { change: undefined, gesture }
+}

@@ -1,4 +1,6 @@
 import { formatNumber } from '@orca/backend/numbers'
+import { Button } from '@orca/ui/components/button'
+import { Toggle } from '@orca/ui/components/toggle'
 import { ChartScatter } from 'lucide-react'
 
 import {
@@ -30,20 +32,23 @@ export function ScopeBar() {
         {filters > 0 && (
           <>
             <span className="text-muted-foreground">{count(filters, 'filter')}</span>
-            <button className="underline underline-offset-2" onClick={clearFilters} type="button">
+            <Button
+              className="h-auto rounded-sm border-0 px-0 font-mono text-[11px] leading-4 font-normal text-foreground underline"
+              onClick={clearFilters}
+              variant="link"
+            >
               clear
-            </button>
+            </Button>
           </>
         )}
-        <button
-          aria-pressed={search.plot}
-          className="flex items-center gap-1.5"
-          onClick={togglePlot}
-          type="button"
+        <Toggle
+          className="h-5 min-w-0 gap-1.5 rounded-sm px-1.5 font-mono text-[11px] leading-4 font-normal"
+          onPressedChange={togglePlot}
+          pressed={search.plot}
         >
           <ChartScatter aria-hidden="true" className="size-3.5 text-muted-foreground" />
           plot
-        </button>
+        </Toggle>
       </div>
     </div>
   )
