@@ -32,6 +32,29 @@ tests of such waits must drive the clock explicitly. This avoids advancing watch
 module loading or other asynchronous work is still running. CI also runs the three scheduler suites
 serially with two repeats per test.
 
+## TanStack Start app
+
+`apps/start` is an independent frontend using `packages/ui` for the Base UI Mira theme and components.
+TanStack Devtools runs in development with the Router panel at the bottom right and the Vite plugin enabled.
+React Compiler runs through the Vite React preset and Rolldown Babel plugin, including shared UI source.
+Theme defaults to the system preference. The Light/Dark/System menu stores the choice under
+`orca-theme` in local storage. A `ScriptOnce` initializes the HTML class and color scheme before
+hydration; system mode tracks OS changes. If storage is unavailable, changes last for the current visit.
+Local aliases in Start and UI use `package.json#imports` (`#components`, `#lib`, `#hooks`);
+shared UI imports use the `@orca/ui` package exports. Both shadcn configs follow these mappings.
+Its public `VITE_CONVEX_URL` points to the same Convex deployment as the checkout's backend.
+Set it in `apps/start/.env.local`; `bun run worktree:setup` writes it for linked worktrees.
+For the main checkout, copy the public `CONVEX_URL` from `packages/backend/.env.local`.
+
+Run `bun run dev:start` for Start and `bun run dev:backend` for backend synchronization.
+Start uses its own Portless name, `orca-start`, with automatic worktree prefixes.
+`bun run dev` continues to run the existing app and backend; Start runs independently alongside them.
+Run `bun run build:start` for the Nitro build and `bun run --cwd apps/start preview` to preview it.
+
+Vercel uses `apps/start` as the project root, the TanStack Start framework preset, and
+`VITE_CONVEX_URL` configured separately for each environment. The URL is embedded at build time.
+No authentication is required for the greeting query. UI source exports are compiled by the consuming app.
+
 ## Backend runtime
 
 `convex.config.ts` parses these deployment variables. Web and logo origins are required; the others

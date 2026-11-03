@@ -22,3 +22,9 @@ scan-profile.*.json
 
 coverage/
 .vitest/
+
+# TanStack Start and Nitro build artifacts
+apps/start/.output/
+apps/start/.tanstack/
+apps/start/dist/
+!apps/start/.env.example

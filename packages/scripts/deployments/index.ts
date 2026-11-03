@@ -18,6 +18,7 @@ import type { CloudDeployment } from './rules'
 
 const ROOT_DIR = path.resolve(import.meta.dir, '../../..')
 const BACKEND_DIR = path.resolve(ROOT_DIR, 'packages/backend')
+const START_ENV = path.resolve(ROOT_DIR, 'apps/start/.env.local')
 const WEB_ENV = path.resolve(ROOT_DIR, 'apps/web/.env.local')
 
 const TEAM = 'deankerr'
@@ -216,6 +217,14 @@ async function setup({ prune: pruneFirst }: { prune: boolean }) {
   }
 
   await Bun.write(WEB_ENV, writeDotenv(webText, values))
+
+  const start = Bun.file(START_ENV)
+  await Bun.write(
+    START_ENV,
+    writeDotenv((await start.exists()) ? await start.text() : '', {
+      VITE_CONVEX_URL: deployment.deploymentUrl,
+    }),
+  )
 
   console.log(`Ready: ${reference} (${deployment.deploymentUrl}), expires ${EXPIRATION}`)
 }

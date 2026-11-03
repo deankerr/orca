@@ -85,3 +85,11 @@ test('dotenv writes replace managed keys, drop their repeats, and keep the rest'
   )
   expect(writeDotenv('', { A: '1' })).toBe('A=1\n')
 })
+
+test('Start environment repair updates the deployment while preserving unrelated settings', () => {
+  expect(
+    writeDotenv('VITE_CONVEX_URL=https://old.convex.cloud\nCUSTOM=value\n', {
+      VITE_CONVEX_URL: 'https://worktree.convex.cloud',
+    }),
+  ).toBe('VITE_CONVEX_URL=https://worktree.convex.cloud\nCUSTOM=value\n')
+})
