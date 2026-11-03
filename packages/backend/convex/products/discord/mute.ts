@@ -4,9 +4,9 @@ import type { EntityAlert } from '../shared/alerts/curate'
 export type InterpretedRow = { source_id: string; event: EntityAlert | null }
 
 /**
- * TEMPORARY: Discord was too noisy to be useful, so it announces only discoveries and non-pricing
- * updates while its policy is reassessed. Muted alerts keep their complete preparation and rendering
- * code; removing this filter from `renderRows` restores them.
+ * TEMPORARY: Discord was too noisy to be useful, so it announces only discoveries and updates
+ * outside pricing and tool choice while its policy is reassessed. Muted alerts keep their complete
+ * preparation and rendering code; removing this filter from `renderRows` restores them.
  */
 export function muteNoise(rows: InterpretedRow[]) {
   const models = new Set(
@@ -34,6 +34,9 @@ export function muteNoise(rows: InterpretedRow[]) {
 
 const BATCH_SUFFIX = ':batch'
 
+/** Pricing and tool-choice modes churn too often to announce. */
+const MUTED_FIELD_PREFIXES = ['pricing.', 'tool_choice.']
+
 function modelKey(event: EntityAlert, model_id = event.entity_id): string {
   return JSON.stringify([event.observed_at, event.type, model_id])
 }
@@ -50,7 +53,9 @@ function quiet(event: EntityAlert, models: Set<string>): EntityAlert | null {
   }
 
   if (event.type === 'endpoint_updated') {
-    const changes = event.changes.filter((change) => !change.field.startsWith('pricing.'))
+    const changes = event.changes.filter(
+      (change) => !MUTED_FIELD_PREFIXES.some((prefix) => change.field.startsWith(prefix)),
+    )
 
     return changes.length === 0 ? null : { ...event, changes }
   }
