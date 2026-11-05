@@ -5,7 +5,7 @@ export type InterpretedRow = { source_id: string; event: EntityAlert | null }
 
 /**
  * TEMPORARY: Discord was too noisy to be useful, so it announces only discoveries and updates
- * outside pricing and tool choice while its policy is reassessed. Muted alerts keep their complete
+ * outside pricing, tool choice, and supported parameters while its policy is reassessed. Muted alerts keep their complete
  * preparation and rendering code; removing this filter from `renderRows` restores them.
  */
 export function muteNoise(rows: InterpretedRow[]) {
@@ -34,8 +34,13 @@ export function muteNoise(rows: InterpretedRow[]) {
 
 const BATCH_SUFFIX = ':batch'
 
-/** Pricing and tool-choice modes churn too often to announce. */
+/** Pricing, tool-choice modes, and supported parameters churn too often to announce. */
 const MUTED_FIELD_PREFIXES = ['pricing.', 'tool_choice.']
+const MUTED_FIELDS = new Set(['supported_parameters'])
+
+function isMuted(field: string): boolean {
+  return MUTED_FIELDS.has(field) || MUTED_FIELD_PREFIXES.some((prefix) => field.startsWith(prefix))
+}
 
 function modelKey(event: EntityAlert, model_id = event.entity_id): string {
   return JSON.stringify([event.observed_at, event.type, model_id])
@@ -53,9 +58,7 @@ function quiet(event: EntityAlert, models: Set<string>): EntityAlert | null {
   }
 
   if (event.type === 'endpoint_updated') {
-    const changes = event.changes.filter(
-      (change) => !MUTED_FIELD_PREFIXES.some((prefix) => change.field.startsWith(prefix)),
-    )
+    const changes = event.changes.filter((change) => !isMuted(change.field))
 
     return changes.length === 0 ? null : { ...event, changes }
   }
