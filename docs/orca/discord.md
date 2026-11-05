@@ -34,7 +34,7 @@ Only discoveries carry a heading marker. Departures announce absence without las
 
 ### Temporary muting
 
-Discord proved too noisy to be useful, so muting temporarily withholds pricing changes, tool choice changes, endpoint unlistings,
+Discord proved too noisy to be useful, so muting temporarily withholds pricing changes, tool choice changes, supported parameter changes, endpoint unlistings,
 and endpoint relistings. A `:batch` model card is withheld when its standard model has the same arrival or
 departure, because the cards differ only by name; the variant's endpoints still announce. Updates keep their
 unmuted fields. The muted alerts' preparation and rendering remain intact, so removing the filter restores them.

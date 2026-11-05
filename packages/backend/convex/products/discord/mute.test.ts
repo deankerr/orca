@@ -73,6 +73,23 @@ test('tool choice changes are muted while other fields of the same update remain
   expect(kept).toEqual([{ ...endpoint, changes: [limitChange], type: 'endpoint_updated' }])
 })
 
+test('supported parameter changes are muted while other fields of the same update remain', () => {
+  const parameters: AlertChange = {
+    added: ['response_format'],
+    field: 'supported_parameters',
+    kind: 'list',
+    removed: [],
+  }
+
+  const { kept, muted } = run([
+    { ...endpoint, changes: [parameters], type: 'endpoint_updated' },
+    { ...endpoint, changes: [parameters, limitChange], type: 'endpoint_updated' },
+  ])
+
+  expect(muted).toEqual(['0'])
+  expect(kept).toEqual([{ ...endpoint, changes: [limitChange], type: 'endpoint_updated' }])
+})
+
 test('endpoint unlistings and relistings are muted; discoveries and unclassified arrivals remain', () => {
   const discovered: EntityAlert = {
     ...endpoint,
