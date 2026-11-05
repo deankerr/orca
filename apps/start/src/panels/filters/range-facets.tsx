@@ -12,7 +12,7 @@ import type { KeyboardEvent } from 'react'
 
 import { RELEASE_WINDOWS } from '#endpoints/filtering'
 import type { ReleaseWindow } from '#endpoints/filtering'
-import { useScope, useScopeActions, useRangeHistograms } from '#endpoints/hooks'
+import { useBound, useReleased, useScopeActions, useRangeHistograms } from '#endpoints/hooks'
 import type { ScopeFilters } from '#endpoints/scope'
 
 import { barKeyAction } from './bar-keys'
@@ -90,7 +90,7 @@ function barName(facet: BoundFacet, stop: number | undefined, kept: number): str
  */
 function HistogramRow({ facet, label }: { facet: BoundFacet; label: string }) {
   const histogram = useRangeHistograms()[facet]
-  const bound = useScope()[facet]
+  const bound = useBound(facet)
   const { update } = useScopeActions()
   const direction = BOUND_DIRECTIONS[facet]
   const stops = boundStops(histogram.thresholds, direction)
@@ -321,7 +321,7 @@ function ReleasedRow({ released }: { released: ScopeFilters['released'] }) {
 
 /** The bounds on price, speed, context, and the model's release date. */
 export function RangeFacets() {
-  const { released } = useScope()
+  const released = useReleased()
 
   return (
     <TooltipProvider delay={250}>

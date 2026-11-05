@@ -3,7 +3,7 @@ import { Button } from '@orca/ui/components/button'
 import { Toggle } from '@orca/ui/components/toggle'
 import { ChartScatter } from 'lucide-react'
 
-import { useScope, useScopeActions, useScopeSummary } from '#endpoints/hooks'
+import { usePlot, useScopeActions, useScopeFilters, useScopeSummary } from '#endpoints/hooks'
 import { activeFilterCount } from '#endpoints/scope'
 
 const count = (value: number, noun: string) =>
@@ -11,9 +11,10 @@ const count = (value: number, noun: string) =>
 
 export function ScopeBar() {
   const { endpoints, models, providers } = useScopeSummary()
-  const scope = useScope()
+  const plot = usePlot()
+  const scopeFilters = useScopeFilters()
   const { clearFilters, togglePlot } = useScopeActions()
-  const filters = activeFilterCount(scope)
+  const filters = activeFilterCount(scopeFilters)
 
   return (
     <div className="flex h-12 shrink-0 items-center justify-between px-5">
@@ -40,7 +41,7 @@ export function ScopeBar() {
         <Toggle
           className="h-5 min-w-0 gap-1.5 rounded-sm px-1.5 font-mono text-[11px] leading-4 font-normal"
           onPressedChange={togglePlot}
-          pressed={scope.plot}
+          pressed={plot}
         >
           <ChartScatter aria-hidden="true" className="size-3.5 text-muted-foreground" />
           plot

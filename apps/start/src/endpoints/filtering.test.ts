@@ -281,3 +281,72 @@ describe('scopeSummary', () => {
     })
   })
 })
+
+describe('shared results', () => {
+  const sharedRows = buildRows(payload)
+
+  it('computes once for the same rows and filters, even through a new filters object', () => {
+    const first = facetCounts(sharedRows, filters({ with: ['tools'] }), AT)
+
+    expect(facetCounts(sharedRows, filters({ with: ['tools'] }), AT)).toBe(first)
+
+    const histograms = rangeHistograms(sharedRows, filters({ with: ['tools'] }), AT)
+
+    expect(rangeHistograms(sharedRows, filters({ with: ['tools'] }), AT)).toBe(histograms)
+
+    const summary = scopeSummary(sharedRows, filters({ with: ['tools'] }), AT)
+
+    expect(scopeSummary(sharedRows, filters({ with: ['tools'] }), AT)).toBe(summary)
+  })
+
+  it('keeps a kind of counts whose contents are equal when another kind changes', () => {
+    const all = facetCounts(sharedRows, filters(), AT)
+    const ticked = facetCounts(sharedRows, filters({ model: ['openai/gpt-5'] }), AT)
+
+    // A list facet's counts ignore its own selection, so ticking a model leaves them as they were.
+    expect(ticked.model).toBe(all.model)
+    expect(ticked.provider).not.toBe(all.provider)
+    expect(ticked.provider.get('deepinfra')).toBeUndefined()
+    expect(ticked.properties).not.toBe(all.properties)
+  })
+
+  it('keeps counts across a change that only reaches other rows sets', () => {
+    const base = facetCounts(sharedRows, filters(), AT)
+
+    facetCounts(sharedRows, filters({ unlisted: true }), AT)
+
+    const back = facetCounts(sharedRows, filters(), AT)
+
+    expect(back).toEqual(base)
+    expect(back.model).toEqual(base.model)
+  })
+
+  it('keeps a histogram whose contents are equal when another bound changes', () => {
+    const open = rangeHistograms(sharedRows, filters(), AT)
+    const bounded = rangeHistograms(sharedRows, filters({ maxInput: 0.6 }), AT)
+
+    // A bound's own histogram ignores that bound.
+    expect(bounded.maxInput).toBe(open.maxInput)
+    expect(bounded.minTps).not.toBe(open.minTps)
+    expect(bounded.minContext).not.toBe(open.minContext)
+  })
+
+  it('keeps a summary whose counts are equal, in whole or in part', () => {
+    const open = scopeSummary(sharedRows, filters(), AT)
+
+    // A bound that keeps every row changes nothing.
+    expect(scopeSummary(sharedRows, filters({ maxInput: 1000 }), AT)).toBe(open)
+
+    const narrowed = scopeSummary(sharedRows, filters({ maxInput: 0.6 }), AT)
+
+    expect(narrowed.endpoints).not.toEqual(open.endpoints)
+    expect(narrowed.models).not.toEqual(open.models)
+    expect(narrowed.providers).toBe(open.providers)
+  })
+
+  it('shares nothing across row sets', () => {
+    const other = buildRows(payload)
+
+    expect(facetCounts(other, filters(), AT)).not.toBe(facetCounts(sharedRows, filters(), AT))
+  })
+})

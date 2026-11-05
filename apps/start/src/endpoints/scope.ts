@@ -85,6 +85,26 @@ export type ScopeFilters = Pick<
   | 'without'
 >
 
+/** The scope's filters alone, as a fresh object: the sort, plot toggle, and selection are dropped. */
+export function scopeFilters(scope: ScopeFilters): ScopeFilters {
+  return {
+    maxInput: scope.maxInput,
+    minContext: scope.minContext,
+    minTps: scope.minTps,
+    model: scope.model,
+    provider: scope.provider,
+    released: scope.released,
+    unlisted: scope.unlisted,
+    with: scope.with,
+    without: scope.without,
+  }
+}
+
+/** The property filters alone, as a fresh object. */
+export function propertyFilters(scope: ScopeFilters): Pick<ScopeFilters, 'with' | 'without'> {
+  return { with: scope.with, without: scope.without }
+}
+
 /** A property facet's state: required active (`with`), required inactive (`without`), or neither. */
 export type PropertyState = 'off' | 'with' | 'without'
 

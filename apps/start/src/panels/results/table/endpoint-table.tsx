@@ -7,7 +7,7 @@ import { memo, useEffect, useRef } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 
 import { tableOwnsKeys } from '#app/keyboard'
-import { useScope, useScopeActions, useScopedRows } from '#endpoints/hooks'
+import { useScopeActions, useScopedRows, useSelectedId, useSort } from '#endpoints/hooks'
 import { setHoveredEndpoint } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
 
@@ -181,7 +181,8 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  */
 export function EndpointTable() {
   const rows = useScopedRows()
-  const { endpoint: selectedId, sort } = useScope()
+  const selectedId = useSelectedId()
+  const sort = useSort()
   const { clearFilters, selectEndpoint, setSort } = useScopeActions()
   const body = useRef<HTMLTableSectionElement>(null)
 

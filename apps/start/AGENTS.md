@@ -33,8 +33,10 @@ Vocabulary:
 - **Snapshot**: the query's payload (`SnapshotPayload`) joined into `EndpointRow`s, built by `buildSnapshot`
   and read with `useSnapshot`.
 - **Scope**: the index route's URL state, defined in `endpoints/scope.ts`. Its filters (`ScopeFilters`)
-  put rows in scope; the sort, plot toggle, and selected endpoint ride along. Read it with `useScope`,
-  change it with `useScopeActions`, and read the filtered, sorted rows with `useScopedRows`.
+  put rows in scope; the sort, plot toggle, and selected endpoint ride along. Read one param with a hook such as
+  `useSelectedId` or `useSort`, or the filters with `useScopeFilters`, so a component re-renders only for what it
+  reads; there is no whole-Scope hook. Change it with `useScopeActions`, and read the filtered, sorted rows with
+  `useScopedRows`.
 
 <!-- intent-skills:start -->
 

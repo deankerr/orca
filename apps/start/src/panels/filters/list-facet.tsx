@@ -3,7 +3,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@orca/ui/component
 import { ScrollArea } from '@orca/ui/components/scroll-area'
 import { cn } from 'cn'
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
 import { EntityAvatar } from '#components/entity-avatar'
@@ -15,7 +15,7 @@ import { filterKeyAction } from './filter-keys'
 import { useSnapshotOptions } from './hooks'
 import { listMeta, orderOptions } from './options'
 import type { FacetOption, OptionKind } from './options'
-import { expectSelection, observeSelection, repin, setEngaged, startPin } from './pin-state'
+import { observeSelection, repin, setEngaged, startPin, tickSelection } from './pin-state'
 
 const COPY = {
   model: {
@@ -34,6 +34,42 @@ const COPY = {
 
 /** Rows the list shows before it scrolls. */
 const VISIBLE_ROWS = 8
+
+interface ListFacetRowProps {
+  checked: boolean
+  count: number
+  onToggle: (id: string) => void
+  option: FacetOption
+}
+
+function ListFacetRow({ checked, count, onToggle, option }: ListFacetRowProps) {
+  return (
+    <label
+      className={cn(
+        'flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4',
+        count === 0 && !checked && 'opacity-50',
+      )}
+      title={option.id}
+    >
+      <Checkbox
+        checked={checked}
+        className="size-3.5 after:hidden"
+        onCheckedChange={() => {
+          onToggle(option.id)
+        }}
+      />
+      <EntityAvatar slug={option.id} />
+      <span className="min-w-0 grow truncate">{option.name}</span>
+      <span className={FACET_COUNT_CLASS}>{count}</span>
+    </label>
+  )
+}
+
+/**
+ * A row renders again only when its own count or tick changes, so ticking one of hundreds of values
+ * touches that row and not the rest.
+ */
+const MemoListFacetRow = memo(ListFacetRow)
 
 /**
  * The Model or Provider facet: a filter field over every value. Checked values combine with OR. The
@@ -83,10 +119,10 @@ export function ListFacet({ kind, selected }: { kind: OptionKind; selected: read
   const rowCount = shown.pinned.length + shown.rest.length
   const meta = listMeta(selected.length, total, copy.noun)
 
+  // It reads the selection from the pin state and the URL rather than from this render, so ticking a
+  // row leaves the handler, and every other row, as it was.
   const toggle = (id: string) => {
-    const next = toggleValue(selected, id)
-
-    setStoredPin((current) => expectSelection(current, next))
+    setStoredPin((current) => tickSelection(current, id))
     update((current) => ({ [kind]: toggleValue(current[kind], id) }))
   }
 
@@ -116,32 +152,15 @@ export function ListFacet({ kind, selected }: { kind: OptionKind; selected: read
     }
   }
 
-  const renderRow = (option: FacetOption) => {
-    const count = counts.get(option.id) ?? 0
-    const checked = selected.includes(option.id)
-
-    return (
-      <label
-        className={cn(
-          'flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4',
-          count === 0 && !checked && 'opacity-50',
-        )}
-        key={option.id}
-        title={option.id}
-      >
-        <Checkbox
-          checked={checked}
-          className="size-3.5 after:hidden"
-          onCheckedChange={() => {
-            toggle(option.id)
-          }}
-        />
-        <EntityAvatar slug={option.id} />
-        <span className="min-w-0 grow truncate">{option.name}</span>
-        <span className={FACET_COUNT_CLASS}>{count}</span>
-      </label>
-    )
-  }
+  const renderRow = (option: FacetOption) => (
+    <MemoListFacetRow
+      checked={selected.includes(option.id)}
+      count={counts.get(option.id) ?? 0}
+      key={option.id}
+      onToggle={toggle}
+      option={option}
+    />
+  )
 
   return (
     <Facet

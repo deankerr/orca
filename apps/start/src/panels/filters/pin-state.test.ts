@@ -7,6 +7,7 @@ import {
   repin,
   setEngaged,
   startPin,
+  tickSelection,
 } from './pin-state'
 
 describe('pin state', () => {
@@ -93,5 +94,79 @@ describe('pin state', () => {
 
   it('repins when the filter text changes', () => {
     expect(repin(startPin(['a']), ['a', 'b']).pinned).toEqual(['a', 'b'])
+  })
+
+  it('keeps the pinned array when the pointer and focus leave with the selection unchanged', () => {
+    const start = startPin(['a', 'b'])
+    const engaged = setEngaged(start, 'focus', true, ['a', 'b'])
+    const left = setEngaged(engaged, 'focus', false, ['b', 'a'])
+
+    expect(left.pinned).toBe(start.pinned)
+    expect(repin(left, ['a', 'b'])).toBe(left)
+  })
+
+  it('keeps the pinned array when an outside change returns the same ids', () => {
+    const start = startPin(['a'])
+    const state = observeSelection({ ...start, seen: ['c'] }, ['a'])
+
+    expect(state.pinned).toBe(start.pinned)
+    expect(state.seen).toEqual(['a'])
+  })
+
+  describe('ticking through the toggle logic', () => {
+    /** The facet is under the pointer; ticks go through `tickSelection`, as `ListFacet` does. */
+    const engaged = (selected: readonly string[]) =>
+      setEngaged(startPin(selected), 'pointer', true, selected)
+
+    it('keeps the pinned set through ticks made before the URL answers', () => {
+      let state = engaged([])
+
+      state = tickSelection(state, 'a')
+      state = tickSelection(state, 'b')
+
+      // The URL toggles each value on the selection it holds, so it answers [a], then [a, b].
+      state = observeSelection(state, ['a'])
+      state = observeSelection(state, ['a', 'b'])
+
+      expect(state.pinned).toEqual([])
+      expect(state.own).toEqual([])
+    })
+
+    it('keeps it when the URL skips straight to the last selection', () => {
+      let state = engaged([])
+
+      state = tickSelection(tickSelection(state, 'a'), 'b')
+      state = observeSelection(state, ['a', 'b'])
+
+      expect(state.pinned).toEqual([])
+      expect(state.own).toEqual([])
+    })
+
+    it('expects an untick of a pending tick', () => {
+      let state = engaged([])
+
+      state = tickSelection(tickSelection(state, 'a'), 'a')
+      state = observeSelection(state, ['a'])
+      state = observeSelection(state, [])
+
+      expect(state.pinned).toEqual([])
+      expect(state.own).toEqual([])
+    })
+
+    it('ticks from the observed selection once nothing is pending', () => {
+      let state = engaged(['a'])
+
+      state = observeSelection(tickSelection(state, 'b'), ['a', 'b'])
+      state = observeSelection(tickSelection(state, 'a'), ['b'])
+
+      expect(state.pinned).toEqual(['a'])
+      expect(state.own).toEqual([])
+    })
+
+    it('still repins on a change that is not a pending tick', () => {
+      const state = observeSelection(tickSelection(engaged([]), 'a'), ['c'])
+
+      expect(state.pinned).toEqual(['c'])
+    })
   })
 })

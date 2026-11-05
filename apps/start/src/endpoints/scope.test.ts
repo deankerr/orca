@@ -8,7 +8,9 @@ import type { Scope } from './scope'
 import {
   activeFilterCount,
   clearedFilters,
+  propertyFilters,
   scopeDefaults,
+  scopeFilters,
   scopeSchema,
   propertyState,
   setPropertyState,
@@ -146,5 +148,43 @@ describe('filter updates', () => {
         without: ['zdr'],
       }),
     ).toBe(5)
+  })
+})
+
+describe('scopeFilters', () => {
+  it('keeps the filters and drops the sort, plot toggle, and selection', () => {
+    const scope = scopeSchema.parse({
+      endpoint: 'abc',
+      maxInput: 2,
+      model: 'openai/gpt-5',
+      plot: false,
+      sort: 'output',
+      unlisted: true,
+      with: 'tools',
+    })
+
+    const filters = scopeFilters(scope)
+
+    expect(Object.keys(filters).toSorted()).toEqual(Object.keys(clearedFilters).toSorted())
+    expect(filters).toMatchObject({
+      maxInput: 2,
+      model: ['openai/gpt-5'],
+      unlisted: true,
+      with: ['tools'],
+    })
+  })
+
+  it('reuses the scope params, so the lists keep their identity', () => {
+    const scope = scopeSchema.parse({ model: 'openai/gpt-5', with: 'tools' })
+    const filters = scopeFilters(scope)
+
+    expect(filters.model).toBe(scope.model)
+    expect(filters.with).toBe(scope.with)
+  })
+
+  it('picks the property lists alone', () => {
+    const scope = scopeSchema.parse({ model: 'openai/gpt-5', with: 'tools', without: 'zdr' })
+
+    expect(propertyFilters(scope)).toEqual({ with: ['tools'], without: ['zdr'] })
   })
 })

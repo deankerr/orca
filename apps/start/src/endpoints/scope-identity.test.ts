@@ -3,13 +3,14 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  replaceEqualDeep,
   stripSearchParams,
 } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
 
 import { stringifySearch } from '#lib/url-search-serializer'
 
-import { scopeDefaults, scopeSchema } from './scope'
+import { propertyFilters, scopeDefaults, scopeFilters, scopeSchema } from './scope'
 import type { Scope } from './scope'
 
 /**
@@ -103,5 +104,37 @@ describe('index route scope identity', () => {
 
     expect(scope().provider).toEqual(['azure', 'openai'])
     expect(scope().model).toBe(before.model)
+  })
+
+  // The filter hooks select a fresh object and let the router's structural sharing (`replaceEqualDeep`
+  // against the previous selection) hand back the old one while every filter is equal.
+  it('shares the filters selection across changes that leave the filters alone', async () => {
+    const { change, scope } = await startRouter('/?provider=azure&model=openai/gpt-5&maxInput=2')
+    const selected = replaceEqualDeep(undefined, scopeFilters(scope()))
+
+    await change({ endpoint: 'abc' })
+    await change({ plot: false })
+    await change({ sort: 'output' })
+
+    expect(replaceEqualDeep(selected, scopeFilters(scope()))).toBe(selected)
+
+    await change({ maxInput: 3 })
+
+    const bounded = replaceEqualDeep(selected, scopeFilters(scope()))
+
+    expect(bounded).not.toBe(selected)
+    expect(bounded.maxInput).toBe(3)
+    expect(bounded.model).toBe(selected.model)
+  })
+
+  it('shares the property filters selection until a property list changes', async () => {
+    const { change, scope } = await startRouter('/?with=tools')
+    const selected = replaceEqualDeep(undefined, propertyFilters(scope()))
+
+    await change({ model: ['openai/gpt-5'] })
+    expect(replaceEqualDeep(selected, propertyFilters(scope()))).toBe(selected)
+
+    await change({ without: ['zdr'] })
+    expect(replaceEqualDeep(selected, propertyFilters(scope()))).not.toBe(selected)
   })
 })

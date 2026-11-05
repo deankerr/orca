@@ -124,6 +124,52 @@ function evaluate(rows: readonly EndpointRow[], filters: ScopeFilters, at: strin
   return evaluation
 }
 
+/**
+ * `previous` with the entries of `next` that equal it carried over, so a part that did not change
+ * keeps its identity, and `previous` itself when nothing changed.
+ */
+function reuseEqual<Result extends object>(previous: Result, next: Result): Result {
+  const merged = { ...next }
+  let changed = false
+
+  for (const key in next) {
+    if (R.isDeepEqual(previous[key], next[key])) {
+      merged[key] = previous[key]
+    } else {
+      changed = true
+    }
+  }
+
+  return changed ? merged : previous
+}
+
+/**
+ * A result derived from the evaluation, computed once for each evaluation however many callers ask.
+ * When the evaluation changes, parts of the new result equal to the last one keep their identity.
+ * The latest result per row set is cached.
+ */
+function derive<Result extends object>(
+  compute: (evaluation: Evaluation, at: string) => Result,
+): (rows: readonly EndpointRow[], filters: ScopeFilters, at: string) => Result {
+  const results = new WeakMap<readonly EndpointRow[], { evaluation: Evaluation; result: Result }>()
+
+  return (rows, filters, at) => {
+    const evaluation = evaluate(rows, filters, at)
+    const cached = results.get(rows)
+
+    if (cached?.evaluation === evaluation) {
+      return cached.result
+    }
+
+    const computed = compute(evaluation, at)
+    const result = cached === undefined ? computed : reuseEqual(cached.result, computed)
+
+    results.set(rows, { evaluation, result })
+
+    return result
+  }
+}
+
 /** Rows matching every facet. */
 export function applyFilters(
   rows: readonly EndpointRow[],
@@ -164,12 +210,11 @@ function countProperty(rows: readonly EndpointRow[], id: PropertyId): PropertyCo
   return { with: active, without: rows.length - active }
 }
 
-export function facetCounts(
-  rows: readonly EndpointRow[],
-  filters: ScopeFilters,
-  at: string,
-): FacetCounts {
-  const evaluation = evaluate(rows, filters, at)
+/**
+ * Per-value counts for the rows and filters. Callers with the same inputs share one result, and a
+ * kind whose counts did not change since the last result keeps its map.
+ */
+export const facetCounts = derive((evaluation): FacetCounts => {
   const counts = new Map<PropertyId, PropertyCounts>()
   const active = new Map<PropertyId, number>()
 
@@ -196,7 +241,7 @@ export function facetCounts(
     properties: counts,
     provider: countValues(matchingOthers(evaluation, 'provider'), (row) => row.provider.id),
   }
-}
+})
 
 /**
  * Counts of row values in bins. `counts[i]` covers values from `thresholds[i - 1]` to `thresholds[i]`,
@@ -288,18 +333,15 @@ export function histogram(
   return { counts, missing, thresholds }
 }
 
-/** Each range facet's histogram over the rows matching every other facet. */
-export function rangeHistograms(
-  rows: readonly EndpointRow[],
-  filters: ScopeFilters,
-  at: string,
-): Record<RangeFacet, Histogram> {
-  const evaluation = evaluate(rows, filters, at)
-
-  return R.mapValues(RANGE_FACETS, ({ closed, thresholds, value }, facet) =>
+/**
+ * Each range facet's histogram over the rows matching every other facet. Callers with the same inputs
+ * share one result, and a facet whose histogram did not change keeps it.
+ */
+export const rangeHistograms = derive((evaluation, at): Record<RangeFacet, Histogram> =>
+  R.mapValues(RANGE_FACETS, ({ closed, thresholds, value }, facet) =>
     histogram(matchingOthers(evaluation, facet).map(value), thresholds(at), closed),
-  )
-}
+  ),
+)
 
 interface ScopeCount {
   inScope: number
@@ -316,13 +358,8 @@ export interface ScopeSummary {
 const distinct = (rows: readonly EndpointRow[], value: (row: EndpointRow) => string) =>
   new Set(rows.map(value)).size
 
-export function scopeSummary(
-  rows: readonly EndpointRow[],
-  filters: ScopeFilters,
-  at: string,
-): ScopeSummary {
-  const { matching, universe } = evaluate(rows, filters, at)
-
+/** Shared and identity-stable like `facetCounts`. */
+export const scopeSummary = derive(({ matching, universe }): ScopeSummary => {
   const scope = (value: (row: EndpointRow) => string) => ({
     inScope: distinct(matching, value),
     total: distinct(universe, value),
@@ -333,4 +370,4 @@ export function scopeSummary(
     models: scope((row) => row.model.id),
     providers: scope((row) => row.provider.id),
   }
-}
+})

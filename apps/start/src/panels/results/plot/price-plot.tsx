@@ -5,7 +5,13 @@ import { createAtom } from '@tanstack/store'
 import type { Atom } from '@tanstack/store'
 import { useMemo, useState } from 'react'
 
-import { useSnapshot, useScope, useScopeActions, useScopedRows } from '#endpoints/hooks'
+import {
+  usePlot,
+  useSelectedId,
+  useSnapshot,
+  useScopeActions,
+  useScopedRows,
+} from '#endpoints/hooks'
 import { setHoveredEndpoint, useHoveredEndpointId } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatCount } from '#lib/format'
@@ -219,7 +225,7 @@ function plottedRow(row: EndpointRow | undefined): EndpointRow | null {
 function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
   const projection = useSelector(atom)
   const { byId } = useSnapshot()
-  const { endpoint } = useScope()
+  const endpoint = useSelectedId()
   const hoveredId = useHoveredEndpointId()
 
   if (projection === null) {
@@ -291,7 +297,7 @@ function PricePlot() {
 
 /** The plot between the scope bar and the Table; nothing when the scope bar's plot toggle is off. */
 export function PlotRegion() {
-  const { plot } = useScope()
+  const plot = usePlot()
 
   return plot ? <PricePlot /> : null
 }

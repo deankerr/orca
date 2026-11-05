@@ -18,8 +18,9 @@ import { Fragment, useId, useState } from 'react'
 import type { PropertyFacet, PropertyFacetGroup } from '#endpoints/facets'
 import {
   useSnapshot,
-  useScope,
+  usePropertyFilters,
   useScopeActions,
+  useUnlisted,
   useFacetCounts,
   usePropertyFacetGroups,
 } from '#endpoints/hooks'
@@ -133,7 +134,7 @@ function PropertyGroup({
   open: boolean
 }) {
   const counts = useFacetCounts().properties
-  const filters = useScope()
+  const filters = usePropertyFilters()
   const { update } = useScopeActions()
   const active = activeInGroup(group, filters)
   const headingId = useId()
@@ -199,7 +200,7 @@ function PropertyGroup({
 /** Property facets by group, then the Status facet's unlisted toggle. */
 export function PropertyFacets() {
   const groups = usePropertyFacetGroups()
-  const filters = useScope()
+  const filters = usePropertyFilters()
   const [toggled, setToggled] = useState<ReadonlyMap<Group, boolean>>(new Map())
 
   return (
@@ -228,7 +229,7 @@ const UNLISTED_NOTE = 'Also show endpoints OpenRouter no longer lists.'
 /** Unlisted endpoints stay out of scope unless shown. */
 function StatusFacet() {
   const { rows } = useSnapshot()
-  const { unlisted } = useScope()
+  const unlisted = useUnlisted()
   const { update } = useScopeActions()
   const noteId = useId()
   const unlistedCount = rows.filter((row) => row.unlisted).length
