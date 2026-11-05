@@ -33,6 +33,7 @@ const conditionsChange = v.object({
 
 const values = {
   count: v.union(v.number(), v.null()),
+  date: v.union(v.string(), v.null()),
   flag: v.union(v.boolean(), v.null()),
   list: v.union(v.array(v.string()), v.null()),
   percent: v.number(),
@@ -46,6 +47,7 @@ const factValidator = <K extends AlertKind>(kind: K) =>
 
 const alertFact = v.union(
   factValidator('count'),
+  factValidator('date'),
   factValidator('flag'),
   factValidator('list'),
   factValidator('percent'),
@@ -59,6 +61,7 @@ const valueChangeValidator = <K extends Exclude<AlertKind, 'list'>>(kind: K) =>
 
 const alertChange = v.union(
   valueChangeValidator('count'),
+  valueChangeValidator('date'),
   valueChangeValidator('flag'),
   valueChangeValidator('percent'),
   valueChangeValidator('price'),

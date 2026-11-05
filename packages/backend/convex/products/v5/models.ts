@@ -20,13 +20,13 @@ export const modelFields = {
   // The author is the model ID prefix.
   'author.id': field('text', ['model_id'], author),
   'author.name': fromMetadata('text', ['author_display_name'], textOrNull),
-  created_at: field('text', ['or_created_at'], isoDate),
+  created_at: field('date', ['or_created_at'], isoDate),
   default_parameters: fromMetadata(
     'opaque',
     ['default_parameters'],
     JsonObject.nullable().catch(null),
   ),
-  deprecation_date: fromMetadata('text', ['variant_deprecation_date'], deprecationDateOrNull),
+  deprecation_date: fromMetadata('date', ['variant_deprecation_date'], deprecationDateOrNull),
   // Upstream has always supplied a description; a missing one is a source failure, not unknown.
   description: fromMetadata('prose', ['description'], z.string().trim().min(1)),
   hf_slug: fromMetadata('text', ['hf_slug'], textOrNull),
