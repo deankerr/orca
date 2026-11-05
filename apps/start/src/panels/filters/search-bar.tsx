@@ -33,7 +33,6 @@ export function SearchBar() {
       }}
       placeholder="Search models, providers"
       search={(query) => search.any(query, 8)}
-      variant="bar"
     />
   )
 }

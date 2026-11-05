@@ -56,11 +56,8 @@ export function createOptionSearch(options: readonly FacetOption[]) {
     ],
   })
 
-  return (
-    query: string,
-    limit: number,
-    exclude: ReadonlySet<string> = new Set(),
-  ): FacetOption[] => {
+  /** The matches in rank order, at most `limit` of them (all by default). A blank query matches nothing. */
+  return (query: string, limit = Number.POSITIVE_INFINITY): FacetOption[] => {
     if (query.trim() === '') {
       return []
     }
@@ -68,7 +65,6 @@ export function createOptionSearch(options: readonly FacetOption[]) {
     return searcher
       .search(query)
       .map(({ record }) => record)
-      .filter(({ id, kind }) => !exclude.has(`${kind}:${id}`))
       .slice(0, limit)
   }
 }
@@ -76,31 +72,83 @@ export function createOptionSearch(options: readonly FacetOption[]) {
 /** The key by which options are told apart across kinds. */
 export const optionKey = ({ id, kind }: Pick<FacetOption, 'id' | 'kind'>) => `${kind}:${id}`
 
+/** A list facet's values in display order: the pinned ones, then the rest. */
+export interface OrderedOptions {
+  pinned: FacetOption[]
+  rest: FacetOption[]
+}
+
 /**
- * The options a list facet shows: selected values first, in selection order, then the highest counts.
- * Equal counts keep the catalogue's order. Selected values with no option, such as stale URL values,
- * are kept so they can be unchecked.
+ * The values a list facet lists. Pinned values come first and the rest follow, each group by count
+ * descending, then by name. The caller chooses which values are pinned (see `pin-state.ts`); this
+ * function only orders them.
+ *
+ * With `matches`, the facet is filtered: only those options are listed, and each group keeps the
+ * search's relevance order instead, except that zero-count matches follow the others, so the first
+ * row is never one that would add nothing while another could. Pinned values with no option, such
+ * as stale URL values, are listed so they can be unchecked, but never match a filter.
  */
-export function visibleOptions(
+export function orderOptions(
   kind: OptionKind,
   options: readonly FacetOption[],
   counts: ReadonlyMap<string, number>,
-  selected: readonly string[],
-  top: number,
-): FacetOption[] {
-  const byId = new Map(options.map((option) => [option.id, option]))
-  const chosen = selected.map((id) => byId.get(id) ?? { id, kind, listed: 0, name: id })
-  const picked = new Set(selected)
+  pinned: readonly string[],
+  matches?: readonly FacetOption[],
+): OrderedOptions {
+  const isPinned = new Set(pinned)
 
-  const leading = options
-    .flatMap((option, position) => (picked.has(option.id) ? [] : [{ option, position }]))
-    .toSorted(
+  const positive = ({ id }: FacetOption) => (counts.get(id) ?? 0) > 0
+
+  /** Keeps the order, but lists zero-count options after the others. */
+  const demoteEmpty = (group: FacetOption[]) => [
+    ...group.filter(positive),
+    ...group.filter((option) => !positive(option)),
+  ]
+
+  let pool: readonly FacetOption[]
+
+  if (matches === undefined) {
+    const known = new Set(options.map(({ id }) => id))
+    const stale = pinned.flatMap((id) => (known.has(id) ? [] : [staleOption(kind, id)]))
+
+    pool = [...options, ...stale].toSorted(
       (left, right) =>
-        (counts.get(right.option.id) ?? 0) - (counts.get(left.option.id) ?? 0) ||
-        left.position - right.position,
+        (counts.get(right.id) ?? 0) - (counts.get(left.id) ?? 0) ||
+        left.name.localeCompare(right.name) ||
+        left.id.localeCompare(right.id),
     )
-    .slice(0, top)
-    .map(({ option }) => option)
+  } else {
+    pool = matches
+  }
 
-  return [...chosen, ...leading]
+  const pinnedGroup = pool.filter(({ id }) => isPinned.has(id))
+  const restGroup = pool.filter(({ id }) => !isPinned.has(id))
+
+  return matches === undefined
+    ? { pinned: pinnedGroup, rest: restGroup }
+    : { pinned: demoteEmpty(pinnedGroup), rest: demoteEmpty(restGroup) }
+}
+
+/** A value the catalogue lacks, listed under its id. */
+const staleOption = (kind: OptionKind, id: string): FacetOption => ({
+  id,
+  kind,
+  listed: 0,
+  name: id,
+})
+
+/**
+ * A list facet's header figure and its accessible name. With no selection it is the number of
+ * values listed; with some, how many of them are selected.
+ */
+export function listMeta(
+  selected: number,
+  total: number,
+  noun: { plural: string; singular: string },
+): { label: string; text: string } {
+  const word = total === 1 ? noun.singular : noun.plural
+
+  return selected === 0
+    ? { label: `${total} ${word}`, text: `${total}` }
+    : { label: `${selected} of ${total} ${word} selected`, text: `${selected} of ${total}` }
 }
