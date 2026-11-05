@@ -23,7 +23,6 @@ import type * as compare from "../compare.js";
 import type * as crons from "../crons.js";
 import type * as entityLogo from "../entityLogo.js";
 import type * as fields from "../fields.js";
-import type * as hello from "../hello.js";
 import type * as http from "../http.js";
 import type * as ingestion_admin from "../ingestion/admin.js";
 import type * as ingestion_catalog_currentEndpoints from "../ingestion/catalog/currentEndpoints.js";
@@ -157,7 +156,6 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   entityLogo: typeof entityLogo;
   fields: typeof fields;
-  hello: typeof hello;
   http: typeof http;
   "ingestion/admin": typeof ingestion_admin;
   "ingestion/catalog/currentEndpoints": typeof ingestion_catalog_currentEndpoints;
