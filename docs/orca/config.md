@@ -54,9 +54,17 @@ Start uses its own Portless name, `orca-start`, with automatic worktree prefixes
 `bun run dev` continues to run the existing app and backend; Start runs independently alongside them.
 Run `bun run build:start` for the Nitro build and `bun run --cwd apps/start preview` to preview it.
 
-Vercel uses `apps/start` as the project root, the TanStack Start framework preset, and
-`VITE_CONVEX_URL` configured separately for each environment. The URL is embedded at build time.
-No authentication is required for the greeting query. UI source exports are compiled by the consuming app.
+The `orca-start` Vercel project deploys Start beside the existing app for tester feedback. It has no custom
+domain; production serves `https://orca-start-deank.vercel.app`.
+
+- Settings: root `apps/start`, the TanStack Start preset, Node 24.x, and production branch `main`.
+- Vercel Authentication protects preview deployments only; production is public.
+- `VITE_CONVEX_URL` is `https://dependable-husky-550.convex.cloud` for production and preview, embedded at build time.
+- Previews cannot find the per-branch Convex deployments the `orca` project creates.
+- Start reads only the public `products.v5.catalog.snapshot` query and deploys no Convex functions.
+- The ignored build step skips commits that leave `apps/start`, `packages/`, and root build files unchanged.
+
+UI source exports are compiled by the consuming app.
 
 ## Backend runtime
 

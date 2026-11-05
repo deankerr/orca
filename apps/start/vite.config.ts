@@ -6,7 +6,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     devtools(),
     nitro(),
@@ -15,4 +15,7 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
-})
+  // Isolated installs leave CommonJS dependencies such as use-sync-external-store unable to resolve
+  // their runtime require('react') from the server output; bundling every SSR dependency resolves it.
+  ...(command === 'build' && { ssr: { noExternal: true } }),
+}))

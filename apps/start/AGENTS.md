@@ -1,6 +1,6 @@
 # start
 
-ORCA's new web app. Under construction, no remote deployment.
+ORCA's new web app, under construction. The `orca-start` Vercel project deploys it for tester feedback.
 
 - Use the `shadcn` skill when building or modifying components. Add components to `packages/ui` on demand.
 - The `cn` package replaces the old shadcn/ui className helper util.
