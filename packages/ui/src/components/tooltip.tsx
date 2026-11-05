@@ -1,8 +1,8 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { cn } from 'cn'
 
-function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
-  return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />
+function TooltipProvider({ delay, ...props }: TooltipPrimitive.Provider.Props) {
+  return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay ?? 0} {...props} />
 }
 
 function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
@@ -15,10 +15,10 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 
 function TooltipContent({
   className,
-  side = 'top',
-  sideOffset = 4,
-  align = 'center',
-  alignOffset = 0,
+  side,
+  sideOffset,
+  align,
+  alignOffset,
   children,
   ...props
 }: TooltipPrimitive.Popup.Props &
@@ -26,10 +26,10 @@ function TooltipContent({
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner
-        align={align}
-        alignOffset={alignOffset}
-        side={side}
-        sideOffset={sideOffset}
+        align={align ?? 'center'}
+        alignOffset={alignOffset ?? 0}
+        side={side ?? 'top'}
+        sideOffset={sideOffset ?? 4}
         className="isolate z-50"
       >
         <TooltipPrimitive.Popup

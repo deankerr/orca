@@ -16,10 +16,10 @@ function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
 }
 
 function DropdownMenuContent({
-  align = 'start',
-  alignOffset = 0,
-  side = 'bottom',
-  sideOffset = 4,
+  align,
+  alignOffset,
+  side,
+  sideOffset,
   className,
   ...props
 }: MenuPrimitive.Popup.Props &
@@ -28,10 +28,10 @@ function DropdownMenuContent({
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
         className="isolate z-50 outline-none"
-        align={align}
-        alignOffset={alignOffset}
-        side={side}
-        sideOffset={sideOffset}
+        align={align ?? 'start'}
+        alignOffset={alignOffset ?? 0}
+        side={side ?? 'bottom'}
+        sideOffset={sideOffset ?? 4}
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
@@ -70,12 +70,14 @@ function DropdownMenuLabel({
 function DropdownMenuItem({
   className,
   inset,
-  variant = 'default',
+  variant: variantProp,
   ...props
 }: MenuPrimitive.Item.Props & {
   inset?: boolean
   variant?: 'default' | 'destructive'
 }) {
+  const variant = variantProp ?? 'default'
+
   return (
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -119,10 +121,10 @@ function DropdownMenuSubTrigger({
 }
 
 function DropdownMenuSubContent({
-  align = 'start',
-  alignOffset = -3,
-  side = 'right',
-  sideOffset = 0,
+  align,
+  alignOffset,
+  side,
+  sideOffset,
   className,
   ...props
 }: React.ComponentProps<typeof DropdownMenuContent>) {
@@ -133,10 +135,10 @@ function DropdownMenuSubContent({
         'w-auto min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
         className,
       )}
-      align={align}
-      alignOffset={alignOffset}
-      side={side}
-      sideOffset={sideOffset}
+      align={align ?? 'start'}
+      alignOffset={alignOffset ?? -3}
+      side={side ?? 'right'}
+      sideOffset={sideOffset ?? 0}
       {...props}
     />
   )

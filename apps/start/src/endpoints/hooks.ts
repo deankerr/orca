@@ -13,7 +13,8 @@ import type { EndpointRow, Snapshot } from './snapshot'
 import { sortRows } from './sort'
 import type { SortKey } from './sort'
 
-const routeApi = getRouteApi('/')
+// PascalCase, so the React Compiler recognises `RouteApi.useX()` as a hook call.
+const RouteApi = getRouteApi('/')
 
 /** The snapshot's rows, built once per payload. The index route's loader has already fetched it. */
 export function useSnapshot(): Snapshot {
@@ -22,7 +23,7 @@ export function useSnapshot(): Snapshot {
 
 /** The index route's validated scope: filters, sort, plot, and selection, defaults included. */
 export function useScope(): Scope {
-  return routeApi.useSearch()
+  return RouteApi.useSearch()
 }
 
 /**
@@ -121,11 +122,11 @@ type ScopeUpdate = (scope: Scope) => Partial<Scope>
  * history entry unless told to replace; the named actions apply the policy for their kind of change.
  */
 export function useScopeActions() {
-  const navigate = routeApi.useNavigate()
+  const navigate = RouteApi.useNavigate()
 
-  const update = (change: ScopeUpdate, { replace = false }: ScopeUpdateOptions = {}) => {
+  const update = (change: ScopeUpdate, options?: ScopeUpdateOptions) => {
     navigate({
-      replace,
+      replace: options?.replace ?? false,
       resetScroll: false,
       search: (scope) => ({ ...scope, ...change(scope) }),
     }).catch(reportError)

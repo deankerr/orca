@@ -27,8 +27,8 @@ const toggleVariants = cva(
 
 function Toggle({
   className,
-  variant = 'default',
-  size = 'default',
+  variant,
+  size,
   ...props
 }: TogglePrimitive.Props & VariantProps<typeof toggleVariants>) {
   return (

@@ -55,12 +55,20 @@ export default defineConfig({
       },
     },
     {
+      // The React Compiler skips a component or hook that destructures with a default.
+      files: ['apps/start/src/**', 'packages/ui/src/**'],
+      jsPlugins: ['./packages/config/oxlint/react-compiler.js'],
+      rules: { 'orca-react-compiler/no-destructured-default': 'error' },
+    },
+    {
       files: ['**/*.test.{ts,tsx}', '**/*.testing.ts'],
       rules: {
         // fixtures and assertions cast test doubles routinely
         'anti-slop/require-safety-comment-for-type-assertion': 'off',
         // scenario tests are long assertion sequences
         complexity: 'off',
+        // test doubles are not React code
+        'orca-react-compiler/no-destructured-default': 'off',
       },
     },
   ],

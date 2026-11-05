@@ -15,7 +15,7 @@ import type { Ref } from 'react'
 function ScrollArea({
   children,
   className,
-  horizontal = false,
+  horizontal,
   viewportClassName,
   viewportRef,
   ...props
@@ -42,7 +42,7 @@ function ScrollArea({
         {children}
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
-      {horizontal ? <ScrollBar orientation="horizontal" /> : null}
+      {horizontal === true ? <ScrollBar orientation="horizontal" /> : null}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -50,9 +50,11 @@ function ScrollArea({
 
 function ScrollBar({
   className,
-  orientation = 'vertical',
+  orientation: orientationProp,
   ...props
 }: ScrollAreaPrimitive.Scrollbar.Props) {
+  const orientation = orientationProp ?? 'vertical'
+
   return (
     <ScrollAreaPrimitive.Scrollbar
       data-slot="scroll-area-scrollbar"

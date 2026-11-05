@@ -38,9 +38,11 @@ const inputGroupAddonVariants = cva(
 /** Text or an icon beside the control. Clicking it, short of a button, focuses the group's input. */
 function InputGroupAddon({
   className,
-  align = 'inline-start',
+  align: alignProp,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
+  const align = alignProp === undefined ? 'inline-start' : alignProp
+
   return (
     // The click only hands focus to the input, which a keyboard user already reaches by tabbing.
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- An addon is a visual label for the input, not a control of its own.

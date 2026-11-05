@@ -22,8 +22,8 @@ function ToggleGroup({
   className,
   variant,
   size,
-  spacing = 2,
-  orientation = 'horizontal',
+  spacing: spacingProp,
+  orientation: orientationProp,
   children,
   ...props
 }: ToggleGroupPrimitive.Props &
@@ -31,6 +31,9 @@ function ToggleGroup({
     spacing?: number
     orientation?: 'horizontal' | 'vertical'
   }) {
+  const spacing = spacingProp ?? 2
+  const orientation = orientationProp ?? 'horizontal'
+
   const context = useMemo(
     () => ({ orientation, size, spacing, variant }),
     [orientation, size, spacing, variant],
@@ -59,11 +62,13 @@ function ToggleGroup({
 function ToggleGroupItem({
   className,
   children,
-  variant = 'default',
-  size = 'default',
+  variant: variantProp,
+  size: sizeProp,
   ...props
 }: TogglePrimitive.Props & VariantProps<typeof toggleVariants>) {
   const context = useContext(ToggleGroupContext)
+  const variant = variantProp === undefined ? 'default' : variantProp
+  const size = sizeProp === undefined ? 'default' : sizeProp
 
   return (
     <TogglePrimitive

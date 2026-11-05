@@ -68,6 +68,10 @@ const config: KnipConfig = {
       ],
       includeEntryExports: true,
     },
+    'packages/config': {
+      // Loaded by oxlint.config.ts as a JS plugin, by path.
+      entry: ['oxlint/*.js'],
+    },
     'packages/contract': {
       entry: ['**/*.test.ts'],
     },
