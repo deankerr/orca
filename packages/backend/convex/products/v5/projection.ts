@@ -14,6 +14,8 @@ type Fact = JsonValue | undefined
 /** ORCA's reading of a field's value, which also decides how its changes are expressed. */
 export interface KindValues {
   count: number | null
+  /** An ISO 8601 instant, rendered in each reader's time zone. */
+  date: string | null
   flag: boolean | null
   /** A string set: changes are member additions and removals. */
   list: string[] | null

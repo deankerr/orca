@@ -120,11 +120,25 @@ function changeValue(item: AlertFact, suffix = ''): string {
     return String(item.value)
   }
 
+  if (item.kind === 'date') {
+    return timestamp(item.value)
+  }
+
   if (item.kind === 'list') {
     return item.value.length === 0 ? '[]' : item.value.map(escape).join(', ')
   }
 
   return link(item.value) ?? escape(excerpt(item.value))
+}
+
+/**
+ * Discord renders timestamp markup in each reader's locale and time zone, with a live countdown:
+ * `1 December 2026 13:00 (in 26 days)`.
+ */
+function timestamp(iso: string): string {
+  const seconds = Math.floor(Date.parse(iso) / 1000)
+
+  return `<t:${seconds}:f> (<t:${seconds}:R>)`
 }
 
 /**

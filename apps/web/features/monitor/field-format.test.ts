@@ -45,6 +45,16 @@ test('Monitor formats native decimal prices and distinguishes null, false and ze
       { field: 'quantization', kind: 'text' as const, value: null },
       { field: 'is_disabled', kind: 'flag' as const, value: false },
       { field: 'limit_rpm', kind: 'count' as const, value: 0 },
-    ].map(formatChangeValue),
+    ].map((item) => formatChangeValue(item)),
   ).toEqual(['null', 'false', '0'])
+})
+
+test("Monitor dates read in the viewer's time zone with their distance from now", () => {
+  const value = formatChangeValue(
+    { field: 'deprecation_date', kind: 'date', value: '2026-12-01T13:00:00.000Z' },
+    { now: new Date('2026-11-05T13:00:00.000Z') },
+  )
+
+  expect(value).toContain('2026')
+  expect(value).toMatch(/\(in 26 days\)$/u)
 })
