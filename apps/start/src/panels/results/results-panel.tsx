@@ -1,4 +1,5 @@
 import { ScrollArea } from '@orca/ui/components/scroll-area'
+import type { ReactNode } from 'react'
 
 import { RESULTS_REGION_ID } from '#app/keyboard'
 import { StatusBar } from '#app/status-bar'
@@ -7,7 +8,8 @@ import { EndpointTable } from '#panels/results/table/endpoint-table'
 
 import { ScopeBar } from './scope-bar'
 
-export function ResultsPanel() {
+/** The Results panel's frame, which the loading skeleton fills with placeholders. */
+export function ResultsFrame({ children }: { children: ReactNode }) {
   return (
     <section
       aria-label="Results"
@@ -17,6 +19,14 @@ export function ResultsPanel() {
       id={RESULTS_REGION_ID}
       tabIndex={-1}
     >
+      {children}
+    </section>
+  )
+}
+
+export function ResultsPanel() {
+  return (
+    <ResultsFrame>
       <ScopeBar />
       <PlotRegion />
       {/* The sticky header lives in this viewport, which never bounces, so the header holds still. */}
@@ -28,6 +38,6 @@ export function ResultsPanel() {
         <EndpointTable />
       </ScrollArea>
       <StatusBar />
-    </section>
+    </ResultsFrame>
   )
 }

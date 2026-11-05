@@ -21,7 +21,18 @@ type TableRowModel = Row<typeof features, EndpointRow>
 
 type TableHeader = Header<typeof features, EndpointRow>
 
-const cellPadding = 'px-2 first:pl-5 last:pr-5'
+/** The classes the table's cells share, which the loading skeleton reuses so the two line up. */
+export const CELL_PADDING_CLASS = 'px-2 first:pl-5 last:pr-5'
+
+export const HEADER_CELL_CLASS =
+  'sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase'
+
+export const BODY_CELL_CLASS = 'h-8 border-b border-border align-middle'
+
+/** The table's own wrapper: as wide as the region, and no narrower than its columns need. */
+export const TABLE_WRAPPER_CLASS = 'relative w-full min-w-190'
+
+export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
 
 function ariaSort(direction: false | 'asc' | 'desc') {
   if (direction === false) {
@@ -50,8 +61,8 @@ function SortHeader({
     <th
       aria-sort={ariaSort(direction)}
       className={cn(
-        'sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase',
-        cellPadding,
+        HEADER_CELL_CLASS,
+        CELL_PADDING_CLASS,
         numeric ? 'text-right' : 'text-left',
         direction !== false && 'text-foreground',
       )}
@@ -106,8 +117,8 @@ function TableRow({
       {row.getAllCells().map((cell) => (
         <td
           className={cn(
-            'h-8 border-b border-border align-middle',
-            cellPadding,
+            BODY_CELL_CLASS,
+            CELL_PADDING_CLASS,
             cell.column.columnDef.meta?.numeric === true &&
               'text-right font-mono text-xs tabular-nums',
             selected && 'first:shadow-[inset_2px_0_0_var(--selection)]',
@@ -333,8 +344,8 @@ export function EndpointTable() {
   }
 
   return (
-    <div aria-busy={stale} className="relative w-full min-w-190">
-      <table className="w-full table-fixed border-separate border-spacing-0">
+    <div aria-busy={stale} className={TABLE_WRAPPER_CLASS}>
+      <table className={TABLE_CLASS}>
         <colgroup>
           {table.getAllLeafColumns().map((column) => (
             <col key={column.id} style={{ width: column.columnDef.meta?.width }} />

@@ -1,11 +1,14 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
+import { AppLayout } from '#app/app-layout'
 import { useSelectedEndpoint } from '#endpoints/hooks'
 import { scopeDefaults, scopeSchema } from '#endpoints/scope'
 import { snapshotQuery } from '#endpoints/snapshot'
 import { EndpointPanel } from '#panels/endpoint/endpoint-panel'
 import { FiltersPanel } from '#panels/filters/filters-panel'
+import { FiltersSkeleton } from '#panels/filters/filters-skeleton'
 import { ResultsPanel } from '#panels/results/results-panel'
+import { ResultsSkeleton } from '#panels/results/results-skeleton'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -17,11 +20,14 @@ export const Route = createFileRoute('/')({
   validateSearch: scopeSchema,
 })
 
+// The server sends this as the page, so it holds nothing that depends on the browser.
 function Pending() {
   return (
-    <main className="flex h-svh items-center justify-center bg-background font-mono text-xs text-muted-foreground">
-      Loading catalogue…
-    </main>
+    <AppLayout busy>
+      <FiltersSkeleton />
+      <ResultsSkeleton />
+      <output className="sr-only">Loading catalogue…</output>
+    </AppLayout>
   )
 }
 
@@ -30,10 +36,10 @@ function Home() {
   const selected = useSelectedEndpoint()
 
   return (
-    <main className="flex h-svh gap-2 bg-background p-2">
+    <AppLayout>
       <FiltersPanel />
       <ResultsPanel />
       {selected === null ? null : <EndpointPanel row={selected} />}
-    </main>
+    </AppLayout>
   )
 }

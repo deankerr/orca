@@ -28,7 +28,7 @@ import { formatBound, formatMonths, formatReleaseWindow } from './bound-labels'
 import type { BoundFacet } from './bound-labels'
 import { FACET_COUNT_CLASS, Facet } from './facet'
 
-const BOUND_ROWS: { facet: BoundFacet; label: string }[] = [
+export const BOUND_ROWS: { facet: BoundFacet; label: string }[] = [
   { facet: 'maxInput', label: 'Input $/M' },
   { facet: 'minTps', label: 'Tok/s' },
   { facet: 'minContext', label: 'Context' },

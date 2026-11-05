@@ -79,7 +79,8 @@ function useScopeSplit(points: readonly PlotPoint[]): DeferredScopeSplit {
   return { split, stale }
 }
 
-function ChartCaption({ note }: { note: string | null }) {
+/** The plot's caption, with a note for the endpoints it leaves out. */
+export function ChartCaption({ note }: { note: string | null }) {
   return (
     <div className="flex justify-between gap-4 font-mono text-[10px] leading-3.5 text-muted-foreground">
       <span className="flex min-w-0 gap-3">
@@ -96,6 +97,9 @@ function ChartCaption({ note }: { note: string | null }) {
     </div>
   )
 }
+
+/** The plot region's frame, which the loading skeleton shares. */
+export const PLOT_REGION_CLASS = 'flex shrink-0 flex-col gap-1 px-5 pb-2.5'
 
 /** The dots, grid, and axes: rebuilt only when the catalogue or the filters change the dots. */
 function PlotChart({
@@ -298,7 +302,7 @@ function PricePlot() {
   const description = `${formatCount(points.length)} of ${formatCount(rows.length)} endpoints plotted, ${formatCount(inScope.length)} of them in the current filters. Blended price from $0.01 to $100 per million tokens on a log scale, against median throughput from ${formatCount(domain[0])} to ${formatCount(domain[1])} tokens per second on a log scale.`
 
   return (
-    <div className="flex shrink-0 flex-col gap-1 px-5 pb-2.5">
+    <div className={PLOT_REGION_CLASS}>
       <ChartCaption note={notPlottedNote(notPlotted)} />
       <div aria-busy={stale} className="relative">
         <PlotChart ariaDescription={description} definition={definition} projection={projection} />

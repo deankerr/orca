@@ -23,6 +23,24 @@ declare module '@tanstack/react-table' {
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
 
+/** Header text by column id, which the loading skeleton also reads. */
+const LABELS = {
+  cacheRead: 'Cache R',
+  context: 'Context',
+  input: 'Input',
+  latency: 'Latency',
+  model: 'Model',
+  output: 'Output',
+  provider: 'Provider',
+  throughput: 'Tok/s',
+} as const
+
+const LABEL_BY_ID: ReadonlyMap<string, string> = new Map(Object.entries(LABELS))
+
+/** The header text for a column id. */
+export const columnLabel = (id: string | undefined): string | undefined =>
+  id === undefined ? undefined : LABEL_BY_ID.get(id)
+
 const helper = createColumnHelper<typeof features, EndpointRow>()
 
 function ModelCell({ row }: { row: EndpointRow }) {
@@ -60,50 +78,56 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
     cell: ({ row }) => <ModelCell row={row.original} />,
-    header: 'Model',
+    header: LABELS.model,
     id: 'model',
     sortDescFirst: false,
   }),
   helper.accessor((row) => row.provider.display_name, {
     cell: ({ row }) => <ProviderCell row={row.original} />,
-    header: 'Provider',
+    header: LABELS.provider,
     id: 'provider',
     meta: { width: 184 },
     sortDescFirst: false,
   }),
   helper.accessor('input', {
     cell: ({ row }) => formatRateCell(row.original.rates.input),
-    header: 'Input',
+    header: LABELS.input,
+    id: 'input',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('output', {
     cell: ({ row }) => formatRateCell(row.original.rates.output),
-    header: 'Output',
+    header: LABELS.output,
+    id: 'output',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('cacheRead', {
     cell: ({ row }) => formatRateCell(row.original.rates.cacheRead),
-    header: 'Cache R',
+    header: LABELS.cacheRead,
+    id: 'cacheRead',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('throughput', {
     cell: ({ row }) => formatCount(row.original.throughput),
-    header: 'Tok/s',
+    header: LABELS.throughput,
+    id: 'throughput',
     meta: { numeric: true, width: 56 },
     sortDescFirst: true,
   }),
   helper.accessor('latency', {
     cell: ({ row }) => formatLatency(row.original.latency),
-    header: 'Latency',
+    header: LABELS.latency,
+    id: 'latency',
     meta: { numeric: true, width: 68 },
     sortDescFirst: false,
   }),
   helper.accessor('context', {
     cell: ({ row }) => formatContext(row.original.context),
-    header: 'Context',
+    header: LABELS.context,
+    id: 'context',
     meta: { numeric: true, width: 68 },
     sortDescFirst: true,
   }),
