@@ -15,7 +15,7 @@ Panel's components, logic, and tests, and nothing else reaches into it. Code use
 lives in a shared folder.
 
 - `routes/`: TanStack Router files. Layout and route options only.
-- `app/`: the app shell (header, page switch, status bar, theme) and `keyboard.ts`, the app's key-ownership
+- `app/`: the app shell (header, status bar, theme) and `keyboard.ts`, the app's key-ownership
   and focus-return rules.
 - `endpoints/`: the data layer, which is not a Panel. It builds the Snapshot from the query, defines the
   Scope (the URL's filter state) and sort, filters and counts rows, and exposes them through `hooks.ts`.

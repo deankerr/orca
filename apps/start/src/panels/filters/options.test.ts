@@ -121,28 +121,23 @@ describe('listMeta', () => {
 })
 
 describe('createOptionSearch', () => {
-  const search = createOptionSearch([...options.model, ...options.provider])
+  const models = createOptionSearch(options.model)
+  const providers = createOptionSearch(options.provider)
 
   it('matches slugs and display names by prefix', () => {
-    expect(search('kimi').map(({ id }) => id)).toEqual(['moonshotai/kimi-k3'])
-    expect(search('gpt 5').map(({ id }) => id)).toContain('openai/gpt-5')
-    expect(search('deep').map(({ id }) => id)).toEqual(['deepinfra'])
+    expect(models('kimi').map(({ id }) => id)).toEqual(['moonshotai/kimi-k3'])
+    expect(models('gpt 5').map(({ id }) => id)).toContain('openai/gpt-5')
+    expect(providers('deep').map(({ id }) => id)).toEqual(['deepinfra'])
   })
 
-  it('finds models and providers together', () => {
-    expect(search('openai').map(optionKey)).toEqual([
-      'provider:openai',
+  it('ranks more-listed options first among equal matches', () => {
+    expect(models('openai').map(optionKey)).toEqual([
       'model:openai/gpt-5',
       'model:openai/gpt-5:free',
     ])
   })
 
   it('returns nothing for a blank query', () => {
-    expect(search('  ')).toEqual([])
-  })
-
-  it('caps the results at the limit, and has none by default', () => {
-    expect(search('openai', 1)).toHaveLength(1)
-    expect(search('openai')).toHaveLength(3)
+    expect(models('  ')).toEqual([])
   })
 })

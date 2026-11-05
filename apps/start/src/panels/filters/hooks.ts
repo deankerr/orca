@@ -4,7 +4,7 @@ import { useSnapshot } from '#endpoints/hooks'
 
 import { snapshotOptions, createOptionSearch } from './options'
 
-/** Every model and provider in the catalogue, with searches over each kind and over both. */
+/** Every model and provider in the catalogue, with a search over each kind. */
 export function useSnapshotOptions() {
   const { rows } = useSnapshot()
 
@@ -14,7 +14,6 @@ export function useSnapshotOptions() {
     return {
       options,
       search: {
-        any: createOptionSearch([...options.model, ...options.provider]),
         model: createOptionSearch(options.model),
         provider: createOptionSearch(options.provider),
       },

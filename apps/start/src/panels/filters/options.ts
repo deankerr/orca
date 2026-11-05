@@ -56,16 +56,13 @@ export function createOptionSearch(options: readonly FacetOption[]) {
     ],
   })
 
-  /** The matches in rank order, at most `limit` of them (all by default). A blank query matches nothing. */
-  return (query: string, limit = Number.POSITIVE_INFINITY): FacetOption[] => {
+  /** The matches in rank order. A blank query matches nothing. */
+  return (query: string): FacetOption[] => {
     if (query.trim() === '') {
       return []
     }
 
-    return searcher
-      .search(query)
-      .map(({ record }) => record)
-      .slice(0, limit)
+    return searcher.search(query).map(({ record }) => record)
   }
 }
 
