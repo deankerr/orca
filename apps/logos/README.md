@@ -22,7 +22,7 @@ bun run generate
 bunx wrangler dev --port 8787
 ```
 
-Fallback artwork comes from `branding/svg/orb-ring-mark.svg`; regenerate after editing it.
+Fallback artwork comes from `src/orb-ring-mark.svg`; regenerate after editing it.
 To preview the local assets in the web app, set `NEXT_PUBLIC_ORCA_LOGO_ORIGIN=http://localhost:8787`
 in `apps/web/.env.local` and restart the web server. Remove the override to restore its default.
 Discord images need a publicly accessible origin.

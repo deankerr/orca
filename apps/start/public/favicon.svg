@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- High-contrast orb for small browser tabs, tinted green to tell the start app's tabs apart. -->
-  <circle cx="32" cy="32" r="28" fill="#052e16" stroke="#4ade80" stroke-width="3"/>
-  <ellipse rx="13" ry="6" transform="translate(39 24) rotate(-33)" fill="#4ade80"/>
+  <!-- Dark head, light eye patch; never invert. Keep in sync with OrbMark. -->
+  <rect width="64" height="64" rx="16" fill="#fafafa"/>
+  <g transform="translate(8 8) scale(0.75)">
+    <circle cx="32" cy="32" r="32" fill="#0a0a0a"/>
+    <ellipse rx="13" ry="6" transform="translate(39 24) rotate(-33)" fill="#fafafa"/>
+  </g>
 </svg>

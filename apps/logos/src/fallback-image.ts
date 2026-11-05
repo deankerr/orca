@@ -27,12 +27,9 @@ const FALLBACK_THEME = {
   },
 } satisfies Record<AssetGroup, { background: string | undefined; mark: string }>
 
-// Read the branding source on each build so artwork tweaks flow into every fallback.
+// Read the artwork on each build so artwork tweaks flow into every fallback.
 export async function emitFallbackAsset(args: FallbackAssetOptions): Promise<void> {
-  const source = await readFile(
-    nodePath.resolve(import.meta.dirname, '../../../branding/svg/orb-ring-mark.svg'),
-    'utf-8',
-  )
+  const source = await readFile(nodePath.resolve(import.meta.dirname, 'orb-ring-mark.svg'), 'utf-8')
 
   const theme = FALLBACK_THEME[args.group]
   const svg = source.replaceAll('#ededed', theme.mark)
