@@ -169,4 +169,12 @@ python3 -I docs/evidence/2026-10-28-scan-study/analyze.py --output /tmp/scan-stu
 python3 -I docs/evidence/2026-10-28-scan-study/listing.py --output /tmp/scan-study
 ```
 
-Both scripts read the retained scan by default, so it reproduces these files. To profile another scan, download it with `packages/scripts/scan-download` and pass `--scan`.
+Both scripts default to `scan.2026-10-27T23:40:40.374Z.jsonl.gz` in this folder, which Git does not track.
+Download that scan with `packages/scripts/scan-download` (see its README for the API key), then gzip it here:
+
+```sh
+bun run --cwd packages/scripts scan-download load scan.2026-10-27T23:40:40.374Z.jsonl --output /tmp/orca-scans
+gzip -c /tmp/orca-scans/scan.2026-10-27T23:40:40.374Z.jsonl > docs/evidence/2026-10-28-scan-study/scan.2026-10-27T23:40:40.374Z.jsonl.gz
+```
+
+To profile another scan, download it the same way and pass its gzipped path with `--scan`.

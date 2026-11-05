@@ -119,7 +119,7 @@ const flagOrNull = (flag: boolean | null) => (flag === null ? null : formatFlag(
 /** The Model tab's sections: what holds for the model whichever provider serves it. */
 export function modelSections(row: EndpointRow): Section[] {
   const { model } = row
-  const { description, hf_slug: weights } = model
+  const { description, hf_slug: weights, warning_message: warning } = model
 
   return [
     {
@@ -160,7 +160,10 @@ export function modelSections(row: EndpointRow): Section[] {
       ],
       title: 'Dates and limits',
     },
-    // The description is prose: it sits after the facts and has no rows of its own.
+    // The warning and description are prose: they sit after the facts and have no rows of their own.
+    ...(warning === null || warning.trim() === ''
+      ? []
+      : [{ id: 'warning', rows: [], text: warning.trim(), title: 'Warning' }]),
     ...(description.trim() === ''
       ? []
       : [{ id: 'description', rows: [], text: description.trim(), title: 'Description' }]),

@@ -72,6 +72,10 @@ describe('scopeSchema', () => {
     ).toEqual(scopeDefaults)
   })
 
+  it('keeps a zero maximum input price, which selects free endpoints', () => {
+    expect(scopeSchema.parse({ maxInput: 0 })).toMatchObject({ maxInput: 0 })
+  })
+
   it('drops unknown properties and lets an included property win over its exclusion', () => {
     expect(scopeSchema.parse({ with: 'tools,bogus', without: 'tools,zdr' })).toMatchObject({
       with: ['tools'],

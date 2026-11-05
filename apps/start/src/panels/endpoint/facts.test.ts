@@ -58,6 +58,24 @@ describe('modelSections', () => {
     expect(byId(rowsOf(sections, 'capabilities'), 'weights')).toMatchObject({ value: 'no' })
   })
 
+  it('shows the model warning as prose before the description', () => {
+    const sections = modelSections(
+      rowWith({ model: { description: 'A model.', warning_message: ' Bedrock is BYOK-only. ' } }),
+    )
+
+    expect(sections.map(({ id }) => id)).toEqual([
+      'identity',
+      'capabilities',
+      'dates-limits',
+      'warning',
+      'description',
+      'links',
+    ])
+    expect(sections.find(({ id }) => id === 'warning')).toMatchObject({
+      text: 'Bedrock is BYOK-only.',
+    })
+  })
+
   it('copies the model ID', () => {
     expect(byId(rowsOf(modelSections(rowWith()), 'identity'), 'id')).toMatchObject({
       copyLabel: 'Copy model ID',

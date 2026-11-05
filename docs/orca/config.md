@@ -37,7 +37,7 @@ serially with two repeats per test.
 `apps/start` is an independent frontend using `packages/ui` for the Base UI Mira theme and components.
 TanStack Devtools runs in development with the Router panel at the bottom right and the Vite plugin enabled.
 React Compiler runs through the Vite React preset and Rolldown Babel plugin, including shared UI source.
-Theme defaults to the system preference. The Light/Dark/System menu stores the choice under
+Theme defaults to dark. The Light/Dark/System menu stores the choice under
 `orca-theme` in local storage. A `ScriptOnce` initializes the HTML class and color scheme before
 hydration; system mode tracks OS changes. If storage is unavailable, changes last for the current visit.
 Local aliases in Start and UI use `package.json#imports`. Start's are `#app`, `#components`, `#endpoints`, `#lib`,

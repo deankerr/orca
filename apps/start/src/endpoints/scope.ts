@@ -23,6 +23,9 @@ const propertyList = list.transform((ids) => ids.filter(isPropertyId))
 
 const bound = z.number().positive().optional().catch(undefined)
 
+/** Zero is a real price, so a zero maximum keeps only free endpoints. */
+const priceBound = z.number().nonnegative().optional().catch(undefined)
+
 /**
  * The index route's scope, as URL search params: the filters that put rows in scope, plus the sort,
  * the plot toggle, and the selected endpoint. Invalid values fall back to their defaults, and
@@ -33,7 +36,7 @@ export const scopeSchema = z
     /** Selected endpoint UUID. */
     endpoint: z.string().min(1).optional().catch(undefined),
     /** Maximum input price in $/M. */
-    maxInput: bound,
+    maxInput: priceBound,
     /** Minimum context length in tokens. */
     minContext: bound,
     /** Minimum median throughput in tokens per second. */
