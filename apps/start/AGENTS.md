@@ -36,7 +36,8 @@ Vocabulary:
   put rows in scope; the sort, plot toggle, and selected endpoint ride along. Read one param with a hook such as
   `useSelectedId` or `useSort`, or the filters with `useScopeFilters`, so a component re-renders only for what it
   reads; there is no whole-Scope hook. Change it with `useScopeActions`, and read the filtered, sorted rows with
-  `useScopedRows`.
+  `useScopedRows`. The Table and plot read `useDeferredScopedRows` and `useDeferredFilteredRows` instead: they
+  trail the filters through `useDeferredValue` (the router's store always updates synchronously) and report `stale`.
 
 <!-- intent-skills:start -->
 

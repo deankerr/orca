@@ -6,15 +6,16 @@ import type { Atom } from '@tanstack/store'
 import { useMemo, useState } from 'react'
 
 import {
+  useDeferredFilteredRows,
   usePlot,
   useSelectedId,
   useSnapshot,
   useScopeActions,
-  useScopedRows,
 } from '#endpoints/hooks'
 import { setHoveredEndpoint, useHoveredEndpointId } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatCount } from '#lib/format'
+import { StaleVeil } from '#panels/results/stale-veil'
 
 import { CHART_HEIGHT, plotDefinition } from './definition'
 import {
@@ -45,16 +46,23 @@ interface ScopeSplit {
   outOfScope: PlotPoint[]
 }
 
+interface DeferredScopeSplit {
+  split: ScopeSplit
+  /** True while the dots still reflect the previous filters. */
+  stale: boolean
+}
+
 function sameMembers(left: ReadonlySet<string>, right: ReadonlySet<string>): boolean {
   return left.size === right.size && [...left].every((id) => right.has(id))
 }
 
 /**
- * The points split by the filters. The split keeps its identity while the same endpoints stay in scope,
- * so re-sorting the Table, which gives `useScopedRows` a new array, does not rebuild the chart.
+ * The points split by the filters, which they trail (see `useDeferredFilteredRows`). The split keeps
+ * its identity while the same endpoints stay in scope, so a filter change that leaves the plotted
+ * endpoints as they were does not rebuild the chart.
  */
-function useScopeSplit(points: readonly PlotPoint[]): ScopeSplit {
-  const filtered = useScopedRows()
+function useScopeSplit(points: readonly PlotPoint[]): DeferredScopeSplit {
+  const { rows: filtered, stale } = useDeferredFilteredRows()
 
   const next = useMemo(() => {
     const ids = new Set(filtered.map((row) => row.id))
@@ -68,7 +76,7 @@ function useScopeSplit(points: readonly PlotPoint[]): ScopeSplit {
     setSplit(next)
   }
 
-  return split
+  return { split, stale }
 }
 
 function ChartCaption({ note }: { note: string | null }) {
@@ -273,7 +281,12 @@ function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
 function PricePlot() {
   const { rows } = useSnapshot()
   const { notPlotted, points } = useMemo(() => plotPoints(rows), [rows])
-  const { inScope, outOfScope } = useScopeSplit(points)
+
+  const {
+    split: { inScope, outOfScope },
+    stale,
+  } = useScopeSplit(points)
+
   const domain = useMemo(() => throughputDomain(points), [points])
 
   const definition = useMemo(
@@ -287,8 +300,10 @@ function PricePlot() {
   return (
     <div className="flex shrink-0 flex-col gap-1 px-5 pb-2.5">
       <ChartCaption note={notPlottedNote(notPlotted)} />
-      <div className="relative">
+      <div aria-busy={stale} className="relative">
         <PlotChart ariaDescription={description} definition={definition} projection={projection} />
+        {/* Only the dots dim: the selection and hover rings in the overlay follow the pointer, not the filters. */}
+        <StaleVeil className="inset-0" stale={stale} />
         <PlotOverlay projection={projection} />
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 
 import { propertyFacetGroups } from './facets'
 import type { PropertyFacetGroup } from './facets'
@@ -81,6 +81,42 @@ export function useScopedRows(): EndpointRow[] {
   const sort = useSort()
 
   return useMemo(() => sortRows(applyFilters(rows, filters, at), sort), [at, rows, filters, sort])
+}
+
+/** Rows for a view that trails the filters, and whether it is still catching up to them. */
+interface DeferredRows {
+  rows: EndpointRow[]
+  /** True while the filters have changed but `rows` still reflect the previous ones. */
+  stale: boolean
+}
+
+/**
+ * Rows matching every filter, in snapshot order, for a heavy view (the Table, the plot). The filters
+ * are deferred, not the rows: a filter change renders the view once more with the old rows, which
+ * its memoised children skip, and filters nothing; then the new rows render in an interruptible
+ * pass that the next keystroke or click can abandon. Without this the router's store, which always
+ * updates synchronously, would make the whole view render inside the click.
+ */
+export function useDeferredFilteredRows(): DeferredRows {
+  const { at, rows } = useSnapshot()
+  const filters = useScopeFilters()
+  const deferred = useDeferredValue(filters)
+
+  const matching = useMemo(() => applyFilters(rows, deferred, at), [at, rows, deferred])
+
+  return { rows: matching, stale: filters !== deferred }
+}
+
+/**
+ * `useScopedRows` for the Table: the filters are deferred as in `useDeferredFilteredRows`, but the
+ * sort is not. Sorting is cheap against rendering, and a header click should reorder the rows it
+ * already shows, not wait behind them.
+ */
+export function useDeferredScopedRows(): DeferredRows {
+  const { rows: matching, stale } = useDeferredFilteredRows()
+  const sort = useSort()
+
+  return { rows: useMemo(() => sortRows(matching, sort), [matching, sort]), stale }
 }
 
 /**

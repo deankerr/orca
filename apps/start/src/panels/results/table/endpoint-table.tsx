@@ -7,9 +7,10 @@ import { memo, useEffect, useRef } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 
 import { tableOwnsKeys } from '#app/keyboard'
-import { useScopeActions, useScopedRows, useSelectedId, useSort } from '#endpoints/hooks'
+import { useDeferredScopedRows, useScopeActions, useSelectedId, useSort } from '#endpoints/hooks'
 import { setHoveredEndpoint } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
+import { StaleVeil } from '#panels/results/stale-veil'
 
 import { columns, features } from './columns'
 import { steppedRowId } from './navigation'
@@ -133,6 +134,32 @@ const MemoTableRow = memo(
     previous.tabbable === next.tabbable,
 )
 
+/**
+ * The body's rows, apart from the Table so that a render that leaves them alone skips them. The
+ * compiler cannot memoise them in `EndpointTable`: they come from the table object's methods. This
+ * is what lets the pass that only marks the Table stale, which keeps the old rows, cost nothing.
+ */
+function TableRowList({
+  rows,
+  selectedId,
+  tabbableId,
+}: {
+  rows: TableRowModel[]
+  selectedId: string | undefined
+  tabbableId: string | undefined
+}) {
+  return rows.map((row) => (
+    <MemoTableRow
+      key={row.id}
+      row={row}
+      selected={row.id === selectedId}
+      tabbable={row.id === tabbableId}
+    />
+  ))
+}
+
+const TableRows = memo(TableRowList)
+
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <tr>
@@ -178,9 +205,14 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
 /**
  * Endpoints as a table, sorted by the URL. The rows arrive filtered and sorted, so the table only
  * lays them out; its sorting state mirrors the URL and header clicks write back to it.
+ *
+ * The rows trail the filters (see `useDeferredFilteredRows`). While they catch up the body dims
+ * (see `StaleVeil`) and the table is `aria-busy`. The header, selection, and sort stay current: keys
+ * step through the rows on screen, and the selection is in the URL, so it can name a row the next
+ * pass removes.
  */
 export function EndpointTable() {
-  const rows = useScopedRows()
+  const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
   const { clearFilters, selectEndpoint, setSort } = useScopeActions()
@@ -301,48 +333,45 @@ export function EndpointTable() {
   }
 
   return (
-    <table className="w-full min-w-190 table-fixed border-separate border-spacing-0">
-      <colgroup>
-        {table.getAllLeafColumns().map((column) => (
-          <col key={column.id} style={{ width: column.columnDef.meta?.width }} />
-        ))}
-      </colgroup>
-      <thead>
-        {table.getHeaderGroups().map((group) => (
-          <tr key={group.id}>
-            {group.headers.map((header) => (
-              <SortHeader
-                direction={sortDirection(sort, header.column.id)}
-                header={header}
-                key={header.id}
-              />
-            ))}
-          </tr>
-        ))}
-      </thead>
-      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Rows are the interactive elements; one delegated handler serves ~1,500 of them, and keys reach them through onKeyDown. */}
-      <tbody
-        onClick={select}
-        onKeyDown={selectFromKey}
-        onPointerLeave={() => {
-          setHoveredEndpoint(null)
-        }}
-        onPointerOver={hover}
-        ref={body}
-      >
-        {tableRows.length === 0 ? (
-          <EmptyState onClear={clearFilters} />
-        ) : (
-          tableRows.map((row) => (
-            <MemoTableRow
-              key={row.id}
-              row={row}
-              selected={row.id === selectedId}
-              tabbable={row.id === tabbableId}
-            />
-          ))
-        )}
-      </tbody>
-    </table>
+    <div aria-busy={stale} className="relative w-full min-w-190">
+      <table className="w-full table-fixed border-separate border-spacing-0">
+        <colgroup>
+          {table.getAllLeafColumns().map((column) => (
+            <col key={column.id} style={{ width: column.columnDef.meta?.width }} />
+          ))}
+        </colgroup>
+        <thead>
+          {table.getHeaderGroups().map((group) => (
+            <tr key={group.id}>
+              {group.headers.map((header) => (
+                <SortHeader
+                  direction={sortDirection(sort, header.column.id)}
+                  header={header}
+                  key={header.id}
+                />
+              ))}
+            </tr>
+          ))}
+        </thead>
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Rows are the interactive elements; one delegated handler serves ~1,500 of them, and keys reach them through onKeyDown. */}
+        <tbody
+          onClick={select}
+          onKeyDown={selectFromKey}
+          onPointerLeave={() => {
+            setHoveredEndpoint(null)
+          }}
+          onPointerOver={hover}
+          ref={body}
+        >
+          {tableRows.length === 0 ? (
+            <EmptyState onClear={clearFilters} />
+          ) : (
+            <TableRows rows={tableRows} selectedId={selectedId} tabbableId={tabbableId} />
+          )}
+        </tbody>
+      </table>
+      {/* Below the sticky header, which keeps its place. */}
+      <StaleVeil className="inset-x-0 top-[30px] bottom-0" stale={stale} />
+    </div>
   )
 }
