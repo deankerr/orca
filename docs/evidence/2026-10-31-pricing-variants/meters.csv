@@ -1,0 +1,14 @@
+meter,endpoints,text_endpoints,zero_values
+prompt,1750,1484,112
+completion,1750,1484,270
+input_cache_read,1229,1214,2
+web_search,496,490,0
+input_cache_write,343,342,2
+input_cache_write_1h,131,131,0
+image,109,90,6
+audio,102,95,1
+internal_reasoning,91,91,0
+input_audio_cache,88,88,0
+image_output,66,15,0
+image_token,43,0,0
+audio_output,2,2,0

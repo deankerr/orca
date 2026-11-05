@@ -1,0 +1,277 @@
+path,disposition,occurrences,types,true,distinct,top_values
+$,identity,435,dict:435,0,0,
+$.endpoints[],container,1484,dict:1484,0,0,
+$.endpoints[].adapter_name,internal,1484,str:1484,0,96,
+$.endpoints[].allowed_passthrough_parameters,property,1484,list:1484,0,0,
+$.endpoints[].allowed_passthrough_parameters[],property,46,str:46,0,14,cachedContent 12; chat_template_kwargs 5; reasoning_budget 4; frequency_penalty 3
+$.endpoints[].can_abort,property,1484,bool:1484,1003,2,True 1003; False 481
+$.endpoints[].capacity_tpm,property,1484,NoneType:1404 int:80,0,33,10000000 12; 1000000 11; 5000000 4; 1500000 4
+$.endpoints[].context_length,dimension,1484,int:1484,0,65,
+$.endpoints[].created_at,property,1484,str:1484,0,1457,
+$.endpoints[].data_policy,container,1484,dict:1484,0,0,
+$.endpoints[].data_policy.canPublish,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].data_policy.privacyPolicyURL,link,1465,str:1465,0,77,
+$.endpoints[].data_policy.requiresUserIDs,property,453,bool:453,453,1,True 453
+$.endpoints[].data_policy.retainsPrompts,property,1484,bool:1484,532,2,False 952; True 532
+$.endpoints[].data_policy.retentionDays,property,222,int:222,0,3,30 171; 55 49; 90 2
+$.endpoints[].data_policy.safetyRetention,property,1484,bool:1484,58,2,False 1426; True 58
+$.endpoints[].data_policy.termsOfServiceURL,link,1439,str:1439,0,76,
+$.endpoints[].data_policy.training,property,1484,bool:1484,16,2,False 1468; True 16
+$.endpoints[].data_policy.trainingOpenRouter,property,1484,bool:1484,7,2,False 1477; True 7
+$.endpoints[].declared_region,constant,1484,NoneType:1484,0,0,
+$.endpoints[].deprecation_date,property,1484,NoneType:1445 str:39,0,17,2098-12-31T16:00:00.000Z 10; 2026-10-31T13:00:00.000Z 4; 2026-12-31T16:00:00.000Z 4; 2026-11-11T13:00:00.000Z 3
+$.endpoints[].derived_service_tier,property,1484,NoneType:1463 str:21,0,4,fast 13; highspeed 5; turbo 2; prime 1
+$.endpoints[].display_pricing,pricing,1484,list:1484,0,0,
+$.endpoints[].display_pricing[],pricing,5320,dict:5320,0,0,
+$.endpoints[].display_pricing[].*,pricing,33049,str:24706 int:5376 dict:1733 list:869 bool:365,365,0,
+$.endpoints[].excluded_parameters,property,1484,list:1484,0,0,
+$.endpoints[].excluded_parameters[],property,1122,str:1122,0,18,top_p 298; temperature 289; top_k 131; max_tokens 79
+$.endpoints[].features,container,1484,dict:1484,0,0,
+$.endpoints[].features.disable_free_endpoint_limits,property,6,bool:6,4,2,True 4; False 2
+$.endpoints[].features.is_mandatory_reasoning,property,103,bool:103,86,2,True 86; False 17
+$.endpoints[].features.reasoning_disabled_as,property,15,str:15,0,1,reasoning_effort_none 15
+$.endpoints[].features.reasoning_return_mechanism,property,83,str:83,0,3,reasoning-content 68; reasoning 10; content-string 5
+$.endpoints[].features.should_send_reasoning_text_in_text_content,internal,3,bool:3,1,2,False 2; True 1
+$.endpoints[].features.supported_parameters,duplicate,227,dict:227,0,0,
+$.endpoints[].features.supported_parameters.response_format,duplicate,121,bool:121,114,2,True 114; False 7
+$.endpoints[].features.supported_parameters.structured_outputs,duplicate,146,bool:146,127,2,True 127; False 19
+$.endpoints[].features.supports_base64_file_input,property,25,bool:25,19,2,True 19; False 6
+$.endpoints[].features.supports_base64_image_input,property,32,bool:32,22,2,True 22; False 10
+$.endpoints[].features.supports_base64_video_input,property,218,bool:218,134,2,True 134; False 84
+$.endpoints[].features.supports_file_urls,property,433,bool:433,357,2,True 357; False 76
+$.endpoints[].features.supports_image_urls,property,32,bool:32,21,2,True 21; False 11
+$.endpoints[].features.supports_input_audio,property,209,bool:209,80,2,False 129; True 80
+$.endpoints[].features.supports_multipart,property,39,bool:39,28,2,True 28; False 11
+$.endpoints[].features.supports_native_apply_patch,property,176,bool:176,176,1,True 176
+$.endpoints[].features.supports_native_web_fetch,property,28,bool:28,28,1,True 28
+$.endpoints[].features.supports_native_web_search,property,385,bool:385,341,2,True 341; False 44
+$.endpoints[].features.supports_tool_choice,container,1484,dict:1484,0,0,
+$.endpoints[].features.supports_tool_choice.literal_auto,property,1484,bool:1484,1460,2,True 1460; False 24
+$.endpoints[].features.supports_tool_choice.literal_none,property,1484,bool:1484,1292,2,True 1292; False 192
+$.endpoints[].features.supports_tool_choice.literal_required,property,1484,bool:1484,1119,2,True 1119; False 365
+$.endpoints[].features.supports_tool_choice.type_function,property,1484,bool:1484,1146,2,True 1146; False 338
+$.endpoints[].features.supports_video_urls,property,218,bool:218,128,2,True 128; False 90
+$.endpoints[].has_chat_completions,property,1484,bool:1484,1484,1,True 1484
+$.endpoints[].has_completions,property,1484,bool:1484,673,2,False 811; True 673
+$.endpoints[].id,identity,1484,str:1484,0,1484,
+$.endpoints[].is_byok,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_byok_only,property,1484,bool:1484,37,2,False 1447; True 37
+$.endpoints[].is_deranked,property,1484,bool:1484,9,2,False 1475; True 9
+$.endpoints[].is_disabled,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_free,property,1484,bool:1484,16,2,False 1468; True 16
+$.endpoints[].is_hidden,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_hipaa_eligible,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_pricing_unresolved,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_private,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].is_zdr,property,1484,bool:1484,952,2,True 952; False 532
+$.endpoints[].limit_rpd,property,1484,NoneType:1480 int:4,0,3,1000 2; 3000 1; 2000 1
+$.endpoints[].limit_rpm,property,1484,NoneType:1347 int:137,0,30,250 31; 300 24; 450 12; 150 10
+$.endpoints[].max_completion_tokens,dimension,1484,int:1280 NoneType:204,0,50,
+$.endpoints[].max_prompt_tokens,dimension,1484,NoneType:1329 int:155,0,16,922000 89; 272000 28; 983616 17; 258048 5
+$.endpoints[].max_tokens_per_image,property,1484,NoneType:1482 int:2,0,1,3342 2
+$.endpoints[].model_variant_permaslug,identity,1484,str:1484,0,435,
+$.endpoints[].model_variant_slug,identity,1484,str:1484,0,435,
+$.endpoints[].moderation_required,property,1484,bool:1484,269,2,False 1215; True 269
+$.endpoints[].name,identity,1484,str:1484,0,1147,
+$.endpoints[].pricing,pricing,1484,dict:1484,0,0,
+$.endpoints[].pricing.audio,pricing,95,str:95,0,28,0.000001 10; 0.000000375 9; 0.000002 8; 0.0000005 7
+$.endpoints[].pricing.audio_output,pricing,2,str:2,0,2,0.000064 1; 0.0000024 1
+$.endpoints[].pricing.completion,pricing,1484,str:1484,0,313,
+$.endpoints[].pricing.discount,pricing,1484,int:1355 float:129,0,38,0 1355; 0.5 35; 0.3 11; 0.1 8
+$.endpoints[].pricing.display_pricing,pricing,1484,list:1484,0,0,
+$.endpoints[].pricing.display_pricing[],pricing,5320,dict:5320,0,0,
+$.endpoints[].pricing.display_pricing[].*,pricing,33049,str:24706 int:5376 dict:1733 list:869 bool:365,365,0,
+$.endpoints[].pricing.image,pricing,90,str:90,0,27,0.00000075 9; 0.000000375 9; 0.000002 8; 0.00000025 6
+$.endpoints[].pricing.image_output,pricing,15,str:15,0,6,0.00003 5; 0.00006 4; 0.00012 3; 0.000066 1
+$.endpoints[].pricing.input_audio_cache,pricing,88,str:88,0,24,0.0000001 9; 0.0000000375 9; 0.00000005 8; 0.0000002 6
+$.endpoints[].pricing.input_cache_read,pricing,1214,str:1214,0,223,
+$.endpoints[].pricing.input_cache_write,pricing,342,str:342,0,49,
+$.endpoints[].pricing.input_cache_write_1h,pricing,131,str:131,0,21,0.00001 27; 0.000011 15; 0.00002 11; 0.000004 11
+$.endpoints[].pricing.internal_reasoning,pricing,91,str:91,0,27,0.000001875 9; 0.0000045 6; 0.0000015 6; 0.000012 6
+$.endpoints[].pricing.overrides,pricing,226,list:226,0,0,
+$.endpoints[].pricing.overrides[],pricing,247,dict:247,0,0,
+$.endpoints[].pricing.overrides[].audio,pricing,12,str:12,0,6,0.000004 3; 0.000002 3; 0.0000025 2; 0.0000072 2
+$.endpoints[].pricing.overrides[].completion,pricing,247,str:247,0,74,
+$.endpoints[].pricing.overrides[].input_audio_cache,pricing,11,str:11,0,6,0.0000004 3; 0.00000025 2; 0.0000002 2; 0.00000072 2
+$.endpoints[].pricing.overrides[].input_cache_read,pricing,230,str:230,0,57,
+$.endpoints[].pricing.overrides[].input_cache_write,pricing,139,str:139,0,34,0.000005 18; 0.0000055 14; 0.0000025 12; 0.00001 10
+$.endpoints[].pricing.overrides[].input_cache_write_1h,pricing,18,str:18,0,6,0.000001 5; 0.0000011 5; 0.000012 4; 0.0000132 2
+$.endpoints[].pricing.overrides[].min_prompt_tokens,pricing,219,int:219,0,6,272000 139; 200000 51; 100000 11; 256000 9
+$.endpoints[].pricing.overrides[].prompt,pricing,247,str:247,0,63,
+$.endpoints[].pricing.overrides[].utc_days,pricing,12,list:12,0,0,
+$.endpoints[].pricing.overrides[].utc_days[],pricing,54,str:54,0,7,monday 10; tuesday 10; wednesday 10; thursday 10
+$.endpoints[].pricing.overrides[].utc_end,pricing,26,int:26,0,7,0 10; 1400 6; 100 2; 400 2
+$.endpoints[].pricing.overrides[].utc_start,pricing,26,int:26,0,7,0 10; 1400 6; 100 2; 400 2
+$.endpoints[].pricing.prompt,pricing,1484,str:1484,0,275,
+$.endpoints[].pricing.web_search,pricing,490,str:490,0,6,0.01 350; 0.014 97; 0.005 35; 0.0025 6
+$.endpoints[].pricing_json,property,1484,dict:1484,0,0,
+$.endpoints[].pricing_json.*,property,7244,str:5906 float:1302 int:36,0,0,
+$.endpoints[].pricing_version_id,identity,1484,str:1484,0,1484,
+$.endpoints[].provider_display_name,identity,1484,str:1484,0,98,
+$.endpoints[].provider_info,container,1484,dict:1484,0,0,
+$.endpoints[].provider_info.adapterName,provider duplicate,1484,str:1484,0,96,
+$.endpoints[].provider_info.baseUrl,internal,1484,str:1484,0,94,
+$.endpoints[].provider_info.byokEnabled,property,1484,bool:1484,1419,2,True 1419; False 65
+$.endpoints[].provider_info.dataPolicy,provider duplicate,1484,dict:1484,0,0,
+$.endpoints[].provider_info.dataPolicy.canPublish,provider duplicate,1484,bool:1484,0,1,False 1484
+$.endpoints[].provider_info.dataPolicy.privacyPolicyURL,provider duplicate,1465,str:1465,0,77,
+$.endpoints[].provider_info.dataPolicy.requiresUserIDs,provider duplicate,1484,bool:1484,453,2,False 1031; True 453
+$.endpoints[].provider_info.dataPolicy.retainsPrompts,provider duplicate,1484,bool:1484,550,2,False 934; True 550
+$.endpoints[].provider_info.dataPolicy.retentionDays,provider duplicate,207,int:207,0,2,30 158; 55 49
+$.endpoints[].provider_info.dataPolicy.safetyRetention,provider duplicate,1484,bool:1484,0,1,False 1484
+$.endpoints[].provider_info.dataPolicy.termsOfServiceURL,provider duplicate,1439,str:1439,0,76,
+$.endpoints[].provider_info.dataPolicy.training,provider duplicate,1484,bool:1484,12,2,False 1472; True 12
+$.endpoints[].provider_info.dataPolicy.trainingOpenRouter,provider duplicate,1484,bool:1484,2,2,False 1482; True 2
+$.endpoints[].provider_info.datacenters,property,448,list:448,0,0,
+$.endpoints[].provider_info.datacenters[],property,324,str:324,0,7,US 178; SG 75; CN 45; ID 11
+$.endpoints[].provider_info.displayName,identity,1484,str:1484,0,89,
+$.endpoints[].provider_info.hasChatCompletions,provider duplicate,1484,bool:1484,1484,1,True 1484
+$.endpoints[].provider_info.hasCompletions,provider duplicate,1484,bool:1484,689,2,False 795; True 689
+$.endpoints[].provider_info.headquarters,property,1385,str:1385,0,9,US 1117; SG 124; FR 53; CN 45
+$.endpoints[].provider_info.icon,identity,1484,dict:1484,0,0,
+$.endpoints[].provider_info.icon.className,identity,153,str:153,0,1,invert-0 dark:invert 153
+$.endpoints[].provider_info.icon.darkUrl,identity,6,str:6,0,1,/images/icons/Modular-dark.png 6
+$.endpoints[].provider_info.icon.url,identity,1484,str:1484,0,25,https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON& 653; /images/icons/OpenAI.svg 146; /images/icons/GoogleVertex.svg 102; /images/icons/Azure.svg 101
+$.endpoints[].provider_info.isAbortable,provider duplicate,1484,bool:1484,1003,2,True 1003; False 481
+$.endpoints[].provider_info.isPrivate,provider duplicate,1484,bool:1484,0,1,False 1484
+$.endpoints[].provider_info.moderationRequired,provider duplicate,1484,bool:1484,269,2,False 1215; True 269
+$.endpoints[].provider_info.name,identity,1484,str:1484,0,83,
+$.endpoints[].provider_info.pricingStrategy,internal,1484,str:1484,0,16,openai_chat_completions 779; openai_responses 219; anthropic 131; gemini 99
+$.endpoints[].provider_info.requiredAttestationTypes,property,1484,list:1484,0,0,
+$.endpoints[].provider_info.sendClientIp,property,1484,bool:1484,0,1,False 1484
+$.endpoints[].provider_info.slug,identity,1484,str:1484,0,106,
+$.endpoints[].provider_info.statusPageUrl,property,1484,str:976 NoneType:508,0,33,https://status.openai.com/ 146; https://status.cloud.google.com/products/sdXM79fz1FS6ekNpu37 102; https://status.azure.com/ 101; https://status.deepinfra.com/ 99
+$.endpoints[].provider_model_id,identity,1484,str:1484,0,781,
+$.endpoints[].provider_name,identity,1484,str:1484,0,83,
+$.endpoints[].provider_permaslug,identity,1484,str:1484,0,83,
+$.endpoints[].provider_region,property,1484,NoneType:1117 str:367,0,13,us 151; global 74; eu 36; us-east-1 26
+$.endpoints[].provider_slug,identity,1484,str:1484,0,244,
+$.endpoints[].quantization,property,1484,str:1484,0,9,unknown 869; fp8 344; fp4 138; bf16 77
+$.endpoints[].server_tool_costs_discount_exempt,pricing,1345,bool:1345,1345,1,True 1345
+$.endpoints[].service_tier,property,155,str:155,0,3,priority 89; flex 62; ultrafast 4
+$.endpoints[].stats,stats,1291,dict:1291,0,0,
+$.endpoints[].stats.*,stats,23238,int:14189 float:6392 str:2582 NoneType:75,0,0,
+$.endpoints[].status,property,1484,int:1484,0,4,0 1408; -5 37; -2 30; -3 9
+$.endpoints[].supported_image_parameters,modality detail,1484,NoneType:1466 dict:18,0,0,
+$.endpoints[].supported_image_parameters.aspect_ratios,modality detail,15,list:15,0,0,
+$.endpoints[].supported_image_parameters.aspect_ratios[],modality detail,165,str:165,0,15,1:1 15; 2:3 15; 3:2 15; 3:4 13
+$.endpoints[].supported_image_parameters.backgrounds,modality detail,13,NoneType:10 list:3,0,0,
+$.endpoints[].supported_image_parameters.backgrounds[],modality detail,8,str:8,0,3,auto 3; opaque 3; transparent 2
+$.endpoints[].supported_image_parameters.input_references,modality detail,17,dict:17,0,0,
+$.endpoints[].supported_image_parameters.input_references.max,modality detail,16,int:15 NoneType:1,0,3,14 11; 16 3; 3 1
+$.endpoints[].supported_image_parameters.input_references.min,modality detail,16,int:15 NoneType:1,0,1,0 15
+$.endpoints[].supported_image_parameters.n,modality detail,17,dict:17,0,0,
+$.endpoints[].supported_image_parameters.n.max,modality detail,16,int:15 NoneType:1,0,2,1 12; 10 3
+$.endpoints[].supported_image_parameters.n.min,modality detail,16,int:15 NoneType:1,0,1,1 15
+$.endpoints[].supported_image_parameters.output_compression,modality detail,16,NoneType:10 dict:6,0,0,
+$.endpoints[].supported_image_parameters.output_compression.max,modality detail,5,int:3 NoneType:2,0,1,100 3
+$.endpoints[].supported_image_parameters.output_compression.min,modality detail,4,int:3 NoneType:1,0,1,0 3
+$.endpoints[].supported_image_parameters.output_formats,modality detail,13,NoneType:13,0,0,
+$.endpoints[].supported_image_parameters.qualities,modality detail,13,NoneType:10 list:3,0,0,
+$.endpoints[].supported_image_parameters.qualities[],modality detail,12,str:12,0,4,auto 3; low 3; medium 3; high 3
+$.endpoints[].supported_image_parameters.resolutions,modality detail,15,list:11 NoneType:4,0,0,
+$.endpoints[].supported_image_parameters.resolutions[],modality detail,32,str:32,0,4,1K 11; 2K 9; 4K 8; 512 4
+$.endpoints[].supported_image_parameters.seed,modality detail,13,NoneType:13,0,0,
+$.endpoints[].supported_parameters,property,1484,list:1484,0,0,
+$.endpoints[].supported_parameters[],property,18194,str:18194,0,26,max_tokens 1401; tools 1345; tool_choice 1325; response_format 1319
+$.endpoints[].supported_stt_parameters,modality detail,1484,NoneType:1484,0,0,
+$.endpoints[].supported_video_parameters,modality detail,1484,NoneType:1403 dict:81,0,0,
+$.endpoints[].supported_video_parameters.generate_audio,modality detail,41,NoneType:41,0,0,
+$.endpoints[].supported_video_parameters.seed,modality detail,41,NoneType:41,0,0,
+$.endpoints[].supported_video_parameters.supported_aspect_ratios,modality detail,5,NoneType:5,0,0,
+$.endpoints[].supported_video_parameters.supported_frame_images,modality detail,41,NoneType:41,0,0,
+$.endpoints[].supported_video_parameters.supported_resolutions,modality detail,5,NoneType:5,0,0,
+$.endpoints[].supported_video_parameters.supported_sizes,modality detail,63,NoneType:63,0,0,
+$.endpoints[].supports_multipart,property,1484,bool:1484,1470,2,True 1470; False 14
+$.endpoints[].supports_reasoning,property,1484,bool:1484,1269,2,True 1269; False 215
+$.endpoints[].supports_tool_parameters,property,1484,bool:1484,1345,2,True 1345; False 139
+$.endpoints[].variant,identity,1484,str:1484,0,3,standard 1395; batch 73; free 16
+$.model,identity,435,dict:435,0,0,
+$.model.author,identity,435,str:435,0,58,
+$.model.author_display_name,identity,435,str:435,0,58,
+$.model.author_flagship_modalities,presentation,435,list:435,0,0,
+$.model.author_flagship_modalities[],presentation,1,str:1,0,1,image 1
+$.model.author_icon_uri,presentation,435,NoneType:419 str:16,0,9,https://sakana.ai 4; https://inference.net/ 2; https://moondream.ai 2; https://scaledown.ai 2
+$.model.context_length,duplicate,435,int:435,0,40,262144 67; 1048576 62; 1000000 54; 1050000 44
+$.model.created_at,property,435,str:435,0,348,
+$.model.default_order,internal,435,list:435,0,0,
+$.model.default_order[],internal,411,str:411,0,20,azure 91; openai 87; google-vertex/global 34; anthropic 30
+$.model.default_parameters,container,435,dict:435,0,0,
+$.model.default_parameters.frequency_penalty,property,215,NoneType:212 int:3,0,1,0 3
+$.model.default_parameters.presence_penalty,property,145,NoneType:145,0,0,
+$.model.default_parameters.repetition_penalty,property,149,NoneType:143 float:4 int:2,0,3,1.1 2; 1.05 2; 1 2
+$.model.default_parameters.temperature,property,251,NoneType:163 int:46 float:42,0,10,1 46; 0.3 15; 0.6 6; 0.7 6
+$.model.default_parameters.top_k,property,158,NoneType:137 int:21,0,4,20 11; 64 5; 50 3; 40 2
+$.model.default_parameters.top_p,property,239,NoneType:172 float:61 int:6,0,5,0.95 54; 1 6; 0.9 3; 0.8 3
+$.model.default_stops,property,435,list:435,0,0,
+$.model.default_stops[],property,74,str:74,0,13,<|im_start|> 10; <|im_end|> 10; <|eot_id|> 7; <|end_of_text|> 7
+$.model.default_system,property,435,NoneType:434 str:1,0,1,"You are MiniMax-M2.1, a helpful AI assistant built by MiniMa 1"
+$.model.description,presentation,435,str:435,0,341,
+$.model.display_required_attestation_types,constant,435,list:435,0,0,
+$.model.features,container,435,dict:435,0,0,
+$.model.features.chat_template_config,container,321,dict:321,0,0,
+$.model.features.chat_template_config.should_hoist_and_merge_system_messages,property,29,NoneType:17 bool:12,12,1,True 12
+$.model.features.reasoning_config,duplicate,362,dict:362,0,0,
+$.model.features.reasoning_config.default_reasoning_effort,duplicate,174,str:159 NoneType:15,0,6,medium 79; high 50; max 12; minimal 9
+$.model.features.reasoning_config.default_reasoning_enabled,duplicate,166,bool:160 NoneType:6,133,2,True 133; False 27
+$.model.features.reasoning_config.end_token,duplicate,355,NoneType:256 str:99,0,2,</think> 98; </reasoning> 1
+$.model.features.reasoning_config.is_mandatory_reasoning,duplicate,229,bool:226 NoneType:3,126,2,True 126; False 100
+$.model.features.reasoning_config.reasoning_return_mechanism,duplicate,104,str:104,0,4,reasoning-content 95; content-string 4; none 3; reasoning 2
+$.model.features.reasoning_config.start_token,duplicate,355,NoneType:256 str:99,0,2,<think> 98; <reasoning> 1
+$.model.features.reasoning_config.supported_reasoning_efforts,duplicate,200,list:196 NoneType:4,0,0,
+$.model.features.reasoning_config.supported_reasoning_efforts[],duplicate,719,str:719,0,6,high 187; low 161; medium 150; xhigh 96
+$.model.features.reasoning_config.supports_reasoning_effort,duplicate,211,bool:211,191,2,True 191; False 20
+$.model.features.reasoning_config.supports_reasoning_max_tokens,duplicate,72,bool:55 NoneType:17,10,2,False 45; True 10
+$.model.features.reasoning_config.system_prompt,duplicate,114,NoneType:113 str:1,0,1,"You are a deep thinking AI, you may use extremely long chain 1"
+$.model.group,presentation,435,str:435,0,15,Other 144; GPT 105; Gemini 35; Claude 30
+$.model.has_text_output,duplicate,435,bool:435,435,1,True 435
+$.model.hf_slug,property,435,str:292 NoneType:143,0,160,
+$.model.hf_updated_at,constant,435,NoneType:435,0,0,
+$.model.hidden,constant,435,bool:435,0,1,False 435
+$.model.input_modalities,property,435,list:435,0,0,
+$.model.input_modalities[],property,1021,str:1021,0,5,text 435; image 287; file 176; video 83
+$.model.instruct_type,property,435,NoneType:403 str:32,0,8,llama3 7; chatml 6; gemma 4; qwen3 4
+$.model.is_private,constant,435,bool:435,0,1,False 435
+$.model.is_trainable_image,constant,435,NoneType:435,0,0,
+$.model.is_trainable_text,property,435,NoneType:328 bool:107,107,1,True 107
+$.model.knowledge_cutoff,property,435,NoneType:276 str:159,0,31,2024-06-30T23:59:59.000Z 25; 2023-10-31T23:59:59.000Z 16; 2025-03-31T23:59:59.000Z 14; 2023-12-31T23:59:59.000Z 12
+$.model.limit_rpd,property,435,NoneType:294 int:141,0,1,0 141
+$.model.limit_rpm,property,435,NoneType:292 int:143,0,3,0 137; 300 4; 50000 2
+$.model.model_version_group_id,property,435,NoneType:345 str:90,0,25,53bf98ea-c68f-471f-95cd-a59b3a9881bb 10; b98cca06-1cff-4829-90c2-ef03ddfefb7d 8; c59971be-c6bc-4199-9192-95e9dc48cb9e 8; abf62d9f-0b98-401f-a916-b5bd3c214712 6
+$.model.name,identity,435,str:435,0,435,
+$.model.output_modalities,property,435,list:435,0,0,
+$.model.output_modalities[],property,447,str:447,0,3,text 435; image 10; audio 2
+$.model.permaslug,identity,435,str:435,0,353,
+$.model.preview_audio,property,435,NoneType:435,0,0,
+$.model.preview_thumbnail_url,property,435,NoneType:426 str:9,0,2,https://model-assets.openrouter.ai/model-examples/google/gem 6; https://model-assets.openrouter.ai/model-examples/openai/gpt 3
+$.model.previews_by_modality,presentation,435,dict:435,0,0,
+$.model.previews_by_modality.image,presentation,9,dict:9,0,0,
+$.model.previews_by_modality.image.thumbnail_url,presentation,9,str:9,0,2,https://model-assets.openrouter.ai/model-examples/google/gem 6; https://model-assets.openrouter.ai/model-examples/openai/gpt 3
+$.model.previews_by_modality.image.url,presentation,9,str:9,0,2,https://model-assets.openrouter.ai/model-examples/google/gem 6; https://model-assets.openrouter.ai/model-examples/openai/gpt 3
+$.model.promotion_message,presentation,435,NoneType:328 str:107,0,1, 107
+$.model.quick_start_example_type,presentation,435,str:273 NoneType:162,0,4,reasoning 261; image_generation 8; fast_apply 3; text 1
+$.model.reasoning_config,container,435,dict:362 NoneType:73,0,0,
+$.model.reasoning_config.default_reasoning_effort,property,174,str:159 NoneType:15,0,6,medium 79; high 50; max 12; minimal 9
+$.model.reasoning_config.default_reasoning_enabled,property,166,bool:160 NoneType:6,133,2,True 133; False 27
+$.model.reasoning_config.end_token,internal,355,NoneType:256 str:99,0,2,</think> 98; </reasoning> 1
+$.model.reasoning_config.is_mandatory_reasoning,property,229,bool:226 NoneType:3,126,2,True 126; False 100
+$.model.reasoning_config.reasoning_return_mechanism,property,104,str:104,0,4,reasoning-content 95; content-string 4; none 3; reasoning 2
+$.model.reasoning_config.start_token,internal,355,NoneType:256 str:99,0,2,<think> 98; <reasoning> 1
+$.model.reasoning_config.supported_reasoning_efforts,property,200,list:196 NoneType:4,0,0,
+$.model.reasoning_config.supported_reasoning_efforts[],property,719,str:719,0,6,high 187; low 161; medium 150; xhigh 96
+$.model.reasoning_config.supports_reasoning_effort,property,211,bool:211,191,2,True 191; False 20
+$.model.reasoning_config.supports_reasoning_max_tokens,property,72,bool:55 NoneType:17,10,2,False 45; True 10
+$.model.reasoning_config.system_prompt,property,114,NoneType:113 str:1,0,1,"You are a deep thinking AI, you may use extremely long chain 1"
+$.model.required_attestation_types,constant,435,list:435,0,0,
+$.model.router,constant,435,NoneType:435,0,0,
+$.model.routing_error_message,property,435,NoneType:361 str:74,0,7, 67; Claude Fable 5 is not available. Learn more: https://www.ant 2; The free launch period for MiniMax M3.1 Flash ended on Oct 2 1; The free Devstral 2 2512 period has ended. To continue using 1
+$.model.short_name,identity,435,str:435,0,435,
+$.model.slug,identity,435,str:435,0,353,
+$.model.supported_tts_voices,modality detail,435,NoneType:434 list:1,0,0,
+$.model.supports_reasoning,property,435,bool:435,322,2,True 322; False 113
+$.model.updated_at,internal,435,str:435,0,201,
+$.model.variant_deprecation_date,property,435,NoneType:419 str:16,0,8,2026-10-31T13:00:00.000Z 4; 2026-11-11T13:00:00.000Z 3; 2098-12-31T16:00:00.000Z 3; 2026-11-02T13:00:00.000Z 2
+$.model.warning_message,property,435,NoneType:254 str:181,0,8," 161; For the free endpoint, please do not upload any confidential 9; By using Claude Fable 5, you consent to data retention for p 2; By using Claude Fable 5.1, you consent to data retention for 2"
+$.model_id,identity,435,str:435,0,435,
+$.scan_at,identity,435,str:435,0,1,2026-10-27T23:40:40.374Z 435
+$.variant,identity,435,str:435,0,3,standard 348; batch 71; free 16

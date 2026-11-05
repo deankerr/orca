@@ -1,0 +1,84 @@
+provider,endpoints,tags,headquarters,datacenters,byokEnabled,statusPageUrl,sendClientIp,requiredAttestationTypes,pricingStrategy
+aion-labs,6,1,IL,,true,,false,,openai_chat_completions
+akashml,8,3,,,true,,false,,openai_chat_completions
+alibaba,45,6,SG,SG CN,true,https://status.alibabacloud.com/,false,,alibaba | openai_extended
+amazon-bedrock,62,7,US,,true,https://health.aws.amazon.com/health/status,false,,anthropic | bedrock_converse | openai_responses | openai_chat_completions
+ambient,1,1,,,false,,false,,openai_chat_completions
+anthropic,32,2,US,,true,https://status.anthropic.com/,false,,anthropic
+atlas-cloud,26,3,US,,true,,false,,openai_extended
+azure,101,5,US,,true,https://status.azure.com/,false,,openai_responses | anthropic | openai_chat_completions
+baidu,13,3,CN,,true,,false,,openai_chat_completions
+baseten,25,9,US,,true,https://status.baseten.co/,false,,openai_chat_completions
+cerebras,2,1,US,,true,https://status.cerebras.ai/,false,,openai_chat_completions
+chutes,6,4,US,,true,,false,,openai_chat_completions
+claude-on-aws,12,1,US,,true,https://status.anthropic.com/,false,,anthropic
+cloudflare,18,2,US,,true,https://www.cloudflarestatus.com/,false,,openai_extended
+cohere,11,1,US,,true,https://status.cohere.ai/,false,,openai_chat_completions
+coreweave,22,6,US,US,true,,false,,openai_chat_completions
+crusoe,11,3,US,,true,https://status.crusoecloud.com/,false,,openai_chat_completions
+darkbloom,12,5,,,false,,false,,openai_chat_completions
+decart,5,3,US,US,true,,false,,openai_chat_completions
+deepinfra,99,11,US,,true,https://status.deepinfra.com/,false,,openai_chat_completions
+deepseek,2,1,CN,,true,https://status.deepseek.com/,false,,deepseek
+dekallm,11,3,ID,ID,false,,false,,openai_chat_completions
+digitalocean,19,1,US,,true,,false,,openai_chat_completions
+featherless,1,1,US,US,true,https://featherless.ai/status,false,,openai_chat_completions
+fireworks,19,4,US,,true,https://status.fireworks.ai/,false,,openai_chat_completions
+friendli,5,1,US,,true,https://status.friendli.ai/,false,,openai_chat_completions
+gmicloud,29,2,US,US,true,,false,,openai_chat_completions
+google-ai-studio,49,5,US,,true,,false,,gemini
+google-vertex,102,10,US,,true,https://status.cloud.google.com/products/sdXM79fz1FS6ekNpu37K/history,false,,gemini | anthropic | openai_chat_completions
+groq,6,1,US,,true,https://status.groq.com/,false,,openai_chat_completions
+inception,3,1,,,true,,false,,openai_chat_completions
+inceptron,6,3,SE,FI,true,,false,,openai_chat_completions
+inference-net,18,7,US,,true,https://status.inference.net,false,,openai_chat_completions
+io-net,7,5,US,,true,https://status.io.net/,false,,openai_chat_completions
+ionstream,3,2,US,US,false,,false,,openai_chat_completions
+liquid,3,1,,,true,,false,,openai_chat_completions
+makora,8,3,,,false,https://status.makora.com,false,,openai_extended
+mancer,10,2,,,true,,false,,mancer
+mara,4,1,US,US,false,,false,,openai_chat_completions
+meta,6,1,US,,true,,false,,meta_responses
+minimax,12,3,SG,US,true,,false,,openai_chat_completions
+mistral,53,6,FR,,true,https://status.mistral.ai/,false,,mistral
+modal,7,3,US,,true,https://status.modal.com/,false,,openai_chat_completions
+modelrun,6,2,US,US,false,,false,,openai_chat_completions
+moonshotai,6,3,SG,SG,true,,false,,openai_chat_completions
+morph,8,1,US,US,true,,false,,openai_chat_completions
+near-ai,3,2,,,false,,false,,openai_extended
+nebius,17,3,NL,,true,,false,,openai_chat_completions
+nex-agi,2,2,CN,SG,false,,false,,openai_chat_completions
+nextbit,6,4,ES,ES,true,,false,,openai_chat_completions
+novita,47,6,US,,true,https://status.novita.ai/,false,,openai_chat_completions
+nvidia,5,2,US,US,true,,false,,openai_chat_completions
+open-inference,3,1,US,,true,,false,,openai_chat_completions
+openai,146,5,US,,true,https://status.openai.com/,false,,openai_responses | openai_chat_completions
+parasail,40,5,US,,true,,false,,openai_chat_completions
+pareto-alpha,1,1,US,US,false,,false,,openai_extended
+perceptron,2,1,US,,true,,false,,openai_chat_completions
+perplexity,5,1,US,,true,https://status.perplexity.ai/,false,,perplexity
+phala,19,2,US,,true,https://status.phala.network/,false,,openai_chat_completions
+poolside,4,2,,,true,,false,,openai_chat_completions
+primeintellect,8,3,,,true,,false,,openai_extended
+recursive,1,1,US,,false,,false,,openai_chat_completions
+reka,9,2,,,true,,false,,openai_chat_completions
+relace,13,5,,,true,https://status.relace.ai,false,,openai_chat_completions
+sail-research,17,4,US,,true,https://status.sailresearch.com/,false,,openai_chat_completions
+sakana,4,1,,,true,,false,,openai_responses | sakana_responses
+sambanova,6,3,US,,true,https://status.sambanova.ai/,false,,openai_chat_completions
+scaledown,2,1,,,true,,false,,openai_extended
+seed,6,1,SG,,false,,false,,byteplus
+siliconflow,41,2,SG,US,true,,false,,openai_chat_completions
+stepfun,2,1,,,true,,false,,openai_chat_completions
+streamlake,20,2,CN,,true,https://status.streamlake.ai/,false,,openai_chat_completions
+tencent,5,1,CN,SG,true,https://status.tencentcloud.com,false,,openai_extended
+tenstorrent,3,2,US,US,false,https://status.tenstorrent.com/,false,,openai_chat_completions
+thinkingmachines,2,1,,,false,,false,,openai_extended
+together,18,1,US,,true,https://status.together.ai/,false,,openai_chat_completions
+unbiased,2,1,,,false,,false,,openai_extended
+upstage,5,2,,,true,,false,,openai_chat_completions
+venice,38,7,US,US,true,,false,,openai_chat_completions
+wafer,14,7,US,,true,,false,,openai_chat_completions
+xai,31,5,US,,true,https://status.x.ai/,false,,xai_responses
+xiaomi,3,1,CN,SG NL,true,,false,,xiaomi
+z-ai,14,3,SG,SG,true,,false,,openai_chat_completions

@@ -1,0 +1,12 @@
+measure,value
+scan_at,2026-10-27T23:40:40.374Z
+scan_sha256,11a96b76aa4dab2c1d00e2b28a4b18776950eb56b9f9028641598e555d8ff392
+collected_models,1114
+collected_models_with_endpoints,662
+collected_endpoints,1750
+scoped_models,435
+scoped_endpoints,1484
+scoped_providers,83
+scoped_provider_tags,244
+models_with_multiple_endpoints,198
+endpoints_in_multi_endpoint_models,1247

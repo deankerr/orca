@@ -1,0 +1,11 @@
+conditions,rate_meters,rows,endpoints
+min_prompt_tokens,completion input_cache_read input_cache_write prompt,118,116
+min_prompt_tokens,completion input_cache_read prompt,55,54
+min_prompt_tokens,completion input_cache_read input_cache_write input_cache_write_1h prompt,18,18
+utc_end utc_start,completion input_cache_read prompt,16,8
+min_prompt_tokens,completion prompt,13,13
+min_prompt_tokens,audio completion input_audio_cache input_cache_read prompt,11,11
+utc_days utc_end utc_start,completion input_cache_read prompt,10,2
+min_prompt_tokens,completion input_cache_write prompt,3,3
+utc_days,completion input_cache_read prompt,2,2
+min_prompt_tokens,audio completion prompt,1,1

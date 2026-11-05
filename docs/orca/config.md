@@ -32,6 +32,40 @@ tests of such waits must drive the clock explicitly. This avoids advancing watch
 module loading or other asynchronous work is still running. CI also runs the three scheduler suites
 serially with two repeats per test.
 
+## TanStack Start app
+
+`apps/start` is an independent frontend using `packages/ui` for the Base UI Mira theme and components.
+TanStack Devtools runs in development with the Router panel at the bottom right and the Vite plugin enabled.
+React Compiler runs through the Vite React preset and Rolldown Babel plugin, including shared UI source.
+Theme defaults to dark. The Light/Dark/System menu stores the choice under
+`orca-theme` in local storage. A `ScriptOnce` initializes the HTML class and color scheme before
+hydration; system mode tracks OS changes. If storage is unavailable, changes last for the current visit.
+Local aliases in Start and UI use `package.json#imports`. Start's are `#app`, `#components`, `#endpoints`, `#lib`,
+and `#panels`, mapped without extensions because each folder mixes `.ts` and `.tsx`; UI's are `#components`,
+`#lib`, and `#hooks`. Start's `tsconfig.json#paths` repeats its aliases, because TypeScript does not probe
+extensions for `imports` targets.
+Shared UI imports use the `@orca/ui` package exports. Both shadcn configs follow these mappings.
+Its public `VITE_CONVEX_URL` points to the same Convex deployment as the checkout's backend.
+Set it in `apps/start/.env.local`; `bun run worktree:setup` writes it for linked worktrees.
+For the main checkout, copy the public `CONVEX_URL` from `packages/backend/.env.local`.
+
+Run `bun run dev:start` for Start and `bun run dev:backend` for backend synchronization.
+Start uses its own Portless name, `orca-start`, with automatic worktree prefixes.
+`bun run dev` continues to run the existing app and backend; Start runs independently alongside them.
+Run `bun run build:start` for the Nitro build and `bun run --cwd apps/start preview` to preview it.
+
+The `orca-start` Vercel project deploys Start beside the existing app for tester feedback. It has no custom
+domain; production serves `https://orca-start-deank.vercel.app`.
+
+- Settings: root `apps/start`, the TanStack Start preset, Node 24.x, and production branch `main`.
+- Vercel Authentication protects preview deployments only; production is public.
+- `VITE_CONVEX_URL` is `https://dependable-husky-550.convex.cloud` for production and preview, embedded at build time.
+- Previews cannot find the per-branch Convex deployments the `orca` project creates.
+- Start reads only the public `products.v5.catalog.snapshot` query and deploys no Convex functions.
+- The ignored build step skips commits that leave `apps/start`, `packages/`, and root build files unchanged.
+
+UI source exports are compiled by the consuming app.
+
 ## Backend runtime
 
 `convex.config.ts` parses these deployment variables. Web and logo origins are required; the others
@@ -175,6 +209,7 @@ Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_U
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_CONVEX_URL`            | Required backend cloud URL.                                                                     |
 | `NEXT_PUBLIC_ORCA_LOGO_ORIGIN`      | Browser avatar origin; defaults to `https://logos.orb.town`.                                    |
+| `VITE_ORCA_LOGO_ORIGIN`             | Start browser avatar origin; unset or empty → `https://logos.orb.town`.                         |
 | `NEXT_PUBLIC_POSTHOG_KEY`           | Public ingestion key shared by production and preview; blank/missing disables analytics.        |
 | `NEXT_PUBLIC_POSTHOG_DEV`           | `true` enables analytics in local development; capture is otherwise disabled there.             |
 | `NEXT_PUBLIC_VERCEL_ENV`            | Browser tier; analytics runs in production and preview. Tags events as `app_environment`.       |
@@ -186,7 +221,7 @@ Vercel deploys Convex before building Next.js and supplies `NEXT_PUBLIC_CONVEX_U
 | `NODE_ENV`                          | Development enables favicon tint, breakpoint display, and detailed errors.                      |
 
 The public query cache persists for 24 hours in browser local storage; its build key discards older
-builds' entries before hydration. Browser and Discord logo origins are configured separately.
+builds' entries before hydration. Browser (Next.js and Start) and Discord logo origins are configured separately.
 
 `env.style` tints the favicon blue in development and amber in preview, leaving white pixels untinted;
 production serves the original. The tint is fixed at build time.

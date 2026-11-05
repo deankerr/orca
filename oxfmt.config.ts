@@ -9,6 +9,7 @@ export default defineConfig({
     '**/.claude/skills',
     '**/components/ui',
     '**/worker-configuration.d.ts',
+    '**/routeTree.gen.ts',
   ],
   semi: false,
   singleQuote: true,

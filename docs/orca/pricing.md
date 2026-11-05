@@ -35,7 +35,21 @@ and favorable direction; product field names and markup remain presentation choi
 - Prices keep three significant digits, cents at minimum, and at most four decimals; smaller nonzero
   values keep one significant digit rather than rounding to zero.
 - Eligibility compares original values before formatting.
-- Grid rates and Pricing History traces omit zero; change alerts can display transitions to or from zero.
+- The old grid and Pricing History traces omit zero; change alerts can display transitions to or from zero.
+- The new app treats zero as a real price of $0: free endpoints show `$0`, pass maximum-price filters, and sort first.
+- `@orca/pricing` serves the new app only and owns rate interpretation: `quotedRate` keeps non-negative decimals.
+- `perMillion` converts a quoted rate to a `Number` for sorting, filtering, and plotting; zero is 0.
+- Absent, negative, malformed, and unrepresentable rates, such as `1e309`, have no `perMillion` value and sort last.
+- Display formats the original string, never the `Number`; zero reads `$0` rather than `$0.00`.
+
+### Blended price
+
+Blended price weighs three parts input to one part output: `(3 × input + output) / 4`, in $/M tokens.
+It summarizes a text endpoint's cost in one number for comparing and plotting endpoints.
+
+- Blend is absent when either rate is absent; free variants, with both rates zero, blend to 0.
+- Log-scale plots cannot place 0, so a plot leaves free endpoints off.
+- Blend ignores cache, audio, image, and conditional rates.
 
 Alert schedule detection and eligibility belong to `events.md`; quote retention does not depend on them.
 

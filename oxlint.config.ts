@@ -5,13 +5,14 @@ import next from 'ultracite/oxlint/next'
 import react from 'ultracite/oxlint/react'
 
 export default defineConfig({
-  extends: [core, react, next, antiSlop],
+  extends: [core, react, antiSlop],
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
     '**/.agents/skills',
     '**/.claude/skills',
     '**/components/ui',
     '**/worker-configuration.d.ts',
+    '**/routeTree.gen.ts',
   ],
   options: {
     reportUnusedDisableDirectives: 'warn',
@@ -19,6 +20,14 @@ export default defineConfig({
     typeCheck: true,
   },
   overrides: [
+    { ...next, files: ['apps/web/**'] },
+    {
+      files: ['apps/start/src/routes/__root.tsx'],
+      rules: {
+        // TanStack Router reserves this root route filename.
+        'unicorn/filename-case': 'off',
+      },
+    },
     {
       files: ['packages/backend/**/*', 'packages/discord-sender/**/*'],
       rules: {
@@ -46,12 +55,20 @@ export default defineConfig({
       },
     },
     {
+      // The React Compiler skips a component or hook that destructures with a default.
+      files: ['apps/start/src/**', 'packages/ui/src/**'],
+      jsPlugins: ['./packages/config/oxlint/react-compiler.js'],
+      rules: { 'orca-react-compiler/no-destructured-default': 'error' },
+    },
+    {
       files: ['**/*.test.{ts,tsx}', '**/*.testing.ts'],
       rules: {
         // fixtures and assertions cast test doubles routinely
         'anti-slop/require-safety-comment-for-type-assertion': 'off',
         // scenario tests are long assertion sequences
         complexity: 'off',
+        // test doubles are not React code
+        'orca-react-compiler/no-destructured-default': 'off',
       },
     },
   ],

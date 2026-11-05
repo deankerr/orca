@@ -1,0 +1,18 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["VITE_CONVEX_URL", "VITE_ORCA_LOGO_ORIGIN"],
+      "outputs": ["dist/**", ".output/**", ".vercel/output/**"]
+    },
+    "dev": {
+      "passThroughEnv": [
+        "PORT",
+        "HOST",
+        "NODE_EXTRA_CA_CERTS",
+        "VITE_CONVEX_URL",
+        "VITE_ORCA_LOGO_ORIGIN"
+      ]
+    }
+  }
+}
