@@ -84,8 +84,15 @@ function value(item: AlertFact): string {
     return item.value.map((member) => JSON.stringify(member)).join(', ') || '[]'
   }
 
+  if (item.kind === 'date') {
+    return utc(item.value)
+  }
+
   return JSON.stringify(item.value)
 }
+
+/** Feed readers share no time zone, so dates read in UTC to the minute: `2026-12-01 13:00 UTC`. */
+const utc = (iso: string) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
 
 const members = (field: string, items: string[]) => value({ field, kind: 'list', value: items })
 

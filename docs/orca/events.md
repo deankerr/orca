@@ -44,7 +44,7 @@ Retained lifecycle Events and presented lifecycle alerts have different meanings
 ### Fields and failures
 
 Alerts read Events through the V5 Contract field declarations, so alert fields use Contract names and
-values. Each field's kind, such as price, count, flag, text, prose, or string set, decides its presentation.
+values. Each field's kind, such as price, count, flag, date, text, prose, or string set, decides its presentation.
 Models also announce `warning_message`, which the Contract does not yet publish.
 
 - Optional facts ORCA cannot read are unknown (null), like absent ones; absent and null are the same value.

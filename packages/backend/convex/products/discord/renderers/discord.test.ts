@@ -159,6 +159,18 @@ test('prices and other numeric fields share precision and reveal changes hidden 
   })
 })
 
+test("dates render as Discord timestamps in the reader's time zone", () => {
+  const date = (before: string | null, after: string | null) =>
+    fieldChange({ after, before, field: 'deprecation_date', kind: 'date' })
+
+  expect(date(null, '2026-12-01T13:00:00.000Z')).toBe(
+    '- **deprecation_date** <t:1796130000:f> (<t:1796130000:R>) (new)',
+  )
+  expect(date('2026-12-01T13:00:00.000Z', '2027-01-01T00:00:00.000Z')).toBe(
+    '- **deprecation_date** <t:1796130000:f> (<t:1796130000:R>) → <t:1798761600:f> (<t:1798761600:R>)',
+  )
+})
+
 test('display pieces compose consistently across changes and block children', () => {
   expect(fieldChange({ after: 'fp16', before: 'fp8', field: 'quantization', kind: 'text' })).toBe(
     changeRow('quantization', valueChange('fp8', 'fp16')),
