@@ -104,7 +104,7 @@ const SHEET_CLASS = {
   bottom:
     'gap-0 rounded-t-xl data-[side=bottom]:h-[85dvh] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]',
   // A Panel's docked width, or the page less a strip of backdrop to tap.
-  left: 'w-[min(20rem,calc(100vw-3rem))] gap-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] data-[side=left]:sm:max-w-none',
+  left: 'data-[side=left]:w-[min(20rem,calc(100vw-3rem))] gap-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] data-[side=left]:sm:max-w-none',
 } as const
 
 interface PanelSlotProps {
