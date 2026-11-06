@@ -46,7 +46,7 @@ function ListFacetRow({ checked, count, onToggle, option }: ListFacetRowProps) {
   return (
     <label
       className={cn(
-        'flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4',
+        'flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4 pointer-coarse:h-9',
         count === 0 && !checked && 'opacity-50',
       )}
       title={option.id}
@@ -186,14 +186,14 @@ export function ListFacet({ kind, selected }: { kind: OptionKind; selected: read
       }}
       title={copy.title}
     >
-      <InputGroup className="mb-1 h-6">
+      <InputGroup className="mb-1 h-6 pointer-coarse:h-9">
         <InputGroupAddon className="py-0">
           <Search aria-hidden="true" />
         </InputGroupAddon>
         <InputGroupInput
           aria-label={copy.filter}
           autoComplete="off"
-          className="text-[13px] leading-4 md:text-[13px]"
+          className="text-[13px] leading-4 md:text-[13px] pointer-coarse:text-base md:pointer-coarse:text-base"
           onChange={(event) => {
             changeQuery(event.target.value)
           }}

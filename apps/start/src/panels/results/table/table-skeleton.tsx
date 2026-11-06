@@ -7,6 +7,7 @@ import { columnLabel, columns } from './columns'
 import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
+  FOLDED_CLASS,
   HEADER_CELL_CLASS,
   TABLE_CLASS,
   TABLE_WRAPPER_CLASS,
@@ -82,7 +83,11 @@ export function TableSkeleton() {
       <table className={TABLE_CLASS}>
         <colgroup>
           {columns.map((column) => (
-            <col key={column.id} style={{ width: column.meta?.width }} />
+            <col
+              className={cn(column.meta?.folds === true && FOLDED_CLASS)}
+              key={column.id}
+              style={{ width: column.meta?.width }}
+            />
           ))}
         </colgroup>
         <thead>
@@ -92,6 +97,7 @@ export function TableSkeleton() {
                 className={cn(
                   HEADER_CELL_CLASS,
                   CELL_PADDING_CLASS,
+                  column.meta?.folds === true && FOLDED_CLASS,
                   column.meta?.numeric === true ? 'text-right' : 'text-left',
                   sortDirection(sort, column.id ?? '') !== false && 'text-foreground',
                 )}
@@ -107,7 +113,14 @@ export function TableSkeleton() {
           {Array.from({ length: ROWS }, (_, index) => (
             <tr key={index}>
               {columns.map((column, position) => (
-                <td className={cn(BODY_CELL_CLASS, CELL_PADDING_CLASS)} key={column.id}>
+                <td
+                  className={cn(
+                    BODY_CELL_CLASS,
+                    CELL_PADDING_CLASS,
+                    column.meta?.folds === true && FOLDED_CLASS,
+                  )}
+                  key={column.id}
+                >
                   <BodyCell index={index} position={position} />
                 </td>
               ))}

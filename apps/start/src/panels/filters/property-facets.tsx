@@ -95,7 +95,7 @@ function PropertyRow({
           <button
             aria-label={`${definition.name}, ${PROPERTY_STATE_WORDS[state]}${excluded ? '' : `, ${count} endpoints`}`}
             className={cn(
-              'flex h-6 w-full items-center gap-2 rounded-sm text-left text-[13px] leading-4',
+              'flex h-6 w-full items-center gap-2 rounded-sm text-left text-[13px] leading-4 pointer-coarse:h-9',
               count === 0 && state === 'off' && 'opacity-50',
               'outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
             )}
@@ -240,7 +240,7 @@ function StatusFacet() {
         <TooltipTrigger
           render={
             // oxlint-disable-next-line jsx-a11y/label-has-associated-control -- The label's text and checkbox are the trigger's children, which the rule cannot see.
-            <label className="flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4" />
+            <label className="flex h-6 cursor-pointer items-center gap-2 text-[13px] leading-4 pointer-coarse:h-9" />
           }
         >
           <Checkbox

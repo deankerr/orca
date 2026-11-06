@@ -8,13 +8,16 @@ import { EndpointTable } from '#panels/results/table/endpoint-table'
 
 import { ScopeBar } from './scope-bar'
 
-/** The Results panel's frame, which the loading skeleton fills with placeholders. */
+/**
+ * The Results panel's frame, which the loading skeleton fills with placeholders. It is the primary
+ * Panel, docked in every layout, and a size container: its parts adapt to its width, not the page's.
+ */
 export function ResultsFrame({ children }: { children: ReactNode }) {
   return (
     <section
       aria-label="Results"
       data-table-keys=""
-      className="flex min-w-0 grow basis-0 flex-col overflow-clip rounded-xl border border-border bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+      className="@container/results flex min-w-0 grow basis-0 flex-col overflow-clip rounded-xl border border-border bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
       // Not a tab stop: it only takes focus from code, when a closing panel's row has been filtered out.
       id={RESULTS_REGION_ID}
       tabIndex={-1}

@@ -22,15 +22,29 @@ type TableRowModel = Row<typeof features, EndpointRow>
 type TableHeader = Header<typeof features, EndpointRow>
 
 /** The classes the table's cells share, which the loading skeleton reuses so the two line up. */
-export const CELL_PADDING_CLASS = 'px-2 first:pl-5 last:pr-5'
+export const CELL_PADDING_CLASS =
+  'px-2 first:pl-5 last:pr-5 @max-md/results:first:pl-3 @max-md/results:last:pr-3'
 
-export const HEADER_CELL_CLASS =
-  'sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase'
+/**
+ * The Model column stays put while the figures scroll under it. A panel too narrow for the whole table
+ * scrolls it sideways, and there the column's edge shows as a rule.
+ */
+const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-3xl/results:first:border-r'
 
-export const BODY_CELL_CLASS = 'h-8 border-b border-border align-middle'
+export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
+
+/** Rows grow to a touch target where the pointer is a finger. */
+export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-coarse:h-10 first:z-[1] first:bg-background ${STICKY_MODEL_CLASS}`
 
 /** The table's own wrapper: as wide as the region, and no narrower than its columns need. */
-export const TABLE_WRAPPER_CLASS = 'relative w-full min-w-190'
+export const TABLE_WRAPPER_CLASS = 'relative w-full min-w-190 @max-lg/results:min-w-144'
+
+/**
+ * Hides a folding column (`meta.folds`) in a Results panel narrower than 32rem, a phone's. Its column,
+ * header, and cells all go, and the table's minimum width drops by its 184px (see `TABLE_WRAPPER_CLASS`),
+ * so the figures start beside the sticky Model column instead of a screen's width away.
+ */
+export const FOLDED_CLASS = '@max-lg/results:hidden'
 
 export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
 
@@ -63,6 +77,7 @@ function SortHeader({
       className={cn(
         HEADER_CELL_CLASS,
         CELL_PADDING_CLASS,
+        column.columnDef.meta?.folds === true && FOLDED_CLASS,
         numeric ? 'text-right' : 'text-left',
         direction !== false && 'text-foreground',
       )}
@@ -107,7 +122,7 @@ function TableRow({
     <tr
       aria-selected={selected}
       className={cn(
-        'cursor-pointer scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+        'group cursor-pointer scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
         selected ? 'bg-selection-surface' : 'hover:bg-muted-hover',
         row.original.unlisted && 'opacity-50',
       )}
@@ -119,9 +134,13 @@ function TableRow({
           className={cn(
             BODY_CELL_CLASS,
             CELL_PADDING_CLASS,
+            cell.column.columnDef.meta?.folds === true && FOLDED_CLASS,
             cell.column.columnDef.meta?.numeric === true &&
               'text-right font-mono text-xs tabular-nums',
-            selected && 'first:shadow-[inset_2px_0_0_var(--selection)]',
+            // The sticky Model cell paints its own background, so it repeats the row's.
+            selected
+              ? 'first:bg-selection-surface first:shadow-[inset_2px_0_0_var(--selection)]'
+              : 'group-hover:first:bg-muted-hover',
           )}
           key={cell.id}
         >
@@ -348,7 +367,11 @@ export function EndpointTable() {
       <table className={TABLE_CLASS}>
         <colgroup>
           {table.getAllLeafColumns().map((column) => (
-            <col key={column.id} style={{ width: column.columnDef.meta?.width }} />
+            <col
+              className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
+              key={column.id}
+              style={{ width: column.columnDef.meta?.width }}
+            />
           ))}
         </colgroup>
         <thead>

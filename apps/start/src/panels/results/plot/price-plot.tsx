@@ -82,7 +82,8 @@ function useScopeSplit(points: readonly PlotPoint[]): DeferredScopeSplit {
 /** The plot's caption, with a note for the endpoints it leaves out. */
 export function ChartCaption({ note }: { note: string | null }) {
   return (
-    <div className="flex justify-between gap-4 font-mono text-[10px] leading-3.5 text-muted-foreground">
+    // A narrow panel wraps the direction hint under the caption rather than overlapping it.
+    <div className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 font-mono text-[10px] leading-3.5 text-muted-foreground">
       <span className="flex min-w-0 gap-3">
         <span className="shrink-0 tracking-[0.04em] uppercase">
           Blend 3:1 $/M × tok/s p50 · log scales
@@ -99,7 +100,7 @@ export function ChartCaption({ note }: { note: string | null }) {
 }
 
 /** The plot region's frame, which the loading skeleton shares. */
-export const PLOT_REGION_CLASS = 'flex shrink-0 flex-col gap-1 px-5 pb-2.5'
+export const PLOT_REGION_CLASS = 'flex shrink-0 flex-col gap-1 px-5 pb-2.5 @max-md/results:px-3'
 
 /** The dots, grid, and axes: rebuilt only when the catalogue or the filters change the dots. */
 function PlotChart({

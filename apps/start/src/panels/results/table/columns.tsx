@@ -17,6 +17,8 @@ declare module '@tanstack/react-table' {
     numeric?: boolean
     /** Pixel width in the fixed layout; the column without one takes the remaining space. */
     width?: number
+    /** Hidden in a narrow Results panel, where the Model cell shows it as a second line instead. */
+    folds?: boolean
   }
 }
 
@@ -47,7 +49,13 @@ function ModelCell({ row }: { row: EndpointRow }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <EntityAvatar slug={row.model.id} />
-      <span className="truncate text-[13px] leading-4">{row.model.name}</span>
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate text-[13px] leading-4">{row.model.name}</span>
+        {/* The Provider column, folded in where the panel is too narrow to give it a column. */}
+        <span className="hidden truncate text-[11px] leading-3.5 text-muted-foreground @max-lg/results:block">
+          {[row.provider.display_name, ...providerTags(row.endpoint)].join(' · ')}
+        </span>
+      </div>
     </div>
   )
 }
@@ -86,7 +94,7 @@ export const columns = helper.columns([
     cell: ({ row }) => <ProviderCell row={row.original} />,
     header: LABELS.provider,
     id: 'provider',
-    meta: { width: 184 },
+    meta: { folds: true, width: 184 },
     sortDescFirst: false,
   }),
   helper.accessor('input', {
