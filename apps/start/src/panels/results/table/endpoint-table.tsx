@@ -65,12 +65,18 @@ type Direction = false | 'asc' | 'desc'
 /**
  * A header's sort button. The active direction's arrow hangs off the label's outer edge, so sorting
  * never moves the label.
+ *
+ * The arrow is decorative. `<th aria-sort>` tells assistive tech a column's sort, but a button inside
+ * another column's header (see `SortHeader`'s `folded`) has no `<th>` of its own, so `announceSort`
+ * has the button say its sort state in its name.
  */
 function SortButton({
+  announceSort,
   className,
   direction,
   header,
 }: {
+  announceSort?: boolean
   className?: string
   direction: Direction
   header: TableHeader
@@ -89,6 +95,9 @@ function SortButton({
       type="button"
     >
       <FlexRender header={header} />
+      {announceSort === true && direction !== false && (
+        <span className="sr-only">, sorted {ariaSort(direction)}</span>
+      )}
       {direction === false ? null : (
         <span
           aria-hidden="true"
@@ -106,7 +115,8 @@ function SortButton({
  * cannot see table state read through builder methods, so a cached header would never update.
  *
  * `folded` is the header of a column folded into this one (see `FOLDED_CLASS`). Its own header is
- * hidden where it folds, so this one carries a sort button for it, shown only there.
+ * hidden where it folds (`display: none`, so it is out of the accessibility tree and its `aria-sort`
+ * with it), so this one carries a sort button for it, shown only there, that names its own sort state.
  */
 function SortHeader({
   direction,
@@ -141,6 +151,7 @@ function SortHeader({
                 /
               </span>
               <SortButton
+                announceSort
                 className={FOLDED_ONLY_CLASS}
                 direction={folded.direction}
                 header={folded.header}
