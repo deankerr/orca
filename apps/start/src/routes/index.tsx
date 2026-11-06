@@ -1,7 +1,7 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
 import { AppLayout } from '#app/app-layout'
-import { PanelSlot, setFiltersSheetOpen, useFiltersSheetOpen, usePanelLayout } from '#app/panels'
+import { OpenFiltersContext, PanelSlot, usePanelLayout, useSheetSession } from '#app/panels'
 import { useScopeActions, useSelectedEndpoint } from '#endpoints/hooks'
 import { scopeDefaults, scopeSchema } from '#endpoints/scope'
 import { snapshotQuery } from '#endpoints/snapshot'
@@ -36,26 +36,34 @@ function Home() {
   // With nothing selected the panel is gone and the Results panel takes its width.
   const selected = useSelectedEndpoint()
   const layout = usePanelLayout()
-  const filtersOpen = useFiltersSheetOpen()
+  const filtersSheet = useSheetSession(layout.filters)
   const { selectEndpoint } = useScopeActions()
 
   return (
     <AppLayout>
       <PanelSlot
+        closeButton
         label="Filters"
         onClose={() => {
-          setFiltersSheetOpen(false)
+          filtersSheet.setOpen(false)
         }}
-        open={filtersOpen}
+        open={filtersSheet.open}
         placement={layout.filters}
         side="left"
       >
         <FiltersPanel />
       </PanelSlot>
-      <ResultsPanel />
+      <OpenFiltersContext
+        value={() => {
+          filtersSheet.setOpen(true)
+        }}
+      >
+        <ResultsPanel />
+      </OpenFiltersContext>
       {selected === null ? null : (
         // A sheet is open exactly while an endpoint is selected; closing it clears the selection.
         <PanelSlot
+          closeButton={false}
           label="Endpoint"
           onClose={() => {
             selectEndpoint(undefined)

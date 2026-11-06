@@ -41,26 +41,32 @@ Vocabulary:
 
 ## Panel layout
 
-Results is the primary Panel and is always docked. Endpoint and Filters are secondary, and each is `docked` beside
-Results, an `overlay` on its trailing edge, or a modal `sheet`. `panelLayout` in `panel-layout.ts` derives placement
-from the page width and whether an endpoint is selected, picking the first candidate layout that fits. Breakpoints are
-not chosen: they come from the Panels' widths, so they move when a Panel's width does.
+Results is the primary Panel and is always docked. Endpoint and Filters are secondary, and each is either `docked`
+beside Results or in a modal `sheet`; nothing floats over Results, because that would hide the columns the Table
+scrolls under. `panelLayout` in `panel-layout.ts` derives placement from the page width and whether an endpoint is
+selected, picking the first candidate layout that fits. Breakpoints are not chosen: they come from the Panels'
+widths (Filters 272, Endpoint 340, Results minimum 480, gap 8), so they move when a Panel's width does.
 
 | Page width (CSS px) | Nothing selected        | Endpoint selected                                   |
 | ------------------- | ----------------------- | --------------------------------------------------- |
 | ≥ 1124              | Filters docked          | Filters and Endpoint docked                         |
 | 844–1123            | Filters docked          | Endpoint docked, Filters in a left sheet            |
-| 776–843             | Filters docked          | Endpoint overlaid, Filters in a left sheet          |
-| 636–775             | Filters in a left sheet | Endpoint overlaid, Filters in a left sheet          |
-| < 636               | Filters in a left sheet | Endpoint in a bottom sheet, Filters in a left sheet |
+| 776–843             | Filters docked          | Filters docked, Endpoint in a bottom sheet          |
+| < 776               | Filters in a left sheet | Endpoint in a bottom sheet, Filters in a left sheet |
 
-- Endpoint outranks Filters: comparison reads the Table beside the selection, while filters are set and left.
-- Selecting an endpoint below 1124px moves Filters into a sheet; the scope bar's filters button opens it.
-- Nothing about placement is stored. Only the Filters sheet's open flag is state, and it only applies in sheet layouts.
+- Endpoint outranks Filters: comparison reads the Table beside the selection, while filters are set and left. An
+  Endpoint that cannot dock opens in a sheet, and Filters keep their column if they fit beside Results.
+- Selecting an endpoint at 844–1123px moves Filters into a sheet; the scope bar's filters button opens it.
+- Nothing about placement is stored. Only whether the user has a sheet open is state, and `useSheetSession` ties it to
+  the placement it was opened in: a Panel that leaves its sheet ends the session, so a window widened until Filters
+  dock and narrowed again does not reopen it.
+- Filters' sheet supplies its own close button (`closeButton` on `PanelSlot`); Endpoint has its own, which clears the
+  selection.
 - Render every Panel through `PanelSlot`; its frame reads `usePlacement` and `panelFrameClass` for border and width.
 - The server renders the skeleton in the widest layout; `DOCKED_FILTERS_MEDIA_CLASS` hides its Filters on phones.
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
-- Below a 32rem Results panel, the Provider column folds into the Model cell's second line (`meta.folds`).
+- Below a 32rem Results panel, the Provider column folds into the Model cell's second line (`meta.folds`), and the
+  Model header carries a second sort button for it ("Model / Provider").
 - The Model column is sticky, so the figures scroll under it when the table is wider than the panel.
 - Use `pointer-coarse:` to enlarge touch targets, keeping dense desktop sizes for fine pointers.
 - Fields keep 16px text on touch screens so iOS does not zoom when they take focus.

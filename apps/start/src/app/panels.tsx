@@ -1,13 +1,17 @@
 import { Sheet, SheetContent, SheetTitle } from '@orca/ui/components/sheet'
-import { useSelector } from '@tanstack/react-store'
-import { createAtom } from '@tanstack/store'
 import { cn } from 'cn'
-import { createContext, use, useRef, useSyncExternalStore } from 'react'
+import { createContext, use, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 
 import { useSelectedEndpoint } from '#endpoints/hooks'
 
-import { BREAKPOINTS, breakpointFloor, panelLayout } from './panel-layout'
+import {
+  BREAKPOINTS,
+  breakpointFloor,
+  closedSession,
+  panelLayout,
+  sheetSessionIn,
+} from './panel-layout'
 import type { PanelLayout, Placement } from './panel-layout'
 
 /*
@@ -15,7 +19,8 @@ import type { PanelLayout, Placement } from './panel-layout'
  * the selection, `PanelSlot` puts a Panel there, and a Panel's frame reads its own placement with
  * `usePlacement` to drop the border and width a sheet already provides. The same Panel components
  * render in every layout; nothing about the layout is stored, so resizing the window or changing the
- * selection can never leave it out of date.
+ * selection can never leave it out of date. The one thing kept is whether the user has a sheet open,
+ * and that lasts only as long as the Panel stays in its sheet (see `useSheetSession`).
  */
 
 function subscribe(onChange: () => void) {
@@ -49,17 +54,32 @@ export function usePanelLayout(): PanelLayout {
 }
 
 /**
- * Whether the user has opened the Filters sheet. It only matters while the layout puts Filters in a
- * sheet, so readers combine it with the layout instead of anything resetting it.
+ * Whether the user has a Panel's sheet open, for a Panel currently in `placement`. The session ends
+ * when the Panel leaves its sheet: Filters opened on a phone and docked by widening the window must not
+ * reopen when the window narrows again. React rebuilds the render when state is set while rendering, so
+ * the stale session never reaches the page.
  */
-const filtersSheetOpen = createAtom(false)
+export function useSheetSession(placement: Placement) {
+  const [stored, setStored] = useState(() => closedSession(placement))
+  const session = sheetSessionIn(stored, placement)
 
-export function setFiltersSheetOpen(open: boolean) {
-  filtersSheetOpen.set(open)
+  if (session !== stored) {
+    setStored(session)
+  }
+
+  return {
+    open: session.open,
+    setOpen: (open: boolean) => {
+      setStored({ open, placement })
+    },
+  }
 }
 
-export function useFiltersSheetOpen(): boolean {
-  return useSelector(filtersSheetOpen)
+/** Opens the Filters sheet; provided by the page, which owns the session. */
+export const OpenFiltersContext = createContext<() => void>(() => undefined)
+
+export function useOpenFilters(): () => void {
+  return use(OpenFiltersContext)
 }
 
 const PlacementContext = createContext<Placement>('docked')
@@ -76,7 +96,7 @@ export function usePlacement(): Placement {
 export function panelFrameClass(placement: Placement, width: string): string {
   return placement === 'sheet'
     ? 'min-h-0 w-full grow'
-    : cn(width, 'shrink-0 rounded-xl border border-border', placement === 'overlay' && 'shadow-2xl')
+    : cn(width, 'shrink-0 rounded-xl border border-border')
 }
 
 const SHEET_CLASS = {
@@ -94,27 +114,33 @@ interface PanelSlotProps {
   label: string
   /** Called when a sheet asks to close: Esc or a tap on the backdrop. */
   onClose: () => void
-  /** Whether a sheet is open; docked and overlaid Panels show whenever they render. */
+  /** Whether a sheet is open; a docked Panel shows whenever it renders. */
   open: boolean
   placement: Placement
+  /** Whether a sheet supplies its close button; a Panel with a close button of its own says no. */
+  closeButton: boolean
   /** The edge a sheet comes from. */
   side: keyof typeof SHEET_CLASS
 }
 
 /**
- * Puts a Panel where the layout says. Docked, it is a column of the page's row; overlaid, it floats
- * over Results' trailing edge; in a sheet, it is a modal dialog with its own focus trap.
+ * Puts a Panel where the layout says. Docked, it is a column of the page's row; in a sheet, it is a
+ * modal dialog with its own focus trap.
  */
-export function PanelSlot({ children, label, onClose, open, placement, side }: PanelSlotProps) {
+export function PanelSlot({
+  children,
+  closeButton,
+  label,
+  onClose,
+  open,
+  placement,
+  side,
+}: PanelSlotProps) {
   const popup = useRef<HTMLDivElement>(null)
   const panel = <PlacementContext value={placement}>{children}</PlacementContext>
 
   if (placement === 'docked') {
     return panel
-  }
-
-  if (placement === 'overlay') {
-    return <div className="absolute inset-y-0 right-0 z-20 flex max-w-full">{panel}</div>
   }
 
   return (
@@ -133,7 +159,7 @@ export function PanelSlot({ children, label, onClose, open, placement, side }: P
         // interaction type to tell a tap by.
         initialFocus={() => (matchMedia('(pointer: coarse)').matches ? popup.current : true)}
         ref={popup}
-        showCloseButton={false}
+        showCloseButton={closeButton}
         side={side}
       >
         <SheetTitle className="sr-only">{label}</SheetTitle>

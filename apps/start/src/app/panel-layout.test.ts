@@ -11,7 +11,8 @@ import {
   PANEL_GAP,
   panelLayout,
   RESULTS_MIN_WIDTH,
-  RESULTS_PEEK_WIDTH,
+  closedSession,
+  sheetSessionIn,
 } from './panel-layout'
 import type { PanelLayout } from './panel-layout'
 
@@ -40,7 +41,8 @@ describe('panelLayout', () => {
     it.each([
       [375, layout('sheet', 'sheet')],
       [430, layout('sheet', 'sheet')],
-      [768, layout('sheet', 'overlay')],
+      [768, layout('sheet', 'sheet')],
+      [800, layout('docked', 'sheet')],
       [1024, layout('sheet', 'docked')],
       [1440, layout('docked', 'docked')],
     ] as const)('lays out a %ipx page as %o', (width, expected) => {
@@ -51,17 +53,24 @@ describe('panelLayout', () => {
       const endpointDocks = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH
 
       expect(panelLayout(endpointDocks, true)).toEqual(layout('sheet', 'docked'))
-      expect(panelLayout(endpointDocks - 1, true).endpoint).toBe('overlay')
       expect(panelLayout(endpointDocks + PANEL_GAP + FILTERS_WIDTH, true)).toEqual(
         layout('docked', 'docked'),
       )
     })
 
-    it('overlays the Endpoint panel only while Results keeps its peek beside it', () => {
-      const overlays = PAD + RESULTS_PEEK_WIDTH + ENDPOINT_WIDTH
+    it('opens the Endpoint panel in a sheet, never over Results, when it does not dock', () => {
+      const endpointDocks = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH
 
-      expect(panelLayout(overlays, true).endpoint).toBe('overlay')
-      expect(panelLayout(overlays - 1, true).endpoint).toBe('sheet')
+      for (let width = 0; width < endpointDocks; width += 1) {
+        expect(panelLayout(width, true).endpoint).toBe('sheet')
+      }
+    })
+
+    it('keeps Filters docked beside Results while the Endpoint panel is in a sheet', () => {
+      const filtersDock = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + FILTERS_WIDTH
+
+      expect(panelLayout(filtersDock, true)).toEqual(layout('docked', 'sheet'))
+      expect(panelLayout(filtersDock - 1, true)).toEqual(layout('sheet', 'sheet'))
     })
   })
 })
@@ -77,6 +86,25 @@ describe('minimumWidth', () => {
     expect(minimumWidth(layout('docked', 'docked'), false)).toBe(
       minimumWidth(layout('docked', 'sheet'), true),
     )
+  })
+})
+
+describe('sheetSessionIn', () => {
+  const opened = { open: true, placement: 'sheet' } as const
+
+  it('keeps a session open while the Panel stays in its sheet', () => {
+    expect(sheetSessionIn(opened, 'sheet')).toBe(opened)
+  })
+
+  it('ends the session when the Panel leaves its sheet', () => {
+    expect(sheetSessionIn(opened, 'docked')).toEqual(closedSession('docked'))
+  })
+
+  it('finds the sheet closed when the Panel returns to it', () => {
+    // Open Filters on a phone, widen the window until they dock, then narrow it again.
+    const docked = sheetSessionIn(opened, 'docked')
+
+    expect(sheetSessionIn(docked, 'sheet').open).toBe(false)
   })
 })
 

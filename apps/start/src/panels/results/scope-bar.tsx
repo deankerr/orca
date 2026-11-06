@@ -3,7 +3,7 @@ import { Button } from '@orca/ui/components/button'
 import { Toggle } from '@orca/ui/components/toggle'
 import { ChartScatter, SlidersHorizontal } from 'lucide-react'
 
-import { setFiltersSheetOpen, usePanelLayout } from '#app/panels'
+import { useOpenFilters, usePanelLayout } from '#app/panels'
 import { usePlot, useScopeActions, useScopeFilters, useScopeSummary } from '#endpoints/hooks'
 import { activeFilterCount } from '#endpoints/scope'
 
@@ -12,13 +12,13 @@ const count = (value: number, noun: string) =>
 
 /** Opens the Filters sheet, in layouts that put Filters in one. It carries the active filter count. */
 function FiltersButton({ filters }: { filters: number }) {
+  const openFilters = useOpenFilters()
+
   return (
     <Button
       aria-label={filters > 0 ? `Filters, ${count(filters, 'active filter')}` : 'Filters'}
       className="h-6 shrink-0 gap-1.5 self-center px-2 font-mono text-[11px] leading-4 font-normal pointer-coarse:h-8"
-      onClick={() => {
-        setFiltersSheetOpen(true)
-      }}
+      onClick={openFilters}
       variant="outline"
     >
       <SlidersHorizontal aria-hidden="true" className="size-3.5 text-muted-foreground" />
