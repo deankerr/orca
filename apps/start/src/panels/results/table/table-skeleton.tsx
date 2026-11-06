@@ -8,6 +8,7 @@ import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
   FOLDED_CLASS,
+  FOLDED_ONLY_CLASS,
   HEADER_CELL_CLASS,
   TABLE_CLASS,
   TABLE_WRAPPER_CLASS,
@@ -105,6 +106,12 @@ export function TableSkeleton() {
                 scope="col"
               >
                 {columnLabel(column.id)}
+                {column.id === 'model' && (
+                  <span className={FOLDED_ONLY_CLASS}>
+                    <span className="mx-3">/</span>
+                    {columnLabel('provider')}
+                  </span>
+                )}
               </th>
             ))}
           </tr>
