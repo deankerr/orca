@@ -11,6 +11,7 @@ import { XIcon } from 'lucide-react'
 import { useId, useLayoutEffect, useRef } from 'react'
 
 import { returnFocusFromPanel, panelClosesOnEscape } from '#app/keyboard'
+import { panelFrameClass, usePlacement } from '#app/panels'
 import { EntityAvatar } from '#components/entity-avatar'
 import { useScopeActions, useScopedRows } from '#endpoints/hooks'
 import type { EndpointRow } from '#endpoints/snapshot'
@@ -39,6 +40,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
   const slug = slugParts(row)
   const unlisted = unlistedLine(row)
   const tagDescriptionId = useId()
+  const placement = usePlacement()
 
   const panelRef = useRef<HTMLElement>(null)
   const endpointId = useRef(row.id)
@@ -70,7 +72,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
     <aside
       aria-label="Endpoint"
       ref={panelRef}
-      className="flex w-85 shrink-0 flex-col overflow-clip rounded-xl border border-border bg-popover"
+      className={cn('flex flex-col overflow-clip bg-popover', panelFrameClass(placement, 'w-85'))}
       // Esc closes the panel from anywhere inside it. The Table's document-level key rule skips the
       // tab list, so the panel owns Esc and keeps it from also reaching the Table. It listens in the
       // capture phase because a description tooltip's trigger stops Esc before it can bubble here.
@@ -89,7 +91,8 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                 <Position id={row.id} />
               </span>
               <span className="flex items-center gap-1.5">
-                ↑↓ move · esc close
+                {/* Keyboard hints, which a touch screen has no keys for. */}
+                <span className="pointer-coarse:hidden">↑↓ move · esc close</span>
                 <Button
                   aria-label="Close endpoint panel"
                   onClick={close}

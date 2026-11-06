@@ -15,7 +15,7 @@ Panel's components, logic, and tests, and nothing else reaches into it. Code use
 lives in a shared folder.
 
 - `routes/`: TanStack Router files. Layout and route options only.
-- `app/`: the app shell (header, status bar, theme) and `keyboard.ts`, the app's key-ownership
+- `app/`: the app shell (header, status bar, theme), the panel layout, and `keyboard.ts`, the app's key-ownership
   and focus-return rules.
 - `endpoints/`: the data layer, which is not a Panel. It builds the Snapshot from the query, defines the
   Scope (the URL's filter state) and sort, filters and counts rows, and exposes them through `hooks.ts`.
@@ -38,6 +38,32 @@ Vocabulary:
   reads; there is no whole-Scope hook. Change it with `useScopeActions`, and read the filtered, sorted rows with
   `useScopedRows`. The Table and plot read `useDeferredScopedRows` and `useDeferredFilteredRows` instead: they
   trail the filters through `useDeferredValue` (the router's store always updates synchronously) and report `stale`.
+
+## Panel layout
+
+Results is the primary Panel and is always docked. Endpoint and Filters are secondary, and each is `docked` beside
+Results, an `overlay` on its trailing edge, or a modal `sheet`. `panelLayout` in `panel-layout.ts` derives placement
+from the page width and whether an endpoint is selected, picking the first candidate layout that fits. Breakpoints are
+not chosen: they come from the Panels' widths, so they move when a Panel's width does.
+
+| Page width (CSS px) | Nothing selected        | Endpoint selected                                   |
+| ------------------- | ----------------------- | --------------------------------------------------- |
+| ≥ 1124              | Filters docked          | Filters and Endpoint docked                         |
+| 844–1123            | Filters docked          | Endpoint docked, Filters in a left sheet            |
+| 776–843             | Filters docked          | Endpoint overlaid, Filters in a left sheet          |
+| 636–775             | Filters in a left sheet | Endpoint overlaid, Filters in a left sheet          |
+| < 636               | Filters in a left sheet | Endpoint in a bottom sheet, Filters in a left sheet |
+
+- Endpoint outranks Filters: comparison reads the Table beside the selection, while filters are set and left.
+- Selecting an endpoint below 1124px moves Filters into a sheet; the scope bar's filters button opens it.
+- Nothing about placement is stored. Only the Filters sheet's open flag is state, and it only applies in sheet layouts.
+- Render every Panel through `PanelSlot`; its frame reads `usePlacement` and `panelFrameClass` for border and width.
+- The server renders the skeleton in the widest layout; `DOCKED_FILTERS_MEDIA_CLASS` hides its Filters on phones.
+- The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
+- Below a 32rem Results panel, the Provider column folds into the Model cell's second line (`meta.folds`).
+- The Model column is sticky, so the figures scroll under it when the table is wider than the panel.
+- Use `pointer-coarse:` to enlarge touch targets, keeping dense desktop sizes for fine pointers.
+- Fields keep 16px text on touch screens so iOS does not zoom when they take focus.
 
 <!-- intent-skills:start -->
 

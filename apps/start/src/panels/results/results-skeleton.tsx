@@ -5,13 +5,14 @@ import { usePlot } from '#endpoints/hooks'
 
 import { PlotSkeleton } from './plot/plot-skeleton'
 import { ResultsFrame } from './results-panel'
+import { SCOPE_BAR_CLASS } from './scope-bar'
 import { TableSkeleton } from './table/table-skeleton'
 
 /** The scope bar's counts and plot toggle, at the bar's height. */
 function ScopeBarSkeleton() {
   return (
-    <div className="flex h-12 shrink-0 items-center justify-between px-5">
-      <div className="flex items-center gap-2.5">
+    <div className={SCOPE_BAR_CLASS}>
+      <div className="flex min-w-0 items-center gap-2.5 overflow-hidden">
         <Skeleton className="h-4 w-28 rounded-sm" />
         <Skeleton className="h-3 w-52 rounded-sm" />
       </div>
