@@ -1,5 +1,6 @@
 import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/react-table'
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
+import { cn } from 'cn'
 
 import { MODEL_COLUMN_WIDTH } from '#app/panel-layout'
 import { EntityAvatar } from '#components/entity-avatar'
@@ -24,16 +25,38 @@ declare module '@tanstack/react-table' {
 }
 
 /**
- * A column's width in the fixed layout. Model and Provider swap which one takes the Table's surplus
- * width when `modelFixed` (see `modelColumnFixed`); the figures keep theirs.
+ * A column's width in the fixed layout. Where the Table folds for the Endpoint drawer (`placementFold`,
+ * see `foldsForEndpoint`), Model holds `MODEL_COLUMN_WIDTH` and Context, the last column, takes the
+ * surplus, so the price columns after Model stay where the drawer's clear band expects them. Elsewhere
+ * Model, the one column without a width, takes the surplus.
  */
-export function columnWidth(id: string, width: number | undefined, modelFixed: boolean) {
-  if (modelFixed && id === 'model') {
+export function columnWidth(id: string, width: number | undefined, placementFold: boolean) {
+  if (!placementFold) {
+    return width
+  }
+
+  if (id === 'model') {
     return MODEL_COLUMN_WIDTH
   }
 
-  return modelFixed && id === 'provider' ? undefined : width
+  return id === 'context' ? undefined : width
 }
+
+/**
+ * The Provider column folds into the Model cell's second line (`meta.folds`) in two cases, and these
+ * classes name both without a second layout: in a Results panel narrower than 32rem (a container query),
+ * and wherever the Endpoint drawer can float beside the Table (`data-folded` on the Table's wrapper,
+ * a `group/table`; see `foldsForEndpoint`). Each class below pairs the two conditions.
+ */
+/** Hides a folding column's column, header, and cells. */
+export const FOLDED_CLASS = '@max-lg/results:hidden group-data-folded/table:hidden'
+
+/** Shown only where a column folds; the folded column's stand-in. */
+export const FOLDED_ONLY_CLASS =
+  'hidden @max-lg/results:inline-flex group-data-folded/table:inline-flex'
+
+/** The folded column's second line in the Model cell. */
+const FOLDED_LINE_CLASS = 'hidden @max-lg/results:block group-data-folded/table:block'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -65,7 +88,12 @@ function ModelCell({ row }: { row: EndpointRow }) {
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[13px] leading-4">{row.model.name}</span>
         {/* The Provider column, folded in where the panel is too narrow to give it a column. */}
-        <span className="hidden truncate text-[11px] leading-3.5 text-muted-foreground @max-lg/results:block">
+        <span
+          className={cn(
+            'truncate text-[11px] leading-3.5 text-muted-foreground',
+            FOLDED_LINE_CLASS,
+          )}
+        >
           {[row.provider.display_name, ...providerTags(row.endpoint)].join(' · ')}
         </span>
       </div>

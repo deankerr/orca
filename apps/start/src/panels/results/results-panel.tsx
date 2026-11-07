@@ -3,7 +3,7 @@ import { cn } from 'cn'
 import type { ReactNode } from 'react'
 
 import { RESULTS_REGION_ID } from '#app/keyboard'
-import { FLUSH_FRAME_MEDIA_CLASS, modelColumnFixed, tableTrailingInset } from '#app/panel-layout'
+import { FLUSH_FRAME_MEDIA_CLASS, foldsForEndpoint, tableTrailingInset } from '#app/panel-layout'
 import { usePanelLayout } from '#app/panels'
 import { StatusBar } from '#app/status-bar'
 import { useSelectedId } from '#endpoints/hooks'
@@ -53,7 +53,7 @@ function TableRegion() {
   return (
     // The sticky header lives in this viewport, which never bounces, so the header holds still.
     <ScrollArea className="min-h-0 grow" horizontal render={<section aria-label="Results table" />}>
-      <EndpointTable modelFixed={modelColumnFixed(layout)} trailingInset={trailingInset} />
+      <EndpointTable placementFold={foldsForEndpoint(layout)} trailingInset={trailingInset} />
     </ScrollArea>
   )
 }

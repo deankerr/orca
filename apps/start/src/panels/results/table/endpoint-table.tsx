@@ -13,7 +13,7 @@ import type { EndpointRow } from '#endpoints/snapshot'
 import type { SortKey } from '#endpoints/sort'
 import { StaleVeil } from '#panels/results/stale-veil'
 
-import { columns, columnWidth, features } from './columns'
+import { columns, columnWidth, features, FOLDED_CLASS, FOLDED_ONLY_CLASS } from './columns'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting-state'
@@ -37,20 +37,12 @@ export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-bor
 export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-coarse:h-10 first:z-[1] first:bg-background ${STICKY_MODEL_CLASS}`
 
 /**
- * The table's own wrapper: as wide as the region, and no narrower than its columns need. Its padding
- * falls outside that width, so trailing padding widens what scrolls without widening the table.
+ * The table's own wrapper: as wide as the region, and no narrower than its columns need, which is 184px
+ * less where Provider folds (see `FOLDED_CLASS`). Its padding falls outside that width, so trailing
+ * padding widens what scrolls without widening the table. It is the `group/table` the fold reads.
  */
-export const TABLE_WRAPPER_CLASS = 'relative box-content w-full min-w-190 @max-lg/results:min-w-144'
-
-/**
- * Hides a folding column (`meta.folds`) in a Results panel narrower than 32rem, a phone's. Its column,
- * header, and cells all go, and the table's minimum width drops by its 184px (see `TABLE_WRAPPER_CLASS`),
- * so the figures start beside the sticky Model column instead of a screen's width away.
- */
-export const FOLDED_CLASS = '@max-lg/results:hidden'
-
-/** Shown only in a Results panel narrow enough to fold a column; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'hidden @max-lg/results:inline-flex'
+export const TABLE_WRAPPER_CLASS =
+  'group/table relative box-content w-full min-w-190 @max-lg/results:min-w-144 data-folded:min-w-144'
 
 export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
 
@@ -307,14 +299,14 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
  *
- * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end. `modelFixed` is
- * `modelColumnFixed` for the layout: the Model column holds its width and Provider takes the surplus.
+ * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end. `placementFold` is
+ * `foldsForEndpoint` for the layout: Provider folds into the Model cell and Model holds its width.
  */
 export function EndpointTable({
-  modelFixed,
+  placementFold,
   trailingInset,
 }: {
-  modelFixed: boolean
+  placementFold: boolean
   trailingInset: number
 }) {
   const { rows, stale } = useDeferredScopedRows()
@@ -441,6 +433,7 @@ export function EndpointTable({
     <div
       aria-busy={stale}
       className={TABLE_WRAPPER_CLASS}
+      data-folded={placementFold ? '' : undefined}
       // Room after the last column, so it can scroll out from under a drawer floating over it.
       style={{ paddingRight: trailingInset }}
     >
@@ -451,7 +444,7 @@ export function EndpointTable({
               className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
               style={{
-                width: columnWidth(column.id, column.columnDef.meta?.width, modelFixed),
+                width: columnWidth(column.id, column.columnDef.meta?.width, placementFold),
               }}
             />
           ))}

@@ -22,8 +22,8 @@ export const RESULTS_MIN_WIDTH = 480
 
 /**
  * The Table's sticky Model column. Where the Endpoint drawer can float beside the Table it is exactly
- * this wide (see `modelColumnFixed`); elsewhere it takes what the fixed-width columns leave of the
- * Table's 190 (760px) minimum, which is this too.
+ * this wide (see `foldsForEndpoint`); elsewhere it takes the surplus. It is also what the folded
+ * Table's 144 (576px) minimum leaves it beside the other columns, with Provider out of the row.
  */
 export const MODEL_COLUMN_WIDTH = 180
 
@@ -35,9 +35,9 @@ const FIGURE_COLUMN_WIDTH = 68
 
 /**
  * The band of the Table that must stay clear beside a floating Endpoint drawer, after the Model
- * column: the width of the three price columns (Input, Output, Cache read). The Provider column
- * comes first in that band, so it shows the Provider and the start of the prices; the rest scroll
- * in clear of the drawer (see `tableTrailingInset`).
+ * column: the width of the three price columns (Input, Output, Cache read), which directly follow
+ * Model because Provider is folded into it there (`foldsForEndpoint`). The rest scroll in clear of the
+ * drawer (see `tableTrailingInset`).
  */
 export const MIN_VISIBLE_FIGURES_WIDTH = 3 * FIGURE_COLUMN_WIDTH
 
@@ -104,13 +104,15 @@ function filtersPlacement(width: number, collapsed: boolean): FiltersPlacement {
 }
 
 /**
- * Whether the Model column holds `MODEL_COLUMN_WIDTH` and the Provider column takes the Table's
- * surplus width. That is wherever the Endpoint drawer can float beside the Table, selected or not, so
- * selecting never moves a column; it keeps the clear band at `MIN_VISIBLE_FIGURES_WIDTH`, which a
- * Model column absorbing the surplus would shrink to a constant 197px. Elsewhere, and where Provider
- * folds into the Model cell, Model takes the surplus.
+ * Whether the Table folds its Provider column into the Model cell's second line and holds the Model
+ * column at `MODEL_COLUMN_WIDTH`. That is wherever the Endpoint drawer can float beside the Table,
+ * selected or not, so selecting never reflows the Table. Provider (184px) would otherwise open the
+ * clear band beside the drawer; folded, Model is directly followed by the price columns, and the band
+ * holds `MIN_VISIBLE_FIGURES_WIDTH` of them. A narrow Results panel folds Provider too, but by its own
+ * width, in CSS (see `FOLDED_CLASS`); the two never overlap, since a drawer beside the Table needs a
+ * Results panel far wider than that.
  */
-export function modelColumnFixed(layout: PanelLayout): boolean {
+export function foldsForEndpoint(layout: PanelLayout): boolean {
   return layout.endpoint === 'right'
 }
 

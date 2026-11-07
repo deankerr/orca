@@ -20,7 +20,7 @@ import {
   MODEL_COLUMN_WIDTH,
   PANEL_GAP,
   panelLayout,
-  modelColumnFixed,
+  foldsForEndpoint,
   RESULTS_BORDER_WIDTH,
   RESULTS_MIN_WIDTH,
   tableTrailingInset,
@@ -108,13 +108,13 @@ describe('panelLayout', () => {
   })
 })
 
-describe('modelColumnFixed', () => {
-  it('holds the Model column wherever the Endpoint drawer can float beside the Table', () => {
+describe('foldsForEndpoint', () => {
+  it('folds the Table wherever the Endpoint drawer can float beside the Table', () => {
     for (let width = 0; width <= 2000; width += 1) {
       for (const collapsed of [false, true]) {
         const layout = panelLayout(width, collapsed)
 
-        expect(modelColumnFixed(layout)).toBe(layout.endpoint === 'right')
+        expect(foldsForEndpoint(layout)).toBe(layout.endpoint === 'right')
       }
     }
   })
