@@ -4,6 +4,7 @@ import {
   KEYS_RESERVED_ATTRIBUTE,
   RESULTS_REGION_ID,
   TABLE_KEYS_ATTRIBUTE,
+  drawerClosesEndpoint,
   panelClosesOnEscape,
   returnFocusFromPanel,
   returnFocusToTable,
@@ -20,6 +21,25 @@ function insideRegion(...attributes: string[]): FocusProbe {
       attributes.some((attribute) => selector === `[${attribute}]`) ? {} : null,
   }
 }
+
+describe('drawerClosesEndpoint', () => {
+  it('leaves Esc to the keyboard rules beside the Table, and treats focus leaving as working the Table', () => {
+    expect(drawerClosesEndpoint('escape-key', false)).toBe(false)
+    expect(drawerClosesEndpoint('focus-out', false)).toBe(false)
+  })
+
+  it('closes a modal drawer on Esc, where focus may start outside the panel', () => {
+    expect(drawerClosesEndpoint('escape-key', true)).toBe(true)
+  })
+
+  it('closes for the close button, a swipe, and a tap outside', () => {
+    for (const modal of [false, true]) {
+      expect(drawerClosesEndpoint('close-press', modal)).toBe(true)
+      expect(drawerClosesEndpoint('swipe', modal)).toBe(true)
+      expect(drawerClosesEndpoint('outside-press', modal)).toBe(true)
+    }
+  })
+})
 
 describe('tableOwnsKeys', () => {
   it('owns the keys when nothing has focus', () => {

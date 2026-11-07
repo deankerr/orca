@@ -19,7 +19,7 @@ const PROPERTY_GROUPS = [4, 5, 3] as const
 /** A row of a facet: a box, optionally a logo, a name, and a count, as in `ListFacet` and `PropertyFacets`. */
 function RowSkeleton({ logo, index }: { logo: boolean; index: number }) {
   return (
-    <div className="flex h-6 items-center gap-2">
+    <div className="flex h-6 items-center gap-2 pointer-coarse:h-9">
       <Skeleton className="size-3.5 shrink-0 rounded-[4px]" />
       {logo ? <Skeleton className="size-4 shrink-0 rounded-[3px]" /> : null}
       <Skeleton className={cn('h-3 rounded-sm', NAME_WIDTHS[index % NAME_WIDTHS.length])} />
@@ -32,19 +32,19 @@ function RowSkeleton({ logo, index }: { logo: boolean; index: number }) {
 function ListFacetSkeleton({ filter, title }: { filter: string; title: string }) {
   return (
     <Facet meta={<Skeleton className="h-2.5 w-16 rounded-sm" />} title={title}>
-      <InputGroup className="mb-1 h-6">
+      <InputGroup className="mb-1 h-6 pointer-coarse:h-9">
         <InputGroupAddon className="py-0">
           <Search aria-hidden="true" />
         </InputGroupAddon>
         <InputGroupInput
           aria-label={filter}
-          className="text-[13px] leading-4 md:text-[13px]"
+          className="text-[13px] leading-4 md:text-[13px] pointer-coarse:text-base md:pointer-coarse:text-base"
           disabled
           placeholder={filter}
         />
       </InputGroup>
       {/* The real list pads its right edge for a scrollbar, which a full catalogue's list always has. */}
-      <div className="pr-2.5">
+      <div className="max-h-48 overflow-hidden pr-2.5">
         {Array.from({ length: LIST_ROWS }, (_, index) => (
           <RowSkeleton index={index} key={index} logo />
         ))}

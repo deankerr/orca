@@ -94,23 +94,31 @@ describe('notPlottedNote', () => {
   })
 
   it('totals the count and names one reason', () => {
-    expect(notPlottedNote({ ...none, free: 3 })).toBe('3 not plotted: free')
+    expect(notPlottedNote({ ...none, free: 3 })).toEqual({
+      label: '3 not plotted',
+      reasons: 'free',
+    })
   })
 
   it('joins two reasons with "or"', () => {
-    expect(notPlottedNote({ ...none, free: 14, noThroughput: 184 })).toBe(
-      '198 not plotted: free or no tok/s',
-    )
+    expect(notPlottedNote({ ...none, free: 14, noThroughput: 184 })).toEqual({
+      label: '198 not plotted',
+      reasons: 'free or no tok/s',
+    })
   })
 
   it('joins more reasons with commas and a final "or"', () => {
-    expect(notPlottedNote({ free: 14, noPrice: 2, noThroughput: 184, offscale: 1 })).toBe(
-      '201 not plotted: free, no price, no tok/s or off scale',
-    )
+    expect(notPlottedNote({ free: 14, noPrice: 2, noThroughput: 184, offscale: 1 })).toEqual({
+      label: '201 not plotted',
+      reasons: 'free, no price, no tok/s or off scale',
+    })
   })
 
   it('groups thousands', () => {
-    expect(notPlottedNote({ ...none, noThroughput: 1234 })).toBe('1,234 not plotted: no tok/s')
+    expect(notPlottedNote({ ...none, noThroughput: 1234 })).toEqual({
+      label: '1,234 not plotted',
+      reasons: 'no tok/s',
+    })
   })
 })
 
