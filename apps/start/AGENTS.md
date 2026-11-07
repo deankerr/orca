@@ -41,29 +41,36 @@ Vocabulary:
 
 ## Panel layout
 
-Results is the primary Panel and is always docked. Endpoint and Filters are secondary, and each is either `docked`
-beside Results or in a modal `sheet`; nothing floats over Results, because that would hide the columns the Table
-scrolls under. `panelLayout` in `panel-layout.ts` derives placement from the page width and whether an endpoint is
-selected, picking the first candidate layout that fits. Breakpoints are not chosen: they come from the Panels'
-widths (Filters 272, Endpoint 340, Results minimum 480, gap 8), so they move when a Panel's width does.
+Results is the primary Panel and is always docked. Filters are docked beside it where both fit, and in a modal
+drawer from the left where they do not; docked Filters can be collapsed, Sidebar-style. The Endpoint panel never
+docks: it floats over Results in a Base UI drawer at every width, so selecting an endpoint, or moving the
+selection with ↑/↓, never reflows the Table or redraws the plot. `panelLayout` in `panel-layout.ts` derives
+placement from the page width and the user's Filters preference. Breakpoints are not chosen: they come from the
+Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8), so they move when a Panel's width does.
 
-| Page width (CSS px) | Nothing selected        | Endpoint selected                                   |
-| ------------------- | ----------------------- | --------------------------------------------------- |
-| ≥ 1124              | Filters docked          | Filters and Endpoint docked                         |
-| 844–1123            | Filters docked          | Endpoint docked, Filters in a left sheet            |
-| 776–843             | Filters docked          | Filters docked, Endpoint in a bottom sheet          |
-| < 776               | Filters in a left sheet | Endpoint in a bottom sheet, Filters in a left sheet |
+| Page width (CSS px) | Filters                               | Endpoint drawer                    |
+| ------------------- | ------------------------------------- | ---------------------------------- |
+| ≥ 888               | Docked, or collapsed if the user says | Beside the Table, non-modal        |
+| 776–887             | Docked, or collapsed if the user says | From the bottom, modal             |
+| < 776               | Drawer from the left, modal           | From the bottom, modal; page flush |
 
-- Endpoint outranks Filters: comparison reads the Table beside the selection, while filters are set and left. An
-  Endpoint that cannot dock opens in a sheet, and Filters keep their column if they fit beside Results.
-- Selecting an endpoint at 844–1123px moves Filters into a sheet; the scope bar's filters button opens it.
-- Nothing about placement is stored. Only whether the user has a sheet open is state, and `useSheetSession` ties it to
-  the placement it was opened in: a Panel that leaves its sheet ends the session, so a window widened until Filters
-  dock and narrowed again does not reopen it.
-- Filters' sheet supplies its own close button (`closeButton` on `PanelSlot`); Endpoint has its own, which clears the
-  selection.
-- Render every Panel through `PanelSlot`; its frame reads `usePlacement` and `panelFrameClass` for border and width.
-- The server renders the skeleton in the widest layout; `DOCKED_FILTERS_MEDIA_CLASS` hides its Filters on phones.
+- The Endpoint drawer beside the Table is non-modal and leaves focus in the Table, so ↑/↓, clicks on rows,
+  and Esc (with focus returning to the row, `keyboard.ts`) keep working; Base UI's own Esc and focus-out
+  dismissals are ignored so the keyboard rules decide. From the bottom it is modal and swipes down to close.
+- While it floats beside the Table, the Table's wrapper gains trailing padding equal to the drawer's width
+  (`tableTrailingInset`), so every column can scroll out from under it without the table changing width.
+- Whether docked Filters are collapsed is a preference in the `orca-filters` cookie (`filters-preference.ts`),
+  which the server reads so the first frame is right. The scope bar's Filters button collapses, expands, or
+  opens the drawer, depending on where Filters are; the column's edge rail toggles it too.
+- Only whether the user has the Filters drawer open is state, and `useDrawerSession` ties it to the placement it
+  was opened in: Filters that leave their drawer end the session, so a window widened until Filters dock and
+  narrowed again does not reopen it.
+- Below 776px Results is the only docked Panel and runs flush to the screen's edges: no page padding, border, or
+  corners, and the scope bar and status bar pad themselves clear of the notch and home indicator.
+- The server renders the skeleton for a desktop; the `*_MEDIA_CLASS` constants in `panel-layout.ts` fix a phone's
+  layout before scripts run, and a test keeps them at the breakpoint.
+- A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
+- Results' parts share one side inset, `--results-inset` (16px, 12px in a narrow panel).
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
 - Below a 32rem Results panel, the Provider column folds into the Model cell's second line (`meta.folds`), and the
   Model header carries a second sort button for it ("Model / Provider").
