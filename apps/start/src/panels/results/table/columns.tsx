@@ -56,7 +56,7 @@ export const FOLDED_ONLY_CLASS =
   'hidden @max-lg/results:inline-flex group-data-folded/table:inline-flex'
 
 /** The folded column's second line in the Model cell. */
-const FOLDED_LINE_CLASS = 'hidden @max-lg/results:block group-data-folded/table:block'
+const FOLDED_LINE_FLEX_CLASS = 'hidden @max-lg/results:flex group-data-folded/table:flex'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -82,19 +82,26 @@ export const columnLabel = (id: string | undefined): string | undefined =>
 const helper = createColumnHelper<typeof features, EndpointRow>()
 
 function ModelCell({ row }: { row: EndpointRow }) {
+  const tags = providerTags(row.endpoint)
+
   return (
     <div className="flex min-w-0 items-center gap-2">
       <EntityAvatar slug={row.model.id} />
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[13px] leading-4">{row.model.name}</span>
-        {/* The Provider column, folded in where the panel is too narrow to give it a column. */}
-        <span
-          className={cn(
-            'truncate text-[11px] leading-3.5 text-muted-foreground',
-            FOLDED_LINE_CLASS,
-          )}
-        >
-          {[row.provider.display_name, ...providerTags(row.endpoint)].join(' · ')}
+        {/* The Provider column, folded in where there is no room for it as a column. Only the name truncates; the tags are the precision and tier the Provider column shows as badges, so they stay whole. */}
+        <span className={cn('min-w-0 items-baseline gap-1', FOLDED_LINE_FLEX_CLASS)}>
+          <span
+            className="min-w-0 truncate text-[11px] leading-3.5 text-muted-foreground"
+            title={row.provider.display_name}
+          >
+            {row.provider.display_name}
+          </span>
+          {tags.length > 0 ? (
+            <span className="shrink-0 text-[11px] leading-3.5 whitespace-nowrap text-muted-foreground">
+              {`· ${tags.join(' · ')}`}
+            </span>
+          ) : null}
         </span>
       </div>
     </div>

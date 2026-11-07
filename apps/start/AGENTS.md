@@ -75,7 +75,7 @@ the surplus, as in the narrow Results panel's fold below.
   and Esc (with focus returning to the row, `keyboard.ts`) keep working; Base UI's own Esc and focus-out
   dismissals are ignored so the keyboard rules decide. From the bottom it is modal and swipes down to close; Base UI's Esc dismissal closes it, since focus may start
   on the popup, outside the panel's own Esc handler (`drawerClosesEndpoint`). A drawer that turns modal while open
-  is keyed by its modality, so it remounts and takes focus.
+  does not remount (that would reset the Endpoint panel's tab); an effect focuses its popup when `modal` turns true.
 - While it floats beside the Table, the Table's wrapper gains trailing padding equal to the drawer's width
   (`tableTrailingInset`), so every column can scroll out from under it without the table changing width.
 - Whether docked Filters are collapsed is a preference in the `orca-filters` cookie (`filters-preference.ts`),
