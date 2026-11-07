@@ -170,17 +170,19 @@ function FiltersRail({ collapsed }: { collapsed: boolean }) {
 
 /** The drawer's popup classes for each edge it comes from. */
 const DRAWER_CLASS = {
-  // Over the page's foot, clear of the home indicator, at a height that leaves the scope bar in view.
-  bottom: 'h-[85dvh] pb-[env(safe-area-inset-bottom)]',
-  // Clear of the notch and home indicator on a phone.
-  left: 'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
+  // Over the page's foot, clear of the home indicator and, in landscape, the notch, at a height that
+  // leaves the scope bar in view.
+  bottom:
+    'h-[85dvh] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]',
+  // Clear of the notch and home indicator on a phone, and the notch in landscape.
+  left: 'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]',
   right: '',
 } as const
 
 const SWIPE_DIRECTION = { bottom: 'down', left: 'left', right: 'right' } as const
 
 /** Why Base UI asks a drawer to open or close: a swipe, Esc, a tap outside, and so on. */
-export type DrawerChangeReason = Parameters<
+type DrawerChangeReason = Parameters<
   NonNullable<ComponentProps<typeof Drawer>['onOpenChange']>
 >[1]['reason']
 
@@ -217,6 +219,9 @@ export function PanelDrawer({
 
   return (
     <Drawer
+      // A drawer that turns modal while open (a window narrowed under it) is a new drawer, so Base UI
+      // runs its initial focus again and takes focus off the page it now blocks.
+      key={modal ? 'modal' : 'floating'}
       // A non-modal drawer stays open while the user works the page beside it.
       disablePointerDismissal={!modal}
       modal={modal}

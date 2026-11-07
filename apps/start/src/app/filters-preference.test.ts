@@ -12,6 +12,18 @@ describe('parseFiltersCollapsed', () => {
   it('expands Filters for a visitor with no cookie', () => {
     expect(parseFiltersCollapsed(undefined)).toBe(false)
   })
+
+  it('expands Filters for a value this version does not know', () => {
+    expect(parseFiltersCollapsed('hidden')).toBe(false)
+    expect(parseFiltersCollapsed('Collapsed')).toBe(false)
+  })
+
+  it('expands Filters for a malformed cookie instead of throwing', () => {
+    const value = cookieValue('orca-filters=%', 'orca-filters')
+
+    expect(parseFiltersCollapsed(value)).toBe(false)
+    expect(parseFiltersCollapsed(cookieValue('orca-filters=%E0%A4%A', 'orca-filters'))).toBe(false)
+  })
 })
 
 describe('cookieValue', () => {
@@ -23,8 +35,12 @@ describe('cookieValue', () => {
     expect(cookieValue('x-orca-filters=collapsed', 'orca-filters')).toBeUndefined()
   })
 
-  it('keeps an equals sign in the value, and decodes it', () => {
-    expect(cookieValue('k=a%20b=c', 'k')).toBe('a b=c')
+  it('keeps an equals sign in the value, and leaves it undecoded', () => {
+    expect(cookieValue('k=a%20b=c', 'k')).toBe('a%20b=c')
+  })
+
+  it('reads a malformed percent escape without throwing', () => {
+    expect(cookieValue('orca-filters=%', 'orca-filters')).toBe('%')
   })
 
   it('is undefined when the cookie is not set', () => {

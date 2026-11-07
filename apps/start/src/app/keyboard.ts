@@ -60,6 +60,20 @@ export function panelClosesOnEscape(event: EscapeEvent): boolean {
   return event.key === 'Escape' && !event.isComposing
 }
 
+/**
+ * Whether a drawer's own dismissal closes the Endpoint panel, by Base UI's reason. A non-modal drawer
+ * beside the Table leaves Esc to the keyboard rules above, which return focus to the row, and treats
+ * focus leaving it as the user working the Table. A modal drawer takes focus and blocks the page, so
+ * Esc belongs to it: on a touch screen focus starts on the popup, outside the panel's own Esc handler.
+ */
+export function drawerClosesEndpoint(reason: string, modal: boolean): boolean {
+  if (reason === 'focus-out') {
+    return false
+  }
+
+  return reason !== 'escape-key' || modal
+}
+
 /** The Results region's element ID: where focus lands when its row is gone. */
 export const RESULTS_REGION_ID = 'results-region'
 

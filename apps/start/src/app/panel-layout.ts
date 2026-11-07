@@ -3,7 +3,9 @@
  * secondary Panel that takes a column: docked beside Results where both fit, or in a drawer where they
  * do not. The Endpoint panel never takes a column: it floats over Results in a drawer at every width,
  * so selecting an endpoint, or moving the selection with ↑/↓, never reflows the Table or redraws the
- * plot. The breakpoints are not chosen; they are the widths at which a layout stops fitting.
+ * plot. It floats beside the Table only where Results keeps the Model column and a band of figures
+ * clear of it; otherwise it rises from the bottom. The breakpoints are not chosen; they are the
+ * widths at which a layout stops fitting.
  */
 
 /** Pixels between Panels, and between the Panels and the page's edge. */
@@ -18,6 +20,27 @@ export const ENDPOINT_WIDTH = 384
 /** The narrowest Results panel beside a docked Panel: its scope bar's counts and the Model column. */
 export const RESULTS_MIN_WIDTH = 480
 
+/** The Table's sticky Model column, which takes what its fixed-width columns leave of 190 (760px). */
+export const MODEL_COLUMN_WIDTH = 180
+
+/** The Table's numeric columns are 68px each (Throughput is 56px). */
+const FIGURE_COLUMN_WIDTH = 68
+
+/**
+ * The figures that must stay visible beside a floating Endpoint drawer: the three price columns
+ * (Input, Output, Cache read), the first figures the Table shows after Model, enough to compare
+ * endpoints by cost while one is open.
+ */
+export const MIN_VISIBLE_FIGURES_WIDTH = 3 * FIGURE_COLUMN_WIDTH
+
+/**
+ * The Results width that fits the Endpoint drawer beside the Table: the drawer, then the Model column
+ * and a readable band of figures clear of it. The drawer covers the end of Results, so the rest is
+ * what the Table shows.
+ */
+export const ENDPOINT_RESULTS_WIDTH =
+  ENDPOINT_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH
+
 /**
  * Where the Filters panel sits.
  *
@@ -28,8 +51,9 @@ export const RESULTS_MIN_WIDTH = 480
 export type FiltersPlacement = 'docked' | 'collapsed' | 'drawer'
 
 /**
- * The edge the Endpoint drawer floats from: `right`, beside the Table, where the page leaves Results
- * its minimum width beside it; `bottom` on a phone or a narrow window.
+ * The edge the Endpoint drawer floats from: `right`, beside the Table, where Results is wide enough
+ * to keep its Model column and a band of figures visible beside it (`ENDPOINT_RESULTS_WIDTH`);
+ * `bottom` on a phone or where docked Filters leave Results too narrow.
  */
 export type EndpointSide = 'right' | 'bottom'
 
@@ -41,18 +65,25 @@ export interface PanelLayout {
 /** The narrowest page that docks Filters beside Results, padding and gaps included. */
 export const FILTERS_DOCK_WIDTH = 2 * PANEL_GAP + FILTERS_WIDTH + PANEL_GAP + RESULTS_MIN_WIDTH
 
-/** The narrowest page whose Results panel leaves its minimum width beside the Endpoint drawer. */
-export const ENDPOINT_SIDE_WIDTH = 2 * PANEL_GAP + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH
+/** The narrowest page whose Results panel, with Filters collapsed or in a drawer, fits the Endpoint drawer. */
+export const ENDPOINT_SIDE_WIDTH = 2 * PANEL_GAP + ENDPOINT_RESULTS_WIDTH
+
+/** The narrowest page whose Results panel, beside docked Filters, fits the Endpoint drawer. */
+export const ENDPOINT_SIDE_DOCKED_WIDTH =
+  2 * PANEL_GAP + FILTERS_WIDTH + PANEL_GAP + ENDPOINT_RESULTS_WIDTH
 
 /**
  * Where each secondary Panel goes on a page this many CSS pixels wide. `filtersCollapsed` is the
  * user's preference for docked Filters; a page too narrow to dock them puts them in a drawer whatever
- * it says.
+ * it says. The Endpoint drawer's edge follows from the Filters, whose column takes Results' width.
  */
 export function panelLayout(width: number, filtersCollapsed: boolean): PanelLayout {
+  const filters = filtersPlacement(width, filtersCollapsed)
+  const endpointSideWidth = filters === 'docked' ? ENDPOINT_SIDE_DOCKED_WIDTH : ENDPOINT_SIDE_WIDTH
+
   return {
-    endpoint: width < ENDPOINT_SIDE_WIDTH ? 'bottom' : 'right',
-    filters: filtersPlacement(width, filtersCollapsed),
+    endpoint: width < endpointSideWidth ? 'bottom' : 'right',
+    filters,
   }
 }
 
@@ -77,9 +108,11 @@ export function tableTrailingInset(layout: PanelLayout, endpointShown: boolean):
  * Every width at which `panelLayout` can change, ascending. Between two of them it returns the same
  * layout, so a page width can be floored to one (see `breakpointFloor`) without changing the result.
  */
-export const BREAKPOINTS: readonly number[] = [FILTERS_DOCK_WIDTH, ENDPOINT_SIDE_WIDTH].toSorted(
-  (left, right) => left - right,
-)
+export const BREAKPOINTS: readonly number[] = [
+  FILTERS_DOCK_WIDTH,
+  ENDPOINT_SIDE_WIDTH,
+  ENDPOINT_SIDE_DOCKED_WIDTH,
+].toSorted((left, right) => left - right)
 
 /** The widest breakpoint no wider than the page, or 0 below them all. */
 export function breakpointFloor(width: number): number {

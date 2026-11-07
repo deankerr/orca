@@ -6,6 +6,8 @@ import {
   closedSession,
   DOCKED_FILTERS_MEDIA_CLASS,
   drawerSessionIn,
+  ENDPOINT_RESULTS_WIDTH,
+  ENDPOINT_SIDE_DOCKED_WIDTH,
   ENDPOINT_SIDE_WIDTH,
   ENDPOINT_WIDTH,
   FILTERS_DOCK_WIDTH,
@@ -14,6 +16,8 @@ import {
   FLUSH_FRAME_MEDIA_CLASS,
   FLUSH_PAGE_MEDIA_CLASS,
   FLUSH_TOP_MEDIA_CLASS,
+  MIN_VISIBLE_FIGURES_WIDTH,
+  MODEL_COLUMN_WIDTH,
   PANEL_GAP,
   panelLayout,
   RESULTS_MIN_WIDTH,
@@ -45,23 +49,58 @@ describe('panelLayout', () => {
   })
 
   it.each([
-    [390, 'bottom'],
-    [768, 'bottom'],
-    [ENDPOINT_SIDE_WIDTH - 1, 'bottom'],
-    [ENDPOINT_SIDE_WIDTH, 'right'],
-    [1024, 'right'],
-    [1728, 'right'],
-  ] as const)('floats the Endpoint drawer on a %ipx page from the %s', (width, side) => {
-    expect(panelLayout(width, false).endpoint).toBe(side)
+    [390, false, 'bottom'],
+    [768, false, 'bottom'],
+    [888, false, 'bottom'],
+    [888, true, 'right'],
+    [ENDPOINT_SIDE_WIDTH - 1, true, 'bottom'],
+    [ENDPOINT_SIDE_WIDTH, true, 'right'],
+    [ENDPOINT_SIDE_DOCKED_WIDTH - 1, false, 'bottom'],
+    [ENDPOINT_SIDE_DOCKED_WIDTH, false, 'right'],
+    [1024, false, 'bottom'],
+    [1024, true, 'right'],
+    [1280, false, 'right'],
+    [1728, false, 'right'],
+  ] as const)(
+    'floats the Endpoint drawer on a %ipx page (Filters collapsed: %s) from the %s',
+    (width, collapsed, side) => {
+      expect(panelLayout(width, collapsed).endpoint).toBe(side)
+    },
+  )
+
+  it('keeps the Model column and a readable band of figures beside the Endpoint drawer', () => {
+    // The drawer covers its width of Results; docked Filters take a column and a gap from it.
+    expect(ENDPOINT_RESULTS_WIDTH).toBe(
+      ENDPOINT_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH,
+    )
+    expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + ENDPOINT_RESULTS_WIDTH)
+    expect(ENDPOINT_SIDE_DOCKED_WIDTH).toBe(
+      PAD + FILTERS_WIDTH + PANEL_GAP + ENDPOINT_RESULTS_WIDTH,
+    )
   })
 
-  it('floats the Endpoint drawer beside the Table where Results keeps its minimum width beside it', () => {
-    expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH)
-  })
-
-  it('never moves Filters for the Endpoint drawer, or the drawer for Filters', () => {
+  it('leaves the Model column and the figures visible wherever the drawer floats beside the Table', () => {
     for (let width = 0; width <= 2000; width += 1) {
-      expect(panelLayout(width, true).endpoint).toBe(panelLayout(width, false).endpoint)
+      for (const collapsed of [false, true]) {
+        const layout = panelLayout(width, collapsed)
+
+        if (layout.endpoint === 'right') {
+          const dockedColumn = layout.filters === 'docked' ? FILTERS_WIDTH + PANEL_GAP : 0
+          const results = width - PAD - dockedColumn
+
+          expect(results - ENDPOINT_WIDTH).toBeGreaterThanOrEqual(
+            MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH,
+          )
+        }
+      }
+    }
+  })
+
+  it('never moves Filters for the Endpoint drawer', () => {
+    for (let width = 0; width <= 2000; width += 1) {
+      expect(panelLayout(width, false).filters).toBe(
+        width < FILTERS_DOCK_WIDTH ? 'drawer' : 'docked',
+      )
     }
   })
 })
@@ -74,6 +113,7 @@ describe('tableTrailingInset', () => {
   it('leaves none with nothing selected, or for a drawer from the bottom', () => {
     expect(tableTrailingInset(panelLayout(1440, false), false)).toBe(0)
     expect(tableTrailingInset(panelLayout(390, false), true)).toBe(0)
+    expect(tableTrailingInset(panelLayout(1024, false), true)).toBe(0)
   })
 })
 

@@ -5,12 +5,18 @@ import type { VariantProps } from 'class-variance-authority'
 import { cn } from 'cn'
 
 const badgeVariants = cva(
-  'group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[0.625rem] font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-2.5!',
+  'group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent text-[0.625rem] font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-2.5!',
   {
     defaultVariants: {
+      size: 'default',
       variant: 'default',
     },
     variants: {
+      size: {
+        default: 'h-5 px-2 py-0.5',
+        // A count on a control's corner: a circle for one digit, a pill for more.
+        sm: 'h-4 min-w-4 px-1',
+      },
       variant: {
         default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
         destructive:
@@ -27,22 +33,25 @@ const badgeVariants = cva(
 
 function Badge({
   className,
+  size: sizeProp,
   variant: variantProp,
   render,
   ...props
 }: useRender.ComponentProps<'span'> & VariantProps<typeof badgeVariants>) {
+  const size = sizeProp === undefined ? 'default' : sizeProp
   const variant = variantProp === undefined ? 'default' : variantProp
 
   return useRender({
     defaultTagName: 'span',
     props: mergeProps<'span'>(
       {
-        className: cn(badgeVariants({ variant }), className),
+        className: cn(badgeVariants({ size, variant }), className),
       },
       props,
     ),
     render,
     state: {
+      size,
       slot: 'badge',
       variant,
     },

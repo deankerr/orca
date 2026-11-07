@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { AppLayout } from '#app/app-layout'
 import { useFiltersCollapsed } from '#app/filters-preference'
+import { drawerClosesEndpoint } from '#app/keyboard'
 import type { EndpointSide } from '#app/panel-layout'
 import {
   DockedFilters,
@@ -11,7 +12,6 @@ import {
   usePanelLayout,
   useDrawerSession,
 } from '#app/panels'
-import type { DrawerChangeReason } from '#app/panels'
 import { useScopeActions, useSelectedEndpoint } from '#endpoints/hooks'
 import { scopeDefaults, scopeSchema } from '#endpoints/scope'
 import { snapshotQuery } from '#endpoints/snapshot'
@@ -46,14 +46,6 @@ function Pending() {
 }
 
 /**
- * Esc is left to the keyboard rules (`keyboard.ts`): the Table and the panel each close the drawer
- * for an Esc they own, and a field or slider elsewhere keeps its own. Focus leaving a non-modal drawer
- * is the user working the Table beside it.
- */
-const closesEndpoint = (reason: DrawerChangeReason): boolean =>
-  reason !== 'escape-key' && reason !== 'focus-out'
-
-/**
  * The selected endpoint in a drawer that floats over Results, so selecting never reflows the Table.
  * Beside the Table it is non-modal: the Table keeps focus, ↑/↓ and clicks on rows move the selection,
  * and the drawer follows. From the bottom, on a phone, it is modal and swipes down to close.
@@ -70,6 +62,7 @@ function EndpointDrawer({ side }: { side: EndpointSide }) {
   }
 
   const row = selected ?? shown
+  const modal = side === 'bottom'
 
   if (row === null) {
     return null
@@ -78,9 +71,9 @@ function EndpointDrawer({ side }: { side: EndpointSide }) {
   return (
     <PanelDrawer
       label="Endpoint"
-      modal={side === 'bottom'}
+      modal={modal}
       onOpenChange={(open, reason) => {
-        if (!open && closesEndpoint(reason)) {
+        if (!open && drawerClosesEndpoint(reason, modal)) {
           selectEndpoint(undefined)
         }
       }}

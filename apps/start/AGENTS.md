@@ -46,17 +46,27 @@ drawer from the left where they do not; docked Filters can be collapsed, Sidebar
 docks: it floats over Results in a Base UI drawer at every width, so selecting an endpoint, or moving the
 selection with ↑/↓, never reflows the Table or redraws the plot. `panelLayout` in `panel-layout.ts` derives
 placement from the page width and the user's Filters preference. Breakpoints are not chosen: they come from the
-Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8), so they move when a Panel's width does.
+Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8, and the Model column and price figures the
+Table keeps visible beside the Endpoint drawer), so they move when a Panel's width does.
 
 | Page width (CSS px) | Filters                               | Endpoint drawer                    |
 | ------------------- | ------------------------------------- | ---------------------------------- |
-| ≥ 888               | Docked, or collapsed if the user says | Beside the Table, non-modal        |
-| 776–887             | Docked, or collapsed if the user says | From the bottom, modal             |
+| ≥ 1064              | Docked, or collapsed if the user says | Beside the Table, non-modal        |
+| 784–1063            | Docked                                | From the bottom, modal             |
+| 784–1063            | Collapsed                             | Beside the Table, non-modal        |
+| 776–783             | Docked, or collapsed if the user says | From the bottom, modal             |
 | < 776               | Drawer from the left, modal           | From the bottom, modal; page flush |
+
+The Endpoint drawer floats beside the Table only where Results, once the drawer covers its end, still shows
+the sticky Model column (180) and the three price columns (3 × 68): Results ≥ 384 + 180 + 204 = 768. Docked
+Filters take 280 of the page (column and gap) from Results, so the same drawer needs a page 280px wider (1064
+against 784) while they are docked. Collapsing Filters can therefore change the drawer's edge.
 
 - The Endpoint drawer beside the Table is non-modal and leaves focus in the Table, so ↑/↓, clicks on rows,
   and Esc (with focus returning to the row, `keyboard.ts`) keep working; Base UI's own Esc and focus-out
-  dismissals are ignored so the keyboard rules decide. From the bottom it is modal and swipes down to close.
+  dismissals are ignored so the keyboard rules decide. From the bottom it is modal and swipes down to close; Base UI's Esc dismissal closes it, since focus may start
+  on the popup, outside the panel's own Esc handler (`drawerClosesEndpoint`). A drawer that turns modal while open
+  is keyed by its modality, so it remounts and takes focus.
 - While it floats beside the Table, the Table's wrapper gains trailing padding equal to the drawer's width
   (`tableTrailingInset`), so every column can scroll out from under it without the table changing width.
 - Whether docked Filters are collapsed is a preference in the `orca-filters` cookie (`filters-preference.ts`),

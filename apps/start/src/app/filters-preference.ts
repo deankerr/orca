@@ -13,18 +13,25 @@ const COOKIE_NAME = 'orca-filters'
 /** A year: the preference outlasts a session, and resets only when the user changes it. */
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-/** The cookie's value as the preference. Anything but `collapsed`, including no cookie, is expanded. */
+/**
+ * A cookie's value as the preference. Anything but `collapsed` is expanded: no cookie, a malformed
+ * value, or one this version does not know. It never throws, because it runs while rendering.
+ */
 export function parseFiltersCollapsed(value: string | undefined): boolean {
   return value === 'collapsed'
 }
 
-/** A cookie's value from a `document.cookie` string, or undefined when it is not set. */
+/**
+ * A cookie's raw value from a `document.cookie` string, or undefined when it is not set. It is not
+ * percent-decoded: the preference's values are plain tokens, and decoding would throw on a malformed
+ * one (`%`) from any script that sets the cookie.
+ */
 export function cookieValue(cookies: string, name: string): string | undefined {
   for (const pair of cookies.split(';')) {
     const [key, ...value] = pair.trim().split('=')
 
     if (key === name) {
-      return decodeURIComponent(value.join('='))
+      return value.join('=')
     }
   }
 

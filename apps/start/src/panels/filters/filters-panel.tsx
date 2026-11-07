@@ -29,17 +29,8 @@ function DrawerActions() {
           Clear
         </Button>
       )}
-      <DrawerClose
-        render={
-          <Button
-            aria-label="Close filters"
-            className="pointer-coarse:size-8"
-            size="icon"
-            variant="ghost"
-          />
-        }
-      >
-        <XIcon aria-hidden="true" />
+      <DrawerClose render={<Button aria-label="Close filters" size="icon" variant="ghost" />}>
+        <XIcon aria-hidden="true" data-icon="inline-start" />
       </DrawerClose>
     </div>
   )

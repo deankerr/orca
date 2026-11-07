@@ -36,16 +36,16 @@ function FiltersButton({ filters, placement }: { filters: number; placement: Fil
           <Button
             aria-expanded={placement === 'drawer' ? undefined : placement === 'docked'}
             aria-label={filters > 0 ? `Filters, ${formatNumber(filters)} active` : 'Filters'}
-            className="relative pointer-coarse:size-8"
+            className="relative"
             onClick={toggle}
             size="icon"
             variant="ghost"
           />
         }
       >
-        <SlidersHorizontal aria-hidden="true" />
+        <SlidersHorizontal aria-hidden="true" data-icon="inline-start" />
         {filters > 0 && (
-          <Badge aria-hidden="true" className="absolute -top-1 -right-1 h-4 min-w-4 px-1">
+          <Badge aria-hidden="true" className="absolute -top-1 -right-1" size="sm">
             {formatNumber(filters)}
           </Badge>
         )}
@@ -63,15 +63,10 @@ function PlotToggle() {
     <Tooltip>
       <TooltipTrigger
         render={
-          <Toggle
-            aria-label="Plot"
-            className="pointer-coarse:size-8"
-            onPressedChange={togglePlot}
-            pressed={plot}
-          />
+          <Toggle aria-label="Plot" onPressedChange={togglePlot} pressed={plot} size="icon" />
         }
       >
-        <ChartScatter aria-hidden="true" />
+        <ChartScatter aria-hidden="true" data-icon="inline-start" />
       </TooltipTrigger>
       <TooltipContent>{plot ? 'Hide plot' : 'Show plot'}</TooltipContent>
     </Tooltip>
