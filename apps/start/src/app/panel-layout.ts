@@ -87,12 +87,26 @@ export const ENDPOINT_SIDE_DOCKED_WIDTH =
  */
 export function panelLayout(width: number, filtersCollapsed: boolean): PanelLayout {
   const filters = filtersPlacement(width, filtersCollapsed)
-  const endpointSideWidth = filters === 'docked' ? ENDPOINT_SIDE_DOCKED_WIDTH : ENDPOINT_SIDE_WIDTH
 
   return {
-    endpoint: width < endpointSideWidth ? 'bottom' : 'right',
+    endpoint: width < endpointSideWidth(filters) ? 'bottom' : 'right',
     filters,
   }
+}
+
+/** The narrowest page whose Endpoint drawer floats beside the Table, with Filters where they are. */
+function endpointSideWidth(filters: FiltersPlacement): number {
+  return filters === 'docked' ? ENDPOINT_SIDE_DOCKED_WIDTH : ENDPOINT_SIDE_WIDTH
+}
+
+/**
+ * The narrowest page whose Table folds for the Endpoint drawer (`foldsForEndpoint`), given only the
+ * user's Filters preference. Below `FILTERS_DOCK_WIDTH` Filters are in a drawer whatever it says, but
+ * both widths are wider than that, so the answer is the same. The server knows the preference, not the
+ * page's width, so the loading skeleton folds from this width in CSS (`FOLD_CLASSES`).
+ */
+export function foldWidth(filtersCollapsed: boolean): number {
+  return endpointSideWidth(filtersCollapsed ? 'collapsed' : 'docked')
 }
 
 function filtersPlacement(width: number, collapsed: boolean): FiltersPlacement {

@@ -88,6 +88,11 @@ the surplus, as in the narrow Results panel's fold below.
   corners, and the scope bar and status bar pad themselves clear of the notch and home indicator.
 - The server renders the skeleton for a desktop; the `*_MEDIA_CLASS` constants in `panel-layout.ts` fix a phone's
   layout before scripts run, and a test keeps them at the breakpoint.
+- The loading skeleton's Table cannot know the page's width on the server, only the Filters preference, so it folds
+  Provider by media query: `FOLD_CLASSES` in `columns.tsx` holds a `data-folded` set for the loaded Table and a
+  `min-[N]` set for each preference (N is `foldWidth`: 785 collapsed, 1065 docked), and a test keeps them at it.
+  Column widths are CSS custom properties (`columnWidthStyle`) the fold chooses between, not an inline `width`.
+  The skeleton, its server HTML, and the loaded Table therefore lay out the same columns at every width.
 - A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
 - Results' parts share one side inset, `--results-inset` (16px, 12px in a narrow panel).
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.

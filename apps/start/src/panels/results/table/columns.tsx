@@ -9,6 +9,14 @@ import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/
 
 import { providerTags } from './tags'
 
+declare module 'react' {
+  // A `<col>`'s widths, which `FOLD_CLASSES` picks between (see `columnWidthStyle`).
+  interface CSSProperties {
+    '--col-folded-width'?: string
+    '--col-width'?: string
+  }
+}
+
 declare module '@tanstack/react-table' {
   interface ColumnMeta<
     in out TFeatures extends TableFeatures,
@@ -25,35 +33,93 @@ declare module '@tanstack/react-table' {
 }
 
 /**
- * A column's width in the fixed layout. Where the Table folds for the Endpoint drawer (`placementFold`,
- * see `foldsForEndpoint`), Model holds `MODEL_COLUMN_WIDTH` and Context, the last column, takes the
- * surplus, so the price columns after Model stay where the drawer's clear band expects them. Elsewhere
- * Model, the one column without a width, takes the surplus.
+ * A column's width in the fixed layout, and its width where the Table folds for the Endpoint drawer
+ * (see `foldsForEndpoint`): Model then holds `MODEL_COLUMN_WIDTH` and Context, the last column, takes
+ * the surplus, so the price columns after Model stay where the drawer's clear band expects them.
+ * Elsewhere Model, the one column without a width, takes the surplus. `undefined` is that surplus.
  */
-export function columnWidth(id: string, width: number | undefined, placementFold: boolean) {
-  if (!placementFold) {
-    return width
-  }
-
+export function columnWidths(id: string, width: number | undefined) {
   if (id === 'model') {
-    return MODEL_COLUMN_WIDTH
+    return { folded: MODEL_COLUMN_WIDTH, unfolded: width }
   }
 
-  return id === 'context' ? undefined : width
+  return { folded: id === 'context' ? undefined : width, unfolded: width }
+}
+
+const px = (width: number | undefined): string => (width === undefined ? 'auto' : `${width}px`)
+
+/**
+ * A `<col>`'s widths as custom properties, which `FoldClasses.width` picks between. They are CSS, not
+ * an inline `width`, so the fold can choose before scripts run.
+ */
+export function columnWidthStyle(id: string, width: number | undefined) {
+  const { folded, unfolded } = columnWidths(id, width)
+
+  return { '--col-folded-width': px(folded), '--col-width': px(unfolded) }
+}
+
+/**
+ * What a fold changes about the Table, as class names, for one thing that says the Table is folded.
+ *
+ * - `hidden`: hides a folding column's column, header, and cells.
+ * - `only`: shown only where a column folds; the folded column's stand-in.
+ * - `wrapper`: the Table wrapper's minimum width, narrower where folded.
+ * - `width`: a `<col>`'s width, from `columnWidthStyle`.
+ *
+ * Every set also folds in a Results panel narrower than 32rem (a container query).
+ */
+interface FoldClasses {
+  hidden: string
+  only: string
+  width: string
+  wrapper: string
 }
 
 /**
  * The Provider column folds into the Model cell's second line (`meta.folds`) in two cases, and these
  * classes name both without a second layout: in a Results panel narrower than 32rem (a container query),
- * and wherever the Endpoint drawer can float beside the Table (`data-folded` on the Table's wrapper,
- * a `group/table`; see `foldsForEndpoint`). Each class below pairs the two conditions.
+ * and wherever the Endpoint drawer can float beside the Table (`foldsForEndpoint`).
+ *
+ * The loaded Table knows the layout, so it sets `data-folded` on its wrapper, a `group/table`, and
+ * reads `data`. The loading skeleton is rendered by the server for a page of unknown width and knows
+ * only the Filters preference (the `orca-filters` cookie), so it reads the media query at the width
+ * `foldWidth` gives for that preference (`collapsed` or `docked`). `min-[N]` is `width >= N`, and a
+ * test keeps each N at `foldWidth`. The skeleton thereby draws the loaded Table's columns from its
+ * first frame, so nothing shifts when the page hydrates or the catalogue arrives.
  */
-/** Hides a folding column's column, header, and cells. */
-export const FOLDED_CLASS = '@max-lg/results:hidden group-data-folded/table:hidden'
+export const FOLD_CLASSES = {
+  collapsed: {
+    hidden: '@max-lg/results:hidden min-[785px]:hidden',
+    only: 'hidden @max-lg/results:inline-flex min-[785px]:inline-flex',
+    width: 'w-(--col-width) min-[785px]:w-(--col-folded-width)',
+    wrapper: 'min-w-190 @max-lg/results:min-w-144 min-[785px]:min-w-144',
+  },
+  data: {
+    hidden: '@max-lg/results:hidden group-data-folded/table:hidden',
+    only: 'hidden @max-lg/results:inline-flex group-data-folded/table:inline-flex',
+    width: 'w-(--col-width) group-data-folded/table:w-(--col-folded-width)',
+    wrapper: 'min-w-190 @max-lg/results:min-w-144 data-folded:min-w-144',
+  },
+  docked: {
+    hidden: '@max-lg/results:hidden min-[1065px]:hidden',
+    only: 'hidden @max-lg/results:inline-flex min-[1065px]:inline-flex',
+    width: 'w-(--col-width) min-[1065px]:w-(--col-folded-width)',
+    wrapper: 'min-w-190 @max-lg/results:min-w-144 min-[1065px]:min-w-144',
+  },
+} as const satisfies Record<string, FoldClasses>
 
-/** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS =
-  'hidden @max-lg/results:inline-flex group-data-folded/table:inline-flex'
+/** What says the Table is folded: the loaded Table's `data-folded`, or the Filters preference's media query. */
+export type FoldTrigger = keyof typeof FOLD_CLASSES
+
+/** The loading skeleton's trigger: the media query for the user's Filters preference. */
+export const skeletonFold = (filtersCollapsed: boolean): FoldTrigger =>
+  filtersCollapsed ? 'collapsed' : 'docked'
+
+/** Hides a folding column's column, header, and cells in the loaded Table. */
+export const FOLDED_CLASS = FOLD_CLASSES.data.hidden
+
+/** Shown only where a column folds in the loaded Table; the folded column's stand-in. */
+export const FOLDED_ONLY_CLASS = FOLD_CLASSES.data.only
 
 /** The folded column's second line in the Model cell. */
 const FOLDED_LINE_FLEX_CLASS = 'hidden @max-lg/results:flex group-data-folded/table:flex'
