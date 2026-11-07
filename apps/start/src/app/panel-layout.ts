@@ -4,8 +4,8 @@
  * do not. The Endpoint panel never takes a column: it floats over Results in a drawer at every width,
  * so selecting an endpoint, or moving the selection with ↑/↓, never reflows the Table or redraws the
  * plot. It floats beside the Table only where Results keeps the Model column and a band of figures
- * clear of it; otherwise it rises from the bottom. The breakpoints are not chosen; they are the
- * widths at which a layout stops fitting.
+ * clear of it; otherwise it rises from the bottom. The Table folds Provider into the Model cell below
+ * one Results width. The breakpoints are not chosen; they are the widths at which a layout stops fitting.
  */
 
 /** Pixels between Panels, and between the Panels and the page's edge. */
@@ -21,33 +21,80 @@ export const ENDPOINT_WIDTH = 384
 export const RESULTS_MIN_WIDTH = 480
 
 /**
- * The Table's sticky Model column. Where the Endpoint drawer can float beside the Table it is exactly
- * this wide (see `foldsForEndpoint`); elsewhere it takes the surplus. It is also what the folded
- * Table's 144 (576px) minimum leaves it beside the other columns, with Provider out of the row.
+ * The Table's sticky Model column at its narrowest: what the folded Table's 144 (576px) minimum
+ * leaves it beside the figures. It is this wide wherever the Table folds, and grows from there only
+ * as far as the clear band beside the Endpoint drawer allows (`MODEL_COLUMN_WIDTH_CSS`).
  */
 export const MODEL_COLUMN_WIDTH = 180
+
+/**
+ * The widest the Model column grows: a model name at the catalogue's 99th percentile (about 202px of
+ * 13px text) beside its avatar and padding. Past it the surplus is trailing space after the last column.
+ */
+export const MODEL_COLUMN_MAX_WIDTH = 256
+
+/** The Provider column, fitted to a typical name with its quantization and tier tags. */
+export const PROVIDER_COLUMN_WIDTH = 184
 
 /** The Results frame's border. Its leading edge sits before the Model column; the drawer covers the trailing one. */
 export const RESULTS_BORDER_WIDTH = 1
 
 /** The Table's numeric columns are 68px each (Throughput is 56px). */
-const FIGURE_COLUMN_WIDTH = 68
+export const FIGURE_COLUMN_WIDTH = 68
 
 /**
- * The band of the Table that must stay clear beside a floating Endpoint drawer, after the Model
- * column: the width of the three price columns (Input, Output, Cache read), which directly follow
- * Model because Provider is folded into it there (`foldsForEndpoint`). The rest scroll in clear of the
- * drawer (see `tableTrailingInset`).
+ * The band of the Table that must stay clear beside a floating Endpoint drawer, after the columns
+ * before the figures: the width of the three price columns (Input, Output, Cache read). The rest
+ * scroll in clear of the drawer (see `tableTrailingInset`).
  */
 export const MIN_VISIBLE_FIGURES_WIDTH = 3 * FIGURE_COLUMN_WIDTH
 
 /**
- * The Results width that fits the Endpoint drawer beside the Table: the drawer, then the frame's
- * leading border, the Model column, and a band of figures clear of it. The drawer covers the end of
- * Results, trailing border included, so the rest is what the Table shows.
+ * The Results width that fits the Endpoint drawer beside the folded Table: the drawer, then the
+ * frame's leading border, the Model column, and a band of figures clear of it. The drawer covers the
+ * end of Results, trailing border included, so the rest is what the Table shows.
  */
 export const ENDPOINT_RESULTS_WIDTH =
   ENDPOINT_WIDTH + RESULTS_BORDER_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH
+
+/**
+ * The narrowest Results panel whose Table gives Provider its own column: where the drawer's clear band
+ * still fits after it. Below it Provider folds into the Model cell's second line. It is the Table's one
+ * fold, a function of the Results width alone, and the drawer floats beside the Table at every width
+ * from `ENDPOINT_RESULTS_WIDTH` up, folded below this and unfolded from it, with no gap between.
+ */
+export const UNFOLD_RESULTS_WIDTH = ENDPOINT_RESULTS_WIDTH + PROVIDER_COLUMN_WIDTH
+
+/**
+ * `UNFOLD_RESULTS_WIDTH` as the Results container query sees it: the frame's content box, inside its
+ * two borders. `UNFOLD_CONTAINER_CLASS` in the Table's columns is this width in Tailwind.
+ */
+export const UNFOLD_CONTAINER_WIDTH = UNFOLD_RESULTS_WIDTH - 2 * RESULTS_BORDER_WIDTH
+
+/**
+ * The Model column's width, as CSS, from the Results container's width (`100cqw`): `MODEL_COLUMN_WIDTH`
+ * wherever the Table folds, then the width that holds the unfolded Table's clear band at exactly
+ * `MIN_VISIBLE_FIGURES_WIDTH` beside the drawer, up to `MODEL_COLUMN_MAX_WIDTH`. The middle term is
+ * `MODEL_COLUMN_WIDTH` at `UNFOLD_CONTAINER_WIDTH`, so the column never jumps. It depends on no layout
+ * or selection, so the server's HTML has it, and opening the drawer moves nothing.
+ */
+export const MODEL_COLUMN_WIDTH_CSS = `clamp(${MODEL_COLUMN_WIDTH}px, 100cqw - ${UNFOLD_CONTAINER_WIDTH - MODEL_COLUMN_WIDTH}px, ${MODEL_COLUMN_MAX_WIDTH}px)`
+
+/**
+ * The Model column's width, in pixels, in a Results panel this wide: `MODEL_COLUMN_WIDTH_CSS`, for
+ * tests and the band's proof.
+ */
+export function modelColumnWidth(results: number): number {
+  const containerWidth = results - 2 * RESULTS_BORDER_WIDTH
+
+  return Math.min(
+    MODEL_COLUMN_MAX_WIDTH,
+    Math.max(MODEL_COLUMN_WIDTH, containerWidth - (UNFOLD_CONTAINER_WIDTH - MODEL_COLUMN_WIDTH)),
+  )
+}
+
+/** Whether a Results panel this wide folds Provider into the Model cell. */
+export const tableFolds = (results: number): boolean => results < UNFOLD_RESULTS_WIDTH
 
 /**
  * Where the Filters panel sits.
@@ -73,7 +120,7 @@ export interface PanelLayout {
 /** The narrowest page that docks Filters beside Results, padding and gaps included. */
 export const FILTERS_DOCK_WIDTH = 2 * PANEL_GAP + FILTERS_WIDTH + PANEL_GAP + RESULTS_MIN_WIDTH
 
-/** The narrowest page whose Results panel, with Filters collapsed or in a drawer, fits the Endpoint drawer. */
+/** The narrowest page whose Results panel, with Filters collapsed, fits the Endpoint drawer. */
 export const ENDPOINT_SIDE_WIDTH = 2 * PANEL_GAP + ENDPOINT_RESULTS_WIDTH
 
 /** The narrowest page whose Results panel, beside docked Filters, fits the Endpoint drawer. */
@@ -83,30 +130,37 @@ export const ENDPOINT_SIDE_DOCKED_WIDTH =
 /**
  * Where each secondary Panel goes on a page this many CSS pixels wide. `filtersCollapsed` is the
  * user's preference for docked Filters; a page too narrow to dock them puts them in a drawer whatever
- * it says. The Endpoint drawer's edge follows from the Filters, whose column takes Results' width.
+ * it says. The Endpoint drawer's edge follows from the Results width the Filters leave.
  */
 export function panelLayout(width: number, filtersCollapsed: boolean): PanelLayout {
   const filters = filtersPlacement(width, filtersCollapsed)
 
   return {
-    endpoint: width < endpointSideWidth(filters) ? 'bottom' : 'right',
+    endpoint: endpointSide(width, filters),
     filters,
   }
 }
 
-/** The narrowest page whose Endpoint drawer floats beside the Table, with Filters where they are. */
-function endpointSideWidth(filters: FiltersPlacement): number {
-  return filters === 'docked' ? ENDPOINT_SIDE_DOCKED_WIDTH : ENDPOINT_SIDE_WIDTH
+/**
+ * The Results panel's width, border included, on a page this wide with Filters where they are. With
+ * Filters in a drawer Results runs flush, the page's full width.
+ */
+export function resultsWidth(width: number, filters: FiltersPlacement): number {
+  if (filters === 'drawer') {
+    return width
+  }
+
+  return width - 2 * PANEL_GAP - (filters === 'docked' ? FILTERS_WIDTH + PANEL_GAP : 0)
 }
 
 /**
- * The narrowest page whose Table folds for the Endpoint drawer (`foldsForEndpoint`), given only the
- * user's Filters preference. Below `FILTERS_DOCK_WIDTH` Filters are in a drawer whatever it says, but
- * both widths are wider than that, so the answer is the same. The server knows the preference, not the
- * page's width, so the loading skeleton folds from this width in CSS (`FOLD_CLASSES`).
+ * The drawer floats beside the Table where Results is at least `ENDPOINT_RESULTS_WIDTH` wide, and only
+ * beside a framed Results: a flush one runs under the drawer's page inset, and is a phone's layout.
  */
-export function foldWidth(filtersCollapsed: boolean): number {
-  return endpointSideWidth(filtersCollapsed ? 'collapsed' : 'docked')
+function endpointSide(width: number, filters: FiltersPlacement): EndpointSide {
+  return filters !== 'drawer' && resultsWidth(width, filters) >= ENDPOINT_RESULTS_WIDTH
+    ? 'right'
+    : 'bottom'
 }
 
 function filtersPlacement(width: number, collapsed: boolean): FiltersPlacement {
@@ -115,19 +169,6 @@ function filtersPlacement(width: number, collapsed: boolean): FiltersPlacement {
   }
 
   return collapsed ? 'collapsed' : 'docked'
-}
-
-/**
- * Whether the Table folds its Provider column into the Model cell's second line and holds the Model
- * column at `MODEL_COLUMN_WIDTH`. That is wherever the Endpoint drawer can float beside the Table,
- * selected or not, so selecting never reflows the Table. Provider (184px) would otherwise open the
- * clear band beside the drawer; folded, Model is directly followed by the price columns, and the band
- * holds `MIN_VISIBLE_FIGURES_WIDTH` of them. A narrow Results panel folds Provider too, but by its own
- * width, in CSS (see `FOLDED_CLASS`); the two never overlap, since a drawer beside the Table needs a
- * Results panel far wider than that.
- */
-export function foldsForEndpoint(layout: PanelLayout): boolean {
-  return layout.endpoint === 'right'
 }
 
 /**

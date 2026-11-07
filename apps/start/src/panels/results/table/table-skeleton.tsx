@@ -1,16 +1,17 @@
 import { Skeleton } from '@orca/ui/components/skeleton'
 import { cn } from 'cn'
 
-import { useFiltersCollapsed } from '#app/filters-preference'
 import { useSort } from '#endpoints/hooks'
 
-import { columnLabel, columns, columnWidthStyle, FOLD_CLASSES, skeletonFold } from './columns'
+import { columnLabel, columns, columnWidthStyle, FOLDED_CLASS, FOLDED_ONLY_CLASS } from './columns'
 import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
+  FillerCell,
+  FillerCol,
   HEADER_CELL_CLASS,
   TABLE_CLASS,
-  tableWrapperClass,
+  TABLE_WRAPPER_CLASS,
 } from './endpoint-table'
 import { sortDirection } from './sorting-state'
 
@@ -73,25 +74,24 @@ function BodyCell({ index, position }: { index: number; position: number }) {
 /**
  * The endpoint table as the route's pending state shows it: the real columns, widths, and header
  * labels, over rows of placeholders. It is decorative, and not interactive: the header's sort buttons
- * need the catalogue to act on.
+ * need the catalogue to act on. Its columns fold and size by the Results width alone, in CSS, so
+ * the server's HTML lays them out where the loaded Table will.
  */
 export function TableSkeleton() {
   const sort = useSort()
-  // The server knows the Filters preference but not the page's width, so the fold is a media query.
-  const trigger = skeletonFold(useFiltersCollapsed())
-  const fold = FOLD_CLASSES[trigger]
 
   return (
-    <div className={tableWrapperClass(trigger)}>
+    <div className={TABLE_WRAPPER_CLASS}>
       <table className={TABLE_CLASS}>
         <colgroup>
           {columns.map((column) => (
             <col
-              className={cn(fold.width, column.meta?.folds === true && fold.hidden)}
+              className={cn(column.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
               style={columnWidthStyle(column.id ?? '', column.meta?.width)}
             />
           ))}
+          <FillerCol />
         </colgroup>
         <thead>
           <tr>
@@ -100,7 +100,7 @@ export function TableSkeleton() {
                 className={cn(
                   HEADER_CELL_CLASS,
                   CELL_PADDING_CLASS,
-                  column.meta?.folds === true && fold.hidden,
+                  column.meta?.folds === true && FOLDED_CLASS,
                   column.meta?.numeric === true ? 'text-right' : 'text-left',
                   sortDirection(sort, column.id ?? '') !== false && 'text-foreground',
                 )}
@@ -109,13 +109,14 @@ export function TableSkeleton() {
               >
                 {columnLabel(column.id)}
                 {column.id === 'model' && (
-                  <span className={fold.only}>
+                  <span className={FOLDED_ONLY_CLASS}>
                     <span className="mx-3">/</span>
                     {columnLabel('provider')}
                   </span>
                 )}
               </th>
             ))}
+            <FillerCell header />
           </tr>
         </thead>
         <tbody>
@@ -126,13 +127,14 @@ export function TableSkeleton() {
                   className={cn(
                     BODY_CELL_CLASS,
                     CELL_PADDING_CLASS,
-                    column.meta?.folds === true && fold.hidden,
+                    column.meta?.folds === true && FOLDED_CLASS,
                   )}
                   key={column.id}
                 >
                   <BodyCell index={index} position={position} />
                 </td>
               ))}
+              <FillerCell />
             </tr>
           ))}
         </tbody>

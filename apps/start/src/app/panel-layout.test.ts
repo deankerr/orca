@@ -17,13 +17,20 @@ import {
   FLUSH_PAGE_MEDIA_CLASS,
   FLUSH_TOP_MEDIA_CLASS,
   MIN_VISIBLE_FIGURES_WIDTH,
+  MODEL_COLUMN_MAX_WIDTH,
   MODEL_COLUMN_WIDTH,
+  MODEL_COLUMN_WIDTH_CSS,
+  modelColumnWidth,
   PANEL_GAP,
   panelLayout,
-  foldsForEndpoint,
+  PROVIDER_COLUMN_WIDTH,
   RESULTS_BORDER_WIDTH,
   RESULTS_MIN_WIDTH,
+  resultsWidth,
+  tableFolds,
   tableTrailingInset,
+  UNFOLD_CONTAINER_WIDTH,
+  UNFOLD_RESULTS_WIDTH,
 } from './panel-layout'
 
 const PAD = 2 * PANEL_GAP
@@ -81,17 +88,33 @@ describe('panelLayout', () => {
     )
   })
 
-  it('leaves the Model column and the figures visible wherever the drawer floats beside the Table', () => {
-    for (let width = 0; width <= 2000; width += 1) {
+  it('floats the drawer beside the Table exactly where a framed Results fits it', () => {
+    for (let width = 0; width <= 3000; width += 1) {
+      for (const collapsed of [false, true]) {
+        const layout = panelLayout(width, collapsed)
+
+        const fits =
+          layout.filters !== 'drawer' &&
+          resultsWidth(width, layout.filters) >= ENDPOINT_RESULTS_WIDTH
+
+        expect(layout.endpoint).toBe(fits ? 'right' : 'bottom')
+      }
+    }
+  })
+
+  it('leaves the columns before the figures, and the clear band, visible wherever the drawer floats beside the Table', () => {
+    for (let width = 0; width <= 3000; width += 1) {
       for (const collapsed of [false, true]) {
         const layout = panelLayout(width, collapsed)
 
         if (layout.endpoint === 'right') {
-          const dockedColumn = layout.filters === 'docked' ? FILTERS_WIDTH + PANEL_GAP : 0
-          const results = width - PAD - dockedColumn
+          const results = resultsWidth(width, layout.filters)
 
-          // The band is what the leading border, the Model column, and the drawer leave of Results.
-          const band = results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH - MODEL_COLUMN_WIDTH
+          const leading =
+            modelColumnWidth(results) + (tableFolds(results) ? 0 : PROVIDER_COLUMN_WIDTH)
+
+          // The band is what the leading border, the columns before the figures, and the drawer leave of Results.
+          const band = results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH - leading
 
           expect(band).toBeGreaterThanOrEqual(MIN_VISIBLE_FIGURES_WIDTH)
         }
@@ -108,15 +131,52 @@ describe('panelLayout', () => {
   })
 })
 
-describe('foldsForEndpoint', () => {
-  it('folds the Table wherever the Endpoint drawer can float beside the Table', () => {
-    for (let width = 0; width <= 2000; width += 1) {
-      for (const collapsed of [false, true]) {
-        const layout = panelLayout(width, collapsed)
+describe('the Table’s fold', () => {
+  it('unfolds Provider where the clear band still fits after it', () => {
+    expect(UNFOLD_RESULTS_WIDTH).toBe(ENDPOINT_RESULTS_WIDTH + PROVIDER_COLUMN_WIDTH)
+    expect(UNFOLD_CONTAINER_WIDTH).toBe(UNFOLD_RESULTS_WIDTH - 2 * RESULTS_BORDER_WIDTH)
+    expect(tableFolds(UNFOLD_RESULTS_WIDTH - 1)).toBe(true)
+    expect(tableFolds(UNFOLD_RESULTS_WIDTH)).toBe(false)
+  })
 
-        expect(foldsForEndpoint(layout)).toBe(layout.endpoint === 'right')
+  it('folds once as Results widens, whatever the Filters do', () => {
+    for (const collapsed of [false, true]) {
+      const flips = []
+
+      for (let width = 1; width <= 3000; width += 1) {
+        const { filters } = panelLayout(width, collapsed)
+        const previous = panelLayout(width - 1, collapsed).filters
+
+        if (
+          tableFolds(resultsWidth(width, filters)) !== tableFolds(resultsWidth(width - 1, previous))
+        ) {
+          flips.push(resultsWidth(width, filters))
+        }
       }
+
+      // Docking Filters at 776 narrows Results, but from 776 to 480: both fold.
+      expect(flips).toEqual([UNFOLD_RESULTS_WIDTH])
     }
+  })
+
+  it('floats the drawer beside the Table across the fold, with no gap between', () => {
+    expect(UNFOLD_RESULTS_WIDTH).toBeGreaterThan(ENDPOINT_RESULTS_WIDTH)
+  })
+})
+
+describe('modelColumnWidth', () => {
+  it('holds the Model column at its narrowest wherever the Table folds, and grows it without a jump', () => {
+    expect(modelColumnWidth(ENDPOINT_RESULTS_WIDTH)).toBe(MODEL_COLUMN_WIDTH)
+    expect(modelColumnWidth(UNFOLD_RESULTS_WIDTH - 1)).toBe(MODEL_COLUMN_WIDTH)
+    expect(modelColumnWidth(UNFOLD_RESULTS_WIDTH)).toBe(MODEL_COLUMN_WIDTH)
+    expect(modelColumnWidth(UNFOLD_RESULTS_WIDTH + 10)).toBe(MODEL_COLUMN_WIDTH + 10)
+    expect(modelColumnWidth(2560)).toBe(MODEL_COLUMN_MAX_WIDTH)
+  })
+
+  it('is the CSS clamp the `<col>` uses', () => {
+    expect(MODEL_COLUMN_WIDTH_CSS).toBe(
+      `clamp(${MODEL_COLUMN_WIDTH}px, 100cqw - ${UNFOLD_CONTAINER_WIDTH - MODEL_COLUMN_WIDTH}px, ${MODEL_COLUMN_MAX_WIDTH}px)`,
+    )
   })
 })
 

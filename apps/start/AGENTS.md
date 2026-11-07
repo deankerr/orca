@@ -46,30 +46,45 @@ drawer from the left where they do not; docked Filters can be collapsed, Sidebar
 docks: it floats over Results in a Base UI drawer at every width, so selecting an endpoint, or moving the
 selection with ↑/↓, never reflows the Table or redraws the plot. `panelLayout` in `panel-layout.ts` derives
 placement from the page width and the user's Filters preference. Breakpoints are not chosen: they come from the
-Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8, and the Model column and price figures the
-Table keeps clear beside the Endpoint drawer, and the Results frame's border), so they move when a Panel's width does.
+Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8), the Table's columns (Model 180, Provider
+184, and the three 68px price columns the Table keeps clear beside the Endpoint drawer), and the Results frame's
+border, so they move when a Panel's or column's width does.
 
-| Page width (CSS px) | Filters                               | Endpoint drawer                    |
-| ------------------- | ------------------------------------- | ---------------------------------- |
-| ≥ 1065              | Docked, or collapsed if the user says | Beside the Table, non-modal        |
-| 785–1064            | Docked                                | From the bottom, modal             |
-| 785–1064            | Collapsed                             | Beside the Table, non-modal        |
-| 776–784             | Docked, or collapsed if the user says | From the bottom, modal             |
-| < 776               | Drawer from the left, modal           | From the bottom, modal; page flush |
+Two Results widths (R, the frame's width, border included) decide everything. Placement is computed in JS from
+the page width less the gutter and any docked Filters (`resultsWidth`); the Table's fold reads R alone, in CSS.
 
-The Endpoint drawer floats beside the Table only where Results, once the drawer covers its end, leaves the
-frame's leading border (1), the sticky Model column (180), and a clear band of 204 (the width of three
-68px price columns): Results ≥ 384 + 1 + 180 + 204 = 769. Docked Filters take 280 of the page (column and gap)
-from Results, so the same drawer needs a page 280px wider (1065 against 785) while they are docked.
-Collapsing Filters can therefore change the drawer's edge.
+| Results width R | Table                             | Endpoint drawer             |
+| --------------- | --------------------------------- | --------------------------- |
+| ≥ 953           | Provider has its own column       | Beside the Table, non-modal |
+| 769–952         | Provider folded into Model's cell | Beside the Table, non-modal |
+| < 769, or flush | Provider folded into Model's cell | From the bottom, modal      |
 
-The band is measured from the Model column's right edge to the drawer's left edge, and holds 204 or more
-wherever the drawer is beside the Table. It is made of price columns: where the layout can float the drawer
-(`foldsForEndpoint`, derived from the placement, not from whether an endpoint is selected, so selecting moves
-no column), Provider folds into the Model cell's second line and Model holds `MODEL_COLUMN_WIDTH` (180), so
-Input, Output and Cache read directly follow it. Context, the last column, takes the Table's surplus width
-(a Model column that absorbed it would shrink the band). Elsewhere Provider is its own column and Model takes
-the surplus, as in the narrow Results panel's fold below.
+| Page width (CSS px) | Filters                     | R                         |
+| ------------------- | --------------------------- | ------------------------- |
+| ≥ 776               | Docked                      | page − 296                |
+| ≥ 776               | Collapsed                   | page − 16                 |
+| < 776               | Drawer from the left, modal | page; flush, drawer below |
+
+So the drawer floats beside the Table from a 1065px page with Filters docked and a 785px page with them
+collapsed, and Provider gets its column from 1249 docked and 969 collapsed. Collapsing Filters can therefore
+change both, but each is one breakpoint in R.
+
+- **Drawer** (`ENDPOINT_RESULTS_WIDTH`, 769): the drawer covers the end of Results, trailing border included,
+  and leaves the frame's leading border (1), the Model column (180), and a clear band of 204 (Input, Output and
+  Cache read): 384 + 1 + 180 + 204. Results that runs flush (below 776) keeps the drawer at the bottom whatever
+  its width: the drawer's page inset would cut into the band.
+- **Fold** (`UNFOLD_RESULTS_WIDTH`, 953): the drawer's width plus Provider's 184, the narrowest Results that
+  keeps the band after Provider as well. Below it Provider folds into the Model cell's second line, and the Model
+  header carries a second sort button for it ("Model / Provider"). Since 953 > 769, the drawer floats beside the
+  Table at every R from 769 up, folded or not, and the band holds 204 or more throughout.
+- **Model width** (`MODEL_COLUMN_WIDTH_CSS`): `clamp(180px, 100cqw − 771px, 256px)` of the Results container,
+  so 180 wherever the Table folds, then growing with R at exactly the rate that holds the band at 204 beside
+  the drawer, up to 256 (a 99th-percentile model name). It meets 180 at the fold, so the column never jumps.
+- **Surplus**: every other column has a fixed width. The Table ends with an empty filler column (`FillerCol`,
+  `FillerCell`) that takes the rest, so on a wide page the columns sit together on the left and the trailing space
+  is empty, with row backgrounds and rules still spanning the panel. No column absorbs surplus between figures.
+- Nothing about the Table's columns depends on the layout or the selection, so opening the drawer moves nothing,
+  and the server's HTML, the loading skeleton, and the loaded Table lay out the same columns at every width.
 
 - The Endpoint drawer beside the Table is non-modal and leaves focus in the Table, so ↑/↓, clicks on rows,
   and Esc (with focus returning to the row, `keyboard.ts`) keep working; Base UI's own Esc and focus-out
@@ -88,20 +103,15 @@ the surplus, as in the narrow Results panel's fold below.
   corners, and the scope bar and status bar pad themselves clear of the notch and home indicator.
 - The server renders the skeleton for a desktop; the `*_MEDIA_CLASS` constants in `panel-layout.ts` fix a phone's
   layout before scripts run, and a test keeps them at the breakpoint.
-- The loading skeleton's Table cannot know the page's width on the server, only the Filters preference, so it folds
-  Provider by media query: `FOLD_CLASSES` in `columns.tsx` holds a `data-folded` set for the loaded Table and a
-  `min-[N]` set for each preference (N is `foldWidth`: 785 collapsed, 1065 docked), and a test keeps them at it.
-  Column widths are CSS custom properties (`columnWidthStyle`) the fold chooses between, not an inline `width`.
-  The skeleton, its server HTML, and the loaded Table therefore lay out the same columns at every width.
+- The Table's fold and Model width are CSS on the Results container (`FOLDED_CLASS` and its siblings in
+  `columns.tsx`, `MODEL_COLUMN_WIDTH_CSS`), so the server and the skeleton need no width or cookie. Tailwind reads
+  the fold's literal `@max-[951px]/results:` (951 is 953 less the two borders, the container's content box), and a
+  test keeps it at `UNFOLD_CONTAINER_WIDTH`.
 - A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
 - Results' parts share one side inset, `--results-inset` (16px, 12px in a narrow panel).
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
-- The Provider column folds into the Model cell's second line (`meta.folds`), and the Model header carries a
-  second sort button for it ("Model / Provider"), under two conditions that never overlap: a Results panel below
-  32rem (a container query) and a layout that can float the Endpoint drawer beside the Table (`data-folded` on the
-  Table's `group/table` wrapper, set from `foldsForEndpoint`). `FOLDED_CLASS` and its siblings in `columns.tsx`
-  pair both, so there is one layout tree and the CSS says which applies.
-- The Model column is sticky, so the figures scroll under it when the table is wider than the panel.
+- The Model column is sticky, so the figures scroll under it when the table is wider than the panel (below 576px
+  of Results, the folded Table's columns, where the column's edge shows as a rule).
 - Use `pointer-coarse:` to enlarge touch targets, keeping dense desktop sizes for fine pointers.
 - Fields keep 16px text on touch screens so iOS does not zoom when they take focus.
 

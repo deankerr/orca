@@ -17,11 +17,10 @@ import {
   columns,
   columnWidthStyle,
   features,
-  FOLD_CLASSES,
   FOLDED_CLASS,
   FOLDED_ONLY_CLASS,
+  TABLE_MIN_WIDTH_CLASS,
 } from './columns'
-import type { FoldTrigger } from './columns'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting-state'
@@ -30,14 +29,18 @@ type TableRowModel = Row<typeof features, EndpointRow>
 
 type TableHeader = Header<typeof features, EndpointRow>
 
-/** The classes the table's cells share, which the loading skeleton reuses so the two line up. */
-export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--results-inset)'
+/**
+ * The classes the table's cells share, which the loading skeleton reuses so the two line up. The last
+ * column before the filler (`FillerCell`) ends on the panel's inset.
+ */
+export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) nth-last-2:pr-(--results-inset)'
 
 /**
- * The Model column stays put while the figures scroll under it. A panel too narrow for the whole table
- * scrolls it sideways, and there the column's edge shows as a rule.
+ * The Model column stays put while the figures scroll under it. A panel narrower than the folded
+ * table's columns (`TABLE_MIN_WIDTH_CLASS`, 36rem) scrolls it sideways, and there the column's edge
+ * shows as a rule.
  */
-const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-3xl/results:first:border-r'
+const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-[36rem]/results:first:border-r'
 
 export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
 
@@ -45,14 +48,34 @@ export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-bor
 export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-coarse:h-10 first:z-[1] first:bg-background ${STICKY_MODEL_CLASS}`
 
 /**
- * The table's own wrapper: as wide as the region, and no narrower than its columns need, which is 184px
- * less where Provider folds (see `FOLD_CLASSES`). Its padding falls outside that width, so trailing
- * padding widens what scrolls without widening the table. It is the `group/table` the fold reads.
+ * The table's own wrapper: as wide as the region, and no narrower than the folded table's columns
+ * (`TABLE_MIN_WIDTH_CLASS`). Its padding falls outside that width, so trailing padding widens what
+ * scrolls without widening the table.
  */
-export const tableWrapperClass = (fold: FoldTrigger): string =>
-  cn('group/table relative box-content w-full', FOLD_CLASSES[fold].wrapper)
+export const TABLE_WRAPPER_CLASS = `relative box-content w-full ${TABLE_MIN_WIDTH_CLASS}`
 
 export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
+
+/**
+ * The filler column's `<col>`, after Context: it has no width, so it takes the Table's surplus, and
+ * the columns keep their widths while the rows' backgrounds still span the panel.
+ */
+export function FillerCol() {
+  return <col />
+}
+
+/**
+ * The filler column's cell (see `FillerCol`): empty, unpadded, and hidden from assistive tech. In
+ * the header it keeps the sticky header's background and rule; in a row, the row's background and rule.
+ */
+export function FillerCell({ header }: { header?: boolean }) {
+  return (
+    <td
+      aria-hidden="true"
+      className={cn(header === true ? HEADER_CELL_CLASS : BODY_CELL_CLASS, 'p-0')}
+    />
+  )
+}
 
 function ariaSort(direction: false | 'asc' | 'desc') {
   if (direction === false) {
@@ -213,6 +236,7 @@ function TableRow({
           <FlexRender cell={cell} />
         </td>
       ))}
+      <FillerCell />
     </tr>
   )
 }
@@ -259,7 +283,7 @@ const TableRows = memo(TableRowList)
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <tr>
-      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length}>
+      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length + 1}>
         <div className="flex flex-col items-center gap-3">
           <p className="text-[13px] text-muted-foreground">No endpoints match these filters</p>
           <Button aria-label="Clear filters" onClick={onClear} size="sm" variant="outline">
@@ -307,16 +331,9 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
  *
- * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end. `placementFold` is
- * `foldsForEndpoint` for the layout: Provider folds into the Model cell and Model holds its width.
+ * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
-export function EndpointTable({
-  placementFold,
-  trailingInset,
-}: {
-  placementFold: boolean
-  trailingInset: number
-}) {
+export function EndpointTable({ trailingInset }: { trailingInset: number }) {
   const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
@@ -440,8 +457,7 @@ export function EndpointTable({
   return (
     <div
       aria-busy={stale}
-      className={tableWrapperClass('data')}
-      data-folded={placementFold ? '' : undefined}
+      className={TABLE_WRAPPER_CLASS}
       // Room after the last column, so it can scroll out from under a drawer floating over it.
       style={{ paddingRight: trailingInset }}
     >
@@ -449,14 +465,12 @@ export function EndpointTable({
         <colgroup>
           {table.getAllLeafColumns().map((column) => (
             <col
-              className={cn(
-                FOLD_CLASSES.data.width,
-                column.columnDef.meta?.folds === true && FOLDED_CLASS,
-              )}
+              className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
               style={columnWidthStyle(column.id, column.columnDef.meta?.width)}
             />
           ))}
+          <FillerCol />
         </colgroup>
         <thead>
           {table.getHeaderGroups().map((group) => (
@@ -472,6 +486,7 @@ export function EndpointTable({
                   key={header.id}
                 />
               ))}
+              <FillerCell header />
             </tr>
           ))}
         </thead>

@@ -2,20 +2,16 @@ import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 import { cn } from 'cn'
 
-import { MODEL_COLUMN_WIDTH } from '#app/panel-layout'
+import {
+  FIGURE_COLUMN_WIDTH,
+  MODEL_COLUMN_WIDTH_CSS,
+  PROVIDER_COLUMN_WIDTH,
+} from '#app/panel-layout'
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
 
 import { providerTags } from './tags'
-
-declare module 'react' {
-  // A `<col>`'s widths, which `FOLD_CLASSES` picks between (see `columnWidthStyle`).
-  interface CSSProperties {
-    '--col-folded-width'?: string
-    '--col-width'?: string
-  }
-}
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<
@@ -25,104 +21,47 @@ declare module '@tanstack/react-table' {
   > {
     /** Right-aligned monospace figures. */
     numeric?: boolean
-    /** Pixel width in the fixed layout; the column without one takes the remaining space. */
+    /** Pixel width in the fixed layout; Model, without one, follows the panel's (`columnWidthStyle`). */
     width?: number
-    /** Hidden in a narrow Results panel, where the Model cell shows it as a second line instead. */
+    /** Hidden where the Table folds, and shown as the Model cell's second line instead. */
     folds?: boolean
   }
 }
 
 /**
- * A column's width in the fixed layout, and its width where the Table folds for the Endpoint drawer
- * (see `foldsForEndpoint`): Model then holds `MODEL_COLUMN_WIDTH` and Context, the last column, takes
- * the surplus, so the price columns after Model stay where the drawer's clear band expects them.
- * Elsewhere Model, the one column without a width, takes the surplus. `undefined` is that surplus.
- */
-export function columnWidths(id: string, width: number | undefined) {
-  if (id === 'model') {
-    return { folded: MODEL_COLUMN_WIDTH, unfolded: width }
-  }
-
-  return { folded: id === 'context' ? undefined : width, unfolded: width }
-}
-
-const px = (width: number | undefined): string => (width === undefined ? 'auto' : `${width}px`)
-
-/**
- * A `<col>`'s widths as custom properties, which `FoldClasses.width` picks between. They are CSS, not
- * an inline `width`, so the fold can choose before scripts run.
+ * A `<col>`'s width. Model's follows the Results container's width (`MODEL_COLUMN_WIDTH_CSS`); every
+ * other column has its own. None takes the surplus: the Table ends with `FILLER_COLUMN`, which does.
+ * It is inline CSS rather than a measurement, so the server's HTML lays out the loaded Table's columns.
  */
 export function columnWidthStyle(id: string, width: number | undefined) {
-  const { folded, unfolded } = columnWidths(id, width)
-
-  return { '--col-folded-width': px(folded), '--col-width': px(unfolded) }
+  return { width: id === 'model' ? MODEL_COLUMN_WIDTH_CSS : `${width ?? 0}px` }
 }
 
-/**
- * What a fold changes about the Table, as class names, for one thing that says the Table is folded.
+/*
+ * The Provider column folds into the Model cell's second line (`meta.folds`) in a Results panel
+ * narrower than `UNFOLD_RESULTS_WIDTH`, by container query, and the Model header carries a second sort
+ * button for it. The Results width is all the fold reads, so the server's HTML, the loading skeleton,
+ * and the loaded Table fold at the same width, and neither Filters nor the drawer moves it.
  *
- * - `hidden`: hides a folding column's column, header, and cells.
- * - `only`: shown only where a column folds; the folded column's stand-in.
- * - `wrapper`: the Table wrapper's minimum width, narrower where folded.
- * - `width`: a `<col>`'s width, from `columnWidthStyle`.
- *
- * Every set also folds in a Results panel narrower than 32rem (a container query).
+ * The queries sit either side of `UNFOLD_CONTAINER_WIDTH`, the Results frame's content width:
+ * `@max-[N]` is `width < N` and `@min-[N]` is `width >= N`. Tailwind reads whole class names, so each
+ * is written out; a test keeps them at the constant.
  */
-interface FoldClasses {
-  hidden: string
-  only: string
-  width: string
-  wrapper: string
-}
 
-/**
- * The Provider column folds into the Model cell's second line (`meta.folds`) in two cases, and these
- * classes name both without a second layout: in a Results panel narrower than 32rem (a container query),
- * and wherever the Endpoint drawer can float beside the Table (`foldsForEndpoint`).
- *
- * The loaded Table knows the layout, so it sets `data-folded` on its wrapper, a `group/table`, and
- * reads `data`. The loading skeleton is rendered by the server for a page of unknown width and knows
- * only the Filters preference (the `orca-filters` cookie), so it reads the media query at the width
- * `foldWidth` gives for that preference (`collapsed` or `docked`). `min-[N]` is `width >= N`, and a
- * test keeps each N at `foldWidth`. The skeleton thereby draws the loaded Table's columns from its
- * first frame, so nothing shifts when the page hydrates or the catalogue arrives.
- */
-export const FOLD_CLASSES = {
-  collapsed: {
-    hidden: '@max-lg/results:hidden min-[785px]:hidden',
-    only: 'hidden @max-lg/results:inline-flex min-[785px]:inline-flex',
-    width: 'w-(--col-width) min-[785px]:w-(--col-folded-width)',
-    wrapper: 'min-w-190 @max-lg/results:min-w-144 min-[785px]:min-w-144',
-  },
-  data: {
-    hidden: '@max-lg/results:hidden group-data-folded/table:hidden',
-    only: 'hidden @max-lg/results:inline-flex group-data-folded/table:inline-flex',
-    width: 'w-(--col-width) group-data-folded/table:w-(--col-folded-width)',
-    wrapper: 'min-w-190 @max-lg/results:min-w-144 data-folded:min-w-144',
-  },
-  docked: {
-    hidden: '@max-lg/results:hidden min-[1065px]:hidden',
-    only: 'hidden @max-lg/results:inline-flex min-[1065px]:inline-flex',
-    width: 'w-(--col-width) min-[1065px]:w-(--col-folded-width)',
-    wrapper: 'min-w-190 @max-lg/results:min-w-144 min-[1065px]:min-w-144',
-  },
-} as const satisfies Record<string, FoldClasses>
+/** Hides a folding column's column, header, and cells where it folds. */
+export const FOLDED_CLASS = '@max-[951px]/results:hidden'
 
-/** What says the Table is folded: the loaded Table's `data-folded`, or the Filters preference's media query. */
-export type FoldTrigger = keyof typeof FOLD_CLASSES
-
-/** The loading skeleton's trigger: the media query for the user's Filters preference. */
-export const skeletonFold = (filtersCollapsed: boolean): FoldTrigger =>
-  filtersCollapsed ? 'collapsed' : 'docked'
-
-/** Hides a folding column's column, header, and cells in the loaded Table. */
-export const FOLDED_CLASS = FOLD_CLASSES.data.hidden
-
-/** Shown only where a column folds in the loaded Table; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = FOLD_CLASSES.data.only
+/** Shown only where a column folds; the folded column's stand-in. */
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[951px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-const FOLDED_LINE_FLEX_CLASS = 'hidden @max-lg/results:flex group-data-folded/table:flex'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[951px]/results:hidden'
+
+/**
+ * The Table wrapper's minimum width: the folded Table's columns (Model at its narrowest and the
+ * figures), so a narrower panel scrolls it sideways. Unfolded, the panel is wider than its columns.
+ */
+export const TABLE_MIN_WIDTH_CLASS = 'min-w-144'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -195,8 +134,11 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 }
 
 /**
- * Columns in display order. Model, the one column without a width, takes the space left over (but
- * see `columnWidth`, where Provider does); Provider is fitted to a typical name with its quantization and tier tags. Lower is better for prices and latency; higher is better for the rest. */
+ * Columns in display order. Model's width follows the panel's (`columnWidthStyle`); Provider is fitted
+ * to a typical name with its quantization and tier tags. The three price columns directly follow
+ * Provider: they are the drawer's clear band (`MIN_VISIBLE_FIGURES_WIDTH`). Lower is better for prices
+ * and latency; higher is better for the rest.
+ */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
     cell: ({ row }) => <ModelCell row={row.original} />,
@@ -208,28 +150,28 @@ export const columns = helper.columns([
     cell: ({ row }) => <ProviderCell row={row.original} />,
     header: LABELS.provider,
     id: 'provider',
-    meta: { folds: true, width: 184 },
+    meta: { folds: true, width: PROVIDER_COLUMN_WIDTH },
     sortDescFirst: false,
   }),
   helper.accessor('input', {
     cell: ({ row }) => formatRateCell(row.original.rates.input),
     header: LABELS.input,
     id: 'input',
-    meta: { numeric: true, width: 68 },
+    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
     sortDescFirst: false,
   }),
   helper.accessor('output', {
     cell: ({ row }) => formatRateCell(row.original.rates.output),
     header: LABELS.output,
     id: 'output',
-    meta: { numeric: true, width: 68 },
+    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
     sortDescFirst: false,
   }),
   helper.accessor('cacheRead', {
     cell: ({ row }) => formatRateCell(row.original.rates.cacheRead),
     header: LABELS.cacheRead,
     id: 'cacheRead',
-    meta: { numeric: true, width: 68 },
+    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
     sortDescFirst: false,
   }),
   helper.accessor('throughput', {
@@ -243,14 +185,14 @@ export const columns = helper.columns([
     cell: ({ row }) => formatLatency(row.original.latency),
     header: LABELS.latency,
     id: 'latency',
-    meta: { numeric: true, width: 68 },
+    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
     sortDescFirst: false,
   }),
   helper.accessor('context', {
     cell: ({ row }) => formatContext(row.original.context),
     header: LABELS.context,
     id: 'context',
-    meta: { numeric: true, width: 68 },
+    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
     sortDescFirst: true,
   }),
 ])
