@@ -20,26 +20,34 @@ export const ENDPOINT_WIDTH = 384
 /** The narrowest Results panel beside a docked Panel: its scope bar's counts and the Model column. */
 export const RESULTS_MIN_WIDTH = 480
 
-/** The Table's sticky Model column, which takes what its fixed-width columns leave of 190 (760px). */
+/**
+ * The Table's sticky Model column. Where the Endpoint drawer can float beside the Table it is exactly
+ * this wide (see `modelColumnFixed`); elsewhere it takes what the fixed-width columns leave of the
+ * Table's 190 (760px) minimum, which is this too.
+ */
 export const MODEL_COLUMN_WIDTH = 180
+
+/** The Results frame's border. Its leading edge sits before the Model column; the drawer covers the trailing one. */
+export const RESULTS_BORDER_WIDTH = 1
 
 /** The Table's numeric columns are 68px each (Throughput is 56px). */
 const FIGURE_COLUMN_WIDTH = 68
 
 /**
- * The figures that must stay visible beside a floating Endpoint drawer: the three price columns
- * (Input, Output, Cache read), the first figures the Table shows after Model, enough to compare
- * endpoints by cost while one is open.
+ * The band of the Table that must stay clear beside a floating Endpoint drawer, after the Model
+ * column: the width of the three price columns (Input, Output, Cache read). The Provider column
+ * comes first in that band, so it shows the Provider and the start of the prices; the rest scroll
+ * in clear of the drawer (see `tableTrailingInset`).
  */
 export const MIN_VISIBLE_FIGURES_WIDTH = 3 * FIGURE_COLUMN_WIDTH
 
 /**
- * The Results width that fits the Endpoint drawer beside the Table: the drawer, then the Model column
- * and a readable band of figures clear of it. The drawer covers the end of Results, so the rest is
- * what the Table shows.
+ * The Results width that fits the Endpoint drawer beside the Table: the drawer, then the frame's
+ * leading border, the Model column, and a band of figures clear of it. The drawer covers the end of
+ * Results, trailing border included, so the rest is what the Table shows.
  */
 export const ENDPOINT_RESULTS_WIDTH =
-  ENDPOINT_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH
+  ENDPOINT_WIDTH + RESULTS_BORDER_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH
 
 /**
  * Where the Filters panel sits.
@@ -93,6 +101,17 @@ function filtersPlacement(width: number, collapsed: boolean): FiltersPlacement {
   }
 
   return collapsed ? 'collapsed' : 'docked'
+}
+
+/**
+ * Whether the Model column holds `MODEL_COLUMN_WIDTH` and the Provider column takes the Table's
+ * surplus width. That is wherever the Endpoint drawer can float beside the Table, selected or not, so
+ * selecting never moves a column; it keeps the clear band at `MIN_VISIBLE_FIGURES_WIDTH`, which a
+ * Model column absorbing the surplus would shrink to a constant 197px. Elsewhere, and where Provider
+ * folds into the Model cell, Model takes the surplus.
+ */
+export function modelColumnFixed(layout: PanelLayout): boolean {
+  return layout.endpoint === 'right'
 }
 
 /**

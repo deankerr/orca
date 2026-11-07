@@ -3,7 +3,7 @@ import { cn } from 'cn'
 import type { ReactNode } from 'react'
 
 import { RESULTS_REGION_ID } from '#app/keyboard'
-import { FLUSH_FRAME_MEDIA_CLASS, tableTrailingInset } from '#app/panel-layout'
+import { FLUSH_FRAME_MEDIA_CLASS, modelColumnFixed, tableTrailingInset } from '#app/panel-layout'
 import { usePanelLayout } from '#app/panels'
 import { StatusBar } from '#app/status-bar'
 import { useSelectedId } from '#endpoints/hooks'
@@ -47,12 +47,13 @@ export function ResultsFrame({ children }: { children: ReactNode }) {
  * itself keeps its width, so selecting reflows nothing.
  */
 function TableRegion() {
-  const trailingInset = tableTrailingInset(usePanelLayout(), useSelectedId() !== undefined)
+  const layout = usePanelLayout()
+  const trailingInset = tableTrailingInset(layout, useSelectedId() !== undefined)
 
   return (
     // The sticky header lives in this viewport, which never bounces, so the header holds still.
     <ScrollArea className="min-h-0 grow" horizontal render={<section aria-label="Results table" />}>
-      <EndpointTable trailingInset={trailingInset} />
+      <EndpointTable modelFixed={modelColumnFixed(layout)} trailingInset={trailingInset} />
     </ScrollArea>
   )
 }

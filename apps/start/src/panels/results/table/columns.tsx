@@ -1,6 +1,7 @@
 import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/react-table'
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 
+import { MODEL_COLUMN_WIDTH } from '#app/panel-layout'
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
@@ -20,6 +21,18 @@ declare module '@tanstack/react-table' {
     /** Hidden in a narrow Results panel, where the Model cell shows it as a second line instead. */
     folds?: boolean
   }
+}
+
+/**
+ * A column's width in the fixed layout. Model and Provider swap which one takes the Table's surplus
+ * width when `modelFixed` (see `modelColumnFixed`); the figures keep theirs.
+ */
+export function columnWidth(id: string, width: number | undefined, modelFixed: boolean) {
+  if (modelFixed && id === 'model') {
+    return MODEL_COLUMN_WIDTH
+  }
+
+  return modelFixed && id === 'provider' ? undefined : width
 }
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
@@ -81,8 +94,8 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 }
 
 /**
- * Columns in display order. Model, the one column without a width, takes the space left over;
- * Provider is fitted to a typical name with its quantization and tier tags. Lower is better for prices and latency; higher is better for the rest. */
+ * Columns in display order. Model, the one column without a width, takes the space left over (but
+ * see `columnWidth`, where Provider does); Provider is fitted to a typical name with its quantization and tier tags. Lower is better for prices and latency; higher is better for the rest. */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
     cell: ({ row }) => <ModelCell row={row.original} />,

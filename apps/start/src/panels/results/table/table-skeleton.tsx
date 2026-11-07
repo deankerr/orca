@@ -1,9 +1,11 @@
 import { Skeleton } from '@orca/ui/components/skeleton'
 import { cn } from 'cn'
 
+import { modelColumnFixed } from '#app/panel-layout'
+import { usePanelLayout } from '#app/panels'
 import { useSort } from '#endpoints/hooks'
 
-import { columnLabel, columns } from './columns'
+import { columnLabel, columns, columnWidth } from './columns'
 import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
@@ -78,6 +80,7 @@ function BodyCell({ index, position }: { index: number; position: number }) {
  */
 export function TableSkeleton() {
   const sort = useSort()
+  const modelFixed = modelColumnFixed(usePanelLayout())
 
   return (
     <div className={TABLE_WRAPPER_CLASS}>
@@ -87,7 +90,7 @@ export function TableSkeleton() {
             <col
               className={cn(column.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
-              style={{ width: column.meta?.width }}
+              style={{ width: columnWidth(column.id ?? '', column.meta?.width, modelFixed) }}
             />
           ))}
         </colgroup>

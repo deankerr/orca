@@ -1,6 +1,6 @@
 import { Drawer, DrawerContent, DrawerTitle } from '@orca/ui/components/drawer'
 import { cn } from 'cn'
-import { createContext, use, useRef, useState, useSyncExternalStore } from 'react'
+import { createContext, use, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 
 import { setFiltersCollapsed, useFiltersCollapsed } from './filters-preference'
@@ -216,12 +216,23 @@ export function PanelDrawer({
   side,
 }: PanelDrawerProps) {
   const popup = useRef<HTMLDivElement>(null)
+  const wasModal = useRef(modal)
+
+  // A drawer that turns modal while open (a window narrowed under it) keeps its Panel, and the tab the
+  // user is on, but Base UI runs its initial focus only as the drawer opens, so the focus it never
+  // moved is still on the page the drawer now blocks. Take it into the popup.
+  useEffect(() => {
+    const turnedModal = modal && !wasModal.current
+
+    wasModal.current = modal
+
+    if (turnedModal && open) {
+      popup.current?.focus()
+    }
+  }, [modal, open])
 
   return (
     <Drawer
-      // A drawer that turns modal while open (a window narrowed under it) is a new drawer, so Base UI
-      // runs its initial focus again and takes focus off the page it now blocks.
-      key={modal ? 'modal' : 'floating'}
       // A non-modal drawer stays open while the user works the page beside it.
       disablePointerDismissal={!modal}
       modal={modal}

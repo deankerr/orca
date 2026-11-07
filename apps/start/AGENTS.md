@@ -47,20 +47,30 @@ docks: it floats over Results in a Base UI drawer at every width, so selecting a
 selection with ↑/↓, never reflows the Table or redraws the plot. `panelLayout` in `panel-layout.ts` derives
 placement from the page width and the user's Filters preference. Breakpoints are not chosen: they come from the
 Panels' widths (Filters 272, Endpoint 384, Results minimum 480, gap 8, and the Model column and price figures the
-Table keeps visible beside the Endpoint drawer), so they move when a Panel's width does.
+Table keeps clear beside the Endpoint drawer, and the Results frame's border), so they move when a Panel's width does.
 
 | Page width (CSS px) | Filters                               | Endpoint drawer                    |
 | ------------------- | ------------------------------------- | ---------------------------------- |
-| ≥ 1064              | Docked, or collapsed if the user says | Beside the Table, non-modal        |
-| 784–1063            | Docked                                | From the bottom, modal             |
-| 784–1063            | Collapsed                             | Beside the Table, non-modal        |
-| 776–783             | Docked, or collapsed if the user says | From the bottom, modal             |
+| ≥ 1065              | Docked, or collapsed if the user says | Beside the Table, non-modal        |
+| 785–1064            | Docked                                | From the bottom, modal             |
+| 785–1064            | Collapsed                             | Beside the Table, non-modal        |
+| 776–784             | Docked, or collapsed if the user says | From the bottom, modal             |
 | < 776               | Drawer from the left, modal           | From the bottom, modal; page flush |
 
-The Endpoint drawer floats beside the Table only where Results, once the drawer covers its end, still shows
-the sticky Model column (180) and the three price columns (3 × 68): Results ≥ 384 + 180 + 204 = 768. Docked
-Filters take 280 of the page (column and gap) from Results, so the same drawer needs a page 280px wider (1064
-against 784) while they are docked. Collapsing Filters can therefore change the drawer's edge.
+The Endpoint drawer floats beside the Table only where Results, once the drawer covers its end, leaves the
+frame's leading border (1), the sticky Model column (180), and a clear band of 204 (the width of three
+68px price columns): Results ≥ 384 + 1 + 180 + 204 = 769. Docked Filters take 280 of the page (column and gap)
+from Results, so the same drawer needs a page 280px wider (1065 against 785) while they are docked.
+Collapsing Filters can therefore change the drawer's edge.
+
+The band is measured from the Model column's right edge to the drawer's left edge, and holds at 204 or
+more wherever the drawer is beside the Table. That depends on which column takes the Table's surplus
+width. Where the layout can float the drawer (`modelColumnFixed`, derived from the placement, not from
+whether an endpoint is selected, so selecting moves no column), Model holds `MODEL_COLUMN_WIDTH` and
+Provider takes the surplus. A Model column that absorbed it would leave the band at a constant ~197px
+at any width, so the constants alone could not fix it. Elsewhere, and where Provider folds, Model takes
+the surplus as before. The band opens with the Provider column (184), so at the narrowest width it shows
+Provider and the start of the prices; the rest scroll in clear of the drawer.
 
 - The Endpoint drawer beside the Table is non-modal and leaves focus in the Table, so ↑/↓, clicks on rows,
   and Esc (with focus returning to the row, `keyboard.ts`) keep working; Base UI's own Esc and focus-out

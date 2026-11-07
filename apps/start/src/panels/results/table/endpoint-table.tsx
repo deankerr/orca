@@ -13,7 +13,7 @@ import type { EndpointRow } from '#endpoints/snapshot'
 import type { SortKey } from '#endpoints/sort'
 import { StaleVeil } from '#panels/results/stale-veil'
 
-import { columns, features } from './columns'
+import { columns, columnWidth, features } from './columns'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting-state'
@@ -307,9 +307,16 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
  *
- * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
+ * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end. `modelFixed` is
+ * `modelColumnFixed` for the layout: the Model column holds its width and Provider takes the surplus.
  */
-export function EndpointTable({ trailingInset }: { trailingInset: number }) {
+export function EndpointTable({
+  modelFixed,
+  trailingInset,
+}: {
+  modelFixed: boolean
+  trailingInset: number
+}) {
   const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
@@ -443,7 +450,9 @@ export function EndpointTable({ trailingInset }: { trailingInset: number }) {
             <col
               className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
-              style={{ width: column.columnDef.meta?.width }}
+              style={{
+                width: columnWidth(column.id, column.columnDef.meta?.width, modelFixed),
+              }}
             />
           ))}
         </colgroup>

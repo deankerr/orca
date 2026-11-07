@@ -20,6 +20,8 @@ import {
   MODEL_COLUMN_WIDTH,
   PANEL_GAP,
   panelLayout,
+  modelColumnFixed,
+  RESULTS_BORDER_WIDTH,
   RESULTS_MIN_WIDTH,
   tableTrailingInset,
 } from './panel-layout'
@@ -71,7 +73,7 @@ describe('panelLayout', () => {
   it('keeps the Model column and a readable band of figures beside the Endpoint drawer', () => {
     // The drawer covers its width of Results; docked Filters take a column and a gap from it.
     expect(ENDPOINT_RESULTS_WIDTH).toBe(
-      ENDPOINT_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH,
+      ENDPOINT_WIDTH + RESULTS_BORDER_WIDTH + MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH,
     )
     expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + ENDPOINT_RESULTS_WIDTH)
     expect(ENDPOINT_SIDE_DOCKED_WIDTH).toBe(
@@ -88,9 +90,10 @@ describe('panelLayout', () => {
           const dockedColumn = layout.filters === 'docked' ? FILTERS_WIDTH + PANEL_GAP : 0
           const results = width - PAD - dockedColumn
 
-          expect(results - ENDPOINT_WIDTH).toBeGreaterThanOrEqual(
-            MODEL_COLUMN_WIDTH + MIN_VISIBLE_FIGURES_WIDTH,
-          )
+          // The band is what the leading border, the Model column, and the drawer leave of Results.
+          const band = results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH - MODEL_COLUMN_WIDTH
+
+          expect(band).toBeGreaterThanOrEqual(MIN_VISIBLE_FIGURES_WIDTH)
         }
       }
     }
@@ -101,6 +104,18 @@ describe('panelLayout', () => {
       expect(panelLayout(width, false).filters).toBe(
         width < FILTERS_DOCK_WIDTH ? 'drawer' : 'docked',
       )
+    }
+  })
+})
+
+describe('modelColumnFixed', () => {
+  it('holds the Model column wherever the Endpoint drawer can float beside the Table', () => {
+    for (let width = 0; width <= 2000; width += 1) {
+      for (const collapsed of [false, true]) {
+        const layout = panelLayout(width, collapsed)
+
+        expect(modelColumnFixed(layout)).toBe(layout.endpoint === 'right')
+      }
     }
   })
 })
