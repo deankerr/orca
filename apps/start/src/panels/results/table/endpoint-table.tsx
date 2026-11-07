@@ -23,8 +23,7 @@ type TableRowModel = Row<typeof features, EndpointRow>
 type TableHeader = Header<typeof features, EndpointRow>
 
 /** The classes the table's cells share, which the loading skeleton reuses so the two line up. */
-export const CELL_PADDING_CLASS =
-  'px-2 first:pl-5 last:pr-5 @max-md/results:first:pl-3 @max-md/results:last:pr-3'
+export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--results-inset)'
 
 /**
  * The Model column stays put while the figures scroll under it. A panel too narrow for the whole table
@@ -37,8 +36,11 @@ export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-bor
 /** Rows grow to a touch target where the pointer is a finger. */
 export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-coarse:h-10 first:z-[1] first:bg-background ${STICKY_MODEL_CLASS}`
 
-/** The table's own wrapper: as wide as the region, and no narrower than its columns need. */
-export const TABLE_WRAPPER_CLASS = 'relative w-full min-w-190 @max-lg/results:min-w-144'
+/**
+ * The table's own wrapper: as wide as the region, and no narrower than its columns need. Its padding
+ * falls outside that width, so trailing padding widens what scrolls without widening the table.
+ */
+export const TABLE_WRAPPER_CLASS = 'relative box-content w-full min-w-190 @max-lg/results:min-w-144'
 
 /**
  * Hides a folding column (`meta.folds`) in a Results panel narrower than 32rem, a phone's. Its column,
@@ -257,7 +259,7 @@ const TableRows = memo(TableRowList)
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <tr>
-      <td className="px-5 py-16 text-center" colSpan={columns.length}>
+      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length}>
         <div className="flex flex-col items-center gap-3">
           <p className="text-[13px] text-muted-foreground">No endpoints match these filters</p>
           <Button aria-label="Clear filters" onClick={onClear} size="sm" variant="outline">
@@ -304,8 +306,10 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * (see `StaleVeil`) and the table is `aria-busy`. The header, selection, and sort stay current: keys
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
+ *
+ * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
-export function EndpointTable() {
+export function EndpointTable({ trailingInset }: { trailingInset: number }) {
   const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
@@ -427,7 +431,12 @@ export function EndpointTable() {
   }
 
   return (
-    <div aria-busy={stale} className={TABLE_WRAPPER_CLASS}>
+    <div
+      aria-busy={stale}
+      className={TABLE_WRAPPER_CLASS}
+      // Room after the last column, so it can scroll out from under a drawer floating over it.
+      style={{ paddingRight: trailingInset }}
+    >
       <table className={TABLE_CLASS}>
         <colgroup>
           {table.getAllLeafColumns().map((column) => (

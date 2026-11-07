@@ -3,116 +3,106 @@ import { describe, expect, it } from 'vitest'
 import {
   BREAKPOINTS,
   breakpointFloor,
+  closedSession,
   DOCKED_FILTERS_MEDIA_CLASS,
+  drawerSessionIn,
+  ENDPOINT_SIDE_WIDTH,
   ENDPOINT_WIDTH,
   FILTERS_DOCK_WIDTH,
   FILTERS_WIDTH,
-  minimumWidth,
+  FLUSH_BOTTOM_MEDIA_CLASS,
+  FLUSH_FRAME_MEDIA_CLASS,
+  FLUSH_PAGE_MEDIA_CLASS,
+  FLUSH_TOP_MEDIA_CLASS,
   PANEL_GAP,
   panelLayout,
   RESULTS_MIN_WIDTH,
-  closedSession,
-  sheetSessionIn,
+  tableTrailingInset,
 } from './panel-layout'
-import type { PanelLayout } from './panel-layout'
 
 const PAD = 2 * PANEL_GAP
 
-const layout = (filters: PanelLayout['filters'], endpoint: PanelLayout['endpoint']) => ({
-  endpoint,
-  filters,
-})
-
 describe('panelLayout', () => {
-  describe('with nothing selected', () => {
-    it.each([
-      [375, 'sheet'],
-      [768, 'sheet'],
-      [FILTERS_DOCK_WIDTH - 1, 'sheet'],
-      [FILTERS_DOCK_WIDTH, 'docked'],
-      [1024, 'docked'],
-      [1440, 'docked'],
-    ] as const)('puts Filters on a %ipx page in a %s', (width, filters) => {
-      expect(panelLayout(width, false).filters).toBe(filters)
-    })
+  it.each([
+    [390, 'drawer'],
+    [768, 'drawer'],
+    [FILTERS_DOCK_WIDTH - 1, 'drawer'],
+    [FILTERS_DOCK_WIDTH, 'docked'],
+    [1024, 'docked'],
+    [1440, 'docked'],
+  ] as const)('puts expanded Filters on a %ipx page in a %s', (width, filters) => {
+    expect(panelLayout(width, false).filters).toBe(filters)
   })
 
-  describe('with an endpoint selected', () => {
-    it.each([
-      [375, layout('sheet', 'sheet')],
-      [430, layout('sheet', 'sheet')],
-      [768, layout('sheet', 'sheet')],
-      [800, layout('docked', 'sheet')],
-      [1024, layout('sheet', 'docked')],
-      [1440, layout('docked', 'docked')],
-    ] as const)('lays out a %ipx page as %o', (width, expected) => {
-      expect(panelLayout(width, true)).toEqual(expected)
-    })
+  it('docks Filters where they leave Results its minimum width', () => {
+    expect(FILTERS_DOCK_WIDTH).toBe(PAD + FILTERS_WIDTH + PANEL_GAP + RESULTS_MIN_WIDTH)
+  })
 
-    it('docks the Endpoint panel before Filters', () => {
-      const endpointDocks = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH
+  it('collapses docked Filters when the user has, and keeps a narrow page’s in a drawer', () => {
+    expect(panelLayout(1440, true).filters).toBe('collapsed')
+    expect(panelLayout(FILTERS_DOCK_WIDTH, true).filters).toBe('collapsed')
+    expect(panelLayout(FILTERS_DOCK_WIDTH - 1, true).filters).toBe('drawer')
+  })
 
-      expect(panelLayout(endpointDocks, true)).toEqual(layout('sheet', 'docked'))
-      expect(panelLayout(endpointDocks + PANEL_GAP + FILTERS_WIDTH, true)).toEqual(
-        layout('docked', 'docked'),
-      )
-    })
+  it.each([
+    [390, 'bottom'],
+    [768, 'bottom'],
+    [ENDPOINT_SIDE_WIDTH - 1, 'bottom'],
+    [ENDPOINT_SIDE_WIDTH, 'right'],
+    [1024, 'right'],
+    [1728, 'right'],
+  ] as const)('floats the Endpoint drawer on a %ipx page from the %s', (width, side) => {
+    expect(panelLayout(width, false).endpoint).toBe(side)
+  })
 
-    it('opens the Endpoint panel in a sheet, never over Results, when it does not dock', () => {
-      const endpointDocks = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH
+  it('floats the Endpoint drawer beside the Table where Results keeps its minimum width beside it', () => {
+    expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH)
+  })
 
-      for (let width = 0; width < endpointDocks; width += 1) {
-        expect(panelLayout(width, true).endpoint).toBe('sheet')
-      }
-    })
-
-    it('keeps Filters docked beside Results while the Endpoint panel is in a sheet', () => {
-      const filtersDock = PAD + RESULTS_MIN_WIDTH + PANEL_GAP + FILTERS_WIDTH
-
-      expect(panelLayout(filtersDock, true)).toEqual(layout('docked', 'sheet'))
-      expect(panelLayout(filtersDock - 1, true)).toEqual(layout('sheet', 'sheet'))
-    })
+  it('never moves Filters for the Endpoint drawer, or the drawer for Filters', () => {
+    for (let width = 0; width <= 2000; width += 1) {
+      expect(panelLayout(width, true).endpoint).toBe(panelLayout(width, false).endpoint)
+    }
   })
 })
 
-describe('minimumWidth', () => {
-  it('leaves Results its minimum beside every docked Panel', () => {
-    expect(minimumWidth(layout('docked', 'docked'), true)).toBe(
-      PAD + FILTERS_WIDTH + PANEL_GAP + RESULTS_MIN_WIDTH + PANEL_GAP + ENDPOINT_WIDTH,
-    )
+describe('tableTrailingInset', () => {
+  it('leaves the Table room for an Endpoint drawer beside it', () => {
+    expect(tableTrailingInset(panelLayout(1440, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
   })
 
-  it('gives an unselected Endpoint panel no room', () => {
-    expect(minimumWidth(layout('docked', 'docked'), false)).toBe(
-      minimumWidth(layout('docked', 'sheet'), true),
-    )
+  it('leaves none with nothing selected, or for a drawer from the bottom', () => {
+    expect(tableTrailingInset(panelLayout(1440, false), false)).toBe(0)
+    expect(tableTrailingInset(panelLayout(390, false), true)).toBe(0)
   })
 })
 
-describe('sheetSessionIn', () => {
-  const opened = { open: true, placement: 'sheet' } as const
+describe('drawerSessionIn', () => {
+  const opened = { open: true, placement: 'drawer' } as const
 
-  it('keeps a session open while the Panel stays in its sheet', () => {
-    expect(sheetSessionIn(opened, 'sheet')).toBe(opened)
+  it('keeps a session open while the Panel stays in its drawer', () => {
+    expect(drawerSessionIn(opened, 'drawer')).toBe(opened)
   })
 
-  it('ends the session when the Panel leaves its sheet', () => {
-    expect(sheetSessionIn(opened, 'docked')).toEqual(closedSession('docked'))
+  it('ends the session when the Panel leaves its drawer', () => {
+    expect(drawerSessionIn(opened, 'docked')).toEqual(closedSession('docked'))
   })
 
-  it('finds the sheet closed when the Panel returns to it', () => {
+  it('finds the drawer closed when the Panel returns to it', () => {
     // Open Filters on a phone, widen the window until they dock, then narrow it again.
-    const docked = sheetSessionIn(opened, 'docked')
+    const docked = drawerSessionIn(opened, 'docked')
 
-    expect(sheetSessionIn(docked, 'sheet').open).toBe(false)
+    expect(drawerSessionIn(docked, 'drawer').open).toBe(false)
   })
 })
 
 describe('breakpointFloor', () => {
   it('keeps the layout of every width it floors', () => {
-    for (let width = 0; width <= 1600; width += 1) {
-      for (const shown of [false, true]) {
-        expect(panelLayout(breakpointFloor(width), shown)).toEqual(panelLayout(width, shown))
+    for (let width = 0; width <= 2000; width += 1) {
+      for (const collapsed of [false, true]) {
+        expect(panelLayout(breakpointFloor(width), collapsed)).toEqual(
+          panelLayout(width, collapsed),
+        )
       }
     }
   })
@@ -122,8 +112,21 @@ describe('breakpointFloor', () => {
   })
 })
 
-describe('DOCKED_FILTERS_MEDIA_CLASS', () => {
-  it('hides the docked Filters exactly where the layout stops docking them', () => {
-    expect(DOCKED_FILTERS_MEDIA_CLASS).toBe(`max-[${FILTERS_DOCK_WIDTH}px]:hidden`)
+describe('media classes', () => {
+  const variant = `max-[${FILTERS_DOCK_WIDTH}px]:`
+
+  it('hides the docked Filters exactly where the layout puts them in a drawer', () => {
+    expect(DOCKED_FILTERS_MEDIA_CLASS).toBe(`${variant}hidden`)
+  })
+
+  it.each([
+    ['page', FLUSH_PAGE_MEDIA_CLASS],
+    ['frame', FLUSH_FRAME_MEDIA_CLASS],
+    ['top', FLUSH_TOP_MEDIA_CLASS],
+    ['bottom', FLUSH_BOTTOM_MEDIA_CLASS],
+  ])('runs Results flush (%s) exactly where it is the only docked Panel', (_, classes) => {
+    for (const name of classes.split(' ')) {
+      expect(name.startsWith(variant)).toBe(true)
+    }
   })
 })
