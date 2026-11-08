@@ -37,6 +37,22 @@ function priceLabelAnchor(price: number): 'start' | 'middle' | 'end' {
 
 const grid = { stroke: 'var(--border-solid)' }
 
+/** The y tick labels' inset from the plot's left edge. */
+export const Y_TICK_LABEL_DX = 4
+
+/** A tick label character's advance: the chart's tick labels are 11px Geist Mono. */
+export const TICK_LABEL_CHAR_WIDTH = 7
+
+/**
+ * Where text in the plot's top-left corner starts, from the plot's left edge, so it clears the y tick
+ * labels whatever their heights: past the widest label (`1,000` is five characters) and a gap.
+ */
+export function yTickLabelsClearance(ticks: readonly number[]): number {
+  const characters = Math.max(0, ...ticks.map((tick) => formatCount(tick).length))
+
+  return Y_TICK_LABEL_DX + characters * TICK_LABEL_CHAR_WIDTH + 2 * Y_TICK_LABEL_DX
+}
+
 export interface PlotDefinitionInput {
   /** Dots inside the filters, drawn bright and on top. */
   inScope: readonly PlotPoint[]
@@ -90,7 +106,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
       y: {
         axis: {
           line: false,
-          tickLabels: { anchor: 'start', dx: 4, dy: -6 },
+          tickLabels: { anchor: 'start', dx: Y_TICK_LABEL_DX, dy: -6 },
           ticks: {
             format: (value: number) => formatCount(value),
             size: 0,

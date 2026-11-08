@@ -18,13 +18,14 @@ import type { EndpointRow } from '#endpoints/snapshot'
 import { formatCount } from '#lib/format'
 import { StaleVeil } from '#panels/results/stale-veil'
 
-import { CHART_HEIGHT, plotDefinition } from './definition'
+import { CHART_HEIGHT, plotDefinition, yTickLabelsClearance } from './definition'
 import {
   notPlottedNote,
   notPlottedReason,
   plotPoints,
   splitByScope,
   throughputDomain,
+  throughputTicks,
 } from './points'
 import type { NotPlottedNote, PlotPoint } from './points'
 
@@ -248,7 +249,13 @@ function plottedRow(row: EndpointRow | undefined): EndpointRow | null {
  * The frame, the selected endpoint's ring and label, and the hovered endpoint's ring and tooltip. It
  * reads hover and selection itself, so they re-render only this, never the chart under it.
  */
-function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
+function PlotOverlay({
+  captionInset,
+  projection: atom,
+}: {
+  captionInset: number
+  projection: ProjectionAtom
+}) {
   const projection = useSelector(atom)
   const { byId } = useSnapshot()
   const endpoint = useSelectedId()
@@ -282,10 +289,10 @@ function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
           <Marker projection={projection} row={hovered} tone="hover" />
         )}
       </svg>
-      {/* Which way is better, in the corner it points to. */}
+      {/* Which way is better, in the corner it points to, clear of the y tick labels. */}
       <span
         className="absolute font-mono text-[10px] leading-3.5 text-muted-foreground"
-        style={{ left: projection.plot.left + 4, top: projection.plot.top + 2 }}
+        style={{ left: projection.plot.left + captionInset, top: projection.plot.top + 2 }}
       >
         ↖ cheaper and faster
       </span>
@@ -329,7 +336,10 @@ function PricePlot() {
         <PlotChart ariaDescription={description} definition={definition} projection={projection} />
         {/* Only the dots dim: the selection and hover rings in the overlay follow the pointer, not the filters. */}
         <StaleVeil className="inset-0" stale={stale} />
-        <PlotOverlay projection={projection} />
+        <PlotOverlay
+          captionInset={yTickLabelsClearance(throughputTicks([...domain]))}
+          projection={projection}
+        />
       </div>
     </div>
   )

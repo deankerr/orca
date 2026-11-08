@@ -2,11 +2,7 @@ import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 import { cn } from 'cn'
 
-import {
-  FIGURE_COLUMN_WIDTH,
-  MODEL_COLUMN_WIDTH_CSS,
-  PROVIDER_COLUMN_WIDTH,
-} from '#app/panel-layout'
+import { MODEL_COLUMN_WIDTH_CSS, PROVIDER_COLUMN_WIDTH } from '#app/panel-layout'
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
@@ -21,20 +17,23 @@ declare module '@tanstack/react-table' {
   > {
     /** Right-aligned monospace figures. */
     numeric?: boolean
-    /** Pixel width in the fixed layout; Model, without one, follows the panel's (`columnWidthStyle`). */
-    width?: number
     /** Hidden where the Table folds, and shown as the Model cell's second line instead. */
     folds?: boolean
   }
 }
 
 /**
- * A `<col>`'s width. Model's follows the Results container's width (`MODEL_COLUMN_WIDTH_CSS`); every
- * other column has its own. None takes the surplus: the Table ends with `FILLER_COLUMN`, which does.
- * It is inline CSS rather than a measurement, so the server's HTML lays out the loaded Table's columns.
+ * A `<col>`'s width, by the Table's width rule (`tableColumnWidths`): Model's follows the Results
+ * container's width (`MODEL_COLUMN_WIDTH_CSS`), Provider's is its own, and the figure columns have
+ * none, so the fixed table shares what is left evenly between them and fills the panel. It is inline
+ * CSS rather than a measurement, so the server's HTML lays out the loaded Table's columns.
  */
-export function columnWidthStyle(id: string, width: number | undefined) {
-  return { width: id === 'model' ? MODEL_COLUMN_WIDTH_CSS : `${width ?? 0}px` }
+export function columnWidthStyle(id: string | undefined) {
+  if (id === 'model') {
+    return { width: MODEL_COLUMN_WIDTH_CSS }
+  }
+
+  return id === 'provider' ? { width: `${PROVIDER_COLUMN_WIDTH}px` } : {}
 }
 
 /*
@@ -49,19 +48,19 @@ export function columnWidthStyle(id: string, width: number | undefined) {
  */
 
 /** Hides a folding column's column, header, and cells where it folds. */
-export const FOLDED_CLASS = '@max-[951px]/results:hidden'
+export const FOLDED_CLASS = '@max-[1039px]/results:hidden'
 
 /** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'inline-flex @min-[951px]/results:hidden'
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[1039px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[951px]/results:hidden'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[1039px]/results:hidden'
 
 /**
- * The Table wrapper's minimum width: the folded Table's columns (Model at its narrowest and the
- * figures), so a narrower panel scrolls it sideways. Unfolded, the panel is wider than its columns.
+ * The Table wrapper's minimum width, `TABLE_MIN_WIDTH`: the folded Table's columns at their
+ * narrowest, so a narrower panel scrolls it sideways. A test keeps the literal at the constant.
  */
-export const TABLE_MIN_WIDTH_CLASS = 'min-w-144'
+export const TABLE_MIN_WIDTH_CLASS = 'min-w-[588px]'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -134,10 +133,9 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 }
 
 /**
- * Columns in display order. Model's width follows the panel's (`columnWidthStyle`); Provider is fitted
- * to a typical name with its quantization and tier tags. The three price columns directly follow
- * Provider: they are the drawer's clear band (`MIN_VISIBLE_FIGURES_WIDTH`). Lower is better for prices
- * and latency; higher is better for the rest.
+ * Columns in display order; `columnWidthStyle` sizes them. Input and Output directly follow Provider:
+ * with Model and Provider, they stay clear of a drawer floating beside the Table
+ * (`keepsLeadingColumnsClear`). Lower is better for prices and latency; higher is better for the rest.
  */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
@@ -150,49 +148,49 @@ export const columns = helper.columns([
     cell: ({ row }) => <ProviderCell row={row.original} />,
     header: LABELS.provider,
     id: 'provider',
-    meta: { folds: true, width: PROVIDER_COLUMN_WIDTH },
+    meta: { folds: true },
     sortDescFirst: false,
   }),
   helper.accessor('input', {
     cell: ({ row }) => formatRateCell(row.original.rates.input),
     header: LABELS.input,
     id: 'input',
-    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
+    meta: { numeric: true },
     sortDescFirst: false,
   }),
   helper.accessor('output', {
     cell: ({ row }) => formatRateCell(row.original.rates.output),
     header: LABELS.output,
     id: 'output',
-    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
+    meta: { numeric: true },
     sortDescFirst: false,
   }),
   helper.accessor('cacheRead', {
     cell: ({ row }) => formatRateCell(row.original.rates.cacheRead),
     header: LABELS.cacheRead,
     id: 'cacheRead',
-    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
+    meta: { numeric: true },
     sortDescFirst: false,
   }),
   helper.accessor('throughput', {
     cell: ({ row }) => formatCount(row.original.throughput),
     header: LABELS.throughput,
     id: 'throughput',
-    meta: { numeric: true, width: 56 },
+    meta: { numeric: true },
     sortDescFirst: true,
   }),
   helper.accessor('latency', {
     cell: ({ row }) => formatLatency(row.original.latency),
     header: LABELS.latency,
     id: 'latency',
-    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
+    meta: { numeric: true },
     sortDescFirst: false,
   }),
   helper.accessor('context', {
     cell: ({ row }) => formatContext(row.original.context),
     header: LABELS.context,
     id: 'context',
-    meta: { numeric: true, width: FIGURE_COLUMN_WIDTH },
+    meta: { numeric: true },
     sortDescFirst: true,
   }),
 ])

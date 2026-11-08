@@ -30,17 +30,17 @@ type TableRowModel = Row<typeof features, EndpointRow>
 type TableHeader = Header<typeof features, EndpointRow>
 
 /**
- * The classes the table's cells share, which the loading skeleton reuses so the two line up. The last
- * column before the filler (`FillerCell`) ends on the panel's inset.
+ * The classes the table's cells share, which the loading skeleton reuses so the two line up. The
+ * first and last columns end on the panel's inset.
  */
-export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) nth-last-2:pr-(--results-inset)'
+export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--results-inset)'
 
 /**
  * The Model column stays put while the figures scroll under it. A panel narrower than the folded
- * table's columns (`TABLE_MIN_WIDTH_CLASS`, 36rem) scrolls it sideways, and there the column's edge
+ * table's columns (`TABLE_MIN_WIDTH_CLASS`, 588px) scrolls it sideways, and there the column's edge
  * shows as a rule.
  */
-const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-[36rem]/results:first:border-r'
+export const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-[588px]/results:first:border-r'
 
 export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
 
@@ -55,27 +55,6 @@ export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-
 export const TABLE_WRAPPER_CLASS = `relative box-content w-full ${TABLE_MIN_WIDTH_CLASS}`
 
 export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
-
-/**
- * The filler column's `<col>`, after Context: it has no width, so it takes the Table's surplus, and
- * the columns keep their widths while the rows' backgrounds still span the panel.
- */
-export function FillerCol() {
-  return <col />
-}
-
-/**
- * The filler column's cell (see `FillerCol`): empty, unpadded, and hidden from assistive tech. In
- * the header it keeps the sticky header's background and rule; in a row, the row's background and rule.
- */
-export function FillerCell({ header }: { header?: boolean }) {
-  return (
-    <td
-      aria-hidden="true"
-      className={cn(header === true ? HEADER_CELL_CLASS : BODY_CELL_CLASS, 'p-0')}
-    />
-  )
-}
 
 function ariaSort(direction: false | 'asc' | 'desc') {
   if (direction === false) {
@@ -236,7 +215,6 @@ function TableRow({
           <FlexRender cell={cell} />
         </td>
       ))}
-      <FillerCell />
     </tr>
   )
 }
@@ -283,7 +261,7 @@ const TableRows = memo(TableRowList)
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <tr>
-      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length + 1}>
+      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length}>
         <div className="flex flex-col items-center gap-3">
           <p className="text-[13px] text-muted-foreground">No endpoints match these filters</p>
           <Button aria-label="Clear filters" onClick={onClear} size="sm" variant="outline">
@@ -467,10 +445,9 @@ export function EndpointTable({ trailingInset }: { trailingInset: number }) {
             <col
               className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
-              style={columnWidthStyle(column.id, column.columnDef.meta?.width)}
+              style={columnWidthStyle(column.id)}
             />
           ))}
-          <FillerCol />
         </colgroup>
         <thead>
           {table.getHeaderGroups().map((group) => (
@@ -486,7 +463,6 @@ export function EndpointTable({ trailingInset }: { trailingInset: number }) {
                   key={header.id}
                 />
               ))}
-              <FillerCell header />
             </tr>
           ))}
         </thead>

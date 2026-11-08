@@ -7,8 +7,6 @@ import { columnLabel, columns, columnWidthStyle, FOLDED_CLASS, FOLDED_ONLY_CLASS
 import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
-  FillerCell,
-  FillerCol,
   HEADER_CELL_CLASS,
   TABLE_CLASS,
   TABLE_WRAPPER_CLASS,
@@ -88,10 +86,9 @@ export function TableSkeleton() {
             <col
               className={cn(column.meta?.folds === true && FOLDED_CLASS)}
               key={column.id}
-              style={columnWidthStyle(column.id ?? '', column.meta?.width)}
+              style={columnWidthStyle(column.id)}
             />
           ))}
-          <FillerCol />
         </colgroup>
         <thead>
           <tr>
@@ -116,7 +113,6 @@ export function TableSkeleton() {
                 )}
               </th>
             ))}
-            <FillerCell header />
           </tr>
         </thead>
         <tbody>
@@ -134,7 +130,6 @@ export function TableSkeleton() {
                   <BodyCell index={index} position={position} />
                 </td>
               ))}
-              <FillerCell />
             </tr>
           ))}
         </tbody>
