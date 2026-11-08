@@ -114,7 +114,8 @@ export function ChartCaption({ note }: { note: NotPlottedNote | null }) {
 }
 
 /** The plot region's frame, which the loading skeleton shares. */
-export const PLOT_REGION_CLASS = 'flex shrink-0 flex-col gap-0.5 px-(--results-inset) pb-1.5'
+export const PLOT_REGION_CLASS =
+  'flex shrink-0 flex-col gap-0.5 px-(--results-header-inset) pb-(--results-header-inset)'
 
 /** The dots, grid, and axes: rebuilt only when the catalogue or the filters change the dots. */
 function PlotChart({

@@ -17,8 +17,10 @@ import { ScopeBar } from './scope-bar'
  * Panel, docked in every layout, and a size container: its parts adapt to its width, not the page's.
  * Where it is the only docked Panel it runs to the screen's edges without a border.
  *
- * Its parts share one side inset, `--results-inset`: the scope bar, the plot, the Table's edge cells,
- * and the status bar all line up on it. A narrow panel tightens it.
+ * Its table-like parts share one side inset, `--results-inset`: the Table's edge cells and the status
+ * bar line up on it, and a narrow panel tightens it. The header, the scope bar and the plot, sit closer
+ * to the frame, on `--results-header-inset`, so the Filters button is as far from the left edge as from
+ * the top.
  */
 export function ResultsFrame({ children }: { children: ReactNode }) {
   return (
@@ -34,7 +36,7 @@ export function ResultsFrame({ children }: { children: ReactNode }) {
       tabIndex={-1}
     >
       {/* A size container cannot query itself, so the inset is set one level in. */}
-      <div className="flex min-h-0 grow flex-col [--results-inset:--spacing(4)] @max-md/results:[--results-inset:--spacing(3)]">
+      <div className="flex min-h-0 grow flex-col [--results-header-inset:--spacing(2)] [--results-inset:--spacing(4)] @max-md/results:[--results-inset:--spacing(3)]">
         {children}
       </div>
     </section>

@@ -113,7 +113,10 @@ change both, but each is one breakpoint in R.
   the fold's literal `@max-[1039px]/results:` (1039 is 1041 less the two borders, the container's content box), and a
   test keeps it at `UNFOLD_CONTAINER_WIDTH`; likewise the `588px` minimum at `TABLE_MIN_WIDTH`.
 - A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
-- Results' parts share one side inset, `--results-inset` (16px, 12px in a narrow panel).
+- The Table's edge cells and the status bar share one side inset, `--results-inset` (16px, 12px in a narrow panel).
+  The scope bar and the plot sit closer to the frame, on `--results-header-inset` (8px, all around the scope bar), so
+  the Filters button is as far from the left edge as from the top; the scope bar's height is the button's plus that
+  inset twice, whether or not filters are active, and on a phone its top inset starts below the notch.
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
 - The Model column is sticky, so the figures scroll under it when the table is wider than the panel (below 588px
   of Results, the folded Table's columns, where the column's edge shows as a rule).

@@ -297,7 +297,8 @@ export const FLUSH_PAGE_MEDIA_CLASS =
 export const FLUSH_FRAME_MEDIA_CLASS = 'max-[776px]:rounded-none max-[776px]:border-0'
 
 /** The scope bar's top padding clears the notch where Results runs under it. */
-export const FLUSH_TOP_MEDIA_CLASS = 'max-[776px]:pt-[calc(0.25rem+env(safe-area-inset-top))]'
+export const FLUSH_TOP_MEDIA_CLASS =
+  'max-[776px]:pt-[calc(var(--results-header-inset)+env(safe-area-inset-top))]'
 
 /** The status bar's bottom padding clears the home indicator where Results runs under it. */
 export const FLUSH_BOTTOM_MEDIA_CLASS =

@@ -75,7 +75,7 @@ function PlotToggle() {
 
 /** The scope bar's frame, which the loading skeleton shares. */
 export const SCOPE_BAR_CLASS = cn(
-  'flex min-h-10 shrink-0 items-center justify-between gap-x-3 px-(--results-inset) py-1',
+  'flex shrink-0 items-center justify-between gap-x-3 p-(--results-header-inset)',
   FLUSH_TOP_MEDIA_CLASS,
 )
 
@@ -88,13 +88,17 @@ function ScopeCounts({ filtered }: { filtered: boolean }) {
 
   return (
     <div
-      className={cn('flex min-w-0', filtered ? 'flex-col' : 'flex-wrap items-baseline gap-x-2.5')}
+      className={cn(
+        'flex min-w-0',
+        // The two lines are taller than the button; the bar's height stays the button's.
+        filtered ? '-my-1 flex-col' : 'flex-wrap items-baseline gap-x-2.5',
+      )}
     >
-      <span className="text-sm/5 font-semibold whitespace-nowrap">
+      <span className="text-[13px]/5 font-semibold whitespace-nowrap">
         {count(endpoints.inScope, 'endpoint')}
       </span>
       {/* A narrow panel breaks the counts only between them. */}
-      <span className="font-mono text-[11px] leading-4 text-muted-foreground">
+      <span className="font-mono text-[10px] leading-4 text-muted-foreground">
         {filtered && (
           <>
             <span className="whitespace-nowrap">of {formatNumber(endpoints.total)} ·</span>{' '}

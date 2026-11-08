@@ -35,10 +35,18 @@ function priceLabelAnchor(price: number): 'start' | 'middle' | 'end' {
   return price === PRICE_DOMAIN[1] ? 'end' : 'middle'
 }
 
-const grid = { stroke: 'var(--border-solid)' }
+/**
+ * The grid. The chart draws grid lines at 0.11 opacity by default, which both themes lose against the
+ * background. `--muted-foreground` at 0.25 lands just under the plot frame's `--border-solid` in each
+ * theme (lightness about 0.29 against 0.32 in dark, 0.89 against 0.87 in light).
+ */
+const grid = { stroke: 'var(--muted-foreground)', strokeOpacity: 0.25 }
 
-/** The y tick labels' inset from the plot's left edge. */
-export const Y_TICK_LABEL_DX = 4
+/** The y tick labels' gap from the plot's left edge (the frame's line). */
+export const Y_TICK_LABEL_DX = 6
+
+/** The gap between the widest y tick label and the caption in the plot's corner. */
+const CAPTION_GAP = 8
 
 /** A tick label character's advance: the chart's tick labels are 11px Geist Mono. */
 export const TICK_LABEL_CHAR_WIDTH = 7
@@ -50,7 +58,7 @@ export const TICK_LABEL_CHAR_WIDTH = 7
 export function yTickLabelsClearance(ticks: readonly number[]): number {
   const characters = Math.max(0, ...ticks.map((tick) => formatCount(tick).length))
 
-  return Y_TICK_LABEL_DX + characters * TICK_LABEL_CHAR_WIDTH + 2 * Y_TICK_LABEL_DX
+  return Y_TICK_LABEL_DX + characters * TICK_LABEL_CHAR_WIDTH + CAPTION_GAP
 }
 
 export interface PlotDefinitionInput {
@@ -107,8 +115,10 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         axis: {
           line: false,
           tickLabels: { anchor: 'start', dx: Y_TICK_LABEL_DX, dy: -6 },
+          // No tick padding (the chart's default 4 is subtracted from the label's x), so `dx` is the gap.
           ticks: {
             format: (value: number) => formatCount(value),
+            padding: 0,
             size: 0,
             values: throughputTicks([...throughputDomain]),
           },
