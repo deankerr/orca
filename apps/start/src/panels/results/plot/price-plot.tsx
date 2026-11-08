@@ -1,4 +1,5 @@
 import { formatPrice } from '@orca/backend/numbers'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@orca/ui/components/tooltip'
 import { Chart } from '@tanstack/charts/react'
 import { useSelector } from '@tanstack/react-store'
 import { createAtom } from '@tanstack/store'
@@ -17,15 +18,16 @@ import type { EndpointRow } from '#endpoints/snapshot'
 import { formatCount } from '#lib/format'
 import { StaleVeil } from '#panels/results/stale-veil'
 
-import { CHART_HEIGHT, plotDefinition } from './definition'
+import { CHART_HEIGHT, plotDefinition, yTickLabelsClearance } from './definition'
 import {
   notPlottedNote,
   notPlottedReason,
   plotPoints,
   splitByScope,
   throughputDomain,
+  throughputTicks,
 } from './points'
-import type { PlotPoint } from './points'
+import type { NotPlottedNote, PlotPoint } from './points'
 
 /** What the overlay needs from the chart's last layout to place a dot, in the chart's own pixels. */
 interface Projection {
@@ -79,27 +81,41 @@ function useScopeSplit(points: readonly PlotPoint[]): DeferredScopeSplit {
   return { split, stale }
 }
 
-/** The plot's caption, with a note for the endpoints it leaves out. */
-export function ChartCaption({ note }: { note: string | null }) {
+/**
+ * The plot's caption, on one line: the axes, and how many endpoints the plot leaves out, with why in
+ * a tooltip.
+ */
+export function ChartCaption({ note }: { note: NotPlottedNote | null }) {
   return (
-    <div className="flex justify-between gap-4 font-mono text-[10px] leading-3.5 text-muted-foreground">
-      <span className="flex min-w-0 gap-3">
-        <span className="shrink-0 tracking-[0.04em] uppercase">
-          Blend 3:1 $/M × tok/s p50 · log scales
-        </span>
-        {note !== null && (
-          <span className="truncate" title={note}>
-            {note}
-          </span>
-        )}
+    <div className="flex justify-between gap-x-4 font-mono text-[10px] leading-3.5 text-muted-foreground">
+      <span className="truncate tracking-[0.04em] uppercase">
+        Blend 3:1 $/M × tok/s p50 · log scales
       </span>
-      <span className="shrink-0">↖ cheaper and faster</span>
+      {note !== null && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The note is the keyboard target for its tooltip, which names the reasons.
+                tabIndex={0}
+              />
+            }
+          >
+            {note.label}
+          </TooltipTrigger>
+          <TooltipContent align="end">
+            {note.label}: {note.reasons}
+          </TooltipContent>
+        </Tooltip>
+      )}
     </div>
   )
 }
 
 /** The plot region's frame, which the loading skeleton shares. */
-export const PLOT_REGION_CLASS = 'flex shrink-0 flex-col gap-1 px-5 pb-2.5'
+export const PLOT_REGION_CLASS =
+  'flex shrink-0 flex-col gap-0.5 px-(--results-header-inset) pb-(--results-header-inset)'
 
 /** The dots, grid, and axes: rebuilt only when the catalogue or the filters change the dots. */
 function PlotChart({
@@ -234,7 +250,13 @@ function plottedRow(row: EndpointRow | undefined): EndpointRow | null {
  * The frame, the selected endpoint's ring and label, and the hovered endpoint's ring and tooltip. It
  * reads hover and selection itself, so they re-render only this, never the chart under it.
  */
-function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
+function PlotOverlay({
+  captionInset,
+  projection: atom,
+}: {
+  captionInset: number
+  projection: ProjectionAtom
+}) {
   const projection = useSelector(atom)
   const { byId } = useSnapshot()
   const endpoint = useSelectedId()
@@ -268,6 +290,13 @@ function PlotOverlay({ projection: atom }: { projection: ProjectionAtom }) {
           <Marker projection={projection} row={hovered} tone="hover" />
         )}
       </svg>
+      {/* Which way is better, in the corner it points to, clear of the y tick labels. */}
+      <span
+        className="absolute font-mono text-[10px] leading-3.5 text-muted-foreground"
+        style={{ left: projection.plot.left + captionInset, top: projection.plot.top + 2 }}
+      >
+        ↖ cheaper and faster
+      </span>
       {selected !== null && !hovered && (
         <MarkerLabel projection={projection} row={selected} tone="selection" />
       )}
@@ -308,7 +337,10 @@ function PricePlot() {
         <PlotChart ariaDescription={description} definition={definition} projection={projection} />
         {/* Only the dots dim: the selection and hover rings in the overlay follow the pointer, not the filters. */}
         <StaleVeil className="inset-0" stale={stale} />
-        <PlotOverlay projection={projection} />
+        <PlotOverlay
+          captionInset={yTickLabelsClearance(throughputTicks([...domain]))}
+          projection={projection}
+        />
       </div>
     </div>
   )

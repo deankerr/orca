@@ -3,7 +3,7 @@ import { cn } from 'cn'
 
 import { useSort } from '#endpoints/hooks'
 
-import { columnLabel, columns } from './columns'
+import { columnLabel, columns, columnWidthStyle, FOLDED_CLASS, FOLDED_ONLY_CLASS } from './columns'
 import {
   BODY_CELL_CLASS,
   CELL_PADDING_CLASS,
@@ -72,7 +72,8 @@ function BodyCell({ index, position }: { index: number; position: number }) {
 /**
  * The endpoint table as the route's pending state shows it: the real columns, widths, and header
  * labels, over rows of placeholders. It is decorative, and not interactive: the header's sort buttons
- * need the catalogue to act on.
+ * need the catalogue to act on. Its columns fold and size by the Results width alone, in CSS, so
+ * the server's HTML lays them out where the loaded Table will.
  */
 export function TableSkeleton() {
   const sort = useSort()
@@ -82,7 +83,11 @@ export function TableSkeleton() {
       <table className={TABLE_CLASS}>
         <colgroup>
           {columns.map((column) => (
-            <col key={column.id} style={{ width: column.meta?.width }} />
+            <col
+              className={cn(column.meta?.folds === true && FOLDED_CLASS)}
+              key={column.id}
+              style={columnWidthStyle(column.id)}
+            />
           ))}
         </colgroup>
         <thead>
@@ -92,6 +97,7 @@ export function TableSkeleton() {
                 className={cn(
                   HEADER_CELL_CLASS,
                   CELL_PADDING_CLASS,
+                  column.meta?.folds === true && FOLDED_CLASS,
                   column.meta?.numeric === true ? 'text-right' : 'text-left',
                   sortDirection(sort, column.id ?? '') !== false && 'text-foreground',
                 )}
@@ -99,6 +105,12 @@ export function TableSkeleton() {
                 scope="col"
               >
                 {columnLabel(column.id)}
+                {column.id === 'model' && (
+                  <span className={FOLDED_ONLY_CLASS}>
+                    <span className="mx-3">/</span>
+                    {columnLabel('provider')}
+                  </span>
+                )}
               </th>
             ))}
           </tr>
@@ -107,7 +119,14 @@ export function TableSkeleton() {
           {Array.from({ length: ROWS }, (_, index) => (
             <tr key={index}>
               {columns.map((column, position) => (
-                <td className={cn(BODY_CELL_CLASS, CELL_PADDING_CLASS)} key={column.id}>
+                <td
+                  className={cn(
+                    BODY_CELL_CLASS,
+                    CELL_PADDING_CLASS,
+                    column.meta?.folds === true && FOLDED_CLASS,
+                  )}
+                  key={column.id}
+                >
                   <BodyCell index={index} position={position} />
                 </td>
               ))}

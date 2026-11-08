@@ -40,6 +40,9 @@ React Compiler runs through the Vite React preset and Rolldown Babel plugin, inc
 Theme defaults to dark. The Light/Dark/System menu stores the choice under
 `orca-theme` in local storage. A `ScriptOnce` initializes the HTML class and color scheme before
 hydration; system mode tracks OS changes. If storage is unavailable, changes last for the current visit.
+Collapsed docked Filters are stored in the `orca-filters` cookie (`collapsed` or `expanded`; path `/`, one year,
+`SameSite=Lax`). The server reads it so the first frame renders Filters as the user left them; no cookie means
+expanded.
 Local aliases in Start and UI use `package.json#imports`. Start's are `#app`, `#components`, `#endpoints`, `#lib`,
 and `#panels`, mapped without extensions because each folder mixes `.ts` and `.tsx`; UI's are `#components`,
 `#lib`, and `#hooks`. Start's `tsconfig.json#paths` repeats its aliases, because TypeScript does not probe

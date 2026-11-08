@@ -10,9 +10,17 @@ import { tableOwnsKeys } from '#app/keyboard'
 import { useDeferredScopedRows, useScopeActions, useSelectedId, useSort } from '#endpoints/hooks'
 import { setHoveredEndpoint } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
+import type { SortKey } from '#endpoints/sort'
 import { StaleVeil } from '#panels/results/stale-veil'
 
-import { columns, features } from './columns'
+import {
+  columns,
+  columnWidthStyle,
+  features,
+  FOLDED_CLASS,
+  FOLDED_ONLY_CLASS,
+  TABLE_MIN_WIDTH_CLASS,
+} from './columns'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting-state'
@@ -21,16 +29,30 @@ type TableRowModel = Row<typeof features, EndpointRow>
 
 type TableHeader = Header<typeof features, EndpointRow>
 
-/** The classes the table's cells share, which the loading skeleton reuses so the two line up. */
-export const CELL_PADDING_CLASS = 'px-2 first:pl-5 last:pr-5'
+/**
+ * The classes the table's cells share, which the loading skeleton reuses so the two line up. The
+ * first and last columns end on the panel's inset.
+ */
+export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--results-inset)'
 
-export const HEADER_CELL_CLASS =
-  'sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase'
+/**
+ * The Model column stays put while the figures scroll under it. A panel narrower than the folded
+ * table's columns (`TABLE_MIN_WIDTH_CLASS`, 588px) scrolls it sideways, and there the column's edge
+ * shows as a rule.
+ */
+export const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-[588px]/results:first:border-r'
 
-export const BODY_CELL_CLASS = 'h-8 border-b border-border align-middle'
+export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
 
-/** The table's own wrapper: as wide as the region, and no narrower than its columns need. */
-export const TABLE_WRAPPER_CLASS = 'relative w-full min-w-190'
+/** Rows grow to a touch target where the pointer is a finger. */
+export const BODY_CELL_CLASS = `h-8 border-b border-border align-middle pointer-coarse:h-10 first:z-[1] first:bg-background ${STICKY_MODEL_CLASS}`
+
+/**
+ * The table's own wrapper: as wide as the region, and no narrower than the folded table's columns
+ * (`TABLE_MIN_WIDTH_CLASS`). Its padding falls outside that width, so trailing padding widens what
+ * scrolls without widening the table.
+ */
+export const TABLE_WRAPPER_CLASS = `relative box-content w-full ${TABLE_MIN_WIDTH_CLASS}`
 
 export const TABLE_CLASS = 'w-full table-fixed border-separate border-spacing-0'
 
@@ -42,20 +64,75 @@ function ariaSort(direction: false | 'asc' | 'desc') {
   return direction === 'asc' ? 'ascending' : 'descending'
 }
 
+type Direction = false | 'asc' | 'desc'
+
 /**
- * The sort direction comes from the URL's key, not `column.getIsSorted()`: the React Compiler
- * cannot see table state read through builder methods, so a cached header would never update.
+ * A header's sort button. The active direction's arrow hangs off the label's outer edge, so sorting
+ * never moves the label.
+ *
+ * The arrow is decorative. `<th aria-sort>` tells assistive tech a column's sort, but a button inside
+ * another column's header (see `SortHeader`'s `folded`) has no `<th>` of its own, so `announceSort`
+ * has the button say its sort state in its name.
  */
-function SortHeader({
+function SortButton({
+  announceSort,
+  className,
   direction,
   header,
 }: {
-  direction: false | 'asc' | 'desc'
+  announceSort?: boolean
+  className?: string
+  direction: Direction
+  header: TableHeader
+}) {
+  const numeric = header.column.columnDef.meta?.numeric === true
+
+  return (
+    <button
+      className={cn(
+        'relative inline-flex h-full max-w-full items-center rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50',
+        numeric && 'justify-end',
+        direction !== false && 'text-foreground',
+        className,
+      )}
+      onClick={header.column.getToggleSortingHandler()}
+      type="button"
+    >
+      <FlexRender header={header} />
+      {announceSort === true && direction !== false && (
+        <span className="sr-only">, sorted {ariaSort(direction)}</span>
+      )}
+      {direction === false ? null : (
+        <span
+          aria-hidden="true"
+          className={cn('absolute', numeric ? 'right-full pr-1' : 'left-full pl-1')}
+        >
+          {direction === 'asc' ? '↑' : '↓'}
+        </span>
+      )}
+    </button>
+  )
+}
+
+/**
+ * The sort direction comes from the URL's key, not `column.getIsSorted()`: the React Compiler
+ * cannot see table state read through builder methods, so a cached header would never update.
+ *
+ * `folded` is the header of a column folded into this one (see `FOLDED_CLASS`). Its own header is
+ * hidden where it folds (`display: none`, so it is out of the accessibility tree and its `aria-sort`
+ * with it), so this one carries a sort button for it, shown only there, that names its own sort state.
+ */
+function SortHeader({
+  direction,
+  folded,
+  header,
+}: {
+  direction: Direction
+  folded?: { direction: Direction; header: TableHeader } | undefined
   header: TableHeader
 }) {
   const { column } = header
   const numeric = column.columnDef.meta?.numeric === true
-  const sortable = column.getCanSort()
 
   return (
     <th
@@ -63,35 +140,41 @@ function SortHeader({
       className={cn(
         HEADER_CELL_CLASS,
         CELL_PADDING_CLASS,
+        column.columnDef.meta?.folds === true && FOLDED_CLASS,
         numeric ? 'text-right' : 'text-left',
-        direction !== false && 'text-foreground',
       )}
       scope="col"
     >
-      {sortable ? (
-        <button
-          className={cn(
-            'relative inline-flex h-full max-w-full items-center rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50',
-            numeric && 'justify-end',
+      {column.getCanSort() ? (
+        <>
+          <SortButton direction={direction} header={header} />
+          {folded !== undefined && (
+            <>
+              {/* Wide enough for the Model arrow, which hangs off the label's trailing edge. */}
+              <span aria-hidden="true" className={cn('mx-3', FOLDED_ONLY_CLASS)}>
+                /
+              </span>
+              <SortButton
+                announceSort
+                className={FOLDED_ONLY_CLASS}
+                direction={folded.direction}
+                header={folded.header}
+              />
+            </>
           )}
-          onClick={column.getToggleSortingHandler()}
-          type="button"
-        >
-          <FlexRender header={header} />
-          {direction === false ? null : (
-            <span
-              aria-hidden="true"
-              className={cn('absolute', numeric ? 'right-full pr-1' : 'left-full pl-1')}
-            >
-              {direction === 'asc' ? '↑' : '↓'}
-            </span>
-          )}
-        </button>
+        </>
       ) : (
         <FlexRender header={header} />
       )}
     </th>
   )
+}
+
+/** The Provider header and its sort direction, for the Model header that carries it where it folds. */
+function foldedProvider(headers: TableHeader[], sort: SortKey) {
+  const header = headers.find((candidate) => candidate.column.id === 'provider')
+
+  return header === undefined ? undefined : { direction: sortDirection(sort, 'provider'), header }
 }
 
 function TableRow({
@@ -107,7 +190,7 @@ function TableRow({
     <tr
       aria-selected={selected}
       className={cn(
-        'cursor-pointer scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+        'group cursor-pointer scroll-mt-[30px] outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
         selected ? 'bg-selection-surface' : 'hover:bg-muted-hover',
         row.original.unlisted && 'opacity-50',
       )}
@@ -119,9 +202,13 @@ function TableRow({
           className={cn(
             BODY_CELL_CLASS,
             CELL_PADDING_CLASS,
+            cell.column.columnDef.meta?.folds === true && FOLDED_CLASS,
             cell.column.columnDef.meta?.numeric === true &&
               'text-right font-mono text-xs tabular-nums',
-            selected && 'first:shadow-[inset_2px_0_0_var(--selection)]',
+            // The sticky Model cell paints its own background, so it repeats the row's.
+            selected
+              ? 'first:bg-selection-surface first:shadow-[inset_2px_0_0_var(--selection)]'
+              : 'group-hover:first:bg-muted-hover',
           )}
           key={cell.id}
         >
@@ -174,7 +261,7 @@ const TableRows = memo(TableRowList)
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <tr>
-      <td className="px-5 py-16 text-center" colSpan={columns.length}>
+      <td className="px-(--results-inset) py-16 text-center" colSpan={columns.length}>
         <div className="flex flex-col items-center gap-3">
           <p className="text-[13px] text-muted-foreground">No endpoints match these filters</p>
           <Button aria-label="Clear filters" onClick={onClear} size="sm" variant="outline">
@@ -221,8 +308,10 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * (see `StaleVeil`) and the table is `aria-busy`. The header, selection, and sort stay current: keys
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
+ *
+ * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
-export function EndpointTable() {
+export function EndpointTable({ trailingInset }: { trailingInset: number }) {
   const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
@@ -344,11 +433,20 @@ export function EndpointTable() {
   }
 
   return (
-    <div aria-busy={stale} className={TABLE_WRAPPER_CLASS}>
+    <div
+      aria-busy={stale}
+      className={TABLE_WRAPPER_CLASS}
+      // Room after the last column, so it can scroll out from under a drawer floating over it.
+      style={{ paddingRight: trailingInset }}
+    >
       <table className={TABLE_CLASS}>
         <colgroup>
           {table.getAllLeafColumns().map((column) => (
-            <col key={column.id} style={{ width: column.columnDef.meta?.width }} />
+            <col
+              className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
+              key={column.id}
+              style={columnWidthStyle(column.id)}
+            />
           ))}
         </colgroup>
         <thead>
@@ -357,6 +455,10 @@ export function EndpointTable() {
               {group.headers.map((header) => (
                 <SortHeader
                   direction={sortDirection(sort, header.column.id)}
+                  // The Model cell shows the Provider column where it folds, so its header does too.
+                  folded={
+                    header.column.id === 'model' ? foldedProvider(group.headers, sort) : undefined
+                  }
                   header={header}
                   key={header.id}
                 />

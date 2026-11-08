@@ -1,8 +1,8 @@
 import { defineChart, dot } from '@tanstack/charts'
-import { scaleLog } from 'd3-scale'
 
 import { formatCount } from '#lib/format'
 
+import { insetLogScale } from './inset-scale'
 import { PRICE_DOMAIN, PRICE_GRID, throughputTicks } from './points'
 import type { PlotPoint } from './points'
 
@@ -21,6 +21,18 @@ const HIT_RADIUS = 10
 const DIM_FILL = 'var(--border-solid)'
 const BRIGHT_FILL = 'var(--foreground)'
 
+/** The dots' radii in pixels. They have no stroke, so a dot's reach is its radius. */
+const DIM_RADIUS = 1.5
+const BRIGHT_RADIUS = 1.75
+
+/**
+ * How far in from the plot's edge the ends of both scales sit, in pixels: the largest dot's radius
+ * rounded up, the frame line's own pixel (it is drawn inside the edge), and a pixel of air. A dot at the
+ * end of a domain (the cheapest, priciest, fastest or slowest) then sits wholly inside the frame, at any
+ * width.
+ */
+const DOT_INSET = Math.ceil(Math.max(DIM_RADIUS, BRIGHT_RADIUS)) + 2
+
 /** `$0.01`, `$0.10`, `$1`, `$10`, `$100`. */
 function formatPriceTick(price: number): string {
   return price < 1 ? `$${price.toFixed(2)}` : `$${price}`
@@ -35,7 +47,40 @@ function priceLabelAnchor(price: number): 'start' | 'middle' | 'end' {
   return price === PRICE_DOMAIN[1] ? 'end' : 'middle'
 }
 
-const grid = { stroke: 'var(--border-solid)' }
+/** The end labels step back out by the scale's inset, so they still start and end at the frame's edges. */
+function priceLabelDx(price: number): number {
+  if (price === PRICE_DOMAIN[0]) {
+    return -DOT_INSET
+  }
+
+  return price === PRICE_DOMAIN[1] ? DOT_INSET : 0
+}
+
+/**
+ * The grid. The chart draws grid lines at 0.11 opacity by default, which both themes lose against the
+ * background. `--muted-foreground` at 0.25 lands just under the plot frame's `--border-solid` in each
+ * theme (lightness about 0.29 against 0.32 in dark, 0.89 against 0.87 in light).
+ */
+const grid = { stroke: 'var(--muted-foreground)', strokeOpacity: 0.25 }
+
+/** The y tick labels' gap from the plot's left edge (the frame's line). */
+export const Y_TICK_LABEL_DX = 6
+
+/** The gap between the widest y tick label and the caption in the plot's corner. */
+const CAPTION_GAP = 8
+
+/** A tick label character's advance: the chart's tick labels are 11px Geist Mono. */
+export const TICK_LABEL_CHAR_WIDTH = 7
+
+/**
+ * Where text in the plot's top-left corner starts, from the plot's left edge, so it clears the y tick
+ * labels whatever their heights: past the widest label (`1,000` is five characters) and a gap.
+ */
+export function yTickLabelsClearance(ticks: readonly number[]): number {
+  const characters = Math.max(0, ...ticks.map((tick) => formatCount(tick).length))
+
+  return Y_TICK_LABEL_DX + characters * TICK_LABEL_CHAR_WIDTH + CAPTION_GAP
+}
 
 export interface PlotDefinitionInput {
   /** Dots inside the filters, drawn bright and on top. */
@@ -60,7 +105,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         fill: DIM_FILL,
         id: 'out-of-scope',
         key: 'id',
-        r: 1.5,
+        r: DIM_RADIUS,
         x: 'price',
         y: 'throughput',
       }),
@@ -68,7 +113,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         fill: BRIGHT_FILL,
         id: 'in-scope',
         key: 'id',
-        r: 1.75,
+        r: BRIGHT_RADIUS,
         x: 'price',
         y: 'throughput',
       }),
@@ -80,25 +125,28 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
           line: false,
           tickLabels: {
             anchor: ({ value }: { value: number }) => priceLabelAnchor(value),
+            dx: ({ value }: { value: number }) => priceLabelDx(value),
             thin: { keep: PRICE_DOMAIN },
           },
           ticks: { format: formatPriceTick, size: 0, values: PRICE_GRID },
         },
         grid,
-        scale: scaleLog().domain([...PRICE_DOMAIN]),
+        scale: insetLogScale(PRICE_DOMAIN, DOT_INSET),
       },
       y: {
         axis: {
           line: false,
-          tickLabels: { anchor: 'start', dx: 4, dy: -6 },
+          tickLabels: { anchor: 'start', dx: Y_TICK_LABEL_DX, dy: -6 },
+          // No tick padding (the chart's default 4 is subtracted from the label's x), so `dx` is the gap.
           ticks: {
             format: (value: number) => formatCount(value),
+            padding: 0,
             size: 0,
             values: throughputTicks([...throughputDomain]),
           },
         },
         grid,
-        scale: scaleLog().domain([...throughputDomain]),
+        scale: insetLogScale(throughputDomain, DOT_INSET),
       },
     },
     theme: {

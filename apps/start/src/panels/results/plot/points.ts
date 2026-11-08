@@ -82,8 +82,16 @@ const reasonText: Record<NotPlottedReason, string> = {
 
 const reasonOrder: readonly NotPlottedReason[] = ['free', 'noPrice', 'noThroughput', 'offscale']
 
-/** The caption for endpoints left off the plot: `17 not plotted: free or no throughput`. Null when all fit. */
-export function notPlottedNote(counts: NotPlottedCounts): string | null {
+/** The caption's note for endpoints left off the plot, and why. */
+export interface NotPlottedNote {
+  /** `17 not plotted` */
+  label: string
+  /** `free or no tok/s` */
+  reasons: string
+}
+
+/** The caption's note for endpoints left off the plot. Null when all fit. */
+export function notPlottedNote(counts: NotPlottedCounts): NotPlottedNote | null {
   const total = reasonOrder.reduce((sum, reason) => sum + counts[reason], 0)
 
   if (total === 0) {
@@ -95,7 +103,7 @@ export function notPlottedNote(counts: NotPlottedCounts): string | null {
   const last = reasons.pop()
   const list = reasons.length === 0 ? last : `${reasons.join(', ')} or ${last}`
 
-  return `${total.toLocaleString('en')} not plotted: ${list}`
+  return { label: `${total.toLocaleString('en')} not plotted`, reasons: list ?? '' }
 }
 
 /** 1, 2, 5 × 10ⁿ: the steps a throughput bound can round to. */
@@ -119,7 +127,8 @@ function stepAbove(value: number): number {
 const EMPTY_THROUGHPUT_DOMAIN = [1, 1000] as const
 
 /**
- * The throughput axis: the data's range, rounded outward to a 1, 2, 5 step so no dot sits on the frame.
+ * The throughput axis: the data's range, rounded outward to a 1, 2, 5 step. A value on a step still ends
+ * the axis, so the scale's inset (`DOT_INSET`) is what keeps that dot inside the frame.
  * It spans the whole catalogue, not the filtered rows, so filtering moves dots without moving the axis.
  */
 export function throughputDomain(points: readonly PlotPoint[]): readonly [number, number] {
