@@ -1,8 +1,8 @@
 import { defineChart, dot } from '@tanstack/charts'
-import { scaleLog } from 'd3-scale'
 
 import { formatCount } from '#lib/format'
 
+import { insetLogScale } from './inset-scale'
 import { PRICE_DOMAIN, PRICE_GRID, throughputTicks } from './points'
 import type { PlotPoint } from './points'
 
@@ -21,6 +21,18 @@ const HIT_RADIUS = 10
 const DIM_FILL = 'var(--border-solid)'
 const BRIGHT_FILL = 'var(--foreground)'
 
+/** The dots' radii in pixels. They have no stroke, so a dot's reach is its radius. */
+const DIM_RADIUS = 1.5
+const BRIGHT_RADIUS = 1.75
+
+/**
+ * How far in from the plot's edge the ends of both scales sit, in pixels: the largest dot's radius
+ * rounded up, the frame line's own pixel (it is drawn inside the edge), and a pixel of air. A dot at the
+ * end of a domain (the cheapest, priciest, fastest or slowest) then sits wholly inside the frame, at any
+ * width.
+ */
+const DOT_INSET = Math.ceil(Math.max(DIM_RADIUS, BRIGHT_RADIUS)) + 2
+
 /** `$0.01`, `$0.10`, `$1`, `$10`, `$100`. */
 function formatPriceTick(price: number): string {
   return price < 1 ? `$${price.toFixed(2)}` : `$${price}`
@@ -33,6 +45,15 @@ function priceLabelAnchor(price: number): 'start' | 'middle' | 'end' {
   }
 
   return price === PRICE_DOMAIN[1] ? 'end' : 'middle'
+}
+
+/** The end labels step back out by the scale's inset, so they still start and end at the frame's edges. */
+function priceLabelDx(price: number): number {
+  if (price === PRICE_DOMAIN[0]) {
+    return -DOT_INSET
+  }
+
+  return price === PRICE_DOMAIN[1] ? DOT_INSET : 0
 }
 
 /**
@@ -84,7 +105,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         fill: DIM_FILL,
         id: 'out-of-scope',
         key: 'id',
-        r: 1.5,
+        r: DIM_RADIUS,
         x: 'price',
         y: 'throughput',
       }),
@@ -92,7 +113,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         fill: BRIGHT_FILL,
         id: 'in-scope',
         key: 'id',
-        r: 1.75,
+        r: BRIGHT_RADIUS,
         x: 'price',
         y: 'throughput',
       }),
@@ -104,12 +125,13 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
           line: false,
           tickLabels: {
             anchor: ({ value }: { value: number }) => priceLabelAnchor(value),
+            dx: ({ value }: { value: number }) => priceLabelDx(value),
             thin: { keep: PRICE_DOMAIN },
           },
           ticks: { format: formatPriceTick, size: 0, values: PRICE_GRID },
         },
         grid,
-        scale: scaleLog().domain([...PRICE_DOMAIN]),
+        scale: insetLogScale(PRICE_DOMAIN, DOT_INSET),
       },
       y: {
         axis: {
@@ -124,7 +146,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
           },
         },
         grid,
-        scale: scaleLog().domain([...throughputDomain]),
+        scale: insetLogScale(throughputDomain, DOT_INSET),
       },
     },
     theme: {
