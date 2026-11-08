@@ -85,24 +85,30 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
     >
       <TooltipProvider delay={250}>
         <Tabs className="min-h-0 grow gap-0" defaultValue="Endpoint">
-          <header className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 pt-3">
-            <div className="flex h-5 items-center justify-between font-mono text-[10px] leading-3.5 text-muted-foreground">
+          <header className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 pt-2">
+            {/* The row clears the close button, which sits in the drawer's corner (below). */}
+            <div className="-mb-1 flex h-7 items-center justify-between gap-2 pr-7 font-mono text-[10px] leading-3.5 text-muted-foreground pointer-coarse:h-8 pointer-coarse:pr-8">
               <span className="tracking-[0.08em]">
                 <Position id={row.id} />
               </span>
-              <span className="flex items-center gap-1.5">
-                {/* Keyboard hints, which a touch screen has no keys for. */}
-                <span className="pointer-coarse:hidden">↑↓ move · esc close</span>
-                <Button
-                  aria-label="Close endpoint panel"
-                  onClick={close}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <XIcon aria-hidden />
-                </Button>
-              </span>
+              {/* Keyboard hints, which a touch screen has no keys for. */}
+              <span className="pointer-coarse:hidden">↑↓ move · esc close</span>
             </div>
+            {/*
+              No ancestor between here and the drawer's popup is positioned, so this sits in the
+              popup's corner, the Results header's inset from its top and right edges, and over the
+              bottom drawer's swipe handle row. The right edge also clears a landscape phone's notch,
+              which the popup pads for.
+            */}
+            <Button
+              aria-label="Close endpoint panel"
+              className="absolute top-(--drawer-corner-inset) right-[calc(var(--drawer-corner-inset)+env(safe-area-inset-right))] [--drawer-corner-inset:--spacing(2)]"
+              onClick={close}
+              size="icon"
+              variant="ghost"
+            >
+              <XIcon aria-hidden data-icon="inline-start" />
+            </Button>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2.5">
                 <EntityAvatar className="size-8 rounded-md" slug={row.provider.id} />
