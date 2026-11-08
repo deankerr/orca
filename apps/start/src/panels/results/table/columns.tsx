@@ -48,13 +48,13 @@ export function columnWidthStyle(id: string | undefined) {
  */
 
 /** Hides a folding column's column, header, and cells where it folds. */
-export const FOLDED_CLASS = '@max-[1039px]/results:hidden'
+export const FOLDED_CLASS = '@max-[872px]/results:hidden'
 
 /** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'inline-flex @min-[1039px]/results:hidden'
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[872px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[1039px]/results:hidden'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[872px]/results:hidden'
 
 /**
  * The Table wrapper's minimum width, `TABLE_MIN_WIDTH`: the folded Table's columns at their
@@ -133,9 +133,9 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 }
 
 /**
- * Columns in display order; `columnWidthStyle` sizes them. Input and Output directly follow Provider:
- * with Model and Provider, they stay clear of a drawer floating beside the Table
- * (`keepsLeadingColumnsClear`). Lower is better for prices and latency; higher is better for the rest.
+ * Columns in display order; `columnWidthStyle` sizes them. Input and Output directly follow Provider,
+ * so they are the first figures, after Model and Provider, a drawer floating beside the Table covers
+ * (`UNFOLD_RESULTS_WIDTH`). Lower is better for prices and latency; higher is better for the rest.
  */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {

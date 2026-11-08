@@ -3,10 +3,11 @@
  * secondary Panel that takes a column: docked beside Results where both fit, or in a drawer where they
  * do not. The Endpoint panel never takes a column: it floats over Results in a drawer at every width,
  * so selecting an endpoint, or moving the selection with ↑/↓, never reflows the Table or redraws the
- * plot. It floats beside the Table only where Results keeps the Table's leading columns (Model, Input
- * and Output) clear of it; otherwise it rises from the bottom. The Table fills Results at every width
- * and folds Provider into the Model cell below one Results width. The breakpoints are not chosen; they
- * are the widths at which a layout stops fitting.
+ * plot. It floats beside the Table only where Results keeps the folded Table's leading columns (Model,
+ * Input and Output) clear of it; otherwise it rises from the bottom. The Table fills Results at every
+ * width and folds Provider into the Model cell below one Results width: where the unfolded Table fits
+ * with Model at its cap. Wider than that the drawer may cover Input and Output, which scroll out from
+ * under it. The breakpoints are not chosen; they are the widths at which a layout stops fitting.
  */
 
 /** Pixels between Panels, and between the Panels and the page's edge. */
@@ -99,15 +100,15 @@ export function tableColumnWidths(results: number): TableColumnWidths {
 }
 
 /**
- * Whether a Results panel this wide, its Table folded or not, keeps the Table's leading columns clear
- * of a floating Endpoint drawer: Model, Provider where it has a column, and the first two figures,
- * Input and Output. The drawer covers the end of Results, trailing border included; the rest, after
- * the leading border, is what the Table shows. The columns under it scroll out (`tableTrailingInset`).
+ * Whether a Results panel this wide keeps the folded Table's leading columns, Model and the first two
+ * figures (Input and Output), clear of a floating Endpoint drawer. The drawer covers the end of
+ * Results, trailing border included; the rest, after the leading border, is what the Table shows. The
+ * columns under it scroll out (`tableTrailingInset`).
  */
-export function keepsLeadingColumnsClear(results: number, folded: boolean): boolean {
-  const { figure, model, provider } = columnWidths(results, folded)
+export function foldedTableKeepsLeadingColumnsClear(results: number): boolean {
+  const { figure, model } = columnWidths(results, true)
 
-  return results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH >= model + provider + 2 * figure
+  return results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH >= model + 2 * figure
 }
 
 /** The narrowest whole width at which a test that holds from there on starts to hold. */
@@ -123,19 +124,20 @@ function narrowest(holds: (width: number) => boolean): number {
 
 /**
  * The narrowest Results panel the Endpoint drawer floats beside: where the folded Table keeps Model,
- * Input and Output clear of it.
+ * Input and Output clear of it. Wider, where Provider has its column, the drawer may cover Input and
+ * Output (`UNFOLD_RESULTS_WIDTH`); they stay reachable by scrolling, and Model and Provider stay clear.
  */
-export const ENDPOINT_RESULTS_WIDTH = narrowest((results) =>
-  keepsLeadingColumnsClear(results, true),
-)
+export const ENDPOINT_RESULTS_WIDTH = narrowest(foldedTableKeepsLeadingColumnsClear)
 
 /**
  * The narrowest Results panel whose Table gives Provider its own column: where the unfolded Table
- * keeps Model, Provider, Input and Output clear of the drawer, so unfolding never hides a figure the
- * folded Table showed beside it. Below it Provider folds into the Model cell's second line. It is the
- * Table's one fold, a function of the Results width alone.
+ * fits, Model at its cap, Provider at its width, and the six figures at their minimum, inside the
+ * frame's two borders. Below it Provider folds into the Model cell's second line. Unfolding earlier,
+ * rather than where the drawer would still leave Input and Output clear, keeps rows distinct when the
+ * Table is sorted by model. It is the Table's one fold, a function of the Results width alone.
  */
-export const UNFOLD_RESULTS_WIDTH = narrowest((results) => keepsLeadingColumnsClear(results, false))
+export const UNFOLD_RESULTS_WIDTH =
+  MODEL_COLUMN_MAX_WIDTH + PROVIDER_COLUMN_WIDTH + FIGURES_MIN_WIDTH + 2 * RESULTS_BORDER_WIDTH
 
 /**
  * `UNFOLD_RESULTS_WIDTH` as the Results container query sees it: the frame's content box, inside its

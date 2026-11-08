@@ -18,7 +18,7 @@ import {
   FLUSH_TOP_MEDIA_CLASS,
   FIGURE_COLUMN_COUNT,
   FIGURE_COLUMN_MIN_WIDTH,
-  keepsLeadingColumnsClear,
+  foldedTableKeepsLeadingColumnsClear,
   MODEL_COLUMN_MAX_WIDTH,
   MODEL_COLUMN_WIDTH,
   MODEL_COLUMN_WIDTH_CSS,
@@ -105,34 +105,47 @@ describe('panelLayout', () => {
     }
   })
 
-  it('keeps Model, Provider where it has a column, Input and Output clear of the drawer wherever it floats beside the Table', () => {
+  it('keeps Model, and Provider where it has a column, clear of the drawer wherever it floats beside the Table', () => {
     for (let width = 0; width <= 3000; width += 1) {
       for (const collapsed of [false, true]) {
         const layout = panelLayout(width, collapsed)
 
         if (layout.endpoint === 'right') {
           const results = resultsWidth(width, layout.filters)
-          const { figure, model, provider } = tableColumnWidths(results)
+          const { model, provider } = tableColumnWidths(results)
 
           // What the leading border and the drawer leave of Results.
           const clear = results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH
 
-          expect(clear).toBeGreaterThanOrEqual(model + provider + 2 * figure)
+          expect(clear).toBeGreaterThanOrEqual(model + provider)
         }
       }
     }
   })
 
-  it('is the narrowest Results that keeps them clear, and they stay clear from there', () => {
-    expect(keepsLeadingColumnsClear(ENDPOINT_RESULTS_WIDTH - 1, true)).toBe(false)
-    expect(keepsLeadingColumnsClear(UNFOLD_RESULTS_WIDTH - 1, false)).toBe(false)
+  it('keeps Input and Output clear of the drawer wherever the Table is folded beside it', () => {
+    for (let results = ENDPOINT_RESULTS_WIDTH; results < UNFOLD_RESULTS_WIDTH; results += 1) {
+      const { figure, model } = tableColumnWidths(results)
+
+      expect(results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH).toBeGreaterThanOrEqual(
+        model + 2 * figure,
+      )
+    }
+  })
+
+  it('lets the drawer cover Input and Output where the Table unfolds, which scroll clear of it', () => {
+    const { figure, model, provider } = tableColumnWidths(UNFOLD_RESULTS_WIDTH)
+    const clear = UNFOLD_RESULTS_WIDTH - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH
+
+    expect(clear).toBeLessThan(model + provider + 2 * figure)
+    expect(tableTrailingInset(panelLayout(1170, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
+  })
+
+  it('is the narrowest Results that keeps the folded Table’s leading columns clear, and they stay clear from there', () => {
+    expect(foldedTableKeepsLeadingColumnsClear(ENDPOINT_RESULTS_WIDTH - 1)).toBe(false)
 
     for (let results = ENDPOINT_RESULTS_WIDTH; results <= 4000; results += 1) {
-      expect(keepsLeadingColumnsClear(results, true)).toBe(true)
-    }
-
-    for (let results = UNFOLD_RESULTS_WIDTH; results <= 4000; results += 1) {
-      expect(keepsLeadingColumnsClear(results, false)).toBe(true)
+      expect(foldedTableKeepsLeadingColumnsClear(results)).toBe(true)
     }
   })
 
@@ -146,8 +159,14 @@ describe('panelLayout', () => {
 })
 
 describe('the Table’s fold', () => {
-  it('unfolds Provider where the unfolded Table keeps its leading columns clear of the drawer', () => {
-    expect(UNFOLD_RESULTS_WIDTH).toBe(1041)
+  it('unfolds Provider where the unfolded Table fits with Model at its cap', () => {
+    expect(UNFOLD_RESULTS_WIDTH).toBe(874)
+    expect(tableColumnWidths(UNFOLD_RESULTS_WIDTH)).toEqual({
+      figure: FIGURE_COLUMN_MIN_WIDTH,
+      model: MODEL_COLUMN_MAX_WIDTH,
+      provider: PROVIDER_COLUMN_WIDTH,
+    })
+
     expect(UNFOLD_CONTAINER_WIDTH).toBe(UNFOLD_RESULTS_WIDTH - 2 * RESULTS_BORDER_WIDTH)
     expect(tableFolds(UNFOLD_RESULTS_WIDTH - 1)).toBe(true)
     expect(tableFolds(UNFOLD_RESULTS_WIDTH)).toBe(false)

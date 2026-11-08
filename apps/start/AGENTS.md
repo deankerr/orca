@@ -59,17 +59,17 @@ The Table fills Results at every width, by one rule (`tableColumnWidths`, expres
 - Below 588 (Model 180 and six figures at 68, `TABLE_MIN_WIDTH`) the Table scrolls sideways under the sticky
   Model column.
 
-Two Results widths (R, the frame's width, border included) decide everything. Both are the narrowest R at which
-the Table, folded or not, keeps its leading columns (Model, Provider where it has a column, Input and Output)
-clear of the floating drawer (`keepsLeadingColumnsClear`); the columns under the drawer scroll out from under
-it. Placement is computed in JS from the page width less the gutter and any docked Filters (`resultsWidth`);
-the Table's fold reads R alone, in CSS.
+Two Results widths (R, the frame's width, border included) decide everything. The drawer's is the narrowest R at
+which the folded Table keeps its leading columns (Model, Input and Output) clear of the floating drawer
+(`foldedTableKeepsLeadingColumnsClear`); the columns under the drawer scroll out from under it. The fold's is the
+narrowest R at which the unfolded Table fits with Model at its cap. Placement is computed in JS from the page width
+less the gutter and any docked Filters (`resultsWidth`); the Table's fold reads R alone, in CSS.
 
-| Results width R | Table                             | Endpoint drawer             |
-| --------------- | --------------------------------- | --------------------------- |
-| ≥ 1041          | Provider has its own column       | Beside the Table, non-modal |
-| 833–1040        | Provider folded into Model's cell | Beside the Table, non-modal |
-| < 833, or flush | Provider folded into Model's cell | From the bottom, modal      |
+| Results width R | Table                             | Endpoint drawer                                      |
+| --------------- | --------------------------------- | ---------------------------------------------------- |
+| ≥ 874           | Provider has its own column       | Beside the Table, non-modal; covers Input and Output |
+| 833–873         | Provider folded into Model's cell | Beside the Table, non-modal                          |
+| < 833, or flush | Provider folded into Model's cell | From the bottom, modal                               |
 
 | Page width (CSS px) | Filters                     | R                         |
 | ------------------- | --------------------------- | ------------------------- |
@@ -78,16 +78,18 @@ the Table's fold reads R alone, in CSS.
 | < 776               | Drawer from the left, modal | page; flush, drawer below |
 
 So the drawer floats beside the Table from a 1129px page with Filters docked and an 849px page with them
-collapsed, and Provider gets its column from 1337 docked and 1057 collapsed. Collapsing Filters can therefore
+collapsed, and Provider gets its column from 1170 docked and 890 collapsed. Collapsing Filters can therefore
 change both, but each is one breakpoint in R.
 
 - **Drawer** (`ENDPOINT_RESULTS_WIDTH`, 833): beside the drawer (which covers the end of Results, trailing
   border included) and the frame's leading border sit Model (256) and Input and Output (96 each, a sixth of what
   Model leaves). Results that runs flush (below 776) keeps the drawer at the bottom whatever its width.
-- **Fold** (`UNFOLD_RESULTS_WIDTH`, 1041): the same with Provider's 208 after Model, so unfolding never hides a
-  figure the folded Table showed beside the drawer; the figures narrow from 130 to 96, and Model keeps its width.
-  Below it Provider folds into the Model cell's second line, and the Model header carries a second sort button
-  for it ("Model / Provider").
+- **Fold** (`UNFOLD_RESULTS_WIDTH`, 874): Model at its cap 256, Provider 208, and the six figures at their
+  68 minimum, inside the two borders (256 + 208 + 6 × 68 + 2). Below it Provider folds into the Model cell's second
+  line, and the Model header carries a second sort button for it ("Model / Provider"). It sits well below where the
+  drawer would still leave Input and Output clear (1041), on purpose: folded, a Table sorted by model repeats one
+  name down every row and loses the variety Provider gives it. Between 874 and 1040 an open drawer therefore covers
+  Input and Output (Model and Provider stay clear); they remain reachable by scrolling (`tableTrailingInset`).
 - Nothing about the Table's columns depends on the layout or the selection, so opening the drawer moves nothing,
   and the server's HTML, the loading skeleton, and the loaded Table lay out the same columns at every width.
 
@@ -110,7 +112,7 @@ change both, but each is one breakpoint in R.
   layout before scripts run, and a test keeps them at the breakpoint.
 - The Table's fold and Model width are CSS on the Results container (`FOLDED_CLASS` and its siblings in
   `columns.tsx`, `MODEL_COLUMN_WIDTH_CSS`), so the server and the skeleton need no width or cookie. Tailwind reads
-  the fold's literal `@max-[1039px]/results:` (1039 is 1041 less the two borders, the container's content box), and a
+  the fold's literal `@max-[872px]/results:` (872 is 874 less the two borders, the container's content box), and a
   test keeps it at `UNFOLD_CONTAINER_WIDTH`; likewise the `588px` minimum at `TABLE_MIN_WIDTH`.
 - A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
 - The Table's edge cells and the status bar share one side inset, `--results-inset` (16px, 12px in a narrow panel).
