@@ -54,6 +54,11 @@
   --color-selection-surface: var(--selection-surface);
   --color-positive-soft-foreground: var(--positive-soft-foreground);
   --color-negative-soft-foreground: var(--negative-soft-foreground);
+  /* A drawer casts toward the content it covers, so each side has its own offset; the colours are per theme. */
+  --shadow-drawer-left: -12px 0 32px var(--drawer-shadow), -2px 0 8px var(--drawer-shadow-contact);
+  --shadow-drawer-right: 12px 0 32px var(--drawer-shadow), 2px 0 8px var(--drawer-shadow-contact);
+  --shadow-drawer-down: 0 12px 32px var(--drawer-shadow), 0 2px 8px var(--drawer-shadow-contact);
+  --shadow-drawer-up: 0 -12px 32px var(--drawer-shadow), 0 -2px 8px var(--drawer-shadow-contact);
   --font-sans: 'Geist Variable', sans-serif;
   --font-mono: 'Geist Mono Variable', monospace;
 }
@@ -97,6 +102,8 @@
   --selection-surface: oklch(0.97 0.025 91.6);
   --positive-soft-foreground: var(--color-green-700);
   --negative-soft-foreground: var(--color-red-700);
+  --drawer-shadow: oklch(0 0 0 / 38%);
+  --drawer-shadow-contact: oklch(0 0 0 / 22%);
 }
 
 .dark {
@@ -137,6 +144,8 @@
   --selection-surface: oklch(0.218 0.006 91.6);
   --positive-soft-foreground: var(--color-green-400);
   --negative-soft-foreground: var(--color-red-400);
+  --drawer-shadow: oklch(0 0 0 / 70%);
+  --drawer-shadow-contact: oklch(0 0 0 / 50%);
 }
 
 @layer base {
