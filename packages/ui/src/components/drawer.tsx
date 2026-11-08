@@ -74,13 +74,16 @@ function DrawerOverlay({ className, ...props }: DrawerPrimitive.Backdrop.Props) 
   )
 }
 
+// The bottom drawer's handle floats over the popup's top edge so it adds no row to the layout. It
+// keeps a hit area (a mouse or pen press must land on it, not on Drawer.Content, which Base UI
+// refuses to drag from) about the pill's width, so it stays clear of a corner close button.
 function DrawerSwipeHandle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="drawer-swipe-handle"
       aria-hidden="true"
       className={cn(
-        'relative z-10 flex shrink-0 cursor-grab transition-opacity duration-200 group-data-nested-drawer-open/drawer-popup:opacity-0 group-data-nested-drawer-swiping/drawer-popup:opacity-100 group-data-[swipe-axis=x]/drawer-popup:h-full group-data-[swipe-axis=x]/drawer-popup:w-3 group-data-[swipe-axis=x]/drawer-popup:items-center group-data-[swipe-axis=y]/drawer-popup:h-3 group-data-[swipe-axis=y]/drawer-popup:w-full group-data-[swipe-axis=y]/drawer-popup:justify-center group-data-[swipe-direction=down]/drawer-popup:pointer-events-none group-data-[swipe-direction=down]/drawer-popup:absolute group-data-[swipe-direction=down]/drawer-popup:inset-x-0 group-data-[swipe-direction=down]/drawer-popup:top-0 group-data-[swipe-direction=down]/drawer-popup:items-end group-data-[swipe-direction=left]/drawer-popup:order-last group-data-[swipe-direction=left]/drawer-popup:justify-start group-data-[swipe-direction=right]/drawer-popup:justify-end group-data-[swipe-direction=up]/drawer-popup:order-last group-data-[swipe-direction=up]/drawer-popup:items-start after:block after:shrink-0 after:rounded-full after:bg-muted group-data-[swipe-axis=x]/drawer-popup:after:h-12 group-data-[swipe-axis=x]/drawer-popup:after:w-1 group-data-[swipe-axis=y]/drawer-popup:after:h-1 group-data-[swipe-axis=y]/drawer-popup:after:w-12 active:cursor-grabbing',
+        'relative z-10 flex shrink-0 cursor-grab transition-opacity duration-200 group-data-nested-drawer-open/drawer-popup:opacity-0 group-data-nested-drawer-swiping/drawer-popup:opacity-100 group-data-[swipe-axis=x]/drawer-popup:h-full group-data-[swipe-axis=x]/drawer-popup:w-3 group-data-[swipe-axis=x]/drawer-popup:items-center group-data-[swipe-axis=y]/drawer-popup:justify-center group-data-[swipe-direction=down]/drawer-popup:absolute group-data-[swipe-direction=down]/drawer-popup:top-0 group-data-[swipe-direction=down]/drawer-popup:left-1/2 group-data-[swipe-direction=down]/drawer-popup:h-6 group-data-[swipe-direction=down]/drawer-popup:w-24 group-data-[swipe-direction=down]/drawer-popup:-translate-x-1/2 group-data-[swipe-direction=down]/drawer-popup:items-start group-data-[swipe-direction=down]/drawer-popup:pt-2 group-data-[swipe-direction=left]/drawer-popup:order-last group-data-[swipe-direction=left]/drawer-popup:justify-start group-data-[swipe-direction=right]/drawer-popup:justify-end group-data-[swipe-direction=up]/drawer-popup:order-last group-data-[swipe-direction=up]/drawer-popup:h-3 group-data-[swipe-direction=up]/drawer-popup:w-full group-data-[swipe-direction=up]/drawer-popup:items-start after:block after:shrink-0 after:rounded-full after:bg-muted group-data-[swipe-axis=x]/drawer-popup:after:h-12 group-data-[swipe-axis=x]/drawer-popup:after:w-1 group-data-[swipe-axis=y]/drawer-popup:after:h-1 group-data-[swipe-axis=y]/drawer-popup:after:w-12 active:cursor-grabbing',
         className,
       )}
       {...props}
