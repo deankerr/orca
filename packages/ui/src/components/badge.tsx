@@ -15,7 +15,7 @@ const badgeVariants = cva(
       size: {
         default: 'h-5 px-2 py-0.5',
         // A count on a control's corner: a circle for one digit, a pill for more.
-        sm: 'h-4 min-w-4 px-1',
+        sm: 'h-3.5 min-w-3.5 px-1 text-[0.5625rem] tabular-nums',
       },
       variant: {
         default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',

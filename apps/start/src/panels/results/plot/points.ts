@@ -22,13 +22,6 @@ export interface PlotPoint {
 /** Why an endpoint cannot be placed on the plot. A row counts under the first reason that applies. */
 export type NotPlottedReason = 'noPrice' | 'free' | 'noThroughput' | 'offscale'
 
-export type NotPlottedCounts = Record<NotPlottedReason, number>
-
-export interface PlotPoints {
-  points: PlotPoint[]
-  notPlotted: NotPlottedCounts
-}
-
 /** The reason a row has no place on log axes, or null when it has one. */
 export function notPlottedReason(
   row: Pick<PlottableRow, 'blend' | 'throughput'>,
@@ -54,56 +47,14 @@ export function notPlottedReason(
   return null
 }
 
-/** Every row that fits both log axes, in row order, and a count of the rest by reason. */
-export function plotPoints(rows: readonly PlottableRow[]): PlotPoints {
-  const points: PlotPoint[] = []
-  const notPlotted: NotPlottedCounts = { free: 0, noPrice: 0, noThroughput: 0, offscale: 0 }
-
-  for (const row of rows) {
-    const reason = notPlottedReason(row)
-
-    if (reason === null) {
-      // `notPlottedReason` has checked both values, but not narrowed them.
-      points.push({ id: row.id, price: row.blend ?? 0, throughput: row.throughput ?? 0 })
-    } else {
-      notPlotted[reason] += 1
-    }
-  }
-
-  return { notPlotted, points }
-}
-
-const reasonText: Record<NotPlottedReason, string> = {
-  free: 'free',
-  noPrice: 'no price',
-  noThroughput: 'no tok/s',
-  offscale: 'off scale',
-}
-
-const reasonOrder: readonly NotPlottedReason[] = ['free', 'noPrice', 'noThroughput', 'offscale']
-
-/** The caption's note for endpoints left off the plot, and why. */
-export interface NotPlottedNote {
-  /** `17 not plotted` */
-  label: string
-  /** `free or no tok/s` */
-  reasons: string
-}
-
-/** The caption's note for endpoints left off the plot. Null when all fit. */
-export function notPlottedNote(counts: NotPlottedCounts): NotPlottedNote | null {
-  const total = reasonOrder.reduce((sum, reason) => sum + counts[reason], 0)
-
-  if (total === 0) {
-    return null
-  }
-
-  const reasons = reasonOrder.flatMap((reason) => (counts[reason] > 0 ? [reasonText[reason]] : []))
-
-  const last = reasons.pop()
-  const list = reasons.length === 0 ? last : `${reasons.join(', ')} or ${last}`
-
-  return { label: `${total.toLocaleString('en')} not plotted`, reasons: list ?? '' }
+/** Every row that fits both log axes, in row order. */
+export function plotPoints(rows: readonly PlottableRow[]): PlotPoint[] {
+  return rows.flatMap((row) =>
+    notPlottedReason(row) === null
+      ? // `notPlottedReason` has checked both values, but not narrowed them.
+        [{ id: row.id, price: row.blend ?? 0, throughput: row.throughput ?? 0 }]
+      : [],
+  )
 }
 
 /** 1, 2, 5 × 10ⁿ: the steps a throughput bound can round to. */

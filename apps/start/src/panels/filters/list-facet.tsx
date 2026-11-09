@@ -208,7 +208,8 @@ export function ListFacet({ kind, selected }: { kind: OptionKind; selected: read
           {copy.empty}
         </output>
       ) : (
-        <ScrollArea viewportClassName="max-h-48">
+        // At either end, a scroll carries on into the Filters panel.
+        <ScrollArea viewportClassName="max-h-48 overscroll-auto">
           <div
             aria-label={copy.title}
             className={cn(rowCount > VISIBLE_ROWS && 'pr-2.5')}

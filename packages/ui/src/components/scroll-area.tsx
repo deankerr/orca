@@ -47,8 +47,9 @@ const VIEWPORT_CLASS =
  * Anything that acts on the scrolling element (`scrollTo`, `scrollIntoView`, an id for focus)
  * belongs on the viewport, so `viewportRef` reaches it.
  *
- * The viewport never chains a scroll to the page or bounces at its edges (`overscroll-none`), so
- * sticky content inside it holds still.
+ * By default the viewport never chains a scroll to the page or bounces at its edges
+ * (`overscroll-none`), so sticky content inside it holds still. A nested list can opt back in with
+ * `viewportClassName="overscroll-auto"`.
  *
  * A touch screen draws its own overlay scrollbars, so the custom ones add nothing there, and they
  * cost a great deal on WebKit, where every iOS browser runs: Base UI's viewport writes four

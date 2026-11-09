@@ -17,20 +17,14 @@ import { useScopeActions, useScopedRows } from '#endpoints/hooks'
 import type { EndpointRow } from '#endpoints/snapshot'
 
 import { CopyText } from './copy-text'
-import {
-  endpointTag,
-  endpointTagDescription,
-  slugParts,
-  unlistedLine,
-  NOT_IN_FILTERS,
-  positionText,
-} from './header'
+import { endpointTag, endpointTagDescription, slugParts, unlistedLine } from './header'
 import { PanelTabs, TAB_NAMES } from './tabs'
 
-function Position({ id }: { id: string }) {
-  const text = positionText(useScopedRows(), id)
+/** The panel's eyebrow, which says when the filters exclude the selected endpoint. */
+function Eyebrow({ id }: { id: string }) {
+  const inScope = useScopedRows().some((row) => row.id === id)
 
-  return <span className={text === NOT_IN_FILTERS ? 'text-foreground' : undefined}>{text}</span>
+  return inScope ? 'ENDPOINT' : <span className="text-foreground">NOT IN CURRENT FILTERS</span>
 }
 
 /** The selected endpoint: its curated facts, with its model and provider a tab away. */
@@ -89,7 +83,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
             {/* The row clears the close button, which sits in the drawer's corner (below). */}
             <div className="-mb-1 flex h-7 items-center justify-between gap-2 pr-7 font-mono text-[10px] leading-3.5 text-muted-foreground pointer-coarse:h-8 pointer-coarse:pr-8">
               <span className="tracking-[0.08em]">
-                <Position id={row.id} />
+                <Eyebrow id={row.id} />
               </span>
               {/* Keyboard hints, which a touch screen has no keys for. */}
               <span className="pointer-coarse:hidden">↑↓ move · esc close</span>
@@ -148,14 +142,19 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
                   <span className="truncate text-xs/4 text-muted-foreground">{row.model.name}</span>
                 </div>
               </div>
-              <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px]/4 text-muted-foreground">
-                <CopyText className="min-w-0" label="Copy provider tag" text={slug.tag}>
-                  {slug.tag}
+              <span className="flex min-w-0 flex-col items-start font-mono text-[11px]/4 text-muted-foreground">
+                <CopyText className="min-w-0" label="Copy model ID" text={row.model.id}>
+                  {row.model.id}
                 </CopyText>
-                ·
-                <CopyText label="Copy endpoint ID" text={slug.id}>
-                  {slug.shortId}
-                </CopyText>
+                <span className="flex max-w-full min-w-0 items-center gap-1.5">
+                  <CopyText className="min-w-0" label="Copy provider tag" text={slug.tag}>
+                    {slug.tag}
+                  </CopyText>
+                  ·
+                  <CopyText label="Copy endpoint ID" text={slug.id}>
+                    {slug.shortId}
+                  </CopyText>
+                </span>
               </span>
               {unlisted === null ? null : (
                 <span className="text-xs/4 text-muted-foreground">{unlisted}</span>
