@@ -64,7 +64,7 @@ function priceLabelDx(price: number): number {
 const grid = { stroke: 'var(--muted-foreground)', strokeOpacity: 0.25 }
 
 /** The y tick labels' gap from the plot's left edge (the frame's line). */
-export const Y_TICK_LABEL_DX = 6
+export const Y_TICK_LABEL_DX = 3
 
 /** The gap between the widest y tick label and the caption in the plot's corner. */
 const CAPTION_GAP = 8

@@ -7,7 +7,7 @@ import { ChartCaption, PLOT_REGION_CLASS } from './price-plot'
 export function PlotSkeleton() {
   return (
     <div className={PLOT_REGION_CLASS}>
-      <ChartCaption note={null} />
+      <ChartCaption />
       <Skeleton className="w-full rounded-none" style={{ height: CHART_HEIGHT }} />
     </div>
   )

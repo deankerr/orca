@@ -45,7 +45,7 @@ function FiltersButton({ filters, placement }: { filters: number; placement: Fil
       >
         <SlidersHorizontal aria-hidden="true" data-icon="inline-start" />
         {filters > 0 && (
-          <Badge aria-hidden="true" className="absolute -top-1 -right-1" size="sm">
+          <Badge aria-hidden="true" className="absolute -top-1.5 -right-1.5" size="sm">
             {formatNumber(filters)}
           </Badge>
         )}
@@ -80,20 +80,15 @@ export const SCOPE_BAR_CLASS = cn(
 )
 
 /**
- * The scope's counts. Unfiltered they share one line; filtered, the in-scope count is a title over
- * the catalogue's total and the models and providers in scope.
+ * The scope's counts on one line: the in-scope endpoints, then, when filtered, the catalogue's
+ * total, and the models and providers in scope.
  */
 function ScopeCounts({ filtered }: { filtered: boolean }) {
   const { endpoints, models, providers } = useScopeSummary()
 
   return (
-    <div
-      className={cn(
-        'flex min-w-0',
-        // The two lines are taller than the button; the bar's height stays the button's.
-        filtered ? '-my-1 flex-col' : 'flex-wrap items-baseline gap-x-2.5',
-      )}
-    >
+    // Wrapped, the two lines are taller than the button; the bar's height stays the button's.
+    <div className="-my-1 flex min-w-0 flex-wrap items-baseline gap-x-2.5">
       <span className="text-[13px]/5 font-semibold whitespace-nowrap">
         {count(endpoints.inScope, 'endpoint')}
       </span>

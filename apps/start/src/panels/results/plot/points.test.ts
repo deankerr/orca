@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   PRICE_DOMAIN,
-  notPlottedNote,
   notPlottedReason,
   plotPoints,
   splitByScope,
@@ -52,73 +51,24 @@ describe('notPlottedReason', () => {
 })
 
 describe('plotPoints', () => {
-  const result = plotPoints([
-    row('kept', 0.38, 142),
-    row('free', 0, 80),
-    row('slow', 2, null),
-    row('unpriced', null, 40),
-    row('cheap', 0.001, 40),
-    row('also-kept', 12, 9),
-  ])
-
   it('keeps the plottable rows in row order, with their blend and throughput', () => {
-    expect(result.points).toEqual([
+    expect(
+      plotPoints([
+        row('kept', 0.38, 142),
+        row('free', 0, 80),
+        row('slow', 2, null),
+        row('unpriced', null, 40),
+        row('cheap', 0.001, 40),
+        row('also-kept', 12, 9),
+      ]),
+    ).toEqual([
       { id: 'kept', price: 0.38, throughput: 142 },
       { id: 'also-kept', price: 12, throughput: 9 },
     ])
   })
 
-  it('counts every other row once, under its reason', () => {
-    expect(result.notPlotted).toEqual({ free: 1, noPrice: 1, noThroughput: 1, offscale: 1 })
-  })
-
-  it('accounts for every row', () => {
-    const counted = Object.values(result.notPlotted).reduce((sum, count) => sum + count, 0)
-
-    expect(result.points.length + counted).toBe(6)
-  })
-
   it('handles an empty catalogue', () => {
-    expect(plotPoints([])).toEqual({
-      notPlotted: { free: 0, noPrice: 0, noThroughput: 0, offscale: 0 },
-      points: [],
-    })
-  })
-})
-
-describe('notPlottedNote', () => {
-  const none = { free: 0, noPrice: 0, noThroughput: 0, offscale: 0 }
-
-  it('is null when every endpoint is plotted', () => {
-    expect(notPlottedNote(none)).toBeNull()
-  })
-
-  it('totals the count and names one reason', () => {
-    expect(notPlottedNote({ ...none, free: 3 })).toEqual({
-      label: '3 not plotted',
-      reasons: 'free',
-    })
-  })
-
-  it('joins two reasons with "or"', () => {
-    expect(notPlottedNote({ ...none, free: 14, noThroughput: 184 })).toEqual({
-      label: '198 not plotted',
-      reasons: 'free or no tok/s',
-    })
-  })
-
-  it('joins more reasons with commas and a final "or"', () => {
-    expect(notPlottedNote({ free: 14, noPrice: 2, noThroughput: 184, offscale: 1 })).toEqual({
-      label: '201 not plotted',
-      reasons: 'free, no price, no tok/s or off scale',
-    })
-  })
-
-  it('groups thousands', () => {
-    expect(notPlottedNote({ ...none, noThroughput: 1234 })).toEqual({
-      label: '1,234 not plotted',
-      reasons: 'no tok/s',
-    })
+    expect(plotPoints([])).toEqual([])
   })
 })
 

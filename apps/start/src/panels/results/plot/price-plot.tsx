@@ -1,5 +1,4 @@
 import { formatPrice } from '@orca/backend/numbers'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@orca/ui/components/tooltip'
 import { Chart } from '@tanstack/charts/react'
 import { useSelector } from '@tanstack/react-store'
 import { createAtom } from '@tanstack/store'
@@ -20,14 +19,13 @@ import { StaleVeil } from '#panels/results/stale-veil'
 
 import { CHART_HEIGHT, plotDefinition, yTickLabelsClearance } from './definition'
 import {
-  notPlottedNote,
   notPlottedReason,
   plotPoints,
   splitByScope,
   throughputDomain,
   throughputTicks,
 } from './points'
-import type { NotPlottedNote, PlotPoint } from './points'
+import type { PlotPoint } from './points'
 
 /** What the overlay needs from the chart's last layout to place a dot, in the chart's own pixels. */
 interface Projection {
@@ -81,34 +79,11 @@ function useScopeSplit(points: readonly PlotPoint[]): DeferredScopeSplit {
   return { split, stale }
 }
 
-/**
- * The plot's caption, on one line: the axes, and how many endpoints the plot leaves out, with why in
- * a tooltip.
- */
-export function ChartCaption({ note }: { note: NotPlottedNote | null }) {
+/** The plot's caption: its axes, on one line. */
+export function ChartCaption() {
   return (
-    <div className="flex justify-between gap-x-4 font-mono text-[10px] leading-3.5 text-muted-foreground">
-      <span className="truncate tracking-[0.04em] uppercase">
-        Blend 3:1 $/M × tok/s p50 · log scales
-      </span>
-      {note !== null && (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span
-                className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- The note is the keyboard target for its tooltip, which names the reasons.
-                tabIndex={0}
-              />
-            }
-          >
-            {note.label}
-          </TooltipTrigger>
-          <TooltipContent align="end">
-            {note.label}: {note.reasons}
-          </TooltipContent>
-        </Tooltip>
-      )}
+    <div className="truncate font-mono text-[10px] leading-3.5 tracking-[0.04em] text-muted-foreground uppercase">
+      Blend 3:1 $/M × tok/s p50 · log scales
     </div>
   )
 }
@@ -313,7 +288,7 @@ function PlotOverlay({
 
 function PricePlot() {
   const { rows } = useSnapshot()
-  const { notPlotted, points } = useMemo(() => plotPoints(rows), [rows])
+  const points = useMemo(() => plotPoints(rows), [rows])
 
   const {
     split: { inScope, outOfScope },
@@ -332,7 +307,7 @@ function PricePlot() {
 
   return (
     <div className={PLOT_REGION_CLASS}>
-      <ChartCaption note={notPlottedNote(notPlotted)} />
+      <ChartCaption />
       <div aria-busy={stale} className="relative">
         <PlotChart ariaDescription={description} definition={definition} projection={projection} />
         {/* Only the dots dim: the selection and hover rings in the overlay follow the pointer, not the filters. */}
