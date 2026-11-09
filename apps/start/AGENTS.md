@@ -56,8 +56,8 @@ The Table fills Results at every width, by one rule (`tableColumnWidths`, expres
 - **Provider**, where it has a column, is 208: a 99th-percentile provider name with its tags.
 - **The six figures** have no width, so the fixed table shares the rest evenly between them, each at least 68.
   The figures stay evenly spaced and right-aligned under their headers, and nothing trails the last column.
-- Below 588 (Model 180 and six figures at 68, `TABLE_MIN_WIDTH`) the Table scrolls sideways under the sticky
-  Model column.
+- Below 588 (Model 180 and six figures at 68, `TABLE_MIN_WIDTH`) the Table scrolls sideways, under the sticky
+  Model column where the pointer is fine.
 
 Two Results widths (R, the frame's width, border included) decide everything. The drawer's is the narrowest R at
 which the folded Table keeps its leading columns (Model, Input and Output) clear of the floating drawer
@@ -120,8 +120,12 @@ change both, but each is one breakpoint in R.
   the Filters button is as far from the left edge as from the top; the scope bar's height is the button's plus that
   inset twice, whether or not filters are active, and on a phone its top inset starts below the notch.
 - The Results frame is the `@container/results` size container; its parts adapt to that width, not the viewport's.
-- The Model column is sticky, so the figures scroll under it when the table is wider than the panel (below 588px
-  of Results, the folded Table's columns, where the column's edge shows as a rule).
+- Where the pointer is fine, the Model column is sticky, so the figures scroll under it when the table is wider
+  than the panel (below 588px of Results, the folded Table's columns, where the column's edge shows as a rule).
+  On a touch screen it is not: WebKit composites each sticky cell as its own layer, which paints late while scrolling.
+- On a touch screen `ScrollArea` scrolls natively; Base UI's custom scrollbars restyle their whole content on every
+  scroll event in WebKit.
+- Drawers keep their Panel mounted and pre-render it, hidden, in an `<Activity>`, so opening one only animates.
 - Use `pointer-coarse:` to enlarge touch targets, keeping dense desktop sizes for fine pointers.
 - Fields keep 16px text on touch screens so iOS does not zoom when they take focus.
 

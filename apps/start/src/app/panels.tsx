@@ -1,6 +1,14 @@
 import { Drawer, DrawerContent, DrawerTitle } from '@orca/ui/components/drawer'
 import { cn } from 'cn'
-import { createContext, use, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  Activity,
+  createContext,
+  use,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 
 import { setFiltersCollapsed, useFiltersCollapsed } from './filters-preference'
@@ -205,6 +213,11 @@ interface PanelDrawerProps {
 /**
  * A Panel in a Base UI drawer, which keeps its native motion, swipe to dismiss, and backdrop. A modal
  * drawer takes focus; a non-modal one leaves it where it is, so the page under it keeps its keys.
+ *
+ * The Panel stays mounted while the drawer is closed, hidden in an `<Activity>`, which React renders
+ * at low priority after the page. Opening then only reveals it: mounting a Panel as heavy as Filters
+ * in the frame the drawer opens took longer than the slide, which a phone skipped. It hides once the
+ * closing slide has finished, so the Panel stays on screen while it leaves.
  */
 export function PanelDrawer({
   children,
@@ -217,6 +230,8 @@ export function PanelDrawer({
 }: PanelDrawerProps) {
   const popup = useRef<HTMLDivElement>(null)
   const wasModal = useRef(modal)
+  // Whether the last open or close animation ended open; Base UI reports it when the motion ends.
+  const [settledOpen, setSettledOpen] = useState(open)
 
   // A drawer that turns modal while open (a window narrowed under it) keeps its Panel, and the tab the
   // user is on, but Base UI runs its initial focus only as the drawer opens, so the focus it never
@@ -239,6 +254,7 @@ export function PanelDrawer({
       onOpenChange={(next, details) => {
         onOpenChange(next, details.reason)
       }}
+      onOpenChangeComplete={setSettledOpen}
       open={open}
       showSwipeHandle={side === 'bottom'}
       swipeDirection={SWIPE_DIRECTION[side]}
@@ -250,10 +266,13 @@ export function PanelDrawer({
         // the on-screen keyboard; the drawers open from app state, so the open has no interaction
         // type to tell a tap by. A non-modal drawer leaves focus in the page.
         initialFocus={() => modal && (!matchMedia('(pointer: coarse)').matches || popup.current)}
+        keepMounted
         ref={popup}
       >
         <DrawerTitle className="sr-only">{label}</DrawerTitle>
-        <FrameContext value="drawer">{children}</FrameContext>
+        <Activity mode={open || settledOpen ? 'visible' : 'hidden'}>
+          <FrameContext value="drawer">{children}</FrameContext>
+        </Activity>
       </DrawerContent>
     </Drawer>
   )
