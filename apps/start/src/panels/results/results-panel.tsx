@@ -1,5 +1,6 @@
 import { ScrollArea } from '@orca/ui/components/scroll-area'
 import { cn } from 'cn'
+import { useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 
 import { RESULTS_REGION_ID } from '#app/keyboard'
@@ -43,19 +44,55 @@ export function ResultsFrame({ children }: { children: ReactNode }) {
   )
 }
 
+const COARSE_POINTER = '(pointer: coarse)'
+
+function subscribeToPointer(onChange: () => void) {
+  const query = matchMedia(COARSE_POINTER)
+
+  query.addEventListener('change', onChange)
+
+  return () => {
+    query.removeEventListener('change', onChange)
+  }
+}
+
+/** Whether the primary pointer is a finger. The Table renders only in the browser. */
+function useCoarsePointer(): boolean {
+  return useSyncExternalStore(
+    subscribeToPointer,
+    () => matchMedia(COARSE_POINTER).matches,
+    () => false,
+  )
+}
+
 /**
  * The Table's scroll area. While the Endpoint drawer floats beside it, the Table's scroll width grows
  * by the drawer's (see `tableTrailingInset`), so every column can scroll out from under it; the Table
  * itself keeps its width, so selecting reflows nothing.
+ *
+ * A touch screen scrolls it natively. The custom scrollbars add nothing there, and on WebKit, where
+ * every iOS browser runs, Base UI's viewport writes inherited CSS variables on every scroll event,
+ * which restyles each of the Table's tens of thousands of elements in every frame of a fling.
  */
 function TableRegion() {
   const layout = usePanelLayout()
   const trailingInset = tableTrailingInset(layout, useSelectedId() !== undefined)
+  const coarsePointer = useCoarsePointer()
+  const table = <EndpointTable trailingInset={trailingInset} />
+
+  if (coarsePointer) {
+    return (
+      // The sticky header lives in this element, which never bounces, so the header holds still.
+      <section aria-label="Results table" className="min-h-0 grow overflow-auto overscroll-none">
+        {table}
+      </section>
+    )
+  }
 
   return (
     // The sticky header lives in this viewport, which never bounces, so the header holds still.
     <ScrollArea className="min-h-0 grow" horizontal render={<section aria-label="Results table" />}>
-      <EndpointTable trailingInset={trailingInset} />
+      {table}
     </ScrollArea>
   )
 }

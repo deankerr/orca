@@ -9,20 +9,18 @@ const LOGO_SERVICE_ORIGIN =
     ? 'https://logos.orb.town'
     : configuredOrigin
 
-/** Marks a logo that failed to load; the sibling fallback shows through `peer-data-error`. */
-function markFailed(image: HTMLImageElement) {
-  image.dataset.error = ''
-}
-
 /**
  * A model or provider logo. Defaults to 16px; callers resize through `className`.
  *
- * A plain `<img>` with no React state: a successful load costs no React work, which matters when a
- * page holds thousands of logos. Only a failure touches the DOM, by setting `data-error` on the image.
+ * One element, with the logo as its background: a page holds thousands of logos but only dozens of
+ * distinct ones, so each costs no `<img>`, lazy-load tracking, or React work beyond the span. The
+ * logo service answers an unknown slug with its own fallback image, so there is no failure state
+ * to render.
  */
 export function EntityAvatar({
   slug,
   className,
+  style,
   ...props
 }: {
   slug: string
@@ -31,35 +29,15 @@ export function EntityAvatar({
 
   return (
     <span
+      aria-hidden="true"
       data-slot="entity-avatar"
       className={cn(
-        'inline-flex size-4 shrink-0 overflow-hidden rounded-[3px] select-none',
+        'inline-block size-4 shrink-0 rounded-[3px] bg-contain bg-center bg-no-repeat select-none',
         className,
       )}
+      // JSON's quoting is a valid CSS string, so any URL is safe inside `url()`.
+      style={{ ...style, backgroundImage: `url(${JSON.stringify(logoUrl)})` }}
       {...props}
-    >
-      {/* Keyed by slug, so a reused avatar showing another entity starts without a stale failure. */}
-      <img
-        alt=""
-        className="peer aspect-square size-full object-contain data-error:hidden"
-        decoding="async"
-        key={slug}
-        loading="lazy"
-        onError={(event) => {
-          markFailed(event.currentTarget)
-        }}
-        // A logo that failed before hydration attached `onError` is already broken when the ref runs.
-        ref={(image) => {
-          if (image?.complete === true && image.naturalWidth === 0) {
-            markFailed(image)
-          }
-        }}
-        src={logoUrl}
-      />
-      {/* Hidden until the image has failed, so a logo still loading never flashes its letter. */}
-      <span className="hidden size-full items-center justify-center bg-muted font-mono text-[10px] leading-none text-muted-foreground uppercase peer-data-error:flex">
-        {slug.charAt(0)}
-      </span>
-    </span>
+    />
   )
 }
