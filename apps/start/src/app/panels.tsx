@@ -230,8 +230,13 @@ export function PanelDrawer({
 }: PanelDrawerProps) {
   const popup = useRef<HTMLDivElement>(null)
   const wasModal = useRef(modal)
-  // Whether the last open or close animation ended open; Base UI reports it when the motion ends.
-  const [settledOpen, setSettledOpen] = useState(open)
+  // Whether the Panel shows: from the moment the drawer opens until its closing slide ends, which
+  // Base UI reports when the motion ends. Closing mid-opening still ends with that slide.
+  const [revealed, setRevealed] = useState(open)
+
+  if (open && !revealed) {
+    setRevealed(true)
+  }
 
   // A drawer that turns modal while open (a window narrowed under it) keeps its Panel, and the tab the
   // user is on, but Base UI runs its initial focus only as the drawer opens, so the focus it never
@@ -254,7 +259,11 @@ export function PanelDrawer({
       onOpenChange={(next, details) => {
         onOpenChange(next, details.reason)
       }}
-      onOpenChangeComplete={setSettledOpen}
+      onOpenChangeComplete={(next) => {
+        if (!next) {
+          setRevealed(false)
+        }
+      }}
       open={open}
       showSwipeHandle={side === 'bottom'}
       swipeDirection={SWIPE_DIRECTION[side]}
@@ -270,7 +279,7 @@ export function PanelDrawer({
         ref={popup}
       >
         <DrawerTitle className="sr-only">{label}</DrawerTitle>
-        <Activity mode={open || settledOpen ? 'visible' : 'hidden'}>
+        <Activity mode={revealed ? 'visible' : 'hidden'}>
           <FrameContext value="drawer">{children}</FrameContext>
         </Activity>
       </DrawerContent>
