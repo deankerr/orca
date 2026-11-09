@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 type Theme = 'light' | 'dark' | 'system'
 
 const storageKey = 'orca-theme'
-const defaultTheme: Theme = 'dark'
+const defaultTheme: Theme = 'system'
 const mediaQuery = '(prefers-color-scheme: dark)'
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void } | undefined>(
