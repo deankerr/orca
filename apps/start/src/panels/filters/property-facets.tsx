@@ -114,7 +114,7 @@ function PropertyRow({
         </span>
         <span className={FACET_COUNT_CLASS}>{countText}</span>
       </TooltipTrigger>
-      <TooltipContent align="start" side="right">
+      <TooltipContent side="right">
         <span className="block">
           <Description text={definition.description} />
         </span>
@@ -254,9 +254,7 @@ function StatusFacet() {
           <span className="grow">Show unlisted</span>
           <span className={FACET_COUNT_CLASS}>{unlistedCount}</span>
         </TooltipTrigger>
-        <TooltipContent align="start" side="right">
-          {UNLISTED_NOTE}
-        </TooltipContent>
+        <TooltipContent side="right">{UNLISTED_NOTE}</TooltipContent>
       </Tooltip>
       <span hidden id={noteId}>
         {UNLISTED_NOTE}

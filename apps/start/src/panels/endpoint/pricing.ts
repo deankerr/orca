@@ -14,21 +14,49 @@ type Meter = keyof typeof priceMeters
 /** How each meter appears: its label, the Contract field holding its rate, and a short hover text. */
 type RateField = Exclude<keyof Pricing, 'discount' | 'overrides'>
 
-const meters: Record<Meter, { description?: string; field: RateField; label: string }> = {
-  audio: { field: 'audio', label: 'Audio' },
-  audio_output: { field: 'audio_output', label: 'Audio output' },
-  completion: { field: 'output', label: 'Output' },
+const meters: Record<Meter, { description: string; field: RateField; label: string }> = {
+  audio: { description: 'Audio input tokens.', field: 'audio', label: 'Audio' },
+  audio_output: {
+    description: 'Generated audio tokens.',
+    field: 'audio_output',
+    label: 'Audio output',
+  },
+  completion: {
+    description: 'Generated text tokens, reasoning tokens included.',
+    field: 'output',
+    label: 'Output',
+  },
   image: {
     description: 'Image input is priced per token, not per image.',
     field: 'image',
     label: 'Image',
   },
-  image_output: { field: 'image_output', label: 'Image output' },
-  input_audio_cache: { field: 'input_audio_cache', label: 'Audio cache' },
-  input_cache_read: { field: 'input_cache_read', label: 'Cache read' },
-  input_cache_write: { field: 'input_cache_write', label: 'Cache write' },
-  input_cache_write_1h: { field: 'input_cache_write_1h', label: 'Cache write 1h' },
-  prompt: { field: 'input', label: 'Input' },
+  image_output: {
+    description: 'Generated image tokens.',
+    field: 'image_output',
+    label: 'Image output',
+  },
+  input_audio_cache: {
+    description: 'Audio input tokens read from the prompt cache.',
+    field: 'input_audio_cache',
+    label: 'Audio cache',
+  },
+  input_cache_read: {
+    description: 'Prompt tokens read from the prompt cache.',
+    field: 'input_cache_read',
+    label: 'Cache read',
+  },
+  input_cache_write: {
+    description: 'Prompt tokens written to the prompt cache.',
+    field: 'input_cache_write',
+    label: 'Cache write',
+  },
+  input_cache_write_1h: {
+    description: 'Prompt tokens written to the prompt cache to stay for one hour.',
+    field: 'input_cache_write_1h',
+    label: 'Cache write 1h',
+  },
+  prompt: { description: 'Text prompt tokens.', field: 'input', label: 'Input' },
   web_search: {
     description: 'Charged per web search request; the discount does not apply.',
     field: 'web_search',
@@ -183,13 +211,13 @@ export function pricingRows(pricing: Pricing, { nativeWebSearch }: PricingContex
     const rate = pricing[field]
 
     if (rate !== null) {
-      const row: FactRow = { id: key, label, rate: true, value: formatMeterRate(rate, key) ?? rate }
-
-      if (description !== undefined) {
-        row.description = description
-      }
-
-      rows.push(row)
+      rows.push({
+        description,
+        id: key,
+        label,
+        rate: true,
+        value: formatMeterRate(rate, key) ?? rate,
+      })
     }
   }
 

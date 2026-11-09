@@ -124,7 +124,7 @@ function FactLine({ row }: { row: FactRow }) {
             </div>
           }
         />
-        <TooltipContent align="end" side="left">
+        <TooltipContent side="left">
           <span>
             <Description text={row.description} />
           </span>
