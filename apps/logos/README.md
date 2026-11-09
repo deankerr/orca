@@ -4,10 +4,6 @@ Cloudflare Workers Static Assets serves public WebP logos at `/v1/{group}/{key}.
 The public groups are `light`, `dark`, and `avatar`. Unknown logo image paths return the
 requested group's fallback image.
 
-Generation writes `dist/_headers`, so browsers cache logo images for a day and revalidate them in
-the background for a week after that. Fallback responses come from the Worker, which `_headers` does
-not cover, so they keep the platform's revalidate-every-time default.
-
 ## Source precedence
 
 Each group resolves independently: LobeHub assets take precedence over manual group assets,

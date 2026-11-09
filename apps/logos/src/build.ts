@@ -24,12 +24,6 @@ const MANUAL_SOURCE_GROUPS = ['base', ...ASSET_GROUPS] as const
 const OUTPUT_IMAGE_SIZE_PX = 128
 const OUTPUT_WEBP_QUALITY = 92
 
-// Browsers keep a logo for a day, then show the cached copy while revalidating it for a week. Without
-// this, Workers Static Assets sends `max-age=0, must-revalidate`, so a page of logos revalidates every
-// one on every load. Fallbacks come from the Worker, which `_headers` does not reach, so a newly added
-// logo replaces its fallback on the next load.
-const LOGO_CACHE_CONTROL = 'public, max-age=86400, stale-while-revalidate=604800'
-
 // Resolve defaults from this app, not from ORCA packages.
 const require = createRequire(import.meta.url)
 const DEFAULT_APP_ROOT = nodePath.dirname(import.meta.dirname)
@@ -556,7 +550,6 @@ async function emitStaticOutput(args: {
   sources: ResolvedSources
 }): Promise<StaticOutputResult> {
   await recreateDist(args.context)
-  await writeHeaders(args.context)
 
   const manifest = createEmptyManifest({
     aliases: args.aliases,
@@ -810,14 +803,6 @@ async function emitFallback(context: BuildContext): Promise<void> {
       webpQuality: OUTPUT_WEBP_QUALITY,
     })
   }
-}
-
-// Workers Static Assets reads response headers from `_headers` at the asset root.
-async function writeHeaders(context: BuildContext): Promise<void> {
-  await writeFile(
-    nodePath.join(context.distDir, '_headers'),
-    `/${PUBLIC_VERSION}/*\n  Cache-Control: ${LOGO_CACHE_CONTROL}\n`,
-  )
 }
 
 async function writeManifest(args: { context: BuildContext; manifest: Manifest }): Promise<void> {
