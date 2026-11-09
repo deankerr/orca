@@ -160,6 +160,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  /*
+   * A touch screen scrolls natively (see ScrollArea). iOS colours an element's scroll indicator from
+   * the system's appearance, not the page's `color-scheme`, so a dark page on a light phone showed
+   * dark indicators; since Safari 26.2 it takes `scrollbar-color`'s thumb instead. Inherited, so it
+   * reaches every scroller, and scoped to touch so desktop's native scrollbars keep their look.
+   */
+  @media (pointer: coarse) {
+    html {
+      scrollbar-color: color-mix(in oklab, var(--foreground) 40%, transparent) transparent;
+    }
+  }
   /* Base UI renders most controls as plain elements with an ARIA role, and Tailwind leaves their cursor at the default. */
   button:not(:disabled),
   [role='button']:not(:disabled),

@@ -55,6 +55,8 @@ describe('the Table’s container queries', () => {
 
   it('scrolls the Table sideways, with a rule after Model, below its minimum width', () => {
     expect(TABLE_MIN_WIDTH_CLASS).toBe(`min-w-[${TABLE_MIN_WIDTH}px]`)
-    expect(STICKY_MODEL_CLASS).toContain(`@max-[${TABLE_MIN_WIDTH}px]/results:first:border-r`)
+    expect(STICKY_MODEL_CLASS).toContain(
+      `@max-[${TABLE_MIN_WIDTH}px]/results:pointer-fine:first:border-r`,
+    )
   })
 })

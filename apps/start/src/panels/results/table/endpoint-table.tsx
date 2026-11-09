@@ -36,11 +36,16 @@ type TableHeader = Header<typeof features, EndpointRow>
 export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--results-inset)'
 
 /**
- * The Model column stays put while the figures scroll under it. A panel narrower than the folded
- * table's columns (`TABLE_MIN_WIDTH_CLASS`, 588px) scrolls it sideways, and there the column's edge
- * shows as a rule.
+ * Where the pointer is fine, the Model column stays put while the figures scroll under it. A panel
+ * narrower than the folded table's columns (`TABLE_MIN_WIDTH_CLASS`, 588px) scrolls it sideways, and
+ * there the column's edge shows as a rule.
+ *
+ * On a touch screen it scrolls with the rest. WebKit gives every sticky element in a scroller its
+ * own compositing layer, so a sticky cell per row is a thousand layers, painted only as each scrolls
+ * into view and discarded once it leaves: the column paints visibly late in both directions.
  */
-export const STICKY_MODEL_CLASS = 'first:sticky first:left-0 @max-[588px]/results:first:border-r'
+export const STICKY_MODEL_CLASS =
+  'pointer-fine:first:sticky pointer-fine:first:left-0 @max-[588px]/results:pointer-fine:first:border-r'
 
 export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
 
