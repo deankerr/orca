@@ -2,6 +2,7 @@
 
 ## Development
 
+- `apps/start` (TanStack Start) is the current development focus and will replace `apps/web` (Next.js).
 - When dependencies are missing, run `bun install --frozen-lockfile` from the repository root.
 - Dependency installation needs no backend setup.
 - A linked worktree comes with a disposable Convex dev deployment and web env; `bun run worktree:setup` repairs it.
