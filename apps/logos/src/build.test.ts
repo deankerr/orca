@@ -97,6 +97,11 @@ test('builds reviewable static output through the build module interface', async
       logs.filter((line) => line.startsWith('Warning: manual logo asset shadowed')),
     ).toHaveLength(3)
     expect(logs.at(-1)).toBe('Built 19 logo assets into dist/v1 (3 manual assets shadowed)')
+    await expect(
+      readFile(nodePath.join(fixture.appRoot, 'dist', '_headers'), 'utf-8'),
+    ).resolves.toBe(
+      '/v1/*\n  Cache-Control: public, max-age=86400, stale-while-revalidate=604800\n',
+    )
 
     const manifest = await readManifest(fixture.appRoot)
     expect(manifest.version).toBe('v1')
