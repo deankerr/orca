@@ -16,8 +16,6 @@ const PRESENCE_FACETS = new Set<PropertyId>([
   'limit_rpd',
   'limit_rpm',
   'native_web_search',
-  'passthrough',
-  'prompt_retention',
   'reasoning_effort',
   'sampling_defaults',
   'warning',

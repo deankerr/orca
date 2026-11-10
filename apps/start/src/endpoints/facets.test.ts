@@ -16,7 +16,7 @@ describe('propertyFacetGroups', () => {
       'Status',
       'Pricing',
     ])
-    expect(ids).toEqual(['tools', 'zdr', 'free', 'new_model', 'caching'])
+    expect(ids).toEqual(['tools', 'zdr', 'free', 'new_model', 'cache_read'])
   })
 
   it('leaves out unlisted, which has its own toggle', () => {

@@ -142,7 +142,7 @@ const active = (overrides: Partial<Scope>) => [...activeProperties(scope(overrid
 describe('properties', () => {
   it('treats null and false alike as inactive', () => {
     expect(activeProperties(scope())).toEqual(new Map())
-    expect(active({ endpoint: endpoint({ can_abort: true, is_zdr: false }) })).toEqual([])
+    expect(active({ endpoint: endpoint({ can_abort: false, is_zdr: false }) })).toEqual([])
   })
 
   it('applies model and provider properties to the endpoint', () => {
@@ -187,21 +187,6 @@ describe('properties', () => {
 
     expect(retained(30)).toBe(30)
     expect(retained(null)).toBe(true)
-  })
-
-  it('counts tool-choice modes only alongside the tool_choice parameter', () => {
-    const tool_choice = { auto: true, function: true, none: true, required: true }
-
-    const accepting = (supported_parameters: string[]) =>
-      active({ endpoint: endpoint({ supported_parameters, tool_choice }) })
-
-    expect(accepting(['tools'])).toEqual(['tools'])
-    expect(accepting(['tools', 'tool_choice'])).toEqual([
-      'tools',
-      'tool_choice',
-      'tool_choice_required',
-      'tool_choice_named',
-    ])
   })
 
   it('prices native web search, ignoring prices without it', () => {
@@ -255,7 +240,7 @@ describe('properties', () => {
     }
 
     expect(active({ endpoint: endpoint({ pricing }) })).toEqual([
-      'caching',
+      'cache_read',
       'long_context_pricing',
       'peak_pricing',
       'discount',

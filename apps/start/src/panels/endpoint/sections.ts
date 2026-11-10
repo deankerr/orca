@@ -44,7 +44,6 @@ const wording: Partial<Record<PropertyId, { label?: string; value?: string }>> =
   deranked: { label: 'Routing', value: 'fallback only' },
   disabled: { label: 'Status', value: 'disabled' },
   new_endpoint: { label: 'New' },
-  no_abort: { label: 'Cancellation', value: 'no abort' },
   reasoning_budget: { label: 'Token budget' },
   reasoning_default_effort: { label: 'Default effort' },
   reasoning_default_off: { label: 'Default', value: 'off' },
@@ -173,20 +172,30 @@ function outputRows(row: EndpointRow): FactRow[] {
   return [...rows, ...activeRows(row, (id) => inGroup('output')(id) && !formatIds.has(id))]
 }
 
-/** Endpoint properties no other section covers; the many accepted-parameter flags collapse to one row. */
+/**
+ * Endpoint properties no other section covers. Cancellation always shows, as yes or no; the many
+ * accepted-parameter flags collapse to one row.
+ */
 function moreRows(row: EndpointRow): FactRow[] {
   const homes: ReadonlySet<Group> = new Set([...CURATED_GROUPS, ...OTHER_HOMES])
 
   const isFlagParameter = (id: PropertyId) =>
     properties[id].group === 'parameter' && properties[id].kind === 'flag'
 
-  const rows = activeRows(row, (id) => {
-    const { entity, group } = properties[id]
+  const rows = [
+    contractRow('cancellation', 'Cancellation', formatFlag(row.endpoint.can_abort)),
+    ...activeRows(row, (id) => {
+      const { entity, group } = properties[id]
 
-    return (
-      entity === 'endpoint' && !homes.has(group) && !NOT_IN_MORE.has(id) && !isFlagParameter(id)
-    )
-  })
+      return (
+        entity === 'endpoint' &&
+        id !== 'cancellation' &&
+        !homes.has(group) &&
+        !NOT_IN_MORE.has(id) &&
+        !isFlagParameter(id)
+      )
+    }),
+  ]
 
   const accepted = [...row.properties.keys()].filter(isFlagParameter)
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { ABSENT } from '#lib/format'
+
 import { rowWith } from './fixtures.testing'
 import { endpointSections } from './sections'
 
@@ -28,5 +30,13 @@ describe('web search in the Endpoint tab', () => {
 
     expect(rowIn('pricing', 'web_search', unpriced)).toBeUndefined()
     expect(rowIn('tools', 'native_web_search', unpriced)?.value).toBe('yes')
+  })
+})
+
+describe('cancellation in the Endpoint tab', () => {
+  it('always shows under More, as yes or no', () => {
+    expect(rowIn('more', 'cancellation', { endpoint: { can_abort: true } })?.value).toBe('yes')
+    expect(rowIn('more', 'cancellation', { endpoint: { can_abort: false } })?.value).toBe('no')
+    expect(rowIn('more', 'cancellation', { endpoint: { can_abort: null } })?.value).toBe(ABSENT)
   })
 })
