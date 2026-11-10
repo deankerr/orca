@@ -456,7 +456,7 @@ export const properties = defineProperties({
   // Status. Raw upstream `status` is too volatile and its codes are undocumented.
 
   deranked: flag('endpoint', {
-    description: 'Deprioritized in routing and used as a fallback.',
+    description: 'OpenRouter routes to this endpoint only as a fallback.',
     group: 'status',
     name: 'Deranked',
     polarity: 'negative',

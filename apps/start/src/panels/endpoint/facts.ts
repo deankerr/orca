@@ -1,5 +1,5 @@
 import type { EndpointRow } from '#endpoints/snapshot'
-import { ABSENT, formatContext } from '#lib/format'
+import { ABSENT } from '#lib/format'
 import { huggingFaceUrl, modelPageUrl, providerPageUrl } from '#lib/openrouter'
 
 import { formatDate, formatFlag, formatList } from './labels'
@@ -98,7 +98,7 @@ function reasoningRows({ model }: EndpointRow): FactRow[] {
   const stated: (FactRow | null)[] = [
     statedRow('mandatory', 'Mandatory', flagOrNull(config.is_mandatory_reasoning)),
     statedRow('default-enabled', 'On by default', flagOrNull(config.default_reasoning_enabled)),
-    efforts === null ? null : listRow('efforts', 'Efforts', efforts),
+    efforts === null ? null : listRow('efforts', 'Effort', efforts),
     statedRow('default-effort', 'Default effort', config.default_reasoning_effort),
     statedRow('budget', 'Token budget', flagOrNull(config.supports_reasoning_max_tokens)),
     statedRow('returned', 'Returned as', config.reasoning_return_mechanism),
@@ -136,7 +136,6 @@ export function modelSections(row: EndpointRow): Section[] {
       rows: [
         listRow('input', 'Input', model.input_modalities),
         listRow('output', 'Output', model.output_modalities),
-        ...reasoningRows(row),
         {
           description: 'Whether the weights are published on Hugging Face, which Links gives.',
           id: 'weights',
@@ -146,19 +145,14 @@ export function modelSections(row: EndpointRow): Section[] {
       ],
       title: 'Capabilities',
     },
+    { id: 'reasoning', rows: reasoningRows(row), title: 'Reasoning' },
     {
-      id: 'dates-limits',
+      id: 'dates',
       rows: [
         { id: 'released', label: 'Released', value: formatDate(model.created_at) },
         { id: 'cutoff', label: 'Knowledge cutoff', value: formatCutoff(model.knowledge_cutoff) },
-        {
-          description: 'Context length of this endpoint.',
-          id: 'context',
-          label: 'Context',
-          value: formatContext(row.context),
-        },
       ],
-      title: 'Dates and limits',
+      title: 'Dates',
     },
     // The warning and description are prose: they sit after the facts and have no rows of their own.
     ...(warning === null || warning.trim() === ''

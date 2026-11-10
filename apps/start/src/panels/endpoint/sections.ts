@@ -18,6 +18,7 @@ import { pricingRows } from './pricing'
 
 /** The groups with a section of their own, in order; every other endpoint property goes to More. */
 const CURATED_GROUPS = [
+  'limits',
   'data-policy',
   'tools',
   'output',
@@ -26,6 +27,7 @@ const CURATED_GROUPS = [
 
 const SECTION_TITLES: Record<(typeof CURATED_GROUPS)[number], string> = {
   'data-policy': 'Data policy',
+  limits: 'Limits',
   output: 'Output',
   reasoning: 'Reasoning',
   tools: 'Tools',
@@ -41,14 +43,12 @@ const NOT_IN_MORE: ReadonlySet<PropertyId> = new Set(['region', 'service_tier', 
 const wording: Partial<Record<PropertyId, { label?: string; value?: string }>> = {
   byok_only: { label: 'BYOK only' },
   completions: { label: 'Completions API' },
-  deranked: { label: 'Routing', value: 'fallback only' },
-  disabled: { label: 'Status', value: 'disabled' },
   new_endpoint: { label: 'New' },
   reasoning_budget: { label: 'Token budget' },
   reasoning_default_effort: { label: 'Default effort' },
-  reasoning_default_off: { label: 'Default', value: 'off' },
+  reasoning_default_off: { label: 'On by default', value: 'no' },
   reasoning_effort: { label: 'Effort' },
-  reasoning_hidden: { label: 'Returned', value: 'no' },
+  reasoning_hidden: { label: 'Returned as', value: 'none' },
   reasoning_mandatory: { label: 'Mandatory' },
 }
 
@@ -138,38 +138,23 @@ function dataPolicyRows(row: EndpointRow): FactRow[] {
   ]
 }
 
-const FORMATS = [
-  ['response_format', 'json'],
-  ['structured_outputs', 'json schema'],
-] as const satisfies readonly (readonly [PropertyId, string])[]
-
-function outputRows(row: EndpointRow): FactRow[] {
-  const rows: FactRow[] = []
-  const { max_completion_tokens: maxOutput } = row.endpoint
-
-  if (maxOutput !== null) {
-    rows.push({
+/** Context and max output always show, as a dash when unstated; other limits only when they apply. */
+function limitsRows(row: EndpointRow): FactRow[] {
+  return [
+    {
+      description: 'Maximum context length in tokens.',
+      id: 'context',
+      label: 'Context',
+      value: formatTokens(row.context),
+    },
+    {
       description: 'Maximum output tokens per response.',
       id: 'max_output',
       label: 'Max output',
-      value: formatTokens(maxOutput),
-    })
-  }
-
-  const formats = FORMATS.filter(([id]) => row.properties.has(id))
-
-  if (formats.length > 0) {
-    rows.push({
-      description: formats.map(([id]) => properties[id].description).join(' '),
-      id: 'formats',
-      label: 'Formats',
-      value: formats.map(([, text]) => text).join(', '),
-    })
-  }
-
-  const formatIds: ReadonlySet<PropertyId> = new Set(FORMATS.map(([id]) => id))
-
-  return [...rows, ...activeRows(row, (id) => inGroup('output')(id) && !formatIds.has(id))]
+      value: formatTokens(row.endpoint.max_completion_tokens),
+    },
+    ...activeRows(row, inGroup('limits')),
+  ]
 }
 
 /**
@@ -226,6 +211,7 @@ export function endpointSections(row: EndpointRow): Section[] {
       }),
       title: 'Pricing',
     },
+    { id: 'limits', rows: limitsRows(row), title: SECTION_TITLES.limits },
     {
       id: 'speed',
       note: 'p50',
@@ -247,7 +233,7 @@ export function endpointSections(row: EndpointRow): Section[] {
     },
     { id: 'data-policy', rows: dataPolicyRows(row), title: SECTION_TITLES['data-policy'] },
     { id: 'tools', rows: activeRows(row, inGroup('tools')), title: SECTION_TITLES.tools },
-    { id: 'output', rows: outputRows(row), title: SECTION_TITLES.output },
+    { id: 'output', rows: activeRows(row, inGroup('output')), title: SECTION_TITLES.output },
     {
       id: 'reasoning',
       rows: activeRows(row, inGroup('reasoning')),

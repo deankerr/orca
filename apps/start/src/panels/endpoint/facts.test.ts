@@ -35,7 +35,7 @@ const rowsOf = (sections: Section[], id: string) =>
   sections.find((section) => section.id === id)?.rows ?? []
 
 describe('modelSections', () => {
-  it('groups identity, capabilities, and dates and limits, with absent facts as a dash', () => {
+  it('groups identity, capabilities, reasoning, and dates, with absent facts as a dash', () => {
     const sections = modelSections(
       rowWith({
         model: { author: { id: 'openai', name: 'OpenAI' }, input_modalities: ['text', 'image'] },
@@ -45,16 +45,17 @@ describe('modelSections', () => {
     expect(sections.map(({ id }) => id)).toEqual([
       'identity',
       'capabilities',
-      'dates-limits',
+      'reasoning',
+      'dates',
       'links',
     ])
 
     expect(byId(rowsOf(sections, 'identity'), 'author')).toMatchObject({ value: 'OpenAI' })
     expect(byId(rowsOf(sections, 'capabilities'), 'input')).toMatchObject({ value: 'text, image' })
-    expect(byId(rowsOf(sections, 'dates-limits'), 'released')).toMatchObject({
+    expect(byId(rowsOf(sections, 'dates'), 'released')).toMatchObject({
       value: '2026-10-10',
     })
-    expect(byId(rowsOf(sections, 'dates-limits'), 'cutoff')).toMatchObject({ value: '—' })
+    expect(byId(rowsOf(sections, 'dates'), 'cutoff')).toMatchObject({ value: '—' })
     expect(byId(rowsOf(sections, 'capabilities'), 'weights')).toMatchObject({ value: 'no' })
   })
 
@@ -66,7 +67,8 @@ describe('modelSections', () => {
     expect(sections.map(({ id }) => id)).toEqual([
       'identity',
       'capabilities',
-      'dates-limits',
+      'reasoning',
+      'dates',
       'warning',
       'description',
       'links',
@@ -85,10 +87,7 @@ describe('modelSections', () => {
 
   it('reads a knowledge cutoff as a date when it is a timestamp, else as stated', () => {
     const cutoff = (knowledge_cutoff: string) =>
-      byId(
-        rowsOf(modelSections(rowWith({ model: { knowledge_cutoff } })), 'dates-limits'),
-        'cutoff',
-      )
+      byId(rowsOf(modelSections(rowWith({ model: { knowledge_cutoff } })), 'dates'), 'cutoff')
 
     expect(cutoff('2025-01-31T23:59:59.000Z')).toMatchObject({ value: '2025-01-31' })
     expect(cutoff('mid 2025')).toMatchObject({ value: 'mid 2025' })
@@ -132,7 +131,7 @@ describe('modelSections', () => {
           },
         }),
       ),
-      'capabilities',
+      'reasoning',
     )
 
     expect(byId(rows, 'efforts')).toMatchObject({ value: 'low, high' })
