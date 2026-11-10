@@ -11,9 +11,6 @@ const DAY_MS = 86_400_000
 
 const accepts = (endpoint: Endpoint, key: string) => endpoint.supported_parameters?.includes(key)
 
-const offersToolChoice = (endpoint: Endpoint, mode: keyof Endpoint['tool_choice']) =>
-  accepts(endpoint, 'tool_choice') === true && endpoint.tool_choice[mode]
-
 const positive = (count: number | null) => count !== null && count > 0 && count
 
 const recent = (timestamp: string | null, at: string) =>
@@ -178,37 +175,6 @@ export const properties = defineProperties({
   }),
 
   /**
-   * Upstream states tool-choice modes on 153 endpoints that do not accept `tool_choice`, 137 of them
-   * without `tools`, so modes count only alongside the parameter. Every endpoint that accepts
-   * `tool_choice` also accepts `tools`.
-   */
-  tool_choice_required: flag('endpoint', {
-    description: 'Can force a tool call with `tool_choice: "required"`.',
-    group: 'tools',
-    name: 'Required Tool Choice',
-    polarity: 'positive',
-    resolve: (endpoint) => offersToolChoice(endpoint, 'required'),
-  }),
-
-  tool_choice_named: flag('endpoint', {
-    description: 'Can force a call to one named function.',
-    group: 'tools',
-    name: 'Named Tool Choice',
-    polarity: 'positive',
-    resolve: (endpoint) => offersToolChoice(endpoint, 'function'),
-  }),
-
-  /** A control parameter. Its absence does not establish that calls are never parallel. */
-  parallel_tool_calls: flag('endpoint', {
-    description:
-      'Accepts `parallel_tool_calls` to allow or prevent several tool calls in one turn.',
-    group: 'tools',
-    name: 'Parallel Tool Calls',
-    polarity: 'positive',
-    resolve: (endpoint) => accepts(endpoint, 'parallel_tool_calls'),
-  }),
-
-  /**
    * The value is the price per search, `true` when unpriced (Alibaba). OpenRouter's own web search,
    * backed by Exa, is a separate plugin with its own price. Upstream also quotes `pricing.web_search`
    * on 154 endpoints without native search, mostly Anthropic and OpenAI models on Bedrock, Vertex, and
@@ -303,8 +269,6 @@ export const properties = defineProperties({
   parameter_max_tokens: parameter('max_tokens', 'Max Tokens'),
   parameter_min_p: parameter('min_p', 'Min P'),
   parameter_presence_penalty: parameter('presence_penalty', 'Presence Penalty'),
-  /** A top-level alias of `reasoning.effort`. */
-  parameter_reasoning_effort: parameter('reasoning_effort', 'Reasoning Effort Parameter'),
   parameter_repetition_penalty: parameter('repetition_penalty', 'Repetition Penalty'),
   parameter_seed: parameter('seed', 'Seed'),
   parameter_stop: parameter('stop', 'Stop Sequences'),
@@ -333,25 +297,17 @@ export const properties = defineProperties({
   }),
 
   /**
-   * `can_abort: false`, which follows the provider: Vertex, Bedrock, Mistral, AI Studio, Alibaba,
-   * and SiliconFlow hold most of them. The description follows OpenRouter's stream-cancellation
-   * guide; recheck it before publishing.
+   * `can_abort`, which follows the provider: Vertex, Bedrock, Mistral, AI Studio, Alibaba, and
+   * SiliconFlow hold most of the endpoints without it. The description follows OpenRouter's
+   * stream-cancellation guide; recheck it before publishing.
    */
-  no_abort: flag('endpoint', {
+  cancellation: flag('endpoint', {
     description:
-      'Cancelling a request may not stop generation upstream, and the full response can still be billed.',
+      'Cancelling a request stops generation upstream; without it, the full response can still be billed.',
     group: 'protocol',
-    name: 'No Abort',
-    polarity: 'negative',
-    resolve: (endpoint) => endpoint.can_abort === false,
-  }),
-
-  system_merged: flag('model', {
-    description: 'System messages are moved to the start and merged into one.',
-    group: 'protocol',
-    name: 'System Prompt Merged',
-    polarity: 'neutral',
-    resolve: (model) => model.merges_system_messages,
+    name: 'Cancellation',
+    polarity: 'positive',
+    resolve: (endpoint) => endpoint.can_abort,
   }),
 
   /**
@@ -399,15 +355,6 @@ export const properties = defineProperties({
     name: 'Training',
     polarity: 'negative',
     resolve: (endpoint) => endpoint.data_policy.training,
-  }),
-
-  /** Undocumented upstream key; only free variants. */
-  training_openrouter: flag('endpoint', {
-    description: 'OpenRouter may train on prompts.',
-    group: 'data-policy',
-    name: 'OpenRouter Training',
-    polarity: 'negative',
-    resolve: (endpoint) => endpoint.data_policy.training_openrouter,
   }),
 
   /** Undocumented upstream key; only Google Vertex, each with `retains_prompts: false`. */
@@ -509,7 +456,7 @@ export const properties = defineProperties({
   // Status. Raw upstream `status` is too volatile and its codes are undocumented.
 
   deranked: flag('endpoint', {
-    description: 'Deprioritized in routing and used as a fallback.',
+    description: 'OpenRouter routes to this endpoint only as a fallback.',
     group: 'status',
     name: 'Deranked',
     polarity: 'negative',
@@ -639,21 +586,13 @@ export const properties = defineProperties({
     resolve: (provider) => nonEmpty(provider.datacenters),
   }),
 
-  status_page: flag('provider', {
-    description: 'The provider publishes a status page.',
-    group: 'provider',
-    name: 'Status Page',
-    polarity: 'neutral',
-    resolve: (provider) => provider.status_page_url !== null,
-  }),
-
   // Pricing. These restate the price quote, but they serve filters.
 
   /** A quoted rate, including zero. 36 endpoints quote one at or above their input rate. */
-  caching: flag('endpoint', {
-    description: 'Quotes a rate for cache hits.',
+  cache_read: flag('endpoint', {
+    description: 'Prompt tokens read from the prompt cache are billed at their own rate.',
     group: 'pricing',
-    name: 'Caching',
+    name: 'Cache Read',
     polarity: 'positive',
     resolve: (endpoint) => endpoint.pricing.input_cache_read !== null,
   }),
@@ -669,7 +608,7 @@ export const properties = defineProperties({
   cache_write_1h: flag('endpoint', {
     description: 'Offers a one-hour cache write rate.',
     group: 'pricing',
-    name: '1h Cache Write',
+    name: 'Cache Write 1h',
     polarity: 'neutral',
     resolve: (endpoint) => endpoint.pricing.input_cache_write_1h !== null,
   }),
