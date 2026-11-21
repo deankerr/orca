@@ -1,4 +1,4 @@
-import { workloadCost } from '@orca/pricing'
+import { defaultWorkload, workloadCost } from '@orca/pricing'
 import type { Workload } from '@orca/pricing'
 
 import type { EndpointRow } from './snapshot'
@@ -37,6 +37,14 @@ export function parseSortKey(key: SortKey) {
 
 export function toSortKey(column: SortColumn, descending: boolean): SortKey {
   return descending ? `-${column}` : column
+}
+
+/**
+ * The workload a sort depends on: the one given when sorting by cost, else `defaultWorkload`, a constant,
+ * so a workload change neither re-sorts nor invalidates a memo under any other sort.
+ */
+export function sortWorkload(key: SortKey, workload: Workload): Workload {
+  return parseSortKey(key).column === 'cost' ? workload : defaultWorkload
 }
 
 type Compare = (left: EndpointRow, right: EndpointRow) => number

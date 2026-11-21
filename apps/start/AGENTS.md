@@ -37,7 +37,7 @@ Vocabulary:
   `useSelectedId`, `useSort`, or `useWorkload`, or the filters with `useScopeFilters`, so a component re-renders only for what it
   reads; there is no whole-Scope hook. Change it with `useScopeActions`, and read the filtered, sorted rows with
   `useScopedRows`. The Table and plot read `useDeferredScopedRows` and `useDeferredFilteredRows` instead: they
-  trail the filters through `useDeferredValue` (the router's store always updates synchronously) and report `stale`.
+  trail the filters (the Table also the workload) through `useDeferredValue` (the router's store always updates synchronously) and report `stale`.
 
 ## Panel layout
 

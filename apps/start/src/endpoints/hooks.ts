@@ -1,4 +1,3 @@
-import { defaultWorkload } from '@orca/pricing'
 import type { Workload } from '@orca/pricing'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
@@ -18,7 +17,7 @@ import {
 import type { Scope, ScopeFilters } from './scope'
 import { buildSnapshot, snapshotQuery } from './snapshot'
 import type { EndpointRow, Snapshot } from './snapshot'
-import { parseSortKey, sortRows } from './sort'
+import { sortRows, sortWorkload } from './sort'
 import type { SortKey } from './sort'
 
 // PascalCase, so the React Compiler recognises `RouteApi.useX()` as a hook call.
@@ -56,8 +55,7 @@ export function useWorkload(): Workload {
  */
 function useSortWorkload(): Workload {
   return RouteApi.useSearch({
-    select: (scope) =>
-      parseSortKey(scope.sort).column === 'cost' ? scopeWorkload(scope) : defaultWorkload,
+    select: (scope) => sortWorkload(scope.sort, scopeWorkload(scope)),
     structuralSharing: true,
   })
 }
@@ -115,10 +113,10 @@ export function useScopedRows(): EndpointRow[] {
   )
 }
 
-/** Rows for a view that trails the filters, and whether it is still catching up to them. */
+/** Rows for a view that trails the URL, and whether it is still catching up to it. */
 interface DeferredRows {
   rows: EndpointRow[]
-  /** True while the filters have changed but `rows` still reflect the previous ones. */
+  /** True while the URL has changed but the view still reflects the previous state: the filters, and for the Table the workload. */
   stale: boolean
 }
 
@@ -139,19 +137,37 @@ export function useDeferredFilteredRows(): DeferredRows {
   return { rows: matching, stale: filters !== deferred }
 }
 
+/** Rows for the Table, with the workload they are sorted under and the costs must be shown under. */
+interface DeferredScopedRows extends DeferredRows {
+  /**
+   * The workload that trails the URL's, as the rows trail the filters. Sort by it, and compute every
+   * cost from it, so the figures always agree with the order.
+   */
+  workload: Workload
+}
+
 /**
- * `useScopedRows` for the Table: the filters are deferred as in `useDeferredFilteredRows`, but the
- * sort is not. Sorting is cheap against rendering, and a header click should reorder the rows it
- * already shows, not wait behind them.
+ * `useScopedRows` for the Table: the filters and the workload are deferred, but the sort is not. A
+ * workload change re-renders the Table once with the old rows and the old workload, which its
+ * memoised children skip; then the new ones render in an interruptible pass. Sorting is cheap
+ * against rendering, and a header click should reorder the rows it already shows, not wait behind
+ * them.
+ *
+ * The sort uses the deferred workload, never the URL's: the costs on screen are computed from the
+ * returned `workload`, so a cost sort that moved ahead of them would show costs out of order. `stale`
+ * covers either deferral, under any sort, since the costs lag under all of them.
  */
-export function useDeferredScopedRows(): DeferredRows {
-  const { rows: matching, stale } = useDeferredFilteredRows()
+export function useDeferredScopedRows(): DeferredScopedRows {
+  const { rows: matching, stale: filtersStale } = useDeferredFilteredRows()
   const sort = useSort()
-  const workload = useSortWorkload()
+  const current = useWorkload()
+  const workload = useDeferredValue(current)
+  const sortedUnder = sortWorkload(sort, workload)
 
   return {
-    rows: useMemo(() => sortRows(matching, sort, workload), [matching, sort, workload]),
-    stale,
+    rows: useMemo(() => sortRows(matching, sort, sortedUnder), [matching, sort, sortedUnder]),
+    stale: filtersStale || current !== workload,
+    workload,
   }
 }
 

@@ -4,7 +4,7 @@ import { useHotkey } from '@tanstack/react-hotkeys'
 import { FlexRender, functionalUpdate, useTable } from '@tanstack/react-table'
 import type { Header, Row } from '@tanstack/react-table'
 import { cn } from 'cn'
-import { memo, useDeferredValue, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import type { ComponentProps, KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 
 import { tableOwnsKeys } from '#app/keyboard'
@@ -345,22 +345,21 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * Endpoints as a table, sorted by the URL. The rows arrive filtered and sorted, so the table only
  * lays them out; its sorting state mirrors the URL and header clicks write back to it.
  *
- * The rows trail the filters (see `useDeferredFilteredRows`). While they catch up the body dims
- * (see `StaleVeil`) and the table is `aria-busy`. The header, selection, and sort stay current: keys
+ * The rows trail the filters and the workload (see `useDeferredScopedRows`). While they catch up the
+ * body dims (see `StaleVeil`) and the table is `aria-busy`. The header, selection, and sort stay current: keys
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
  *
- * The Cost cells compute under the workload (`useWorkload`), which trails like the rows and reaches
- * the cells through context (see `MemoTableRow`); the rest of the URL does not re-render the Table.
+ * The Cost cells compute under the workload `useDeferredScopedRows` returns, the one a cost sort orders
+ * the rows by, so figures and order agree while both trail the URL. It reaches the cells through
+ * context (see `MemoTableRow`); the rest of the URL does not re-render the Table.
  *
  * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
 export function EndpointTable({ trailingInset }: { trailingInset: number }) {
-  const { rows, stale } = useDeferredScopedRows()
+  const { rows, stale, workload } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
-  // Like the rows, the cost cells trail a change: 1,500 of them take longer than a keystroke.
-  const workload = useDeferredValue(useWorkload())
   const { clearFilters, selectEndpoint, setSort } = useScopeActions()
   const body = useRef<HTMLTableSectionElement>(null)
 

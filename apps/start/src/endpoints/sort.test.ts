@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { endpoint, models, providers, payload } from './fixtures.testing'
 import { buildRows } from './snapshot'
-import { isSortColumn, parseSortKey, sortRows, toSortKey } from './sort'
+import { isSortColumn, parseSortKey, sortRows, sortWorkload, toSortKey } from './sort'
 
 const rows = buildRows(payload).filter((row) => !row.unlisted)
 const uncached = { hitRate: 0, ratio: 3 }
@@ -128,5 +128,31 @@ describe('sort keys', () => {
   it('accepts only sortable columns', () => {
     expect(isSortColumn('latency')).toBe(true)
     expect(isSortColumn('properties')).toBe(false)
+  })
+})
+
+// The Table sorts under the deferred workload and shows costs under it too, so the two always agree
+// while both trail the URL's workload. `useDeferredScopedRows` sorts under `sortWorkload(sort, deferred)`.
+describe('sortWorkload', () => {
+  const cached = { hitRate: 0.9, ratio: 100 }
+
+  it('is the workload given when sorting by cost, in either direction', () => {
+    expect(sortWorkload('cost', cached)).toBe(cached)
+    expect(sortWorkload('-cost', cached)).toBe(cached)
+  })
+
+  it('is one constant under any other sort, so a workload change does not re-sort', () => {
+    expect(sortWorkload('input', cached)).toBe(defaultWorkload)
+    expect(sortWorkload('-throughput', uncached)).toBe(defaultWorkload)
+  })
+
+  it('orders rows by the workload given, not the newer one', () => {
+    // Sorting under the deferred (older) workload gives the order its costs show; the URL's newer
+    // workload would give another, which is what the Table must not show beside the old costs.
+    const ids = (workload: typeof uncached) =>
+      sortRows(rows, 'cost', sortWorkload('cost', workload)).map((row) => row.id)
+
+    expect(ids(uncached)).toEqual(order('cost', uncached))
+    expect(ids(uncached)).not.toEqual(ids(cached))
   })
 })
