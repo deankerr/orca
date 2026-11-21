@@ -49,6 +49,13 @@ token volume was prompt input. The caching view showed most prompt tokens as cac
 ⚠️ Raw token share is not cost share. Cache status, discounts, and different input and output rates
 materially change the bill.
 
+📊 2026-09 token shares from OpenRouter's _Inferred_ newsletter, edition 03 "Cache is Crucial" (2026-10-08, read 2026-11-22),
+https://openrouter.ai/data/newsletter/cache-is-crucial:
+
+- For API keys OpenRouter classifies as agentic, tokens were roughly 87% cached prompt, 12% novel prompt and 1% output.
+- For human API keys, output plus reasoning was about 12% of tokens; novel prompt tokens were still the majority.
+- OpenRouter does not publish the cached share for human keys.
+
 ⚠️ Some audio-transcription endpoints use `prompt` for a per-audio-hour price. Rendering that value
 as a per-million-token rate produces nonsensical headline prices.
 
@@ -59,6 +66,30 @@ than properties of the base `prompt` rate.
 
 - `input_cache_read` prices input served from a prompt cache.
 - `input_cache_write` and `input_cache_write_1h` price cache creation where the provider charges for it.
+- Where a write meter exists on Anthropic and OpenAI, it replaces the input rate for those tokens.
+- OpenAI's docs state "Cache-write pricing is not an additive fee".
+- Writes are incremental: a request pays the read rate for the cached prefix, the write rate only for appended tokens.
+- A miss, by expiry or a changed prefix, re-bills the whole prefix as fresh input.
+
+🔭 2026-11-21: 223 of 1,525 listed, priced, non-free text-output endpoints (14.6%) quote no `input_cache_read`.
+By model release: 2024 and earlier 41 of 70, 2025 96 of 283, 2026 H1 70 of 383, 2026 H2 16 of 789.
+Measured from the production snapshot scanned 2026-11-21 07:40 UTC.
+
+🔭 2026-11-21: 426 of those 1,525 endpoints quote `input_cache_write`, as a multiple of `prompt`:
+
+- 1.25× on Anthropic (141) and OpenAI (153, GPT-5.6 onwards) endpoints, and on 21 Qwen, Moonshot, Z.AI, and Meta ones.
+- Below 1× on Google models (109), from 0.03× to 0.83×.
+- $0 on 2 xAI endpoints.
+- 3 Alibaba endpoints quote a write rate with no read rate.
+
+🔭 2026-11-21: `input_cache_write_1h` is quoted by the 141 Anthropic-model endpoints only, at 2× `prompt`.
+
+Google's write meter appears to be the storage component alone, charged on top of input. Gemini 2.5 Flash quotes
+$0.0833/M, equal to its $1.00/M/hour storage price × 5/60. That matches OpenRouter's prompt-caching guide formula
+"Input token price + (Cache storage price × (5 minutes / 60 minutes))".
+
+⚠️ The Google reading is inferred from matching figures; OpenRouter does not state it about the field.
+It covers explicit caching only; Gemini's implicit caching has no write or storage charge.
 
 ⚠️ The economic value of caching depends on the workload, cache hit rate, retention policy, and
 endpoint-specific rates; property presence does not supply a universal savings factor.

@@ -1,9 +1,10 @@
+import { formatNumber, formatPrice } from '@orca/backend/numbers'
 import { defineChart, dot } from '@tanstack/charts'
 
 import { formatCount } from '#lib/format'
 
 import { insetLogScale } from './inset-scale'
-import { PRICE_DOMAIN, PRICE_GRID, throughputTicks } from './points'
+import { decadeTicks, splitByNoCache } from './points'
 import type { PlotPoint } from './points'
 
 /** The plotting area's height in pixels; the x tick labels sit below it. */
@@ -26,34 +27,56 @@ const DIM_RADIUS = 1.5
 const BRIGHT_RADIUS = 1.75
 
 /**
- * How far in from the plot's edge the ends of both scales sit, in pixels: the largest dot's radius
- * rounded up, the frame line's own pixel (it is drawn inside the edge), and a pixel of air. A dot at the
+ * The rings' radii and stroke width in pixels, for endpoints whose lack of a cache raises their cost. A ring's stroke is centred
+ * on its radius, so it reaches half the stroke past it. A ring is a little larger than a dot, enough
+ * for its hole to show, but its thin stroke keeps it no heavier than the dots around it.
+ */
+const DIM_RING_RADIUS = 1.75
+const BRIGHT_RING_RADIUS = 2
+const RING_STROKE_WIDTH = 1
+
+/**
+ * How far in from the plot's edge the ends of both scales sit, in pixels: the largest mark's reach
+ * rounded up, the frame line's own pixel (it is drawn inside the edge), and a pixel of air. A mark at the
  * end of a domain (the cheapest, priciest, fastest or slowest) then sits wholly inside the frame, at any
  * width.
  */
-const DOT_INSET = Math.ceil(Math.max(DIM_RADIUS, BRIGHT_RADIUS)) + 2
+const DOT_INSET =
+  Math.ceil(
+    Math.max(
+      DIM_RADIUS,
+      BRIGHT_RADIUS,
+      DIM_RING_RADIUS + RING_STROKE_WIDTH / 2,
+      BRIGHT_RING_RADIUS + RING_STROKE_WIDTH / 2,
+    ),
+  ) + 2
 
-/** `$0.01`, `$0.10`, `$1`, `$10`, `$100`. */
-function formatPriceTick(price: number): string {
-  return price < 1 ? `$${price.toFixed(2)}` : `$${price}`
+/**
+ * A cost tick or end label: whole dollars bare (`$1`, `$10`, `$1,000`), cents at minimum below that
+ * (`$0.10`), and small values at their first significant digits (`$0.005`).
+ */
+export function formatPriceTick(price: number): string {
+  return Number.isInteger(price)
+    ? `$${formatNumber(price) ?? price}`
+    : (formatPrice(price) ?? `$${price}`)
 }
 
-/** The end labels sit inside the frame, so `$0.01` starts at its left edge and `$100` ends at its right. */
-function priceLabelAnchor(price: number): 'start' | 'middle' | 'end' {
-  if (price === PRICE_DOMAIN[0]) {
+/** The end labels sit inside the frame, so the low end starts at its left edge and the high end ends at its right. */
+function priceLabelAnchor(price: number, [low, high]: readonly [number, number]) {
+  if (price === low) {
     return 'start'
   }
 
-  return price === PRICE_DOMAIN[1] ? 'end' : 'middle'
+  return price === high ? 'end' : 'middle'
 }
 
 /** The end labels step back out by the scale's inset, so they still start and end at the frame's edges. */
-function priceLabelDx(price: number): number {
-  if (price === PRICE_DOMAIN[0]) {
+function priceLabelDx(price: number, [low, high]: readonly [number, number]): number {
+  if (price === low) {
     return -DOT_INSET
   }
 
-  return price === PRICE_DOMAIN[1] ? DOT_INSET : 0
+  return price === high ? DOT_INSET : 0
 }
 
 /**
@@ -83,25 +106,37 @@ export function yTickLabelsClearance(ticks: readonly number[]): number {
 }
 
 export interface PlotDefinitionInput {
-  /** Dots inside the filters, drawn bright and on top. */
+  /** Points inside the filters, drawn bright and on top. */
   inScope: readonly PlotPoint[]
-  /** Dots outside the filters, drawn dim and underneath. */
+  /** Points outside the filters, drawn dim and underneath. */
   outOfScope: readonly PlotPoint[]
+  /** The cost axis's range in $/M, from `priceDomain`. */
+  priceDomain: readonly [number, number]
   throughputDomain: readonly [number, number]
 }
 
 /**
- * The scatter of blended price against p50 throughput. It holds only what the filters change: the two
- * dot layers. Hover and selection are drawn above it, so changing them never rebuilds this definition.
+ * The scatter of workload cost against p50 throughput. Endpoints whose lack of a cache raises their cost are rings and
+ * the rest are filled dots, each in a bright layer inside the filters and a dim one outside them. It holds
+ * only what the filters and the workload change: the points and the axes. Hover and selection are
+ * drawn above it, so changing them never rebuilds this definition.
  */
-export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDefinitionInput) {
+export function plotDefinition({
+  inScope,
+  outOfScope,
+  priceDomain,
+  throughputDomain,
+}: PlotDefinitionInput) {
+  const dim = splitByNoCache(outOfScope)
+  const bright = splitByNoCache(inScope)
+
   return defineChart({
     focusRing: false,
     // Hover and selection draw above the chart, and the Table owns keyboard selection.
     keyboard: false,
     margin: { bottom: LABEL_ROOM, left: 1, right: 1, top: 1 },
     marks: [
-      dot(outOfScope, {
+      dot(dim.filled, {
         fill: DIM_FILL,
         id: 'out-of-scope',
         key: 'id',
@@ -109,11 +144,31 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         x: 'price',
         y: 'throughput',
       }),
-      dot(inScope, {
+      dot(dim.rings, {
+        fill: 'none',
+        id: 'out-of-scope-rings',
+        key: 'id',
+        r: DIM_RING_RADIUS,
+        stroke: DIM_FILL,
+        strokeWidth: RING_STROKE_WIDTH,
+        x: 'price',
+        y: 'throughput',
+      }),
+      dot(bright.filled, {
         fill: BRIGHT_FILL,
         id: 'in-scope',
         key: 'id',
         r: BRIGHT_RADIUS,
+        x: 'price',
+        y: 'throughput',
+      }),
+      dot(bright.rings, {
+        fill: 'none',
+        id: 'in-scope-rings',
+        key: 'id',
+        r: BRIGHT_RING_RADIUS,
+        stroke: BRIGHT_FILL,
+        strokeWidth: RING_STROKE_WIDTH,
         x: 'price',
         y: 'throughput',
       }),
@@ -124,14 +179,14 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
         axis: {
           line: false,
           tickLabels: {
-            anchor: ({ value }: { value: number }) => priceLabelAnchor(value),
-            dx: ({ value }: { value: number }) => priceLabelDx(value),
-            thin: { keep: PRICE_DOMAIN },
+            anchor: ({ value }: { value: number }) => priceLabelAnchor(value, priceDomain),
+            dx: ({ value }: { value: number }) => priceLabelDx(value, priceDomain),
+            thin: { keep: priceDomain },
           },
-          ticks: { format: formatPriceTick, size: 0, values: PRICE_GRID },
+          ticks: { format: formatPriceTick, size: 0, values: decadeTicks(priceDomain) },
         },
         grid,
-        scale: insetLogScale(PRICE_DOMAIN, DOT_INSET),
+        scale: insetLogScale(priceDomain, DOT_INSET),
       },
       y: {
         axis: {
@@ -142,7 +197,7 @@ export function plotDefinition({ inScope, outOfScope, throughputDomain }: PlotDe
             format: (value: number) => formatCount(value),
             padding: 0,
             size: 0,
-            values: throughputTicks([...throughputDomain]),
+            values: decadeTicks(throughputDomain),
           },
         },
         grid,

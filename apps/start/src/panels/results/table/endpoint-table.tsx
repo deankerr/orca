@@ -1,17 +1,25 @@
 import { Button } from '@orca/ui/components/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@orca/ui/components/tooltip'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { FlexRender, functionalUpdate, useTable } from '@tanstack/react-table'
 import type { Header, Row } from '@tanstack/react-table'
 import { cn } from 'cn'
-import { memo, useEffect, useRef } from 'react'
-import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
+import { memo, useDeferredValue, useEffect, useRef } from 'react'
+import type { ComponentProps, KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 
 import { tableOwnsKeys } from '#app/keyboard'
-import { useDeferredScopedRows, useScopeActions, useSelectedId, useSort } from '#endpoints/hooks'
+import {
+  useDeferredScopedRows,
+  useScopeActions,
+  useSelectedId,
+  useSort,
+  useWorkload,
+} from '#endpoints/hooks'
 import { setHoveredEndpoint } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
 import type { SortKey } from '#endpoints/sort'
 import { StaleVeil } from '#panels/results/stale-veil'
+import { costHint } from '#panels/results/workload'
 
 import {
   columns,
@@ -21,6 +29,7 @@ import {
   FOLDED_ONLY_CLASS,
   TABLE_MIN_WIDTH_CLASS,
 } from './columns'
+import { WorkloadContext } from './cost-cell'
 import { steppedRowId } from './navigation'
 import type { Step } from './navigation'
 import { fromSortingState, sortDirection, toSortingState } from './sorting-state'
@@ -37,7 +46,7 @@ export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--re
 
 /**
  * Where the pointer is fine, the Model column stays put while the figures scroll under it. A panel
- * narrower than the folded table's columns (`TABLE_MIN_WIDTH_CLASS`, 588px) scrolls it sideways, and
+ * narrower than the folded table's columns (`TABLE_MIN_WIDTH_CLASS`, 656px) scrolls it sideways, and
  * there the column's edge shows as a rule.
  *
  * On a touch screen it scrolls with the rest. WebKit gives every sticky element in a scroller its
@@ -45,7 +54,7 @@ export const CELL_PADDING_CLASS = 'px-2 first:pl-(--results-inset) last:pr-(--re
  * into view and discarded once it leaves: the column paints visibly late in both directions.
  */
 export const STICKY_MODEL_CLASS =
-  'pointer-fine:first:sticky pointer-fine:first:left-0 @max-[588px]/results:pointer-fine:first:border-r'
+  'pointer-fine:first:sticky pointer-fine:first:left-0 @max-[656px]/results:pointer-fine:first:border-r'
 
 export const HEADER_CELL_CLASS = `sticky top-0 z-10 h-[30px] border-b border-border bg-background font-mono text-[10px] leading-3.5 font-normal tracking-[0.06em] text-muted-foreground uppercase first:z-20 ${STICKY_MODEL_CLASS}`
 
@@ -84,23 +93,29 @@ function SortButton({
   className,
   direction,
   header,
-}: {
+  onClick,
+  ...props
+}: Omit<ComponentProps<'button'>, 'children'> & {
   announceSort?: boolean
-  className?: string
   direction: Direction
   header: TableHeader
 }) {
   const numeric = header.column.columnDef.meta?.numeric === true
+  const toggle = header.column.getToggleSortingHandler()
 
   return (
     <button
+      {...props}
       className={cn(
         'relative inline-flex h-full max-w-full items-center rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50',
         numeric && 'justify-end',
         direction !== false && 'text-foreground',
         className,
       )}
-      onClick={header.column.getToggleSortingHandler()}
+      onClick={(event) => {
+        onClick?.(event)
+        toggle?.(event)
+      }}
       type="button"
     >
       <FlexRender header={header} />
@@ -116,6 +131,21 @@ function SortButton({
         </span>
       )}
     </button>
+  )
+}
+
+/**
+ * The Cost header's sort button, with a tooltip that says what the figures are under the current
+ * workload. Only this header reads the workload, so it re-renders alone when it changes.
+ */
+function CostSortButton(props: ComponentProps<typeof SortButton>) {
+  const workload = useWorkload()
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<SortButton {...props} />} />
+      <TooltipContent>{costHint(workload)}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -152,7 +182,11 @@ function SortHeader({
     >
       {column.getCanSort() ? (
         <>
-          <SortButton direction={direction} header={header} />
+          {column.id === 'cost' ? (
+            <CostSortButton direction={direction} header={header} />
+          ) : (
+            <SortButton direction={direction} header={header} />
+          )}
           {folded !== undefined && (
             <>
               {/* Wide enough for the Model arrow, which hangs off the label's trailing edge. */}
@@ -227,7 +261,9 @@ function TableRow({
 /**
  * Rows render again only when their endpoint, selection, or tab stop changes. Table rebuilds its
  * row objects whenever the data array changes, as it does on every sort, but a row's cells depend
- * on nothing except its endpoint, so a re-sort only moves the existing elements.
+ * on nothing except its endpoint, so a re-sort only moves the existing elements. The Cost cells also
+ * depend on the workload, which reaches them through `WorkloadContext`, past this comparison: a
+ * workload change re-renders them alone.
  */
 const MemoTableRow = memo(
   TableRow,
@@ -314,12 +350,17 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * step through the rows on screen, and the selection is in the URL, so it can name a row the next
  * pass removes.
  *
+ * The Cost cells compute under the workload (`useWorkload`), which trails like the rows and reaches
+ * the cells through context (see `MemoTableRow`); the rest of the URL does not re-render the Table.
+ *
  * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
 export function EndpointTable({ trailingInset }: { trailingInset: number }) {
   const { rows, stale } = useDeferredScopedRows()
   const selectedId = useSelectedId()
   const sort = useSort()
+  // Like the rows, the cost cells trail a change: 1,500 of them take longer than a keystroke.
+  const workload = useDeferredValue(useWorkload())
   const { clearFilters, selectEndpoint, setSort } = useScopeActions()
   const body = useRef<HTMLTableSectionElement>(null)
 
@@ -438,58 +479,60 @@ export function EndpointTable({ trailingInset }: { trailingInset: number }) {
   }
 
   return (
-    <div
-      aria-busy={stale}
-      className={TABLE_WRAPPER_CLASS}
-      // Room after the last column, so it can scroll out from under a drawer floating over it.
-      style={{ paddingRight: trailingInset }}
-    >
-      <table className={TABLE_CLASS}>
-        <colgroup>
-          {table.getAllLeafColumns().map((column) => (
-            <col
-              className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
-              key={column.id}
-              style={columnWidthStyle(column.id)}
-            />
-          ))}
-        </colgroup>
-        <thead>
-          {table.getHeaderGroups().map((group) => (
-            <tr key={group.id}>
-              {group.headers.map((header) => (
-                <SortHeader
-                  direction={sortDirection(sort, header.column.id)}
-                  // The Model cell shows the Provider column where it folds, so its header does too.
-                  folded={
-                    header.column.id === 'model' ? foldedProvider(group.headers, sort) : undefined
-                  }
-                  header={header}
-                  key={header.id}
-                />
-              ))}
-            </tr>
-          ))}
-        </thead>
-        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Rows are the interactive elements; one delegated handler serves ~1,500 of them, and keys reach them through onKeyDown. */}
-        <tbody
-          onClick={select}
-          onKeyDown={selectFromKey}
-          onPointerLeave={() => {
-            setHoveredEndpoint(null)
-          }}
-          onPointerOver={hover}
-          ref={body}
-        >
-          {tableRows.length === 0 ? (
-            <EmptyState onClear={clearFilters} />
-          ) : (
-            <TableRows rows={tableRows} selectedId={selectedId} tabbableId={tabbableId} />
-          )}
-        </tbody>
-      </table>
-      {/* Below the sticky header, which keeps its place. */}
-      <StaleVeil className="inset-x-0 top-[30px] bottom-0" stale={stale} />
-    </div>
+    <WorkloadContext value={workload}>
+      <div
+        aria-busy={stale}
+        className={TABLE_WRAPPER_CLASS}
+        // Room after the last column, so it can scroll out from under a drawer floating over it.
+        style={{ paddingRight: trailingInset }}
+      >
+        <table className={TABLE_CLASS}>
+          <colgroup>
+            {table.getAllLeafColumns().map((column) => (
+              <col
+                className={cn(column.columnDef.meta?.folds === true && FOLDED_CLASS)}
+                key={column.id}
+                style={columnWidthStyle(column.id)}
+              />
+            ))}
+          </colgroup>
+          <thead>
+            {table.getHeaderGroups().map((group) => (
+              <tr key={group.id}>
+                {group.headers.map((header) => (
+                  <SortHeader
+                    direction={sortDirection(sort, header.column.id)}
+                    // The Model cell shows the Provider column where it folds, so its header does too.
+                    folded={
+                      header.column.id === 'model' ? foldedProvider(group.headers, sort) : undefined
+                    }
+                    header={header}
+                    key={header.id}
+                  />
+                ))}
+              </tr>
+            ))}
+          </thead>
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Rows are the interactive elements; one delegated handler serves ~1,500 of them, and keys reach them through onKeyDown. */}
+          <tbody
+            onClick={select}
+            onKeyDown={selectFromKey}
+            onPointerLeave={() => {
+              setHoveredEndpoint(null)
+            }}
+            onPointerOver={hover}
+            ref={body}
+          >
+            {tableRows.length === 0 ? (
+              <EmptyState onClear={clearFilters} />
+            ) : (
+              <TableRows rows={tableRows} selectedId={selectedId} tabbableId={tabbableId} />
+            )}
+          </tbody>
+        </table>
+        {/* Below the sticky header, which keeps its place. */}
+        <StaleVeil className="inset-x-0 top-[30px] bottom-0" stale={stale} />
+      </div>
+    </WorkloadContext>
   )
 }

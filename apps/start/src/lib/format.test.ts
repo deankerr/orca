@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ABSENT,
   formatContext,
+  formatCost,
   formatCount,
   formatLatency,
   formatRate,
@@ -129,5 +130,43 @@ describe('formatRate', () => {
 
   it('is absent for an absent rate', () => {
     expect(formatRate(null)).toBeNull()
+  })
+})
+
+describe('formatCost', () => {
+  it('shows a cost in $/M at three fixed decimals', () => {
+    expect(formatCost(0.38)).toBe('$0.380')
+    expect(formatCost(1.4)).toBe('$1.400')
+    expect(formatCost(0.0043)).toBe('$0.004')
+  })
+
+  it('keeps three decimals from 10 up, with grouping', () => {
+    expect(formatCost(12.5)).toBe('$12.500')
+    expect(formatCost(1234.5)).toBe('$1,234.500')
+  })
+
+  it('rounds half away from zero at the third decimal', () => {
+    expect(formatCost(2.6255)).toBe('$2.626')
+    expect(formatCost(0.2625)).toBe('$0.263')
+    expect(formatCost(0.0005)).toBe('$0.001')
+    expect(formatCost(0.9996)).toBe('$1.000')
+  })
+
+  it('falls back to the full display when three decimals would show $0.000', () => {
+    expect(formatCost(0.0004)).toBe('$0.0004')
+    expect(formatCost(0.000198)).toBe('$0.0002')
+  })
+
+  it('reads as formatRateCell reads the same amount', () => {
+    expect(formatCost(2.5)).toBe(formatRateCell('0.0000025'))
+    expect(formatCost(0.0004)).toBe(formatRateCell('0.0000000004'))
+  })
+
+  it('shows a free endpoint as $0', () => {
+    expect(formatCost(0)).toBe('$0')
+  })
+
+  it('shows an absent cost as a dash', () => {
+    expect(formatCost(null)).toBe(ABSENT)
   })
 })

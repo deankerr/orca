@@ -1,3 +1,4 @@
+import { defaultWorkload } from '@orca/pricing'
 import { describe, expect, it } from 'vitest'
 
 import { endpoint, models, providers, payload } from './fixtures.testing'
@@ -5,7 +6,10 @@ import { buildRows } from './snapshot'
 import { isSortColumn, parseSortKey, sortRows, toSortKey } from './sort'
 
 const rows = buildRows(payload).filter((row) => !row.unlisted)
-const order = (key: Parameters<typeof sortRows>[1]) => sortRows(rows, key).map((row) => row.id)
+const uncached = { hitRate: 0, ratio: 3 }
+
+const order = (key: Parameters<typeof sortRows>[1], workload = defaultWorkload) =>
+  sortRows(rows, key, workload).map((row) => row.id)
 
 describe('sortRows', () => {
   it('sorts numbers ascending with absent values last', () => {
@@ -29,7 +33,7 @@ describe('sortRows', () => {
     const priced = [...rows, ...unpriced]
 
     const sorted = (key: Parameters<typeof sortRows>[1]) =>
-      sortRows(priced, key).map((row) => row.id)
+      sortRows(priced, key, defaultWorkload).map((row) => row.id)
 
     expect(sorted('input')).toEqual([
       'gpt-free',
@@ -47,8 +51,42 @@ describe('sortRows', () => {
       'gpt-free',
       'unpriced',
     ])
-    expect(sorted('blend')[0]).toBe('gpt-free')
-    expect(sorted('-blend').slice(-2)).toEqual(['gpt-free', 'unpriced'])
+    expect(sorted('cost')[0]).toBe('gpt-free')
+    expect(sorted('-cost').slice(-2)).toEqual(['gpt-free', 'unpriced'])
+  })
+
+  it('sorts by workload cost under the workload given', () => {
+    // At 100 input tokens per output token and a 90% hit rate, the cached GPT-5 on Azure beats the
+    // cheaper-input Kimi endpoints; with no cache hits it costs the same as GPT-5 on OpenAI, which
+    // has no cache, and both fall behind.
+    expect(order('cost', defaultWorkload)).toEqual([
+      'gpt-free',
+      'gpt-azure',
+      'kimi-deepinfra',
+      'kimi-azure',
+      'gpt-openai',
+    ])
+    expect(order('cost', uncached)).toEqual([
+      'gpt-free',
+      'kimi-deepinfra',
+      'kimi-azure',
+      'gpt-azure',
+      'gpt-openai',
+    ])
+    expect(order('-cost', uncached).slice(0, 2)).toEqual(['gpt-azure', 'gpt-openai'])
+  })
+
+  it('puts endpoints without a cost last in either direction', () => {
+    const unpriced = buildRows({
+      ...payload,
+      endpoints: [
+        endpoint({ id: 'unpriced', input: null, model: models.gpt, provider: providers.azure }),
+      ],
+    })
+
+    for (const key of ['cost', '-cost'] as const) {
+      expect(sortRows([...unpriced, ...rows], key, uncached).at(-1)?.id).toBe('unpriced')
+    }
   })
 
   it('keeps absent values last when descending', () => {
@@ -74,7 +112,7 @@ describe('sortRows', () => {
   it('does not mutate its input', () => {
     const before = rows.map((row) => row.id)
 
-    sortRows(rows, '-blend')
+    sortRows(rows, '-cost', defaultWorkload)
 
     expect(rows.map((row) => row.id)).toEqual(before)
   })
@@ -82,7 +120,7 @@ describe('sortRows', () => {
 
 describe('sort keys', () => {
   it('prefix descending columns with a minus', () => {
-    expect(parseSortKey('-blend')).toEqual({ column: 'blend', descending: true })
+    expect(parseSortKey('-cost')).toEqual({ column: 'cost', descending: true })
     expect(parseSortKey('input')).toEqual({ column: 'input', descending: false })
     expect(toSortKey('throughput', true)).toBe('-throughput')
   })

@@ -8,7 +8,7 @@ import { ResultsFrame } from './results-panel'
 import { SCOPE_BAR_CLASS } from './scope-bar'
 import { TableSkeleton } from './table/table-skeleton'
 
-/** The scope bar's Filters button, counts, and plot toggle, at the bar's height. */
+/** The scope bar's Filters button, counts, workload control, and plot toggle, at the bar's height. */
 function ScopeBarSkeleton() {
   return (
     <div className={SCOPE_BAR_CLASS}>
@@ -17,7 +17,10 @@ function ScopeBarSkeleton() {
         <Skeleton className="h-4 w-28 shrink-0 rounded-sm" />
         <Skeleton className="h-3 w-40 rounded-sm" />
       </div>
-      <Skeleton className="size-7 shrink-0 pointer-coarse:size-8" />
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Skeleton className="h-7 w-24 shrink-0 pointer-coarse:h-8" />
+        <Skeleton className="size-7 shrink-0 pointer-coarse:size-8" />
+      </div>
     </div>
   )
 }

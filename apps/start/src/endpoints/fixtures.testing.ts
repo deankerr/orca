@@ -63,6 +63,7 @@ interface EndpointFixture {
   input?: string | null
   output?: string | null
   cacheRead?: string | null
+  cacheWrite?: string | null
   throughput?: number | null
   latency?: number | null
   context?: number | null
@@ -78,6 +79,7 @@ export function endpoint({
   input = '0.000001',
   output = '0.000005',
   cacheRead = null,
+  cacheWrite = null,
   throughput = 100,
   latency = 500,
   context = 128_000,
@@ -127,7 +129,7 @@ export function endpoint({
       input,
       input_audio_cache: null,
       input_cache_read: cacheRead,
-      input_cache_write: null,
+      input_cache_write: cacheWrite,
       input_cache_write_1h: null,
       output,
       overrides: null,

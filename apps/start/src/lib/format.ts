@@ -39,17 +39,21 @@ export function formatRate(rate: string | null): string | null {
  * nonzero rate that three decimals would erase (`$0.000`) falls back to `formatRate`.
  */
 export function formatRateCell(rate: string | null): string {
-  const full = formatRate(rate)
+  return formatFixedCell(rate, 6, formatRate(rate))
+}
 
-  if (rate === null || full === null || full === '$0') {
+/**
+ * The rule behind `formatRateCell` and `formatCost`, so the Table's figures read alike. `full` is
+ * the value's fuller display: `$0` for a free value, null for an absent one, and what a nonzero
+ * value falls back to when three decimals would erase it. `scale` moves the value's decimal point
+ * to $/M.
+ */
+function formatFixedCell(value: string | number | null, scale: number, full: string | null) {
+  if (value === null || full === null || full === '$0') {
     return full ?? ABSENT
   }
 
-  const amount = formatNumber(rate, {
-    minimumFractionDigits: 3,
-    scale: 6,
-    significantDigits: 0,
-  })
+  const amount = formatNumber(value, { minimumFractionDigits: 3, scale, significantDigits: 0 })
 
   return amount === null || amount === '0.000' ? full : `$${amount}`
 }
@@ -88,4 +92,18 @@ export function formatScanTime(at: string | null): string {
   const time = new UTCDateMini(at)
 
   return isValid(time) ? `scan ${format(time, 'yyyy-MM-dd HH:mm')} UTC` : ABSENT
+}
+
+/**
+ * A workload cost in $/M for a table cell, written as `formatRateCell` writes a rate: always three
+ * decimals (`$0.380`, `$12.500`), `$0` when free, a dash when absent, and a nonzero cost that three
+ * decimals would erase (`$0.000`) falls back to a fuller figure (`$0.0004`). Only the Table's Cost
+ * cell uses it.
+ */
+export function formatCost(cost: number | null): string {
+  if (cost === null) {
+    return ABSENT
+  }
+
+  return formatFixedCell(cost, 0, cost === 0 ? '$0' : formatPrice(cost))
 }
