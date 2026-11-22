@@ -5,6 +5,7 @@ import { Toggle } from '@orca/ui/components/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@orca/ui/components/tooltip'
 import { cn } from 'cn'
 import { ChartScatter, SlidersHorizontal } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import type { FiltersPlacement } from '#app/panel-layout'
 import { FLUSH_TOP_MEDIA_CLASS } from '#app/panel-layout'
@@ -108,7 +109,7 @@ function ScopeCounts({ filtered }: { filtered: boolean }) {
   )
 }
 
-export function ScopeBar() {
+export function ScopeBar({ extra }: { extra?: ReactNode }) {
   const scopeFilters = useScopeFilters()
   const { clearFilters } = useScopeActions()
   const filters = activeFilterCount(scopeFilters)
@@ -127,6 +128,7 @@ export function ScopeBar() {
             Clear
           </Button>
         )}
+        {extra}
         <WorkloadControl />
         <PlotToggle />
       </div>

@@ -7,6 +7,7 @@ import { MODEL_COLUMN_WIDTH_CSS, PROVIDER_COLUMN_WIDTH } from '#app/panel-layout
 import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
+import { ChangeMark } from '#panels/alerts-prototype/marks'
 
 import { CostCell } from './cost-cell'
 import { providerTags } from './tags'
@@ -95,7 +96,10 @@ function ModelCell({ row }: { row: EndpointRow }) {
     <div className="flex min-w-0 items-center gap-2">
       <EntityAvatar slug={row.model.id} />
       <div className="flex min-w-0 flex-col">
-        <span className="truncate text-[13px] leading-4">{row.model.name}</span>
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate text-[13px] leading-4">{row.model.name}</span>
+          <ChangeMark id={row.id} />
+        </span>
         {/* The Provider column, folded in where there is no room for it as a column. Only the name truncates; the tags are the precision and tier the Provider column shows as badges, so they stay whole. */}
         <span className={cn('min-w-0 items-baseline gap-1', FOLDED_LINE_FLEX_CLASS)}>
           <span

@@ -137,7 +137,7 @@ function FactLine({ row }: { row: FactRow }) {
   )
 }
 
-export function SectionBlock({
+function SectionBlock({
   children,
   note,
   title,

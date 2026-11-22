@@ -5,9 +5,10 @@ import type { ReactNode } from 'react'
 
 import { TABLE_KEYS_ATTRIBUTE } from '#app/keyboard'
 import type { EndpointRow } from '#endpoints/snapshot'
+import { EndpointAlerts } from '#panels/alerts-prototype/parts'
 
 import { modelSections, providerSections } from './facts'
-import { RowsSection, SectionBlock } from './parts'
+import { RowsSection } from './parts'
 import { endpointSections } from './sections'
 
 export const TAB_NAMES = ['Endpoint', 'Model', 'Provider', 'History'] as const
@@ -66,11 +67,7 @@ export function PanelTabs({ row }: { row: EndpointRow }) {
         ))}
       </TabBody>
       <TabBody endpointId={row.id} value="History">
-        <SectionBlock title="History">
-          <p className="text-[13px]/[18px] text-muted-foreground">
-            Price and stats history for this endpoint will appear here.
-          </p>
-        </SectionBlock>
+        <EndpointAlerts id={row.id} />
       </TabBody>
     </>
   )

@@ -48,7 +48,7 @@ export function ResultsFrame({ children }: { children: ReactNode }) {
  * by the drawer's (see `tableTrailingInset`), so every column can scroll out from under it; the Table
  * itself keeps its width, so selecting reflows nothing.
  */
-function TableRegion() {
+export function TableRegion() {
   const layout = usePanelLayout()
   const trailingInset = tableTrailingInset(layout, useSelectedId() !== undefined)
 

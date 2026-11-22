@@ -18,6 +18,7 @@ import {
 import { setHoveredEndpoint } from '#endpoints/hover'
 import type { EndpointRow } from '#endpoints/snapshot'
 import type { SortKey } from '#endpoints/sort'
+import { useChangedRows } from '#panels/alerts-prototype/marks'
 import { StaleVeil } from '#panels/results/stale-veil'
 import { costHint } from '#panels/results/workload'
 
@@ -357,7 +358,8 @@ function ifTableOwnsKeys(event: globalThis.KeyboardEvent, act: () => void) {
  * `trailingInset` is the width, in pixels, of a drawer floating over the Table's end.
  */
 export function EndpointTable({ trailingInset }: { trailingInset: number }) {
-  const { rows, stale, workload } = useDeferredScopedRows()
+  const { rows: scopedRows, stale, workload } = useDeferredScopedRows()
+  const rows = useChangedRows(scopedRows)
   const selectedId = useSelectedId()
   const sort = useSort()
   const { clearFilters, selectEndpoint, setSort } = useScopeActions()

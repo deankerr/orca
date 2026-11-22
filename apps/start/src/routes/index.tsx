@@ -15,10 +15,12 @@ import {
 import { useScopeActions, useSelectedEndpoint } from '#endpoints/hooks'
 import { scopeDefaults, scopeSchema } from '#endpoints/scope'
 import { snapshotQuery } from '#endpoints/snapshot'
+import { AlertsProvider, useAlertsState } from '#panels/alerts-prototype/data'
+import { protoDefaults, protoSchema } from '#panels/alerts-prototype/proto'
+import { PrototypeSwitcher } from '#panels/alerts-prototype/switcher'
+import { ProtoColumn, ProtoResults } from '#panels/alerts-prototype/variants'
 import { EndpointPanel } from '#panels/endpoint/endpoint-panel'
-import { FiltersPanel } from '#panels/filters/filters-panel'
 import { FiltersSkeleton } from '#panels/filters/filters-skeleton'
-import { ResultsPanel } from '#panels/results/results-panel'
 import { ResultsSkeleton } from '#panels/results/results-skeleton'
 
 export const Route = createFileRoute('/')({
@@ -26,9 +28,10 @@ export const Route = createFileRoute('/')({
   // The whole catalogue loads in the browser; server rendering it would inline megabytes of JSON.
   loader: async ({ context }) => await context.queryClient.query(snapshotQuery),
   pendingComponent: Pending,
-  search: { middlewares: [stripSearchParams(scopeDefaults)] },
+  search: { middlewares: [stripSearchParams({ ...scopeDefaults, ...protoDefaults })] },
   ssr: false,
-  validateSearch: scopeSchema,
+  // PROTOTYPE (issue #260): the variant and its two flags ride in the URL beside the Scope.
+  validateSearch: scopeSchema.and(protoSchema),
 })
 
 // The server sends this as the page, so it holds nothing that depends on the browser's width. The
@@ -88,32 +91,36 @@ function EndpointDrawer({ side }: { side: EndpointSide }) {
 function Home() {
   const layout = usePanelLayout()
   const filtersDrawer = useDrawerSession(layout.filters)
+  const alerts = useAlertsState()
 
   return (
-    <AppLayout>
-      {layout.filters === 'drawer' ? (
-        <PanelDrawer
-          label="Filters"
-          modal
-          onOpenChange={filtersDrawer.setOpen}
-          open={filtersDrawer.open}
-          side="left"
+    <AlertsProvider value={alerts}>
+      <AppLayout>
+        {layout.filters === 'drawer' ? (
+          <PanelDrawer
+            label="Filters"
+            modal
+            onOpenChange={filtersDrawer.setOpen}
+            open={filtersDrawer.open}
+            side="left"
+          >
+            <ProtoColumn />
+          </PanelDrawer>
+        ) : (
+          <DockedFilters collapsed={layout.filters === 'collapsed'}>
+            <ProtoColumn />
+          </DockedFilters>
+        )}
+        <OpenFiltersContext
+          value={() => {
+            filtersDrawer.setOpen(true)
+          }}
         >
-          <FiltersPanel />
-        </PanelDrawer>
-      ) : (
-        <DockedFilters collapsed={layout.filters === 'collapsed'}>
-          <FiltersPanel />
-        </DockedFilters>
-      )}
-      <OpenFiltersContext
-        value={() => {
-          filtersDrawer.setOpen(true)
-        }}
-      >
-        <ResultsPanel />
-      </OpenFiltersContext>
-      <EndpointDrawer side={layout.endpoint} />
-    </AppLayout>
+          <ProtoResults />
+        </OpenFiltersContext>
+        <EndpointDrawer side={layout.endpoint} />
+        <PrototypeSwitcher />
+      </AppLayout>
+    </AlertsProvider>
   )
 }

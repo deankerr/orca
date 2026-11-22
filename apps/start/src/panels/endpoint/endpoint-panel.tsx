@@ -15,6 +15,7 @@ import { panelFrameClass, usePlacement } from '#app/panels'
 import { EntityAvatar } from '#components/entity-avatar'
 import { useScopeActions, useScopedRows } from '#endpoints/hooks'
 import type { EndpointRow } from '#endpoints/snapshot'
+import { usePanelTab } from '#panels/alerts-prototype/parts'
 
 import { CopyText } from './copy-text'
 import { endpointTag, endpointTagDescription, slugParts, unlistedLine } from './header'
@@ -35,6 +36,7 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
   const unlisted = unlistedLine(row)
   const tagDescriptionId = useId()
   const placement = usePlacement()
+  const [activeTab, setActiveTab] = usePanelTab()
 
   const panelRef = useRef<HTMLElement>(null)
   const endpointId = useRef(row.id)
@@ -78,7 +80,13 @@ export function EndpointPanel({ row }: { row: EndpointRow }) {
       }}
     >
       <TooltipProvider delay={250}>
-        <Tabs className="min-h-0 grow gap-0" defaultValue="Endpoint">
+        <Tabs
+          className="min-h-0 grow gap-0"
+          onValueChange={(next) => {
+            setActiveTab(String(next))
+          }}
+          value={activeTab}
+        >
           <header className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 pt-2">
             {/* The row clears the close button, which sits in the drawer's corner (below). */}
             <div className="-mb-1 flex h-7 items-center justify-between gap-2 pr-7 font-mono text-[10px] leading-3.5 text-muted-foreground pointer-coarse:h-8 pointer-coarse:pr-8">

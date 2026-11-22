@@ -37,7 +37,13 @@ function DrawerActions() {
 }
 
 /** The Filters panel's frame, which the loading skeleton fills with placeholders. */
-export function FiltersFrame({ children }: { children: ReactNode }) {
+export function FiltersFrame({
+  children,
+  subheader,
+}: {
+  children: ReactNode
+  subheader?: ReactNode
+}) {
   const placement = usePlacement()
 
   return (
@@ -46,6 +52,7 @@ export function FiltersFrame({ children }: { children: ReactNode }) {
       className={cn('flex flex-col overflow-clip bg-card', panelFrameClass(placement, 'w-68'))}
     >
       <HeaderBar>{placement === 'drawer' && <DrawerActions />}</HeaderBar>
+      {subheader}
       <ScrollArea className="min-h-0 grow border-t border-border">
         <div className="flex flex-col">{children}</div>
       </ScrollArea>
@@ -53,15 +60,19 @@ export function FiltersFrame({ children }: { children: ReactNode }) {
   )
 }
 
-export function FiltersPanel() {
+export function FiltersPanel({ body, subheader }: { body?: ReactNode; subheader?: ReactNode }) {
   const { model, provider } = useScopeFilters()
 
   return (
-    <FiltersFrame>
-      <ListFacet kind="model" selected={model} />
-      <ListFacet kind="provider" selected={provider} />
-      <RangeFacets />
-      <PropertyFacets />
+    <FiltersFrame subheader={subheader}>
+      {body ?? (
+        <>
+          <ListFacet kind="model" selected={model} />
+          <ListFacet kind="provider" selected={provider} />
+          <RangeFacets />
+          <PropertyFacets />
+        </>
+      )}
     </FiltersFrame>
   )
 }
