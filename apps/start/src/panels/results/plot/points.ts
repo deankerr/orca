@@ -1,47 +1,63 @@
+import { isCostRaisedByNoCache, workloadCost } from '@orca/pricing'
+import type { Workload } from '@orca/pricing'
+
 import type { EndpointRow } from '#endpoints/snapshot'
 
-/** The price axis, in blended $/M. Fixed so the axis reads the same however the filters narrow the rows. */
-export const PRICE_DOMAIN = [0.01, 100] as const
+/** What the plot reads of an endpoint: its cost under the current workload, its throughput, and whether its lack of a cache raises that cost. */
+export interface PlottableRow {
+  /** Endpoint UUID, as in `EndpointRow.id`. */
+  id: string
+  /** Workload cost in $/M; null when the endpoint has no input or output rate. */
+  cost: number | null
+  throughput: number | null
+  /** Whether the endpoint's lack of a cache raises its cost under the workload; see `isCostRaisedByNoCache`. */
+  noCache: boolean
+}
 
-/** Price grid lines and ticks: each decade inside the axis. The frame marks its ends, which are labelled. */
-export const PRICE_GRID = [0.1, 1, 10] as const
-
-/** The fields of an endpoint row the plot reads. */
-export type PlottableRow = Pick<EndpointRow, 'blend' | 'id' | 'throughput'>
+/** An endpoint row's plottable form under a workload. */
+export function plottableRow(
+  row: Pick<EndpointRow, 'cacheRead' | 'cacheWrite' | 'id' | 'input' | 'output' | 'throughput'>,
+  workload: Workload,
+): PlottableRow {
+  return {
+    cost: workloadCost(row, workload),
+    id: row.id,
+    noCache: isCostRaisedByNoCache(row, workload),
+    throughput: row.throughput,
+  }
+}
 
 /** One endpoint that can stand on both log axes. */
 export interface PlotPoint {
   /** Endpoint UUID, as in `EndpointRow.id`. */
   id: string
-  /** Blended $/M, within `PRICE_DOMAIN`. */
+  /** Workload cost in $/M, above zero. */
   price: number
   /** Median tokens per second, above zero. */
   throughput: number
+  /** Whether the endpoint's lack of a cache raises its cost; those that do are drawn as rings. */
+  noCache: boolean
 }
 
 /** Why an endpoint cannot be placed on the plot. A row counts under the first reason that applies. */
-export type NotPlottedReason = 'noPrice' | 'free' | 'noThroughput' | 'offscale'
+export type NotPlottedReason = 'noPrice' | 'free' | 'noThroughput'
 
 /** The reason a row has no place on log axes, or null when it has one. */
 export function notPlottedReason(
-  row: Pick<PlottableRow, 'blend' | 'throughput'>,
+  row: Pick<PlottableRow, 'cost' | 'throughput'>,
 ): NotPlottedReason | null {
-  const { blend, throughput } = row
+  const { cost, throughput } = row
 
-  if (blend === null) {
+  if (cost === null) {
     return 'noPrice'
   }
 
-  if (blend === 0) {
+  if (cost === 0) {
     return 'free'
   }
 
   if (throughput === null || throughput <= 0) {
     return 'noThroughput'
-  }
-
-  if (blend < PRICE_DOMAIN[0] || blend > PRICE_DOMAIN[1]) {
-    return 'offscale'
   }
 
   return null
@@ -52,66 +68,121 @@ export function plotPoints(rows: readonly PlottableRow[]): PlotPoint[] {
   return rows.flatMap((row) =>
     notPlottedReason(row) === null
       ? // `notPlottedReason` has checked both values, but not narrowed them.
-        [{ id: row.id, price: row.blend ?? 0, throughput: row.throughput ?? 0 }]
+        [
+          {
+            id: row.id,
+            noCache: row.noCache,
+            price: row.cost ?? 0,
+            throughput: row.throughput ?? 0,
+          },
+        ]
       : [],
   )
 }
 
-/** 1, 2, 5 × 10ⁿ: the steps a throughput bound can round to. */
+/** 1, 2, 5 × 10ⁿ: the steps an axis bound can round to. */
 const STEPS = [1, 2, 5, 10]
+
+/** A product of a step and a power of ten, without the float noise of the multiplication. */
+const clean = (value: number): number => Number(value.toPrecision(12))
 
 function stepBelow(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value))
   const mantissa = value / magnitude
 
-  return (STEPS.findLast((step) => step <= mantissa * (1 + 1e-9)) ?? 1) * magnitude
+  return clean((STEPS.findLast((step) => step <= mantissa * (1 + 1e-9)) ?? 1) * magnitude)
 }
 
 function stepAbove(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value))
   const mantissa = value / magnitude
 
-  return (STEPS.find((step) => step >= mantissa * (1 - 1e-9)) ?? 10) * magnitude
+  return clean((STEPS.find((step) => step >= mantissa * (1 - 1e-9)) ?? 10) * magnitude)
 }
 
-/** Used when no point has a throughput, so the axes still draw. */
-const EMPTY_THROUGHPUT_DOMAIN = [1, 1000] as const
-
 /**
- * The throughput axis: the data's range, rounded outward to a 1, 2, 5 step. A value on a step still ends
- * the axis, so the scale's inset (`DOT_INSET`) is what keeps that dot inside the frame.
- * It spans the whole catalogue, not the filtered rows, so filtering moves dots without moving the axis.
+ * The range of positive values, rounded outward to 1, 2, 5 steps. A value on a step still ends the
+ * axis, so the scale's inset (`DOT_INSET`) is what keeps that dot inside the frame. `empty` is used
+ * when there are no values, so the axes still draw.
+ *
+ * Always `0 < low < high < Infinity`, since a log axis needs it. At the ends of the double range
+ * rounding or widening may not be representable (a step above `1.7e308` is `Infinity`; one below
+ * `Number.MIN_VALUE` is 0): the bound is then the data's own end, and a single value widens as far as
+ * `Number.MIN_VALUE` and `Number.MAX_VALUE` allow.
  */
-export function throughputDomain(points: readonly PlotPoint[]): readonly [number, number] {
-  if (points.length === 0) {
-    return EMPTY_THROUGHPUT_DOMAIN
+function roundedDomain(values: readonly number[], empty: readonly [number, number]) {
+  if (values.length === 0) {
+    return empty
   }
 
   let low = Infinity
   let high = -Infinity
 
-  for (const { throughput } of points) {
-    low = Math.min(low, throughput)
-    high = Math.max(high, throughput)
+  for (const value of values) {
+    low = Math.min(low, value)
+    high = Math.max(high, value)
   }
 
-  const lowBound = stepBelow(low)
-  const highBound = stepAbove(high)
+  const steppedLow = stepBelow(low)
+  const steppedHigh = stepAbove(high)
+
+  // Outward by at most the steps' own tolerance; anything else is a rounding that did not survive.
+  const lowBound =
+    Number.isFinite(steppedLow) && steppedLow > 0 && steppedLow <= low * (1 + 1e-9)
+      ? steppedLow
+      : low
+
+  const highBound =
+    Number.isFinite(steppedHigh) && steppedHigh >= high * (1 - 1e-9) ? steppedHigh : high
 
   // A single value, or equal rounding, still needs a span to draw.
-  return lowBound === highBound ? [lowBound / 2, highBound * 2] : [lowBound, highBound]
+  return lowBound === highBound
+    ? ([
+        Math.max(lowBound / 2, Number.MIN_VALUE),
+        Math.min(highBound * 2, Number.MAX_VALUE),
+      ] as const)
+    : ([lowBound, highBound] as const)
 }
 
-/** Throughput ticks: each power of ten strictly inside the domain, since the frame marks its ends. */
-export function throughputTicks([low, high]: readonly [number, number]): number[] {
+/** Used when no point has a throughput, so the axes still draw. */
+const EMPTY_THROUGHPUT_DOMAIN = [1, 1000] as const
+
+/** Used when no point has a cost, so the axes still draw. */
+const EMPTY_PRICE_DOMAIN = [0.01, 100] as const
+
+/**
+ * The throughput axis: the data's range, rounded outward to a 1, 2, 5 step.
+ * It spans the whole catalogue, not the filtered rows, so filtering moves dots without moving the axis.
+ */
+export function throughputDomain(points: readonly PlotPoint[]): readonly [number, number] {
+  return roundedDomain(
+    points.map((point) => point.throughput),
+    EMPTY_THROUGHPUT_DOMAIN,
+  )
+}
+
+/**
+ * The cost axis, in workload cost $/M: the range of plottable costs, rounded outward to a 1, 2, 5
+ * step. Like the throughput axis it spans the whole catalogue, so filtering moves dots without moving
+ * the axis, and it follows the workload, so every dot is on scale under any of them.
+ */
+export function priceDomain(points: readonly PlotPoint[]): readonly [number, number] {
+  return roundedDomain(
+    points.map((point) => point.price),
+    EMPTY_PRICE_DOMAIN,
+  )
+}
+
+/** Axis ticks: each power of ten strictly inside the domain, since the frame marks its ends. */
+export function decadeTicks([low, high]: readonly [number, number]): number[] {
   const ticks: number[] = []
 
   for (
     let power = Math.floor(Math.log10(low) + 1e-9) + 1;
-    10 ** power < high * (1 - 1e-9);
+    Number(`1e${power}`) < high * (1 - 1e-9);
     power += 1
   ) {
-    ticks.push(10 ** power)
+    ticks.push(Number(`1e${power}`))
   }
 
   return ticks
@@ -135,4 +206,12 @@ export function splitByScope(
   }
 
   return { inScope, outOfScope }
+}
+
+/** Points split by whether the endpoint's lack of a cache raises its cost: `filled` are drawn as dots, `rings` as rings. */
+export function splitByNoCache(points: readonly PlotPoint[]) {
+  return {
+    filled: points.filter((point) => !point.noCache),
+    rings: points.filter((point) => point.noCache),
+  }
 }

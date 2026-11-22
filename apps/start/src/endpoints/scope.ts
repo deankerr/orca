@@ -1,3 +1,5 @@
+import { defaultWorkload } from '@orca/pricing'
+import type { Workload } from '@orca/pricing'
 import { isPropertyId } from '@orca/properties'
 import type { PropertyId } from '@orca/properties'
 import * as R from 'remeda'
@@ -21,6 +23,13 @@ const list = z
 
 const propertyList = list.transform((ids) => ids.filter(isPropertyId))
 
+/** The default `ratio` and `hit` params: the default workload's numbers. */
+const DEFAULT_RATIO = defaultWorkload.ratio
+const DEFAULT_HIT = Math.round(defaultWorkload.hitRate * 100)
+
+/** The largest workload ratio a URL may carry. */
+export const MAX_RATIO = 1000
+
 const bound = z.number().positive().optional().catch(undefined)
 
 /** Zero is a real price, so a zero maximum keeps only free endpoints. */
@@ -28,13 +37,15 @@ const priceBound = z.number().nonnegative().optional().catch(undefined)
 
 /**
  * The index route's scope, as URL search params: the filters that put rows in scope, plus the sort,
- * the plot toggle, and the selected endpoint. Invalid values fall back to their defaults, and
+ * the workload, the plot toggle, and the selected endpoint. Invalid values fall back to their defaults, and
  * defaults are stripped from URLs, so a bare `/` is the default view.
  */
 export const scopeSchema = z
   .object({
     /** Selected endpoint UUID. */
     endpoint: z.string().min(1).optional().catch(undefined),
+    /** Workload cache hit rate, as an integer percent from 0 to 100. */
+    hit: z.number().int().min(0).max(100).default(DEFAULT_HIT).catch(DEFAULT_HIT),
     /** Maximum input price in $/M. */
     maxInput: priceBound,
     /** Minimum context length in tokens. */
@@ -46,6 +57,8 @@ export const scopeSchema = z
     plot: z.boolean().default(true).catch(true),
     /** Provider IDs, any of which may match. */
     provider: list.default([]).catch([]),
+    /** Workload input tokens per output token, above 0 and at most `MAX_RATIO`. */
+    ratio: z.number().positive().max(MAX_RATIO).default(DEFAULT_RATIO).catch(DEFAULT_RATIO),
     /** Models created within this many months of the reference time. */
     released: z.literal(RELEASE_WINDOWS).optional().catch(undefined),
     sort: z.custom<SortKey>(isSortKey).default('input').catch('input'),
@@ -65,14 +78,40 @@ export type Scope = z.output<typeof scopeSchema>
 
 /** Values stripped from URLs. */
 export const scopeDefaults = {
+  hit: DEFAULT_HIT,
   model: [],
   plot: true,
   provider: [],
+  ratio: DEFAULT_RATIO,
   sort: 'input',
   unlisted: false,
   with: [],
   without: [],
 } as const satisfies Partial<Scope>
+
+/** The workload a scope's `ratio` and `hit` params describe. */
+export function scopeWorkload(scope: Pick<Scope, 'hit' | 'ratio'>): Workload {
+  return { hitRate: scope.hit / 100, ratio: scope.ratio }
+}
+
+/**
+ * The `ratio` and `hit` params that describe a workload's numbers; the hit rate rounds to a whole
+ * percent. A number the change leaves out is left out of the params too, so merging them into a scope
+ * (as the search updater does, from the scope it is given) changes only the params it names.
+ */
+export function workloadParams(workload: Partial<Workload>): Partial<Pick<Scope, 'hit' | 'ratio'>> {
+  const params: Partial<Pick<Scope, 'hit' | 'ratio'>> = {}
+
+  if (workload.hitRate !== undefined) {
+    params.hit = Math.round(workload.hitRate * 100)
+  }
+
+  if (workload.ratio !== undefined) {
+    params.ratio = workload.ratio
+  }
+
+  return params
+}
 
 /** The scope's filters: the params that narrow or widen the rows in scope. */
 export type ScopeFilters = Pick<
@@ -88,7 +127,7 @@ export type ScopeFilters = Pick<
   | 'without'
 >
 
-/** The scope's filters alone, as a fresh object: the sort, plot toggle, and selection are dropped. */
+/** The scope's filters alone, as a fresh object: the sort, workload, plot toggle, and selection are dropped. */
 export function scopeFilters(scope: ScopeFilters): ScopeFilters {
   return {
     maxInput: scope.maxInput,
@@ -138,7 +177,7 @@ export function toggleValue<T>(values: readonly T[], value: T): T[] {
   return values.includes(value) ? values.filter((other) => other !== value) : [...values, value]
 }
 
-/** Every filter at its default; sort, selection, and plot stay. */
+/** Every filter at its default; sort, workload, selection, and plot stay. */
 export const clearedFilters = {
   maxInput: undefined,
   minContext: undefined,

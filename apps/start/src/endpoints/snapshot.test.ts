@@ -21,19 +21,44 @@ describe('buildRows', () => {
     expect(buildRows({ ...payload, endpoints: [orphan], providers: [] })).toEqual([])
   })
 
-  it('converts rates to $/M and blends them three to one', () => {
+  it('converts rates to $/M, leaving the cost to the workload', () => {
     expect(row('gpt-azure')).toMatchObject({
-      blend: (3 * 1.25 + 10) / 4,
       cacheRead: 0.125,
+      cacheWrite: null,
       input: 1.25,
       output: 10,
-      rates: { cacheRead: '0.000000125', input: '0.00000125', output: '0.00001' },
+      rates: {
+        cacheRead: '0.000000125',
+        cacheWrite: null,
+        input: '0.00000125',
+        output: '0.00001',
+      },
+    })
+    expect(row('gpt-azure')).not.toHaveProperty('blend')
+  })
+
+  it('converts a cache-write rate and keeps its string', () => {
+    const [cached] = buildRows({
+      ...payload,
+      endpoints: [
+        endpoint({
+          cacheRead: '0.000000125',
+          cacheWrite: '0.0000015625',
+          id: 'cached',
+          model: models.gpt,
+          provider: providers.openai,
+        }),
+      ],
+    })
+
+    expect(cached).toMatchObject({
+      cacheWrite: 1.5625,
+      rates: { cacheWrite: '0.0000015625' },
     })
   })
 
-  it('keeps zero rates as a price of $0, blending to 0', () => {
+  it('keeps zero rates as a price of $0', () => {
     expect(row('gpt-free')).toMatchObject({
-      blend: 0,
       input: 0,
       output: 0,
       rates: { input: '0', output: '0' },
@@ -55,7 +80,7 @@ describe('buildRows', () => {
         ],
       })
 
-      expect(absent).toMatchObject({ blend: null, input: null, output: 10, rates: { input: null } })
+      expect(absent).toMatchObject({ input: null, output: 10, rates: { input: null } })
     }
   })
 
@@ -73,7 +98,7 @@ describe('buildRows', () => {
       ],
     })
 
-    expect(extreme).toMatchObject({ blend: null, input: null, output: 10 })
+    expect(extreme).toMatchObject({ input: null, output: 10 })
     expect(extreme?.rates.input).toBe('1e309')
   })
 

@@ -226,3 +226,17 @@ _Avoid_: Event (when referring to the selected content)
 **Batch alert**:
 A group of equivalent field changes, or endpoint unlistings, across entities at the same scan time and within the same entity kind.
 Its members retain their individual event identities.
+
+### Cost comparison
+
+**Workload**:
+How an endpoint is used, as the input tokens per output token and the share of input tokens a cache serves.
+_Avoid_: Usage profile, traffic mix, scenario
+
+**Workload cost**:
+An endpoint's price in USD per million tokens under a workload, averaging its input, output, and cache rates by that workload's mix.
+_Avoid_: Blended price, effective price
+
+**Fresh input**:
+Input tokens a cache does not serve: new tokens, and tokens re-billed after a cache miss.
+_Avoid_: Uncached input

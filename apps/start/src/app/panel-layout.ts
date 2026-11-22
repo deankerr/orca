@@ -4,9 +4,9 @@
  * do not. The Endpoint panel never takes a column: it floats over Results in a drawer at every width,
  * so selecting an endpoint, or moving the selection with ↑/↓, never reflows the Table or redraws the
  * plot. It floats beside the Table only where Results keeps the folded Table's leading columns (Model,
- * Input and Output) clear of it; otherwise it rises from the bottom. The Table fills Results at every
+ * Cost and Input) clear of it; otherwise it rises from the bottom. The Table fills Results at every
  * width and folds Provider into the Model cell below one Results width: where the unfolded Table fits
- * with Model at its cap. Wider than that the drawer may cover Input and Output, which scroll out from
+ * with Model at its cap. Wider than that the drawer may cover Cost and Input, which scroll out from
  * under it. The breakpoints are not chosen; they are the widths at which a layout stops fitting.
  */
 
@@ -27,7 +27,7 @@ export const RESULTS_BORDER_WIDTH = 1
 
 /*
  * The Table's columns fill the Results panel at every width, in a fixed layout, by one rule: Model
- * grows first, to its cap; Provider, where it has a column, has its own width; and the six figure
+ * grows first, to its cap; Provider, where it has a column, has its own width; and the seven figure
  * columns share what is left evenly, so the figures stay evenly spaced and right-aligned under their
  * headers. `tableColumnWidths` is the rule in pixels; the `<col>`s express it in CSS
  * (`MODEL_COLUMN_WIDTH_CSS`, and figure columns without a width, which a fixed table shares evenly).
@@ -45,10 +45,10 @@ export const MODEL_COLUMN_MAX_WIDTH = 256
 /** The Provider column: a provider name with its quantization and tier tags at the 99th percentile (207px). */
 export const PROVIDER_COLUMN_WIDTH = 208
 
-/** The numeric columns: Input, Output, Cache read, Throughput, Latency, Context. */
-export const FIGURE_COLUMN_COUNT = 6
+/** The numeric columns: Cost, Input, Output, Cache read, Throughput, Latency, Context. */
+export const FIGURE_COLUMN_COUNT = 7
 
-/** A figure column at its narrowest: a price such as `$12.500` and its padding. */
+/** A figure column at its narrowest: a price such as `$12.500` and its padding. A Cost cell's no-cache mark hangs into the padding and the gap beside it. */
 export const FIGURE_COLUMN_MIN_WIDTH = 68
 
 /** The figures at their narrowest, which Model leaves room for before it grows. */
@@ -72,7 +72,7 @@ export interface TableColumnWidths {
   model: number
   /** Zero where Provider is folded into the Model cell. */
   provider: number
-  /** Each of the six figure columns. */
+  /** Each of the figure columns. */
   figure: number
 }
 
@@ -101,7 +101,7 @@ export function tableColumnWidths(results: number): TableColumnWidths {
 
 /**
  * Whether a Results panel this wide keeps the folded Table's leading columns, Model and the first two
- * figures (Input and Output), clear of a floating Endpoint drawer. The drawer covers the end of
+ * figures (Cost and Input), clear of a floating Endpoint drawer. The drawer covers the end of
  * Results, trailing border included; the rest, after the leading border, is what the Table shows. The
  * columns under it scroll out (`tableTrailingInset`).
  */
@@ -124,16 +124,16 @@ function narrowest(holds: (width: number) => boolean): number {
 
 /**
  * The narrowest Results panel the Endpoint drawer floats beside: where the folded Table keeps Model,
- * Input and Output clear of it. Wider, where Provider has its column, the drawer may cover Input and
+ * Cost and Input clear of it. Wider, where Provider has its column, the drawer may cover Input and
  * Output (`UNFOLD_RESULTS_WIDTH`); they stay reachable by scrolling, and Model and Provider stay clear.
  */
 export const ENDPOINT_RESULTS_WIDTH = narrowest(foldedTableKeepsLeadingColumnsClear)
 
 /**
  * The narrowest Results panel whose Table gives Provider its own column: where the unfolded Table
- * fits, Model at its cap, Provider at its width, and the six figures at their minimum, inside the
+ * fits, Model at its cap, Provider at its width, and the figures at their minimum, inside the
  * frame's two borders. Below it Provider folds into the Model cell's second line. Unfolding earlier,
- * rather than where the drawer would still leave Input and Output clear, keeps rows distinct when the
+ * rather than where the drawer would still leave Cost and Input clear, keeps rows distinct when the
  * Table is sorted by model. It is the Table's one fold, a function of the Results width alone.
  */
 export const UNFOLD_RESULTS_WIDTH =

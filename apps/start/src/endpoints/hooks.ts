@@ -1,3 +1,4 @@
+import type { Workload } from '@orca/pricing'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useDeferredValue, useMemo } from 'react'
@@ -6,11 +7,17 @@ import { propertyFacetGroups } from './facets'
 import type { PropertyFacetGroup } from './facets'
 import { applyFilters, facetCounts, rangeHistograms, scopeSummary } from './filtering'
 import type { FacetCounts, Histogram, RangeFacet, ScopeSummary } from './filtering'
-import { clearedFilters, propertyFilters, scopeFilters } from './scope'
+import {
+  clearedFilters,
+  propertyFilters,
+  scopeFilters,
+  scopeWorkload,
+  workloadParams,
+} from './scope'
 import type { Scope, ScopeFilters } from './scope'
 import { buildSnapshot, snapshotQuery } from './snapshot'
 import type { EndpointRow, Snapshot } from './snapshot'
-import { sortRows } from './sort'
+import { sortRows, sortWorkload } from './sort'
 import type { SortKey } from './sort'
 
 // PascalCase, so the React Compiler recognises `RouteApi.useX()` as a hook call.
@@ -22,7 +29,7 @@ export function useSnapshot(): Snapshot {
 }
 
 // The single-param hooks below re-render a component only when that param changes, so the sort, the
-// selection, and the plot toggle stay out of components that do not read them. The router keeps a
+// workload, the selection, and the plot toggle stay out of components that do not read them. The router keeps a
 // param's value across navigations that leave it unchanged, so a list param is stable too.
 
 /** The selected endpoint's id. */
@@ -32,6 +39,25 @@ export function useSelectedId(): string | undefined {
 
 export function useSort(): SortKey {
   return RouteApi.useSearch({ select: (scope) => scope.sort })
+}
+
+/**
+ * The workload the costs are computed under, from the `ratio` and `hit` params. The selector builds a
+ * fresh object, so structural sharing hands back the previous one while both numbers are unchanged.
+ */
+export function useWorkload(): Workload {
+  return RouteApi.useSearch({ select: scopeWorkload, structuralSharing: true })
+}
+
+/**
+ * The workload the sort depends on: the current one when sorting by cost, else a constant, so changing
+ * the workload neither re-renders nor re-sorts under any other sort.
+ */
+function useSortWorkload(): Workload {
+  return RouteApi.useSearch({
+    select: (scope) => sortWorkload(scope.sort, scopeWorkload(scope)),
+    structuralSharing: true,
+  })
 }
 
 /** Whether the plot is shown. */
@@ -73,20 +99,24 @@ function useSnapshotAndFilters(): [Snapshot, ScopeFilters] {
 
 /**
  * Rows matching every filter, in the URL's sort order. The array changes only with the snapshot, a
- * filter, the sort, or the reference time, so selecting an endpoint or toggling the plot leaves it
+ * filter, the sort, the reference time, or, when sorting by cost, the workload, so selecting an endpoint or toggling the plot leaves it
  * alone and nothing downstream filters, sorts, or re-renders.
  */
 export function useScopedRows(): EndpointRow[] {
   const [{ at, rows }, filters] = useSnapshotAndFilters()
   const sort = useSort()
+  const workload = useSortWorkload()
 
-  return useMemo(() => sortRows(applyFilters(rows, filters, at), sort), [at, rows, filters, sort])
+  return useMemo(
+    () => sortRows(applyFilters(rows, filters, at), sort, workload),
+    [at, rows, filters, sort, workload],
+  )
 }
 
-/** Rows for a view that trails the filters, and whether it is still catching up to them. */
+/** Rows for a view that trails the URL, and whether it is still catching up to it. */
 interface DeferredRows {
   rows: EndpointRow[]
-  /** True while the filters have changed but `rows` still reflect the previous ones. */
+  /** True while the URL has changed but the view still reflects the previous state: the filters, and for the Table the workload. */
   stale: boolean
 }
 
@@ -107,16 +137,38 @@ export function useDeferredFilteredRows(): DeferredRows {
   return { rows: matching, stale: filters !== deferred }
 }
 
-/**
- * `useScopedRows` for the Table: the filters are deferred as in `useDeferredFilteredRows`, but the
- * sort is not. Sorting is cheap against rendering, and a header click should reorder the rows it
- * already shows, not wait behind them.
- */
-export function useDeferredScopedRows(): DeferredRows {
-  const { rows: matching, stale } = useDeferredFilteredRows()
-  const sort = useSort()
+/** Rows for the Table, with the workload they are sorted under and the costs must be shown under. */
+interface DeferredScopedRows extends DeferredRows {
+  /**
+   * The workload that trails the URL's, as the rows trail the filters. Sort by it, and compute every
+   * cost from it, so the figures always agree with the order.
+   */
+  workload: Workload
+}
 
-  return { rows: useMemo(() => sortRows(matching, sort), [matching, sort]), stale }
+/**
+ * `useScopedRows` for the Table: the filters and the workload are deferred, but the sort is not. A
+ * workload change re-renders the Table once with the old rows and the old workload, which its
+ * memoised children skip; then the new ones render in an interruptible pass. Sorting is cheap
+ * against rendering, and a header click should reorder the rows it already shows, not wait behind
+ * them.
+ *
+ * The sort uses the deferred workload, never the URL's: the costs on screen are computed from the
+ * returned `workload`, so a cost sort that moved ahead of them would show costs out of order. `stale`
+ * covers either deferral, under any sort, since the costs lag under all of them.
+ */
+export function useDeferredScopedRows(): DeferredScopedRows {
+  const { rows: matching, stale: filtersStale } = useDeferredFilteredRows()
+  const sort = useSort()
+  const current = useWorkload()
+  const workload = useDeferredValue(current)
+  const sortedUnder = sortWorkload(sort, workload)
+
+  return {
+    rows: useMemo(() => sortRows(matching, sort, sortedUnder), [matching, sort, sortedUnder]),
+    stale: filtersStale || current !== workload,
+    workload,
+  }
 }
 
 /**
@@ -188,6 +240,10 @@ export function useScopeActions() {
     },
     setSort: (sort: SortKey) => {
       update(() => ({ sort }), { replace: true })
+    },
+    /** Changes the workload numbers it names and leaves the other as the current scope has it. */
+    setWorkload: (change: Partial<Workload>) => {
+      update(() => workloadParams(change), { replace: true })
     },
     togglePlot: () => {
       update(({ plot }) => ({ plot: !plot }), { replace: true })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { blendedPrice, perMillion, quotedRate } from './index'
+import { perMillion, quotedRate } from './index'
 
 describe('quoted rates', () => {
   it('keeps zero as a real price and treats absent rates as unquoted', () => {
@@ -57,31 +57,5 @@ describe('quoted rates', () => {
     expect(perMillion('1e302')).toBe(1e308)
     expect(perMillion('1e-312')).toBe(1e-306)
     expect(perMillion('5e-318')).toBe(5e-312)
-  })
-})
-
-describe('blended price', () => {
-  it('weights input three to one against output', () => {
-    expect(blendedPrice(1, 5)).toBe(2)
-    expect(blendedPrice(0.15, 0.6)).toBeCloseTo(0.2625)
-  })
-
-  it('stays finite for huge finite rates', () => {
-    expect(blendedPrice(1e308, 1e308)).toBe(1e308)
-    expect(blendedPrice(Number.MAX_VALUE, Number.MAX_VALUE)).toBe(Number.MAX_VALUE)
-  })
-
-  it('is zero when both rates are zero', () => {
-    expect(blendedPrice(0, 0)).toBe(0)
-  })
-
-  it('weights a zero rate like any other', () => {
-    expect(blendedPrice(0, 4)).toBe(1)
-    expect(blendedPrice(4, 0)).toBe(3)
-  })
-
-  it('is absent when either rate is absent', () => {
-    expect(blendedPrice(null, 5)).toBeNull()
-    expect(blendedPrice(1, null)).toBeNull()
   })
 })

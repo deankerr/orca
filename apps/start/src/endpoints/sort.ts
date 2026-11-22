@@ -1,18 +1,21 @@
+import { defaultWorkload, workloadCost } from '@orca/pricing'
+import type { Workload } from '@orca/pricing'
+
 import type { EndpointRow } from './snapshot'
 
-/** Row fields the table can sort by. */
+/** Row fields the table can sort by, and `cost`, which derives from the row under a workload. */
 const SORT_COLUMNS = [
   'model',
   'provider',
   'input',
   'output',
   'cacheRead',
-  'blend',
+  'cost',
   'throughput',
   'latency',
   'context',
   'released',
-] as const satisfies readonly (keyof EndpointRow)[]
+] as const satisfies readonly (keyof EndpointRow | 'cost')[]
 
 export type SortColumn = (typeof SORT_COLUMNS)[number]
 
@@ -34,6 +37,14 @@ export function parseSortKey(key: SortKey) {
 
 export function toSortKey(column: SortColumn, descending: boolean): SortKey {
   return descending ? `-${column}` : column
+}
+
+/**
+ * The workload a sort depends on: the one given when sorting by cost, else `defaultWorkload`, a constant,
+ * so a workload change neither re-sorts nor invalidates a memo under any other sort.
+ */
+export function sortWorkload(key: SortKey, workload: Workload): Workload {
+  return parseSortKey(key).column === 'cost' ? workload : defaultWorkload
 }
 
 type Compare = (left: EndpointRow, right: EndpointRow) => number
@@ -66,10 +77,10 @@ const reversible =
   (left, right) =>
     descending ? compare(right, left) : compare(left, right)
 
-const comparators: Record<SortColumn, (descending: boolean) => Compare> = {
-  blend: byNumber((row) => row.blend),
+const comparators = (workload: Workload): Record<SortColumn, (descending: boolean) => Compare> => ({
   cacheRead: byNumber((row) => row.cacheRead),
   context: byNumber((row) => row.context),
+  cost: byNumber((row) => workloadCost(row, workload)),
   input: byNumber((row) => row.input),
   latency: byNumber((row) => row.latency),
   model: reversible(byText((row) => row.model.name)),
@@ -77,7 +88,7 @@ const comparators: Record<SortColumn, (descending: boolean) => Compare> = {
   provider: reversible(byText((row) => row.provider.display_name)),
   released: byNumber((row) => row.released),
   throughput: byNumber((row) => row.throughput),
-}
+})
 
 /** Ties fall back to model name, provider name, then endpoint ID, so order is stable across scans. */
 const tieBreak: Compare = (left, right) =>
@@ -85,10 +96,17 @@ const tieBreak: Compare = (left, right) =>
   collator.compare(left.provider.display_name, right.provider.display_name) ||
   left.id.localeCompare(right.id)
 
-/** Rows ordered by a sort key; absent numbers sort last in either direction. */
-export function sortRows(rows: readonly EndpointRow[], key: SortKey): EndpointRow[] {
+/**
+ * Rows ordered by a sort key; absent numbers sort last in either direction. The workload matters only
+ * to the `cost` column.
+ */
+export function sortRows(
+  rows: readonly EndpointRow[],
+  key: SortKey,
+  workload: Workload,
+): EndpointRow[] {
   const { column, descending } = parseSortKey(key)
-  const compare = comparators[column](descending)
+  const compare = comparators(workload)[column](descending)
 
   return rows.toSorted((left, right) => compare(left, right) || tieBreak(left, right))
 }

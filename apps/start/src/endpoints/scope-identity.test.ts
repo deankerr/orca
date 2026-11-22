@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 
 import { stringifySearch } from '#lib/url-search-serializer'
 
-import { propertyFilters, scopeDefaults, scopeFilters, scopeSchema } from './scope'
+import { propertyFilters, scopeDefaults, scopeFilters, scopeSchema, scopeWorkload } from './scope'
 import type { Scope } from './scope'
 
 /**
@@ -115,6 +115,7 @@ describe('index route scope identity', () => {
     await change({ endpoint: 'abc' })
     await change({ plot: false })
     await change({ sort: 'output' })
+    await change({ hit: 50, ratio: 10 })
 
     expect(replaceEqualDeep(selected, scopeFilters(scope()))).toBe(selected)
 
@@ -125,6 +126,30 @@ describe('index route scope identity', () => {
     expect(bounded).not.toBe(selected)
     expect(bounded.maxInput).toBe(3)
     expect(bounded.model).toBe(selected.model)
+  })
+
+  // `useWorkload` selects a fresh object the same way.
+  it('shares the workload selection until a workload param changes', async () => {
+    const { change, scope } = await startRouter('/?ratio=10&hit=75')
+    const selected = replaceEqualDeep(undefined, scopeWorkload(scope()))
+
+    await change({ endpoint: 'abc' })
+    await change({ sort: 'cost' })
+    await change({ model: ['openai/gpt-5'] })
+    expect(replaceEqualDeep(selected, scopeWorkload(scope()))).toBe(selected)
+
+    await change({ hit: 90 })
+    expect(replaceEqualDeep(selected, scopeWorkload(scope()))).not.toBe(selected)
+  })
+
+  it('strips the default workload from the URL', async () => {
+    const { change, scope } = await startRouter('/?ratio=10')
+
+    expect(scope().ratio).toBe(10)
+
+    await change({ ratio: 100 })
+
+    expect(scope().ratio).toBe(100)
   })
 
   it('shares the property filters selection until a property list changes', async () => {

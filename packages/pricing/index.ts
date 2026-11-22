@@ -2,7 +2,15 @@ export { priceMeters } from './meters'
 
 export { conditionalPricing, isLongContextPriced, isSchedulePriced } from './overrides'
 
-export { blendedPrice, perMillion, quotedRate } from './rates'
+export { perMillion, quotedRate } from './rates'
+
+export {
+  defaultWorkload,
+  isCostRaisedByNoCache,
+  matchingPreset,
+  workloadCost,
+  workloadPresets,
+} from './workload'
 
 export type {
   ConditionalPricing,
@@ -11,3 +19,5 @@ export type {
   PriceRates,
   PriceWindow,
 } from './overrides'
+
+export type { Workload, WorkloadPreset, WorkloadRates } from './workload'

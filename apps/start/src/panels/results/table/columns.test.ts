@@ -9,6 +9,7 @@ import {
 } from '#app/panel-layout'
 
 import {
+  columnLabel,
   columns,
   columnWidthStyle,
   FOLDED_CLASS,
@@ -19,19 +20,41 @@ import {
 import { STICKY_MODEL_CLASS } from './endpoint-table'
 
 describe('columns', () => {
-  it('follows Model and Provider with Input and Output, the figures kept clear of the drawer', () => {
-    expect(columns.map((column) => column.id).slice(0, 4)).toEqual([
+  it('orders the columns Model, Provider, then the figures, Cost first', () => {
+    expect(columns.map((column) => column.id)).toEqual([
       'model',
       'provider',
+      'cost',
       'input',
       'output',
+      'cacheRead',
+      'throughput',
+      'latency',
+      'context',
     ])
   })
 
-  it('has the six figure columns the width rule shares the surplus between', () => {
+  it('has the figure columns the width rule shares the surplus between', () => {
     expect(columns.filter((column) => column.meta?.numeric === true)).toHaveLength(
       FIGURE_COLUMN_COUNT,
     )
+    expect(FIGURE_COLUMN_COUNT).toBe(7)
+  })
+
+  it('makes Cost numeric, sortable, and ascending first, the first figure after Provider', () => {
+    const ids = columns.map((column) => column.id)
+    const cost = columns.find((column) => column.id === 'cost')
+
+    expect(ids.indexOf('cost')).toBe(ids.indexOf('provider') + 1)
+    expect(columnLabel('cost')).toBe('Cost')
+    expect(cost?.meta?.numeric).toBe(true)
+    expect(cost?.sortDescFirst).toBe(false)
+  })
+
+  it('names every column by a label, which the loading skeleton reads', () => {
+    for (const column of columns) {
+      expect(columnLabel(column.id)).toBeTypeOf('string')
+    }
   })
 })
 

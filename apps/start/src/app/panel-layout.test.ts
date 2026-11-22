@@ -65,8 +65,8 @@ describe('panelLayout', () => {
     [768, false, 'bottom'],
     [888, false, 'bottom'],
     [888, true, 'right'],
-    [848, true, 'bottom'],
-    [849, true, 'right'],
+    [810, true, 'bottom'],
+    [811, true, 'right'],
     [ENDPOINT_SIDE_WIDTH - 1, true, 'bottom'],
     [ENDPOINT_SIDE_WIDTH, true, 'right'],
     [ENDPOINT_SIDE_DOCKED_WIDTH - 1, false, 'bottom'],
@@ -84,7 +84,7 @@ describe('panelLayout', () => {
 
   it('derives the drawer’s pages from the narrowest Results that fits it', () => {
     // The drawer covers its width of Results; docked Filters take a column and a gap from it.
-    expect(ENDPOINT_RESULTS_WIDTH).toBe(833)
+    expect(ENDPOINT_RESULTS_WIDTH).toBe(795)
     expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + ENDPOINT_RESULTS_WIDTH)
     expect(ENDPOINT_SIDE_DOCKED_WIDTH).toBe(
       PAD + FILTERS_WIDTH + PANEL_GAP + ENDPOINT_RESULTS_WIDTH,
@@ -123,7 +123,7 @@ describe('panelLayout', () => {
     }
   })
 
-  it('keeps Input and Output clear of the drawer wherever the Table is folded beside it', () => {
+  it('keeps Cost and Input clear of the drawer wherever the Table is folded beside it', () => {
     for (let results = ENDPOINT_RESULTS_WIDTH; results < UNFOLD_RESULTS_WIDTH; results += 1) {
       const { figure, model } = tableColumnWidths(results)
 
@@ -133,12 +133,12 @@ describe('panelLayout', () => {
     }
   })
 
-  it('lets the drawer cover Input and Output where the Table unfolds, which scroll clear of it', () => {
+  it('lets the drawer cover Cost and Input where the Table unfolds, which scroll clear of it', () => {
     const { figure, model, provider } = tableColumnWidths(UNFOLD_RESULTS_WIDTH)
     const clear = UNFOLD_RESULTS_WIDTH - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH
 
     expect(clear).toBeLessThan(model + provider + 2 * figure)
-    expect(tableTrailingInset(panelLayout(1170, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
+    expect(tableTrailingInset(panelLayout(1238, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
   })
 
   it('is the narrowest Results that keeps the folded Table’s leading columns clear, and they stay clear from there', () => {
@@ -160,7 +160,7 @@ describe('panelLayout', () => {
 
 describe('the Table’s fold', () => {
   it('unfolds Provider where the unfolded Table fits with Model at its cap', () => {
-    expect(UNFOLD_RESULTS_WIDTH).toBe(874)
+    expect(UNFOLD_RESULTS_WIDTH).toBe(942)
     expect(tableColumnWidths(UNFOLD_RESULTS_WIDTH)).toEqual({
       figure: FIGURE_COLUMN_MIN_WIDTH,
       model: MODEL_COLUMN_MAX_WIDTH,

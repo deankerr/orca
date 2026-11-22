@@ -1,3 +1,4 @@
+import { defaultWorkload, workloadCost } from '@orca/pricing'
 import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/react-table'
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 import { cn } from 'cn'
@@ -7,6 +8,7 @@ import { EntityAvatar } from '#components/entity-avatar'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
 
+import { CostCell } from './cost-cell'
 import { providerTags } from './tags'
 
 declare module '@tanstack/react-table' {
@@ -48,19 +50,19 @@ export function columnWidthStyle(id: string | undefined) {
  */
 
 /** Hides a folding column's column, header, and cells where it folds. */
-export const FOLDED_CLASS = '@max-[872px]/results:hidden'
+export const FOLDED_CLASS = '@max-[940px]/results:hidden'
 
 /** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'inline-flex @min-[872px]/results:hidden'
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[940px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[872px]/results:hidden'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[940px]/results:hidden'
 
 /**
  * The Table wrapper's minimum width, `TABLE_MIN_WIDTH`: the folded Table's columns at their
  * narrowest, so a narrower panel scrolls it sideways. A test keeps the literal at the constant.
  */
-export const TABLE_MIN_WIDTH_CLASS = 'min-w-[588px]'
+export const TABLE_MIN_WIDTH_CLASS = 'min-w-[656px]'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -69,6 +71,7 @@ export const features = tableFeatures({ rowSortingFeature })
 const LABELS = {
   cacheRead: 'Cache R',
   context: 'Context',
+  cost: 'Cost',
   input: 'Input',
   latency: 'Latency',
   model: 'Model',
@@ -133,8 +136,9 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 }
 
 /**
- * Columns in display order; `columnWidthStyle` sizes them. Input and Output directly follow Provider,
- * so they are the first figures, after Model and Provider, a drawer floating beside the Table covers
+ * Columns in display order; `columnWidthStyle` sizes them. Cost is the first figure, ahead of the
+ * quoted prices it derives from. Cost and Input directly follow Provider, so they are the first
+ * figures, after Model and Provider, a drawer floating beside the Table covers
  * (`UNFOLD_RESULTS_WIDTH`). Lower is better for prices and latency; higher is better for the rest.
  */
 export const columns = helper.columns([
@@ -149,6 +153,15 @@ export const columns = helper.columns([
     header: LABELS.provider,
     id: 'provider',
     meta: { folds: true },
+    sortDescFirst: false,
+  }),
+  helper.accessor((row) => workloadCost(row, defaultWorkload), {
+    // The accessor only makes the column sortable. It is never read: the URL's sort orders the rows
+    // upstream, under the current workload, and the cell reads the workload from context.
+    cell: ({ row }) => <CostCell row={row.original} />,
+    header: LABELS.cost,
+    id: 'cost',
+    meta: { numeric: true },
     sortDescFirst: false,
   }),
   helper.accessor('input', {

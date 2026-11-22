@@ -12,6 +12,8 @@ import { usePanelLayout, useToggleFilters } from '#app/panels'
 import { usePlot, useScopeActions, useScopeFilters, useScopeSummary } from '#endpoints/hooks'
 import { activeFilterCount } from '#endpoints/scope'
 
+import { WorkloadControl } from './workload-control'
+
 const count = (value: number, noun: string) =>
   `${formatNumber(value)} ${noun}${value === 1 ? '' : 's'}`
 
@@ -125,6 +127,7 @@ export function ScopeBar() {
             Clear
           </Button>
         )}
+        <WorkloadControl />
         <PlotToggle />
       </div>
     </div>

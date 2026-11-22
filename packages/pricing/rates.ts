@@ -40,16 +40,3 @@ export function perMillion(rate: string | null): number | null {
 
   return Number.isFinite(value) && value > 0 ? value : null
 }
-
-/** Share of the blended price from input: three parts input to one part output. */
-const BLEND_INPUT_WEIGHT = 0.75
-
-/**
- * Blended price: three parts input to one part output, `0.75 × input + 0.25 × output`, in the rates'
- * unit. Weighting before adding keeps two huge finite rates finite. Zero when both rates are zero; null when either rate is absent.
- */
-export function blendedPrice(input: number | null, output: number | null): number | null {
-  return input === null || output === null
-    ? null
-    : BLEND_INPUT_WEIGHT * input + (1 - BLEND_INPUT_WEIGHT) * output
-}

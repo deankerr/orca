@@ -3,7 +3,7 @@ import { api } from '@orca/backend/api'
 import type { Endpoint } from '@orca/contract/endpoint'
 import type { Model } from '@orca/contract/model'
 import type { Provider } from '@orca/contract/provider'
-import { blendedPrice, perMillion, quotedRate } from '@orca/pricing'
+import { perMillion, quotedRate } from '@orca/pricing'
 import { activeProperties } from '@orca/properties'
 import type { PropertyId, Value } from '@orca/properties'
 import { queryOptions } from '@tanstack/react-query'
@@ -23,9 +23,13 @@ interface QuotedRates {
   input: string | null
   output: string | null
   cacheRead: string | null
+  cacheWrite: string | null
 }
 
-/** One endpoint with its model, provider, active properties, and the numbers views sort, filter, and plot. */
+/**
+ * One endpoint with its model, provider, active properties, and the numbers views sort, filter, and
+ * plot. Rows do not depend on the workload: derive a cost with `workloadCost(row, workload)`.
+ */
 export interface EndpointRow {
   /** Endpoint UUID. */
   id: string
@@ -41,8 +45,8 @@ export interface EndpointRow {
   output: number | null
   /** Cache-read $/M. */
   cacheRead: number | null
-  /** Blended $/M: `(3 × input + output) / 4`; 0 when both rates are zero. */
-  blend: number | null
+  /** Cache-write $/M, the 5-minute rate. */
+  cacheWrite: number | null
   /** Median tokens per second. */
   throughput: number | null
   /** Median latency in milliseconds. */
@@ -89,8 +93,8 @@ export function buildRows(payload: SnapshotPayload, at = referenceTime(payload))
 
     return [
       {
-        blend: blendedPrice(input, output),
         cacheRead: perMillion(pricing.input_cache_read),
+        cacheWrite: perMillion(pricing.input_cache_write),
         context: endpoint.context_length,
         endpoint,
         id: endpoint.id,
@@ -102,6 +106,7 @@ export function buildRows(payload: SnapshotPayload, at = referenceTime(payload))
         provider,
         rates: {
           cacheRead: quotedRate(pricing.input_cache_read),
+          cacheWrite: quotedRate(pricing.input_cache_write),
           input: quotedRate(pricing.input),
           output: quotedRate(pricing.output),
         },

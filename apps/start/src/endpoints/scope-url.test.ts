@@ -15,12 +15,14 @@ const roundTrip = (scope: ScopeInput) =>
 describe('scope URL round-trip', () => {
   it('round-trips through the router parser and the scope schema', () => {
     const scope = scopeSchema.parse({
+      hit: 75,
       maxInput: 2.5,
       model: ['openai/gpt-5', 'moonshotai/kimi-k3'],
       plot: false,
       provider: ['302'],
+      ratio: 2.5,
       released: 6,
-      sort: '-blend',
+      sort: '-cost',
       without: ['training'],
     })
 
