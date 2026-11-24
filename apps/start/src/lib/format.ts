@@ -1,6 +1,6 @@
 import { UTCDateMini } from '@date-fns/utc'
 import { compareNumbers, formatNumber, formatPrice } from '@orca/backend/numbers'
-import { format, isValid } from 'date-fns'
+import { differenceInMonths, format, isValid } from 'date-fns'
 
 /** Shown where an endpoint has no value. */
 export const ABSENT = '—'
@@ -106,4 +106,38 @@ export function formatCost(cost: number | null): string {
   }
 
   return formatFixedCell(cost, 0, cost === 0 ? '$0' : formatPrice(cost))
+}
+
+/** A UTC calendar date: `2026-10-24`. */
+export function formatDate(iso: string | number | null): string {
+  if (iso === null) {
+    return ABSENT
+  }
+
+  const date = new UTCDateMini(iso)
+
+  return isValid(date) ? format(date, 'yyyy-MM-dd') : ABSENT
+}
+
+const DAY = 86_400_000
+
+/**
+ * How long before the reference time a model was released, compactly: whole days under 100 days
+ * (`0d`, `99d`), whole calendar months under a year (`4mo`, `11mo`), then years to one decimal
+ * (`1.5y`). A release after the reference time reads `0d`. Both are epoch milliseconds.
+ */
+export function formatAge(released: number, at: number): string {
+  if (!Number.isFinite(released) || !Number.isFinite(at)) {
+    return ABSENT
+  }
+
+  const days = Math.floor((at - released) / DAY)
+
+  if (days < 100) {
+    return `${Math.max(0, days)}d`
+  }
+
+  const months = differenceInMonths(new UTCDateMini(at), new UTCDateMini(released))
+
+  return months < 12 ? `${months}mo` : `${(months / 12).toFixed(1)}y`
 }

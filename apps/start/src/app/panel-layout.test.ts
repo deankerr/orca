@@ -65,13 +65,14 @@ describe('panelLayout', () => {
     [768, false, 'bottom'],
     [888, false, 'bottom'],
     [888, true, 'right'],
-    [810, true, 'bottom'],
-    [811, true, 'right'],
     [ENDPOINT_SIDE_WIDTH - 1, true, 'bottom'],
-    [ENDPOINT_SIDE_WIDTH, true, 'right'],
+    // Results fits the drawer from here, but a page this narrow puts Filters in a drawer and runs Results flush.
+    [ENDPOINT_SIDE_WIDTH, true, 'bottom'],
+    [FILTERS_DOCK_WIDTH - 1, true, 'bottom'],
+    [FILTERS_DOCK_WIDTH, true, 'right'],
     [ENDPOINT_SIDE_DOCKED_WIDTH - 1, false, 'bottom'],
     [ENDPOINT_SIDE_DOCKED_WIDTH, false, 'right'],
-    [1024, false, 'bottom'],
+    [1024, false, 'right'],
     [1024, true, 'right'],
     [1280, false, 'right'],
     [1728, false, 'right'],
@@ -84,7 +85,7 @@ describe('panelLayout', () => {
 
   it('derives the drawer’s pages from the narrowest Results that fits it', () => {
     // The drawer covers its width of Results; docked Filters take a column and a gap from it.
-    expect(ENDPOINT_RESULTS_WIDTH).toBe(795)
+    expect(ENDPOINT_RESULTS_WIDTH).toBe(701)
     expect(ENDPOINT_SIDE_WIDTH).toBe(PAD + ENDPOINT_RESULTS_WIDTH)
     expect(ENDPOINT_SIDE_DOCKED_WIDTH).toBe(
       PAD + FILTERS_WIDTH + PANEL_GAP + ENDPOINT_RESULTS_WIDTH,
@@ -133,12 +134,16 @@ describe('panelLayout', () => {
     }
   })
 
-  it('lets the drawer cover Cost and Input where the Table unfolds, which scroll clear of it', () => {
-    const { figure, model, provider } = tableColumnWidths(UNFOLD_RESULTS_WIDTH)
-    const clear = UNFOLD_RESULTS_WIDTH - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH
+  it('keeps Cost and Input clear of the drawer where the Table unfolds too, and the rest scroll clear of it', () => {
+    for (let results = UNFOLD_RESULTS_WIDTH; results <= 4000; results += 1) {
+      const { figure, model, provider } = tableColumnWidths(results)
 
-    expect(clear).toBeLessThan(model + provider + 2 * figure)
-    expect(tableTrailingInset(panelLayout(1238, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
+      expect(results - ENDPOINT_WIDTH - RESULTS_BORDER_WIDTH).toBeGreaterThanOrEqual(
+        model + provider + 2 * figure,
+      )
+    }
+
+    expect(tableTrailingInset(panelLayout(1306, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
   })
 
   it('is the narrowest Results that keeps the folded Table’s leading columns clear, and they stay clear from there', () => {
@@ -160,7 +165,7 @@ describe('panelLayout', () => {
 
 describe('the Table’s fold', () => {
   it('unfolds Provider where the unfolded Table fits with Model at its cap', () => {
-    expect(UNFOLD_RESULTS_WIDTH).toBe(942)
+    expect(UNFOLD_RESULTS_WIDTH).toBe(1010)
     expect(tableColumnWidths(UNFOLD_RESULTS_WIDTH)).toEqual({
       figure: FIGURE_COLUMN_MIN_WIDTH,
       model: MODEL_COLUMN_MAX_WIDTH,
@@ -218,7 +223,6 @@ describe('tableColumnWidths', () => {
       provider: 0,
     })
     expect(tableColumnWidths(TABLE_MIN_WIDTH + 2 + 40).model).toBe(MODEL_COLUMN_WIDTH + 40)
-    expect(tableColumnWidths(ENDPOINT_RESULTS_WIDTH).model).toBe(MODEL_COLUMN_MAX_WIDTH)
     expect(tableColumnWidths(2264).model).toBe(MODEL_COLUMN_MAX_WIDTH)
   })
 
@@ -245,7 +249,7 @@ describe('tableTrailingInset', () => {
   it('leaves none with nothing selected, or for a drawer from the bottom', () => {
     expect(tableTrailingInset(panelLayout(1440, false), false)).toBe(0)
     expect(tableTrailingInset(panelLayout(390, false), true)).toBe(0)
-    expect(tableTrailingInset(panelLayout(1024, false), true)).toBe(0)
+    expect(tableTrailingInset(panelLayout(996, false), true)).toBe(0)
   })
 })
 

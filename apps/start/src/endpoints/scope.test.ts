@@ -25,6 +25,11 @@ describe('scopeSchema', () => {
     expect(scopeSchema.parse({})).toEqual(scopeDefaults)
   })
 
+  it('opens on the newest models, and keeps an explicit sort', () => {
+    expect(scopeSchema.parse({}).sort).toBe('-released')
+    expect(scopeSchema.parse({ sort: 'input' }).sort).toBe('input')
+  })
+
   it('splits comma lists, including single values the router parsed as other types', () => {
     expect(
       scopeSchema.parse({ model: 'openai/gpt-5,openai/gpt-5:free', provider: ['azure'] }),
@@ -149,7 +154,7 @@ describe('stripping defaults from URLs', () => {
 
   it('strips only the defaults from a mixed scope', () => {
     expect(
-      stringifySearch(strip(scopeSchema.parse({ model: 'a', plot: true, sort: 'input' }))),
+      stringifySearch(strip(scopeSchema.parse({ model: 'a', plot: true, sort: '-released' }))),
     ).toBe('?model=a')
   })
 })

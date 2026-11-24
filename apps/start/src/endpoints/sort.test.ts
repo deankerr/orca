@@ -109,6 +109,57 @@ describe('sortRows', () => {
     ])
   })
 
+  it('sorts by release, each model’s endpoints together and cheapest input first, in either direction', () => {
+    expect(order('-released')).toEqual([
+      'gpt-azure',
+      'gpt-openai',
+      'gpt-free',
+      'kimi-deepinfra',
+      'kimi-azure',
+    ])
+    expect(order('released')).toEqual([
+      'kimi-deepinfra',
+      'kimi-azure',
+      'gpt-free',
+      'gpt-azure',
+      'gpt-openai',
+    ])
+  })
+
+  it('keeps models released at the same time apart, with absent prices last within each', () => {
+    const twin = { ...models.kimi, id: 'moonshotai/kimi-twin', name: 'Kimi Twin' }
+
+    const released = buildRows({
+      ...payload,
+      endpoints: [
+        endpoint({
+          id: 'kimi-unpriced',
+          input: null,
+          model: models.kimi,
+          provider: providers.openai,
+        }),
+        endpoint({ id: 'twin-dear', input: '0.000002', model: twin, provider: providers.azure }),
+        endpoint({
+          id: 'kimi-cheap',
+          input: '0.0000001',
+          model: models.kimi,
+          provider: providers.azure,
+        }),
+        endpoint({ id: 'twin-cheap', input: '0.0000001', model: twin, provider: providers.openai }),
+      ],
+      models: [...payload.models, twin],
+    })
+
+    for (const key of ['released', '-released'] as const) {
+      expect(sortRows(released, key, defaultWorkload).map((row) => row.id)).toEqual([
+        'kimi-cheap',
+        'kimi-unpriced',
+        'twin-cheap',
+        'twin-dear',
+      ])
+    }
+  })
+
   it('does not mutate its input', () => {
     const before = rows.map((row) => row.id)
 

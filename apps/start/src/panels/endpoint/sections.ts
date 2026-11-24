@@ -2,18 +2,11 @@ import { properties } from '@orca/properties'
 import type { Group, PropertyId, Value } from '@orca/properties'
 
 import type { EndpointRow } from '#endpoints/snapshot'
-import { ABSENT, formatLatency } from '#lib/format'
+import { ABSENT, formatDate, formatLatency } from '#lib/format'
 
 import { listRow } from './facts'
 import type { FactRow, Section } from './facts'
-import {
-  formatDate,
-  formatDays,
-  formatFlag,
-  formatTokens,
-  formatValue,
-  sentenceCase,
-} from './labels'
+import { formatDays, formatFlag, formatTokens, formatValue, sentenceCase } from './labels'
 import { pricingRows } from './pricing'
 
 /** The groups with a section of their own, in order; every other endpoint property goes to More. */

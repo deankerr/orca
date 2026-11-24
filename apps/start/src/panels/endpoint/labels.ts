@@ -1,7 +1,5 @@
-import { UTCDateMini } from '@date-fns/utc'
 import { formatNumber } from '@orca/backend/numbers'
 import type { Value } from '@orca/properties'
-import { format, isValid } from 'date-fns'
 
 import { ABSENT } from '#lib/format'
 
@@ -12,17 +10,6 @@ export function formatFlag(flag: boolean | null): string {
   }
 
   return flag ? 'yes' : 'no'
-}
-
-/** A UTC calendar date: `2026-10-24`. */
-export function formatDate(iso: string | null): string {
-  if (iso === null) {
-    return ABSENT
-  }
-
-  const date = new UTCDateMini(iso)
-
-  return isValid(date) ? format(date, 'yyyy-MM-dd') : ABSENT
 }
 
 /** A whole number with grouping: `128,000`. */

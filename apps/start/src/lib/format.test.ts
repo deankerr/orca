@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ABSENT,
+  formatAge,
   formatContext,
   formatCost,
   formatCount,
+  formatDate,
   formatLatency,
   formatRate,
   formatRateCell,
@@ -168,5 +170,42 @@ describe('formatCost', () => {
 
   it('shows an absent cost as a dash', () => {
     expect(formatCost(null)).toBe(ABSENT)
+  })
+})
+
+describe('formatDate', () => {
+  it('dates in UTC', () => {
+    expect(formatDate('2026-10-24T23:30:00.000Z')).toBe('2026-10-24')
+    expect(formatDate(Date.parse('2026-10-24T23:30:00.000Z'))).toBe('2026-10-24')
+    expect(formatDate(null)).toBe(ABSENT)
+  })
+})
+
+describe('formatAge', () => {
+  const at = Date.parse('2026-10-28T00:00:00.000Z')
+  const age = (released: string) => formatAge(Date.parse(released), at)
+
+  it('counts whole days under 100 days', () => {
+    expect(age('2026-10-28T00:00:00.000Z')).toBe('0d')
+    expect(age('2026-10-27T00:00:01.000Z')).toBe('0d')
+    expect(age('2026-10-16T00:00:00.000Z')).toBe('12d')
+    expect(age('2026-07-21T00:00:00.000Z')).toBe('99d')
+  })
+
+  it('counts whole calendar months from 100 days to under a year', () => {
+    expect(age('2026-07-20T00:00:00.000Z')).toBe('3mo')
+    expect(age('2026-06-28T00:00:00.000Z')).toBe('4mo')
+    expect(age('2025-10-29T00:00:00.000Z')).toBe('11mo')
+  })
+
+  it('counts years to one decimal from a year', () => {
+    expect(age('2025-10-28T00:00:00.000Z')).toBe('1.0y')
+    expect(age('2025-04-28T00:00:00.000Z')).toBe('1.5y')
+    expect(age('2023-10-28T00:00:00.000Z')).toBe('3.0y')
+  })
+
+  it('reads a release after the reference time as 0d, and an invalid time as absent', () => {
+    expect(age('2026-11-01T00:00:00.000Z')).toBe('0d')
+    expect(formatAge(Number.NaN, at)).toBe(ABSENT)
   })
 })

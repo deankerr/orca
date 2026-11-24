@@ -31,6 +31,7 @@ describe('columns', () => {
       'throughput',
       'latency',
       'context',
+      'released',
     ])
   })
 
@@ -38,7 +39,7 @@ describe('columns', () => {
     expect(columns.filter((column) => column.meta?.numeric === true)).toHaveLength(
       FIGURE_COLUMN_COUNT,
     )
-    expect(FIGURE_COLUMN_COUNT).toBe(7)
+    expect(FIGURE_COLUMN_COUNT).toBe(8)
   })
 
   it('makes Cost numeric, sortable, and ascending first, the first figure after Provider', () => {
@@ -49,6 +50,15 @@ describe('columns', () => {
     expect(columnLabel('cost')).toBe('Cost')
     expect(cost?.meta?.numeric).toBe(true)
     expect(cost?.sortDescFirst).toBe(false)
+  })
+
+  it('makes Released the last column, numeric, and newest first', () => {
+    const released = columns.at(-1)
+
+    expect(released?.id).toBe('released')
+    expect(columnLabel('released')).toBe('Released')
+    expect(released?.meta?.numeric).toBe(true)
+    expect(released?.sortDescFirst).toBe(true)
   })
 
   it('names every column by a label, which the loading skeleton reads', () => {
