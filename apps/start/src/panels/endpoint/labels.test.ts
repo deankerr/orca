@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatDate, formatDays, formatFlag, formatList, formatValue, sentenceCase } from './labels'
+import { formatDays, formatFlag, formatList, formatValue, sentenceCase } from './labels'
 
 describe('sentenceCase', () => {
   it('lowercases ordinary words after the first', () => {
@@ -28,11 +28,6 @@ describe('formatValue', () => {
 })
 
 describe('small formats', () => {
-  it('dates in UTC', () => {
-    expect(formatDate('2026-10-24T23:30:00.000Z')).toBe('2026-10-24')
-    expect(formatDate(null)).toBe('—')
-  })
-
   it('states flags, days, and lists', () => {
     expect(formatFlag(true)).toBe('yes')
     expect(formatFlag(false)).toBe('no')

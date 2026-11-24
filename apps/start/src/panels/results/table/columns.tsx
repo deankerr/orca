@@ -9,6 +9,7 @@ import type { EndpointRow } from '#endpoints/snapshot'
 import { formatContext, formatCount, formatLatency, formatRateCell } from '#lib/format'
 
 import { CostCell } from './cost-cell'
+import { ReleasedCell } from './released-cell'
 import { providerTags } from './tags'
 
 declare module '@tanstack/react-table' {
@@ -50,19 +51,19 @@ export function columnWidthStyle(id: string | undefined) {
  */
 
 /** Hides a folding column's column, header, and cells where it folds. */
-export const FOLDED_CLASS = '@max-[940px]/results:hidden'
+export const FOLDED_CLASS = '@max-[1008px]/results:hidden'
 
 /** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'inline-flex @min-[940px]/results:hidden'
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[1008px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[940px]/results:hidden'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[1008px]/results:hidden'
 
 /**
  * The Table wrapper's minimum width, `TABLE_MIN_WIDTH`: the folded Table's columns at their
  * narrowest, so a narrower panel scrolls it sideways. A test keeps the literal at the constant.
  */
-export const TABLE_MIN_WIDTH_CLASS = 'min-w-[656px]'
+export const TABLE_MIN_WIDTH_CLASS = 'min-w-[724px]'
 
 /** Sorting is controlled by the URL and applied upstream, so no sorted row model is registered. */
 export const features = tableFeatures({ rowSortingFeature })
@@ -77,6 +78,7 @@ const LABELS = {
   model: 'Model',
   output: 'Output',
   provider: 'Provider',
+  released: 'Released',
   throughput: 'Tok/s',
 } as const
 
@@ -137,9 +139,9 @@ function ProviderCell({ row }: { row: EndpointRow }) {
 
 /**
  * Columns in display order; `columnWidthStyle` sizes them. Cost is the first figure, ahead of the
- * quoted prices it derives from. Cost and Input directly follow Provider, so they are the first
- * figures, after Model and Provider, a drawer floating beside the Table covers
- * (`UNFOLD_RESULTS_WIDTH`). Lower is better for prices and latency; higher is better for the rest.
+ * quoted prices it derives from. Cost and Input directly follow Provider, so a drawer floating beside
+ * the Table leaves them clear (`foldedTableKeepsLeadingColumnsClear`). Released is last. Lower is
+ * better for prices and latency, higher for the rest, and newer for Released.
  */
 export const columns = helper.columns([
   helper.accessor((row) => row.model.name, {
@@ -204,6 +206,14 @@ export const columns = helper.columns([
     header: LABELS.context,
     id: 'context',
     meta: { numeric: true },
+    sortDescFirst: true,
+  }),
+  helper.accessor('released', {
+    cell: ({ row }) => <ReleasedCell row={row.original} />,
+    header: LABELS.released,
+    id: 'released',
+    meta: { numeric: true },
+    // Descending is newest first: a later release time is a younger model.
     sortDescFirst: true,
   }),
 ])

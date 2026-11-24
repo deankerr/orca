@@ -1,8 +1,8 @@
 import type { EndpointRow } from '#endpoints/snapshot'
-import { ABSENT } from '#lib/format'
+import { ABSENT, formatDate } from '#lib/format'
 import { huggingFaceUrl, modelPageUrl, providerPageUrl } from '#lib/openrouter'
 
-import { formatDate, formatFlag, formatList } from './labels'
+import { formatFlag, formatList } from './labels'
 
 /** One label and value in the panel. */
 export interface FactRow {

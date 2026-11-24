@@ -1,8 +1,7 @@
 import { properties } from '@orca/properties'
 
 import type { EndpointRow } from '#endpoints/snapshot'
-
-import { formatDate } from './labels'
+import { formatDate } from '#lib/format'
 
 /** The region and tier that tell a provider's endpoints for one model apart, if it states them. */
 export function endpointTag({ properties: active }: EndpointRow): string | null {

@@ -6,7 +6,7 @@ import * as R from 'remeda'
 import { z } from 'zod'
 
 import { RELEASE_WINDOWS } from './filtering'
-import { isSortKey } from './sort'
+import { DEFAULT_SORT, isSortKey } from './sort'
 import type { SortKey } from './sort'
 
 /**
@@ -61,7 +61,7 @@ export const scopeSchema = z
     ratio: z.number().positive().max(MAX_RATIO).default(DEFAULT_RATIO).catch(DEFAULT_RATIO),
     /** Models created within this many months of the reference time. */
     released: z.literal(RELEASE_WINDOWS).optional().catch(undefined),
-    sort: z.custom<SortKey>(isSortKey).default('input').catch('input'),
+    sort: z.custom<SortKey>(isSortKey).default(DEFAULT_SORT).catch(DEFAULT_SORT),
     /** Also show unlisted endpoints. */
     unlisted: z.boolean().default(false).catch(false),
     /** Properties that must be active. */
@@ -83,7 +83,7 @@ export const scopeDefaults = {
   plot: true,
   provider: [],
   ratio: DEFAULT_RATIO,
-  sort: 'input',
+  sort: DEFAULT_SORT,
   unlisted: false,
   with: [],
   without: [],

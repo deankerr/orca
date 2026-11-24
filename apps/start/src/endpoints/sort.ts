@@ -22,6 +22,9 @@ export type SortColumn = (typeof SORT_COLUMNS)[number]
 /** A sort column, ascending, or prefixed with `-` for descending: `input`, `-throughput`. */
 export type SortKey = SortColumn | `-${SortColumn}`
 
+/** The sort a URL without one opens on: newest model first (see `released` in `comparators`). */
+export const DEFAULT_SORT: SortKey = '-released'
+
 export const isSortColumn = (value: string): value is SortColumn =>
   SORT_COLUMNS.some((column) => column === value)
 
@@ -77,6 +80,19 @@ const reversible =
   (left, right) =>
     descending ? compare(right, left) : compare(left, right)
 
+const byModelId: Compare = (left, right) => left.model.id.localeCompare(right.model.id)
+
+/**
+ * By model release time, then model, so each model's endpoints stay together even where two models
+ * share a release time, and within a model by input price ascending, absent last, in either direction.
+ */
+const byRelease = (descending: boolean): Compare => {
+  const released = byNumber((row) => row.released)(descending)
+  const input = byNumber((row) => row.input)(false)
+
+  return (left, right) => released(left, right) || byModelId(left, right) || input(left, right)
+}
+
 const comparators = (workload: Workload): Record<SortColumn, (descending: boolean) => Compare> => ({
   cacheRead: byNumber((row) => row.cacheRead),
   context: byNumber((row) => row.context),
@@ -86,7 +102,7 @@ const comparators = (workload: Workload): Record<SortColumn, (descending: boolea
   model: reversible(byText((row) => row.model.name)),
   output: byNumber((row) => row.output),
   provider: reversible(byText((row) => row.provider.display_name)),
-  released: byNumber((row) => row.released),
+  released: byRelease,
   throughput: byNumber((row) => row.throughput),
 })
 
