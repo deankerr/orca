@@ -53,7 +53,8 @@ The Table fills Results at every width, by one rule (`tableColumnWidths`, expres
 
 - **Model** takes what the figures' minimum leaves, `clamp(180px, 100cqw − 544px, 256px)` of the Results
   container (`MODEL_COLUMN_WIDTH_CSS`). 256 fits a 99th-percentile model name with its avatar and padding.
-- **Provider**, where it has a column, is 208: a 99th-percentile provider name with its tags.
+- **Provider**, where it has a column, is 248: a 99th-percentile provider name with its region, quantization, and
+  tier tags, among listed endpoints.
 - **The eight figures** have no width, so the fixed table shares the rest evenly between them, each at least 68.
   The figures stay evenly spaced and right-aligned under their headers, and nothing trails the last column.
 - Below 724 (Model 180 and eight figures at 68, `TABLE_MIN_WIDTH`) the Table scrolls sideways, under the sticky
@@ -67,8 +68,8 @@ less the gutter and any docked Filters (`resultsWidth`); the Table's fold reads 
 
 | Results width R | Table                             | Endpoint drawer             |
 | --------------- | --------------------------------- | --------------------------- |
-| ≥ 1010          | Provider has its own column       | Beside the Table, non-modal |
-| 701–1009        | Provider folded into Model's cell | Beside the Table, non-modal |
+| ≥ 1050          | Provider has its own column       | Beside the Table, non-modal |
+| 701–1049        | Provider folded into Model's cell | Beside the Table, non-modal |
 | < 701, or flush | Provider folded into Model's cell | From the bottom, modal      |
 
 | Page width (CSS px) | Filters                     | R                         |
@@ -78,7 +79,7 @@ less the gutter and any docked Filters (`resultsWidth`); the Table's fold reads 
 | < 776               | Drawer from the left, modal | page; flush, drawer below |
 
 So the drawer floats beside the Table from a 997px page with Filters docked and from 776 with them collapsed
-(Results fits it from 717, but below 776 it runs flush), and Provider gets its column from 1306 docked and 1026
+(Results fits it from 717, but below 776 it runs flush), and Provider gets its column from 1346 docked and 1066
 collapsed. Collapsing Filters can therefore
 change both, but each is one breakpoint in R.
 
@@ -86,8 +87,8 @@ change both, but each is one breakpoint in R.
   border included) and the frame's leading border sit Model (180), Cost, and Input (68 each), the folded Table at
   its 724 minimum, which scrolls sideways there. Results that runs flush (below 776) keeps the drawer at the
   bottom whatever its width.
-- **Fold** (`UNFOLD_RESULTS_WIDTH`, 1010): Model at its cap 256, Provider 208, and the eight figures at their
-  68 minimum, inside the two borders (256 + 208 + 8 × 68 + 2). Below it Provider folds into the Model cell's second
+- **Fold** (`UNFOLD_RESULTS_WIDTH`, 1050): Model at its cap 256, Provider 248, and the eight figures at their
+  68 minimum, inside the two borders (256 + 248 + 8 × 68 + 2). Below it Provider folds into the Model cell's second
   line, and the Model header carries a second sort button for it ("Model / Provider"). Unfolded, the Table keeps
   Model, Provider, Cost, and Input clear of an open drawer at every width; the columns under it remain reachable
   by scrolling (`tableTrailingInset`).
@@ -113,7 +114,7 @@ change both, but each is one breakpoint in R.
   layout before scripts run, and a test keeps them at the breakpoint.
 - The Table's fold and Model width are CSS on the Results container (`FOLDED_CLASS` and its siblings in
   `columns.tsx`, `MODEL_COLUMN_WIDTH_CSS`), so the server and the skeleton need no width or cookie. Tailwind reads
-  the fold's literal `@max-[1008px]/results:` (1008 is 1010 less the two borders, the container's content box), and a
+  the fold's literal `@max-[1048px]/results:` (1048 is 1050 less the two borders, the container's content box), and a
   test keeps it at `UNFOLD_CONTAINER_WIDTH`; likewise the `724px` minimum at `TABLE_MIN_WIDTH`.
 - A Panel's frame reads `usePlacement` and `panelFrameClass` for border and width.
 - The Table's edge cells and the status bar share one side inset, `--results-inset` (16px, 12px in a narrow panel).

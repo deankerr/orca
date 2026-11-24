@@ -143,7 +143,7 @@ describe('panelLayout', () => {
       )
     }
 
-    expect(tableTrailingInset(panelLayout(1306, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
+    expect(tableTrailingInset(panelLayout(1346, false), true)).toBe(ENDPOINT_WIDTH + PANEL_GAP)
   })
 
   it('is the narrowest Results that keeps the folded Table’s leading columns clear, and they stay clear from there', () => {
@@ -165,7 +165,7 @@ describe('panelLayout', () => {
 
 describe('the Table’s fold', () => {
   it('unfolds Provider where the unfolded Table fits with Model at its cap', () => {
-    expect(UNFOLD_RESULTS_WIDTH).toBe(1010)
+    expect(UNFOLD_RESULTS_WIDTH).toBe(1050)
     expect(tableColumnWidths(UNFOLD_RESULTS_WIDTH)).toEqual({
       figure: FIGURE_COLUMN_MIN_WIDTH,
       model: MODEL_COLUMN_MAX_WIDTH,
