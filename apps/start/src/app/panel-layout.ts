@@ -41,8 +41,11 @@ export const MODEL_COLUMN_WIDTH = 180
  */
 export const MODEL_COLUMN_MAX_WIDTH = 256
 
-/** The Provider column: a provider name with its quantization and tier tags at the 99th percentile (207px). */
-export const PROVIDER_COLUMN_WIDTH = 208
+/**
+ * The Provider column: a provider name with its region, quantization, and tier tags at the 99th
+ * percentile of listed endpoints (245px with its avatar and padding, measured on the live catalogue).
+ */
+export const PROVIDER_COLUMN_WIDTH = 248
 
 /** The numeric columns: Cost, Input, Output, Cache read, Throughput, Latency, Context, Released. */
 export const FIGURE_COLUMN_COUNT = 8

@@ -2,6 +2,7 @@ import { defaultWorkload, workloadCost } from '@orca/pricing'
 import { createColumnHelper, rowSortingFeature, tableFeatures } from '@tanstack/react-table'
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 import { cn } from 'cn'
+import { Fragment } from 'react'
 
 import { MODEL_COLUMN_WIDTH_CSS, PROVIDER_COLUMN_WIDTH } from '#app/panel-layout'
 import { EntityAvatar } from '#components/entity-avatar'
@@ -51,13 +52,13 @@ export function columnWidthStyle(id: string | undefined) {
  */
 
 /** Hides a folding column's column, header, and cells where it folds. */
-export const FOLDED_CLASS = '@max-[1008px]/results:hidden'
+export const FOLDED_CLASS = '@max-[1048px]/results:hidden'
 
 /** Shown only where a column folds; the folded column's stand-in. */
-export const FOLDED_ONLY_CLASS = 'inline-flex @min-[1008px]/results:hidden'
+export const FOLDED_ONLY_CLASS = 'inline-flex @min-[1048px]/results:hidden'
 
 /** The folded column's second line in the Model cell. */
-export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[1008px]/results:hidden'
+export const FOLDED_LINE_FLEX_CLASS = 'flex @min-[1048px]/results:hidden'
 
 /**
  * The Table wrapper's minimum width, `TABLE_MIN_WIDTH`: the folded Table's columns at their
@@ -91,14 +92,14 @@ export const columnLabel = (id: string | undefined): string | undefined =>
 const helper = createColumnHelper<typeof features, EndpointRow>()
 
 function ModelCell({ row }: { row: EndpointRow }) {
-  const tags = providerTags(row.endpoint)
+  const tags = providerTags(row)
 
   return (
     <div className="flex min-w-0 items-center gap-2">
       <EntityAvatar slug={row.model.id} />
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[13px] leading-4">{row.model.name}</span>
-        {/* The Provider column, folded in where there is no room for it as a column. Only the name truncates; the tags are the precision and tier the Provider column shows as badges, so they stay whole. */}
+        {/* The Provider column, folded in where there is no room for it as a column. Only the name truncates; the tags are the region, precision, and tier the Provider column shows as badges, so they stay whole. */}
         <span className={cn('min-w-0 items-baseline gap-1', FOLDED_LINE_FLEX_CLASS)}>
           <span
             className="min-w-0 truncate text-[11px] leading-3.5 text-muted-foreground"
@@ -108,7 +109,12 @@ function ModelCell({ row }: { row: EndpointRow }) {
           </span>
           {tags.length > 0 ? (
             <span className="shrink-0 text-[11px] leading-3.5 whitespace-nowrap text-muted-foreground">
-              {`· ${tags.join(' · ')}`}
+              {tags.map((tag) => (
+                <Fragment key={tag.id}>
+                  {' · '}
+                  <span title={tag.hint}>{tag.label}</span>
+                </Fragment>
+              ))}
             </span>
           ) : null}
         </span>
@@ -118,7 +124,7 @@ function ModelCell({ row }: { row: EndpointRow }) {
 }
 
 function ProviderCell({ row }: { row: EndpointRow }) {
-  const tags = providerTags(row.endpoint)
+  const tags = providerTags(row)
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -128,9 +134,10 @@ function ProviderCell({ row }: { row: EndpointRow }) {
       {tags.map((tag) => (
         <span
           className="shrink-0 rounded-[3px] border border-border-solid px-1 font-mono text-[10px] leading-4 text-muted-foreground"
-          key={tag}
+          key={tag.id}
+          title={tag.hint}
         >
-          {tag}
+          {tag.label}
         </span>
       ))}
     </div>

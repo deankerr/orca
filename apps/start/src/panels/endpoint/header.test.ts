@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { rowWith } from './fixtures.testing'
-import { endpointTag, slugParts, unlistedLine } from './header'
+import { endpointTag, endpointTagDescription, slugParts, unlistedLine } from './header'
 
 describe('endpointTag', () => {
   it('joins the region and tier an endpoint states', () => {
@@ -13,6 +13,19 @@ describe('endpointTag', () => {
 
   it('has none when neither is stated', () => {
     expect(endpointTag(rowWith())).toBeNull()
+  })
+})
+
+describe('endpointTagDescription', () => {
+  it('explains each property behind the tag', () => {
+    expect(
+      endpointTagDescription(
+        rowWith({ endpoint: { provider_region: 'us', service_tier: 'flex' } }),
+      ),
+    ).toBe(
+      'Region: Reported serving region; it does not establish data residency. Service Tier: Paid speed or priority tier, or discounted flex tier.',
+    )
+    expect(endpointTagDescription(rowWith())).toBe('')
   })
 })
 

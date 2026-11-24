@@ -1,5 +1,4 @@
-import { properties } from '@orca/properties'
-
+import { propertyHint } from '#endpoints/property-hint'
 import type { EndpointRow } from '#endpoints/snapshot'
 import { formatDate } from '#lib/format'
 
@@ -17,9 +16,7 @@ export function endpointTag({ properties: active }: EndpointRow): string | null 
 /** What the tag means, for hover: the properties behind it. */
 export function endpointTagDescription({ properties: active }: EndpointRow): string {
   return (['region', 'service_tier'] as const)
-    .flatMap((id) =>
-      active.has(id) ? [`${properties[id].name}: ${properties[id].description}`] : [],
-    )
+    .flatMap((id) => (active.has(id) ? [propertyHint(id)] : []))
     .join(' ')
 }
 
